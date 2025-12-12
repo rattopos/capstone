@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "광공업생산",
+  "description": "스키마 정의: 광공업생산",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "region_code": {
+        "type": "string",
+        "description": "지역\n코드"
+      },
+      "region_name": {
+        "type": "string",
+        "description": "지역\n이름"
+      },
+      "category_level": {
+        "type": "string",
+        "description": "분류\n단계"
+      },
+      "weight": {
+        "type": "string",
+        "description": "가중치"
+      },
+      "산업_코드": {
+        "type": "string",
+        "description": "산업\n코드"
+      },
+      "산업_이름": {
+        "type": "string",
+        "description": "산업 이름"
+      },
+      "value_2013": {
+        "type": "string",
+        "description": "연도: 2013"
+      },
+      "value_2014": {
+        "type": "string",
+        "description": "연도: 2014"
+      },
+      "value_2015": {
+        "type": "string",
+        "description": "연도: 2015"
+      },
+      "value_2016": {
+        "type": "string",
+        "description": "연도: 2016"
+      },
+      "value_2017": {
+        "type": "string",
+        "description": "연도: 2017"
+      },
+      "value_2018": {
+        "type": "string",
+        "description": "연도: 2018"
+      },
+      "value_2019": {
+        "type": "string",
+        "description": "연도: 2019"
+      },
+      "value_2020": {
+        "type": "number",
+        "description": "연도: 2020",
+        "minimum": 0.0,
+        "maximum": 2020.0
+      },
+      "value_2021": {
+        "type": "number",
+        "description": "연도: 2021",
+        "minimum": 0.0,
+        "maximum": 2021.0
+      },
+      "value_2022": {
+        "type": "number",
+        "description": "연도: 2022",
+        "minimum": 0.0,
+        "maximum": 2022.0
+      },
+      "value_2023": {
+        "type": "number",
+        "description": "연도: 2023",
+        "minimum": 0.0,
+        "maximum": 2023.0
+      },
+      "value_2024": {
+        "type": "number",
+        "description": "연도: 2024",
+        "minimum": 0.0,
+        "maximum": 2024.0
+      },
+      "value_2014_q4": {
+        "type": "string",
+        "description": "연도: 2014, 분기: 4"
+      },
+      "value_2015_q4": {
+        "type": "string",
+        "description": "연도: 2015, 분기: 4"
+      },
+      "value_2016_q4": {
+        "type": "string",
+        "description": "연도: 2016, 분기: 4"
+      },
+      "value_2017_q4": {
+        "type": "string",
+        "description": "연도: 2017, 분기: 4"
+      },
+      "value_2018_q4": {
+        "type": "string",
+        "description": "연도: 2018, 분기: 4"
+      },
+      "value_2019_q4": {
+        "type": "string",
+        "description": "연도: 2019, 분기: 4"
+      },
+      "value_2020_q4": {
+        "type": "string",
+        "description": "연도: 2020, 분기: 4"
+      },
+      "value_2021_q4": {
+        "type": "string",
+        "description": "연도: 2021, 분기: 4"
+      },
+      "value_2022_q4": {
+        "type": "string",
+        "description": "연도: 2022, 분기: 4"
+      },
+      "value_2023_q4": {
+        "type": "string",
+        "description": "연도: 2023, 분기: 4"
+      },
+      "value_2024_q4": {
+        "type": "string",
+        "description": "연도: 2024, 분기: 4"
+      },
+      "value_2025_q4": {
+        "type": "string",
+        "description": "2025  2/4p"
+      }
+    },
+    "required": [
+      "region_code",
+      "region_name",
+      "category_level",
+      "weight",
+      "산업_코드"
+    ]
+  }
+}

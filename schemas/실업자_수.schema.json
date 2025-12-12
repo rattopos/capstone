@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "실업자 수",
+  "description": "스키마 정의: 실업자 수",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sido": {
+        "type": "string",
+        "description": "시도별"
+      },
+      "age_group": {
+        "type": "string",
+        "description": "연령계층별"
+      },
+      "value_2012": {
+        "type": "number",
+        "description": "연도: 2012",
+        "minimum": 0.0,
+        "maximum": 2012.0
+      },
+      "value_2013": {
+        "type": "number",
+        "description": "연도: 2013",
+        "minimum": 0.0,
+        "maximum": 2013.0
+      },
+      "value_2014": {
+        "type": "number",
+        "description": "연도: 2014",
+        "minimum": 0.0,
+        "maximum": 2014.0
+      },
+      "value_2015": {
+        "type": "number",
+        "description": "연도: 2015",
+        "minimum": 0.0,
+        "maximum": 2015.0
+      },
+      "value_2016": {
+        "type": "number",
+        "description": "연도: 2016",
+        "minimum": 0.0,
+        "maximum": 2016.0
+      },
+      "value_2017": {
+        "type": "number",
+        "description": "연도: 2017",
+        "minimum": 0.2,
+        "maximum": 2017.0
+      },
+      "value_2018": {
+        "type": "number",
+        "description": "연도: 2018",
+        "minimum": 0.4,
+        "maximum": 2018.0
+      },
+      "value_2019": {
+        "type": "number",
+        "description": "연도: 2019",
+        "minimum": 0.5,
+        "maximum": 2019.0
+      },
+      "value_2020": {
+        "type": "number",
+        "description": "연도: 2020",
+        "minimum": 0.7,
+        "maximum": 2020.0
+      },
+      "value_2021": {
+        "type": "number",
+        "description": "연도: 2021",
+        "minimum": 0.6,
+        "maximum": 2021.0
+      },
+      "value_2022": {
+        "type": "number",
+        "description": "연도: 2022",
+        "minimum": 0.7,
+        "maximum": 2022.0
+      },
+      "value_2023": {
+        "type": "number",
+        "description": "연도: 2023",
+        "minimum": 0.6,
+        "maximum": 2023.0
+      },
+      "value_2024": {
+        "type": "number",
+        "description": "연도: 2024",
+        "minimum": 0.8,
+        "maximum": 2024.0
+      },
+      "value_2014_q4": {
+        "type": "string",
+        "description": "연도: 2014, 분기: 4"
+      },
+      "value_2015_q4": {
+        "type": "string",
+        "description": "연도: 2015, 분기: 4"
+      },
+      "value_2016_q4": {
+        "type": "string",
+        "description": "연도: 2016, 분기: 4"
+      },
+      "value_2017_q4": {
+        "type": "string",
+        "description": "연도: 2017, 분기: 4"
+      },
+      "value_2018_q4": {
+        "type": "string",
+        "description": "연도: 2018, 분기: 4"
+      },
+      "value_2019_q4": {
+        "type": "string",
+        "description": "연도: 2019, 분기: 4"
+      },
+      "value_2020_q4": {
+        "type": "string",
+        "description": "연도: 2020, 분기: 4"
+      },
+      "value_2021_q4": {
+        "type": "string",
+        "description": "연도: 2021, 분기: 4"
+      },
+      "value_2022_q4": {
+        "type": "string",
+        "description": "연도: 2022, 분기: 4"
+      },
+      "value_2023_q4": {
+        "type": "string",
+        "description": "연도: 2023, 분기: 4"
+      },
+      "value_2024_q4": {
+        "type": "string",
+        "description": "연도: 2024, 분기: 4"
+      },
+      "value_2025_q4": {
+        "type": "string",
+        "description": "연도: 2025, 분기: 2"
+      }
+    },
+    "required": [
+      "age_group",
+      "value_2012",
+      "value_2013",
+      "value_2014",
+      "value_2015"
+    ]
+  }
+}
