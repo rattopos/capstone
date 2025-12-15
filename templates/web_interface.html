@@ -242,7 +242,7 @@
                     엑셀 파일 <span class="required">*</span>
                 </label>
                 <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
-                <div class="file-info">.xlsx 또는 .xls 파일만 업로드 가능합니다</div>
+                <div class="file-info">.xlsx 또는 .xls 파일만 업로드 가능합니다 (최대 200MB)</div>
             </div>
 
             <div class="form-group">
@@ -299,6 +299,16 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // 파일 크기 검증
+            const excelFile = document.getElementById('excel_file').files[0];
+            const maxSize = 200 * 1024 * 1024; // 200MB
+            
+            if (excelFile && excelFile.size > maxSize) {
+                errorMessage.textContent = `파일 크기가 너무 큽니다. 최대 파일 크기는 200MB입니다. (현재: ${(excelFile.size / 1024 / 1024).toFixed(2)}MB)`;
+                errorMessage.classList.add('active');
+                return;
+            }
+
             // UI 상태 초기화
             errorMessage.classList.remove('active');
             successMessage.classList.remove('active');
@@ -314,30 +324,27 @@
                 });
 
                 if (response.ok) {
-                    // 파일 다운로드
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
+                    // 응답 데이터 파싱
+                    const data = await response.json();
                     
-                    // Content-Disposition 헤더에서 파일명 추출 시도
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = 'result.html';
-                    if (contentDisposition) {
-                        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                        if (filenameMatch) {
-                            filename = filenameMatch[1].replace(/['"]/g, '');
-                        }
-                    }
-                    
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+                    if (data.success && data.file_id) {
+                        // 미리보기 페이지로 리다이렉트
+                        window.location.href = `/preview/${data.file_id}`;
+                    } else {
+                        // 예전 형식 지원 (blob 응답)
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = data.filename || 'result.html';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
 
-                    successMessage.textContent = '보도자료가 성공적으로 생성되었습니다! 파일이 다운로드됩니다.';
-                    successMessage.classList.add('active');
+                        successMessage.textContent = '보도자료가 성공적으로 생성되었습니다! 파일이 다운로드됩니다.';
+                        successMessage.classList.add('active');
+                    }
                 } else {
                     // 에러 응답 처리
                     const errorData = await response.json();
@@ -353,12 +360,24 @@
             }
         });
 
-        // 파일 선택 시 파일명 표시
+        // 파일 선택 시 파일명 표시 및 크기 검증
         document.getElementById('excel_file').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const fileInfo = this.nextElementSibling;
-                fileInfo.textContent = `선택된 파일: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                const fileSizeMB = file.size / 1024 / 1024;
+                const maxSizeMB = 200;
+                
+                if (fileSizeMB > maxSizeMB) {
+                    fileInfo.textContent = `⚠️ 파일 크기 초과: ${fileSizeMB.toFixed(2)}MB (최대 ${maxSizeMB}MB)`;
+                    fileInfo.style.color = '#e74c3c';
+                    errorMessage.textContent = `파일 크기가 너무 큽니다. 최대 ${maxSizeMB}MB까지 업로드 가능합니다.`;
+                    errorMessage.classList.add('active');
+                } else {
+                    fileInfo.textContent = `선택된 파일: ${file.name} (${fileSizeMB.toFixed(2)} MB)`;
+                    fileInfo.style.color = '#666';
+                    errorMessage.classList.remove('active');
+                }
             }
         });
 

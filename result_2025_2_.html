@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부문별 지역경제동향 - 광공업생산</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #fff;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .document-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 30px 0 15px 0;
+            color: #2c3e50;
+        }
+        
+        .subsection-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            color: #34495e;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: justify;
+            line-height: 1.9;
+        }
+        
+        .content-text strong {
+            font-weight: bold;
+        }
+        
+        .highlight-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .highlight-box-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .region-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .region-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .industry-list {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+        
+        .industry-item {
+            margin-bottom: 5px;
+        }
+        
+        .percentage {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .percentage.positive {
+            color: #27ae60;
+        }
+        
+        .percentage.negative {
+            color: #e74c3c;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table caption {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: left;
+            color: #2c3e50;
+        }
+        
+        thead {
+            background-color: #34495e;
+            color: #fff;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2c3e50;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        .region-name-cell {
+            text-align: left;
+            font-weight: 500;
+            padding-left: 12px;
+        }
+        
+        .data-cell {
+            font-weight: 500;
+        }
+        
+        .data-cell.positive {
+            color: #27ae60;
+        }
+        
+        .data-cell.negative {
+            color: #e74c3c;
+        }
+        
+        .preliminary {
+            font-size: 11px;
+            vertical-align: super;
+        }
+        
+        .source {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 20px;
+            text-align: right;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="document-title">II 부문별 지역경제동향</div>
+    
+    <div class="section-title">1. 생산 동향</div>
+    
+    <div class="subsection-title">가. 광공업생산</div>
+    
+    <!-- 
+    엑셀 파일 구조 참고:
+    - 시트명: "광공업생산"
+    - 전국 총지수: Row 4, Col F="총지수"
+    - 분기 데이터 열:
+      * 2023 3/4: Col 58 (BD4)
+      * 2023 4/4: Col 59 (BE4)
+      * 2024 1/4: Col 60 (BF4)
+      * 2024 2/4: Col 61 (BG4)
+      * 2024 3/4: Col 62 (BH4)
+      * 2024 4/4: Col 63 (BI4)
+      * 2025 1/4: Col 64 (BJ4)
+      * 2025 2/4: Col 65 (BK4)
+    - 증감률은 전년 동분기 대비로 계산 필요
+    -->
+    
+    <div class="content-text">
+        광공업생산은 강원(반도체·전자부품, 의료·정밀), 대구(반도체·전자부품, 의료·정밀), 광주(전기장비, 담배) 등 <strong>7</strong>개 시도에서 전년동분기대비 감소.
+    </div>
+    
+    <div class="content-text">
+        <strong>2023</strong>년 <strong>1/4</strong>분기 전국 광공업생산은 반도체·전자부품, 기타 운송장비 등의 생산이 늘어 전년동분기대비 <strong><span class="percentage">-8.2%</span></strong> 감소.
+    </div>
+    
+    <div class="content-text">
+        강원(<strong><span class="percentage positive">10.7%</span></strong>), 대구(<strong><span class="percentage positive">5.9%</span></strong>), 광주(<strong><span class="percentage positive">5.7%</span></strong>)는 반도체·전자부품, 전기장비 등의 생산이 늘어 증가하였으며, 경기(<strong><span class="percentage negative">-21.5%</span></strong>), 수도(<strong><span class="percentage negative">-18.5%</span></strong>), 서울(<strong><span class="percentage negative">-8.3%</span></strong>)은 의료·정밀, 반도체·전자부품, 금속 등의 생산이 줄어 감소.
+    </div>
+    
+    <div class="highlight-box">
+        <div class="highlight-box-title">&lt; 주요 증감지역 및 업종 &gt;</div>
+        
+        <!-- 
+        업종별 증감률 데이터 위치:
+        - 각 지역별로 산업 코드별 행을 찾아야 함
+        - 예: 전국에서 "반도체·전자부품" 산업 코드 찾기
+        - 증감률 계산: (현재분기 / 전년동분기 - 1) * 100
+        -->
+        
+        <!-- 전국 -->
+        <div class="region-item">
+            <span class="region-name">전국(-8.2%):</span>
+            <div class="industry-list">
+                <div class="industry-item">반도체·전자부품(<span class="percentage positive">-29.2%</span>), 기타 운송장비(<span class="percentage positive">71.5%</span>), 의료·정밀(<span class="percentage positive">-7.2%</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 상위 3개 시도 -->
+        <div class="region-item">
+            <span class="region-name">강원(10.7%):</span>
+            <div class="industry-list">
+                <div class="industry-item">반도체·전자부품(<span class="percentage positive">-19.4%</span>), 의료·정밀(<span class="percentage positive">109.7%</span>), 금속(<span class="percentage positive">-42.9%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">대구(5.9%):</span>
+            <div class="industry-list">
+                <div class="industry-item">반도체·전자부품(<span class="percentage positive">14.8%</span>), 의료·정밀(<span class="percentage positive">38.4%</span>), 의약품(<span class="percentage positive">13.8%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">광주(5.7%):</span>
+            <div class="industry-list">
+                <div class="industry-item">전기장비(<span class="percentage positive">-24.1%</span>), 담배(<span class="percentage positive">6.6%</span>), 자동차·트레일러(<span class="percentage positive">38.6%</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 하위 3개 시도 -->
+        <div class="region-item">
+            <span class="region-name">경기(-21.5%):</span>
+            <div class="industry-list">
+                <div class="industry-item">반도체·전자부품(<span class="percentage negative">-35%</span>), 기타기계장비(<span class="percentage negative">-11.4%</span>), 의료·정밀(<span class="percentage negative">-15.7%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">수도(-18.5%):</span>
+            <div class="industry-list">
+                <div class="industry-item">반도체·전자부품(<span class="percentage negative">-34.4%</span>), 자동차·트레일러(<span class="percentage negative">23.5%</span>), 의약품(<span class="percentage negative">17.8%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">서울(-8.3%):</span>
+            <div class="industry-list">
+                <div class="industry-item">의료·정밀(<span class="percentage negative">23.3%</span>), 전기·가스업(<span class="percentage negative">-13.8%</span>), 식료품(<span class="percentage negative">17.4%</span>)</div>
+            </div>
+        </div>
+    </div>
+    
+    <table>
+        <caption>《광공업생산 증감률(불변)》</caption>
+        <thead>
+            <tr>
+                <th>시·도</th>
+                <!-- 
+                분기 헤더 - 엑셀 열 참조:
+                Col 58: 2023 3/4
+                Col 59: 2023 4/4
+                Col 60: 2024 1/4
+                Col 61: 2024 2/4
+                Col 62: 2024 3/4
+                Col 63: 2024 4/4
+                Col 64: 2025 1/4
+                Col 65: 2025 2/4p
+                -->
+                <th>2023 3/4</th>
+                <th>2023 4/4</th>
+                <th>2024 1/4</th>
+                <th>2024 2/4</th>
+                <th>2024 3/4</th>
+                <th>2024 4/4</th>
+                <th>2025 1/4</th>
+                <th>2025 2/4P</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 
+            지역별 데이터 행 위치 확인 필요:
+            - 각 지역 코드별로 총지수 행 찾기
+            - 지역 코드: 00(전국), 11(서울), 21(부산), 22(대구), 23(인천), 24(광주), 25(대전), 26(울산), 27(세종), 28(경기), 29(강원), 30(충북), 31(충남), 32(전북), 33(전남), 34(경북), 35(경남), 39(제주)
+            - 증감률 계산: (현재분기 / 전년동분기 - 1) * 100
+            예: 2023 3/4 증감률 = (BD4 / BD4의 전년동분기 - 1) * 100
+            -->
+            <tr>
+                <td class="region-name-cell">전국</td>
+                <!-- 전국 Row 4 기준 -->
+                <td class="data-cell">-0.5</td>
+                <td class="data-cell">4.8</td>
+                <td class="data-cell">5.3</td>
+                <td class="data-cell">5.2</td>
+                <td class="data-cell">2.4</td>
+                <td class="data-cell">3.5</td>
+                <td class="data-cell">2</td>
+                <td class="data-cell">2.1</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">서울</td>
+                <!-- 서울 지역 Row 확인 필요 -->
+                <td class="data-cell">0.9</td>
+                <td class="data-cell">-2</td>
+                <td class="data-cell">-3.4</td>
+                <td class="data-cell">2</td>
+                <td class="data-cell">-3.5</td>
+                <td class="data-cell">-7</td>
+                <td class="data-cell">-5.5</td>
+                <td class="data-cell">-10.1</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">부산</td>
+                <td class="data-cell">-13.9</td>
+                <td class="data-cell">-8.8</td>
+                <td class="data-cell">-3.6</td>
+                <td class="data-cell">5.6</td>
+                <td class="data-cell">5</td>
+                <td class="data-cell">4.6</td>
+                <td class="data-cell">-2.4</td>
+                <td class="data-cell">-4</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">대구</td>
+                <td class="data-cell">-6.5</td>
+                <td class="data-cell">-6</td>
+                <td class="data-cell">-1.3</td>
+                <td class="data-cell">2.5</td>
+                <td class="data-cell">1</td>
+                <td class="data-cell">0</td>
+                <td class="data-cell">-5.1</td>
+                <td class="data-cell">-2.2</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">인천</td>
+                <td class="data-cell">-1.3</td>
+                <td class="data-cell">2.1</td>
+                <td class="data-cell">26.4</td>
+                <td class="data-cell">30.9</td>
+                <td class="data-cell">17.2</td>
+                <td class="data-cell">9.8</td>
+                <td class="data-cell">-3.8</td>
+                <td class="data-cell">-3.7</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">광주</td>
+                <td class="data-cell">-1.9</td>
+                <td class="data-cell">-4.5</td>
+                <td class="data-cell">0.4</td>
+                <td class="data-cell">4.5</td>
+                <td class="data-cell">2.5</td>
+                <td class="data-cell">9.3</td>
+                <td class="data-cell">10.2</td>
+                <td class="data-cell">11.3</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">대전</td>
+                <td class="data-cell">-6.5</td>
+                <td class="data-cell">-1.7</td>
+                <td class="data-cell">3.3</td>
+                <td class="data-cell">13.4</td>
+                <td class="data-cell">11.3</td>
+                <td class="data-cell">2.5</td>
+                <td class="data-cell">1.8</td>
+                <td class="data-cell">-0.6</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">울산</td>
+                <td class="data-cell">0.5</td>
+                <td class="data-cell">-2.9</td>
+                <td class="data-cell">-0.5</td>
+                <td class="data-cell">2.4</td>
+                <td class="data-cell">2</td>
+                <td class="data-cell">1.4</td>
+                <td class="data-cell">-0.7</td>
+                <td class="data-cell">2.5</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">세종</td>
+                <td class="data-cell">-5.7</td>
+                <td class="data-cell">-4.2</td>
+                <td class="data-cell">6.2</td>
+                <td class="data-cell">-3.2</td>
+                <td class="data-cell">2</td>
+                <td class="data-cell">0.7</td>
+                <td class="data-cell">-7.6</td>
+                <td class="data-cell">-3.4</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경기</td>
+                <td class="data-cell">7.6</td>
+                <td class="data-cell">19.7</td>
+                <td class="data-cell">31</td>
+                <td class="data-cell">20</td>
+                <td class="data-cell">9</td>
+                <td class="data-cell">13.2</td>
+                <td class="data-cell">7.3</td>
+                <td class="data-cell">12.3</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">강원</td>
+                <td class="data-cell">1.8</td>
+                <td class="data-cell">-4.1</td>
+                <td class="data-cell">-9.2</td>
+                <td class="data-cell">-10.4</td>
+                <td class="data-cell">-9.7</td>
+                <td class="data-cell">-7.3</td>
+                <td class="data-cell">-10.9</td>
+                <td class="data-cell">0.3</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">충북</td>
+                <td class="data-cell">-9.1</td>
+                <td class="data-cell">4.8</td>
+                <td class="data-cell">-6.6</td>
+                <td class="data-cell">-9.7</td>
+                <td class="data-cell">-3.7</td>
+                <td class="data-cell">-4.1</td>
+                <td class="data-cell">5.8</td>
+                <td class="data-cell">14.1</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">충남</td>
+                <td class="data-cell">-4.3</td>
+                <td class="data-cell">-3.1</td>
+                <td class="data-cell">-3.5</td>
+                <td class="data-cell">2.4</td>
+                <td class="data-cell">3.2</td>
+                <td class="data-cell">-2.1</td>
+                <td class="data-cell">-0.3</td>
+                <td class="data-cell">-6.4</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">전북</td>
+                <td class="data-cell">-6.9</td>
+                <td class="data-cell">-10.9</td>
+                <td class="data-cell">-3.1</td>
+                <td class="data-cell">-1.2</td>
+                <td class="data-cell">-1.9</td>
+                <td class="data-cell">0.7</td>
+                <td class="data-cell">-0.5</td>
+                <td class="data-cell">-1.3</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">전남</td>
+                <td class="data-cell">-2.1</td>
+                <td class="data-cell">2.5</td>
+                <td class="data-cell">-2.7</td>
+                <td class="data-cell">5</td>
+                <td class="data-cell">3.6</td>
+                <td class="data-cell">6.6</td>
+                <td class="data-cell">-0.6</td>
+                <td class="data-cell">-1.7</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경북</td>
+                <td class="data-cell">-7.3</td>
+                <td class="data-cell">-2.9</td>
+                <td class="data-cell">-3.4</td>
+                <td class="data-cell">-2.2</td>
+                <td class="data-cell">5.1</td>
+                <td class="data-cell">5.3</td>
+                <td class="data-cell">2</td>
+                <td class="data-cell">4.1</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경남</td>
+                <td class="data-cell">2.9</td>
+                <td class="data-cell">2.3</td>
+                <td class="data-cell">4.3</td>
+                <td class="data-cell">6.2</td>
+                <td class="data-cell">5.4</td>
+                <td class="data-cell">5.4</td>
+                <td class="data-cell">-0.7</td>
+                <td class="data-cell">-1.1</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">제주</td>
+                <td class="data-cell">-2.2</td>
+                <td class="data-cell">-6.5</td>
+                <td class="data-cell">-4.2</td>
+                <td class="data-cell">-1.6</td>
+                <td class="data-cell">3.2</td>
+                <td class="data-cell">1.2</td>
+                <td class="data-cell">0.5</td>
+                <td class="data-cell">-2.2</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="source">
+        자료: 통계청 국가통계포털(KOSIS), 광업제조업동향조사
+    </div>
+</body>
+</html>

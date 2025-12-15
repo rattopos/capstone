@@ -34,6 +34,11 @@ INDUSTRY_NAME_MAPPING = {
     '전기업 및 가스업': '전기·가스업',
     '전기, 가스, 증기 및 공기 조절 공급업': '전기·가스업',
     '식료품 제조업': '식료품',
+    '화학물질 및 화학제품 제조업': '화학제품',
+    '화학제품 제조업': '화학제품',
+    '음료 제조업': '음료',
+    '의류, 의복 액세서리 및 모피제품 제조업': '의류·모피',
+    '의류 및 모피제품 제조업': '의류·모피',
     # 부분 일치를 위한 키워드 매핑
     '반도체': '반도체·전자부품',
     '전자부품': '반도체·전자부품',
@@ -147,8 +152,9 @@ class TemplateFiller:
                 # Config를 사용하여 분석
                 self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(sheet_name)
             else:
-                # 기본값: 2025 2/4 분기 데이터 분석 (Col 65: 현재, Col 61: 전년 동분기)
-                quarter_data = {'2025_2/4': (65, 61)}
+                # 기본값: 2023 1/4 분기 데이터 분석 (Col 56: 현재, Col 52: 전년 동분기)
+                # 2023 Q1 = Col 58 - 2 = 56, 2022 Q1 = Col 58 - 6 = 52
+                quarter_data = {'2023_1/4': (56, 52)}
                 self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
                     sheet_name, quarter_data
                 )
@@ -166,15 +172,35 @@ class TemplateFiller:
             증감률 (퍼센트) 또는 None
         """
         # 분기별 열 매핑 (현재 분기 열, 전년 동분기 열)
+        # 스크린샷 기준: 2021 Q2부터 2023 Q1p까지
+        # 엑셀 열 번호 계산 필요 (2021 Q2 = 2020 Q2 대비, 2023 Q1p = 2022 Q1 대비)
+        # 기준: 2023년 3/4분기 = Col 58 (BD)
+        # 2021 Q2 = 2020 Q2 대비 → Col 계산 필요
+        # 2021 Q3 = 2020 Q3 대비
+        # 2021 Q4 = 2020 Q4 대비
+        # 2022 Q1 = 2021 Q1 대비
+        # 2022 Q2 = 2021 Q2 대비
+        # 2022 Q3 = 2021 Q3 대비
+        # 2022 Q4 = 2021 Q4 대비
+        # 2023 Q1p = 2022 Q1 대비
+        # Config 기준: 2023년 3/4분기 = Col 58
+        # 2021 Q2 = Col 58 - (2년 * 4 + 1분기) = 58 - 9 = 49
+        # 2021 Q3 = Col 58 - (2년 * 4 + 0분기) = 58 - 8 = 50
+        # 2021 Q4 = Col 58 - (2년 * 4 - 1분기) = 58 - 7 = 51
+        # 2022 Q1 = Col 58 - (1년 * 4 + 2분기) = 58 - 6 = 52
+        # 2022 Q2 = Col 58 - (1년 * 4 + 1분기) = 58 - 5 = 53
+        # 2022 Q3 = Col 58 - (1년 * 4 + 0분기) = 58 - 4 = 54
+        # 2022 Q4 = Col 58 - (1년 * 4 - 1분기) = 58 - 3 = 55
+        # 2023 Q1p = Col 58 - (0년 * 4 + 2분기) = 58 - 2 = 56
         quarter_cols = {
-            '2023_3분기': (58, 54),  # BD (2023 3/4) vs 54 (2022 3/4)
-            '2023_4분기': (59, 55),  # BE (2023 4/4) vs 55 (2022 4/4)
-            '2024_1분기': (60, 56),  # BF (2024 1/4) vs 56 (2023 1/4)
-            '2024_2분기': (61, 57),  # BG (2024 2/4) vs 57 (2023 2/4)
-            '2024_3분기': (62, 58),  # BH (2024 3/4) vs 58 (2023 3/4)
-            '2024_4분기': (63, 59),  # BI (2024 4/4) vs 59 (2023 4/4)
-            '2025_1분기': (64, 60),  # BJ (2025 1/4) vs 60 (2024 1/4)
-            '2025_2분기': (65, 61),  # BK (2025 2/4) vs 61 (2024 2/4)
+            '2021_2분기': (49, 45),  # 2021 Q2 vs 2020 Q2 (전년 동분기)
+            '2021_3분기': (50, 46),  # 2021 Q3 vs 2020 Q3
+            '2021_4분기': (51, 47),  # 2021 Q4 vs 2020 Q4
+            '2022_1분기': (52, 48),  # 2022 Q1 vs 2021 Q1
+            '2022_2분기': (53, 49),  # 2022 Q2 vs 2021 Q2
+            '2022_3분기': (54, 50),  # 2022 Q3 vs 2021 Q3
+            '2022_4분기': (55, 51),  # 2022 Q4 vs 2021 Q4
+            '2023_1분기': (56, 52),  # 2023 Q1p vs 2022 Q1
         }
         
         if quarter not in quarter_cols:
@@ -225,7 +251,7 @@ class TemplateFiller:
         if self.config is not None:
             quarter_name = self.config.get_quarter_name()
         else:
-            quarter_name = '2025_2/4'
+            quarter_name = '2023_1/4'
         
         if quarter_name not in self._analyzed_data_cache:
             return None
@@ -356,7 +382,8 @@ class TemplateFiller:
                                 growth_rate = industry['growth_rate']
                                 return self.nlp_processor.determine_trend(growth_rate)
         
-        # 분기별 증감률 마커 처리 (예: 전국_2023_3분기_증감률)
+        # 분기별 증감률 마커 처리 (예: 전국_2023_1분기_증감률)
+        # 스크린샷 기준: 2021 Q2부터 2023 Q1p까지
         quarterly_match = re.match(r'(.+)_(\d{4})_(\d)분기_증감률', key)
         if quarterly_match:
             region_name = quarterly_match.group(1)
@@ -366,22 +393,23 @@ class TemplateFiller:
             
             growth_rate = self._get_quarterly_growth_rate(sheet_name, region_name, quarter_key)
             if growth_rate is not None:
-                # 표 셀에는 % 기호 없이 표시
-                return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
+                # 표 셀에는 % 기호 없이 표시, 소수점 1자리
+                formatted = f"{growth_rate:.1f}".rstrip('0').rstrip('.')
+                return formatted
             return ""
         
         # 분기 헤더 마커 처리 (예: 분기1_헤더)
         header_match = re.match(r'분기(\d+)_헤더', key)
         if header_match:
             quarter_idx = int(header_match.group(1)) - 1
-            headers = ['2023 3/4', '2023 4/4', '2024 1/4', '2024 2/4', 
-                      '2024 3/4', '2024 4/4', '2025 1/4', '2025 2/4P']
+            headers = ['2021 Q2', '2021 Q3', '2021 Q4', '2022 Q1', 
+                      '2022 Q2', '2022 Q3', '2022 Q4', '2023 Q1p']
             if 0 <= quarter_idx < len(headers):
                 return headers[quarter_idx]
         
-        # 전국 증감률 처리 (2025 2/4 분기)
+        # 전국 증감률 처리 (2023 1/4 분기)
         if key == '전국_증감률':
-            growth_rate = self._get_quarterly_growth_rate(sheet_name, '전국', '2025_2분기')
+            growth_rate = self._get_quarterly_growth_rate(sheet_name, '전국', '2023_1분기')
             if growth_rate is not None:
                 return self.format_percentage(growth_rate, decimal_places=1)
             return ""
@@ -392,13 +420,13 @@ class TemplateFiller:
             # 시도 코드: 2자리 숫자, 00(전국) 제외, 11-39 범위
             # 그룹 코드: 1자리 숫자 또는 다른 형식 (수도, 대경, 호남, 충청 등)
             sheet = self.excel_extractor.get_sheet(sheet_name)
-            positive_count = 0
+            negative_count = 0  # 감소 시도 수 (스크린샷 기준: 12개 시도 감소)
             
             # Config가 있으면 해당 열 사용, 없으면 기본값
             if self.config is not None:
                 current_col, prev_col = self.config.get_column_pair()
             else:
-                current_col, prev_col = 65, 61  # 기본값: 2025 2/4
+                current_col, prev_col = 56, 52  # 기본값: 2023 1/4
             
             for row in range(4, min(1000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
@@ -416,18 +444,18 @@ class TemplateFiller:
                         
                         if current is not None and prev is not None and prev != 0:
                             growth_rate = ((current / prev) - 1) * 100
-                            if growth_rate > 0:
-                                positive_count += 1
+                            if growth_rate < 0:  # 감소 시도 카운트
+                                negative_count += 1
             
-            return str(positive_count)
+            return str(negative_count)
         elif key == '기준연도':
             if self.config is not None:
                 return str(self.config.year)
-            return '2025'
+            return '2023'
         elif key == '기준분기':
             if self.config is not None:
                 return f'{self.config.quarter}/4'
-            return '2/4'
+            return '1/4'
         
         return None
     

@@ -30,7 +30,7 @@ pip install -r requirements.txt
 python run_web.py
 ```
 
-2. 브라우저에서 `http://localhost:5000` 접속
+2. 브라우저에서 `http://localhost:8000` 접속
 
 3. 엑셀 파일 업로드 및 설정 후 "보도자료 생성하기" 버튼 클릭
 
