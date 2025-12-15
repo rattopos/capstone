@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계청 보도자료</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>2025년 2분기 지역경제 보도자료</h1>
+    
+    <h2>주요 통계</h2>
+    <p>
+        총 인구: <span class="stat-value">{시트1:A1}</span>명
+    </p>
+    <p>
+        총 생산액: <span class="stat-value">{시트1:B1}</span>원
+    </p>
+    
+    <h2>증감 현황</h2>
+    <p>
+        전년 대비 증감률: <span class="stat-value">{시트1:A1:A2:증감률}</span>%
+    </p>
+    <p>
+        증감액: <span class="stat-value">{시트1:A1:A2:증감액}</span>원
+    </p>
+    
+    <h2>집계 데이터</h2>
+    <p>
+        합계: <span class="stat-value">{시트1:A1:A5:sum}</span>
+    </p>
+    <p>
+        평균: <span class="stat-value">{시트1:A1:A5:average}</span>
+    </p>
+</body>
+</html>
+
