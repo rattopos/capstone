@@ -3,21 +3,24 @@
 엑셀 데이터에서 상위/하위 시도 및 산업을 동적으로 추출
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .excel_extractor import ExcelExtractor
+from .config import Config
 
 
 class DataAnalyzer:
     """엑셀 데이터를 분석하여 상위/하위 항목을 추출하는 클래스"""
     
-    def __init__(self, excel_extractor: ExcelExtractor):
+    def __init__(self, excel_extractor: ExcelExtractor, config: Optional[Config] = None):
         """
         데이터 분석기 초기화
         
         Args:
             excel_extractor: 엑셀 추출기 인스턴스
+            config: 설정 객체 (선택적)
         """
         self.excel_extractor = excel_extractor
+        self.config = config
     
     def get_regions_with_growth_rate(self, sheet_name: str, current_col: int, prev_col: int) -> List[Dict[str, Any]]:
         """
@@ -289,18 +292,37 @@ class DataAnalyzer:
         
         return result[:top_n]
     
-    def analyze_quarter_data(self, sheet_name: str, quarter_cols: Dict[str, Tuple[int, int]]) -> Dict[str, Any]:
+    def analyze_quarter_data(self, sheet_name: str, 
+                            quarter_cols: Optional[Dict[str, Tuple[int, int]]] = None,
+                            year: Optional[int] = None,
+                            quarter: Optional[int] = None) -> Dict[str, Any]:
         """
         특정 분기의 데이터를 분석하여 상위/하위 시도와 각 시도의 상위 산업을 반환
         
         Args:
             sheet_name: 시트 이름
-            quarter_cols: 분기별 (현재 열, 전년 열) 딕셔너리
+            quarter_cols: 분기별 (현재 열, 전년 열) 딕셔너리 (선택적)
                 예: {'2025_2/4': (65, 61)}
+            year: 분석할 연도 (quarter_cols가 없을 때 사용)
+            quarter: 분석할 분기 (quarter_cols가 없을 때 사용)
             
         Returns:
             분석 결과 딕셔너리
         """
+        # quarter_cols가 없으면 Config를 사용하여 계산
+        if quarter_cols is None:
+            if self.config is not None:
+                current_col, prev_col = self.config.get_column_pair()
+                quarter_name = self.config.get_quarter_name()
+                quarter_cols = {quarter_name: (current_col, prev_col)}
+            elif year is not None and quarter is not None:
+                config = Config(year, quarter)
+                current_col, prev_col = config.get_column_pair()
+                quarter_name = config.get_quarter_name()
+                quarter_cols = {quarter_name: (current_col, prev_col)}
+            else:
+                raise ValueError("quarter_cols 또는 (year, quarter) 또는 Config 객체가 필요합니다.")
+        
         results = {}
         
         for quarter_name, (current_col, prev_col) in quarter_cols.items():

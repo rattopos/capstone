@@ -10,6 +10,8 @@ from .template_manager import TemplateManager
 from .excel_extractor import ExcelExtractor
 from .calculator import Calculator
 from .data_analyzer import DataAnalyzer
+from .config import Config
+from .nlp_processor import NLPProcessor
 
 # 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
 INDUSTRY_NAME_MAPPING = {
@@ -42,18 +44,22 @@ INDUSTRY_NAME_MAPPING = {
 class TemplateFiller:
     """템플릿에 데이터를 채우는 클래스"""
     
-    def __init__(self, template_manager: TemplateManager, excel_extractor: ExcelExtractor):
+    def __init__(self, template_manager: TemplateManager, excel_extractor: ExcelExtractor, 
+                 config: Optional[Config] = None):
         """
         템플릿 필러 초기화
         
         Args:
             template_manager: 템플릿 관리자 인스턴스
             excel_extractor: 엑셀 추출기 인스턴스
+            config: 설정 객체 (선택적)
         """
         self.template_manager = template_manager
         self.excel_extractor = excel_extractor
         self.calculator = Calculator()
-        self.data_analyzer = DataAnalyzer(excel_extractor)
+        self.config = config
+        self.data_analyzer = DataAnalyzer(excel_extractor, config)
+        self.nlp_processor = NLPProcessor()
         self._analyzed_data_cache = None
     
     def format_number(self, value: Any, use_comma: bool = True, decimal_places: int = None) -> str:
@@ -137,11 +143,15 @@ class TemplateFiller:
             sheet_name: 시트 이름
         """
         if self._analyzed_data_cache is None:
-            # 2025 2/4 분기 데이터 분석 (Col 65: 현재, Col 61: 전년 동분기)
-            quarter_data = {'2025_2/4': (65, 61)}
-            self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
-                sheet_name, quarter_data
-            )
+            if self.config is not None:
+                # Config를 사용하여 분석
+                self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(sheet_name)
+            else:
+                # 기본값: 2025 2/4 분기 데이터 분석 (Col 65: 현재, Col 61: 전년 동분기)
+                quarter_data = {'2025_2/4': (65, 61)}
+                self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
+                    sheet_name, quarter_data
+                )
     
     def _get_quarterly_growth_rate(self, sheet_name: str, region_name: str, quarter: str) -> Optional[float]:
         """
@@ -211,10 +221,16 @@ class TemplateFiller:
         """
         self._analyze_data_if_needed(sheet_name)
         
-        if '2025_2/4' not in self._analyzed_data_cache:
+        # 캐시에서 데이터 가져오기 (Config가 있으면 해당 분기, 없으면 기본값)
+        if self.config is not None:
+            quarter_name = self.config.get_quarter_name()
+        else:
+            quarter_name = '2025_2/4'
+        
+        if quarter_name not in self._analyzed_data_cache:
             return None
         
-        data = self._analyzed_data_cache['2025_2/4']
+        data = self._analyzed_data_cache[quarter_name]
         
         # 전국 패턴
         if key == '전국_이름':
@@ -223,6 +239,10 @@ class TemplateFiller:
         elif key == '전국_증감률':
             if 'national_region' in data and data['national_region']:
                 return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1)
+        elif key == '전국_증감방향':
+            if 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return self.nlp_processor.determine_trend(growth_rate)
         elif key.startswith('전국_산업'):
             if 'national_region' in data and data['national_region']:
                 industry_match = re.match(r'전국_산업(\d+)_(.+)', key)
@@ -246,6 +266,9 @@ class TemplateFiller:
                             return mapped_name if mapped_name else industry_name
                         elif industry_field == '증감률':
                             return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                        elif industry_field == '증감방향':
+                            growth_rate = industry['growth_rate']
+                            return self.nlp_processor.determine_trend(growth_rate)
         
         # 상위 시도 패턴
         top_match = re.match(r'상위시도(\d+)_(.+)', key)
@@ -260,6 +283,9 @@ class TemplateFiller:
                     return region['name']
                 elif field == '증감률':
                     return self.format_percentage(region['growth_rate'], decimal_places=1)
+                elif field == '증감방향':
+                    growth_rate = region['growth_rate']
+                    return self.nlp_processor.determine_trend(growth_rate)
                 elif field.startswith('산업'):
                     # 산업1_이름, 산업1_증감률 등
                     industry_match = re.match(r'산업(\d+)_(.+)', field)
@@ -283,6 +309,9 @@ class TemplateFiller:
                                 return mapped_name if mapped_name else industry_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                            elif industry_field == '증감방향':
+                                growth_rate = industry['growth_rate']
+                                return self.nlp_processor.determine_trend(growth_rate)
         
         # 하위 시도 패턴
         bottom_match = re.match(r'하위시도(\d+)_(.+)', key)
@@ -297,6 +326,9 @@ class TemplateFiller:
                     return region['name']
                 elif field == '증감률':
                     return self.format_percentage(region['growth_rate'], decimal_places=1)
+                elif field == '증감방향':
+                    growth_rate = region['growth_rate']
+                    return self.nlp_processor.determine_trend(growth_rate)
                 elif field.startswith('산업'):
                     # 산업1_이름, 산업1_증감률 등
                     industry_match = re.match(r'산업(\d+)_(.+)', field)
@@ -320,6 +352,9 @@ class TemplateFiller:
                                 return mapped_name if mapped_name else industry_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                            elif industry_field == '증감방향':
+                                growth_rate = industry['growth_rate']
+                                return self.nlp_processor.determine_trend(growth_rate)
         
         # 분기별 증감률 마커 처리 (예: 전국_2023_3분기_증감률)
         quarterly_match = re.match(r'(.+)_(\d{4})_(\d)분기_증감률', key)
@@ -359,6 +394,12 @@ class TemplateFiller:
             sheet = self.excel_extractor.get_sheet(sheet_name)
             positive_count = 0
             
+            # Config가 있으면 해당 열 사용, 없으면 기본값
+            if self.config is not None:
+                current_col, prev_col = self.config.get_column_pair()
+            else:
+                current_col, prev_col = 65, 61  # 기본값: 2025 2/4
+            
             for row in range(4, min(1000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
                 cell_b = sheet.cell(row=row, column=2)  # 지역 이름
@@ -370,8 +411,8 @@ class TemplateFiller:
                     is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
                     
                     if is_sido:
-                        current = sheet.cell(row=row, column=65).value  # 2025 2/4
-                        prev = sheet.cell(row=row, column=61).value    # 2024 2/4
+                        current = sheet.cell(row=row, column=current_col).value
+                        prev = sheet.cell(row=row, column=prev_col).value
                         
                         if current is not None and prev is not None and prev != 0:
                             growth_rate = ((current / prev) - 1) * 100
@@ -380,8 +421,12 @@ class TemplateFiller:
             
             return str(positive_count)
         elif key == '기준연도':
+            if self.config is not None:
+                return str(self.config.year)
             return '2025'
         elif key == '기준분기':
+            if self.config is not None:
+                return f'{self.config.quarter}/4'
             return '2/4'
         
         return None

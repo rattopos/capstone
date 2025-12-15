@@ -21,7 +21,29 @@ pip install -r requirements.txt
 
 ## 사용 방법
 
-### 기본 사용
+### 웹 애플리케이션 (권장)
+
+웹 브라우저를 통해 쉽게 사용할 수 있는 웹 인터페이스를 제공합니다.
+
+1. 웹 서버 실행:
+```bash
+python run_web.py
+```
+
+2. 브라우저에서 `http://localhost:5000` 접속
+
+3. 엑셀 파일 업로드 및 설정 후 "보도자료 생성하기" 버튼 클릭
+
+4. 생성된 HTML 파일이 자동으로 다운로드됩니다
+
+**웹 애플리케이션 기능:**
+- 직관적인 웹 인터페이스
+- 파일 업로드 (엑셀 파일, 템플릿 파일)
+- 연도/분기 설정
+- 실시간 처리 상태 표시
+- 결과 파일 자동 다운로드
+
+### CLI 사용 (명령줄)
 
 기본 템플릿(`templates/mining_manufacturing_production.html`) 사용:
 
@@ -69,14 +91,17 @@ python -m src.main --template templates/template.html --excel data/data.xlsx --o
 ```
 capstone/
 ├── templates/          # HTML 템플릿 파일
+│   └── web_interface.html  # 웹 인터페이스
 ├── data/              # 엑셀 데이터 파일
 ├── output/            # 생성된 보도자료
 ├── src/               # 소스 코드
-│   ├── main.py                 # 메인 실행 파일
+│   ├── main.py                 # CLI 메인 실행 파일
 │   ├── template_manager.py     # 템플릿 관리
 │   ├── excel_extractor.py      # 엑셀 데이터 추출
 │   ├── calculator.py           # 계산 엔진
 │   └── template_filler.py      # 템플릿 채우기
+├── app.py             # Flask 웹 애플리케이션
+├── run_web.py         # 웹 서버 실행 스크립트
 ├── requirements.txt   # Python 패키지 의존성
 └── README.md
 ```
