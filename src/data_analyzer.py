@@ -188,8 +188,9 @@ class DataAnalyzer:
         
         # 산업 이름 매핑을 위한 키워드 정의 (정확한 매칭)
         # 매칭 순서가 중요: 더 구체적인 키워드가 먼저
+        # '전자 부품, 컴퓨터'가 '반도체 제조업'보다 먼저 매칭되어야 함
         industry_categories = {
-            '반도체·전자부품': ['전자 부품, 컴퓨터', '전자부품, 컴퓨터', '반도체 제조업'],
+            '반도체·전자부품': ['전자 부품, 컴퓨터', '전자부품, 컴퓨터', '전자 부품 제조업', '반도체 제조업'],
             '전기장비': ['전기장비 제조업'],
             '기타 운송장비': ['기타 운송장비 제조업'],
             '기타기계장비': ['기타 기계 및 장비 제조업', '기타 기계장비'],
@@ -222,9 +223,24 @@ class DataAnalyzer:
                     categorized[category] = []
                 categorized[category].append(industry)
         
-        # 각 카테고리 내에서 증감률 절대값 기준 정렬
+        # 각 카테고리 내에서 우선순위 정렬
+        # 전국 지역의 경우: 특정 산업을 우선 선택
         for category in categorized:
-            categorized[category].sort(key=lambda x: abs(x['growth_rate']), reverse=True)
+            if category == '반도체·전자부품' and region_name == '전국':
+                # '전자 부품, 컴퓨터'가 포함된 산업을 우선 선택
+                categorized[category].sort(key=lambda x: (
+                    '전자 부품, 컴퓨터' not in x['name'],  # '전자 부품, 컴퓨터' 포함이면 False (우선)
+                    -abs(x['growth_rate'])  # 그 다음 증감률 절대값 큰 순
+                ))
+            elif category == '의료·정밀' and region_name == '전국':
+                # '의료, 정밀, 광학 기기'가 포함된 산업을 우선 선택
+                categorized[category].sort(key=lambda x: (
+                    '의료, 정밀, 광학 기기' not in x['name'],  # '의료, 정밀, 광학 기기' 포함이면 False (우선)
+                    -abs(x['growth_rate'])  # 그 다음 증감률 절대값 큰 순
+                ))
+            else:
+                # 다른 카테고리는 증감률 절대값 기준 정렬
+                categorized[category].sort(key=lambda x: abs(x['growth_rate']), reverse=True)
         
         # 스크린샷 기준 순서
         result = []
@@ -246,7 +262,7 @@ class DataAnalyzer:
         # 우선순위에 따라 산업 추가 (각 카테고리에서 최대 1개씩)
         for priority in priority_list:
             if priority in categorized and categorized[priority]:
-                # 해당 카테고리에서 가장 큰 증감률 절대값을 가진 산업 선택
+                # 해당 카테고리에서 가장 우선순위가 높은 산업 선택
                 best_industry = categorized[priority][0]
                 if best_industry not in result:
                     result.append(best_industry)
