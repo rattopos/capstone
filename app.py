@@ -27,10 +27,103 @@ app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
 
+# 시트명과 템플릿 파일 매핑
+SHEET_TEMPLATE_MAPPING = {
+    '광공업생산': {
+        'template': 'mining_manufacturing_production.html',
+        'display_name': '광공업생산'
+    },
+    '서비스업생산': {
+        'template': 'service_production.html',
+        'display_name': '서비스업생산'
+    },
+    '소비(소매, 추가)': {
+        'template': 'retail_sales.html',
+        'display_name': '소비(소매, 추가)'
+    },
+    '고용': {
+        'template': 'employment.html',
+        'display_name': '고용'
+    },
+    '고용(kosis)': {
+        'template': 'employment_kosis.html',
+        'display_name': '고용(kosis)'
+    },
+    '고용률': {
+        'template': 'employment_rate.html',
+        'display_name': '고용률'
+    },
+    '실업자 수': {
+        'template': 'unemployed.html',
+        'display_name': '실업자 수'
+    },
+    '지출목적별 물가': {
+        'template': 'price_by_purpose.html',
+        'display_name': '지출목적별 물가'
+    },
+    '품목성질별 물가': {
+        'template': 'price_by_item.html',
+        'display_name': '품목성질별 물가'
+    },
+    '건설 (공표자료)': {
+        'template': 'construction.html',
+        'display_name': '건설 (공표자료)'
+    },
+    '수출': {
+        'template': 'exports.html',
+        'display_name': '수출'
+    },
+    '수입': {
+        'template': 'imports.html',
+        'display_name': '수입'
+    },
+    '연령별 인구이동': {
+        'template': 'population_movement_by_age.html',
+        'display_name': '연령별 인구이동'
+    },
+    '시도 간 이동': {
+        'template': 'inter_sido_movement.html',
+        'display_name': '시도 간 이동'
+    },
+    '시군구인구이동': {
+        'template': 'population_movement_sigungu.html',
+        'display_name': '시군구인구이동'
+    }
+}
+
 
 def allowed_file(filename):
     """파일 확장자 검증"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_template_for_sheet(sheet_name):
+    """
+    시트명에 해당하는 템플릿 정보를 반환합니다.
+    
+    Args:
+        sheet_name: 엑셀 시트명
+        
+    Returns:
+        dict: {'template': 템플릿 파일명, 'display_name': 표시용 이름}
+        매핑이 없으면 기본값 반환
+    """
+    # 정확한 매칭 시도
+    if sheet_name in SHEET_TEMPLATE_MAPPING:
+        return SHEET_TEMPLATE_MAPPING[sheet_name]
+    
+    # 부분 매칭 시도 (키워드 기반)
+    sheet_lower = sheet_name.lower()
+    for key, value in SHEET_TEMPLATE_MAPPING.items():
+        if key.lower() in sheet_lower or sheet_lower in key.lower():
+            return value
+    
+    # 특수 케이스: 소비/소매 관련
+    if '소비' in sheet_name or '소매' in sheet_name:
+        return SHEET_TEMPLATE_MAPPING['소비(소매, 추가)']
+    
+    # 기본값: 광공업생산 템플릿 사용
+    return SHEET_TEMPLATE_MAPPING['광공업생산']
 
 
 @app.route('/')
@@ -78,8 +171,11 @@ def process_template():
         if not sheet_name:
             return jsonify({'error': '시트명을 선택해주세요.'}), 400
         
-        # 템플릿 경로 확인 (기본 템플릿만 사용)
-        template_name = 'mining_manufacturing_production.html'
+        # 시트명에 따라 템플릿 자동 선택
+        template_info = get_template_for_sheet(sheet_name)
+        template_name = template_info['template']
+        sheet_display_name = template_info['display_name']
+        
         template_path = Path('templates') / template_name
         
         if not template_path.exists():
@@ -117,8 +213,8 @@ def process_template():
             )
             
             # 결과 저장
-            # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(광공업생산).html
-            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료(광공업생산).html"
+            # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(시트명).html
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({sheet_display_name}).html"
             output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(filled_template)
