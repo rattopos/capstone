@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부문별 지역경제동향 - 건설수주</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        ul {
+            margin: 12px 0;
+            padding-left: 0;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+        
+        .document-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .subsection-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.7;
+            color: #000;
+        }
+        
+        .content-text strong {
+            font-weight: bold;
+        }
+        
+        /* 불릿 포인트 스타일 */
+        .bullet-diamond {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-diamond li::before {
+            content: "◆";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-square {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-square li::before {
+            content: "■";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-circle {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-circle li::before {
+            content: "●";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .highlight-box {
+            background-color: #fff;
+            border: none;
+            padding: 15px 0;
+            margin: 20px 0;
+        }
+        
+        .highlight-box-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #000;
+        }
+        
+        .region-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .region-name {
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .category-list {
+            margin-left: 0;
+            margin-top: 3px;
+        }
+        
+        .category-item {
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+        
+        .percentage {
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .percentage.positive {
+            color: #000;
+        }
+        
+        .percentage.negative {
+            color: #000;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 13px;
+            border: 1px solid #000;
+        }
+        
+        table caption {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+            color: #000;
+            caption-side: top;
+        }
+        
+        .table-unit {
+            font-size: 12px;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+        
+        thead {
+            background-color: #fff;
+        }
+        
+        th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #000;
+            white-space: nowrap;
+            font-size: 12px;
+            background-color: #f5f5f5;
+        }
+        
+        td {
+            padding: 7px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 12px;
+            background-color: #fff;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #fff;
+        }
+        
+        tbody tr:hover {
+            background-color: #fff;
+        }
+        
+        .region-name-cell {
+            text-align: left;
+            font-weight: normal;
+            padding-left: 8px;
+        }
+        
+        .data-cell {
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .data-cell.positive {
+            color: #000;
+        }
+        
+        .data-cell.negative {
+            color: #000;
+        }
+        
+        .preliminary {
+            font-size: 10px;
+            vertical-align: super;
+        }
+        
+        .source {
+            font-size: 12px;
+            color: #000;
+            margin-top: 15px;
+            text-align: left;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="document-title">II 부문별 지역경제동향</div>
+    
+    <div class="section-title">1. 생산 동향</div>
+    
+    <div class="subsection-title">나. 건설수주</div>
+    
+    <ul class="bullet-diamond">
+        <li>건설수주는 제주(토목), 세종(건축), 광주(토목) 등 <strong>12</strong>개 시도에서 전년동분기대비 감소.</li>
+    </ul>
+    
+    <ul class="bullet-square">
+        <li><strong>2025</strong>년 <strong>2/4</strong>분기 전국 건설수주는 토목, 건축 등의 토목이 줄어 전년동분기대비 <strong><span class="percentage">-8.4%</span></strong> 감소.</li>
+    </ul>
+    
+    <ul class="bullet-circle">
+        <li>대구(<strong><span class="percentage positive">370.9%</span></strong>), 경남(<strong><span class="percentage positive">91.9%</span></strong>), 부산(<strong><span class="percentage positive">73.8%</span></strong>)는 토목, 토목 등의 토목이 늘어 증가하였으며, 제주(<strong><span class="percentage negative">-70.6%</span></strong>), 세종(<strong><span class="percentage negative">-67.5%</span></strong>), 광주(<strong><span class="percentage negative">-56.4%</span></strong>)은 토목, 건축 등의 토목이 줄어 감소.</li>
+    </ul>
+    
+    <div class="highlight-box">
+        <div class="highlight-box-title">&lt; 주요 증감지역 및 공종 &gt;</div>
+        
+        <!-- 전국 -->
+        <div class="region-item">
+            <span class="region-name">전국(-8.4%):</span>
+            <div class="category-list">
+                <div class="category-item">토목(<span class="percentage negative">-44.2%</span>), 건축(<span class="percentage negative">9.0%</span>), N/A(<span class="percentage negative">N/A</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 상위 3개 시도 -->
+        <div class="region-item">
+            <span class="region-name">대구(370.9%):</span>
+            <div class="category-list">
+                <div class="category-item">토목(<span class="percentage positive">411.5%</span>)로 건축, N/A / 건축(<span class="percentage positive">356.7%</span>)로 N/A, N/A 등</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">경남(91.9%):</span>
+            <div class="category-list">
+                <div class="category-item">토목(<span class="percentage positive">99.3%</span>)로 건축, N/A / N/A(<span class="percentage positive">N/A</span>)로 N/A, N/A</div>
+            </div>
+        </div>
+        
+        <!-- 하위 2개 시도 -->
+        <div class="region-item">
+            <span class="region-name">제주(-70.6%):</span>
+            <div class="category-list">
+                <div class="category-item">토목(<span class="percentage negative">-71.7%</span>)로 건축, N/A / N/A(<span class="percentage negative">N/A</span>)로 N/A, N/A 등</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">세종(-67.5%):</span>
+            <div class="category-list">
+                <div class="category-item">건축(<span class="percentage negative">-80.5%</span>)로 N/A, N/A / N/A(<span class="percentage negative">N/A</span>)로 N/A, N/A</div>
+            </div>
+        </div>
+    </div>
+    
+    <table>
+        <caption>《건설수주 증감률(경상)》<span class="table-unit">[전년 동분기비, %]</span></caption>
+        <thead>
+            <tr>
+                <th>시·도</th>
+                <th>2023 3/4</th>
+                <th>2023 4/4</th>
+                <th>2024 1/4</th>
+                <th>2024 2/4</th>
+                <th>2024 3/4</th>
+                <th>2024 4/4</th>
+                <th>2025 1/4</th>
+                <th>2025 2/4P</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="region-name-cell">전국</td>
+                <td class="data-cell">-43.2</td>
+                <td class="data-cell">23.2</td>
+                <td class="data-cell">-10.4</td>
+                <td class="data-cell">20.7</td>
+                <td class="data-cell">26.8</td>
+                <td class="data-cell">9.7</td>
+                <td class="data-cell">1.1</td>
+                <td class="data-cell">-8.4</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">서울</td>
+                <td class="data-cell">-44.0</td>
+                <td class="data-cell">46.0</td>
+                <td class="data-cell">58.9</td>
+                <td class="data-cell">59.8</td>
+                <td class="data-cell">75.7</td>
+                <td class="data-cell">43.8</td>
+                <td class="data-cell">125.9</td>
+                <td class="data-cell">29.2</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">부산</td>
+                <td class="data-cell">-59.4</td>
+                <td class="data-cell">23.6</td>
+                <td class="data-cell">-8.6</td>
+                <td class="data-cell">-32.8</td>
+                <td class="data-cell">3.9</td>
+                <td class="data-cell">89.1</td>
+                <td class="data-cell">27.2</td>
+                <td class="data-cell">73.8</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">대구</td>
+                <td class="data-cell">-58.7</td>
+                <td class="data-cell">62.0</td>
+                <td class="data-cell">30.0</td>
+                <td class="data-cell">-59.4</td>
+                <td class="data-cell">104.2</td>
+                <td class="data-cell">-5.3</td>
+                <td class="data-cell">13.8</td>
+                <td class="data-cell">370.9</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">인천</td>
+                <td class="data-cell">-59.0</td>
+                <td class="data-cell">38.4</td>
+                <td class="data-cell">180.3</td>
+                <td class="data-cell">14.6</td>
+                <td class="data-cell">177.5</td>
+                <td class="data-cell">-6.3</td>
+                <td class="data-cell">-27.5</td>
+                <td class="data-cell">-50.0</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">광주</td>
+                <td class="data-cell">61.7</td>
+                <td class="data-cell">84.9</td>
+                <td class="data-cell">-51.8</td>
+                <td class="data-cell">-80.0</td>
+                <td class="data-cell">-79.2</td>
+                <td class="data-cell">-50.9</td>
+                <td class="data-cell">-84.8</td>
+                <td class="data-cell">-56.4</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">대전</td>
+                <td class="data-cell">-31.1</td>
+                <td class="data-cell">72.4</td>
+                <td class="data-cell">307.6</td>
+                <td class="data-cell">102.8</td>
+                <td class="data-cell">14.0</td>
+                <td class="data-cell">-61.2</td>
+                <td class="data-cell">-63.5</td>
+                <td class="data-cell">-49.2</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">울산</td>
+                <td class="data-cell">-68.7</td>
+                <td class="data-cell">-15.1</td>
+                <td class="data-cell">-88.1</td>
+                <td class="data-cell">-19.0</td>
+                <td class="data-cell">69.8</td>
+                <td class="data-cell">64.9</td>
+                <td class="data-cell">3.8</td>
+                <td class="data-cell">-16.2</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">세종</td>
+                <td class="data-cell">-83.1</td>
+                <td class="data-cell">72.4</td>
+                <td class="data-cell">0.3</td>
+                <td class="data-cell">-12.3</td>
+                <td class="data-cell">589.5</td>
+                <td class="data-cell">-13.4</td>
+                <td class="data-cell">362.3</td>
+                <td class="data-cell">-67.5</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경기</td>
+                <td class="data-cell">-34.8</td>
+                <td class="data-cell">21.6</td>
+                <td class="data-cell">-12.1</td>
+                <td class="data-cell">49.8</td>
+                <td class="data-cell">19.0</td>
+                <td class="data-cell">19.4</td>
+                <td class="data-cell">-21.2</td>
+                <td class="data-cell">-13.3</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">강원</td>
+                <td class="data-cell">-58.4</td>
+                <td class="data-cell">-16.7</td>
+                <td class="data-cell">-8.0</td>
+                <td class="data-cell">43.2</td>
+                <td class="data-cell">108.4</td>
+                <td class="data-cell">16.6</td>
+                <td class="data-cell">-3.2</td>
+                <td class="data-cell">-52.5</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">충북</td>
+                <td class="data-cell">-46.6</td>
+                <td class="data-cell">-28.7</td>
+                <td class="data-cell">-61.3</td>
+                <td class="data-cell">151.3</td>
+                <td class="data-cell">-8.1</td>
+                <td class="data-cell">60.7</td>
+                <td class="data-cell">275.6</td>
+                <td class="data-cell">-4.2</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">충남</td>
+                <td class="data-cell">-50.2</td>
+                <td class="data-cell">-3.6</td>
+                <td class="data-cell">61.3</td>
+                <td class="data-cell">-1.8</td>
+                <td class="data-cell">48.9</td>
+                <td class="data-cell">80.9</td>
+                <td class="data-cell">-55.7</td>
+                <td class="data-cell">-56.0</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">전북</td>
+                <td class="data-cell">-41.8</td>
+                <td class="data-cell">14.6</td>
+                <td class="data-cell">-59.9</td>
+                <td class="data-cell">-53.9</td>
+                <td class="data-cell">-10.4</td>
+                <td class="data-cell">-2.7</td>
+                <td class="data-cell">61.9</td>
+                <td class="data-cell">70.9</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">전남</td>
+                <td class="data-cell">-48.1</td>
+                <td class="data-cell">10.4</td>
+                <td class="data-cell">26.1</td>
+                <td class="data-cell">48.1</td>
+                <td class="data-cell">-59.8</td>
+                <td class="data-cell">-46.2</td>
+                <td class="data-cell">-64.0</td>
+                <td class="data-cell">-39.0</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경북</td>
+                <td class="data-cell">-48.1</td>
+                <td class="data-cell">91.5</td>
+                <td class="data-cell">29.1</td>
+                <td class="data-cell">-24.2</td>
+                <td class="data-cell">-3.8</td>
+                <td class="data-cell">-65.4</td>
+                <td class="data-cell">-33.5</td>
+                <td class="data-cell">-2.6</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">경남</td>
+                <td class="data-cell">-19.9</td>
+                <td class="data-cell">3.2</td>
+                <td class="data-cell">138.9</td>
+                <td class="data-cell">-27.1</td>
+                <td class="data-cell">33.8</td>
+                <td class="data-cell">-44.9</td>
+                <td class="data-cell">-68.9</td>
+                <td class="data-cell">91.9</td>
+            </tr>
+            <tr>
+                <td class="region-name-cell">제주</td>
+                <td class="data-cell">-33.2</td>
+                <td class="data-cell">-44.6</td>
+                <td class="data-cell">-42.5</td>
+                <td class="data-cell">-25.8</td>
+                <td class="data-cell">-8.7</td>
+                <td class="data-cell">-5.3</td>
+                <td class="data-cell">-49.0</td>
+                <td class="data-cell">-70.6</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="source">
+        자료: 통계청 국가통계포털(KOSIS), 건설경기동향조사
+    </div>
+</body>
+</html>
+

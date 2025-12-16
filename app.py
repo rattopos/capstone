@@ -18,6 +18,7 @@ import shutil
 from src.template_manager import TemplateManager
 from src.excel_extractor import ExcelExtractor
 from src.template_filler import TemplateFiller
+from src.period_detector import PeriodDetector
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -66,8 +67,8 @@ SHEET_TEMPLATE_MAPPING = {
         'display_name': '품목성질별 물가'
     },
     '건설 (공표자료)': {
-        'template': 'construction.html',
-        'display_name': '건설 (공표자료)'
+        'template': 'construction_orders.html',
+        'display_name': '건설수주'
     },
     '수출': {
         'template': 'exports.html',
@@ -165,8 +166,8 @@ def process_template():
         
         # 시트명, 연도 및 분기 파라미터 가져오기
         sheet_name = request.form.get('sheet_name', '')
-        year = request.form.get('year', '2025')
-        quarter = request.form.get('quarter', '2')
+        year_str = request.form.get('year', '')
+        quarter_str = request.form.get('quarter', '')
         
         if not sheet_name:
             return jsonify({'error': '시트명을 선택해주세요.'}), 400
@@ -204,12 +205,30 @@ def process_template():
                     'error': f'시트 "{sheet_name}"을 찾을 수 없습니다. 사용 가능한 시트: {", ".join(sheet_names)}'
                 }), 400
             
+            # 연도 및 분기 자동 감지 또는 사용자 입력값 사용
+            period_detector = PeriodDetector(excel_extractor)
+            periods_info = period_detector.detect_available_periods(sheet_name)
+            
+            if year_str and quarter_str:
+                # 사용자가 입력한 값 사용
+                year = int(year_str)
+                quarter = int(quarter_str)
+                
+                # 유효성 검증
+                is_valid, error_msg = period_detector.validate_period(sheet_name, year, quarter)
+                if not is_valid:
+                    return jsonify({'error': error_msg}), 400
+            else:
+                # 자동 감지된 기본값 사용
+                year = periods_info['default_year']
+                quarter = periods_info['default_quarter']
+            
             # 템플릿 필러 초기화 및 처리
             template_filler = TemplateFiller(template_manager, excel_extractor)
             filled_template = template_filler.fill_template(
                 sheet_name=sheet_name,
-                year=int(year), 
-                quarter=int(quarter)
+                year=year, 
+                quarter=quarter
             )
             
             # 결과 저장
@@ -294,11 +313,26 @@ def validate_files():
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
             sheet_names = excel_extractor.get_sheet_names()
+            
+            # 각 시트별로 사용 가능한 연도/분기 정보 수집
+            period_detector = PeriodDetector(excel_extractor)
+            sheets_info = {}
+            for sheet_name in sheet_names:
+                periods_info = period_detector.detect_available_periods(sheet_name)
+                sheets_info[sheet_name] = {
+                    'min_year': periods_info['min_year'],
+                    'max_year': periods_info['max_year'],
+                    'default_year': periods_info['default_year'],
+                    'default_quarter': periods_info['default_quarter'],
+                    'available_periods': periods_info['available_periods']
+                }
+            
             excel_extractor.close()
             
             return jsonify({
                 'valid': True,
                 'sheet_names': sheet_names,
+                'sheets_info': sheets_info,
                 'message': '파일이 유효합니다.'
             })
         except Exception as e:
