@@ -21,7 +21,25 @@ pip install -r requirements.txt
 
 ## 사용 방법
 
-### 기본 사용
+### 웹 애플리케이션 (권장)
+
+웹 브라우저를 통해 쉽게 사용할 수 있는 웹 인터페이스를 제공합니다.
+
+1. **웹 서버 시작**:
+```bash
+python app.py
+```
+
+2. **브라우저에서 접속**:
+   - http://localhost:8000 을 열어주세요
+
+3. **사용 방법**:
+   - 엑셀 파일을 드래그 앤 드롭하거나 클릭하여 업로드
+   - 템플릿 선택
+   - "보도자료 생성" 버튼 클릭
+   - 생성된 결과를 미리보기하거나 다운로드
+
+### CLI 사용 (명령줄)
 
 기본 템플릿(`templates/mining_manufacturing_production.html`) 사용:
 
@@ -68,16 +86,22 @@ python -m src.main --template templates/template.html --excel data/data.xlsx --o
 
 ```
 capstone/
-├── templates/          # HTML 템플릿 파일
-├── data/              # 엑셀 데이터 파일
-├── output/            # 생성된 보도자료
-├── src/               # 소스 코드
-│   ├── main.py                 # 메인 실행 파일
+├── templates/              # HTML 템플릿 파일
+├── flask_templates/        # Flask 웹 템플릿
+├── static/                 # 정적 파일 (CSS, JS)
+│   ├── css/
+│   └── js/
+├── data/                   # 엑셀 데이터 파일
+├── output/                 # 생성된 보도자료
+├── src/                    # 소스 코드
+│   ├── main.py                 # CLI 메인 실행 파일
 │   ├── template_manager.py     # 템플릿 관리
 │   ├── excel_extractor.py      # 엑셀 데이터 추출
 │   ├── calculator.py           # 계산 엔진
-│   └── template_filler.py      # 템플릿 채우기
-├── requirements.txt   # Python 패키지 의존성
+│   ├── template_filler.py      # 템플릿 채우기
+│   └── data_analyzer.py        # 데이터 분석
+├── app.py                  # Flask 웹 애플리케이션
+├── requirements.txt        # Python 패키지 의존성
 └── README.md
 ```
 

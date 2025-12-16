@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계청 보도자료 자동 생성 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 통계청 보도자료 자동 생성 시스템</h1>
+            <p class="subtitle">엑셀 데이터를 HTML 템플릿에 자동으로 삽입하여 보도자료를 생성합니다</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <h2>1. 파일 업로드</h2>
+                <div class="upload-box">
+                    <div class="file-upload-area" id="excelUploadArea">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="upload-text">엑셀 파일을 드래그하거나 클릭하여 업로드</p>
+                        <p class="upload-hint">.xlsx, .xls 파일만 지원됩니다 (최대 100MB)</p>
+                        <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                    </div>
+                    <div id="excelFileInfo" class="file-info" style="display: none;">
+                        <span class="file-name"></span>
+                        <button class="remove-file" onclick="removeExcelFile()">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-section">
+                <h2>2. 템플릿 선택</h2>
+                <select id="templateSelect" class="template-select">
+                    <option value="">템플릿을 불러오는 중...</option>
+                </select>
+            </div>
+
+            <div class="action-section">
+                <button id="processBtn" class="btn btn-primary" disabled>
+                    <span class="btn-text">보도자료 생성</span>
+                    <span class="btn-loader" style="display: none;">처리 중...</span>
+                </button>
+            </div>
+
+            <div id="resultSection" class="result-section" style="display: none;">
+                <h2>3. 결과</h2>
+                <div class="result-box">
+                    <div class="result-message" id="resultMessage"></div>
+                    <div class="result-actions">
+                        <button id="previewBtn" class="btn btn-secondary">미리보기</button>
+                        <button id="downloadBtn" class="btn btn-primary">다운로드</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorSection" class="error-section" style="display: none;">
+                <div class="error-box">
+                    <span class="error-icon">⚠️</span>
+                    <span class="error-message" id="errorMessage"></span>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>11기 국가데이터처 캡스톤 프로젝트</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+
