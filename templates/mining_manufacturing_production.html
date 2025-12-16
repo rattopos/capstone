@@ -13,164 +13,226 @@
         
         body {
             font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-            line-height: 1.8;
-            color: #333;
+            line-height: 1.6;
+            color: #000;
             background-color: #fff;
-            padding: 40px 20px;
-            max-width: 1200px;
+            padding: 30px 40px;
+            max-width: 1000px;
             margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        ul {
+            margin: 12px 0;
+            padding-left: 0;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.7;
         }
         
         .document-title {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             margin-bottom: 20px;
-            color: #1a1a1a;
+            color: #000;
+            line-height: 1.4;
         }
         
         .section-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
-            margin: 30px 0 15px 0;
-            color: #2c3e50;
+            margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
         }
         
         .subsection-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
-            margin: 25px 0 15px 0;
-            color: #34495e;
+            margin: 20px 0 10px 0;
+            color: #000;
+            line-height: 1.4;
         }
         
         .content-text {
             font-size: 14px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-align: justify;
-            line-height: 1.9;
+            line-height: 1.7;
+            color: #000;
         }
         
         .content-text strong {
             font-weight: bold;
         }
         
+        /* 불릿 포인트 스타일 */
+        .bullet-diamond {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-diamond li::before {
+            content: "◆";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-square {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-square li::before {
+            content: "■";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-circle {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-circle li::before {
+            content: "●";
+            margin-right: 6px;
+            color: #000;
+        }
+        
         .highlight-box {
-            background-color: #f8f9fa;
-            border-left: 4px solid #3498db;
-            padding: 20px;
-            margin: 25px 0;
+            background-color: #fff;
+            border: none;
+            padding: 15px 0;
+            margin: 20px 0;
         }
         
         .highlight-box-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 15px;
-            color: #2c3e50;
+            margin-bottom: 12px;
+            color: #000;
         }
         
         .region-item {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             font-size: 14px;
+            line-height: 1.6;
         }
         
         .region-name {
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
         }
         
         .industry-list {
-            margin-left: 20px;
-            margin-top: 5px;
+            margin-left: 0;
+            margin-top: 3px;
         }
         
         .industry-item {
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            font-size: 14px;
         }
         
         .percentage {
-            font-weight: bold;
-            color: #e74c3c;
+            font-weight: normal;
+            color: #000;
         }
         
         .percentage.positive {
-            color: #27ae60;
+            color: #000;
         }
         
         .percentage.negative {
-            color: #e74c3c;
+            color: #000;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 30px 0;
+            margin: 25px 0;
             font-size: 13px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #000;
         }
         
         table caption {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-align: left;
-            color: #2c3e50;
+            color: #000;
+            caption-side: top;
+        }
+        
+        .table-unit {
+            font-size: 12px;
+            font-weight: normal;
+            margin-left: 5px;
         }
         
         thead {
-            background-color: #34495e;
-            color: #fff;
+            background-color: #fff;
         }
         
         th {
-            padding: 12px 8px;
+            padding: 8px 6px;
             text-align: center;
             font-weight: bold;
-            border: 1px solid #2c3e50;
+            border: 1px solid #000;
             white-space: nowrap;
+            font-size: 12px;
+            background-color: #f5f5f5;
         }
         
         td {
-            padding: 10px 8px;
+            padding: 7px 6px;
             text-align: center;
-            border: 1px solid #ddd;
+            border: 1px solid #000;
+            font-size: 12px;
+            background-color: #fff;
         }
         
         tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #fff;
         }
         
         tbody tr:hover {
-            background-color: #e8f4f8;
+            background-color: #fff;
         }
         
         .region-name-cell {
             text-align: left;
-            font-weight: 500;
-            padding-left: 12px;
+            font-weight: normal;
+            padding-left: 8px;
         }
         
         .data-cell {
-            font-weight: 500;
+            font-weight: normal;
+            color: #000;
         }
         
         .data-cell.positive {
-            color: #27ae60;
+            color: #000;
         }
         
         .data-cell.negative {
-            color: #e74c3c;
+            color: #000;
         }
         
         .preliminary {
-            font-size: 11px;
+            font-size: 10px;
             vertical-align: super;
         }
         
         .source {
             font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 20px;
-            text-align: right;
-            font-style: italic;
+            color: #000;
+            margin-top: 15px;
+            text-align: left;
+            font-style: normal;
         }
     </style>
 </head>
@@ -197,17 +259,17 @@
     - 증감률은 전년 동분기 대비로 계산 필요
     -->
     
-    <div class="content-text">
-        광공업생산은 {광공업생산:상위시도1_이름}({광공업생산:상위시도1_산업1_이름}, {광공업생산:상위시도1_산업2_이름}), {광공업생산:상위시도2_이름}({광공업생산:상위시도2_산업1_이름}, {광공업생산:상위시도2_산업2_이름}), {광공업생산:상위시도3_이름}({광공업생산:상위시도3_산업1_이름}, {광공업생산:상위시도3_산업2_이름}) 등 <strong>{광공업생산:증가시도수}</strong>개 시도에서 전년동분기대비 증가.
-    </div>
+    <ul class="bullet-diamond">
+        <li>광공업생산은 {광공업생산:하위시도1_이름}({광공업생산:하위시도1_산업1_이름}), {광공업생산:하위시도2_이름}({광공업생산:하위시도2_산업1_이름}), {광공업생산:하위시도3_이름}({광공업생산:하위시도3_산업1_이름}) 등 <strong>{광공업생산:증가시도수}</strong>개 시도에서 전년동분기대비 감소.</li>
+    </ul>
     
-    <div class="content-text">
-        <strong>{광공업생산:기준연도}</strong>년 <strong>{광공업생산:기준분기}</strong>분기 전국 광공업생산은 반도체·전자부품, 기타 운송장비 등의 생산이 늘어 전년동분기대비 <strong><span class="percentage">{광공업생산:전국_증감률}</span></strong> 증가.
-    </div>
+    <ul class="bullet-square">
+        <li><strong>{광공업생산:기준연도}</strong>년 <strong>{광공업생산:기준분기}</strong>분기 전국 광공업생산은 반도체·전자부품, 기타 운송장비 등의 생산이 늘어 전년동분기대비 <strong><span class="percentage">{광공업생산:전국_증감률}</span></strong> 증가.</li>
+    </ul>
     
-    <div class="content-text">
-        {광공업생산:상위시도1_이름}(<strong><span class="percentage positive">{광공업생산:상위시도1_증감률}</span></strong>), {광공업생산:상위시도2_이름}(<strong><span class="percentage positive">{광공업생산:상위시도2_증감률}</span></strong>), {광공업생산:상위시도3_이름}(<strong><span class="percentage positive">{광공업생산:상위시도3_증감률}</span></strong>)는 반도체·전자부품, 전기장비 등의 생산이 늘어 증가하였으며, {광공업생산:하위시도1_이름}(<strong><span class="percentage negative">{광공업생산:하위시도1_증감률}</span></strong>), {광공업생산:하위시도2_이름}(<strong><span class="percentage negative">{광공업생산:하위시도2_증감률}</span></strong>), {광공업생산:하위시도3_이름}(<strong><span class="percentage negative">{광공업생산:하위시도3_증감률}</span></strong>)은 의료·정밀, 반도체·전자부품, 금속 등의 생산이 줄어 감소.
-    </div>
+    <ul class="bullet-circle">
+        <li>{광공업생산:상위시도1_이름}(<strong><span class="percentage positive">{광공업생산:상위시도1_증감률}</span></strong>), {광공업생산:상위시도2_이름}(<strong><span class="percentage positive">{광공업생산:상위시도2_증감률}</span></strong>), {광공업생산:상위시도3_이름}(<strong><span class="percentage positive">{광공업생산:상위시도3_증감률}</span></strong>)는 반도체·전자부품, 전기장비 등의 생산이 늘어 증가하였으며, {광공업생산:하위시도1_이름}(<strong><span class="percentage negative">{광공업생산:하위시도1_증감률}</span></strong>), {광공업생산:하위시도2_이름}(<strong><span class="percentage negative">{광공업생산:하위시도2_증감률}</span></strong>), {광공업생산:하위시도3_이름}(<strong><span class="percentage negative">{광공업생산:하위시도3_증감률}</span></strong>)은 의료·정밀, 반도체·전자부품, 금속 등의 생산이 줄어 감소.</li>
+    </ul>
     
     <div class="highlight-box">
         <div class="highlight-box-title">&lt; 주요 증감지역 및 업종 &gt;</div>
@@ -273,7 +335,7 @@
     </div>
     
     <table>
-        <caption>《광공업생산 증감률(불변)》</caption>
+        <caption>《광공업생산 증감률(불변)》<span class="table-unit">[전년 동분기비, %]</span></caption>
         <thead>
             <tr>
                 <th>시·도</th>
@@ -510,7 +572,7 @@
     </table>
     
     <div class="source">
-        자료: 국가데이터처 국가통계포털(KOSIS), 광업제조업동향조사
+        자료: 통계청 국가통계포털(KOSIS), 광업제조업동향조사
     </div>
 </body>
 </html>
