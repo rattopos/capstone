@@ -5,7 +5,7 @@ HTML 템플릿 파일 로드 및 마커 파싱 기능 제공
 
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 
 class TemplateManager:
@@ -17,14 +17,14 @@ class TemplateManager:
     # 셀주소: 영문+숫자 형식 (A1, B5, AA100 등) 또는 범위 (A1:A5)
     MARKER_PATTERN = re.compile(r'\{([^:{}]+):([A-Z]+[0-9]+(?::[A-Z]+[0-9]+)?)(?::([^}]+))?\}')
     
-    def __init__(self, template_path: str):
+    def __init__(self, template_path: Optional[str] = None):
         """
         템플릿 매니저 초기화
         
         Args:
-            template_path: HTML 템플릿 파일 경로
+            template_path: HTML 템플릿 파일 경로 (None이면 메모리에서만 작업)
         """
-        self.template_path = Path(template_path)
+        self.template_path = Path(template_path) if template_path else None
         self.template_content = ""
         self.markers = []
         
@@ -36,9 +36,13 @@ class TemplateManager:
             템플릿 내용 문자열
             
         Raises:
+            ValueError: template_path가 None일 때
             FileNotFoundError: 템플릿 파일이 존재하지 않을 때
             IOError: 파일 읽기 실패 시
         """
+        if self.template_path is None:
+            raise ValueError("template_path가 None입니다. template_content를 직접 설정하거나 template_path를 제공해야 합니다.")
+        
         if not self.template_path.exists():
             raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {self.template_path}")
         
@@ -60,7 +64,7 @@ class TemplateManager:
             - 'cell_address': 셀 주소 (또는 범위)
             - 'operation': 계산식 (선택적, 없으면 None)
         """
-        if not self.template_content:
+        if not self.template_content and self.template_path:
             self.load_template()
         
         self.markers = []
@@ -94,7 +98,7 @@ class TemplateManager:
         Returns:
             (유효성 여부, 누락된 마커 리스트) 튜플
         """
-        if not self.template_content:
+        if not self.template_content and self.template_path:
             self.load_template()
         
         extracted = self.extract_markers()
@@ -119,7 +123,7 @@ class TemplateManager:
         Returns:
             템플릿 내용 문자열
         """
-        if not self.template_content:
+        if not self.template_content and self.template_path:
             self.load_template()
         return self.template_content
     
@@ -134,7 +138,7 @@ class TemplateManager:
         Returns:
             치환된 템플릿 내용
         """
-        if not self.template_content:
+        if not self.template_content and self.template_path:
             self.load_template()
         
         # 정확히 일치하는 마커만 치환 (부분 일치 방지)

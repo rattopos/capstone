@@ -59,6 +59,40 @@ main {
     padding: 40px 30px;
 }
 
+.mode-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.mode-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.mode-btn:hover {
+    color: var(--primary-color);
+    background: var(--bg-color);
+}
+
+.mode-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.mode-content {
+    animation: fadeIn 0.3s ease;
+}
+
 h2 {
     font-size: 20px;
     font-weight: 600;
@@ -352,5 +386,147 @@ footer {
 .result-section,
 .error-section {
     animation: fadeIn 0.3s ease;
+}
+
+/* 학습 진행 상황 */
+.training-progress-section {
+    margin-bottom: 30px;
+}
+
+.progress-box {
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.progress-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#progressStatusText {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+#progressPercentage {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), #60a5fa);
+    transition: width 0.3s ease;
+    border-radius: 12px;
+}
+
+.progress-details {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.improvements-list {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.improvements-list h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.improvements-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.improvements-list li {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: white;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 2% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 24px;
+    overflow: auto;
+    flex: 1;
 }
 

@@ -1,0 +1,12 @@
+{
+  "templates": {
+    "건설수주테스트": {
+      "template_name": "건설수주테스트",
+      "reference_image": "image_cache/건설수주테스트_reference.png",
+      "original_path": "uploaded_images/png",
+      "saved_at": "2025-12-17T08:25:56.554037",
+      "year": 2025,
+      "quarter": 2
+    }
+  }
+}

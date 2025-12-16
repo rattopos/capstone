@@ -19,14 +19,26 @@ from src.template_manager import TemplateManager
 from src.excel_extractor import ExcelExtractor
 from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
+from src.image_analyzer import ImageAnalyzer
+from src.template_generator import TemplateGenerator
+from src.mapping_trainer import MappingTrainer
+from src.template_storage import TemplateStorage
+from src.template_matcher import TemplateMatcher
+from src.template_auto_trainer import TemplateAutoTrainer
+from src.image_cache import ImageCache
+from src.training_status import training_status_manager
+import threading
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
+app.config['IMAGE_FOLDER'] = Path('uploaded_images')
+app.config['IMAGE_FOLDER'].mkdir(parents=True, exist_ok=True)
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # 시트명과 템플릿 파일 매핑
 SHEET_TEMPLATE_MAPPING = {
@@ -96,6 +108,11 @@ SHEET_TEMPLATE_MAPPING = {
 def allowed_file(filename):
     """파일 확장자 검증"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def allowed_image_file(filename):
+    """이미지 파일 확장자 검증"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 
 def get_template_for_sheet(sheet_name):
@@ -351,6 +368,409 @@ def validate_files():
         }), 500
 
 
+@app.route('/api/create_template', methods=['POST'])
+def create_template():
+    """이미지로부터 템플릿 생성 및 매핑 학습"""
+    try:
+        if 'image_file' not in request.files:
+            return jsonify({'error': '이미지 파일이 없습니다.'}), 400
+        if 'excel_file' not in request.files:
+            return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
+        
+        image_file = request.files['image_file']
+        excel_file = request.files['excel_file']
+        
+        if image_file.filename == '':
+            return jsonify({'error': '이미지 파일을 선택해주세요.'}), 400
+        if excel_file.filename == '':
+            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
+        
+        if not allowed_image_file(image_file.filename):
+            return jsonify({'error': '지원하지 않는 이미지 형식입니다.'}), 400
+        if not allowed_file(excel_file.filename):
+            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
+        
+        # 템플릿 이름 가져오기
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            template_name = Path(image_file.filename).stem
+        
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 이미지 파일 저장
+        image_filename = secure_filename(image_file.filename)
+        image_path = app.config['IMAGE_FOLDER'] / image_filename
+        image_file.save(str(image_path))
+        
+        # 엑셀 파일 저장
+        excel_filename = secure_filename(excel_file.filename)
+        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+        excel_file.save(str(excel_path))
+        
+        try:
+            # 템플릿 생성
+            template_generator = TemplateGenerator()
+            template_result = template_generator.generate_template_from_image(
+                str(image_path),
+                template_name
+            )
+            
+            # 엑셀 추출기 초기화
+            excel_extractor = ExcelExtractor(str(excel_path))
+            excel_extractor.load_workbook()
+            
+            # 매핑 학습
+            mapping_trainer = MappingTrainer(excel_extractor)
+            mapping_data = mapping_trainer.train_mapping(
+                template_result['template_html'],
+                template_name,
+                template_result['sheet_name'],
+                year,
+                quarter
+            )
+            
+            # 템플릿 저장
+            template_storage = TemplateStorage()
+            template_storage.save_template(
+                template_name,
+                template_result['template_html'],
+                mapping_data,
+                {
+                    'sheet_name': template_result['sheet_name'],
+                    'markers_count': len(template_result['markers']),
+                    'image_filename': image_filename
+                }
+            )
+            
+            excel_extractor.close()
+            
+            return jsonify({
+                'success': True,
+                'template_name': template_name,
+                'markers_count': len(template_result['markers']),
+                'validation': mapping_data.get('validation_results', {}),
+                'message': f'템플릿 "{template_name}"이 성공적으로 생성되고 저장되었습니다.'
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'error': f'템플릿 생성 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            if excel_path.exists():
+                excel_path.unlink()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/templates/list', methods=['GET'])
+def list_templates():
+    """저장된 템플릿 목록 반환"""
+    try:
+        template_storage = TemplateStorage()
+        templates = template_storage.list_templates()
+        
+        return jsonify({
+            'success': True,
+            'templates': templates
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'템플릿 목록을 불러오는 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/templates/<template_name>/html', methods=['GET'])
+def get_template_html(template_name):
+    """템플릿 HTML 가져오기"""
+    try:
+        from urllib.parse import unquote
+        # URL 디코딩 (한글 템플릿 이름 지원)
+        # Flask가 이미 디코딩을 수행하지만, 추가 인코딩이 있을 수 있으므로 unquote 사용
+        template_name_decoded = unquote(template_name)
+        
+        template_storage = TemplateStorage()
+        template_data = template_storage.load_template(template_name_decoded)
+        
+        if not template_data:
+            # 저장된 템플릿 목록 확인 (디버깅용)
+            all_templates = template_storage.list_templates()
+            print(f"템플릿 '{template_name_decoded}'을 찾을 수 없습니다. 저장된 템플릿: {[t['name'] for t in all_templates]}")
+            return jsonify({
+                'error': f'템플릿 "{template_name_decoded}"을 찾을 수 없습니다.',
+                'available_templates': [t['name'] for t in all_templates]
+            }), 404
+        
+        from flask import Response
+        return Response(
+            template_data['template_html'],
+            mimetype='text/html',
+            headers={'Content-Type': 'text/html; charset=utf-8'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': f'템플릿을 불러오는 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/auto_train', methods=['POST'])
+def auto_train_template():
+    """템플릿 자동 학습 루틴 실행"""
+    try:
+        if 'reference_image' not in request.files:
+            return jsonify({'error': '정답 이미지 파일이 없습니다.'}), 400
+        
+        reference_image = request.files['reference_image']
+        if reference_image.filename == '':
+            return jsonify({'error': '정답 이미지를 선택해주세요.'}), 400
+        
+        if not allowed_image_file(reference_image.filename):
+            return jsonify({'error': '지원하지 않는 이미지 형식입니다.'}), 400
+        
+        # 템플릿 이름
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            template_name = Path(reference_image.filename).stem
+        
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 최대 반복 횟수 및 임계값
+        max_iterations = int(request.form.get('max_iterations', '10'))
+        similarity_threshold = float(request.form.get('similarity_threshold', '0.85'))
+        
+        # 엑셀 파일 (선택적)
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        
+        # 이미지 파일 저장
+        image_filename = secure_filename(reference_image.filename)
+        image_path = app.config['IMAGE_FOLDER'] / image_filename
+        reference_image.save(str(image_path))
+        
+        # 엑셀 파일 저장 (있는 경우)
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            excel_file.save(str(excel_path))
+        
+        try:
+            # 상태 ID 생성
+            status_id = training_status_manager.create_status(template_name)
+            
+            # 엑셀 파일이 있으면 스레드 시작 전에 복사본 생성 (원본이 삭제되기 전에)
+            excel_path_for_thread = None
+            if excel_path and excel_path.exists():
+                import shutil
+                temp_excel = Path(app.config['UPLOAD_FOLDER']) / f"{status_id}_{excel_path.name}"
+                try:
+                    shutil.copy2(excel_path, temp_excel)
+                    excel_path_for_thread = str(temp_excel)
+                except Exception as e:
+                    print(f"엑셀 파일 복사 실패: {e}")
+                    excel_path_for_thread = None
+            
+            # 별도 스레드에서 학습 실행
+            def train_in_thread():
+                try:
+                    auto_trainer = TemplateAutoTrainer()
+                    training_result = auto_trainer.train_template(
+                        reference_image_path=str(image_path),
+                        template_name=template_name,
+                        excel_file_path=excel_path_for_thread,
+                        sheet_name=None,  # 자동 추론
+                        year=year,
+                        quarter=quarter,
+                        max_iterations=max_iterations,
+                        similarity_threshold=similarity_threshold,
+                        status_id=status_id
+                    )
+                        
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    training_status_manager.update_status(
+                        status_id,
+                        status='error',
+                        message=f'오류 발생: {str(e)}'
+                    )
+                finally:
+                    # 스레드 종료 시 사용한 엑셀 파일 삭제
+                    if excel_path_for_thread and Path(excel_path_for_thread).exists():
+                        try:
+                            Path(excel_path_for_thread).unlink()
+                        except Exception as e:
+                            print(f"임시 엑셀 파일 삭제 실패: {e}")
+            
+            # 학습 시작
+            train_thread = threading.Thread(target=train_in_thread, daemon=True)
+            train_thread.start()
+            
+            return jsonify({
+                'success': True,
+                'status_id': status_id,
+                'message': '자동 학습이 시작되었습니다.',
+                'template_name': template_name
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            # 오류 발생 시 복사본 파일 정리
+            if excel_path_for_thread and Path(excel_path_for_thread).exists():
+                try:
+                    Path(excel_path_for_thread).unlink()
+                except:
+                    pass
+            return jsonify({
+                'error': f'자동 학습 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            # 원본 엑셀 파일은 즉시 삭제 가능 (스레드에서 복사본 사용)
+            if excel_path and excel_path.exists():
+                try:
+                    excel_path.unlink()
+                except:
+                    pass
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/training_status/<status_id>', methods=['GET'])
+def get_training_status(status_id):
+    """학습 진행 상태 조회"""
+    try:
+        status = training_status_manager.get_status(status_id)
+        if not status:
+            return jsonify({'error': '상태를 찾을 수 없습니다.'}), 404
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'상태 조회 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/training_stop/<status_id>', methods=['POST'])
+def stop_training(status_id):
+    """학습 중단"""
+    try:
+        training_status_manager.request_stop(status_id)
+        return jsonify({
+            'success': True,
+            'message': '중단 요청이 전송되었습니다.'
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'중단 요청 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/process_template', methods=['POST'])
+def process_template_selected():
+    """저장된 템플릿을 선택하여 보도자료 생성"""
+    try:
+        if 'excel_file' not in request.files:
+            return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
+        
+        excel_file = request.files['excel_file']
+        if excel_file.filename == '':
+            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
+        
+        if not allowed_file(excel_file.filename):
+            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
+        
+        # 템플릿 이름 가져오기
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            return jsonify({'error': '템플릿 이름을 선택해주세요.'}), 400
+        
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 엑셀 파일 저장
+        excel_filename = secure_filename(excel_file.filename)
+        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+        excel_file.save(str(excel_path))
+        
+        try:
+            # 엑셀 추출기 초기화
+            excel_extractor = ExcelExtractor(str(excel_path))
+            excel_extractor.load_workbook()
+            
+            # 템플릿 매처로 템플릿 매칭 및 채우기
+            template_matcher = TemplateMatcher()
+            filled_template = template_matcher.match_and_fill(
+                template_name,
+                excel_extractor,
+                year,
+                quarter
+            )
+            
+            if not filled_template:
+                return jsonify({
+                    'error': f'템플릿 "{template_name}"을 찾을 수 없습니다.'
+                }), 404
+            
+            # 결과 저장
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({template_name}).html"
+            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(filled_template)
+            
+            excel_extractor.close()
+            
+            return jsonify({
+                'success': True,
+                'output_filename': output_filename,
+                'message': '보도자료가 성공적으로 생성되었습니다.'
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'error': f'처리 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            if excel_path.exists():
+                excel_path.unlink()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
 @app.errorhandler(413)
 def request_entity_too_large(error):
     """파일 크기 제한 초과 에러 처리"""
@@ -363,6 +783,7 @@ if __name__ == '__main__':
     # 출력 폴더 생성
     os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['IMAGE_FOLDER'], exist_ok=True)
     
     print("=" * 50)
     print("지역경제동향 보도자료 자동생성")
