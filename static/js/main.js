@@ -126,7 +126,6 @@ async function loadSheetNames(file) {
             // 시트 목록 채우기
             sheetSelect.innerHTML = '';
             const defaultSheetName = '광공업생산';
-            let defaultSheetFound = false;
             
             data.sheet_names.forEach(sheetName => {
                 const option = document.createElement('option');
@@ -138,12 +137,18 @@ async function loadSheetNames(file) {
             // 기본 시트 "광공업생산"이 있으면 선택, 없으면 첫 번째 시트 선택
             if (data.sheet_names.includes(defaultSheetName)) {
                 sheetSelect.value = defaultSheetName;
-                defaultSheetFound = true;
             } else if (data.sheet_names.length > 0) {
                 sheetSelect.value = data.sheet_names[0];
             }
             
             sheetSelect.disabled = false;
+            
+            // 시트별 연도/분기 정보 저장
+            if (data.sheets_info) {
+                window.sheetsInfo = data.sheets_info;
+                // 선택된 시트의 연도/분기 업데이트
+                updateYearQuarterOptions(sheetSelect.value);
+            }
         } else {
             sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
             showError(data.error || '시트 목록을 불러올 수 없습니다.');
@@ -286,11 +291,51 @@ function setupResultButtons() {
     };
 }
 
-// 시트 선택 변경 시 처리 버튼 상태 업데이트
+// 연도/분기 옵션 업데이트
+function updateYearQuarterOptions(sheetName) {
+    if (!window.sheetsInfo || !window.sheetsInfo[sheetName]) {
+        return;
+    }
+    
+    const sheetInfo = window.sheetsInfo[sheetName];
+    const yearSelect = document.getElementById('yearSelect');
+    const quarterSelect = document.getElementById('quarterSelect');
+    
+    // 연도 옵션 업데이트
+    yearSelect.innerHTML = '';
+    for (let year = sheetInfo.min_year; year <= sheetInfo.max_year; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === sheetInfo.default_year) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    // 분기 옵션 업데이트 (항상 1-4)
+    quarterSelect.innerHTML = '';
+    for (let quarter = 1; quarter <= 4; quarter++) {
+        const option = document.createElement('option');
+        option.value = quarter;
+        option.textContent = quarter + '분기';
+        if (quarter === sheetInfo.default_quarter) {
+            option.selected = true;
+        }
+        quarterSelect.appendChild(option);
+    }
+}
+
+// 시트 선택 변경 시 처리 버튼 상태 업데이트 및 연도/분기 옵션 업데이트
 document.addEventListener('DOMContentLoaded', function() {
     const sheetSelect = document.getElementById('sheetSelect');
     if (sheetSelect) {
-        sheetSelect.addEventListener('change', updateProcessButton);
+        sheetSelect.addEventListener('change', function() {
+            updateProcessButton();
+            if (window.sheetsInfo && this.value) {
+                updateYearQuarterOptions(this.value);
+            }
+        });
     }
 });
 

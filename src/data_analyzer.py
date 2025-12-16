@@ -34,33 +34,55 @@ class DataAnalyzer:
         sheet = self.excel_extractor.get_sheet(sheet_name)
         regions = []
         
+        # 시트별 설정에서 category_column 가져오기
+        from .template_filler import SHEET_CONFIG
+        config = SHEET_CONFIG.get(sheet_name, SHEET_CONFIG['default'])
+        category_col = config['category_column']
+        
         # 모든 지역 총지수 행 찾기 (총지수인 행을 찾되, 분류 단계는 0 또는 1)
+        seen_regions = set()  # 중복 방지
         for row in range(4, min(1000, sheet.max_row + 1)):
             cell_a = sheet.cell(row=row, column=1)  # 지역 코드
             cell_b = sheet.cell(row=row, column=2)  # 지역 이름
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-            cell_f = sheet.cell(row=row, column=6)  # 산업 이름
+            cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
             
-            # 총지수인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
-            if cell_b.value and cell_f.value == '총지수':
+            # 총지수 또는 계인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
+            is_total = False
+            if cell_category.value:
+                category_str = str(cell_category.value).strip()
+                if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                    is_total = True
+            
+            if cell_b.value and is_total:
                 # 분류 단계가 0 또는 1인 경우만 (일부 시도는 분류 단계가 1)
                 if cell_c.value is not None:
                     try:
                         classification = float(cell_c.value) if cell_c.value else 0
                         if classification <= 1:  # 0 또는 1
-                            current = sheet.cell(row=row, column=current_col).value
-                            prev = sheet.cell(row=row, column=prev_col).value
-                            
-                            if current is not None and prev is not None and prev != 0:
-                                growth_rate = ((current / prev) - 1) * 100
-                                regions.append({
-                                    'code': str(cell_a.value).strip() if cell_a.value else '',
-                                    'name': str(cell_b.value).strip(),
-                                    'row': row,
-                                    'growth_rate': growth_rate,
-                                    'current': current,
-                                    'prev': prev
-                                })
+                            region_name = str(cell_b.value).strip()
+                            # 중복 방지: 같은 지역 이름이 이미 추가되었으면 스킵
+                            if region_name not in seen_regions:
+                                # 시도만 필터링 (그룹 제외)
+                                code_str = str(cell_a.value).strip() if cell_a.value else ''
+                                is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
+                                
+                                # 전국도 제외, 시도만 포함
+                                if region_name != '전국' and (is_sido or region_name in ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']):
+                                    seen_regions.add(region_name)
+                                    current = sheet.cell(row=row, column=current_col).value
+                                    prev = sheet.cell(row=row, column=prev_col).value
+                                    
+                                    if current is not None and prev is not None and prev != 0:
+                                        growth_rate = ((current / prev) - 1) * 100
+                                        regions.append({
+                                            'code': code_str,
+                                            'name': region_name,
+                                            'row': row,
+                                            'growth_rate': growth_rate,
+                                            'current': current,
+                                            'prev': prev
+                                        })
                     except (ValueError, TypeError):
                         pass
         
@@ -307,10 +329,23 @@ class DataAnalyzer:
             # 전국 데이터 추가
             national_region = None
             sheet = self.excel_extractor.get_sheet(sheet_name)
+            
+            # 시트별 설정에서 category_column 가져오기
+            from .template_filler import SHEET_CONFIG
+            config = SHEET_CONFIG.get(sheet_name, SHEET_CONFIG['default'])
+            category_col = config['category_column']
+            
             for row in range(4, min(1000, sheet.max_row + 1)):
                 cell_b = sheet.cell(row=row, column=2)
-                cell_f = sheet.cell(row=row, column=6)
-                if cell_b.value == '전국' and cell_f.value == '총지수':
+                cell_category = sheet.cell(row=row, column=category_col)
+                # 총지수 또는 계
+                is_total = False
+                if cell_category.value:
+                    category_str = str(cell_category.value).strip()
+                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                        is_total = True
+                
+                if cell_b.value == '전국' and is_total:
                     current = sheet.cell(row=row, column=current_col).value
                     prev = sheet.cell(row=row, column=prev_col).value
                     if current is not None and prev is not None and prev != 0:

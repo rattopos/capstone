@@ -57,6 +57,27 @@ def main():
         help='상세한 로그 출력'
     )
     
+    parser.add_argument(
+        '--sheet', '-s',
+        type=str,
+        default=None,
+        help='시트 이름 (지정하지 않으면 마커에서 추출)'
+    )
+    
+    parser.add_argument(
+        '--year', '-y',
+        type=int,
+        default=None,
+        help='연도 (지정하지 않으면 자동 감지)'
+    )
+    
+    parser.add_argument(
+        '--quarter', '-q',
+        type=int,
+        default=None,
+        help='분기 (1-4, 지정하지 않으면 자동 감지)'
+    )
+    
     args = parser.parse_args()
     
     # 파일 경로 검증
@@ -104,7 +125,21 @@ def main():
         if args.verbose:
             print("템플릿 채우는 중...")
         template_filler = TemplateFiller(template_manager, excel_extractor)
-        filled_template = template_filler.fill_template()
+        
+        # 시트명, 연도, 분기 파라미터 추가 (CLI에서)
+        sheet_name = getattr(args, 'sheet', None)
+        year = getattr(args, 'year', None)
+        quarter = getattr(args, 'quarter', None)
+        
+        filled_template = template_filler.fill_template(
+            sheet_name=sheet_name,
+            year=year,
+            quarter=quarter
+        )
+        
+        if args.verbose and template_filler._current_year:
+            print(f"사용된 연도: {template_filler._current_year}")
+            print(f"사용된 분기: {template_filler._current_quarter}")
         
         # 결과 저장
         if args.verbose:
