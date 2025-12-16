@@ -1,6 +1,6 @@
 """
 Flask 웹 애플리케이션
-통계청 보도자료 자동 생성 시스템 웹 인터페이스
+지역경제동향 보도자료 자동생성 웹 인터페이스
 """
 
 import os
@@ -117,7 +117,8 @@ def process_template():
             )
             
             # 결과 저장
-            output_filename = f"result_{Path(excel_filename).stem}.html"
+            # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(광공업생산).html
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료(광공업생산).html"
             output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(filled_template)
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     print("=" * 50)
-    print("통계청 보도자료 자동 생성 시스템")
+    print("지역경제동향 보도자료 자동생성")
     print("=" * 50)
     print(f"웹 서버가 시작되었습니다.")
     print(f"브라우저에서 http://localhost:8000 을 열어주세요.")

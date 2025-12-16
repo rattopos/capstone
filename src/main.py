@@ -16,7 +16,7 @@ from .template_filler import TemplateFiller
 def main():
     """메인 함수 - CLI 인터페이스"""
     parser = argparse.ArgumentParser(
-        description='통계청 보도자료 자동 생성 시스템',
+        description='지역경제동향 보도자료 자동생성',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 사용 예시:
