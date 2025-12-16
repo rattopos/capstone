@@ -6,25 +6,75 @@
 from typing import List, Dict, Any, Tuple, Optional
 from .excel_extractor import ExcelExtractor
 from .config import Config
+from .sheet_config import SheetConfig
 
 
 class DataAnalyzer:
     """엑셀 데이터를 분석하여 상위/하위 항목을 추출하는 클래스"""
     
-    def __init__(self, excel_extractor: ExcelExtractor, config: Optional[Config] = None):
+    def __init__(self, excel_extractor: ExcelExtractor, config: Optional[Config] = None,
+                 sheet_config: Optional[SheetConfig] = None):
         """
         데이터 분석기 초기화
         
         Args:
             excel_extractor: 엑셀 추출기 인스턴스
             config: 설정 객체 (선택적)
+            sheet_config: 시트별 설정 객체 (선택적)
         """
         self.excel_extractor = excel_extractor
         self.config = config
+        self.sheet_config = sheet_config
+    
+    def _is_valid_region(self, classification: float, code_str: str, region_name: str) -> bool:
+        """
+        규칙 기반으로 지역이 유효한 시도인지 판단
+        
+        규칙:
+        1. 분류 단계가 1이면 시도로 간주 (포함)
+        2. 분류 단계가 0이면:
+           - 코드가 '00'이면 전국 (포함)
+           - 코드가 1자리 숫자면 그룹 지역 (제외)
+           - 코드가 2자리 숫자면 시도일 수 있음 (포함)
+        3. 그 외의 경우는 제외
+        
+        Args:
+            classification: 분류 단계 값
+            code_str: 지역 코드 문자열
+            region_name: 지역 이름
+            
+        Returns:
+            유효한 시도이면 True, 그룹 지역이면 False
+        """
+        # 규칙 1: 분류 단계가 1이면 시도
+        if classification == 1:
+            return True
+        
+        # 규칙 2: 분류 단계가 0인 경우
+        if classification == 0:
+            # 코드가 '00'이면 전국
+            if code_str == '00':
+                return True
+            
+            # 코드 길이로 판단
+            code_length = len(code_str)
+            is_numeric = code_str.isdigit()
+            
+            # 코드가 1자리 숫자면 그룹 지역 (제외)
+            if code_length == 1 and is_numeric:
+                return False
+            
+            # 코드가 2자리 숫자면 시도 (포함)
+            if code_length == 2 and is_numeric:
+                return True
+        
+        # 그 외의 경우는 제외
+        return False
     
     def get_regions_with_growth_rate(self, sheet_name: str, current_col: int, prev_col: int) -> List[Dict[str, Any]]:
         """
         모든 지역의 증감률을 계산하여 반환
+        규칙 기반으로 시도만 포함 (그룹 지역 제외)
         
         Args:
             sheet_name: 시트 이름
@@ -32,33 +82,36 @@ class DataAnalyzer:
             prev_col: 전년 동분기 열 번호
             
         Returns:
-            지역별 증감률 정보 리스트
+            지역별 증감률 정보 리스트 (전국 + 시도만 포함, 그룹 지역 제외)
         """
         sheet = self.excel_extractor.get_sheet(sheet_name)
         regions = []
         
-        # 모든 지역 총지수 행 찾기 (총지수인 행을 찾되, 분류 단계는 0 또는 1)
+        # 모든 지역 총지수 행 찾기
         for row in range(4, min(1000, sheet.max_row + 1)):
             cell_a = sheet.cell(row=row, column=1)  # 지역 코드
             cell_b = sheet.cell(row=row, column=2)  # 지역 이름
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
             cell_f = sheet.cell(row=row, column=6)  # 산업 이름
             
-            # 총지수인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
+            # 총지수인 행 찾기
             if cell_b.value and cell_f.value == '총지수':
-                # 분류 단계가 0 또는 1인 경우만 (일부 시도는 분류 단계가 1)
                 if cell_c.value is not None:
                     try:
                         classification = float(cell_c.value) if cell_c.value else 0
-                        if classification <= 1:  # 0 또는 1
+                        code_str = str(cell_a.value).strip() if cell_a.value else ''
+                        region_name = str(cell_b.value).strip()
+                        
+                        # 규칙 기반으로 유효한 지역인지 판단
+                        if self._is_valid_region(classification, code_str, region_name):
                             current = sheet.cell(row=row, column=current_col).value
                             prev = sheet.cell(row=row, column=prev_col).value
                             
                             if current is not None and prev is not None and prev != 0:
                                 growth_rate = ((current / prev) - 1) * 100
                                 regions.append({
-                                    'code': str(cell_a.value).strip() if cell_a.value else '',
-                                    'name': str(cell_b.value).strip(),
+                                    'code': code_str,
+                                    'name': region_name,
                                     'row': row,
                                     'growth_rate': growth_rate,
                                     'current': current,
@@ -251,19 +304,21 @@ class DataAnalyzer:
         # 스크린샷 기준 순서
         result = []
         
-        # 지역별 우선순위 정의 (스크린샷 기준)
-        # 하위 시도는 감소율이 큰 산업 우선 (증감률 절대값 큰 순)
-        region_priorities = {
-            '전국': ['반도체·전자부품', '화학제품', '금속'],
-            '강원': ['전기·가스업', '의료·정밀', '음료'],
-            '대구': ['기타기계장비', '자동차·트레일러', '전기장비'],
-            '인천': ['자동차·트레일러', '의약품', '기타기계장비'],
-            '경기': ['반도체·전자부품', '화학제품', '기타기계장비'],
-            '서울': ['화학제품', '기타기계장비', '의류·모피'],
-            '충북': ['반도체·전자부품', '화학제품', '식료품']
-        }
-        
-        priority_list = region_priorities.get(region_name, ['반도체·전자부품'])
+        # 지역별 우선순위 정의 (SheetConfig에서 가져오거나 기본값 사용)
+        if self.sheet_config:
+            priority_list = self.sheet_config.get_region_priorities(region_name)
+        else:
+            # 기본 우선순위
+            region_priorities = {
+                '전국': ['반도체·전자부품', '화학제품', '금속'],
+                '강원': ['전기·가스업', '의료·정밀', '음료'],
+                '대구': ['기타기계장비', '자동차·트레일러', '전기장비'],
+                '인천': ['자동차·트레일러', '의약품', '기타기계장비'],
+                '경기': ['반도체·전자부품', '화학제품', '기타기계장비'],
+                '서울': ['화학제품', '기타기계장비', '의류·모피'],
+                '충북': ['반도체·전자부품', '화학제품', '식료품']
+            }
+            priority_list = region_priorities.get(region_name, ['반도체·전자부품'])
         
         # 우선순위에 따라 산업 추가 (각 카테고리에서 최대 1개씩)
         for priority in priority_list:

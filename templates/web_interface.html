@@ -254,12 +254,22 @@
             </div>
 
             <div class="form-group">
+                <label for="sheet_name">
+                    시트 선택 (선택)
+                </label>
+                <select id="sheet_name" name="sheet_name">
+                    <option value="">자동 선택 (첫 번째 시트)</option>
+                </select>
+                <div class="help-text">처리할 엑셀 시트를 선택하세요. 선택하지 않으면 첫 번째 시트를 사용합니다.</div>
+            </div>
+
+            <div class="form-group">
                 <label>설정 (선택)</label>
                 <div class="config-group">
                     <div>
                         <label for="year">연도</label>
-                        <input type="number" id="year" name="year" min="2020" max="2100" placeholder="예: 2025">
-                        <div class="help-text">분석할 연도를 입력하세요</div>
+                        <input type="number" id="year" name="year" min="2020" max="2100" placeholder="예: 2023">
+                        <div class="help-text">분석할 연도를 입력하세요 (선택사항, 시트 기본값 사용)</div>
                     </div>
                     <div>
                         <label for="quarter">분기</label>
@@ -270,7 +280,7 @@
                             <option value="3">3분기</option>
                             <option value="4">4분기</option>
                         </select>
-                        <div class="help-text">분석할 분기를 선택하세요</div>
+                        <div class="help-text">분석할 분기를 선택하세요 (선택사항, 시트 기본값 사용)</div>
                     </div>
                 </div>
             </div>
@@ -360,8 +370,8 @@
             }
         });
 
-        // 파일 선택 시 파일명 표시 및 크기 검증
-        document.getElementById('excel_file').addEventListener('change', function(e) {
+        // 파일 선택 시 파일명 표시 및 크기 검증, 시트 목록 로드
+        document.getElementById('excel_file').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (file) {
                 const fileInfo = this.nextElementSibling;
@@ -377,9 +387,47 @@
                     fileInfo.textContent = `선택된 파일: ${file.name} (${fileSizeMB.toFixed(2)} MB)`;
                     fileInfo.style.color = '#666';
                     errorMessage.classList.remove('active');
+                    
+                    // 시트 목록 로드
+                    await loadSheetNames(file);
                 }
             }
         });
+
+        // 엑셀 파일에서 시트 목록 가져오기
+        async function loadSheetNames(file) {
+            const sheetSelect = document.getElementById('sheet_name');
+            sheetSelect.innerHTML = '<option value="">로딩 중...</option>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('excel_file', file);
+                
+                const response = await fetch('/get_sheets', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+                    
+                    if (data.sheets && data.sheets.length > 0) {
+                        data.sheets.forEach(sheetName => {
+                            const option = document.createElement('option');
+                            option.value = sheetName;
+                            option.textContent = sheetName;
+                            sheetSelect.appendChild(option);
+                        });
+                    }
+                } else {
+                    sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+                }
+            } catch (error) {
+                console.error('시트 목록 로드 실패:', error);
+                sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+            }
+        }
 
         document.getElementById('template_file').addEventListener('change', function(e) {
             const file = e.target.files[0];

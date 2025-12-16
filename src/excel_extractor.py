@@ -43,14 +43,17 @@ class ExcelExtractor:
     def get_sheet_names(self) -> List[str]:
         """
         엑셀 파일의 모든 시트 이름을 반환합니다.
+        "완료체크" 시트는 제외됩니다.
         
         Returns:
-            시트 이름 리스트
+            시트 이름 리스트 (완료체크 제외)
         """
         if self.workbook is None:
             self.load_workbook()
         
-        return self.workbook.sheetnames
+        # "완료체크" 시트 제외
+        excluded_sheets = ['완료체크']
+        return [name for name in self.workbook.sheetnames if name not in excluded_sheets]
     
     def get_sheet(self, sheet_name: str):
         """

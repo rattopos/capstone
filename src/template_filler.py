@@ -5,12 +5,13 @@
 
 import html
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from .template_manager import TemplateManager
 from .excel_extractor import ExcelExtractor
 from .calculator import Calculator
 from .data_analyzer import DataAnalyzer
 from .config import Config
+from .sheet_config import SheetConfig
 from .nlp_processor import NLPProcessor
 
 # 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
@@ -50,7 +51,7 @@ class TemplateFiller:
     """템플릿에 데이터를 채우는 클래스"""
     
     def __init__(self, template_manager: TemplateManager, excel_extractor: ExcelExtractor, 
-                 config: Optional[Config] = None):
+                 config: Optional[Config] = None, sheet_name: Optional[str] = None):
         """
         템플릿 필러 초기화
         
@@ -58,14 +59,34 @@ class TemplateFiller:
             template_manager: 템플릿 관리자 인스턴스
             excel_extractor: 엑셀 추출기 인스턴스
             config: 설정 객체 (선택적)
+            sheet_name: 시트 이름 (선택적, SheetConfig 사용 시 필요)
         """
         self.template_manager = template_manager
         self.excel_extractor = excel_extractor
         self.calculator = Calculator()
         self.config = config
-        self.data_analyzer = DataAnalyzer(excel_extractor, config)
+        self.sheet_name = sheet_name
+        
+        # SheetConfig 초기화 (시트명이 있으면 사용)
+        if sheet_name:
+            try:
+                if config:
+                    self.sheet_config = SheetConfig(sheet_name, config.year, config.quarter)
+                else:
+                    self.sheet_config = SheetConfig(sheet_name)
+                # SheetConfig의 Config를 사용
+                self.config = self.sheet_config.get_config()
+            except Exception as e:
+                # SheetConfig 초기화 실패 시 기본값 사용
+                print(f"경고: SheetConfig 초기화 실패 ({sheet_name}): {str(e)}")
+                self.sheet_config = None
+        else:
+            self.sheet_config = None
+        
+        self.data_analyzer = DataAnalyzer(excel_extractor, self.config, sheet_config=self.sheet_config)
         self.nlp_processor = NLPProcessor()
         self._analyzed_data_cache = None
+        self._all_regions_cache = None  # 모든 지역 목록 캐시
     
     def format_number(self, value: Any, use_comma: bool = True, decimal_places: int = None) -> str:
         """
@@ -148,16 +169,29 @@ class TemplateFiller:
             sheet_name: 시트 이름
         """
         if self._analyzed_data_cache is None:
-            if self.config is not None:
-                # Config를 사용하여 분석
-                self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(sheet_name)
-            else:
-                # 기본값: 2023 1/4 분기 데이터 분석 (Col 56: 현재, Col 52: 전년 동분기)
-                # 2023 Q1 = Col 58 - 2 = 56, 2022 Q1 = Col 58 - 6 = 52
-                quarter_data = {'2023_1/4': (56, 52)}
-                self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
-                    sheet_name, quarter_data
-                )
+            try:
+                if self.config is not None:
+                    # Config를 사용하여 분석
+                    self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(sheet_name)
+                elif self.sheet_config:
+                    # SheetConfig 사용
+                    config_obj = self.sheet_config.get_config()
+                    current_col, prev_col = config_obj.get_column_pair()
+                    quarter_name = config_obj.get_quarter_name()
+                    quarter_data = {quarter_name: (current_col, prev_col)}
+                    self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
+                        sheet_name, quarter_data
+                    )
+                else:
+                    # 기본값: 2023 1/4 분기 데이터 분석 (Col 56: 현재, Col 52: 전년 동분기)
+                    quarter_data = {'2023_1/4': (56, 52)}
+                    self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
+                        sheet_name, quarter_data
+                    )
+            except Exception as e:
+                # 분석 실패 시 빈 딕셔너리로 초기화
+                print(f"경고: 데이터 분석 실패 ({sheet_name}): {str(e)}")
+                self._analyzed_data_cache = {}
     
     def _get_quarterly_growth_rate(self, sheet_name: str, region_name: str, quarter: str) -> Optional[float]:
         """
@@ -166,42 +200,48 @@ class TemplateFiller:
         Args:
             sheet_name: 시트 이름
             region_name: 지역 이름 (예: '전국', '서울')
-            quarter: 분기 문자열 (예: '2023_3분기', '2024_1분기')
+            quarter: 분기 문자열 (예: '2021_2분기', '2023_1분기')
             
         Returns:
             증감률 (퍼센트) 또는 None
         """
         # 분기별 열 매핑 (현재 분기 열, 전년 동분기 열)
-        # 스크린샷 기준: 2021 Q2부터 2023 Q1p까지
-        # 엑셀 열 번호 계산 필요 (2021 Q2 = 2020 Q2 대비, 2023 Q1p = 2022 Q1 대비)
-        # 기준: 2023년 3/4분기 = Col 58 (BD)
-        # 2021 Q2 = 2020 Q2 대비 → Col 계산 필요
-        # 2021 Q3 = 2020 Q3 대비
-        # 2021 Q4 = 2020 Q4 대비
-        # 2022 Q1 = 2021 Q1 대비
-        # 2022 Q2 = 2021 Q2 대비
-        # 2022 Q3 = 2021 Q3 대비
-        # 2022 Q4 = 2021 Q4 대비
-        # 2023 Q1p = 2022 Q1 대비
-        # Config 기준: 2023년 3/4분기 = Col 58
-        # 2021 Q2 = Col 58 - (2년 * 4 + 1분기) = 58 - 9 = 49
-        # 2021 Q3 = Col 58 - (2년 * 4 + 0분기) = 58 - 8 = 50
-        # 2021 Q4 = Col 58 - (2년 * 4 - 1분기) = 58 - 7 = 51
-        # 2022 Q1 = Col 58 - (1년 * 4 + 2분기) = 58 - 6 = 52
-        # 2022 Q2 = Col 58 - (1년 * 4 + 1분기) = 58 - 5 = 53
-        # 2022 Q3 = Col 58 - (1년 * 4 + 0분기) = 58 - 4 = 54
-        # 2022 Q4 = Col 58 - (1년 * 4 - 1분기) = 58 - 3 = 55
-        # 2023 Q1p = Col 58 - (0년 * 4 + 2분기) = 58 - 2 = 56
-        quarter_cols = {
-            '2021_2분기': (49, 45),  # 2021 Q2 vs 2020 Q2 (전년 동분기)
-            '2021_3분기': (50, 46),  # 2021 Q3 vs 2020 Q3
-            '2021_4분기': (51, 47),  # 2021 Q4 vs 2020 Q4
-            '2022_1분기': (52, 48),  # 2022 Q1 vs 2021 Q1
-            '2022_2분기': (53, 49),  # 2022 Q2 vs 2021 Q2
-            '2022_3분기': (54, 50),  # 2022 Q3 vs 2021 Q3
-            '2022_4분기': (55, 51),  # 2022 Q4 vs 2021 Q4
-            '2023_1분기': (56, 52),  # 2023 Q1p vs 2022 Q1
-        }
+        # Config 클래스를 사용하여 동적으로 열 계산
+        quarter_cols = {}
+        
+        # SheetConfig에서 분기 목록 가져오기
+        if self.sheet_config:
+            table_quarters = self.sheet_config.get_table_quarters()
+            
+            for year_str, quarter_num in table_quarters:
+                year = int(year_str)
+                # Config 클래스를 사용하여 현재 분기 열 계산
+                current_config = Config(year, quarter_num)
+                current_col = current_config.get_current_column()
+                
+                # 전년 동분기 열 계산
+                prev_col = current_config.get_previous_year_column()
+                
+                quarter_key = f'{year}_{quarter_num}분기'
+                quarter_cols[quarter_key] = (current_col, prev_col)
+        else:
+            # SheetConfig가 없는 경우에도 Config 클래스 사용
+            # 기본값: 2021 Q2부터 2023 Q1까지
+            for year in [2021, 2022, 2023]:
+                for quarter_num in [1, 2, 3, 4]:
+                    # 2021년은 Q2부터 시작
+                    if year == 2021 and quarter_num < 2:
+                        continue
+                    # 2023년은 Q1까지만
+                    if year == 2023 and quarter_num > 1:
+                        continue
+                    
+                    current_config = Config(year, quarter_num)
+                    current_col = current_config.get_current_column()
+                    prev_col = current_config.get_previous_year_column()
+                    
+                    quarter_key = f'{year}_{quarter_num}분기'
+                    quarter_cols[quarter_key] = (current_col, prev_col)
         
         if quarter not in quarter_cols:
             return None
@@ -230,7 +270,8 @@ class TemplateFiller:
         if current_value is None or prev_value is None or prev_value == 0:
             return None
         
-        # 증감률 계산
+        # 증감률 계산: 전년 동분기 대비
+        # 공식: ((현재값 / 전년동분기값) - 1) * 100
         growth_rate = ((current_value / prev_value) - 1) * 100
         return growth_rate
     
@@ -245,32 +286,47 @@ class TemplateFiller:
         Returns:
             처리된 값 또는 None
         """
+        # 데이터 분석이 필요하면 수행
         self._analyze_data_if_needed(sheet_name)
+        
+        # 캐시가 없거나 비어있으면 None 반환
+        if self._analyzed_data_cache is None:
+            return None
         
         # 캐시에서 데이터 가져오기 (Config가 있으면 해당 분기, 없으면 기본값)
         if self.config is not None:
             quarter_name = self.config.get_quarter_name()
+        elif self.sheet_config:
+            quarter_name = self.sheet_config.get_config().get_quarter_name()
         else:
             quarter_name = '2023_1/4'
+        
+        # 캐시가 딕셔너리가 아니거나 해당 분기 데이터가 없으면 None 반환
+        if not isinstance(self._analyzed_data_cache, dict):
+            return None
         
         if quarter_name not in self._analyzed_data_cache:
             return None
         
         data = self._analyzed_data_cache[quarter_name]
         
+        # data가 None이거나 딕셔너리가 아니면 None 반환
+        if data is None or not isinstance(data, dict):
+            return None
+        
         # 전국 패턴
         if key == '전국_이름':
-            if 'national_region' in data and data['national_region']:
+            if data and 'national_region' in data and data['national_region']:
                 return data['national_region']['name']
         elif key == '전국_증감률':
-            if 'national_region' in data and data['national_region']:
+            if data and 'national_region' in data and data['national_region']:
                 return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1)
         elif key == '전국_증감방향':
-            if 'national_region' in data and data['national_region']:
+            if data and 'national_region' in data and data['national_region']:
                 growth_rate = data['national_region']['growth_rate']
                 return self.nlp_processor.determine_trend(growth_rate)
         elif key.startswith('전국_산업'):
-            if 'national_region' in data and data['national_region']:
+            if data and 'national_region' in data and data['national_region']:
                 industry_match = re.match(r'전국_산업(\d+)_(.+)', key)
                 if industry_match:
                     industry_idx = int(industry_match.group(1)) - 1
@@ -295,6 +351,9 @@ class TemplateFiller:
                         elif industry_field == '증감방향':
                             growth_rate = industry['growth_rate']
                             return self.nlp_processor.determine_trend(growth_rate)
+                        elif industry_field == '증감방향_클래스':
+                            growth_rate = industry['growth_rate']
+                            return 'positive' if growth_rate > 0 else 'negative'
         
         # 상위 시도 패턴
         top_match = re.match(r'상위시도(\d+)_(.+)', key)
@@ -302,7 +361,7 @@ class TemplateFiller:
             idx = int(top_match.group(1)) - 1  # 0-based
             field = top_match.group(2)
             
-            if idx < len(data['top_regions']):
+            if data and 'top_regions' in data and idx < len(data['top_regions']):
                 region = data['top_regions'][idx]
                 
                 if field == '이름':
@@ -338,6 +397,9 @@ class TemplateFiller:
                             elif industry_field == '증감방향':
                                 growth_rate = industry['growth_rate']
                                 return self.nlp_processor.determine_trend(growth_rate)
+                            elif industry_field == '증감방향_클래스':
+                                growth_rate = industry['growth_rate']
+                                return 'positive' if growth_rate > 0 else 'negative'
         
         # 하위 시도 패턴
         bottom_match = re.match(r'하위시도(\d+)_(.+)', key)
@@ -345,7 +407,7 @@ class TemplateFiller:
             idx = int(bottom_match.group(1)) - 1  # 0-based
             field = bottom_match.group(2)
             
-            if idx < len(data['bottom_regions']):
+            if data and 'bottom_regions' in data and idx < len(data['bottom_regions']):
                 region = data['bottom_regions'][idx]
                 
                 if field == '이름':
@@ -381,6 +443,98 @@ class TemplateFiller:
                             elif industry_field == '증감방향':
                                 growth_rate = industry['growth_rate']
                                 return self.nlp_processor.determine_trend(growth_rate)
+                            elif industry_field == '증감방향_클래스':
+                                growth_rate = industry['growth_rate']
+                                return 'positive' if growth_rate > 0 else 'negative'
+        
+        # 첫 번째 문단용 동적 마커: 전국 증감률에 따라 상위/하위 시도 자동 선택
+        first_para_match = re.match(r'첫문단시도(\d+)_(.+)', key)
+        if first_para_match:
+            idx = int(first_para_match.group(1)) - 1  # 0-based
+            field = first_para_match.group(2)
+            
+            # 전국 증감률 확인
+            national_growth_rate = None
+            if data and 'national_region' in data and data['national_region']:
+                national_growth_rate = data['national_region']['growth_rate']
+            
+            # 전국이 증가(+)면 상위시도, 감소(-)면 하위시도 사용
+            if national_growth_rate is not None and national_growth_rate > 0:
+                # 상위시도 사용
+                if data and 'top_regions' in data and idx < len(data['top_regions']):
+                    region = data['top_regions'][idx]
+                    
+                    if field == '이름':
+                        return region['name']
+                    elif field == '증감률':
+                        return self.format_percentage(region['growth_rate'], decimal_places=1)
+                    elif field == '증감방향':
+                        growth_rate = region['growth_rate']
+                        return self.nlp_processor.determine_trend(growth_rate)
+                    elif field.startswith('산업'):
+                        industry_match = re.match(r'산업(\d+)_(.+)', field)
+                        if industry_match:
+                            industry_idx = int(industry_match.group(1)) - 1
+                            industry_field = industry_match.group(2)
+                            
+                            if 'top_industries' in region and industry_idx < len(region['top_industries']):
+                                industry = region['top_industries'][industry_idx]
+                                
+                                if industry_field == '이름':
+                                    industry_name = industry['name']
+                                    mapped_name = INDUSTRY_NAME_MAPPING.get(industry_name)
+                                    if not mapped_name:
+                                        for key_map, value_map in INDUSTRY_NAME_MAPPING.items():
+                                            if key_map in industry_name or industry_name in key_map:
+                                                mapped_name = value_map
+                                                break
+                                    return mapped_name if mapped_name else industry_name
+                                elif industry_field == '증감률':
+                                    return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                                elif industry_field == '증감방향':
+                                    growth_rate = industry['growth_rate']
+                                    return self.nlp_processor.determine_trend(growth_rate)
+                                elif industry_field == '증감방향_클래스':
+                                    growth_rate = industry['growth_rate']
+                                    return 'positive' if growth_rate > 0 else 'negative'
+            else:
+                # 하위시도 사용
+                if data and 'bottom_regions' in data and idx < len(data['bottom_regions']):
+                    region = data['bottom_regions'][idx]
+                    
+                    if field == '이름':
+                        return region['name']
+                    elif field == '증감률':
+                        return self.format_percentage(region['growth_rate'], decimal_places=1)
+                    elif field == '증감방향':
+                        growth_rate = region['growth_rate']
+                        return self.nlp_processor.determine_trend(growth_rate)
+                    elif field.startswith('산업'):
+                        industry_match = re.match(r'산업(\d+)_(.+)', field)
+                        if industry_match:
+                            industry_idx = int(industry_match.group(1)) - 1
+                            industry_field = industry_match.group(2)
+                            
+                            if 'top_industries' in region and industry_idx < len(region['top_industries']):
+                                industry = region['top_industries'][industry_idx]
+                                
+                                if industry_field == '이름':
+                                    industry_name = industry['name']
+                                    mapped_name = INDUSTRY_NAME_MAPPING.get(industry_name)
+                                    if not mapped_name:
+                                        for key_map, value_map in INDUSTRY_NAME_MAPPING.items():
+                                            if key_map in industry_name or industry_name in key_map:
+                                                mapped_name = value_map
+                                                break
+                                    return mapped_name if mapped_name else industry_name
+                                elif industry_field == '증감률':
+                                    return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                                elif industry_field == '증감방향':
+                                    growth_rate = industry['growth_rate']
+                                    return self.nlp_processor.determine_trend(growth_rate)
+                                elif industry_field == '증감방향_클래스':
+                                    growth_rate = industry['growth_rate']
+                                    return 'positive' if growth_rate > 0 else 'negative'
         
         # 분기별 증감률 마커 처리 (예: 전국_2023_1분기_증감률)
         # 스크린샷 기준: 2021 Q2부터 2023 Q1p까지
@@ -402,8 +556,13 @@ class TemplateFiller:
         header_match = re.match(r'분기(\d+)_헤더', key)
         if header_match:
             quarter_idx = int(header_match.group(1)) - 1
-            headers = ['2021 Q2', '2021 Q3', '2021 Q4', '2022 Q1', 
-                      '2022 Q2', '2022 Q3', '2022 Q4', '2023 Q1p']
+            # SheetConfig에서 헤더 가져오기
+            if self.sheet_config:
+                headers = self.sheet_config.get_table_headers()
+            else:
+                # 기본값
+                headers = ['2021 Q2', '2021 Q3', '2021 Q4', '2022 Q1', 
+                          '2022 Q2', '2022 Q3', '2022 Q4', '2023 Q1p']
             if 0 <= quarter_idx < len(headers):
                 return headers[quarter_idx]
         
@@ -414,8 +573,139 @@ class TemplateFiller:
                 return self.format_percentage(growth_rate, decimal_places=1)
             return ""
         
-        # 기타 동적 키 처리
-        if key == '증가시도수':
+        # 문서 제목, 섹션 제목 등 SheetConfig에서 가져오기
+        if key == '문서제목':
+            if self.sheet_config:
+                return self.sheet_config.get_document_title()
+            return '부문별 지역경제동향'
+        elif key == '섹션제목_마커':
+            if self.sheet_config:
+                section_title = self.sheet_config.get_section_title()
+                if section_title:
+                    return f'<div class="section-title">{section_title}</div>'
+            return ''
+        elif key == '서브섹션제목_마커':
+            if self.sheet_config:
+                subsection_title = self.sheet_config.get_subsection_title()
+                if subsection_title:
+                    return f'<div class="subsection-title">{subsection_title}</div>'
+            return ''
+        elif key == '서브섹션제목':
+            if self.sheet_config:
+                return self.sheet_config.get_subsection_title()
+            return ''
+        
+        # 증감방향 관련 마커
+        elif key == '전국_증감방향_동사':
+            if data and 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return '늘어' if growth_rate > 0 else '줄어'
+            return '변동'
+        elif key == '전국_증감방향_클래스':
+            if data and 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return 'positive' if growth_rate > 0 else 'negative'
+            return ''
+        elif key.endswith('_증감방향_클래스'):
+            # 산업별 증감방향 클래스
+            industry_match = re.match(r'전국_산업(\d+)_증감방향_클래스', key)
+            if industry_match:
+                industry_idx = int(industry_match.group(1)) - 1
+                if data and 'national_region' in data and data['national_region']:
+                    if 'top_industries' in data['national_region'] and industry_idx < len(data['national_region']['top_industries']):
+                        industry = data['national_region']['top_industries'][industry_idx]
+                        growth_rate = industry['growth_rate']
+                        return 'positive' if growth_rate > 0 else 'negative'
+            return ''
+        
+        # 동적 리스트 생성
+        elif key == '상위시도_리스트':
+            if data and 'top_regions' in data:
+                return self._generate_region_list_html(data['top_regions'], 'positive')
+            return ''
+        elif key == '하위시도_리스트':
+            if data and 'bottom_regions' in data:
+                return self._generate_region_list_html(data['bottom_regions'], 'negative')
+            return ''
+        
+        # 동적 표 생성
+        elif key == '동적표':
+            return self._generate_dynamic_table(sheet_name)
+        
+        # 첫 번째 문단용 시도수: 전국 증감률에 따라 증가/감소 시도수 자동 선택
+        elif key == '첫문단시도수':
+            # 전국 증감률 확인
+            national_growth_rate = None
+            if data and 'national_region' in data and data['national_region']:
+                national_growth_rate = data['national_region']['growth_rate']
+            
+            # 전국이 증가(+)면 증가시도수, 감소(-)면 감소시도수 반환
+            if national_growth_rate is not None and national_growth_rate > 0:
+                # 증가시도수 반환
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                positive_count = 0
+                
+                if self.config is not None:
+                    current_col, prev_col = self.config.get_column_pair()
+                elif self.sheet_config:
+                    current_col, prev_col = self.sheet_config.get_config().get_column_pair()
+                else:
+                    current_col, prev_col = 56, 52
+                
+                for row in range(4, min(1000, sheet.max_row + 1)):
+                    cell_a = sheet.cell(row=row, column=1)
+                    cell_b = sheet.cell(row=row, column=2)
+                    cell_f = sheet.cell(row=row, column=6)
+                    
+                    if cell_b.value and cell_f.value == '총지수':
+                        code_str = str(cell_a.value).strip() if cell_a.value else ''
+                        is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
+                        
+                        if is_sido:
+                            current = sheet.cell(row=row, column=current_col).value
+                            prev = sheet.cell(row=row, column=prev_col).value
+                            
+                            if current is not None and prev is not None and prev != 0:
+                                growth_rate = ((current / prev) - 1) * 100
+                                if growth_rate > 0:
+                                    positive_count += 1
+                
+                return str(positive_count)
+            else:
+                # 감소시도수 반환
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                negative_count = 0
+                
+                if self.config is not None:
+                    current_col, prev_col = self.config.get_column_pair()
+                elif self.sheet_config:
+                    current_col, prev_col = self.sheet_config.get_config().get_column_pair()
+                else:
+                    current_col, prev_col = 56, 52  # 기본값: 2023 1/4
+                
+                for row in range(4, min(1000, sheet.max_row + 1)):
+                    cell_a = sheet.cell(row=row, column=1)  # 지역 코드
+                    cell_b = sheet.cell(row=row, column=2)  # 지역 이름
+                    cell_f = sheet.cell(row=row, column=6)  # 산업 이름
+                    
+                    if cell_b.value and cell_f.value == '총지수':
+                        # 시도 코드 확인: 2자리 숫자이고 00이 아닌 것
+                        code_str = str(cell_a.value).strip() if cell_a.value else ''
+                        is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
+                        
+                        if is_sido:
+                            current = sheet.cell(row=row, column=current_col).value
+                            prev = sheet.cell(row=row, column=prev_col).value
+                            
+                            if current is not None and prev is not None and prev != 0:
+                                growth_rate = ((current / prev) - 1) * 100
+                                if growth_rate < 0:  # 감소 시도 카운트
+                                    negative_count += 1
+                
+                return str(negative_count)
+        
+        # 감소시도수
+        elif key == '감소시도수':
             # 시도만 카운트 (그룹 제외)
             # 시도 코드: 2자리 숫자, 00(전국) 제외, 11-39 범위
             # 그룹 코드: 1자리 숫자 또는 다른 형식 (수도, 대경, 호남, 충청 등)
@@ -425,6 +715,8 @@ class TemplateFiller:
             # Config가 있으면 해당 열 사용, 없으면 기본값
             if self.config is not None:
                 current_col, prev_col = self.config.get_column_pair()
+            elif self.sheet_config:
+                current_col, prev_col = self.sheet_config.get_config().get_column_pair()
             else:
                 current_col, prev_col = 56, 52  # 기본값: 2023 1/4
             
@@ -448,13 +740,48 @@ class TemplateFiller:
                                 negative_count += 1
             
             return str(negative_count)
+        elif key == '증가시도수':
+            # 증가시도수도 지원 (하위 호환성)
+            sheet = self.excel_extractor.get_sheet(sheet_name)
+            positive_count = 0
+            
+            if self.config is not None:
+                current_col, prev_col = self.config.get_column_pair()
+            elif self.sheet_config:
+                current_col, prev_col = self.sheet_config.get_config().get_column_pair()
+            else:
+                current_col, prev_col = 56, 52
+            
+            for row in range(4, min(1000, sheet.max_row + 1)):
+                cell_a = sheet.cell(row=row, column=1)
+                cell_b = sheet.cell(row=row, column=2)
+                cell_f = sheet.cell(row=row, column=6)
+                
+                if cell_b.value and cell_f.value == '총지수':
+                    code_str = str(cell_a.value).strip() if cell_a.value else ''
+                    is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
+                    
+                    if is_sido:
+                        current = sheet.cell(row=row, column=current_col).value
+                        prev = sheet.cell(row=row, column=prev_col).value
+                        
+                        if current is not None and prev is not None and prev != 0:
+                            growth_rate = ((current / prev) - 1) * 100
+                            if growth_rate > 0:
+                                positive_count += 1
+            
+            return str(positive_count)
         elif key == '기준연도':
             if self.config is not None:
                 return str(self.config.year)
+            elif self.sheet_config:
+                return str(self.sheet_config.year)
             return '2023'
         elif key == '기준분기':
             if self.config is not None:
                 return f'{self.config.quarter}/4'
+            elif self.sheet_config:
+                return f'{self.sheet_config.quarter}/4'
             return '1/4'
         
         return None
@@ -548,6 +875,10 @@ class TemplateFiller:
         # 템플릿 로드
         template_content = self.template_manager.get_template_content()
         
+        # 시트명이 있으면 "시트명" 플레이스홀더를 실제 시트 이름으로 치환
+        if self.sheet_name:
+            template_content = template_content.replace('{시트명:', f'{{{self.sheet_name}:')
+        
         # CSS와 스크립트 섹션을 제외하고 처리
         # <style>...</style> 및 <script>...</script> 태그 내부는 제외
         style_pattern = re.compile(r'<style[^>]*>.*?</style>', re.IGNORECASE | re.DOTALL)
@@ -576,23 +907,41 @@ class TemplateFiller:
         dynamic_marker_pattern = re.compile(r'\{([^:{}]+):([^:}]+)\}')
         
         # 동적 마커 찾기 및 치환
-        for match in dynamic_marker_pattern.finditer(template_content):
-            full_match = match.group(0)
-            sheet_name = match.group(1)
-            dynamic_key = match.group(2)
+        # 여러 번 치환될 수 있으므로 반복 처리
+        max_iterations = 10  # 무한 루프 방지
+        iteration = 0
+        while iteration < max_iterations:
+            iteration += 1
+            found_any = False
             
-            # 셀 주소 형식이 아닌 경우 동적 마커로 처리
-            # 하지만 CSS 속성명 같은 것들은 제외 (한글이나 숫자가 포함된 경우만)
-            if not re.match(r'^[A-Z]+\d+', dynamic_key):
-                # 실제 마커인지 확인 (한글, 숫자, 언더스코어 포함)
-                if re.search(r'[가-힣0-9_]', dynamic_key):
-                    try:
-                        dynamic_value = self._process_dynamic_marker(sheet_name, dynamic_key)
-                        if dynamic_value is not None:
-                            template_content = template_content.replace(full_match, dynamic_value)
-                    except Exception:
-                        # 에러 발생 시 원본 유지
-                        pass
+            for match in dynamic_marker_pattern.finditer(template_content):
+                full_match = match.group(0)
+                sheet_name = match.group(1)
+                dynamic_key = match.group(2)
+                
+                # 셀 주소 형식이 아닌 경우 동적 마커로 처리
+                if not re.match(r'^[A-Z]+\d+', dynamic_key):
+                    # 실제 마커인지 확인 (한글, 숫자, 언더스코어 포함)
+                    if re.search(r'[가-힣0-9_]', dynamic_key):
+                        try:
+                            dynamic_value = self._process_dynamic_marker(sheet_name, dynamic_key)
+                            if dynamic_value is not None:
+                                template_content = template_content.replace(full_match, str(dynamic_value), 1)
+                                found_any = True
+                            else:
+                                # 값이 None이면 빈 문자열로 치환 (디버깅용으로 마커 키 표시)
+                                # 실제 운영에서는 빈 문자열로 치환
+                                template_content = template_content.replace(full_match, "", 1)
+                                found_any = True
+                        except Exception as e:
+                            # 에러 발생 시 에러 메시지 표시 (디버깅용)
+                            error_msg = f"[에러:{dynamic_key}:{str(e)}]"
+                            template_content = template_content.replace(full_match, error_msg, 1)
+                            found_any = True
+            
+            # 더 이상 치환할 마커가 없으면 종료
+            if not found_any:
+                break
         
         # 일반 마커 추출 및 처리
         markers = self.template_manager.extract_markers()
@@ -613,6 +962,154 @@ class TemplateFiller:
         
         return template_content
     
+    def _generate_region_list_html(self, regions: List[Dict], css_class: str) -> str:
+        """
+        지역 리스트를 HTML로 생성합니다.
+        
+        Args:
+            regions: 지역 정보 리스트
+            css_class: CSS 클래스 ('positive' 또는 'negative')
+            
+        Returns:
+            HTML 문자열
+        """
+        html_parts = []
+        for region in regions:
+            region_name = region.get('name', '')
+            growth_rate = region.get('growth_rate', 0)
+            formatted_rate = self.format_percentage(growth_rate, decimal_places=1)
+            industries = region.get('top_industries', [])
+            
+            industry_parts = []
+            for i, industry in enumerate(industries[:3]):  # 최대 3개
+                industry_name = industry.get('name', '')
+                industry_growth = industry.get('growth_rate', 0)
+                
+                # 산업 이름 매핑
+                mapped_name = INDUSTRY_NAME_MAPPING.get(industry_name)
+                if not mapped_name:
+                    for key_map, value_map in INDUSTRY_NAME_MAPPING.items():
+                        if key_map in industry_name or industry_name in key_map:
+                            mapped_name = value_map
+                            break
+                display_name = mapped_name if mapped_name else industry_name
+                
+                industry_class = 'positive' if industry_growth > 0 else 'negative'
+                formatted_industry_rate = self.format_percentage(industry_growth, decimal_places=1)
+                
+                industry_parts.append(
+                    f'{display_name}(<span class="percentage {industry_class}">{formatted_industry_rate}</span>)'
+                )
+            
+            industry_html = ', '.join(industry_parts)
+            
+            html_parts.append(f'''        <div class="region-item">
+            <span class="region-name">{region_name}({formatted_rate}):</span>
+            <div class="industry-list">
+                <div class="industry-item">{industry_html}</div>
+            </div>
+        </div>''')
+        
+        return '\n'.join(html_parts)
+    
+    def _generate_dynamic_table(self, sheet_name: str) -> str:
+        """
+        동적으로 표를 생성합니다.
+        
+        Args:
+            sheet_name: 시트 이름
+            
+        Returns:
+            표 HTML 문자열
+        """
+        # SheetConfig에서 표 헤더 가져오기
+        if self.sheet_config:
+            headers = self.sheet_config.get_table_headers()
+            table_quarters = self.sheet_config.get_table_quarters()
+        else:
+            headers = ['2021 Q2', '2021 Q3', '2021 Q4', '2022 Q1', 
+                      '2022 Q2', '2022 Q3', '2022 Q4', '2023 Q1p']
+            table_quarters = [
+                ('2021', 2), ('2021', 3), ('2021', 4),
+                ('2022', 1), ('2022', 2), ('2022', 3), ('2022', 4),
+                ('2023', 1)
+            ]
+        
+        # 표 제목
+        subsection_title = self.sheet_config.get_subsection_title() if self.sheet_config else '광공업생산'
+        table_caption = f'《{subsection_title} 증감률(불변)》'
+        
+        # 표 헤더 HTML 생성
+        header_html = '<th>시·도</th>'
+        for header in headers:
+            header_html += f'<th>{header}</th>'
+        
+        # 모든 지역 목록 가져오기
+        if self.config is not None:
+            current_col, prev_col = self.config.get_column_pair()
+        elif self.sheet_config:
+            current_col, prev_col = self.sheet_config.get_config().get_column_pair()
+        else:
+            current_col, prev_col = 56, 52
+        
+        all_regions = self.data_analyzer.get_regions_with_growth_rate(
+            sheet_name, current_col, prev_col
+        )
+        
+        # 지역 순서 정의 (전국 먼저, 그 다음 시도 순서)
+        region_order = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                       '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        # 지역을 순서대로 정렬
+        sorted_regions = []
+        for region_name in region_order:
+            for region in all_regions:
+                if region['name'] == region_name:
+                    sorted_regions.append(region)
+                    break
+        
+        # 나머지 지역 추가 (순서에 없는 경우)
+        for region in all_regions:
+            if region not in sorted_regions:
+                sorted_regions.append(region)
+        
+        # 표 행 HTML 생성
+        rows_html = []
+        for region in sorted_regions:
+            region_name = region['name']
+            row_html = f'            <tr>\n                <td class="region-name-cell">{region_name}</td>'
+            
+            # 각 분기별 증감률 계산
+            for year_str, quarter_num in table_quarters:
+                year = int(year_str)
+                quarter_key = f'{year}_{quarter_num}분기'
+                growth_rate = self._get_quarterly_growth_rate(sheet_name, region_name, quarter_key)
+                
+                if growth_rate is not None:
+                    formatted = f"{growth_rate:.1f}".rstrip('0').rstrip('.')
+                    cell_class = 'positive' if growth_rate > 0 else 'negative' if growth_rate < 0 else ''
+                    row_html += f'\n                <td class="data-cell {cell_class}">{formatted}</td>'
+                else:
+                    row_html += '\n                <td class="data-cell">-</td>'
+            
+            row_html += '\n            </tr>'
+            rows_html.append(row_html)
+        
+        # 전체 표 HTML 조합
+        table_html = f'''    <table>
+        <caption>{table_caption}</caption>
+        <thead>
+            <tr>
+                {header_html}
+            </tr>
+        </thead>
+        <tbody>
+{chr(10).join(rows_html)}
+        </tbody>
+    </table>'''
+        
+        return table_html
+
     def fill_template_with_custom_format(self, format_func: callable = None) -> str:
         """
         커스텀 포맷팅 함수를 사용하여 템플릿을 채웁니다.

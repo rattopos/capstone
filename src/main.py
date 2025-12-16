@@ -35,8 +35,8 @@ def main():
     parser.add_argument(
         '--template', '-t',
         type=str,
-        default='templates/mining_manufacturing_production.html',
-        help='HTML 템플릿 파일 경로 (기본값: templates/mining_manufacturing_production.html)'
+        default='templates/dynamic_template.html',
+        help='HTML 템플릿 파일 경로 (기본값: templates/dynamic_template.html)'
     )
     
     parser.add_argument(
@@ -208,10 +208,11 @@ def main():
         # 각 시트별로 처리
         if len(sheets_to_process) == 1:
             # 단일 시트인 경우 기존 방식대로 처리
+            sheet_name = sheets_to_process[0]
             if args.verbose:
-                print(f"시트 처리 중: {sheets_to_process[0]}")
+                print(f"시트 처리 중: {sheet_name}")
             
-            template_filler = TemplateFiller(template_manager, excel_extractor, config)
+            template_filler = TemplateFiller(template_manager, excel_extractor, config, sheet_name=sheet_name)
             filled_template = template_filler.fill_template()
             
             # 결과 저장
@@ -230,8 +231,8 @@ def main():
                 if args.verbose:
                     print(f"  시트 처리 중: {sheet_name}")
                 
-                # 각 시트별로 템플릿 필러 생성 (시트별로 다른 템플릿을 사용할 수 있음)
-                template_filler = TemplateFiller(template_manager, excel_extractor, config)
+                # 각 시트별로 템플릿 필러 생성 (시트별로 다른 설정 사용)
+                template_filler = TemplateFiller(template_manager, excel_extractor, config, sheet_name=sheet_name)
                 filled_template = template_filler.fill_template()
                 
                 # 시트명을 포함한 출력 파일명 생성

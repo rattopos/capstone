@@ -45,6 +45,50 @@ def index():
     return render_template('web_interface.html')
 
 
+@app.route('/get_sheets', methods=['POST'])
+def get_sheets():
+    """엑셀 파일의 시트 목록 반환"""
+    try:
+        if 'excel_file' not in request.files:
+            return jsonify({'error': '엑셀 파일이 필요합니다.'}), 400
+        
+        excel_file = request.files['excel_file']
+        if excel_file.filename == '':
+            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
+        
+        if not allowed_file(excel_file.filename):
+            return jsonify({'error': '엑셀 파일만 업로드 가능합니다 (.xlsx, .xls)'}), 400
+        
+        # 임시 파일 저장
+        excel_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(excel_file.filename))
+        excel_file.save(excel_path)
+        
+        try:
+            # 엑셀 추출기 초기화
+            excel_extractor = ExcelExtractor(excel_path)
+            excel_extractor.load_workbook()
+            
+            # 시트 목록 가져오기
+            sheet_names = excel_extractor.get_sheet_names()
+            
+            # 엑셀 파일 닫기
+            excel_extractor.close()
+            
+            # 임시 파일 삭제
+            if os.path.exists(excel_path):
+                os.remove(excel_path)
+            
+            return jsonify({'sheets': sheet_names})
+        except Exception as e:
+            # 에러 발생 시 임시 파일 정리
+            if os.path.exists(excel_path):
+                os.remove(excel_path)
+            return jsonify({'error': f'시트 목록을 가져오는 중 오류가 발생했습니다: {str(e)}'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': f'서버 오류: {str(e)}'}), 500
+
+
 @app.errorhandler(RequestEntityTooLarge)
 def handle_file_too_large(e):
     """파일 크기 초과 오류 처리"""
@@ -94,7 +138,7 @@ def process():
             template_file.save(template_path)
         else:
             # 기본 템플릿 사용
-            default_template = Path('templates/mining_manufacturing_production.html')
+            default_template = Path('templates/dynamic_template.html')
             if not default_template.exists():
                 return jsonify({'error': '기본 템플릿 파일을 찾을 수 없습니다.'}), 500
             template_path = str(default_template)
@@ -109,8 +153,14 @@ def process():
             excel_extractor = ExcelExtractor(excel_path)
             excel_extractor.load_workbook()
             
+            # 시트명 결정 (첫 번째 시트 또는 지정된 시트)
+            sheet_name = request.form.get('sheet_name', '').strip()
+            if not sheet_name:
+                all_sheets = excel_extractor.get_sheet_names()
+                sheet_name = all_sheets[0] if all_sheets else None
+            
             # 템플릿 채우기
-            template_filler = TemplateFiller(template_manager, excel_extractor, config)
+            template_filler = TemplateFiller(template_manager, excel_extractor, config, sheet_name=sheet_name)
             filled_template = template_filler.fill_template()
             
             # 원본 엑셀 파일명 저장 (다운로드 파일명용)
