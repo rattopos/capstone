@@ -129,48 +129,80 @@ class TemplateFiller:
         """
         return html.escape(str(value) if value is not None else "")
     
-    def _analyze_data_if_needed(self, sheet_name: str) -> None:
+    def _analyze_data_if_needed(self, sheet_name: str, year: int = 2025, quarter: int = 2) -> None:
         """
         필요시 데이터를 분석하여 캐시에 저장
         
         Args:
             sheet_name: 시트 이름
+            year: 연도
+            quarter: 분기 (1-4)
         """
-        if self._analyzed_data_cache is None:
-            # 2025 2/4 분기 데이터 분석 (Col 65: 현재, Col 61: 전년 동분기)
-            quarter_data = {'2025_2/4': (65, 61)}
-            self._analyzed_data_cache = self.data_analyzer.analyze_quarter_data(
-                sheet_name, quarter_data
-            )
+        cache_key = f"{year}_{quarter}"
+        if self._analyzed_data_cache is None or cache_key not in self._analyzed_data_cache:
+            # 분기별 열 매핑 계산
+            quarter_key = f"{year}_{quarter}분기"
+            quarter_cols = self._get_quarter_columns(year, quarter)
+            if quarter_cols:
+                quarter_data = {f"{year}_{quarter}/4": quarter_cols}
+                analyzed = self.data_analyzer.analyze_quarter_data(sheet_name, quarter_data)
+                if self._analyzed_data_cache is None:
+                    self._analyzed_data_cache = {}
+                self._analyzed_data_cache[cache_key] = analyzed.get(f"{year}_{quarter}/4", {})
     
-    def _get_quarterly_growth_rate(self, sheet_name: str, region_name: str, quarter: str) -> Optional[float]:
+    def _get_quarter_columns(self, year: int, quarter: int) -> tuple:
+        """
+        연도와 분기에 해당하는 열 번호를 반환합니다.
+        
+        Args:
+            year: 연도
+            quarter: 분기 (1-4)
+            
+        Returns:
+            (현재 분기 열, 전년 동분기 열) 튜플
+        """
+        # 기본 열 번호 (2023년 1분기 기준으로 계산)
+        # 실제 데이터: 2023년 3분기=58, 2023년 4분기=59, 2024년 1분기=60
+        # 따라서 2023년 1분기는 56, 2023년 2분기는 57
+        base_year = 2023
+        base_col = 56  # 2023년 1분기
+        
+        # 연도 차이 계산
+        year_diff = year - base_year
+        
+        # 분기별 오프셋 (1분기=0, 2분기=1, 3분기=2, 4분기=3)
+        quarter_offset = quarter - 1
+        
+        # 현재 분기 열 계산
+        current_col = base_col + (year_diff * 4) + quarter_offset
+        
+        # 전년 동분기 열 계산
+        prev_col = current_col - 4
+        
+        return (current_col, prev_col)
+    
+    def _get_quarterly_growth_rate(self, sheet_name: str, region_name: str, quarter_key: str) -> Optional[float]:
         """
         특정 지역의 특정 분기 증감률을 계산합니다.
         
         Args:
             sheet_name: 시트 이름
             region_name: 지역 이름 (예: '전국', '서울')
-            quarter: 분기 문자열 (예: '2023_3분기', '2024_1분기')
+            quarter_key: 분기 문자열 (예: '2023_3분기', '2024_1분기')
             
         Returns:
             증감률 (퍼센트) 또는 None
         """
-        # 분기별 열 매핑 (현재 분기 열, 전년 동분기 열)
-        quarter_cols = {
-            '2023_3분기': (58, 54),  # BD (2023 3/4) vs 54 (2022 3/4)
-            '2023_4분기': (59, 55),  # BE (2023 4/4) vs 55 (2022 4/4)
-            '2024_1분기': (60, 56),  # BF (2024 1/4) vs 56 (2023 1/4)
-            '2024_2분기': (61, 57),  # BG (2024 2/4) vs 57 (2023 2/4)
-            '2024_3분기': (62, 58),  # BH (2024 3/4) vs 58 (2023 3/4)
-            '2024_4분기': (63, 59),  # BI (2024 4/4) vs 59 (2023 4/4)
-            '2025_1분기': (64, 60),  # BJ (2025 1/4) vs 60 (2024 1/4)
-            '2025_2분기': (65, 61),  # BK (2025 2/4) vs 61 (2024 2/4)
-        }
-        
-        if quarter not in quarter_cols:
+        # 분기 키에서 연도와 분기 추출
+        match = re.match(r'(\d{4})_(\d)분기', quarter_key)
+        if not match:
             return None
         
-        current_col, prev_col = quarter_cols[quarter]
+        year = int(match.group(1))
+        quarter = int(match.group(2))
+        
+        # 열 번호 계산
+        current_col, prev_col = self._get_quarter_columns(year, quarter)
         
         # 지역의 총지수 행 찾기
         sheet = self.excel_extractor.get_sheet(sheet_name)
@@ -198,31 +230,36 @@ class TemplateFiller:
         growth_rate = ((current_value / prev_value) - 1) * 100
         return growth_rate
     
-    def _process_dynamic_marker(self, sheet_name: str, key: str) -> Optional[str]:
+    def _process_dynamic_marker(self, sheet_name: str, key: str, year: int = 2025, quarter: int = 2) -> Optional[str]:
         """
         동적 마커를 처리합니다.
         
         Args:
             sheet_name: 시트 이름
             key: 동적 키 (예: '상위시도1_이름', '상위시도1_증감률')
+            year: 연도
+            quarter: 분기
             
         Returns:
             처리된 값 또는 None
         """
-        self._analyze_data_if_needed(sheet_name)
+        self._analyze_data_if_needed(sheet_name, year, quarter)
         
-        if '2025_2/4' not in self._analyzed_data_cache:
-            return None
+        cache_key = f"{year}_{quarter}"
+        if cache_key not in self._analyzed_data_cache:
+            return "N/A"
         
-        data = self._analyzed_data_cache['2025_2/4']
+        data = self._analyzed_data_cache[cache_key]
         
         # 전국 패턴
         if key == '전국_이름':
             if 'national_region' in data and data['national_region']:
                 return data['national_region']['name']
+            return "N/A"
         elif key == '전국_증감률':
             if 'national_region' in data and data['national_region']:
                 return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1)
+            return "N/A"
         elif key.startswith('전국_산업'):
             if 'national_region' in data and data['national_region']:
                 industry_match = re.match(r'전국_산업(\d+)_(.+)', key)
@@ -246,6 +283,8 @@ class TemplateFiller:
                             return mapped_name if mapped_name else industry_name
                         elif industry_field == '증감률':
                             return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                    return "N/A"
+                return "N/A"
         
         # 상위 시도 패턴
         top_match = re.match(r'상위시도(\d+)_(.+)', key)
@@ -253,7 +292,7 @@ class TemplateFiller:
             idx = int(top_match.group(1)) - 1  # 0-based
             field = top_match.group(2)
             
-            if idx < len(data['top_regions']):
+            if 'top_regions' in data and idx < len(data['top_regions']):
                 region = data['top_regions'][idx]
                 
                 if field == '이름':
@@ -283,6 +322,9 @@ class TemplateFiller:
                                 return mapped_name if mapped_name else industry_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                    return "N/A"
+                return "N/A"
+            return "N/A"
         
         # 하위 시도 패턴
         bottom_match = re.match(r'하위시도(\d+)_(.+)', key)
@@ -290,7 +332,7 @@ class TemplateFiller:
             idx = int(bottom_match.group(1)) - 1  # 0-based
             field = bottom_match.group(2)
             
-            if idx < len(data['bottom_regions']):
+            if 'bottom_regions' in data and idx < len(data['bottom_regions']):
                 region = data['bottom_regions'][idx]
                 
                 if field == '이름':
@@ -320,6 +362,9 @@ class TemplateFiller:
                                 return mapped_name if mapped_name else industry_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(industry['growth_rate'], decimal_places=1)
+                    return "N/A"
+                return "N/A"
+            return "N/A"
         
         # 분기별 증감률 마커 처리 (예: 전국_2023_3분기_증감률)
         quarterly_match = re.match(r'(.+)_(\d{4})_(\d)분기_증감률', key)
@@ -333,7 +378,7 @@ class TemplateFiller:
             if growth_rate is not None:
                 # 표 셀에는 % 기호 없이 표시
                 return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
-            return ""
+            return "N/A"
         
         # 분기 헤더 마커 처리 (예: 분기1_헤더)
         header_match = re.match(r'분기(\d+)_헤더', key)
@@ -344,12 +389,13 @@ class TemplateFiller:
             if 0 <= quarter_idx < len(headers):
                 return headers[quarter_idx]
         
-        # 전국 증감률 처리 (2025 2/4 분기)
+        # 전국 증감률 처리 (동적 연도/분기)
         if key == '전국_증감률':
-            growth_rate = self._get_quarterly_growth_rate(sheet_name, '전국', '2025_2분기')
+            quarter_key = f'{year}_{quarter}분기'
+            growth_rate = self._get_quarterly_growth_rate(sheet_name, '전국', quarter_key)
             if growth_rate is not None:
                 return self.format_percentage(growth_rate, decimal_places=1)
-            return ""
+            return "N/A"
         
         # 기타 동적 키 처리
         if key == '증가시도수':
@@ -358,6 +404,9 @@ class TemplateFiller:
             # 그룹 코드: 1자리 숫자 또는 다른 형식 (수도, 대경, 호남, 충청 등)
             sheet = self.excel_extractor.get_sheet(sheet_name)
             positive_count = 0
+            
+            # 연도/분기에 해당하는 열 번호 가져오기
+            current_col, prev_col = self._get_quarter_columns(year, quarter)
             
             for row in range(4, min(1000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
@@ -370,8 +419,8 @@ class TemplateFiller:
                     is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
                     
                     if is_sido:
-                        current = sheet.cell(row=row, column=65).value  # 2025 2/4
-                        prev = sheet.cell(row=row, column=61).value    # 2024 2/4
+                        current = sheet.cell(row=row, column=current_col).value
+                        prev = sheet.cell(row=row, column=prev_col).value
                         
                         if current is not None and prev is not None and prev != 0:
                             growth_rate = ((current / prev) - 1) * 100
@@ -380,11 +429,11 @@ class TemplateFiller:
             
             return str(positive_count)
         elif key == '기준연도':
-            return '2025'
+            return str(year)
         elif key == '기준분기':
-            return '2/4'
+            return f'{quarter}/4'
         
-        return None
+        return "N/A"
     
     def process_marker(self, marker_info: Dict[str, str]) -> str:
         """
@@ -410,11 +459,15 @@ class TemplateFiller:
                 dynamic_value = self._process_dynamic_marker(sheet_name, cell_address)
                 if dynamic_value is not None:
                     return dynamic_value
-                # 동적 마커가 아니면 에러
-                return f"[에러: 동적 마커를 찾을 수 없음: {cell_address}]"
+                # 동적 마커를 찾을 수 없으면 N/A 반환
+                return "N/A"
             
             # 엑셀에서 값 추출
-            raw_value = self.excel_extractor.extract_value(sheet_name, cell_address)
+            try:
+                raw_value = self.excel_extractor.extract_value(sheet_name, cell_address)
+            except Exception:
+                # 시트나 셀을 찾을 수 없으면 N/A 반환
+                return "N/A"
             
             # 계산이 필요한 경우
             if operation:
@@ -459,15 +512,21 @@ class TemplateFiller:
                     # 숫자가 아닌 경우 그대로 반환 (HTML 이스케이프는 하지 않음 - HTML 내에서 사용)
                     return str(calculated)
             else:
-                return ""
+                # 값이 없으면 N/A 반환
+                return "N/A"
                 
         except Exception as e:
-            # 에러 발생 시 에러 메시지 반환 (디버깅용)
-            return f"[에러: {str(e)}]"
+            # 에러 발생 시 N/A 반환
+            return "N/A"
     
-    def fill_template(self) -> str:
+    def fill_template(self, sheet_name: str = None, year: int = 2025, quarter: int = 2) -> str:
         """
         템플릿의 모든 마커를 처리하여 완성된 템플릿을 반환합니다.
+        
+        Args:
+            sheet_name: 시트 이름 (기본값: None, 마커에서 추출)
+            year: 연도 (기본값: 2025)
+            quarter: 분기 (1-4, 기본값: 2)
         
         Returns:
             모든 마커가 값으로 치환된 HTML 템플릿
@@ -514,12 +573,17 @@ class TemplateFiller:
                 # 실제 마커인지 확인 (한글, 숫자, 언더스코어 포함)
                 if re.search(r'[가-힣0-9_]', dynamic_key):
                     try:
-                        dynamic_value = self._process_dynamic_marker(sheet_name, dynamic_key)
+                        # sheet_name이 제공되지 않으면 마커에서 추출한 시트명 사용
+                        marker_sheet_name = sheet_name if sheet_name else match.group(1)
+                        dynamic_value = self._process_dynamic_marker(marker_sheet_name, dynamic_key, year, quarter)
                         if dynamic_value is not None:
                             template_content = template_content.replace(full_match, dynamic_value)
+                        else:
+                            # 값이 없으면 N/A로 채움
+                            template_content = template_content.replace(full_match, 'N/A')
                     except Exception:
-                        # 에러 발생 시 원본 유지
-                        pass
+                        # 에러 발생 시 N/A로 채움
+                        template_content = template_content.replace(full_match, 'N/A')
         
         # 일반 마커 추출 및 처리
         markers = self.template_manager.extract_markers()
@@ -527,7 +591,14 @@ class TemplateFiller:
         # 각 마커를 처리하여 치환
         for marker_info in markers:
             marker_str = marker_info['full_match']
+            # sheet_name이 제공되면 마커의 시트명을 덮어쓰기
+            if sheet_name:
+                marker_info['sheet_name'] = sheet_name
             processed_value = self.process_marker(marker_info)
+            
+            # 값이 비어있거나 에러인 경우 N/A로 채움
+            if not processed_value or processed_value.startswith('[에러'):
+                processed_value = 'N/A'
             
             # 마커를 처리된 값으로 치환
             template_content = template_content.replace(marker_str, processed_value)

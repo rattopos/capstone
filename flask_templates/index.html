@@ -34,11 +34,37 @@
                 </div>
             </div>
 
-            <div class="template-section">
-                <h2>2. 템플릿 선택</h2>
-                <select id="templateSelect" class="template-select">
-                    <option value="">템플릿을 불러오는 중...</option>
-                </select>
+            <div class="sheet-section">
+                <h2>2. 시트 선택</h2>
+                <div class="selector-group">
+                    <label for="sheetSelect">시트명</label>
+                    <select id="sheetSelect" class="period-select" disabled>
+                        <option value="">엑셀 파일을 업로드하세요</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="period-section">
+                <h2>3. 연도 및 분기 선택</h2>
+                <div class="period-selectors">
+                    <div class="selector-group">
+                        <label for="yearSelect">연도</label>
+                        <select id="yearSelect" class="period-select">
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                        </select>
+                    </div>
+                    <div class="selector-group">
+                        <label for="quarterSelect">분기</label>
+                        <select id="quarterSelect" class="period-select">
+                            <option value="1">1분기</option>
+                            <option value="2" selected>2분기</option>
+                            <option value="3">3분기</option>
+                            <option value="4">4분기</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="action-section">
@@ -49,7 +75,7 @@
             </div>
 
             <div id="resultSection" class="result-section" style="display: none;">
-                <h2>3. 결과</h2>
+                <h2>4. 결과</h2>
                 <div class="result-box">
                     <div class="result-message" id="resultMessage"></div>
                     <div class="result-actions">

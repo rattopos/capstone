@@ -70,8 +70,16 @@ def process_template():
         if not allowed_file(excel_file.filename):
             return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
         
-        # 템플릿 경로 확인
-        template_name = request.form.get('template', 'mining_manufacturing_production.html')
+        # 시트명, 연도 및 분기 파라미터 가져오기
+        sheet_name = request.form.get('sheet_name', '')
+        year = request.form.get('year', '2025')
+        quarter = request.form.get('quarter', '2')
+        
+        if not sheet_name:
+            return jsonify({'error': '시트명을 선택해주세요.'}), 400
+        
+        # 템플릿 경로 확인 (기본 템플릿만 사용)
+        template_name = 'mining_manufacturing_production.html'
         template_path = Path('templates') / template_name
         
         if not template_path.exists():
@@ -94,9 +102,19 @@ def process_template():
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
             
+            # 선택한 시트가 존재하는지 확인
+            if sheet_name not in sheet_names:
+                return jsonify({
+                    'error': f'시트 "{sheet_name}"을 찾을 수 없습니다. 사용 가능한 시트: {", ".join(sheet_names)}'
+                }), 400
+            
             # 템플릿 필러 초기화 및 처리
             template_filler = TemplateFiller(template_manager, excel_extractor)
-            filled_template = template_filler.fill_template()
+            filled_template = template_filler.fill_template(
+                sheet_name=sheet_name,
+                year=int(year), 
+                quarter=int(quarter)
+            )
             
             # 결과 저장
             output_filename = f"result_{Path(excel_filename).stem}.html"
