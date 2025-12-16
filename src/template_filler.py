@@ -56,14 +56,14 @@ class TemplateFiller:
         self.data_analyzer = DataAnalyzer(excel_extractor)
         self._analyzed_data_cache = None
     
-    def format_number(self, value: Any, use_comma: bool = True, decimal_places: int = None) -> str:
+    def format_number(self, value: Any, use_comma: bool = True, decimal_places: int = 1) -> str:
         """
         숫자를 포맷팅합니다.
         
         Args:
             value: 포맷팅할 값
             use_comma: 천 단위 구분 기호 사용 여부
-            decimal_places: 소수점 자릿수 (None이면 원래대로)
+            decimal_places: 소수점 자릿수 (기본값: 1)
             
         Returns:
             포맷팅된 문자열
@@ -73,17 +73,16 @@ class TemplateFiller:
             num = float(value)
             
             # 소수점 처리
-            if decimal_places is not None:
-                num = round(num, decimal_places)
-                # 소수점이 0이면 정수로 표시
-                if decimal_places == 0:
-                    num = int(num)
+            num = round(num, decimal_places)
+            # 소수점이 0이면 정수로 표시
+            if decimal_places == 0:
+                num = int(num)
             
             # 문자열로 변환
-            if decimal_places is not None and decimal_places > 0:
+            if decimal_places > 0:
                 formatted = f"{num:.{decimal_places}f}"
             else:
-                formatted = str(int(num) if num.is_integer() else num)
+                formatted = str(int(num))
             
             # 천 단위 구분
             if use_comma:
@@ -102,7 +101,7 @@ class TemplateFiller:
         
         Args:
             value: 퍼센트 값 (예: 5.5는 5.5%를 의미)
-            decimal_places: 소수점 자릿수
+            decimal_places: 소수점 자릿수 (기본값: 1)
             include_percent: % 기호 포함 여부
             
         Returns:
@@ -110,7 +109,8 @@ class TemplateFiller:
         """
         try:
             num = float(value)
-            formatted = f"{num:.{decimal_places}f}".rstrip('0').rstrip('.')
+            # 항상 소수점 첫째자리까지 표시 (0이어도 0.0으로 표시)
+            formatted = f"{num:.{decimal_places}f}"
             if include_percent:
                 return f"{formatted}%"
             return formatted
@@ -435,7 +435,7 @@ class TemplateFiller:
                     # 단일 값인 경우
                     # 일부 계산식은 단일 값도 처리 (예: format)
                     if operation_lower in ['format', '포맷']:
-                        return self.format_number(raw_value)
+                        return self.format_number(raw_value, decimal_places=1)
                     # 계산식이 있지만 단일 값인 경우 그대로 사용
                     calculated = raw_value
             else:
@@ -453,8 +453,8 @@ class TemplateFiller:
                     # 퍼센트 연산인 경우 퍼센트 포맷
                     if operation and operation.lower() in ['growth_rate', '증감률', '증가율']:
                         return self.format_percentage(float_val, decimal_places=1)
-                    # 일반 숫자 포맷팅 (천 단위 구분)
-                    return self.format_number(float_val, use_comma=True)
+                    # 일반 숫자 포맷팅 (천 단위 구분, 소수점 첫째자리까지)
+                    return self.format_number(float_val, use_comma=True, decimal_places=1)
                 except (ValueError, TypeError):
                     # 숫자가 아닌 경우 그대로 반환 (HTML 이스케이프는 하지 않음 - HTML 내에서 사용)
                     return str(calculated)
