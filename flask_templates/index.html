@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <!-- 토스트 알림 컨테이너 -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
     <div class="container">
         <header>
             <h1>📊 지역경제동향 보도자료 자동생성</h1>
@@ -14,9 +17,9 @@
         </header>
 
         <main>
-            <div class="template-create-section" style="margin-bottom: 40px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+            <div class="template-create-section">
                 <h2>📝 템플릿 생성 (새로 만들기)</h2>
-                <p style="margin-bottom: 15px; color: #666;">사진과 엑셀 파일을 업로드하면 엑셀 헤더를 기반으로 HTML 템플릿을 생성합니다.</p>
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">사진과 엑셀 파일을 업로드하면 엑셀 헤더를 기반으로 HTML 템플릿을 생성합니다.</p>
                 <div class="upload-box">
                     <div class="file-upload-area" id="imageUploadArea" style="border: 2px dashed #4CAF50; margin-bottom: 15px;">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -53,9 +56,9 @@
                         <input type="text" id="templateName" placeholder="템플릿 이름을 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
                         <label for="sheetName" style="display: block; margin-bottom: 5px; font-weight: bold;">시트명 (엑셀 파일 업로드 시 자동 선택):</label>
                         <input type="text" id="sheetName" value="" placeholder="시트명을 입력하거나 엑셀 파일을 업로드하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
-                        <button id="createTemplateBtn" class="btn btn-primary" disabled style="width: 100%;">
+                        <button id="createTemplateBtn" class="btn btn-primary" disabled style="width: 100%;" aria-label="템플릿 생성">
                             <span class="btn-text">템플릿 생성</span>
-                            <span class="btn-loader" style="display: none;">처리 중...</span>
+                            <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
                         </button>
                     </div>
                 </div>
@@ -68,7 +71,7 @@
                 <h2>1. 템플릿 선택</h2>
                 <div class="selector-group">
                     <label for="templateSelect">템플릿</label>
-                    <select id="templateSelect" class="period-select">
+                    <select id="templateSelect" class="period-select" aria-label="템플릿 선택">
                         <option value="">템플릿 목록을 불러오는 중...</option>
                     </select>
                 </div>
@@ -103,7 +106,7 @@
                 <div class="period-selectors">
                     <div class="selector-group">
                         <label for="yearSelect">연도</label>
-                        <select id="yearSelect" class="period-select">
+                        <select id="yearSelect" class="period-select" aria-label="연도 선택">
                             <option value="2023">2023</option>
                             <option value="2024">2024</option>
                             <option value="2025" selected>2025</option>
@@ -111,7 +114,7 @@
                     </div>
                     <div class="selector-group">
                         <label for="quarterSelect">분기</label>
-                        <select id="quarterSelect" class="period-select">
+                        <select id="quarterSelect" class="period-select" aria-label="분기 선택">
                             <option value="1">1분기</option>
                             <option value="2" selected>2분기</option>
                             <option value="3">3분기</option>
@@ -122,10 +125,13 @@
             </div>
 
             <div class="action-section">
-                <button id="processBtn" class="btn btn-primary" disabled>
+                <button id="processBtn" class="btn btn-primary" disabled aria-label="보도자료 생성">
                     <span class="btn-text">보도자료 생성</span>
-                    <span class="btn-loader" style="display: none;">처리 중...</span>
+                    <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
                 </button>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
             </div>
 
             <div id="resultSection" class="result-section" style="display: none;">
@@ -133,8 +139,8 @@
                 <div class="result-box">
                     <div class="result-message" id="resultMessage"></div>
                     <div class="result-actions">
-                        <button id="previewBtn" class="btn btn-secondary">미리보기</button>
-                        <button id="downloadBtn" class="btn btn-primary">다운로드</button>
+                        <button id="previewBtn" class="btn btn-secondary" aria-label="미리보기">미리보기</button>
+                        <button id="downloadBtn" class="btn btn-primary" aria-label="다운로드">다운로드</button>
                     </div>
                 </div>
             </div>

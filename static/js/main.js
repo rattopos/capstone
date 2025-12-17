@@ -4,6 +4,63 @@ let currentOutputFilename = null;
 let selectedTemplate = null;
 let templatesList = [];
 
+// 토스트 알림 시스템
+function showToast(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" aria-label="닫기" onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // 자동 제거
+    if (duration > 0) {
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+    }
+}
+
+// 진행률 표시
+function showProgress(percentage) {
+    const container = document.getElementById('progressContainer');
+    const bar = document.getElementById('progressBar');
+    
+    if (container && bar) {
+        container.classList.add('active');
+        bar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+    }
+}
+
+function hideProgress() {
+    const container = document.getElementById('progressContainer');
+    if (container) {
+        container.classList.remove('active');
+        setTimeout(() => {
+            const bar = document.getElementById('progressBar');
+            if (bar) bar.style.width = '0%';
+        }, 300);
+    }
+}
+
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -76,6 +133,10 @@ async function handleFileSelect(file) {
         showError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
         return;
     }
+    
+    // 파일 크기 포맷팅
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    showToast(`파일 업로드: ${file.name} (${fileSizeMB} MB)`, 'info', 3000);
 
     selectedExcelFile = file;
     displayFileInfo(file);
@@ -138,6 +199,9 @@ async function loadTemplates() {
             });
             
             templateSelect.disabled = false;
+            if (data.templates.length > 0) {
+                showToast(`${data.templates.length}개의 템플릿을 불러왔습니다.`, 'success', 3000);
+            }
         } else {
             templateSelect.innerHTML = '<option value="">템플릿을 불러올 수 없습니다</option>';
             showError('템플릿 목록을 불러올 수 없습니다.');
@@ -317,6 +381,8 @@ async function handleProcess() {
     
     hideError();
     hideResult();
+    showProgress(10);
+    showToast('파일을 업로드하고 처리 중입니다...', 'info', 2000);
 
     try {
         // FormData 생성
@@ -326,18 +392,30 @@ async function handleProcess() {
         formData.append('year', year);
         formData.append('quarter', quarter);
 
+        // 진행률 업데이트
+        showProgress(30);
+        
         // API 호출
         const response = await fetch('/api/process', {
             method: 'POST',
             body: formData
         });
+        
+        showProgress(60);
 
         const data = await response.json();
+        showProgress(90);
 
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
-            showResult(data.message);
+            showProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showResult(data.message);
+                showSuccess('보도자료가 성공적으로 생성되었습니다!');
+            }, 500);
         } else {
+            hideProgress();
             // 413 에러 (파일 크기 초과) 처리
             if (response.status === 413) {
                 showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
@@ -347,11 +425,12 @@ async function handleProcess() {
         }
     } catch (error) {
         console.error('처리 오류:', error);
+        hideProgress();
         // 네트워크 오류나 파일 크기 초과 등의 경우
         if (error.message && error.message.includes('413')) {
             showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
         } else {
-            showError('서버와 통신하는 중 오류가 발생했습니다.');
+            showError('서버와 통신하는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
         }
     } finally {
         // UI 복원
@@ -386,12 +465,14 @@ function setupResultButtons() {
     
     previewBtn.onclick = () => {
         if (currentOutputFilename) {
+            showToast('미리보기 창을 엽니다...', 'info', 2000);
             window.open(`/api/preview/${currentOutputFilename}`, '_blank');
         }
     };
     
     downloadBtn.onclick = () => {
         if (currentOutputFilename) {
+            showToast('파일을 다운로드합니다...', 'info', 2000);
             window.location.href = `/api/download/${currentOutputFilename}`;
         }
     };
@@ -456,16 +537,29 @@ function showError(message) {
     const errorSection = document.getElementById('errorSection');
     const errorMessage = document.getElementById('errorMessage');
     
-    errorMessage.textContent = message;
-    errorSection.style.display = 'block';
+    if (errorSection && errorMessage) {
+        errorMessage.textContent = message;
+        errorSection.style.display = 'block';
+        
+        // 스크롤하여 에러 메시지가 보이도록
+        errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     
-    // 스크롤하여 에러 메시지가 보이도록
-    errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // 토스트 알림도 표시
+    showToast(message, 'error', 7000);
 }
 
 // 에러 숨기기
 function hideError() {
-    document.getElementById('errorSection').style.display = 'none';
+    const errorSection = document.getElementById('errorSection');
+    if (errorSection) {
+        errorSection.style.display = 'none';
+    }
+}
+
+// 성공 메시지 표시
+function showSuccess(message) {
+    showToast(message, 'success', 4000);
 }
 
 // 템플릿 생성 관련 함수들
@@ -580,6 +674,8 @@ async function handleCreateTemplate() {
     
     hideError();
     document.getElementById('templateCreateResult').style.display = 'none';
+    showProgress(10);
+    showToast('템플릿을 생성하는 중입니다...', 'info', 2000);
 
     try {
         // FormData 생성
@@ -596,29 +692,47 @@ async function handleCreateTemplate() {
         }
         formData.append('sheet_name', sheetName);
 
+        // 진행률 업데이트
+        showProgress(30);
+        
         // API 호출
         const response = await fetch('/api/create-template', {
             method: 'POST',
             body: formData
         });
+        
+        showProgress(60);
 
         const data = await response.json();
+        showProgress(90);
 
         if (response.ok && data.success) {
-            const resultDiv = document.getElementById('templateCreateResult');
-            const messageDiv = document.getElementById('templateCreateMessage');
-            messageDiv.innerHTML = `
-                <strong>✅ ${data.message}</strong><br>
-                <small>템플릿 파일: ${data.template_name}</small>
-            `;
-            resultDiv.style.display = 'block';
-            resultDiv.style.backgroundColor = '#e8f5e9';
+            showProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                const resultDiv = document.getElementById('templateCreateResult');
+                const messageDiv = document.getElementById('templateCreateMessage');
+                messageDiv.innerHTML = `
+                    <strong>✅ ${data.message}</strong><br>
+                    <small>템플릿 파일: ${data.template_name}</small>
+                `;
+                resultDiv.style.display = 'block';
+                resultDiv.style.backgroundColor = '#e8f5e9';
+                showSuccess('템플릿이 성공적으로 생성되었습니다!');
+                
+                // 템플릿 목록 새로고침
+                setTimeout(() => {
+                    loadTemplates();
+                }, 1000);
+            }, 500);
         } else {
+            hideProgress();
             showError(data.error || '템플릿 생성 중 오류가 발생했습니다.');
         }
     } catch (error) {
         console.error('템플릿 생성 오류:', error);
-        showError('서버와 통신하는 중 오류가 발생했습니다.');
+        hideProgress();
+        showError('서버와 통신하는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
     } finally {
         // UI 복원
         createBtn.disabled = false;
