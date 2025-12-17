@@ -6,6 +6,9 @@ Flask 웹 애플리케이션
 import os
 import sys
 import shutil
+import uuid
+import threading
+import time
 from pathlib import Path
 from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
 
@@ -36,6 +39,13 @@ app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 # Word 파일 저장 폴더 (로컬에 저장)
 app.config['WORD_FILES_FOLDER'] = Path(__file__).parent / 'output' / 'word_files'
+
+# 진행 상황 저장소 (세션 ID 기반)
+progress_store = {}
+progress_lock = threading.Lock()
+
+# 진행 상황 타임아웃 (10분)
+PROGRESS_TIMEOUT = 600  # 초 단위
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
@@ -692,6 +702,12 @@ def process_word_template():
         # 시트명은 백엔드에서 Word 템플릿의 마커를 분석하여 자동으로 감지합니다
         # 요청에서 sheet_name 파라미터가 있어도 무시하고 템플릿에서 자동 감지
         
+        # 세션 ID 생성
+        session_id = str(uuid.uuid4())
+        
+        # 진행 상황 초기화
+        update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 0, '초기화 중...')
+        
         # 파일 저장
         pdf_filename = secure_filename(pdf_file.filename)
         excel_filename = secure_filename(excel_file.filename)
@@ -705,10 +721,36 @@ def process_word_template():
             print("=" * 60)
             print("1단계: PDF를 Word 템플릿으로 변환 중...")
             print("=" * 60)
+            update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 5, 'PDF 파일 로딩 중...')
+            
             pdf_to_word = PDFToWordConverter(use_easyocr=True, dpi=300)
             pdf_stem = Path(pdf_filename).stem
             word_template_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_temp_template.docx"
-            pdf_to_word.convert_pdf_to_word(str(pdf_path), str(word_template_path))
+            
+            # PDF 페이지 수 확인
+            import fitz
+            pdf_doc_temp = fitz.open(str(pdf_path))
+            total_pages = len(pdf_doc_temp)
+            pdf_doc_temp.close()
+            
+            # 진행 상황 콜백 함수 정의
+            def progress_callback(current_page, total_pages, message):
+                page_progress = int((current_page / total_pages) * 40)  # 1단계의 40%를 페이지 처리에 할당
+                overall_progress = 5 + page_progress  # 초기 5% + 페이지 진행률
+                update_progress(
+                    session_id, 1, 'PDF를 Word 템플릿으로 변환 중',
+                    overall_progress, message,
+                    {'current': current_page, 'total': total_pages}
+                )
+            
+            # PDF to Word 변환 (진행 상황 콜백 전달)
+            pdf_to_word.convert_pdf_to_word(
+                str(pdf_path), 
+                str(word_template_path),
+                progress_callback=progress_callback
+            )
+            
+            update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 45, 'Word 문서 생성 완료')
             print(f"[DEBUG] Word 템플릿 생성 완료: {word_template_path}")
             print(f"[DEBUG] Word 템플릿 파일 존재 여부: {word_template_path.exists()}")
             
@@ -716,8 +758,12 @@ def process_word_template():
             print("=" * 60)
             print("2단계: Word 템플릿 로드 중...")
             print("=" * 60)
+            update_progress(session_id, 2, 'Word 템플릿 로드 중', 50, '템플릿 파일 로딩 중...')
+            
             word_template_manager = WordTemplateManager(str(word_template_path))
             word_template_manager.load_template()
+            
+            update_progress(session_id, 2, 'Word 템플릿 로드 중', 55, '템플릿 로드 완료')
             print(f"[DEBUG] Word 템플릿 로드 완료")
             
             # Word 템플릿 내용 확인 (처음 500자)
@@ -732,8 +778,12 @@ def process_word_template():
             print("=" * 60)
             print("3단계: 엑셀 데이터 로드 중...")
             print("=" * 60)
+            update_progress(session_id, 3, '엑셀 데이터 로드 중', 60, '엑셀 파일 로딩 중...')
+            
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
+            
+            update_progress(session_id, 3, '엑셀 데이터 로드 중', 65, '엑셀 데이터 로드 완료')
             
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
@@ -747,7 +797,11 @@ def process_word_template():
             print("=" * 60)
             print("4단계: 템플릿에서 필요한 시트 자동 감지 중 (키워드 기반)...")
             print("=" * 60)
+            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 70, '마커 추출 중...')
+            
             markers = word_template_manager.extract_markers()
+            
+            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 75, f'마커 {len(markers)}개 발견, 시트 매칭 중...')
             print(f"[DEBUG] 추출된 마커 개수: {len(markers)}")
             
             if len(markers) == 0:
@@ -884,9 +938,12 @@ def process_word_template():
                 }), 400
             
             print(f"발견된 필요한 시트: {', '.join(required_sheets)}")
+            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 80, f'{len(required_sheets)}개 시트 발견')
             
             # 5단계: 연도 및 분기 자동 감지 또는 사용자 입력값 사용
             print("5단계: 연도/분기 감지 중...")
+            update_progress(session_id, 5, '연도/분기 감지 중', 82, '연도 및 분기 정보 분석 중...')
+            
             period_detector = PeriodDetector(excel_extractor)
             
             # 첫 번째 필요한 시트를 기준으로 연도/분기 감지
@@ -907,6 +964,8 @@ def process_word_template():
             
             # 6단계: Word 템플릿에 데이터 채우기 (시트명 없이 자동 처리)
             print("6단계: Word 템플릿에 데이터 채우는 중...")
+            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 85, '데이터 매핑 중...')
+            
             word_template_filler = WordTemplateFiller(word_template_manager, excel_extractor)
             word_template_filler.fill_template(
                 sheet_name=None,  # None으로 설정하면 마커에서 자동으로 시트 찾음
@@ -915,8 +974,12 @@ def process_word_template():
             )
             
             # 채워진 Word 파일 저장
+            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 90, '템플릿에 데이터 채우는 중...')
+            
             filled_word_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_filled.docx"
             word_template_filler.save_filled_template(str(filled_word_path))
+            
+            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 92, '데이터 채우기 완료')
             
             # Word 파일을 로컬에 저장 (확인용)
             word_files_folder = Path(app.config['WORD_FILES_FOLDER'])
@@ -941,17 +1004,25 @@ def process_word_template():
             if output_format == 'word':
                 # Word 파일로 출력
                 print("7단계: Word 파일로 저장 중...")
+                update_progress(session_id, 7, 'Word 파일 생성 중', 95, 'Word 파일 저장 중...')
+                
                 output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.docx"
                 output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
                 shutil.copy2(str(filled_word_path), str(output_path))
+                
+                update_progress(session_id, 7, 'Word 파일 생성 중', 100, '완료')
                 print(f"[DEBUG] Word 파일 저장: {output_path}")
             else:
                 # PDF로 변환 (기본값)
                 print("7단계: Word를 PDF로 변환 중...")
+                update_progress(session_id, 7, 'PDF로 변환 중', 95, 'PDF 변환 중...')
+                
                 word_to_pdf = WordToPDFConverter()
                 output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.pdf"
                 output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
                 word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
+                
+                update_progress(session_id, 7, 'PDF로 변환 중', 100, '완료')
                 print(f"[DEBUG] PDF 파일 저장: {output_path}")
             
             # 엑셀 파일 닫기
@@ -969,8 +1040,18 @@ def process_word_template():
             
             # 결과 반환
             format_text = 'Word' if output_format == 'word' else 'PDF'
+            
+            # 진행 상황 데이터 정리 (완료 후 5초 후 삭제)
+            def cleanup_session():
+                time.sleep(5)
+                with progress_lock:
+                    if session_id in progress_store:
+                        del progress_store[session_id]
+            threading.Thread(target=cleanup_session, daemon=True).start()
+            
             return jsonify({
                 'success': True,
+                'session_id': session_id,
                 'output_filename': output_filename,
                 'output_format': output_format,
                 'used_sheets': list(required_sheets),
@@ -982,8 +1063,13 @@ def process_word_template():
         except Exception as e:
             import traceback
             traceback.print_exc()
+            
+            # 에러 발생 시 진행 상황 업데이트
+            update_progress(session_id, 0, '오류 발생', 0, f'오류: {str(e)}')
+            
             return jsonify({
-                'error': f'처리 중 오류가 발생했습니다: {str(e)}'
+                'error': f'처리 중 오류가 발생했습니다: {str(e)}',
+                'session_id': session_id
             }), 500
             
         finally:
@@ -1001,6 +1087,65 @@ def process_word_template():
         return jsonify({
             'error': f'서버 오류가 발생했습니다: {str(e)}'
         }), 500
+
+
+@app.route('/api/progress/<session_id>', methods=['GET'])
+def get_progress(session_id):
+    """진행 상황 조회 API"""
+    with progress_lock:
+        if session_id not in progress_store:
+            return jsonify({
+                'error': '진행 상황을 찾을 수 없습니다.',
+                'session_id': session_id
+            }), 404
+        
+        progress_data = progress_store[session_id]
+        
+        # 타임아웃 체크
+        if time.time() - progress_data.get('last_update', 0) > PROGRESS_TIMEOUT:
+            del progress_store[session_id]
+            return jsonify({
+                'error': '진행 상황이 만료되었습니다.',
+                'session_id': session_id
+            }), 404
+        
+        return jsonify(progress_data)
+
+
+def update_progress(session_id, step, step_name, progress, message, page_info=None):
+    """진행 상황 업데이트 헬퍼 함수"""
+    with progress_lock:
+        if session_id not in progress_store:
+            progress_store[session_id] = {
+                'session_id': session_id,
+                'step': 1,
+                'step_name': '',
+                'progress': 0,
+                'message': '',
+                'page_info': {'current': 0, 'total': 0},
+                'last_update': time.time()
+            }
+        
+        progress_store[session_id].update({
+            'step': step,
+            'step_name': step_name,
+            'progress': progress,
+            'message': message,
+            'page_info': page_info or {'current': 0, 'total': 0},
+            'last_update': time.time()
+        })
+
+
+def cleanup_old_progress():
+    """오래된 진행 상황 데이터 정리"""
+    current_time = time.time()
+    with progress_lock:
+        expired_sessions = [
+            sid for sid, data in progress_store.items()
+            if current_time - data.get('last_update', 0) > PROGRESS_TIMEOUT
+        ]
+        for sid in expired_sessions:
+            del progress_store[sid]
 
 
 @app.errorhandler(413)

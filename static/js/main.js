@@ -5,6 +5,10 @@ let currentOutputFilename = null;
 let currentOutputFormat = 'pdf';
 let sheetsInfo = {};
 
+// 진행 상황 폴링 관련 변수
+let progressPollingInterval = null;
+let currentSessionId = null;
+
 // 시간 추정 관련 변수
 let stepStartTimes = {};
 let stepDurations = {
@@ -319,42 +323,60 @@ async function handleProcess() {
         formData.append('quarter', quarter);
         formData.append('output_format', outputFormat);
 
-        // 진행 상황 시뮬레이션
-        simulateProgress();
-
-        // API 호출
-        const response = await fetch('/api/process-word-template', {
+        // API 호출 (비동기 처리 시작)
+        // 주의: 현재 구조상 process-word-template이 동기적으로 실행되므로
+        // 응답이 올 때는 이미 완료된 상태입니다.
+        // 하지만 진행 상황을 실시간으로 보여주기 위해 폴링을 사용합니다.
+        
+        // 백그라운드에서 처리 시작 (실제로는 동기적이지만 진행 상황은 폴링으로 확인)
+        fetch('/api/process-word-template', {
             method: 'POST',
             body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            currentOutputFilename = data.output_filename;
-            currentOutputFormat = data.output_format || outputFormat;
-            
-            // 모든 단계 완료 처리
-            if (currentStep) {
-                endStep(currentStep);
-            }
-            
-            updateProgress(100);
-            setTimeout(() => {
-                progressSection.style.display = 'none';
-                showResult(data.message, currentOutputFormat);
-                updateWorkflowStep(3);
-            }, 1000);
-        } else {
-            progressSection.style.display = 'none';
-            if (response.status === 413) {
-                showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.session_id) {
+                // 성공적으로 완료되었고 세션 ID도 있는 경우
+                // 결과 정보 저장
+                currentOutputFilename = data.output_filename;
+                currentOutputFormat = data.output_format || outputFormat;
+                currentSessionId = data.session_id;
+                
+                // 폴링 시작 (이미 완료되었을 수 있지만 최신 진행 상황 확인)
+                startProgressPolling(data.session_id);
+                
+                // 폴링이 완료 상태를 확인하면 결과 표시
+            } else if (data.success) {
+                // 즉시 완료된 경우 (세션 ID 없이 완료)
+                stopProgressPolling();
+                currentOutputFilename = data.output_filename;
+                currentOutputFormat = data.output_format || outputFormat;
+                updateProgress(100, 7);
+                setTimeout(() => {
+                    progressSection.style.display = 'none';
+                    showResult(data.message, currentOutputFormat);
+                    updateWorkflowStep(3);
+                }, 1000);
+            } else if (data.session_id) {
+                // 세션 ID만 있고 아직 완료되지 않은 경우 (이론적으로는 발생하지 않음)
+                currentSessionId = data.session_id;
+                startProgressPolling(data.session_id);
             } else {
+                // 에러 발생
+                stopProgressPolling();
+                progressSection.style.display = 'none';
                 showError(data.error || '처리 중 오류가 발생했습니다.');
             }
-        }
+        })
+        .catch(error => {
+            console.error('처리 오류:', error);
+            stopProgressPolling();
+            progressSection.style.display = 'none';
+            showError('서버와 통신하는 중 오류가 발생했습니다.');
+        });
     } catch (error) {
         console.error('처리 오류:', error);
+        stopProgressPolling();
         progressSection.style.display = 'none';
         if (error.message && error.message.includes('413')) {
             showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
@@ -370,17 +392,129 @@ async function handleProcess() {
     }
 }
 
-// 진행 상황 시뮬레이션
-function simulateProgress() {
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 5;
-        if (progress <= 90) {
-            updateProgress(progress);
-        } else {
-            clearInterval(interval);
+// 진행 상황 폴링 시작
+function startProgressPolling(sessionId) {
+    // 기존 폴링 중지
+    stopProgressPolling();
+    
+    // 폴링 시작 (500ms 간격)
+    progressPollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/api/progress/${sessionId}`);
+            const data = await response.json();
+            
+            if (response.ok && !data.error) {
+                // 진행 상황 업데이트
+                updateProgressFromBackend(data);
+                
+                // 완료 확인
+                if (data.progress >= 100 && data.result) {
+                    stopProgressPolling();
+                    
+                    // 결과 정보 가져오기
+                    const result = data.result;
+                    currentOutputFilename = result.output_filename;
+                    currentOutputFormat = result.output_format || currentOutputFormat;
+                    
+                    // 진행 상황 숨기고 결과 표시
+                    setTimeout(() => {
+                        const progressSection = document.getElementById('progressSection');
+                        if (progressSection) {
+                            progressSection.style.display = 'none';
+                        }
+                        showResult(result.message, currentOutputFormat);
+                        updateWorkflowStep(3);
+                    }, 1000);
+                } else if (data.progress >= 100) {
+                    // 완료되었지만 결과 정보가 아직 없는 경우 (약간 대기)
+                    // 폴링 계속 (결과 정보가 추가될 때까지)
+                } else if (data.step === 0) {
+                    // 에러 발생
+                    stopProgressPolling();
+                    const progressSection = document.getElementById('progressSection');
+                    if (progressSection) {
+                        progressSection.style.display = 'none';
+                    }
+                    showError(data.message || '처리 중 오류가 발생했습니다.');
+                }
+            } else {
+                // 진행 상황을 찾을 수 없음 (타임아웃 또는 완료)
+                if (data.error && data.error.includes('만료')) {
+                    stopProgressPolling();
+                    const progressSection = document.getElementById('progressSection');
+                    progressSection.style.display = 'none';
+                    showError('처리 시간이 초과되었습니다. 다시 시도해주세요.');
+                }
+            }
+        } catch (error) {
+            console.error('진행 상황 조회 오류:', error);
+            // 폴링은 계속 진행 (일시적 네트워크 오류일 수 있음)
         }
     }, 500);
+}
+
+// 진행 상황 폴링 중지
+function stopProgressPolling() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+}
+
+// 백엔드에서 받은 진행 상황으로 UI 업데이트
+function updateProgressFromBackend(progressData) {
+    const progress = progressData.progress || 0;
+    const step = progressData.step || 1;
+    const stepName = progressData.step_name || '';
+    const message = progressData.message || '';
+    const pageInfo = progressData.page_info || {current: 0, total: 0};
+    
+    // 진행률 업데이트 (백엔드 단계 정보 포함)
+    updateProgress(progress, step);
+    
+    // 단계별 텍스트 업데이트
+    updateStepTexts(step, stepName, message, pageInfo);
+    
+    // 완료 시 결과 처리는 폴링 루프에서 처리
+}
+
+// 단계별 텍스트 동적 업데이트
+function updateStepTexts(step, stepName, message, pageInfo) {
+    // 단계별 요소 찾기
+    const stepElements = {
+        1: { text: document.getElementById('step1Text'), time: document.getElementById('step1Time') },
+        2: { text: document.getElementById('step2Text'), time: document.getElementById('step2Time') },
+        3: { text: document.getElementById('step3Text'), time: document.getElementById('step3Time') },
+        4: { text: document.getElementById('step4Text'), time: document.getElementById('step4Time') }
+    };
+    
+    // 모든 단계 업데이트
+    Object.keys(stepElements).forEach(stepNum => {
+        const stepNumInt = parseInt(stepNum);
+        const element = stepElements[stepNumInt];
+        
+        if (element && element.text) {
+            // 현재 단계인 경우
+            if (stepNumInt === step) {
+                let displayText = stepName;
+                
+                // 페이지 정보가 있으면 추가
+                if (pageInfo && pageInfo.total > 0) {
+                    displayText += ` (${pageInfo.current}/${pageInfo.total})`;
+                }
+                
+                // 메시지가 있으면 추가 (stepName과 다를 때만)
+                if (message && message !== stepName) {
+                    displayText = message;
+                    if (pageInfo && pageInfo.total > 0) {
+                        displayText += ` (${pageInfo.current}/${pageInfo.total})`;
+                    }
+                }
+                
+                element.text.textContent = displayText;
+            }
+        }
+    });
 }
 
 // 단계 시작
@@ -495,7 +629,7 @@ function updateProgressTexts(format) {
 }
 
 // 진행 상황 업데이트
-function updateProgress(percentage) {
+function updateProgress(percentage, backendStep = null) {
     const progressBar = document.getElementById('progressBar');
     const progressPercentage = document.getElementById('progressPercentage');
     
@@ -504,12 +638,22 @@ function updateProgress(percentage) {
         progressPercentage.textContent = Math.round(percentage) + '%';
     }
     
+    // 백엔드에서 받은 단계 정보가 있으면 사용, 없으면 진행률 기반 추정
+    let currentStepNum = backendStep;
+    if (!currentStepNum) {
+        // 진행률 기반으로 단계 추정
+        if (percentage < 25) currentStepNum = 1;
+        else if (percentage < 50) currentStepNum = 2;
+        else if (percentage < 75) currentStepNum = 3;
+        else currentStepNum = 4;
+    }
+    
     // 단계별 아이콘 및 시간 업데이트
     const steps = [
-        { id: 'step1', threshold: 25 },
-        { id: 'step2', threshold: 50 },
-        { id: 'step3', threshold: 75 },
-        { id: 'step4', threshold: 100 }
+        { id: 'step1', stepNum: 1, threshold: 25 },
+        { id: 'step2', stepNum: 2, threshold: 50 },
+        { id: 'step3', stepNum: 3, threshold: 75 },
+        { id: 'step4', stepNum: 4, threshold: 100 }
     ];
     
     let activeStepId = null;
@@ -519,7 +663,25 @@ function updateProgress(percentage) {
         const icon = stepElement.querySelector('.progress-icon');
         const timeElement = document.getElementById(step.id + 'Time');
         
-        if (percentage >= step.threshold) {
+        // 백엔드 단계 정보를 우선 사용
+        if (currentStepNum && step.stepNum === currentStepNum) {
+            // 현재 진행 중인 단계
+            if (!activeStepId) {
+                activeStepId = step.id;
+                startStep(step.id);
+            }
+            icon.textContent = '⏳';
+            stepElement.classList.add('active');
+            stepElement.classList.remove('completed');
+            
+            // 남은 시간 추정
+            if (timeElement && currentStepStartTime) {
+                const remaining = estimateRemainingTime(step.id, percentage);
+                if (remaining !== null) {
+                    timeElement.textContent = formatTime(remaining) + ' 남음';
+                }
+            }
+        } else if (currentStepNum && step.stepNum < currentStepNum) {
             // 완료된 단계
             icon.textContent = '✅';
             stepElement.classList.add('completed');
@@ -533,8 +695,22 @@ function updateProgress(percentage) {
                 }
             }
             endStep(step.id);
-        } else if (percentage >= step.threshold - 10) {
-            // 진행 중인 단계
+        } else if (percentage >= step.threshold) {
+            // 진행률 기반 완료 판단 (백엔드 정보가 없을 때)
+            icon.textContent = '✅';
+            stepElement.classList.add('completed');
+            stepElement.classList.remove('active');
+            if (timeElement) {
+                const duration = stepDurations[step.id]?.[stepDurations[step.id].length - 1];
+                if (duration) {
+                    timeElement.textContent = `완료 (${formatTime(duration)})`;
+                } else {
+                    timeElement.textContent = '완료';
+                }
+            }
+            endStep(step.id);
+        } else if (percentage >= step.threshold - 10 && !currentStepNum) {
+            // 진행 중인 단계 (백엔드 정보 없을 때만)
             if (!activeStepId) {
                 activeStepId = step.id;
                 startStep(step.id);
