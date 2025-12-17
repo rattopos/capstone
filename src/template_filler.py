@@ -104,6 +104,42 @@ SHEET_CONFIG = {
         'national_priorities': None,  # 절대값 기준 정렬
         'region_priorities': {},
     },
+    '수출': {
+        'category_column': 6,  # F열에 품목 이름
+        'base_year': 2023,
+        'base_quarter': 1,
+        'base_col': 56,  # 2023년 1분기
+        'name_mapping': INDUSTRY_NAME_MAPPING,
+        'national_priorities': None,  # 절대값 기준 정렬
+        'region_priorities': {},
+    },
+    '수입': {
+        'category_column': 6,  # F열에 품목 이름
+        'base_year': 2023,
+        'base_quarter': 1,
+        'base_col': 56,  # 2023년 1분기
+        'name_mapping': INDUSTRY_NAME_MAPPING,
+        'national_priorities': None,  # 절대값 기준 정렬
+        'region_priorities': {},
+    },
+    '지출목적별 물가': {
+        'category_column': 6,  # F열에 품목 이름
+        'base_year': 2023,
+        'base_quarter': 1,
+        'base_col': 56,  # 2023년 1분기 (확인 필요)
+        'name_mapping': {},
+        'national_priorities': None,
+        'region_priorities': {},
+    },
+    '품목성질별 물가': {
+        'category_column': 6,  # F열에 품목 이름
+        'base_year': 2023,
+        'base_quarter': 1,
+        'base_col': 56,  # 2023년 1분기 (확인 필요)
+        'name_mapping': {},
+        'national_priorities': None,
+        'region_priorities': {},
+    },
     # 기본 설정 (다른 시트들)
     'default': {
         'category_column': 6,  # F열에 산업 이름
@@ -725,7 +761,22 @@ class TemplateFiller:
                 return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
             return "N/A"
         
-        # 분기 헤더 마커 처리 (예: 분기1_헤더)
+        # 지역별 분기별 증감률 마커 처리 (예: 전국_2023_3분기, 서울_2024_2분기)
+        # 표 셀에 증감률 값을 % 없이 표시
+        region_quarterly_match = re.match(r'^([가-힣]+)_(\d{4})_(\d)분기$', key)
+        if region_quarterly_match:
+            region_name = region_quarterly_match.group(1)
+            target_year = int(region_quarterly_match.group(2))
+            target_quarter = int(region_quarterly_match.group(3))
+            quarter_key = f'{target_year}_{target_quarter}분기'
+            
+            growth_rate = self._get_quarterly_growth_rate(sheet_name, region_name, quarter_key)
+            if growth_rate is not None:
+                # 표 셀에는 % 기호 없이 표시
+                return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
+            return "N/A"
+        
+        # 분기 헤더 마커 처리 (예: 분기1_헤더, 2023_3분기)
         header_match = re.match(r'분기(\d+)_헤더', key)
         if header_match:
             quarter_idx = int(header_match.group(1)) - 1
@@ -735,6 +786,16 @@ class TemplateFiller:
             )
             if 0 <= quarter_idx < len(headers):
                 return headers[quarter_idx]
+        
+        # 연도_분기 헤더 마커 처리 (예: 2023_3분기)
+        # 템플릿에서 헤더로 사용되는 경우 (예: {수출:2023_3분기})
+        year_quarter_header_match = re.match(r'^(\d{4})_(\d)분기$', key)
+        if year_quarter_header_match:
+            target_year = int(year_quarter_header_match.group(1))
+            target_quarter = int(year_quarter_header_match.group(2))
+            # 헤더 형식: "2023.3" 또는 "2023 3/4" - 템플릿에 맞게 조정
+            # 정답지 확인 필요하지만 일단 "2023.3" 형식 사용
+            return f'{target_year}.{target_quarter}'
         
         # 전국 증감률 처리 (동적 연도/분기)
         if key == '전국_증감률':
@@ -754,8 +815,134 @@ class TemplateFiller:
                 return self.format_percentage(growth_rate, decimal_places=1)
             return "N/A"
         
-        # 기타 동적 키 처리
-        if key == '증가시도수':
+        # 전국 품목별 증감률 마커 처리 (예: 전국_메모리반도체_증감률, 전국_선박_증감률, 전국_중화학공업품_증감률)
+        national_item_match = re.match(r'^전국_(.+)_증감률$', key)
+        if national_item_match:
+            item_name = national_item_match.group(1)
+            # 품목 이름 매핑 (템플릿에서 사용하는 이름 -> 엑셀에서 찾을 이름)
+            # 시트별로 다른 매핑이 필요할 수 있음
+            item_mapping = {
+                '메모리반도체': ['메모리 반도체', '메모리반도체'],
+                '선박': ['선박'],
+                '중화학공업품': ['기타 중화학 공업품', '중화학 공업품', '중화학공업품'],
+                '원유': ['원유'],
+                '석탄': ['석탄'],
+                '나프타': ['나프타'],
+                '외식제외개인서비스': ['외식제외개인서비스', '외식 제외 개인서비스'],
+                '외식': ['외식'],
+                '가공식품': ['가공식품', '가공 식품'],
+                '공공서비스': ['공공서비스', '공공 서비스'],
+                '농산물': ['농산물'],
+                '석유류': ['석유류', '석유'],
+                '의약품': ['의약품'],
+                '출판물': ['출판물'],
+                '내구재': ['내구재'],
+                '축산물': ['축산물'],
+                '철도궤도': ['철도·궤도', '철도궤도', '철도 궤도'],
+                '기계설치': ['기계설치', '기계 설치'],
+                '사무실점포': ['사무실·점포', '사무실점포', '사무실 점포'],
+                '토목': ['토목'],
+                '건축': ['건축'],
+            }
+            # 매핑된 이름 찾기
+            search_names = item_mapping.get(item_name, [item_name])
+            if isinstance(search_names, str):
+                search_names = [search_names]
+            
+            # 건설수주 시트의 경우 토목/건축은 특별 처리
+            if sheet_name == '건설 (공표자료)':
+                if item_name == '토목' or item_name == '건축':
+                    # 전국의 토목/건축 카테고리 찾기
+                    categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=20)
+                    for category in categories:
+                        category_name = str(category['name']).strip()
+                        if item_name in category_name or category_name == item_name:
+                            return self.format_percentage(category['growth_rate'], decimal_places=1)
+                    return "N/A"
+            
+            # 전국의 해당 품목 증감률 찾기
+            categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=20)
+            for category in categories:
+                category_name = str(category['name']).strip()
+                # 매핑된 이름 중 하나라도 일치하는지 확인
+                for search_name in search_names:
+                    # 정확히 일치하거나 포함되는지 확인 (양방향)
+                    if search_name in category_name or category_name in search_name:
+                        return self.format_percentage(category['growth_rate'], decimal_places=1)
+            return "N/A"
+        
+        # 지역별 품목별 증감률 마커 처리 (예: 부산_외식제외개인서비스_증감률, 제주_농산물_증감률)
+        region_item_match = re.match(r'^([가-힣]+)_(.+)_증감률$', key)
+        if region_item_match:
+            region_name = region_item_match.group(1)
+            item_name = region_item_match.group(2)
+            
+            # 전국 품목별과 동일한 매핑 사용
+            item_mapping = {
+                '메모리반도체': ['메모리 반도체', '메모리반도체'],
+                '선박': ['선박'],
+                '중화학공업품': ['기타 중화학 공업품', '중화학 공업품', '중화학공업품'],
+                '원유': ['원유'],
+                '석탄': ['석탄'],
+                '나프타': ['나프타'],
+                '외식제외개인서비스': ['외식제외개인서비스', '외식 제외 개인서비스'],
+                '외식': ['외식'],
+                '가공식품': ['가공식품', '가공 식품'],
+                '공공서비스': ['공공서비스', '공공 서비스'],
+                '농산물': ['농산물'],
+                '석유류': ['석유류', '석유'],
+                '의약품': ['의약품'],
+                '출판물': ['출판물'],
+                '내구재': ['내구재'],
+                '축산물': ['축산물'],
+                '철도궤도': ['철도·궤도', '철도궤도', '철도 궤도'],
+                '기계설치': ['기계설치', '기계 설치'],
+                '사무실점포': ['사무실·점포', '사무실점포', '사무실 점포'],
+                '토목': ['토목'],
+                '건축': ['건축'],
+            }
+            
+            # 매핑된 이름 찾기
+            search_names = item_mapping.get(item_name, [item_name])
+            if isinstance(search_names, str):
+                search_names = [search_names]
+            
+            # 건설수주 시트의 경우 토목/건축은 특별 처리
+            if sheet_name == '건설 (공표자료)':
+                if item_name == '토목' or item_name == '건축':
+                    # 해당 지역의 토목/건축 카테고리 찾기
+                    categories = self._get_categories_for_region(sheet_name, region_name, year, quarter, top_n=20)
+                    for category in categories:
+                        category_name = str(category['name']).strip()
+                        if item_name in category_name or category_name == item_name:
+                            return self.format_percentage(category['growth_rate'], decimal_places=1)
+                    return "N/A"
+            
+            # 해당 지역의 품목 증감률 찾기
+            categories = self._get_categories_for_region(sheet_name, region_name, year, quarter, top_n=20)
+            for category in categories:
+                category_name = str(category['name']).strip()
+                # 매핑된 이름 중 하나라도 일치하는지 확인
+                for search_name in search_names:
+                    # 정확히 일치하거나 포함되는지 확인 (양방향)
+                    if search_name in category_name or category_name in search_name:
+                        return self.format_percentage(category['growth_rate'], decimal_places=1)
+            return "N/A"
+        
+        # 연도 헤더 마커 처리 (예: 2023, 2024, 2025)
+        year_header_match = re.match(r'^(\d{4})$', key)
+        if year_header_match:
+            target_year = int(year_header_match.group(1))
+            return str(target_year)
+        
+        # 연도/분기 값 처리
+        if key == '연도':
+            return str(year)
+        elif key == '분기':
+            return str(quarter)
+        
+        # 증가시도수 처리 (증가_시도수 형식도 지원)
+        if key == '증가시도수' or key == '증가_시도수':
             # 시도만 카운트 (그룹 제외)
             sheet = self.excel_extractor.get_sheet(sheet_name)
             positive_count = 0
@@ -797,6 +984,49 @@ class TemplateFiller:
             return str(positive_count)
         elif key == '감소시도수':
             # 감소한 시도 개수
+            sheet = self.excel_extractor.get_sheet(sheet_name)
+            negative_count = 0
+            seen_regions = set()
+            
+            # 연도/분기에 해당하는 열 번호 가져오기
+            current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+            
+            # 시트별 설정 가져오기
+            config = self._get_sheet_config(sheet_name)
+            category_col = config['category_column']
+            
+            for row in range(4, min(1000, sheet.max_row + 1)):
+                cell_a = sheet.cell(row=row, column=1)  # 지역 코드
+                cell_b = sheet.cell(row=row, column=2)  # 지역 이름
+                cell_c = sheet.cell(row=row, column=3)  # 분류 단계
+                cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
+                
+                # 총지수 또는 계 (분류 단계가 0인 경우)
+                is_total = False
+                if cell_category.value:
+                    category_str = str(cell_category.value).strip()
+                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                        is_total = True
+                
+                if cell_b.value and is_total:
+                    # 시도 코드 확인: 2자리 숫자이고 00이 아닌 것
+                    code_str = str(cell_a.value).strip() if cell_a.value else ''
+                    is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
+                    
+                    region_name = str(cell_b.value).strip()
+                    if is_sido and region_name not in seen_regions:
+                        seen_regions.add(region_name)
+                        current = sheet.cell(row=row, column=current_col).value
+                        prev = sheet.cell(row=row, column=prev_col).value
+                        
+                        if current is not None and prev is not None and prev != 0:
+                            growth_rate = ((current / prev) - 1) * 100
+                            if growth_rate < 0:
+                                negative_count += 1
+            
+            return str(negative_count)
+        elif key == '감소_시도수' or key == '감소시도수':
+            # 감소한 시도 개수 (위의 감소시도수 처리와 동일)
             sheet = self.excel_extractor.get_sheet(sheet_name)
             negative_count = 0
             seen_regions = set()

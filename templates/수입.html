@@ -39,6 +39,14 @@
             line-height: 1.4;
         }
         
+        .subsection-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
         .content-text {
             font-size: 14px;
             margin-bottom: 12px;
@@ -47,10 +55,39 @@
             color: #000;
         }
         
+        .key-section {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+        }
+        
+        .key-item {
+            font-size: 14px;
+            margin-bottom: 8px;
+            line-height: 1.6;
+            color: #000;
+        }
+        
+        .table-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 25px 0 5px 0;
+            text-align: center;
+            color: #000;
+        }
+        
+        .table-subtitle {
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #000;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 25px 0;
+            margin: 15px 0 25px 0;
             font-size: 13px;
             border: 1px solid #000;
         }
@@ -66,360 +103,291 @@
             background-color: #f5f5f5;
             font-weight: bold;
         }
+        
+        .footnote {
+            font-size: 12px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #000;
+        }
+        
+        .source {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #000;
+        }
     </style>
 </head>
 <body>
+    <div class="subsection-title">나. 수입</div>
+    
+    <div class="content-text">
+        수입은 충남(원유), 전남(원유), 경북(기타 무기화합물) 등 {수입:감소_시도수}개 시·도에서 전년동분기대비 감소하였다.
+    </div>
+    
+    <div class="content-text">
+        {수입:연도}년 {수입:분기}분기 전국 수입은 원유, 석탄, 나프타 등의 수입이 줄어 전년동분기대비 {수입:전국_증감률}% 감소하였다.
+    </div>
+    
+    <div class="content-text">
+        제주({수입:제주_증감률}%), 광주({수입:광주_증감률}%), 세종({수입:세종_증감률}%)은 항공기, 프로세서·컨트롤러, 컴퓨터 주변기기 등의 수입이 늘어 증가하였으며, 충남({수입:충남_증감률}%), 전남({수입:전남_증감률}%), 경북({수입:경북_증감률}%)은 원유, 기타 무기화합물 등의 수입이 줄어 감소하였다.
+    </div>
+    
+    <div class="key-section">&lt; 주요 증감지역 및 품목 &gt;</div>
+    
+    <div class="key-item">
+        전국({수입:전국_증감률}%): 원유({수입:전국_원유_증감률}%), 석탄({수입:전국_석탄_증감률}%), 나프타({수입:전국_나프타_증감률}%)
+    </div>
+    
+    <div class="key-item">
+        제주({수입:제주_증감률}%): 항공기, 측정시험기, 기타 섬유류
+    </div>
+    
+    <div class="key-item">
+        광주({수입:광주_증감률}%): 프로세서·컨트롤러, 천연고무, 선박
+    </div>
+    
+    <div class="key-item">
+        세종({수입:세종_증감률}%): 컴퓨터 주변기기, 운반 하역기계, 기타 무기화합물
+    </div>
+    
+    <div class="key-item">
+        충남({수입:충남_증감률}%): 원유, 나프타, 석탄
+    </div>
+    
+    <div class="key-item">
+        전남({수입:전남_증감률}%): 원유, 석탄, 나프타
+    </div>
+    
+    <div class="key-item">
+        경북({수입:경북_증감률}%): 기타 무기화합물, 기타 경공업제품, 비철금속 광
+    </div>
+    
+    <div class="table-title">《수입 증감률(경상)》</div>
+    <div class="table-subtitle">[전년동분기비, %]</div>
+    
     <table>
-        <tr>
-            <th>나:</th>
-            <th>수입</th>
-        </tr>
-        <tr>
-            <td>수입은</td>
-            <td>충남원유)</td>
-            <td>전남원유);</td>
-            <td>경북기타</td>
-            <td>무기화합물)</td>
-            <td>등</td>
-            <td>{서비스업생산:value}개</td>
-            <td>시도에서</td>
-            <td>전년동분기</td>
-        </tr>
-        <tr>
-            <td>대비</td>
-            <td>감소</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}년</td>
-            <td>{서비스업생산:value}/{서비스업생산:value}분기</td>
-            <td>전국</td>
-            <td>수입은</td>
-            <td>원유</td>
-            <td>석단</td>
-            <td>나프타</td>
-            <td>등의</td>
-            <td>수입이</td>
-            <td>줄어</td>
-            <td>전년</td>
-        </tr>
-        <tr>
-            <td>동분기대비</td>
-            <td>{서비스업생산:value}스업생산:전국_증감률}   감소</td>
-        </tr>
-        <tr>
-            <td>제주({서비스업생산:value}업생산:전국_증감률})</td>
-            <td>,</td>
-            <td>광주({서비스업생산:value})</td>
-            <td>,</td>
-            <td>세중({서비스업생산:value}스업생산:전국_증감률}은</td>
-            <td>항공기</td>
-            <td>프로세서</td>
-            <td>권트물러</td>
-            <td>컴퓨터</td>
-        </tr>
-        <tr>
-            <td>주변기기</td>
-            <td>등의</td>
-            <td>수입이</td>
-            <td>늘어</td>
-            <td>증가하여으미,</td>
-            <td>충남({서비스업생산:value}생산:전국_증감률}) ,   전남({서비스업생산:value}업생산:전국_증감률}),</td>
-        </tr>
-        <tr>
-            <td>경북({서비스업생산:value}업생산:전국_증감률})은</td>
-            <td>원유</td>
-            <td>기타</td>
-            <td>무기화합물</td>
-            <td>등의</td>
-            <td>수입이</td>
-            <td>줄어</td>
-            <td>감소</td>
-        </tr>
-        <tr>
-            <td>주요 증감지역</td>
-            <td>및</td>
-            <td>품목 ></td>
-        </tr>
-        <tr>
-            <td>전국(</td>
-            <td>{서비스업생산:value}):</td>
-            <td>원유({서비스업생산:value}),</td>
-            <td>석단({서비스업생산:value})  나프타({서비스업생산:value})</td>
-        </tr>
-        <tr>
-            <td>제</td>
-            <td>출</td>
-            <td>{서비스업생산:value}업생산:전국_증감률}{서비스업생산:value}):</td>
-            <td>항공기</td>
-            <td>축정시험기</td>
-            <td>기타</td>
-            <td>섬유류</td>
-        </tr>
-        <tr>
-            <td>짧</td>
-            <td>{서비스업생산:value}업생산:전국_증감률}{서비스업생산:value}):</td>
-            <td>프로세서 커트론러</td>
-            <td>천연고무</td>
-            <td>선박</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}스업생산:전국_증감률}{서비스업생산:value}):</td>
-            <td>컴퓨터</td>
-            <td>주변기기 , 운반  하여기계 ,</td>
-            <td>기타 무기화합물</td>
-        </tr>
-        <tr>
-            <td>출t</td>
-            <td>남({서비스업생산:value}):</td>
-            <td>원</td>
-            <td>유:</td>
-            <td>나프다,</td>
-            <td>석단</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}-</td>
-            <td>원</td>
-            <td>석단</td>
-            <td>나프다</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}생산:전국_증감률}{서비스업생산:value});</td>
-            <td>기타 무기 화합물 ,</td>
-            <td>기타 경공업제 품</td>
-            <td>비철금속 광</td>
-        </tr>
-        <tr>
-            <td>수입</td>
-            <td>중감물(경상)</td>
-            <td>></td>
-        </tr>
-        <tr>
-            <td>[전년동분기비,</td>
-            <td>%]</td>
-        </tr>
-        <tr>
-            <td>시</td>
-            <td>도</td>
-            <td>{서비스업생산:2023}</td>
-            <td>{서비스업생산:2023}</td>
-            <td>{서비스업생산:2024}</td>
-            <td>{서비스업생산:2024}</td>
-            <td>{서비스업생산:2024}</td>
-            <td>{서비스업생산:2024}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}/{서비스업생산:value}</td>
-            <td>{서비스업생산:value}/{서비스업생산:value}</td>
-            <td>{서비스업생산:value}/{서비스업생산:value}</td>
-            <td>리{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}/{서비스업생산:value}</td>
-            <td>{서비스업생산:value}/{서비스업생산:value}</td>
-            <td>{서비스업생산:value}p</td>
-        </tr>
-        <tr>
-            <td>?</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>울</td>
-            <td>~{서비스업생산:value}</td>
-            <td>-.{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},</td>
-        </tr>
-        <tr>
-            <td>세</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>경</td>
-            <td>기</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>강</td>
-            <td>:</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>~{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>춤</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>~{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>충</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>줄</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>정 부</td>
-            <td>{서비스업생산:value}</td>
-            <td>~{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-            <td>{서비스업생산:value},{서비스업생산:value}</td>
-            <td>{서비스업생산:value}</td>
-        </tr>
-        <tr>
-            <td>{서비스업생산:value}) 수입신고서</td>
-            <td>상 남세의무자의</td>
-            <td>소재지</td>
-            <td>기준</td>
-        </tr>
-        <tr>
-            <td>자료</td>
-            <td>관세청   한국무역통계서비스</td>
-        </tr>
+        <thead>
+            <tr>
+                <th>시·도</th>
+                <th>{수입:2023_3분기}</th>
+                <th>{수입:2023_4분기}</th>
+                <th>{수입:2024_1분기}</th>
+                <th>{수입:2024_2분기}</th>
+                <th>{수입:2024_3분기}</th>
+                <th>{수입:2024_4분기}</th>
+                <th>{수입:2025_1분기}</th>
+                <th>{수입:2025_2분기}P</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>전국</td>
+                <td>{수입:전국_2023_3분기}</td>
+                <td>{수입:전국_2023_4분기}</td>
+                <td>{수입:전국_2024_1분기}</td>
+                <td>{수입:전국_2024_2분기}</td>
+                <td>{수입:전국_2024_3분기}</td>
+                <td>{수입:전국_2024_4분기}</td>
+                <td>{수입:전국_2025_1분기}</td>
+                <td>{수입:전국_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>서울</td>
+                <td>{수입:서울_2023_3분기}</td>
+                <td>{수입:서울_2023_4분기}</td>
+                <td>{수입:서울_2024_1분기}</td>
+                <td>{수입:서울_2024_2분기}</td>
+                <td>{수입:서울_2024_3분기}</td>
+                <td>{수입:서울_2024_4분기}</td>
+                <td>{수입:서울_2025_1분기}</td>
+                <td>{수입:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>부산</td>
+                <td>{수입:부산_2023_3분기}</td>
+                <td>{수입:부산_2023_4분기}</td>
+                <td>{수입:부산_2024_1분기}</td>
+                <td>{수입:부산_2024_2분기}</td>
+                <td>{수입:부산_2024_3분기}</td>
+                <td>{수입:부산_2024_4분기}</td>
+                <td>{수입:부산_2025_1분기}</td>
+                <td>{수입:부산_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>대구</td>
+                <td>{수입:대구_2023_3분기}</td>
+                <td>{수입:대구_2023_4분기}</td>
+                <td>{수입:대구_2024_1분기}</td>
+                <td>{수입:대구_2024_2분기}</td>
+                <td>{수입:대구_2024_3분기}</td>
+                <td>{수입:대구_2024_4분기}</td>
+                <td>{수입:대구_2025_1분기}</td>
+                <td>{수입:대구_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>인천</td>
+                <td>{수입:인천_2023_3분기}</td>
+                <td>{수입:인천_2023_4분기}</td>
+                <td>{수입:인천_2024_1분기}</td>
+                <td>{수입:인천_2024_2분기}</td>
+                <td>{수입:인천_2024_3분기}</td>
+                <td>{수입:인천_2024_4분기}</td>
+                <td>{수입:인천_2025_1분기}</td>
+                <td>{수입:인천_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>광주</td>
+                <td>{수입:광주_2023_3분기}</td>
+                <td>{수입:광주_2023_4분기}</td>
+                <td>{수입:광주_2024_1분기}</td>
+                <td>{수입:광주_2024_2분기}</td>
+                <td>{수입:광주_2024_3분기}</td>
+                <td>{수입:광주_2024_4분기}</td>
+                <td>{수입:광주_2025_1분기}</td>
+                <td>{수입:광주_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>대전</td>
+                <td>{수입:대전_2023_3분기}</td>
+                <td>{수입:대전_2023_4분기}</td>
+                <td>{수입:대전_2024_1분기}</td>
+                <td>{수입:대전_2024_2분기}</td>
+                <td>{수입:대전_2024_3분기}</td>
+                <td>{수입:대전_2024_4분기}</td>
+                <td>{수입:대전_2025_1분기}</td>
+                <td>{수입:대전_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>울산</td>
+                <td>{수입:울산_2023_3분기}</td>
+                <td>{수입:울산_2023_4분기}</td>
+                <td>{수입:울산_2024_1분기}</td>
+                <td>{수입:울산_2024_2분기}</td>
+                <td>{수입:울산_2024_3분기}</td>
+                <td>{수입:울산_2024_4분기}</td>
+                <td>{수입:울산_2025_1분기}</td>
+                <td>{수입:울산_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>세종</td>
+                <td>{수입:세종_2023_3분기}</td>
+                <td>{수입:세종_2023_4분기}</td>
+                <td>{수입:세종_2024_1분기}</td>
+                <td>{수입:세종_2024_2분기}</td>
+                <td>{수입:세종_2024_3분기}</td>
+                <td>{수입:세종_2024_4분기}</td>
+                <td>{수입:세종_2025_1분기}</td>
+                <td>{수입:세종_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경기</td>
+                <td>{수입:경기_2023_3분기}</td>
+                <td>{수입:경기_2023_4분기}</td>
+                <td>{수입:경기_2024_1분기}</td>
+                <td>{수입:경기_2024_2분기}</td>
+                <td>{수입:경기_2024_3분기}</td>
+                <td>{수입:경기_2024_4분기}</td>
+                <td>{수입:경기_2025_1분기}</td>
+                <td>{수입:경기_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>강원</td>
+                <td>{수입:강원_2023_3분기}</td>
+                <td>{수입:강원_2023_4분기}</td>
+                <td>{수입:강원_2024_1분기}</td>
+                <td>{수입:강원_2024_2분기}</td>
+                <td>{수입:강원_2024_3분기}</td>
+                <td>{수입:강원_2024_4분기}</td>
+                <td>{수입:강원_2025_1분기}</td>
+                <td>{수입:강원_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>충북</td>
+                <td>{수입:충북_2023_3분기}</td>
+                <td>{수입:충북_2023_4분기}</td>
+                <td>{수입:충북_2024_1분기}</td>
+                <td>{수입:충북_2024_2분기}</td>
+                <td>{수입:충북_2024_3분기}</td>
+                <td>{수입:충북_2024_4분기}</td>
+                <td>{수입:충북_2025_1분기}</td>
+                <td>{수입:충북_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>충남</td>
+                <td>{수입:충남_2023_3분기}</td>
+                <td>{수입:충남_2023_4분기}</td>
+                <td>{수입:충남_2024_1분기}</td>
+                <td>{수입:충남_2024_2분기}</td>
+                <td>{수입:충남_2024_3분기}</td>
+                <td>{수입:충남_2024_4분기}</td>
+                <td>{수입:충남_2025_1분기}</td>
+                <td>{수입:충남_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>전북</td>
+                <td>{수입:전북_2023_3분기}</td>
+                <td>{수입:전북_2023_4분기}</td>
+                <td>{수입:전북_2024_1분기}</td>
+                <td>{수입:전북_2024_2분기}</td>
+                <td>{수입:전북_2024_3분기}</td>
+                <td>{수입:전북_2024_4분기}</td>
+                <td>{수입:전북_2025_1분기}</td>
+                <td>{수입:전북_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>전남</td>
+                <td>{수입:전남_2023_3분기}</td>
+                <td>{수입:전남_2023_4분기}</td>
+                <td>{수입:전남_2024_1분기}</td>
+                <td>{수입:전남_2024_2분기}</td>
+                <td>{수입:전남_2024_3분기}</td>
+                <td>{수입:전남_2024_4분기}</td>
+                <td>{수입:전남_2025_1분기}</td>
+                <td>{수입:전남_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경북</td>
+                <td>{수입:경북_2023_3분기}</td>
+                <td>{수입:경북_2023_4분기}</td>
+                <td>{수입:경북_2024_1분기}</td>
+                <td>{수입:경북_2024_2분기}</td>
+                <td>{수입:경북_2024_3분기}</td>
+                <td>{수입:경북_2024_4분기}</td>
+                <td>{수입:경북_2025_1분기}</td>
+                <td>{수입:경북_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경남</td>
+                <td>{수입:경남_2023_3분기}</td>
+                <td>{수입:경남_2023_4분기}</td>
+                <td>{수입:경남_2024_1분기}</td>
+                <td>{수입:경남_2024_2분기}</td>
+                <td>{수입:경남_2024_3분기}</td>
+                <td>{수입:경남_2024_4분기}</td>
+                <td>{수입:경남_2025_1분기}</td>
+                <td>{수입:경남_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>제주</td>
+                <td>{수입:제주_2023_3분기}</td>
+                <td>{수입:제주_2023_4분기}</td>
+                <td>{수입:제주_2024_1분기}</td>
+                <td>{수입:제주_2024_2분기}</td>
+                <td>{수입:제주_2024_3분기}</td>
+                <td>{수입:제주_2024_4분기}</td>
+                <td>{수입:제주_2025_1분기}</td>
+                <td>{수입:제주_2025_2분기}</td>
+            </tr>
+        </tbody>
     </table>
+    
+    <div class="footnote">
+        1) 수입신고서 상 납세의무자의 소재지 기준
+    </div>
+    
+    <div class="source">
+        자료: 관세청, 한국무역통계서비스
+    </div>
 </body>
 </html>

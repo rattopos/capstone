@@ -335,7 +335,8 @@ function updateProcessButton() {
     const processBtn = document.getElementById('processBtn');
     const templateSelect = document.getElementById('templateSelect');
     
-    if (selectedExcelFile && templateSelect.value) {
+    // 템플릿만 선택되어 있으면 활성화 (엑셀 파일은 선택사항)
+    if (templateSelect.value) {
         processBtn.disabled = false;
     } else {
         processBtn.disabled = true;
@@ -344,11 +345,6 @@ function updateProcessButton() {
 
 // 보도자료 생성 처리
 async function handleProcess() {
-    if (!selectedExcelFile) {
-        showError('엑셀 파일을 선택해주세요.');
-        return;
-    }
-
     // 템플릿, 연도 및 분기 가져오기
     const templateSelect = document.getElementById('templateSelect');
     const yearSelect = document.getElementById('yearSelect');
@@ -363,11 +359,13 @@ async function handleProcess() {
         return;
     }
     
-    // 필요한 시트 확인
-    const validation = await validateRequiredSheets(selectedExcelFile);
-    if (!validation.valid) {
-        showError(validation.error);
-        return;
+    // 엑셀 파일이 선택된 경우에만 시트 검증
+    if (selectedExcelFile) {
+        const validation = await validateRequiredSheets(selectedExcelFile);
+        if (!validation.valid) {
+            showError(validation.error);
+            return;
+        }
     }
 
     // UI 업데이트
@@ -382,12 +380,19 @@ async function handleProcess() {
     hideError();
     hideResult();
     showProgress(10);
-    showToast('파일을 업로드하고 처리 중입니다...', 'info', 2000);
+    if (selectedExcelFile) {
+        showToast('파일을 업로드하고 처리 중입니다...', 'info', 2000);
+    } else {
+        showToast('기본 엑셀 파일을 사용하여 처리 중입니다...', 'info', 2000);
+    }
 
     try {
         // FormData 생성
         const formData = new FormData();
-        formData.append('excel_file', selectedExcelFile);
+        // 엑셀 파일이 선택된 경우에만 추가 (없으면 서버에서 기본 파일 사용)
+        if (selectedExcelFile) {
+            formData.append('excel_file', selectedExcelFile);
+        }
         formData.append('template_name', templateName);
         formData.append('year', year);
         formData.append('quarter', quarter);
@@ -456,17 +461,18 @@ function showResult(message) {
 // 결과 숨기기
 function hideResult() {
     document.getElementById('resultSection').style.display = 'none';
+    hidePreview();
 }
 
 // 결과 버튼 설정
 function setupResultButtons() {
     const previewBtn = document.getElementById('previewBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
     
     previewBtn.onclick = () => {
         if (currentOutputFilename) {
-            showToast('미리보기 창을 엽니다...', 'info', 2000);
-            window.open(`/api/preview/${currentOutputFilename}`, '_blank');
+            showPreview(currentOutputFilename);
         }
     };
     
@@ -476,6 +482,44 @@ function setupResultButtons() {
             window.location.href = `/api/download/${currentOutputFilename}`;
         }
     };
+    
+    // 미리보기 닫기 버튼
+    if (closePreviewBtn) {
+        closePreviewBtn.onclick = () => {
+            hidePreview();
+        };
+    }
+}
+
+// 미리보기 표시
+function showPreview(filename) {
+    const previewSection = document.getElementById('previewSection');
+    const previewFrame = document.getElementById('previewFrame');
+    
+    if (previewSection && previewFrame) {
+        previewFrame.src = `/api/preview/${filename}`;
+        previewSection.style.display = 'block';
+        
+        // 미리보기 영역으로 스크롤
+        setTimeout(() => {
+            previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        
+        showToast('미리보기를 표시합니다...', 'info', 2000);
+    }
+}
+
+// 미리보기 숨기기
+function hidePreview() {
+    const previewSection = document.getElementById('previewSection');
+    const previewFrame = document.getElementById('previewFrame');
+    
+    if (previewSection) {
+        previewSection.style.display = 'none';
+        if (previewFrame) {
+            previewFrame.src = '';
+        }
+    }
 }
 
 // 연도/분기 옵션 업데이트

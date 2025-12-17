@@ -22,19 +22,18 @@
             font-size: 14px;
         }
         
-        .document-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #000;
-            line-height: 1.4;
-            text-align: center;
-        }
-        
         .section-title {
             font-size: 16px;
             font-weight: bold;
             margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .subsection-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
             color: #000;
             line-height: 1.4;
         }
@@ -47,10 +46,39 @@
             color: #000;
         }
         
+        .key-section {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+        }
+        
+        .key-item {
+            font-size: 14px;
+            margin-bottom: 8px;
+            line-height: 1.6;
+            color: #000;
+        }
+        
+        .table-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 25px 0 5px 0;
+            text-align: center;
+            color: #000;
+        }
+        
+        .table-subtitle {
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-align: right;
+            color: #000;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 25px 0;
+            margin: 15px 0 25px 0;
             font-size: 13px;
             border: 1px solid #000;
         }
@@ -66,335 +94,297 @@
             background-color: #f5f5f5;
             font-weight: bold;
         }
+        
+        .footnote {
+            font-size: 12px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #000;
+        }
+        
+        .source {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #000;
+        }
     </style>
 </head>
 <body>
+    <div class="section-title">4. 고용 동향</div>
+    
+    <div class="subsection-title">가. 고용률</div>
+    
+    <div class="content-text">
+        고용률은 대전, 부산, 강원 등 {고용률:상승_시도수}개 시·도에서 전년동분기대비 상승하였다.
+    </div>
+    
+    <div class="content-text">
+        {고용률:연도}년 {고용률:분기}분기 전국 고용률은 {고용률:전국_고용률}%로, 30대, 40대, 60세이상의 고용률이 올라 전년동분기대비 {고용률:전국_증감률}%p 상승하였다.
+    </div>
+    
+    <div class="content-text">
+        대전({고용률:대전_증감률}%p), 부산({고용률:부산_증감률}%p), 강원({고용률:강원_증감률}%p) 등의 고용률은 상승하였으며, 전북({고용률:전북_증감률}%p), 광주({고용률:광주_증감률}%p), 서울({고용률:서울_증감률}%p) 등의 고용률은 하락하였다.
+    </div>
+    
+    <div class="key-section">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
+    
+    <div class="key-item">
+        전국({고용률:전국_증감률}%p): 30~39세({고용률:전국_30대_증감률}%p), 40~49세({고용률:전국_40대_증감률}%p), 60세이상({고용률:전국_60대이상_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        대전({고용률:대전_증감률}%p): 60세이상({고용률:대전_60대이상_증감률}%p), 15~29세({고용률:대전_15대29세_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        부산({고용률:부산_증감률}%p): 50~59세({고용률:부산_50대_증감률}%p), 40~49세({고용률:부산_40대_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        강원({고용률:강원_증감률}%p): 60세이상({고용률:강원_60대이상_증감률}%p), 50~59세({고용률:강원_50대_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        전북({고용률:전북_증감률}%p): 60세이상({고용률:전북_60대이상_증감률}%p), 50~59세({고용률:전북_50대_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        광주({고용률:광주_증감률}%p): 50~59세({고용률:광주_50대_증감률}%p), 15~29세({고용률:광주_15대29세_증감률}%p)
+    </div>
+    
+    <div class="key-item">
+        서울({고용률:서울_증감률}%p): 30~39세({고용률:서울_30대_증감률}%p), 15~29세({고용률:서울_15대29세_증감률}%p)
+    </div>
+    
+    <div class="table-title">《고용률¹⁾》</div>
+    <div class="table-subtitle">[전년동분기비, %, %p]</div>
+    
     <table>
-        <tr>
-            <th>{고용:value}</th>
-            <th>고용</th>
-            <th>동향</th>
-        </tr>
-        <tr>
-            <td>가:</td>
-            <td>고용글</td>
-        </tr>
-        <tr>
-            <td>고용물은 대전 부산 강원</td>
-            <td>등 {고용:시도_이름}개 시도에서  전년동분기대비 상승</td>
-        </tr>
-        <tr>
-            <td>{고용:value}년</td>
-            <td>{고용:value}/{고용:value}분기</td>
-            <td>전국</td>
-            <td>고용출은</td>
-            <td>{고용:value}로</td>
-            <td>{고용:value}대,</td>
-            <td>{고용:value}대</td>
-            <td>,</td>
-            <td>{고용:value}세이상의</td>
-            <td>고용롭이</td>
-        </tr>
-        <tr>
-            <td>올라</td>
-            <td>전년동분기대비</td>
-            <td>{고용:value}:전국_증감률}P</td>
-            <td>상승</td>
-        </tr>
-        <tr>
-            <td>대전(L.{고용:value}고용:전국_증감률}P)</td>
-            <td>,</td>
-            <td>부산(L.O%P);</td>
-            <td>강원(L.o%p)</td>
-            <td>등의</td>
-            <td>고용물은</td>
-            <td>상승하없으다</td>
-            <td>,</td>
-            <td>전북</td>
-        </tr>
-        <tr>
-            <td>({고용:value}:전국_증감률}P);</td>
-            <td>광주({고용:value}P)</td>
-            <td>서울({고용:value}:전국_증감률}P)</td>
-            <td>등의</td>
-            <td>고용물은</td>
-            <td>하락</td>
-        </tr>
-        <tr>
-            <td>주요</td>
-            <td>등락지역</td>
-            <td>및</td>
-            <td>연령별</td>
-            <td>고용률</td>
-        </tr>
-        <tr>
-            <td>전국(</td>
-            <td>{고용:value}op): {고용:value}~{고용:value}세({고용:value}op) , {고용:value}</td>
-            <td>{고용:value}세({고용:value}iop), {고용:value}세이상({고용:value}op)</td>
-        </tr>
-        <tr>
-            <td>대전</td>
-            <td>{고용:value}op): {고용:value}세이상({고용:value}op) , {고용:value}~{고용:value}세{고용:value}({고용:value}op)</td>
-        </tr>
-        <tr>
-            <td>부산다</td>
-            <td>{고용:value},O{고용:value}op): {고용:value}~{고용:value}세({고용:value}op) ,</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}세(.{고용:value}op)</td>
-        </tr>
-        <tr>
-            <td>강원</td>
-            <td>{고용:value}O{고용:value}op): {고용:value}세이상({고용:value}p) , {고용:value}</td>
-            <td>{고용:value}세({고용:value}:전국_증감률}op)</td>
-        </tr>
-        <tr>
-            <td>정불</td>
-            <td>{고용:value}p): {고용:value}세이상({고용:value}op) , {고용:value}</td>
-            <td>{고용:value}세({고용:value}:전국_증감률}op)</td>
-        </tr>
-        <tr>
-            <td>~{고용:value}op): {고용:value}-</td>
-            <td>{고용:value}세l({고용:value}p) ,</td>
-            <td>{고용:value} ~{고용:value}세({고용:value}O{고용:value}op</td>
-        </tr>
-        <tr>
-            <td>서올</td>
-            <td>~{고용:value},{고용:value}oop): {고용:value}~{고용:value}세{고용:value}({고용:value}op) ,</td>
-            <td>{고용:value} ~{고용:value}세({고용:value}전국_증감률}op</td>
-        </tr>
-        <tr>
-            <td>고용률</td>
-        </tr>
-        <tr>
-            <td>[전년동분기비</td>
-            <td>%</td>
-            <td>%op]</td>
-        </tr>
-        <tr>
-            <td>고용룹</td>
-            <td>고용룹 증갈_</td>
-        </tr>
-        <tr>
-            <td>시</td>
-            <td>도</td>
-            <td>{고용:2024}</td>
-            <td>{고용:2024}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:2024}</td>
-            <td>{고용:2024}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}/{고용:value}</td>
-            <td>{고용:value}/{고용:value}</td>
-            <td>{고용:value}/{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}/{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>리{고용:value}</td>
-        </tr>
-        <tr>
-            <td>#</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>대</td>
-            <td>줄</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>올</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-        </tr>
-        <tr>
-            <td>세</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-        </tr>
-        <tr>
-            <td>경</td>
-            <td>기</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>강</td>
-            <td>원</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-        </tr>
-        <tr>
-            <td>총 북</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-            <td>{고용:value},{고용:value}</td>
-        </tr>
-        <tr>
-            <td>#</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>{고용:value})</td>
-            <td>고용률 (%</td>
-            <td>(취업자수</td>
-            <td>{고용:value}세</td>
-            <td>이상</td>
-            <td>인구</td>
-            <td>수) x</td>
-            <td>{고용:value}</td>
-        </tr>
-        <tr>
-            <td>자료</td>
-            <td>통계청</td>
-            <td>국가통계포털 (KOSIS) , 경제 활동인구조사</td>
-        </tr>
+        <thead>
+            <tr>
+                <th rowspan="2">시·도</th>
+                <th colspan="4">고용률</th>
+                <th colspan="4">고용률 증감</th>
+            </tr>
+            <tr>
+                <th>{고용률:2024_3분기}</th>
+                <th>{고용률:2024_4분기}</th>
+                <th>{고용률:2025_1분기}</th>
+                <th>{고용률:2025_2분기}</th>
+                <th>{고용률:2024_3분기}</th>
+                <th>{고용률:2024_4분기}</th>
+                <th>{고용률:2025_1분기}</th>
+                <th>{고용률:2025_2분기}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>전국</td>
+                <td>{고용률:전국_고용률_2024_3분기}</td>
+                <td>{고용률:전국_고용률_2024_4분기}</td>
+                <td>{고용률:전국_고용률_2025_1분기}</td>
+                <td>{고용률:전국_고용률_2025_2분기}</td>
+                <td>{고용률:전국_증감_2024_3분기}</td>
+                <td>{고용률:전국_증감_2024_4분기}</td>
+                <td>{고용률:전국_증감_2025_1분기}</td>
+                <td>{고용률:전국_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>서울</td>
+                <td>{고용률:서울_고용률_2024_3분기}</td>
+                <td>{고용률:서울_고용률_2024_4분기}</td>
+                <td>{고용률:서울_고용률_2025_1분기}</td>
+                <td>{고용률:서울_고용률_2025_2분기}</td>
+                <td>{고용률:서울_증감_2024_3분기}</td>
+                <td>{고용률:서울_증감_2024_4분기}</td>
+                <td>{고용률:서울_증감_2025_1분기}</td>
+                <td>{고용률:서울_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>부산</td>
+                <td>{고용률:부산_고용률_2024_3분기}</td>
+                <td>{고용률:부산_고용률_2024_4분기}</td>
+                <td>{고용률:부산_고용률_2025_1분기}</td>
+                <td>{고용률:부산_고용률_2025_2분기}</td>
+                <td>{고용률:부산_증감_2024_3분기}</td>
+                <td>{고용률:부산_증감_2024_4분기}</td>
+                <td>{고용률:부산_증감_2025_1분기}</td>
+                <td>{고용률:부산_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>대구</td>
+                <td>{고용률:대구_고용률_2024_3분기}</td>
+                <td>{고용률:대구_고용률_2024_4분기}</td>
+                <td>{고용률:대구_고용률_2025_1분기}</td>
+                <td>{고용률:대구_고용률_2025_2분기}</td>
+                <td>{고용률:대구_증감_2024_3분기}</td>
+                <td>{고용률:대구_증감_2024_4분기}</td>
+                <td>{고용률:대구_증감_2025_1분기}</td>
+                <td>{고용률:대구_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>인천</td>
+                <td>{고용률:인천_고용률_2024_3분기}</td>
+                <td>{고용률:인천_고용률_2024_4분기}</td>
+                <td>{고용률:인천_고용률_2025_1분기}</td>
+                <td>{고용률:인천_고용률_2025_2분기}</td>
+                <td>{고용률:인천_증감_2024_3분기}</td>
+                <td>{고용률:인천_증감_2024_4분기}</td>
+                <td>{고용률:인천_증감_2025_1분기}</td>
+                <td>{고용률:인천_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>광주</td>
+                <td>{고용률:광주_고용률_2024_3분기}</td>
+                <td>{고용률:광주_고용률_2024_4분기}</td>
+                <td>{고용률:광주_고용률_2025_1분기}</td>
+                <td>{고용률:광주_고용률_2025_2분기}</td>
+                <td>{고용률:광주_증감_2024_3분기}</td>
+                <td>{고용률:광주_증감_2024_4분기}</td>
+                <td>{고용률:광주_증감_2025_1분기}</td>
+                <td>{고용률:광주_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>대전</td>
+                <td>{고용률:대전_고용률_2024_3분기}</td>
+                <td>{고용률:대전_고용률_2024_4분기}</td>
+                <td>{고용률:대전_고용률_2025_1분기}</td>
+                <td>{고용률:대전_고용률_2025_2분기}</td>
+                <td>{고용률:대전_증감_2024_3분기}</td>
+                <td>{고용률:대전_증감_2024_4분기}</td>
+                <td>{고용률:대전_증감_2025_1분기}</td>
+                <td>{고용률:대전_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>울산</td>
+                <td>{고용률:울산_고용률_2024_3분기}</td>
+                <td>{고용률:울산_고용률_2024_4분기}</td>
+                <td>{고용률:울산_고용률_2025_1분기}</td>
+                <td>{고용률:울산_고용률_2025_2분기}</td>
+                <td>{고용률:울산_증감_2024_3분기}</td>
+                <td>{고용률:울산_증감_2024_4분기}</td>
+                <td>{고용률:울산_증감_2025_1분기}</td>
+                <td>{고용률:울산_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>세종</td>
+                <td>{고용률:세종_고용률_2024_3분기}</td>
+                <td>{고용률:세종_고용률_2024_4분기}</td>
+                <td>{고용률:세종_고용률_2025_1분기}</td>
+                <td>{고용률:세종_고용률_2025_2분기}</td>
+                <td>{고용률:세종_증감_2024_3분기}</td>
+                <td>{고용률:세종_증감_2024_4분기}</td>
+                <td>{고용률:세종_증감_2025_1분기}</td>
+                <td>{고용률:세종_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경기</td>
+                <td>{고용률:경기_고용률_2024_3분기}</td>
+                <td>{고용률:경기_고용률_2024_4분기}</td>
+                <td>{고용률:경기_고용률_2025_1분기}</td>
+                <td>{고용률:경기_고용률_2025_2분기}</td>
+                <td>{고용률:경기_증감_2024_3분기}</td>
+                <td>{고용률:경기_증감_2024_4분기}</td>
+                <td>{고용률:경기_증감_2025_1분기}</td>
+                <td>{고용률:경기_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>강원</td>
+                <td>{고용률:강원_고용률_2024_3분기}</td>
+                <td>{고용률:강원_고용률_2024_4분기}</td>
+                <td>{고용률:강원_고용률_2025_1분기}</td>
+                <td>{고용률:강원_고용률_2025_2분기}</td>
+                <td>{고용률:강원_증감_2024_3분기}</td>
+                <td>{고용률:강원_증감_2024_4분기}</td>
+                <td>{고용률:강원_증감_2025_1분기}</td>
+                <td>{고용률:강원_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>충북</td>
+                <td>{고용률:충북_고용률_2024_3분기}</td>
+                <td>{고용률:충북_고용률_2024_4분기}</td>
+                <td>{고용률:충북_고용률_2025_1분기}</td>
+                <td>{고용률:충북_고용률_2025_2분기}</td>
+                <td>{고용률:충북_증감_2024_3분기}</td>
+                <td>{고용률:충북_증감_2024_4분기}</td>
+                <td>{고용률:충북_증감_2025_1분기}</td>
+                <td>{고용률:충북_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>충남</td>
+                <td>{고용률:충남_고용률_2024_3분기}</td>
+                <td>{고용률:충남_고용률_2024_4분기}</td>
+                <td>{고용률:충남_고용률_2025_1분기}</td>
+                <td>{고용률:충남_고용률_2025_2분기}</td>
+                <td>{고용률:충남_증감_2024_3분기}</td>
+                <td>{고용률:충남_증감_2024_4분기}</td>
+                <td>{고용률:충남_증감_2025_1분기}</td>
+                <td>{고용률:충남_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>전북</td>
+                <td>{고용률:전북_고용률_2024_3분기}</td>
+                <td>{고용률:전북_고용률_2024_4분기}</td>
+                <td>{고용률:전북_고용률_2025_1분기}</td>
+                <td>{고용률:전북_고용률_2025_2분기}</td>
+                <td>{고용률:전북_증감_2024_3분기}</td>
+                <td>{고용률:전북_증감_2024_4분기}</td>
+                <td>{고용률:전북_증감_2025_1분기}</td>
+                <td>{고용률:전북_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>전남</td>
+                <td>{고용률:전남_고용률_2024_3분기}</td>
+                <td>{고용률:전남_고용률_2024_4분기}</td>
+                <td>{고용률:전남_고용률_2025_1분기}</td>
+                <td>{고용률:전남_고용률_2025_2분기}</td>
+                <td>{고용률:전남_증감_2024_3분기}</td>
+                <td>{고용률:전남_증감_2024_4분기}</td>
+                <td>{고용률:전남_증감_2025_1분기}</td>
+                <td>{고용률:전남_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경북</td>
+                <td>{고용률:경북_고용률_2024_3분기}</td>
+                <td>{고용률:경북_고용률_2024_4분기}</td>
+                <td>{고용률:경북_고용률_2025_1분기}</td>
+                <td>{고용률:경북_고용률_2025_2분기}</td>
+                <td>{고용률:경북_증감_2024_3분기}</td>
+                <td>{고용률:경북_증감_2024_4분기}</td>
+                <td>{고용률:경북_증감_2025_1분기}</td>
+                <td>{고용률:경북_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>경남</td>
+                <td>{고용률:경남_고용률_2024_3분기}</td>
+                <td>{고용률:경남_고용률_2024_4분기}</td>
+                <td>{고용률:경남_고용률_2025_1분기}</td>
+                <td>{고용률:경남_고용률_2025_2분기}</td>
+                <td>{고용률:경남_증감_2024_3분기}</td>
+                <td>{고용률:경남_증감_2024_4분기}</td>
+                <td>{고용률:경남_증감_2025_1분기}</td>
+                <td>{고용률:경남_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td>제주</td>
+                <td>{고용률:제주_고용률_2024_3분기}</td>
+                <td>{고용률:제주_고용률_2024_4분기}</td>
+                <td>{고용률:제주_고용률_2025_1분기}</td>
+                <td>{고용률:제주_고용률_2025_2분기}</td>
+                <td>{고용률:제주_증감_2024_3분기}</td>
+                <td>{고용률:제주_증감_2024_4분기}</td>
+                <td>{고용률:제주_증감_2025_1분기}</td>
+                <td>{고용률:제주_증감_2025_2분기}</td>
+            </tr>
+        </tbody>
     </table>
+    
+    <div class="footnote">
+        1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100
+    </div>
+    
+    <div class="source">
+        자료: 통계청 국가통계포털(KOSIS), 경제활동인구조사
+    </div>
 </body>
 </html>

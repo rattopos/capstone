@@ -28,6 +28,10 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 
+# 기본 엑셀 파일 경로
+BASE_DIR = Path(__file__).parent
+DEFAULT_EXCEL_FILE = BASE_DIR / '기초자료수집표_2025년 2분기_캡스톤.xlsx'
+
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
@@ -229,16 +233,27 @@ def get_template_sheets():
 def process_template():
     """엑셀 파일과 템플릿을 처리하여 결과 생성"""
     try:
-        # 파일 검증
-        if 'excel_file' not in request.files:
-            return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
+        # 엑셀 파일 처리: 업로드된 파일이 있으면 사용, 없으면 기본 파일 사용
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        use_default_file = False
         
-        excel_file = request.files['excel_file']
-        if excel_file.filename == '':
-            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
-        
-        if not allowed_file(excel_file.filename):
-            return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+        if excel_file and excel_file.filename:
+            # 업로드된 파일이 있는 경우
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+            
+            # 엑셀 파일 저장
+            excel_filename = secure_filename(excel_file.filename)
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            excel_file.save(str(excel_path))
+        else:
+            # 기본 엑셀 파일 사용
+            if not DEFAULT_EXCEL_FILE.exists():
+                return jsonify({'error': f'기본 엑셀 파일을 찾을 수 없습니다: {DEFAULT_EXCEL_FILE.name}'}), 400
+            
+            excel_path = DEFAULT_EXCEL_FILE
+            use_default_file = True
         
         # 템플릿명, 연도 및 분기 파라미터 가져오기
         template_name = request.form.get('template_name', '')
@@ -252,11 +267,6 @@ def process_template():
         
         if not template_path.exists():
             return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다: {template_name}'}), 404
-        
-        # 엑셀 파일 저장
-        excel_filename = secure_filename(excel_file.filename)
-        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
-        excel_file.save(str(excel_path))
         
         try:
             # 템플릿 관리자 초기화
@@ -363,8 +373,8 @@ def process_template():
             }), 500
             
         finally:
-            # 임시 엑셀 파일 삭제
-            if excel_path.exists():
+            # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
+            if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
                 excel_path.unlink()
     
     except Exception as e:
@@ -402,20 +412,27 @@ def preview_file(filename):
 def validate_files():
     """파일 유효성 검증"""
     try:
-        if 'excel_file' not in request.files:
-            return jsonify({'valid': False, 'error': '엑셀 파일이 없습니다.'}), 400
+        # 엑셀 파일 처리: 업로드된 파일이 있으면 사용, 없으면 기본 파일 사용
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        use_default_file = False
         
-        excel_file = request.files['excel_file']
-        if excel_file.filename == '':
-            return jsonify({'valid': False, 'error': '엑셀 파일을 선택해주세요.'}), 400
-        
-        if not allowed_file(excel_file.filename):
-            return jsonify({'valid': False, 'error': '지원하지 않는 파일 형식입니다.'}), 400
-        
-        # 엑셀 파일 임시 저장 및 검증
-        excel_filename = secure_filename(excel_file.filename)
-        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
-        excel_file.save(str(excel_path))
+        if excel_file and excel_file.filename:
+            # 업로드된 파일이 있는 경우
+            if not allowed_file(excel_file.filename):
+                return jsonify({'valid': False, 'error': '지원하지 않는 파일 형식입니다.'}), 400
+            
+            # 엑셀 파일 임시 저장 및 검증
+            excel_filename = secure_filename(excel_file.filename)
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            excel_file.save(str(excel_path))
+        else:
+            # 기본 엑셀 파일 사용
+            if not DEFAULT_EXCEL_FILE.exists():
+                return jsonify({'valid': False, 'error': f'기본 엑셀 파일을 찾을 수 없습니다: {DEFAULT_EXCEL_FILE.name}'}), 400
+            
+            excel_path = DEFAULT_EXCEL_FILE
+            use_default_file = True
         
         try:
             excel_extractor = ExcelExtractor(str(excel_path))
@@ -449,7 +466,8 @@ def validate_files():
                 'error': f'엑셀 파일을 읽을 수 없습니다: {str(e)}'
             }), 400
         finally:
-            if excel_path.exists():
+            # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
+            if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
                 excel_path.unlink()
     
     except Exception as e:

@@ -31,7 +31,12 @@
             </div>
 
             <div class="upload-section">
-                <h2>2. 파일 업로드</h2>
+                <h2>2. 파일 업로드 (선택사항)</h2>
+                <div style="margin-bottom: 15px; padding: 12px; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #2196F3;">
+                    <p style="margin: 0; color: #1976D2; font-size: 0.95em;">
+                        <strong>ℹ️ 기본 엑셀 파일 사용:</strong> 엑셀 파일을 업로드하지 않으면 기본 파일(기초자료수집표_2025년 2분기_캡스톤.xlsx)이 자동으로 사용됩니다.
+                    </p>
+                </div>
                 <div class="upload-box">
                     <div class="file-upload-area" id="excelUploadArea">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -39,7 +44,7 @@
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        <p class="upload-text">엑셀 파일을 드래그하거나 클릭하여 업로드</p>
+                        <p class="upload-text">엑셀 파일을 드래그하거나 클릭하여 업로드 (선택사항)</p>
                         <p class="upload-hint">.xlsx, .xls 파일만 지원됩니다 (최대 100MB)</p>
                         <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
                     </div>
@@ -99,6 +104,16 @@
                 <div class="error-box">
                     <span class="error-icon">⚠️</span>
                     <span class="error-message" id="errorMessage"></span>
+                </div>
+            </div>
+
+            <div id="previewSection" class="preview-section" style="display: none;">
+                <div class="preview-header">
+                    <h2>미리보기</h2>
+                    <button id="closePreviewBtn" class="close-preview-btn" aria-label="미리보기 닫기">✕</button>
+                </div>
+                <div class="preview-container">
+                    <iframe id="previewFrame" src="" frameborder="0"></iframe>
                 </div>
             </div>
         </main>
