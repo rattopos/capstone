@@ -2,6 +2,7 @@
 let selectedPdfFile = null;
 let selectedExcelFile = null;
 let currentOutputFilename = null;
+let currentOutputFormat = 'pdf';
 let sheetsInfo = {};
 
 // DOM 로드 완료 시 초기화
@@ -177,6 +178,7 @@ async function handleExcelSelect(file) {
     
     // 연도/분기 섹션 표시
     document.getElementById('periodSection').style.display = 'block';
+    document.getElementById('formatSection').style.display = 'block';
     updateWorkflowStep(2);
     
     updateProcessButton();
@@ -199,6 +201,7 @@ function removeExcelFile() {
     
     // 섹션 숨기기
     document.getElementById('periodSection').style.display = 'none';
+    document.getElementById('formatSection').style.display = 'none';
     
     updateProcessButton();
     updateWorkflowStep(1);
@@ -262,6 +265,10 @@ async function handleProcess() {
     
     const year = yearSelect.value;
     const quarter = quarterSelect.value;
+    
+    // 출력 포맷 가져오기
+    const formatRadio = document.querySelector('input[name="outputFormat"]:checked');
+    const outputFormat = formatRadio ? formatRadio.value : 'pdf';
 
     // UI 업데이트
     const processBtn = document.getElementById('processBtn');
@@ -287,6 +294,7 @@ async function handleProcess() {
         formData.append('excel_file', selectedExcelFile);
         formData.append('year', year);
         formData.append('quarter', quarter);
+        formData.append('output_format', outputFormat);
 
         // 진행 상황 시뮬레이션
         simulateProgress();
@@ -301,10 +309,11 @@ async function handleProcess() {
 
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
+            currentOutputFormat = data.output_format || outputFormat;
             updateProgress(100);
             setTimeout(() => {
                 progressSection.style.display = 'none';
-                showResult(data.message);
+                showResult(data.message, currentOutputFormat);
                 updateWorkflowStep(3);
             }, 500);
         } else {
@@ -377,7 +386,7 @@ function updateProgress(percentage) {
 }
 
 // 결과 표시
-function showResult(message) {
+function showResult(message, format = 'pdf') {
     const resultSection = document.getElementById('resultSection');
     const resultMessage = document.getElementById('resultMessage');
     
@@ -385,7 +394,7 @@ function showResult(message) {
     resultSection.style.display = 'block';
     
     // 다운로드 버튼 설정
-    setupDownloadButton();
+    setupDownloadButton(format);
     
     // 결과 섹션으로 스크롤
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -397,8 +406,12 @@ function hideResult() {
 }
 
 // 다운로드 버튼 설정
-function setupDownloadButton() {
+function setupDownloadButton(format = 'pdf') {
     const downloadBtn = document.getElementById('downloadBtn');
+    
+    // 버튼 텍스트 업데이트
+    const formatText = format === 'word' ? 'Word' : 'PDF';
+    downloadBtn.innerHTML = `<span>📥 ${formatText} 다운로드</span>`;
     
     downloadBtn.onclick = () => {
         if (currentOutputFilename) {

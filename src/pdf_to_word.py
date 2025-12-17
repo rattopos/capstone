@@ -621,7 +621,7 @@ class PDFToWordConverter:
                 image = Image.open(io.BytesIO(img_data))
                 
                 text_data = self.extract_text_and_layout(image)
-                organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1])
+                organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1]) if text_data else []
                 
                 # OCR 방식에서도 이미지 추출 (그래프, 인포그래픽)
                 # 페이지 전체를 이미지로 사용하지 않고, 개별 이미지 객체만 추출
@@ -686,10 +686,16 @@ class PDFToWordConverter:
             
             # 디버그: 첫 페이지의 텍스트 샘플 출력
             if page_num == 0:
-                print(f"[DEBUG PDFToWord] 첫 페이지 텍스트 샘플 (처음 3개 단락):")
+                print(f"[DEBUG PDFToWord] 첫 페이지 텍스트 샘플 (처음 3개 요소):")
                 for i, item in enumerate(organized_text[:3]):
-                    text_sample = ' '.join([ti['text'] for ti in item['items']])
-                    print(f"  단락 {i+1}: {repr(text_sample[:100])}")
+                    item_type = item.get('type', 'unknown')
+                    if item_type == 'paragraph' and 'items' in item:
+                        text_sample = ' '.join([ti.get('text', '') for ti in item.get('items', [])])
+                        print(f"  요소 {i+1} (단락): {repr(text_sample[:100])}")
+                    elif item_type == 'table':
+                        print(f"  요소 {i+1} (표): {item.get('table_data', {}).get('num_rows', 0)}행 x {item.get('table_data', {}).get('num_cols', 0)}열")
+                    else:
+                        print(f"  요소 {i+1} (타입: {item_type})")
             
             # 페이지의 이미지 가져오기
             page_images = pages_images[page_num] if page_num < len(pages_images) else []
@@ -699,10 +705,14 @@ class PDFToWordConverter:
             
             # 텍스트/표 요소 추가
             for item in organized_text:
+                # 안전하게 타입과 y 좌표 가져오기
+                item_type = item.get('type', 'paragraph')
+                item_y = item.get('y', 0)
+                
                 all_elements.append({
-                    'type': item.get('type', 'paragraph'),
+                    'type': item_type,
                     'data': item,
-                    'y': item.get('y', 0)
+                    'y': item_y
                 })
             
             # 이미지 요소 추가
@@ -720,14 +730,15 @@ class PDFToWordConverter:
             # Word 문서에 추가
             prev_y = None
             for element in all_elements:
-                element_y = element.get('y', 0)
-                
-                # 큰 간격이 있으면 단락 구분
-                if prev_y is not None and (element_y - prev_y) > page_height * 0.05:
-                    doc.add_paragraph()  # 빈 단락 추가
-                
-                # 이미지인 경우
-                if element.get('type') == 'image':
+                try:
+                    element_y = element.get('y', 0)
+                    
+                    # 큰 간격이 있으면 단락 구분
+                    if prev_y is not None and (element_y - prev_y) > page_height * 0.05:
+                        doc.add_paragraph()  # 빈 단락 추가
+                    
+                    # 이미지인 경우
+                    if element.get('type') == 'image':
                     img_info = element.get('data', {})
                     try:
                         # 이미지를 임시 파일로 저장
@@ -827,13 +838,21 @@ class PDFToWordConverter:
                 # 단락인 경우
                 if element.get('type') == 'paragraph':
                     item = element.get('data', {})
+                    if not item:
+                        continue
+                    
                     para = doc.add_paragraph()
                     
                     # 텍스트 아이템들을 순서대로 추가 (폰트 정보 유지)
                     items = item.get('items', [])
-                    if items:
+                    if items and isinstance(items, list):
                         for idx, text_item in enumerate(items):
+                            if not isinstance(text_item, dict):
+                                continue
+                            
                             text = text_item.get('text', '')
+                            if not text:
+                                continue
                             
                             # 숫자나 데이터를 의미 기반 마커로 변환 (단일 아이템 기준)
                             processed_text = self._convert_data_to_semantic_markers(text, [text_item])
@@ -843,7 +862,8 @@ class PDFToWordConverter:
                             
                             # 폰트 크기 설정 (정확한 크기 유지)
                             font_size = text_item.get('font_size', 12)
-                            run.font.size = Pt(font_size)
+                            if font_size:
+                                run.font.size = Pt(font_size)
                             
                             # 폰트 이름 설정 (한글 지원)
                             run.font.name = '맑은 고딕'
@@ -854,15 +874,18 @@ class PDFToWordConverter:
                                 run.bold = True
                             
                             # 다음 아이템과 공백 추가 (같은 줄의 경우)
-                            if idx < len(items) - 1:
+                            if idx < len(items) - 1 and isinstance(items[idx + 1], dict):
                                 # 다음 아이템과의 x 좌표 차이 확인
-                                current_x = text_item.get('bbox', [0, 0, 0, 0])[2]
-                                next_x = items[idx + 1].get('bbox', [0, 0, 0, 0])[0]
-                                gap = next_x - current_x
-                                
-                                # 적절한 간격이면 공백 추가
-                                if 5 < gap < 100:  # 5~100 픽셀 간격
-                                    run.add_text(' ')
+                                current_bbox = text_item.get('bbox', [0, 0, 0, 0])
+                                next_bbox = items[idx + 1].get('bbox', [0, 0, 0, 0])
+                                if len(current_bbox) >= 3 and len(next_bbox) >= 1:
+                                    current_x = current_bbox[2]
+                                    next_x = next_bbox[0]
+                                    gap = next_x - current_x
+                                    
+                                    # 적절한 간격이면 공백 추가
+                                    if 5 < gap < 100:  # 5~100 픽셀 간격
+                                        run.add_text(' ')
                     else:
                         # 아이템이 없는 경우 빈 단락
                         para.add_run('')
@@ -881,6 +904,12 @@ class PDFToWordConverter:
                             para.paragraph_format.space_before = Pt(max(6, int(y_diff * 0.1)))
                     
                     prev_y = element_y
+                except Exception as e:
+                    print(f"[DEBUG PDFToWord] 요소 처리 중 오류 발생: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    # 오류가 발생해도 계속 진행
+                    continue
         
         pdf_doc.close()
         

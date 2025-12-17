@@ -109,6 +109,28 @@
                 </div>
             </div>
 
+            <!-- 출력 포맷 선택 -->
+            <div class="section" id="formatSection" style="display: none;">
+                <h2>📄 출력 포맷 선택</h2>
+                <p class="section-description">생성할 파일의 포맷을 선택하세요</p>
+                <div class="format-selectors">
+                    <label class="format-option">
+                        <input type="radio" name="outputFormat" value="pdf" checked>
+                        <span class="format-label">
+                            <span class="format-icon">📄</span>
+                            <span class="format-text">PDF</span>
+                        </span>
+                    </label>
+                    <label class="format-option">
+                        <input type="radio" name="outputFormat" value="word">
+                        <span class="format-label">
+                            <span class="format-icon">📝</span>
+                            <span class="format-text">Word (.docx)</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
             <!-- 진행 상황 표시 -->
             <div id="progressSection" class="progress-section" style="display: none;">
                 <h2>⏳ 처리 중...</h2>

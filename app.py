@@ -687,6 +687,7 @@ def process_word_template():
         # 연도 및 분기 파라미터 가져오기 (시트는 백엔드에서 자동 감지)
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
+        output_format = request.form.get('output_format', 'pdf').lower()  # 'pdf' 또는 'word'
         
         # 시트명은 백엔드에서 Word 템플릿의 마커를 분석하여 자동으로 감지합니다
         # 요청에서 sheet_name 파라미터가 있어도 무시하고 템플릿에서 자동 감지
@@ -934,13 +935,24 @@ def process_word_template():
             shutil.copy2(str(filled_word_path), str(saved_filled_path))
             print(f"[DEBUG] 채워진 Word 파일 저장: {saved_filled_path}")
             
-            # 7단계: Word를 PDF로 변환
-            print("7단계: Word를 PDF로 변환 중...")
-            word_to_pdf = WordToPDFConverter()
+            # 7단계: 출력 포맷에 따라 처리
             sheets_display = ', '.join(sorted(required_sheets))[:50]  # 시트명이 너무 길면 잘라냄
-            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.pdf"
-            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-            word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
+            
+            if output_format == 'word':
+                # Word 파일로 출력
+                print("7단계: Word 파일로 저장 중...")
+                output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.docx"
+                output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+                shutil.copy2(str(filled_word_path), str(output_path))
+                print(f"[DEBUG] Word 파일 저장: {output_path}")
+            else:
+                # PDF로 변환 (기본값)
+                print("7단계: Word를 PDF로 변환 중...")
+                word_to_pdf = WordToPDFConverter()
+                output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.pdf"
+                output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+                word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
+                print(f"[DEBUG] PDF 파일 저장: {output_path}")
             
             # 엑셀 파일 닫기
             excel_extractor.close()
@@ -956,13 +968,15 @@ def process_word_template():
                 filled_word_path.unlink()
             
             # 결과 반환
+            format_text = 'Word' if output_format == 'word' else 'PDF'
             return jsonify({
                 'success': True,
                 'output_filename': output_filename,
+                'output_format': output_format,
                 'used_sheets': list(required_sheets),
                 'year': year,
                 'quarter': quarter,
-                'message': f'보도자료가 성공적으로 생성되었습니다. (사용된 시트: {", ".join(sorted(required_sheets))})'
+                'message': f'{format_text} 파일이 성공적으로 생성되었습니다. (사용된 시트: {", ".join(sorted(required_sheets))})'
             })
             
         except Exception as e:
