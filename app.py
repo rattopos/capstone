@@ -270,8 +270,19 @@ def process_template():
             
             # 엑셀 파일 저장
             excel_filename = secure_filename(excel_file.filename)
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
             excel_file.save(str(excel_path))
+            
+            # 파일이 제대로 저장되었는지 확인
+            if not excel_path.exists():
+                return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
         else:
             # 기본 엑셀 파일 사용
             if not DEFAULT_EXCEL_FILE.exists():
@@ -310,6 +321,10 @@ def process_template():
                 return jsonify({
                     'error': '템플릿에서 필요한 시트를 찾을 수 없습니다.'
                 }), 400
+            
+            # 파일 경로 검증
+            if not excel_path.exists():
+                return jsonify({'error': f'엑셀 파일을 찾을 수 없습니다: {excel_path}'}), 400
             
             # 엑셀 추출기 초기화
             excel_extractor = ExcelExtractor(str(excel_path))
@@ -400,7 +415,10 @@ def process_template():
         finally:
             # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
             if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
-                excel_path.unlink()
+                try:
+                    excel_path.unlink()
+                except Exception:
+                    pass  # 파일 삭제 실패는 무시
     
     except Exception as e:
         return jsonify({
@@ -466,8 +484,19 @@ def validate_files():
             
             # 엑셀 파일 임시 저장 및 검증
             excel_filename = secure_filename(excel_file.filename)
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            if not excel_filename:
+                return jsonify({'valid': False, 'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
             excel_file.save(str(excel_path))
+            
+            # 파일이 제대로 저장되었는지 확인
+            if not excel_path.exists():
+                return jsonify({'valid': False, 'error': '파일 저장에 실패했습니다.'}), 400
         else:
             # 기본 엑셀 파일 사용
             if not DEFAULT_EXCEL_FILE.exists():
@@ -560,8 +589,19 @@ def create_template():
             
             # 엑셀 파일 저장
             excel_filename = secure_filename(excel_file.filename)
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
             excel_file.save(str(excel_path))
+            
+            # 파일이 제대로 저장되었는지 확인
+            if not excel_path.exists():
+                return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
         
         # 템플릿 이름 가져오기
         template_name = request.form.get('template_name', '').strip()
@@ -588,8 +628,19 @@ def create_template():
         
         # 이미지 파일 저장
         image_filename = secure_filename(image_file.filename)
-        image_path = Path(app.config['UPLOAD_FOLDER']) / image_filename
+        if not image_filename:
+            return jsonify({'error': '이미지 파일명이 유효하지 않습니다.'}), 400
+        
+        # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+        upload_folder = Path(app.config['UPLOAD_FOLDER'])
+        upload_folder.mkdir(parents=True, exist_ok=True)
+        
+        image_path = upload_folder / image_filename
         image_file.save(str(image_path))
+        
+        # 파일이 제대로 저장되었는지 확인
+        if not image_path.exists():
+            return jsonify({'error': '이미지 파일 저장에 실패했습니다.'}), 400
         
         try:
             # 엑셀 헤더 파서 초기화 (엑셀 파일이 있는 경우)
@@ -688,8 +739,19 @@ def generate_pdf():
             
             # 엑셀 파일 저장
             excel_filename = secure_filename(excel_file.filename)
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
             excel_file.save(str(excel_path))
+            
+            # 파일이 제대로 저장되었는지 확인
+            if not excel_path.exists():
+                return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
         else:
             # 기본 엑셀 파일 사용
             if not DEFAULT_EXCEL_FILE.exists():
@@ -702,18 +764,22 @@ def generate_pdf():
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
         
+        # 파일 경로 검증
+        if not excel_path.exists():
+            return jsonify({'error': f'엑셀 파일을 찾을 수 없습니다: {excel_path}'}), 400
+        
         # 엑셀 추출기 초기화
         excel_extractor = ExcelExtractor(str(excel_path))
         excel_extractor.load_workbook()
-        
-        # 사용 가능한 시트 목록 가져오기
-        sheet_names = excel_extractor.get_sheet_names()
-        
-        # 첫 번째 시트를 기본 시트로 사용 (연도/분기 감지용)
-        primary_sheet = sheet_names[0] if sheet_names else None
-        if not primary_sheet:
-            excel_extractor.close()
-            return jsonify({'error': '엑셀 파일에 시트가 없습니다.'}), 400
+            
+            # 사용 가능한 시트 목록 가져오기
+            sheet_names = excel_extractor.get_sheet_names()
+            
+            # 첫 번째 시트를 기본 시트로 사용 (연도/분기 감지용)
+            primary_sheet = sheet_names[0] if sheet_names else None
+            if not primary_sheet:
+                excel_extractor.close()
+                return jsonify({'error': '엑셀 파일에 시트가 없습니다.'}), 400
         
         # 연도 및 분기 자동 감지 또는 사용자 입력값 사용
         period_detector = PeriodDetector(excel_extractor)
@@ -899,7 +965,10 @@ def generate_pdf():
         except Exception as e:
             # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
             if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
-                excel_path.unlink()
+                try:
+                    excel_path.unlink()
+                except Exception:
+                    pass  # 파일 삭제 실패는 무시
             return jsonify({
                 'error': f'PDF 생성 중 오류가 발생했습니다: {str(e)}'
             }), 500
@@ -918,7 +987,10 @@ def generate_pdf():
         
         # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
         if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
-            excel_path.unlink()
+            try:
+                excel_path.unlink()
+            except Exception:
+                pass  # 파일 삭제 실패는 무시
         
         return jsonify(result)
     
