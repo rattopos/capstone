@@ -358,6 +358,7 @@ function hideError() {
 
 // 템플릿 생성 관련 함수들
 let selectedImageFile = null;
+let selectedExcelFileForTemplate = null;
 
 // 이미지 업로드 설정
 function setupImageUpload() {
@@ -472,6 +473,12 @@ async function handleCreateTemplate() {
         // FormData 생성
         const formData = new FormData();
         formData.append('image_file', selectedImageFile);
+        
+        // 엑셀 파일이 있으면 추가
+        if (selectedExcelFileForTemplate) {
+            formData.append('excel_file', selectedExcelFileForTemplate);
+        }
+        
         if (templateName) {
             formData.append('template_name', templateName);
         }
@@ -509,9 +516,118 @@ async function handleCreateTemplate() {
     }
 }
 
+// 엑셀 파일 업로드 설정 (템플릿 생성용)
+function setupExcelUploadForTemplate() {
+    const uploadArea = document.getElementById('excelUploadAreaForTemplate');
+    const fileInput = document.getElementById('excelFileForTemplate');
+    const fileInfo = document.getElementById('excelFileInfoForTemplate');
+
+    if (!uploadArea || !fileInput) return;
+
+    // 클릭 이벤트
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', (e) => {
+        handleExcelSelectForTemplate(e.target.files[0]);
+    });
+
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            handleExcelSelectForTemplate(file);
+        }
+    });
+}
+
+// 엑셀 파일 선택 처리 (템플릿 생성용)
+async function handleExcelSelectForTemplate(file) {
+    if (!file) return;
+
+    // 파일 크기 검증
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+        showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        return;
+    }
+
+    // 엑셀 파일 형식 검증
+    const allowedExtensions = ['.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!allowedExtensions.includes(fileExtension)) {
+        showError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
+        return;
+    }
+
+    selectedExcelFileForTemplate = file;
+    displayExcelFileInfoForTemplate(file);
+    
+    // 엑셀 파일의 시트 목록 가져오기
+    await loadSheetNamesForTemplate(file);
+}
+
+// 엑셀 파일 정보 표시 (템플릿 생성용)
+function displayExcelFileInfoForTemplate(file) {
+    const fileInfo = document.getElementById('excelFileInfoForTemplate');
+    const fileName = fileInfo.querySelector('.file-name');
+    
+    fileName.textContent = file.name;
+    fileInfo.style.display = 'flex';
+}
+
+// 엑셀 파일 제거 (템플릿 생성용)
+function removeExcelFileForTemplate() {
+    selectedExcelFileForTemplate = null;
+    document.getElementById('excelFileForTemplate').value = '';
+    document.getElementById('excelFileInfoForTemplate').style.display = 'none';
+    document.getElementById('sheetName').value = '';
+    updateCreateTemplateButton();
+}
+
+// 시트 목록 로드 (템플릿 생성용)
+async function loadSheetNamesForTemplate(file) {
+    const sheetNameInput = document.getElementById('sheetName');
+    
+    try {
+        const formData = new FormData();
+        formData.append('excel_file', file);
+        
+        const response = await fetch('/api/validate', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.valid && data.sheet_names && data.sheet_names.length > 0) {
+            // 첫 번째 시트를 기본값으로 설정
+            sheetNameInput.value = data.sheet_names[0];
+            sheetNameInput.placeholder = `사용 가능한 시트: ${data.sheet_names.join(', ')}`;
+        }
+    } catch (error) {
+        console.error('시트 목록 로드 오류:', error);
+    }
+}
+
 // 초기화 시 이미지 업로드 설정
 document.addEventListener('DOMContentLoaded', function() {
     setupImageUpload();
+    setupExcelUploadForTemplate();
     
     // 템플릿 생성 버튼 이벤트
     const createBtn = document.getElementById('createTemplateBtn');
