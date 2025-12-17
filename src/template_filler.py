@@ -78,7 +78,14 @@ SHEET_CONFIG = {
         'base_col': 56,  # 2023년 1분기
         'name_mapping': INDUSTRY_NAME_MAPPING,
         'national_priorities': None,  # 절대값 기준 정렬
-        'region_priorities': {},  # 지역별 우선순위 없음
+        'region_priorities': {
+            '충북': ['반도체·전자부품', '전기장치', '의약품'],
+            '경기': ['반도체·전자부품', '기타 기계', '의료·정밀기기'],
+            '광주': ['전기장치', '담배', '자동차·트레일러'],
+            '서울': ['의료·정밀기기', '전기·가스업', '식품'],
+            '충남': ['반도체·전자부품', '전기장치', '전기·가스업'],
+            '부산': ['금속', '기타 수송기기', '금속가공제품'],
+        }
     },
     '서비스업생산': {
         'category_column': 6,  # F열에 산업 이름
@@ -424,17 +431,51 @@ class TemplateFiller:
             region_col = structure['region_column']
             data_start_row = structure['data_start_row']
             classification_col = structure.get('classification_column')
+            category_col = config.get('category_column', structure.get('category_column', 6))
             
-            for row in range(data_start_row, min(data_start_row + 100, sheet.max_row + 1)):
+            # 지역명 매핑 (엑셀의 긴 이름 -> 짧은 이름)
+            region_mapping = {
+                '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                '경상남도': '경남', '제주특별자치도': '제주'
+            }
+            
+            for row in range(data_start_row, min(data_start_row + 500, sheet.max_row + 1)):
                 cell_region = sheet.cell(row=row, column=region_col)
-                if cell_region.value and str(cell_region.value).strip() == region_name:
-                    # 분류 단계가 0인 행 찾기
+                if not cell_region.value:
+                    continue
+                    
+                cell_region_str = str(cell_region.value).strip()
+                # 지역명 매칭 (정확히 일치하거나 매핑된 이름과 일치)
+                is_matching_region = (cell_region_str == region_name or 
+                                     cell_region_str == region_mapping.get(region_name, '') or
+                                     region_name == region_mapping.get(cell_region_str, ''))
+                
+                if is_matching_region:
+                    # 총지수 또는 계 확인
+                    cell_category = sheet.cell(row=row, column=category_col)
+                    is_total = False
+                    if cell_category.value:
+                        category_str = str(cell_category.value).strip()
+                        if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                            is_total = True
+                    
+                    # 분류 단계가 0 또는 1인 행 찾기 (일부 시도는 분류 단계가 1)
                     if classification_col:
                         cell_class = sheet.cell(row=row, column=classification_col)
-                        if cell_class.value and str(cell_class.value).strip() in ['0', '0.0']:
-                            region_row = row
-                            break
-                    else:
+                        if cell_class.value is not None:
+                            try:
+                                classification_level = float(cell_class.value)
+                                if is_total and classification_level <= 1:  # 0 또는 1
+                                    region_row = row
+                                    break
+                            except (ValueError, TypeError):
+                                pass
+                    elif is_total:
+                        # 분류 단계 열이 없으면 총지수/계만 확인
                         region_row = row
                         break
         
@@ -525,11 +566,30 @@ class TemplateFiller:
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
             cell_category = sheet.cell(row=row, column=category_col)  # 산업/업태 이름
             
-            # 같은 지역이고 분류 단계가 1 이상인 것 (산업/업태)
+            # 같은 지역인지 확인 (지역명 매핑 고려)
             is_same_region = False
-            if cell_b.value == region_name:
+            cell_b_str = str(cell_b.value).strip() if cell_b.value else ''
+            
+            # 지역명 매핑 확인
+            region_mapping = {
+                '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                '경상남도': '경남', '제주특별자치도': '제주'
+            }
+            
+            mapped_region_name = region_mapping.get(region_name, region_name)
+            mapped_cell_b = region_mapping.get(cell_b_str, cell_b_str)
+            
+            if (cell_b_str == region_name or 
+                cell_b_str == mapped_region_name or
+                mapped_cell_b == region_name or
+                mapped_cell_b == mapped_region_name):
                 is_same_region = True
             
+            # 같은 지역이고 분류 단계가 1 이상인 것 (산업/업태)
             if is_same_region and cell_c.value:
                 try:
                     classification_level = float(cell_c.value) if cell_c.value else 0
@@ -600,9 +660,25 @@ class TemplateFiller:
                     except (ValueError, TypeError, ZeroDivisionError, OverflowError):
                         continue
             else:
-                # 다른 지역이 나오면 중단
-                if cell_b.value and cell_b.value != region_name:
-                    break
+                # 다른 지역이 나오면 중단 (지역명 매핑 고려)
+                if cell_b.value:
+                    cell_b_str = str(cell_b.value).strip()
+                    region_mapping = {
+                        '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                        '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                        '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                        '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                        '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                        '경상남도': '경남', '제주특별자치도': '제주'
+                    }
+                    mapped_region_name = region_mapping.get(region_name, region_name)
+                    mapped_cell_b = region_mapping.get(cell_b_str, cell_b_str)
+                    
+                    if (cell_b_str != region_name and 
+                        cell_b_str != mapped_region_name and
+                        mapped_cell_b != region_name and
+                        mapped_cell_b != mapped_region_name):
+                        break
         
         # 전국인 경우: 시트별 설정에 따라 처리
         if region_name == '전국':
@@ -628,10 +704,33 @@ class TemplateFiller:
         # 지역별로 증가/감소에 따라 필터링
         if region_growth_rate is not None:
             if region_growth_rate > 0:
-                # 증가한 지역: 증가한 산업/업태만 선택, 증가율이 큰 순서
+                # 증가한 지역: 증가한 산업/업태만 선택
                 positive_categories = [c for c in categories if c['growth_rate'] > 0]
-                positive_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
-                return positive_categories[:top_n]
+                
+                # data_analyzer의 get_top_industries_for_region과 동일한 로직 사용
+                # 지역별 우선순위가 있으면 우선순위 적용, 없으면 증가율 큰 순서
+                region_priorities = config.get('region_priorities', {})
+                priority_list = region_priorities.get(region_name, [])
+                
+                if priority_list:
+                    # 우선순위에 따라 선택
+                    result = []
+                    for priority_keyword in priority_list:
+                        for cat in positive_categories:
+                            if priority_keyword in cat['name'] and cat not in result:
+                                result.append(cat)
+                                break
+                    
+                    # 우선순위에 없는 산업/업태는 증가율 큰 순서로 추가
+                    remaining = [c for c in positive_categories if c not in result]
+                    remaining.sort(key=lambda x: x['growth_rate'], reverse=True)
+                    result.extend(remaining)
+                    
+                    return result[:top_n]
+                else:
+                    # 우선순위가 없으면 증가율 큰 순서
+                    positive_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
+                    return positive_categories[:top_n]
             else:
                 # 감소한 지역: 감소한 산업/업태만 선택, 지역별 우선순위 적용
                 negative_categories = [c for c in categories if c['growth_rate'] < 0]
@@ -725,23 +824,31 @@ class TemplateFiller:
             if cell_b_str != region_name:
                 continue
             
-            # 총지수 또는 계 (분류 단계가 0인 경우)
+            # 총지수 또는 계 확인
             is_total = False
             if cell_category.value:
                 category_str = str(cell_category.value).strip()
                 if category_str == '총지수' or category_str == '계' or category_str == '   계':
                     is_total = True
             
-            # 수출 시트의 경우: 분류 단계가 없거나 0이거나, 총지수/계인 경우
+            # 분류 단계 확인 (0 또는 1 모두 허용)
+            classification_level = None
+            if cell_c.value is not None:
+                try:
+                    classification_level = float(cell_c.value)
+                except (ValueError, TypeError):
+                    pass
+            
+            # 수출/수입 시트의 경우: 분류 단계가 없거나 0이거나, 총지수/계인 경우
             # 또는 category_col이 비어있거나 None인 경우도 허용 (수출 시트는 구조가 다를 수 있음)
             if sheet_name == '수출' or sheet_name == '수입':
                 # 수출/수입 시트는 지역 이름만으로 찾기 (분류 단계나 카테고리 체크 완화)
-                if is_total or (cell_c.value is None or cell_c.value == 0 or cell_c.value == '0') or (cell_category.value is None or str(cell_category.value).strip() == ''):
+                if is_total or (classification_level is None or classification_level == 0) or (cell_category.value is None or str(cell_category.value).strip() == ''):
                     region_row = row
                     break
             else:
-                # 다른 시트는 기존 로직 사용
-                if is_total or (cell_c.value == 0 or cell_c.value == '0'):
+                # 다른 시트는 총지수/계이고 분류 단계가 0 또는 1인 경우
+                if is_total and (classification_level is None or classification_level <= 1):
                     region_row = row
                     break
         

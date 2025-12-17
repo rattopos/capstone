@@ -68,8 +68,19 @@ class DataAnalyzer:
                                 is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
                                 
                                 # 전국도 제외, 시도만 포함
-                                if region_name != '전국' and (is_sido or region_name in ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']):
-                                    seen_regions.add(region_name)
+                                # 지역명 매핑 (엑셀의 긴 이름 -> 짧은 이름)
+                                region_mapping = {
+                                    '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                                    '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                                    '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                                    '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                                    '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                                    '경상남도': '경남', '제주특별자치도': '제주'
+                                }
+                                mapped_name = region_mapping.get(region_name, region_name)
+                                
+                                if mapped_name != '전국' and (is_sido or mapped_name in ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']):
+                                    seen_regions.add(mapped_name)
                                     current = sheet.cell(row=row, column=current_col).value
                                     prev = sheet.cell(row=row, column=prev_col).value
                                     
@@ -77,7 +88,7 @@ class DataAnalyzer:
                                         growth_rate = ((current / prev) - 1) * 100
                                         regions.append({
                                             'code': code_str,
-                                            'name': region_name,
+                                            'name': mapped_name,  # 매핑된 이름 사용
                                             'row': row,
                                             'growth_rate': growth_rate,
                                             'current': current,
@@ -144,16 +155,33 @@ class DataAnalyzer:
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
             cell_f = sheet.cell(row=row, column=6)  # 산업 이름
             
-            # 같은 지역이고 분류 단계가 1 이상인 것 (산업)
+            # 같은 지역인지 확인 (지역명 매핑 고려)
             is_same_region = False
             if region_code:
                 # 지역 코드로 확인
                 if cell_a.value and str(cell_a.value).strip() == region_code:
                     is_same_region = True
             else:
-                # 지역 이름으로 확인
-                if cell_b.value and str(cell_b.value).strip() == region_name:
-                    is_same_region = True
+                # 지역 이름으로 확인 (지역명 매핑 고려)
+                if cell_b.value:
+                    cell_b_str = str(cell_b.value).strip()
+                    # 지역명 매핑
+                    region_mapping = {
+                        '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                        '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                        '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                        '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                        '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                        '경상남도': '경남', '제주특별자치도': '제주'
+                    }
+                    mapped_region_name = region_mapping.get(region_name, region_name)
+                    mapped_cell_b = region_mapping.get(cell_b_str, cell_b_str)
+                    
+                    if (cell_b_str == region_name or 
+                        cell_b_str == mapped_region_name or
+                        mapped_cell_b == region_name or
+                        mapped_cell_b == mapped_region_name):
+                        is_same_region = True
             
             if is_same_region and cell_c.value:
                 try:
@@ -181,8 +209,25 @@ class DataAnalyzer:
                         if cell_a.value and str(cell_a.value).strip() != region_code:
                             break
                     else:
-                        if cell_b.value and str(cell_b.value).strip() != region_name:
-                            break
+                        if cell_b.value:
+                            cell_b_str = str(cell_b.value).strip()
+                            # 지역명 매핑
+                            region_mapping = {
+                                '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+                                '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+                                '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+                                '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+                                '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+                                '경상남도': '경남', '제주특별자치도': '제주'
+                            }
+                            mapped_region_name = region_mapping.get(region_name, region_name)
+                            mapped_cell_b = region_mapping.get(cell_b_str, cell_b_str)
+                            
+                            if (cell_b_str != region_name and 
+                                cell_b_str != mapped_region_name and
+                                mapped_cell_b != region_name and
+                                mapped_cell_b != mapped_region_name):
+                                break
         
         return industries
     
