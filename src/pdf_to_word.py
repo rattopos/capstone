@@ -344,12 +344,21 @@ class PDFToWordConverter:
         
         # 텍스트가 충분히 추출되었는지 확인
         total_text_chars = sum(len(item['text']) for page_data in pages_text_data for item in page_data)
+        total_pages_with_text = len([p for p in pages_text_data if len(p) > 0])
         use_ocr = total_text_chars < 100  # 100자 미만이면 스캔된 PDF로 간주
         
+        print(f"[DEBUG PDFToWord] 추출된 텍스트 통계:")
+        print(f"  - 총 문자 수: {total_text_chars}")
+        print(f"  - 텍스트가 있는 페이지: {total_pages_with_text}/{len(pages_text_data)}")
+        print(f"  - 페이지별 텍스트 수:")
+        for i, page_data in enumerate(pages_text_data[:5]):  # 처음 5페이지만
+            page_chars = sum(len(item['text']) for item in page_data)
+            print(f"    페이지 {i+1}: {page_chars}자, {len(page_data)}개 텍스트 블록")
+        
         if use_ocr:
-            print(f"텍스트가 부족합니다 ({total_text_chars}자). 스캔된 PDF로 판단하여 OCR을 사용합니다.")
+            print(f"[DEBUG PDFToWord] 텍스트가 부족합니다 ({total_text_chars}자). 스캔된 PDF로 판단하여 OCR을 사용합니다.")
         else:
-            print(f"텍스트 기반 PDF로 확인되었습니다 ({total_text_chars}자 추출). 직접 추출 방식을 사용합니다.")
+            print(f"[DEBUG PDFToWord] 텍스트 기반 PDF로 확인되었습니다 ({total_text_chars}자 추출). 직접 추출 방식을 사용합니다.")
         
         # Word 문서 생성
         doc = Document()
@@ -404,9 +413,17 @@ class PDFToWordConverter:
             
             if not organized_text:
                 # 텍스트가 없으면 빈 단락 추가
+                print(f"[DEBUG PDFToWord] ⚠️ 경고: 페이지 {page_num + 1}에서 텍스트를 추출할 수 없습니다")
                 para = doc.add_paragraph()
                 para.add_run(f"(페이지 {page_num + 1} - 텍스트를 추출할 수 없습니다)")
                 continue
+            
+            # 디버그: 첫 페이지의 텍스트 샘플 출력
+            if page_num == 0:
+                print(f"[DEBUG PDFToWord] 첫 페이지 텍스트 샘플 (처음 3개 단락):")
+                for i, item in enumerate(organized_text[:3]):
+                    text_sample = ' '.join([ti['text'] for ti in item['items']])
+                    print(f"  단락 {i+1}: {repr(text_sample[:100])}")
             
             # Word 문서에 추가
             prev_y = None
@@ -419,11 +436,16 @@ class PDFToWordConverter:
                 para = doc.add_paragraph()
                 
                 # 텍스트 아이템들을 순서대로 추가
-                for text_item in item['items']:
-                    run = para.add_run(text_item['text'])
-                    
-                    # 폰트 크기 설정
-                    font_size = text_item.get('font_size', 12)
+                # 숫자나 데이터를 의미 기반 마커로 변환
+                full_text = ' '.join([ti['text'] for ti in item['items']])
+                processed_text = self._convert_data_to_semantic_markers(full_text, item['items'])
+                
+                # 처리된 텍스트를 Run으로 추가
+                run = para.add_run(processed_text)
+                
+                # 폰트 크기 설정 (첫 번째 아이템 기준)
+                if item['items']:
+                    font_size = item['items'][0].get('font_size', 12)
                     run.font.size = Pt(font_size)
                     
                     # 폰트 이름 설정 (한글 지원)
@@ -431,12 +453,8 @@ class PDFToWordConverter:
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
                     
                     # 굵은 글씨 설정
-                    if text_item.get('is_bold', False):
+                    if item['items'][0].get('is_bold', False):
                         run.bold = True
-                    
-                    # 공백 추가 (같은 줄의 다음 텍스트)
-                    if text_item != item['items'][-1]:
-                        run.add_text(' ')
                 
                 # 단락 정렬 (왼쪽 정렬 기본)
                 para.alignment = WD_ALIGN_PARAGRAPH.LEFT

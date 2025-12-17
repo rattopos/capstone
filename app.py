@@ -5,6 +5,7 @@ Flask 웹 애플리케이션
 
 import os
 import sys
+import shutil
 from pathlib import Path
 from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
 
@@ -33,6 +34,8 @@ app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
+# Word 파일 저장 폴더 (로컬에 저장)
+app.config['WORD_FILES_FOLDER'] = Path(__file__).parent / 'output' / 'word_files'
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
@@ -698,28 +701,75 @@ def process_word_template():
         
         try:
             # 1단계: PDF를 Word 템플릿으로 변환
+            print("=" * 60)
             print("1단계: PDF를 Word 템플릿으로 변환 중...")
+            print("=" * 60)
             pdf_to_word = PDFToWordConverter(use_easyocr=True, dpi=300)
             pdf_stem = Path(pdf_filename).stem
             word_template_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_temp_template.docx"
             pdf_to_word.convert_pdf_to_word(str(pdf_path), str(word_template_path))
+            print(f"[DEBUG] Word 템플릿 생성 완료: {word_template_path}")
+            print(f"[DEBUG] Word 템플릿 파일 존재 여부: {word_template_path.exists()}")
             
             # 2단계: Word 템플릿 관리자 초기화
+            print("=" * 60)
             print("2단계: Word 템플릿 로드 중...")
+            print("=" * 60)
             word_template_manager = WordTemplateManager(str(word_template_path))
             word_template_manager.load_template()
+            print(f"[DEBUG] Word 템플릿 로드 완료")
+            
+            # Word 템플릿 내용 확인 (처음 500자)
+            if word_template_manager.document:
+                sample_text = ""
+                for para in word_template_manager.document.paragraphs[:5]:
+                    sample_text += para.text + "\n"
+                print(f"[DEBUG] Word 템플릿 샘플 텍스트 (처음 5개 단락):")
+                print(f"  {repr(sample_text[:500])}")
             
             # 3단계: 엑셀 추출기 초기화
+            print("=" * 60)
             print("3단계: 엑셀 데이터 로드 중...")
+            print("=" * 60)
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
             
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
+            print(f"[DEBUG] 사용 가능한 시트 목록 ({len(sheet_names)}개):")
+            for i, sheet in enumerate(sheet_names[:10], 1):  # 처음 10개만 출력
+                print(f"  {i}. {sheet}")
+            if len(sheet_names) > 10:
+                print(f"  ... 외 {len(sheet_names) - 10}개")
             
             # 4단계: Word 템플릿에서 필요한 시트 자동 감지 (키워드 기반)
+            print("=" * 60)
             print("4단계: 템플릿에서 필요한 시트 자동 감지 중 (키워드 기반)...")
+            print("=" * 60)
             markers = word_template_manager.extract_markers()
+            print(f"[DEBUG] 추출된 마커 개수: {len(markers)}")
+            
+            if len(markers) == 0:
+                print("[DEBUG] ⚠️ 경고: 마커가 하나도 추출되지 않았습니다!")
+                print("[DEBUG] Word 템플릿의 모든 단락 텍스트 확인:")
+                if word_template_manager.document:
+                    for idx, para in enumerate(word_template_manager.document.paragraphs[:10]):
+                        para_text = para.text.strip()
+                        if para_text:
+                            print(f"  단락 {idx+1}: {repr(para_text[:100])}")
+                            # 마커 패턴이 있는지 확인
+                            import re
+                            marker_pattern = re.compile(r'\{([^:{}]+):([^:}]+)(?::([^}]+))?\}')
+                            if marker_pattern.search(para_text):
+                                print(f"    -> 마커 패턴 발견!")
+            else:
+                print("[DEBUG] 추출된 마커 목록:")
+                for i, marker in enumerate(markers, 1):
+                    print(f"  마커 {i}: {marker.get('full_match', 'N/A')}")
+                    print(f"    - 시트명: {marker.get('sheet_name', 'N/A')}")
+                    print(f"    - 셀주소: {marker.get('cell_address', 'N/A')}")
+                    print(f"    - 계산식: {marker.get('operation', 'N/A')}")
+            
             required_sheets = set()
             
             # 키워드 기반 시트 매칭 사용
@@ -729,41 +779,107 @@ def process_word_template():
             flexible_mapper = FlexibleMapper(excel_extractor)
             
             for marker in markers:
-                marker_sheet = marker['sheet_name']
+                marker_full = marker.get('full_match', 'N/A')
+                is_semantic = marker.get('is_semantic', False)
+                marker_sheet = marker.get('sheet_keyword') or marker.get('sheet_name')
+                marker_data = marker.get('data_keyword') or marker.get('cell_address')
                 
-                # 1. 키워드 기반 의미 매칭 시도
-                semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
-                if semantic_sheet:
-                    required_sheets.add(semantic_sheet)
-                    print(f"  키워드 매칭: '{marker_sheet}' -> '{semantic_sheet}'")
-                    continue
+                print(f"\n[DEBUG] 마커 처리 중: '{marker_full}'")
+                print(f"  - 의미 기반 마커: {is_semantic}")
+                print(f"  - 시트 키워드: '{marker_sheet}'")
+                print(f"  - 데이터 키워드: '{marker_data}'")
                 
-                # 2. 유연한 매핑으로 실제 시트명 찾기
-                actual_sheet = flexible_mapper.find_sheet_by_name(marker_sheet)
-                if actual_sheet:
-                    required_sheets.add(actual_sheet)
-                    print(f"  유연 매칭: '{marker_sheet}' -> '{actual_sheet}'")
-                    continue
+                # 의미 기반 마커인 경우
+                if is_semantic:
+                    print(f"  [의미 기반 마커] 의미 해석을 통한 시트 찾기...")
+                    # 의미 기반으로 시트 찾기
+                    if marker_sheet:
+                        semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
+                    else:
+                        # 시트 키워드가 없으면 데이터 키워드에서 추론
+                        semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_data)
+                    
+                    if semantic_sheet:
+                        required_sheets.add(semantic_sheet)
+                        print(f"  ✅ 의미 기반 매칭 성공: '{marker_sheet or marker_data}' -> '{semantic_sheet}'")
+                        continue
+                    else:
+                        print(f"  ❌ 의미 기반 매칭 실패, 기존 방식으로 시도...")
                 
-                # 3. 정확한 매칭
-                if marker_sheet in sheet_names:
-                    required_sheets.add(marker_sheet)
-                    print(f"  정확 매칭: '{marker_sheet}'")
-                    continue
-                
-                # 4. 컨텍스트 기반 추론 (마커 전체 텍스트 사용)
-                context_results = semantic_matcher.find_sheets_by_context(marker['full_match'])
-                if context_results and context_results[0][1] > 0.3:
-                    inferred_sheet = context_results[0][0]
-                    required_sheets.add(inferred_sheet)
-                    print(f"  컨텍스트 추론: '{marker_sheet}' -> '{inferred_sheet}' (점수: {context_results[0][1]:.2f})")
-                    continue
-                
-                print(f"  경고: 시트를 찾을 수 없음: '{marker_sheet}'")
+                # 기존 방식 (하위 호환)
+                if marker_sheet:
+                    # 1. 키워드 기반 의미 매칭 시도
+                    print(f"  [1단계] 키워드 기반 의미 매칭 시도...")
+                    semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
+                    if semantic_sheet:
+                        required_sheets.add(semantic_sheet)
+                        print(f"  ✅ 키워드 매칭 성공: '{marker_sheet}' -> '{semantic_sheet}'")
+                        continue
+                    else:
+                        print(f"  ❌ 키워드 매칭 실패")
+                    
+                    # 2. 유연한 매핑으로 실제 시트명 찾기
+                    print(f"  [2단계] 유연한 매핑 시도...")
+                    actual_sheet = flexible_mapper.find_sheet_by_name(marker_sheet)
+                    if actual_sheet:
+                        required_sheets.add(actual_sheet)
+                        print(f"  ✅ 유연 매칭 성공: '{marker_sheet}' -> '{actual_sheet}'")
+                        continue
+                    else:
+                        print(f"  ❌ 유연 매칭 실패")
+                    
+                    # 3. 정확한 매칭
+                    print(f"  [3단계] 정확한 매칭 시도...")
+                    if marker_sheet in sheet_names:
+                        required_sheets.add(marker_sheet)
+                        print(f"  ✅ 정확 매칭 성공: '{marker_sheet}'")
+                        continue
+                    else:
+                        print(f"  ❌ 정확 매칭 실패 (시트 목록에 없음)")
+                    
+                    # 4. 컨텍스트 기반 추론
+                    print(f"  [4단계] 컨텍스트 기반 추론 시도...")
+                    context_results = semantic_matcher.find_sheets_by_context(marker_full)
+                    if context_results and context_results[0][1] > 0.3:
+                        inferred_sheet = context_results[0][0]
+                        required_sheets.add(inferred_sheet)
+                        print(f"  ✅ 컨텍스트 추론 성공: '{marker_sheet}' -> '{inferred_sheet}' (점수: {context_results[0][1]:.2f})")
+                        continue
+                    else:
+                        if context_results:
+                            print(f"  ❌ 컨텍스트 추론 실패 (최고 점수: {context_results[0][1]:.2f}, 임계값: 0.3)")
+                        else:
+                            print(f"  ❌ 컨텍스트 추론 실패 (결과 없음)")
+                    
+                    print(f"  ⚠️ 경고: 모든 방법으로 시트를 찾을 수 없음: '{marker_sheet}'")
+                else:
+                    print(f"  ⚠️ 경고: 시트 키워드가 없습니다. 의미 기반 마커로 처리됩니다.")
+            
+            print("\n" + "=" * 60)
+            print(f"[DEBUG] 최종 결과: 발견된 필요한 시트 개수: {len(required_sheets)}")
+            if required_sheets:
+                print(f"[DEBUG] 발견된 시트 목록:")
+                for sheet in sorted(required_sheets):
+                    print(f"  - {sheet}")
+            else:
+                print("[DEBUG] ⚠️ 경고: 필요한 시트를 하나도 찾지 못했습니다!")
+                print("[DEBUG] 가능한 원인:")
+                print("  1. Word 템플릿에 마커가 없음 (PDF 변환 실패)")
+                print("  2. 마커 형식이 올바르지 않음 (예: {시트명:셀주소} 형식이어야 함)")
+                print("  3. 시트명이 엑셀 파일의 시트명과 전혀 일치하지 않음")
+                print("[DEBUG] 디버그 정보를 확인하세요.")
             
             if not required_sheets:
+                error_msg = '템플릿에서 사용 가능한 시트를 찾을 수 없습니다. 템플릿의 마커 형식을 확인해주세요.'
+                if len(markers) == 0:
+                    error_msg += ' (Word 템플릿에 마커가 없습니다. PDF 변환이 제대로 되지 않았을 수 있습니다.)'
                 return jsonify({
-                    'error': '템플릿에서 사용 가능한 시트를 찾을 수 없습니다. 템플릿의 마커 형식을 확인해주세요.'
+                    'error': error_msg,
+                    'debug_info': {
+                        'markers_found': len(markers),
+                        'available_sheets': sheet_names[:10],  # 처음 10개만
+                        'markers': [m.get('full_match', 'N/A') for m in markers[:5]]  # 처음 5개만
+                    }
                 }), 400
             
             print(f"발견된 필요한 시트: {', '.join(required_sheets)}")
@@ -801,6 +917,23 @@ def process_word_template():
             filled_word_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_filled.docx"
             word_template_filler.save_filled_template(str(filled_word_path))
             
+            # Word 파일을 로컬에 저장 (확인용)
+            word_files_folder = Path(app.config['WORD_FILES_FOLDER'])
+            word_files_folder.mkdir(parents=True, exist_ok=True)
+            
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            # Word 템플릿 파일 복사 (PDF에서 변환된 원본)
+            saved_template_path = word_files_folder / f"{timestamp}_{pdf_stem}_template.docx"
+            shutil.copy2(str(word_template_path), str(saved_template_path))
+            print(f"[DEBUG] Word 템플릿 파일 저장: {saved_template_path}")
+            
+            # 채워진 Word 파일 복사
+            saved_filled_path = word_files_folder / f"{timestamp}_{pdf_stem}_filled.docx"
+            shutil.copy2(str(filled_word_path), str(saved_filled_path))
+            print(f"[DEBUG] 채워진 Word 파일 저장: {saved_filled_path}")
+            
             # 7단계: Word를 PDF로 변환
             print("7단계: Word를 PDF로 변환 중...")
             word_to_pdf = WordToPDFConverter()
@@ -812,7 +945,7 @@ def process_word_template():
             # 엑셀 파일 닫기
             excel_extractor.close()
             
-            # 임시 파일 정리
+            # 임시 파일 정리 (로컬에 저장된 파일은 유지)
             if pdf_path.exists():
                 pdf_path.unlink()
             if excel_path.exists():
@@ -869,12 +1002,17 @@ if __name__ == '__main__':
     os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
+    # Word 파일 저장 폴더 생성
+    word_files_folder = Path(app.config['WORD_FILES_FOLDER'])
+    word_files_folder.mkdir(parents=True, exist_ok=True)
+    
     print("=" * 50)
     print("지역경제동향 보도자료 자동생성")
     print("=" * 50)
     print(f"웹 서버가 시작되었습니다.")
     print(f"브라우저에서 http://localhost:8000 을 열어주세요.")
     print(f"최대 파일 크기: 100MB")
+    print(f"Word 파일 저장 위치: {word_files_folder.absolute()}")
     print("=" * 50)
     
     app.run(debug=True, host='0.0.0.0', port=8000)

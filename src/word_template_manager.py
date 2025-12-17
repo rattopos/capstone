@@ -20,8 +20,12 @@ except ImportError:
 class WordTemplateManager:
     """Word 템플릿을 관리하고 마커를 파싱하는 클래스"""
     
-    # 마커 패턴: {시트명:셀주소} 또는 {시트명:셀주소:계산식} 또는 {시트명:동적키}
-    MARKER_PATTERN = re.compile(r'\{([^:{}]+):([^:}]+)(?::([^}]+))?\}')
+    # 마커 패턴: 
+    # 1. {시트키워드:데이터키워드} - 의미 기반 마커
+    # 2. {데이터키워드} - 시트 키워드 생략 가능
+    # 3. {시트명:셀주소} - 기존 형식 (하위 호환)
+    # 4. {시트명:셀주소:계산식} - 계산식 포함
+    MARKER_PATTERN = re.compile(r'\{([^:{}]*):?([^:}]+)(?::([^}]+))?\}')
     
     def __init__(self, template_path: str):
         """
@@ -76,15 +80,29 @@ class WordTemplateManager:
         
         self.markers = []
         
+        print(f"[DEBUG WordTemplateManager] 단락 개수: {len(self.document.paragraphs)}")
+        print(f"[DEBUG WordTemplateManager] 테이블 개수: {len(self.document.tables)}")
+        
         # 모든 단락에서 마커 찾기
         for para_idx, paragraph in enumerate(self.document.paragraphs):
+            para_text = paragraph.text.strip()
+            if para_text:
+                # 마커 패턴이 있는지 미리 확인
+                if self.MARKER_PATTERN.search(para_text):
+                    print(f"[DEBUG WordTemplateManager] 단락 {para_idx+1}에서 마커 패턴 발견: {repr(para_text[:100])}")
             markers_in_para = self._extract_markers_from_paragraph(paragraph, para_idx)
+            if markers_in_para:
+                print(f"[DEBUG WordTemplateManager] 단락 {para_idx+1}에서 {len(markers_in_para)}개 마커 추출")
             self.markers.extend(markers_in_para)
         
         # 모든 테이블에서 마커 찾기
         for table_idx, table in enumerate(self.document.tables):
             markers_in_table = self._extract_markers_from_table(table, table_idx)
+            if markers_in_table:
+                print(f"[DEBUG WordTemplateManager] 테이블 {table_idx+1}에서 {len(markers_in_table)}개 마커 추출")
             self.markers.extend(markers_in_table)
+        
+        print(f"[DEBUG WordTemplateManager] 총 {len(self.markers)}개 마커 추출 완료")
         
         return self.markers
     
@@ -97,18 +115,24 @@ class WordTemplateManager:
         matches = self.MARKER_PATTERN.finditer(full_text)
         
         for match in matches:
-            sheet_name = match.group(1).strip()
-            cell_address = match.group(2).strip()
+            sheet_part = match.group(1).strip() if match.group(1) else None
+            data_part = match.group(2).strip()
             operation = match.group(3).strip() if match.group(3) else None
             
             # 마커가 포함된 Run 찾기
             run_info = self._find_run_containing_marker(paragraph, match.start(), match.end())
             
+            # 마커 타입 판단 (셀 주소 형식인지 의미 기반인지)
+            is_cell_address = bool(re.match(r'^[A-Z]+\d+', data_part))
+            
             marker_info = {
                 'full_match': match.group(0),
-                'sheet_name': sheet_name,
-                'cell_address': cell_address,
+                'sheet_keyword': sheet_part,  # 시트 키워드 (None일 수 있음)
+                'data_keyword': data_part,    # 데이터 키워드 또는 셀 주소
+                'sheet_name': sheet_part,     # 하위 호환성
+                'cell_address': data_part,    # 하위 호환성
                 'operation': operation,
+                'is_semantic': not is_cell_address,  # 의미 기반 마커인지
                 'paragraph': paragraph,
                 'run': run_info['run'] if run_info else None,
                 'run_index': run_info['index'] if run_info else None,
@@ -132,17 +156,23 @@ class WordTemplateManager:
                     matches = self.MARKER_PATTERN.finditer(full_text)
                     
                     for match in matches:
-                        sheet_name = match.group(1).strip()
-                        cell_address = match.group(2).strip()
+                        sheet_part = match.group(1).strip() if match.group(1) else None
+                        data_part = match.group(2).strip()
                         operation = match.group(3).strip() if match.group(3) else None
                         
                         run_info = self._find_run_containing_marker(paragraph, match.start(), match.end())
                         
+                        # 마커 타입 판단
+                        is_cell_address = bool(re.match(r'^[A-Z]+\d+', data_part))
+                        
                         marker_info = {
                             'full_match': match.group(0),
-                            'sheet_name': sheet_name,
-                            'cell_address': cell_address,
+                            'sheet_keyword': sheet_part,
+                            'data_keyword': data_part,
+                            'sheet_name': sheet_part,     # 하위 호환성
+                            'cell_address': data_part,    # 하위 호환성
                             'operation': operation,
+                            'is_semantic': not is_cell_address,
                             'paragraph': paragraph,
                             'run': run_info['run'] if run_info else None,
                             'run_index': run_info['index'] if run_info else None,

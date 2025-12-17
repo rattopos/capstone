@@ -165,25 +165,46 @@ class WordTemplateFiller:
         for marker_info in markers:
             marker_str = marker_info['full_match']
             
+            # 의미 기반 마커인 경우
+            if marker_info.get('is_semantic', False):
+                # 의미 기반 마커 해석기 사용
+                from src.semantic_marker_resolver import SemanticMarkerResolver
+                semantic_resolver = SemanticMarkerResolver(self.excel_extractor)
+                
+                resolved_value = semantic_resolver.resolve_semantic_marker(
+                    marker_info['full_match'],
+                    year=year,
+                    quarter=quarter
+                )
+                
+                if resolved_value is not None:
+                    processed_value = self.html_filler._format_value(resolved_value)
+                    if not processed_value or processed_value.startswith('[에러'):
+                        processed_value = 'N/A'
+                    self.template_manager.replace_marker(marker_info, processed_value)
+                    continue
+            
+            # 기존 방식 (셀 주소 기반 또는 하위 호환)
             # sheet_name이 제공되면 마커의 시트명을 덮어쓰기
             if sheet_name:
                 marker_info['sheet_name'] = sheet_name
             else:
                 # 시트명이 제공되지 않으면 키워드 기반 의미 매칭 사용
-                marker_sheet = marker_info['sheet_name']
+                marker_sheet = marker_info.get('sheet_keyword') or marker_info.get('sheet_name')
                 
-                # 키워드 기반 의미 매칭 시도
-                from src.semantic_sheet_matcher import SemanticSheetMatcher
-                semantic_matcher = SemanticSheetMatcher(self.excel_extractor)
-                semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
-                
-                if semantic_sheet:
-                    marker_info['sheet_name'] = semantic_sheet
-                else:
-                    # 유연한 매핑으로 찾기
-                    actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
-                    if actual_sheet:
-                        marker_info['sheet_name'] = actual_sheet
+                if marker_sheet:
+                    # 키워드 기반 의미 매칭 시도
+                    from src.semantic_sheet_matcher import SemanticSheetMatcher
+                    semantic_matcher = SemanticSheetMatcher(self.excel_extractor)
+                    semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
+                    
+                    if semantic_sheet:
+                        marker_info['sheet_name'] = semantic_sheet
+                    else:
+                        # 유연한 매핑으로 찾기
+                        actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
+                        if actual_sheet:
+                            marker_info['sheet_name'] = actual_sheet
             
             # 마커 처리
             processed_value = self.process_marker(marker_info)
