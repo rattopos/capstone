@@ -69,6 +69,9 @@ output/
 *.png
 *.jpg
 *.jpeg
+# correct_answer 폴더는 예외로 포함
+!correct_answer/
+!correct_answer/**/*.png
 
 # Testing
 .pytest_cache/
