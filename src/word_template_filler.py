@@ -116,12 +116,33 @@ class WordTemplateFiller:
             quarter: 분기 (None이면 자동 감지)
         """
         # 연도/분기가 지정되지 않으면 자동 감지
-        if sheet_name and (year is None or quarter is None):
-            periods_info = self.period_detector.detect_available_periods(sheet_name)
-            if year is None:
-                year = periods_info['default_year']
-            if quarter is None:
-                quarter = periods_info['default_quarter']
+        # sheet_name이 None이면 마커에서 첫 번째 시트를 찾아서 사용
+        if year is None or quarter is None:
+            # 시트명이 없으면 마커에서 첫 번째 시트 찾기
+            if sheet_name is None:
+                # Word 템플릿 로드
+                if self.template_manager.document is None:
+                    self.template_manager.load_template()
+                
+                # 모든 마커 추출
+                markers = self.template_manager.extract_markers()
+                if markers:
+                    # 첫 번째 마커의 시트명 사용
+                    marker_sheet = markers[0]['sheet_name']
+                    # 유연한 매핑으로 실제 시트명 찾기
+                    actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
+                    if actual_sheet:
+                        sheet_name = actual_sheet
+                    else:
+                        # 매핑 실패 시 마커의 시트명 그대로 사용
+                        sheet_name = marker_sheet
+            
+            if sheet_name:
+                periods_info = self.period_detector.detect_available_periods(sheet_name)
+                if year is None:
+                    year = periods_info['default_year']
+                if quarter is None:
+                    quarter = periods_info['default_quarter']
         
         # 현재 처리 중인 연도/분기/시트명 저장
         self._current_year = year

@@ -681,13 +681,12 @@ def process_word_template():
         if not allowed_file(excel_file.filename):
             return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
         
-        # 시트명, 연도 및 분기 파라미터 가져오기
-        sheet_name = request.form.get('sheet_name', '')
+        # 연도 및 분기 파라미터 가져오기 (시트는 백엔드에서 자동 감지)
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
         
-        if not sheet_name:
-            return jsonify({'error': '시트명을 선택해주세요.'}), 400
+        # 시트명은 백엔드에서 Word 템플릿의 마커를 분석하여 자동으로 감지합니다
+        # 요청에서 sheet_name 파라미터가 있어도 무시하고 템플릿에서 자동 감지
         
         # 파일 저장
         pdf_filename = secure_filename(pdf_file.filename)
