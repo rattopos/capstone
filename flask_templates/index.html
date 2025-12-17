@@ -17,56 +17,6 @@
         </header>
 
         <main>
-            <div class="template-create-section">
-                <h2>📝 템플릿 생성 (새로 만들기)</h2>
-                <p style="margin-bottom: 15px; color: var(--text-secondary);">사진과 엑셀 파일을 업로드하면 엑셀 헤더를 기반으로 HTML 템플릿을 생성합니다.</p>
-                <div class="upload-box">
-                    <div class="file-upload-area" id="imageUploadArea" style="border: 2px dashed #4CAF50; margin-bottom: 15px;">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        <p class="upload-text">이미지 파일을 드래그하거나 클릭하여 업로드</p>
-                        <p class="upload-hint">.png, .jpg, .jpeg 파일만 지원됩니다 (최대 100MB)</p>
-                        <input type="file" id="imageFile" accept="image/*" style="display: none;">
-                    </div>
-                    <div id="imageFileInfo" class="file-info" style="display: none;">
-                        <span class="file-name"></span>
-                        <button class="remove-file" onclick="removeImageFile()">✕</button>
-                    </div>
-                    
-                    <div class="file-upload-area" id="excelUploadAreaForTemplate" style="border: 2px dashed #2196F3; margin-bottom: 15px;">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <p class="upload-text">엑셀 파일을 드래그하거나 클릭하여 업로드 (선택사항)</p>
-                        <p class="upload-hint">.xlsx, .xls 파일만 지원됩니다. 엑셀 파일을 업로드하면 헤더 기반 마커가 생성됩니다.</p>
-                        <input type="file" id="excelFileForTemplate" accept=".xlsx,.xls" style="display: none;">
-                    </div>
-                    <div id="excelFileInfoForTemplate" class="file-info" style="display: none;">
-                        <span class="file-name"></span>
-                        <button class="remove-file" onclick="removeExcelFileForTemplate()">✕</button>
-                    </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <label for="templateName" style="display: block; margin-bottom: 5px; font-weight: bold;">템플릿 이름:</label>
-                        <input type="text" id="templateName" placeholder="템플릿 이름을 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
-                        <label for="sheetName" style="display: block; margin-bottom: 5px; font-weight: bold;">시트명 (엑셀 파일 업로드 시 자동 선택):</label>
-                        <input type="text" id="sheetName" value="" placeholder="시트명을 입력하거나 엑셀 파일을 업로드하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
-                        <button id="createTemplateBtn" class="btn btn-primary" disabled style="width: 100%;" aria-label="템플릿 생성">
-                            <span class="btn-text">템플릿 생성</span>
-                            <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </div>
-                <div id="templateCreateResult" style="display: none; margin-top: 15px; padding: 10px; background-color: #e8f5e9; border-radius: 4px;">
-                    <div id="templateCreateMessage"></div>
-                </div>
-            </div>
-
             <div class="template-section" style="margin-bottom: 40px;">
                 <h2>1. 템플릿 선택</h2>
                 <div class="selector-group">
