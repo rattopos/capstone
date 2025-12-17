@@ -717,20 +717,49 @@ def process_word_template():
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
             
-            # 4단계: Word 템플릿에서 필요한 시트 자동 감지
-            print("4단계: 템플릿에서 필요한 시트 자동 감지 중...")
+            # 4단계: Word 템플릿에서 필요한 시트 자동 감지 (키워드 기반)
+            print("4단계: 템플릿에서 필요한 시트 자동 감지 중 (키워드 기반)...")
             markers = word_template_manager.extract_markers()
             required_sheets = set()
+            
+            # 키워드 기반 시트 매칭 사용
+            from src.semantic_sheet_matcher import SemanticSheetMatcher
+            semantic_matcher = SemanticSheetMatcher(excel_extractor)
+            from src.flexible_mapper import FlexibleMapper
+            flexible_mapper = FlexibleMapper(excel_extractor)
+            
             for marker in markers:
                 marker_sheet = marker['sheet_name']
-                # 유연한 매핑으로 실제 시트명 찾기
-                from src.flexible_mapper import FlexibleMapper
-                flexible_mapper = FlexibleMapper(excel_extractor)
+                
+                # 1. 키워드 기반 의미 매칭 시도
+                semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
+                if semantic_sheet:
+                    required_sheets.add(semantic_sheet)
+                    print(f"  키워드 매칭: '{marker_sheet}' -> '{semantic_sheet}'")
+                    continue
+                
+                # 2. 유연한 매핑으로 실제 시트명 찾기
                 actual_sheet = flexible_mapper.find_sheet_by_name(marker_sheet)
                 if actual_sheet:
                     required_sheets.add(actual_sheet)
-                elif marker_sheet in sheet_names:
+                    print(f"  유연 매칭: '{marker_sheet}' -> '{actual_sheet}'")
+                    continue
+                
+                # 3. 정확한 매칭
+                if marker_sheet in sheet_names:
                     required_sheets.add(marker_sheet)
+                    print(f"  정확 매칭: '{marker_sheet}'")
+                    continue
+                
+                # 4. 컨텍스트 기반 추론 (마커 전체 텍스트 사용)
+                context_results = semantic_matcher.find_sheets_by_context(marker['full_match'])
+                if context_results and context_results[0][1] > 0.3:
+                    inferred_sheet = context_results[0][0]
+                    required_sheets.add(inferred_sheet)
+                    print(f"  컨텍스트 추론: '{marker_sheet}' -> '{inferred_sheet}' (점수: {context_results[0][1]:.2f})")
+                    continue
+                
+                print(f"  경고: 시트를 찾을 수 없음: '{marker_sheet}'")
             
             if not required_sheets:
                 return jsonify({

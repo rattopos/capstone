@@ -455,4 +455,116 @@ class PDFToWordConverter:
         print(f"Word 템플릿이 생성되었습니다: {output_path}")
         
         return str(output_file)
+    
+    def _convert_data_to_semantic_markers(self, text: str, text_items: List[Dict]) -> str:
+        """
+        텍스트에서 숫자나 데이터를 의미 기반 마커로 변환합니다.
+        하드코딩된 시트명 대신 의미 기반 키워드를 사용합니다.
+        
+        Args:
+            text: 원본 텍스트
+            text_items: 텍스트 아이템 리스트 (컨텍스트 분석용)
+            
+        Returns:
+            마커가 포함된 텍스트
+        """
+        import re
+        
+        # 숫자 패턴 (퍼센트, 소수점, 콤마 포함)
+        number_pattern = r'[\d,]+\.?\d*%?'
+        
+        # 숫자가 포함된 경우 주변 컨텍스트 분석
+        def replace_with_marker(match):
+            number = match.group(0)
+            
+            # 주변 텍스트에서 키워드 추출
+            start_pos = match.start()
+            end_pos = match.end()
+            
+            # 앞뒤 20자 정도의 컨텍스트 추출
+            context_start = max(0, start_pos - 20)
+            context_end = min(len(text), end_pos + 20)
+            context = text[context_start:context_end]
+            
+            # 의미 기반 키워드 추출
+            sheet_keyword = self._extract_sheet_keyword_from_context(context)
+            data_keyword = self._extract_data_keyword_from_context(context, number)
+            
+            # 마커 생성: {의미키워드:데이터키워드}
+            if sheet_keyword and data_keyword:
+                return f"{{{sheet_keyword}:{data_keyword}}}"
+            elif sheet_keyword:
+                return f"{{{sheet_keyword}:값}}"
+            else:
+                # 키워드를 추출하지 못한 경우 원본 숫자 유지
+                return number
+        
+        # 숫자 패턴을 마커로 변환
+        result = re.sub(number_pattern, replace_with_marker, text)
+        
+        return result
+    
+    def _extract_sheet_keyword_from_context(self, context: str) -> Optional[str]:
+        """컨텍스트에서 시트 키워드 추출"""
+        import re
+        
+        # 키워드 매핑 (의미 기반)
+        keyword_patterns = {
+            '경제지표': r'경제|지표|gdp|생산|소비|투자',
+            '생산': r'생산|제조|manufacturing|production',
+            '소비': r'소비|소매|consumption|retail',
+            '건설': r'건설|construction|공정',
+            '광업': r'광업|mining',
+            '제조업': r'제조|manufacturing',
+            '서비스업': r'서비스|service',
+            '소매업': r'소매|retail',
+            '지역': r'지역|region|시도|시군구',
+            '전국': r'전국|national|전체',
+        }
+        
+        context_lower = context.lower()
+        
+        for keyword, pattern in keyword_patterns.items():
+            if re.search(pattern, context_lower, re.IGNORECASE):
+                return keyword
+        
+        return None
+    
+    def _extract_data_keyword_from_context(self, context: str, number: str) -> Optional[str]:
+        """컨텍스트에서 데이터 키워드 추출"""
+        import re
+        
+        # 데이터 키워드 패턴
+        data_patterns = {
+            '증감률': r'증감|증가|감소|변화|변동|growth|change',
+            '증가율': r'증가|상승|up|rise',
+            '감소율': r'감소|하락|down|fall',
+            '전국': r'전국|national|전체',
+            '서울': r'서울|seoul',
+            '부산': r'부산|busan',
+            '대구': r'대구|daegu',
+            '인천': r'인천|incheon',
+            '광주': r'광주|gwangju',
+            '대전': r'대전|daejeon',
+            '울산': r'울산|ulsan',
+        }
+        
+        context_lower = context.lower()
+        
+        keywords = []
+        for keyword, pattern in data_patterns.items():
+            if re.search(pattern, context_lower, re.IGNORECASE):
+                keywords.append(keyword)
+        
+        if keywords:
+            # 여러 키워드가 있으면 언더스코어로 연결
+            return '_'.join(keywords)
+        
+        # 키워드를 찾지 못한 경우 숫자 주변 텍스트에서 추출
+        # 예: "전국 2.5%" -> "전국_값"
+        words = re.findall(r'[가-힣]+', context)
+        if words:
+            return '_'.join(words[:2])  # 최대 2개 단어
+        
+        return None
 

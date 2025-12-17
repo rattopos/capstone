@@ -22,13 +22,13 @@ class FlexibleMapper:
         self.sheet_cache = {}  # 시트 정보 캐시
         self.header_cache = {}  # 헤더 정보 캐시
     
-    def find_sheet_by_name(self, target_sheet_name: str, similarity_threshold: float = 0.6) -> Optional[str]:
+    def find_sheet_by_name(self, target_sheet_name: str, similarity_threshold: float = 0.3) -> Optional[str]:
         """
-        시트명을 유연하게 찾습니다.
+        시트명을 유연하게 찾습니다. 키워드 기반 자연어 처리 사용.
         
         Args:
-            target_sheet_name: 찾고자 하는 시트명
-            similarity_threshold: 유사도 임계값 (0.0 ~ 1.0)
+            target_sheet_name: 찾고자 하는 시트명 또는 키워드
+            similarity_threshold: 유사도 임계값 (0.0 ~ 1.0, 기본값 0.3으로 낮춤)
             
         Returns:
             실제 시트명 또는 None
@@ -50,15 +50,30 @@ class FlexibleMapper:
             if target_normalized in sheet_normalized or sheet_normalized in target_normalized:
                 return sheet
         
-        # 유사도 기반 매칭
+        # 키워드 기반 매칭 (새로운 방식)
+        target_keywords = self._extract_keywords(target_sheet_name)
         best_match = None
         best_score = 0.0
         
         for sheet in available_sheets:
-            score = self._calculate_similarity(target_sheet_name, sheet)
-            if score > best_score and score >= similarity_threshold:
-                best_score = score
-                best_match = sheet
+            sheet_keywords = self._extract_keywords(sheet)
+            
+            # 키워드 교집합 점수
+            if target_keywords and sheet_keywords:
+                common_keywords = set(target_keywords) & set(sheet_keywords)
+                if common_keywords:
+                    keyword_score = len(common_keywords) / max(len(target_keywords), len(sheet_keywords))
+                    if keyword_score > best_score:
+                        best_score = keyword_score
+                        best_match = sheet
+        
+        # 키워드 매칭이 실패하면 유사도 기반 매칭
+        if not best_match:
+            for sheet in available_sheets:
+                score = self._calculate_similarity(target_sheet_name, sheet)
+                if score > best_score and score >= similarity_threshold:
+                    best_score = score
+                    best_match = sheet
         
         return best_match
     

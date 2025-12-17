@@ -169,11 +169,21 @@ class WordTemplateFiller:
             if sheet_name:
                 marker_info['sheet_name'] = sheet_name
             else:
-                # 시트명이 제공되지 않으면 유연한 매핑으로 찾기
+                # 시트명이 제공되지 않으면 키워드 기반 의미 매칭 사용
                 marker_sheet = marker_info['sheet_name']
-                actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
-                if actual_sheet:
-                    marker_info['sheet_name'] = actual_sheet
+                
+                # 키워드 기반 의미 매칭 시도
+                from src.semantic_sheet_matcher import SemanticSheetMatcher
+                semantic_matcher = SemanticSheetMatcher(self.excel_extractor)
+                semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
+                
+                if semantic_sheet:
+                    marker_info['sheet_name'] = semantic_sheet
+                else:
+                    # 유연한 매핑으로 찾기
+                    actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
+                    if actual_sheet:
+                        marker_info['sheet_name'] = actual_sheet
             
             # 마커 처리
             processed_value = self.process_marker(marker_info)
