@@ -53,6 +53,7 @@ class TemplateManager:
     def extract_markers(self) -> List[Dict[str, str]]:
         """
         템플릿에서 모든 마커를 추출합니다.
+        CSS 스타일 블록과 스크립트 블록은 제외합니다.
         
         Returns:
             마커 정보 딕셔너리 리스트. 각 딕셔너리는 다음 키를 포함:
@@ -64,13 +65,42 @@ class TemplateManager:
         if not self.template_content:
             self.load_template()
         
+        # CSS 스타일 블록과 스크립트 블록 제거
+        # <style>...</style> 및 <script>...</script> 태그 내용 제외
+        content_without_style_script = self.template_content
+        
+        # <style> 태그 내용 제거 (재귀적으로 중첩된 태그도 처리)
+        style_pattern = re.compile(r'<style[^>]*>.*?</style>', re.DOTALL | re.IGNORECASE)
+        content_without_style_script = style_pattern.sub('', content_without_style_script)
+        
+        # <script> 태그 내용 제거
+        script_pattern = re.compile(r'<script[^>]*>.*?</script>', re.DOTALL | re.IGNORECASE)
+        content_without_style_script = script_pattern.sub('', content_without_style_script)
+        
         self.markers = []
-        matches = self.MARKER_PATTERN.finditer(self.template_content)
+        matches = self.MARKER_PATTERN.finditer(content_without_style_script)
         
         for match in matches:
             sheet_name = match.group(1).strip()
             cell_address = match.group(2).strip()
             operation = match.group(3).strip() if match.group(3) else None
+            
+            # CSS 속성명이나 일반적인 CSS 값이 아닌지 추가 검증
+            # 시트명이 일반적인 CSS 속성명이 아닌지 확인
+            css_properties = {
+                'width', 'height', 'margin', 'padding', 'font-size', 'font-family',
+                'background-color', 'color', 'border', 'display', 'position',
+                'top', 'left', 'right', 'bottom', 'z-index', 'opacity', 'overflow',
+                'text-align', 'line-height', 'font-weight', 'box-sizing', 'max-width'
+            }
+            
+            # 시트명이 CSS 속성명이면 건너뛰기
+            if sheet_name.lower() in css_properties:
+                continue
+            
+            # 셀 주소가 CSS 값 형식(px, %, em 등으로 끝나는)이면 건너뛰기
+            if re.match(r'^[\d.]+(px|%|em|rem|pt|vh|vw|cm|mm|in)$', cell_address, re.IGNORECASE):
+                continue
             
             marker_info = {
                 'full_match': match.group(0),
