@@ -524,7 +524,7 @@ class PDFToWordConverter:
     def convert_pdf_to_word(self, pdf_path: str, output_path: str) -> str:
         """
         PDF 파일을 Word 템플릿으로 변환합니다.
-        텍스트 기반 PDF는 직접 추출하고, 스캔된 PDF는 OCR을 사용합니다.
+        모든 PDF를 이미지로 변환한 후 OCR을 사용하여 텍스트를 추출합니다.
         
         Args:
             pdf_path: PDF 파일 경로
@@ -540,34 +540,7 @@ class PDFToWordConverter:
             raise ValueError("PyMuPDF가 설치되어 있지 않습니다. pip install PyMuPDF를 실행해주세요.")
         
         print(f"PDF 파일 로딩 중: {pdf_path}")
-        
-        # 1단계: PDF에서 직접 텍스트 추출 시도 (텍스트 기반 PDF)
-        print("텍스트 기반 추출 시도 중...")
-        pages_text_data = self.extract_text_from_pdf_direct(pdf_path)
-        
-        # 1-1단계: PDF에서 이미지 추출 (그래프, 인포그래픽)
-        print("이미지 추출 중...")
-        pages_images = self.extract_images_from_pdf(pdf_path)
-        total_images = sum(len(imgs) for imgs in pages_images)
-        print(f"[DEBUG PDFToWord] 총 {total_images}개 이미지 발견")
-        
-        # 텍스트가 충분히 추출되었는지 확인
-        total_text_chars = sum(len(item['text']) for page_data in pages_text_data for item in page_data)
-        total_pages_with_text = len([p for p in pages_text_data if len(p) > 0])
-        use_ocr = total_text_chars < 100  # 100자 미만이면 스캔된 PDF로 간주
-        
-        print(f"[DEBUG PDFToWord] 추출된 텍스트 통계:")
-        print(f"  - 총 문자 수: {total_text_chars}")
-        print(f"  - 텍스트가 있는 페이지: {total_pages_with_text}/{len(pages_text_data)}")
-        print(f"  - 페이지별 텍스트 수:")
-        for i, page_data in enumerate(pages_text_data[:5]):  # 처음 5페이지만
-            page_chars = sum(len(item['text']) for item in page_data)
-            print(f"    페이지 {i+1}: {page_chars}자, {len(page_data)}개 텍스트 블록")
-        
-        if use_ocr:
-            print(f"[DEBUG PDFToWord] 텍스트가 부족합니다 ({total_text_chars}자). 스캔된 PDF로 판단하여 OCR을 사용합니다.")
-        else:
-            print(f"[DEBUG PDFToWord] 텍스트 기반 PDF로 확인되었습니다 ({total_text_chars}자 추출). 직접 추출 방식을 사용합니다.")
+        print("[DEBUG PDFToWord] 모든 PDF를 이미지로 변환한 후 OCR을 사용합니다.")
         
         # PDF 열기 (페이지 크기 정보를 위해)
         pdf_doc = fitz.open(pdf_path)
@@ -599,6 +572,9 @@ class PDFToWordConverter:
         
         print(f"[DEBUG PDFToWord] PDF 페이지 크기: {pdf_page_width_inch:.2f} x {pdf_page_height_inch:.2f} 인치")
         
+        # 이미지 저장용 리스트 초기화
+        pages_images = []
+        
         # 각 페이지 처리
         for page_num in range(total_pages):
             print(f"페이지 {page_num + 1}/{total_pages} 처리 중...")
@@ -612,70 +588,56 @@ class PDFToWordConverter:
             page_width = page_rect.width
             page_height = page_rect.height
             
-            if use_ocr:
-                # OCR 방식: 이미지 변환 후 OCR
-                zoom = self.dpi / 72.0
-                mat = fitz.Matrix(zoom, zoom)
-                pix = page.get_pixmap(matrix=mat)
-                img_data = pix.tobytes("png")
-                image = Image.open(io.BytesIO(img_data))
-                
-                text_data = self.extract_text_and_layout(image)
-                organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1]) if text_data else []
-                
-                # OCR 방식에서도 이미지 추출 (그래프, 인포그래픽)
-                # 페이지 전체를 이미지로 사용하지 않고, 개별 이미지 객체만 추출
-                page_images_for_ocr = []
-                try:
-                    image_list = page.get_images()
-                    for img_idx, img in enumerate(image_list):
-                        try:
-                            xref = img[0]
-                            base_image = pdf_doc.extract_image(xref)
-                            image_bytes = base_image["image"]
-                            image_ext = base_image["ext"]
+            # 모든 페이지를 이미지로 변환 후 OCR 사용
+            zoom = self.dpi / 72.0
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            img_data = pix.tobytes("png")
+            image = Image.open(io.BytesIO(img_data))
+            
+            # OCR로 텍스트 추출
+            print(f"  - OCR로 텍스트 추출 중...")
+            text_data = self.extract_text_and_layout(image)
+            organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1]) if text_data else []
+            
+            # 페이지에서 이미지 추출 (그래프, 인포그래픽)
+            page_images_for_ocr = []
+            try:
+                image_list = page.get_images()
+                for img_idx, img in enumerate(image_list):
+                    try:
+                        xref = img[0]
+                        base_image = pdf_doc.extract_image(xref)
+                        image_bytes = base_image["image"]
+                        image_ext = base_image["ext"]
+                        
+                        image_rects = page.get_image_rects(xref)
+                        for rect in image_rects:
+                            bbox = (rect.x0, rect.y0, rect.x1, rect.y1)
+                            width = rect.width
+                            height = rect.height
                             
-                            image_rects = page.get_image_rects(xref)
-                            for rect in image_rects:
-                                bbox = (rect.x0, rect.y0, rect.x1, rect.y1)
-                                width = rect.width
-                                height = rect.height
-                                
-                                # 최소 크기 필터링
-                                if width >= 50 and height >= 50:
-                                    page_images_for_ocr.append({
-                                        'image_data': image_bytes,
-                                        'image_ext': image_ext,
-                                        'bbox': bbox,
-                                        'width': width,
-                                        'height': height,
-                                        'page_num': page_num + 1
-                                    })
-                        except Exception as e:
-                            print(f"[DEBUG PDFToWord] OCR 모드에서 이미지 {img_idx} 추출 실패: {e}")
-                            continue
-                    
-                    # OCR 모드의 이미지를 pages_images에 추가
-                    if page_num < len(pages_images):
-                        pages_images[page_num].extend(page_images_for_ocr)
-                    else:
-                        # 페이지가 없으면 새로 추가
-                        while len(pages_images) <= page_num:
-                            pages_images.append([])
-                        pages_images[page_num] = page_images_for_ocr
-                except Exception as e:
-                    print(f"[DEBUG PDFToWord] OCR 모드에서 이미지 추출 실패: {e}")
-            else:
-                # 직접 추출 방식: 이미 추출된 텍스트 사용
-                page_text_data = pages_text_data[page_num] if page_num < len(pages_text_data) else []
+                            # 최소 크기 필터링
+                            if width >= 50 and height >= 50:
+                                page_images_for_ocr.append({
+                                    'image_data': image_bytes,
+                                    'image_ext': image_ext,
+                                    'bbox': bbox,
+                                    'width': width,
+                                    'height': height,
+                                    'page_num': page_num + 1
+                                })
+                    except Exception as e:
+                        print(f"[DEBUG PDFToWord] 이미지 {img_idx} 추출 실패: {e}")
+                        continue
                 
-                if not page_text_data:
-                    para = doc.add_paragraph()
-                    para.add_run(f"(페이지 {page_num + 1} - 텍스트를 추출할 수 없습니다)")
-                    continue
-                
-                # 직접 추출된 텍스트를 organize_text_by_layout 형식으로 변환
-                organized_text = self.organize_text_by_layout(page_text_data, page_width, page_height)
+                # 페이지 이미지 리스트에 추가
+                pages_images.append(page_images_for_ocr)
+                if page_images_for_ocr:
+                    print(f"  - {len(page_images_for_ocr)}개 이미지 발견")
+            except Exception as e:
+                print(f"[DEBUG PDFToWord] 이미지 추출 실패: {e}")
+                pages_images.append([])
             
             if not organized_text:
                 # 텍스트가 없으면 빈 단락 추가
