@@ -3,6 +3,8 @@ let selectedExcelFile = null;
 let currentOutputFilename = null;
 let selectedTemplate = null;
 let templatesList = [];
+let selectedPdfExcelFile = null;
+let currentPdfFilename = null;
 
 // 토스트 알림 시스템
 function showToast(message, type = 'info', duration = 5000) {
@@ -73,6 +75,9 @@ function initializeApp() {
     setupFileUpload();
     setupTemplateSelect();
     setupProcessButton();
+    setupTabNavigation();
+    setupPdfFileUpload();
+    setupPdfGenerateButton();
 }
 
 // 파일 업로드 설정
@@ -620,5 +625,288 @@ function hideError() {
 // 성공 메시지 표시
 function showSuccess(message) {
     showToast(message, 'success', 4000);
+}
+
+// 탭 네비게이션 설정
+function setupTabNavigation() {
+    const htmlTabBtn = document.getElementById('htmlTabBtn');
+    const pdfTabBtn = document.getElementById('pdfTabBtn');
+    const htmlTab = document.getElementById('html-tab');
+    const pdfTab = document.getElementById('pdf-tab');
+    
+    htmlTabBtn.addEventListener('click', () => {
+        htmlTabBtn.classList.add('active');
+        pdfTabBtn.classList.remove('active');
+        htmlTab.classList.add('active');
+        pdfTab.classList.remove('active');
+    });
+    
+    pdfTabBtn.addEventListener('click', () => {
+        pdfTabBtn.classList.add('active');
+        htmlTabBtn.classList.remove('active');
+        pdfTab.classList.add('active');
+        htmlTab.classList.remove('active');
+    });
+}
+
+// PDF 엑셀 파일 업로드 설정
+function setupPdfFileUpload() {
+    const uploadArea = document.getElementById('pdfExcelUploadArea');
+    const fileInput = document.getElementById('pdfExcelFile');
+    
+    if (!uploadArea || !fileInput) return;
+    
+    // 클릭 이벤트
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', async (e) => {
+        await handlePdfFileSelect(e.target.files[0]);
+    });
+    
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            await handlePdfFileSelect(file);
+        }
+    });
+}
+
+// PDF 파일 선택 처리
+async function handlePdfFileSelect(file) {
+    if (!file) return;
+    
+    // 파일 크기 검증 (100MB = 100 * 1024 * 1024 bytes)
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+        showPdfError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        return;
+    }
+    
+    // 파일 형식 검증
+    const allowedExtensions = ['.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+        showPdfError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
+        return;
+    }
+    
+    // 파일 크기 포맷팅
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    showToast(`파일 업로드: ${file.name} (${fileSizeMB} MB)`, 'info', 3000);
+    
+    selectedPdfExcelFile = file;
+    displayPdfFileInfo(file);
+}
+
+// PDF 파일 정보 표시
+function displayPdfFileInfo(file) {
+    const fileInfo = document.getElementById('pdfExcelFileInfo');
+    const fileName = fileInfo.querySelector('.file-name');
+    
+    if (fileName) {
+        fileName.textContent = file.name;
+        fileInfo.style.display = 'flex';
+    }
+}
+
+// PDF 엑셀 파일 제거
+function removePdfExcelFile() {
+    selectedPdfExcelFile = null;
+    const fileInput = document.getElementById('pdfExcelFile');
+    if (fileInput) fileInput.value = '';
+    const fileInfo = document.getElementById('pdfExcelFileInfo');
+    if (fileInfo) fileInfo.style.display = 'none';
+}
+
+// PDF 생성 버튼 설정
+function setupPdfGenerateButton() {
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+    if (generatePdfBtn) {
+        generatePdfBtn.addEventListener('click', handlePdfGenerate);
+    }
+}
+
+// PDF 생성 처리
+async function handlePdfGenerate() {
+    const yearSelect = document.getElementById('pdfYearSelect');
+    const quarterSelect = document.getElementById('pdfQuarterSelect');
+    
+    const year = yearSelect.value;
+    const quarter = quarterSelect.value;
+    
+    if (!year || !quarter) {
+        showPdfError('연도와 분기를 선택해주세요.');
+        return;
+    }
+    
+    // UI 업데이트
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+    const btnText = generatePdfBtn.querySelector('.btn-text');
+    const btnLoader = generatePdfBtn.querySelector('.btn-loader');
+    
+    generatePdfBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    
+    hidePdfError();
+    hidePdfResult();
+    showPdfProgress(10);
+    if (selectedPdfExcelFile) {
+        showToast('파일을 업로드하고 PDF를 생성 중입니다...', 'info', 2000);
+    } else {
+        showToast('기본 엑셀 파일을 사용하여 PDF를 생성 중입니다...', 'info', 2000);
+    }
+    
+    try {
+        // FormData 생성
+        const formData = new FormData();
+        // 엑셀 파일이 선택된 경우에만 추가 (없으면 서버에서 기본 파일 사용)
+        if (selectedPdfExcelFile) {
+            formData.append('excel_file', selectedPdfExcelFile);
+        }
+        formData.append('year', year);
+        formData.append('quarter', quarter);
+        
+        // 진행률 업데이트
+        showPdfProgress(30);
+        
+        // API 호출
+        const response = await fetch('/api/generate-pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        showPdfProgress(60);
+        
+        const data = await response.json();
+        showPdfProgress(90);
+        
+        if (response.ok && data.success) {
+            currentPdfFilename = data.output_filename;
+            showPdfProgress(100);
+            setTimeout(() => {
+                hidePdfProgress();
+                showPdfResult(data.message);
+                showSuccess('PDF가 성공적으로 생성되었습니다!');
+            }, 500);
+        } else {
+            hidePdfProgress();
+            // 413 에러 (파일 크기 초과) 처리
+            if (response.status === 413) {
+                showPdfError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+            } else {
+                showPdfError(data.error || 'PDF 생성 중 오류가 발생했습니다.');
+            }
+        }
+    } catch (error) {
+        console.error('PDF 생성 오류:', error);
+        hidePdfProgress();
+        // 네트워크 오류나 파일 크기 초과 등의 경우
+        if (error.message && error.message.includes('413')) {
+            showPdfError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        } else {
+            showPdfError('서버와 통신하는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+        }
+    } finally {
+        // UI 복원
+        generatePdfBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoader.style.display = 'none';
+    }
+}
+
+// PDF 진행률 표시
+function showPdfProgress(percentage) {
+    const container = document.getElementById('pdfProgressContainer');
+    const bar = document.getElementById('pdfProgressBar');
+    
+    if (container && bar) {
+        container.classList.add('active');
+        bar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+    }
+}
+
+function hidePdfProgress() {
+    const container = document.getElementById('pdfProgressContainer');
+    if (container) {
+        container.classList.remove('active');
+        setTimeout(() => {
+            const bar = document.getElementById('pdfProgressBar');
+            if (bar) bar.style.width = '0%';
+        }, 300);
+    }
+}
+
+// PDF 결과 표시
+function showPdfResult(message) {
+    const resultSection = document.getElementById('pdfResultSection');
+    const resultMessage = document.getElementById('pdfResultMessage');
+    
+    if (resultMessage) {
+        resultMessage.textContent = message;
+    }
+    if (resultSection) {
+        resultSection.style.display = 'block';
+        
+        // 다운로드 버튼 설정
+        const pdfDownloadBtn = document.getElementById('pdfDownloadBtn');
+        if (pdfDownloadBtn) {
+            pdfDownloadBtn.onclick = () => {
+                if (currentPdfFilename) {
+                    showToast('PDF를 다운로드합니다...', 'info', 2000);
+                    window.location.href = `/api/download/${currentPdfFilename}`;
+                }
+            };
+        }
+    }
+}
+
+// PDF 결과 숨기기
+function hidePdfResult() {
+    const resultSection = document.getElementById('pdfResultSection');
+    if (resultSection) {
+        resultSection.style.display = 'none';
+    }
+}
+
+// PDF 에러 표시
+function showPdfError(message) {
+    const errorSection = document.getElementById('pdfErrorSection');
+    const errorMessage = document.getElementById('pdfErrorMessage');
+    
+    if (errorSection && errorMessage) {
+        errorMessage.textContent = message;
+        errorSection.style.display = 'block';
+        
+        // 스크롤하여 에러 메시지가 보이도록
+        errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    // 토스트 알림도 표시
+    showToast(message, 'error', 7000);
+}
+
+// PDF 에러 숨기기
+function hidePdfError() {
+    const errorSection = document.getElementById('pdfErrorSection');
+    if (errorSection) {
+        errorSection.style.display = 'none';
+    }
 }
 

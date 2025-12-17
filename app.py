@@ -275,14 +275,26 @@ def process_template():
             
             # 업로드 폴더가 존재하는지 확인하고 없으면 생성
             upload_folder = Path(app.config['UPLOAD_FOLDER'])
-            upload_folder.mkdir(parents=True, exist_ok=True)
+            try:
+                upload_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                return jsonify({'error': f'업로드 폴더 생성 실패: {str(e)}'}), 500
             
             excel_path = upload_folder / excel_filename
-            excel_file.save(str(excel_path))
             
-            # 파일이 제대로 저장되었는지 확인
+            # 파일 저장 시도
+            try:
+                excel_file.save(str(excel_path))
+            except Exception as e:
+                return jsonify({'error': f'파일 저장 중 오류가 발생했습니다: {str(e)}'}), 500
+            
+            # 파일이 제대로 저장되었는지 확인 (크기도 확인)
             if not excel_path.exists():
                 return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
+            
+            # 파일 크기 확인 (0바이트 파일 방지)
+            if excel_path.stat().st_size == 0:
+                return jsonify({'error': '저장된 파일이 비어있습니다.'}), 400
         else:
             # 기본 엑셀 파일 사용
             if not DEFAULT_EXCEL_FILE.exists():
@@ -325,6 +337,11 @@ def process_template():
             # 파일 경로 검증
             if not excel_path.exists():
                 return jsonify({'error': f'엑셀 파일을 찾을 수 없습니다: {excel_path}'}), 400
+            
+            # 파일 크기 확인
+            file_size = excel_path.stat().st_size
+            if file_size == 0:
+                return jsonify({'error': '엑셀 파일이 비어있습니다.'}), 400
             
             # 엑셀 추출기 초기화
             excel_extractor = ExcelExtractor(str(excel_path))
@@ -407,9 +424,24 @@ def process_template():
                 'message': '보도자료가 성공적으로 생성되었습니다.'
             })
             
-        except Exception as e:
+        except FileNotFoundError as e:
             return jsonify({
-                'error': f'처리 중 오류가 발생했습니다: {str(e)}'
+                'error': f'엑셀 파일을 찾을 수 없습니다: {str(e)}'
+            }), 400
+        except PermissionError as e:
+            return jsonify({
+                'error': f'엑셀 파일에 접근할 수 없습니다. 파일이 다른 프로그램에서 사용 중일 수 있습니다: {str(e)}'
+            }), 400
+        except Exception as e:
+            # 더 자세한 오류 정보 제공
+            error_details = str(e)
+            if 'BadZipFile' in str(type(e)) or 'zipfile' in str(e).lower():
+                error_details = '엑셀 파일이 손상되었거나 올바른 형식이 아닙니다. 파일을 다시 확인해주세요.'
+            elif 'openpyxl' in str(e).lower():
+                error_details = f'엑셀 파일을 읽는 중 오류가 발생했습니다: {str(e)}'
+            
+            return jsonify({
+                'error': f'처리 중 오류가 발생했습니다: {error_details}'
             }), 500
             
         finally:
@@ -489,14 +521,26 @@ def validate_files():
             
             # 업로드 폴더가 존재하는지 확인하고 없으면 생성
             upload_folder = Path(app.config['UPLOAD_FOLDER'])
-            upload_folder.mkdir(parents=True, exist_ok=True)
+            try:
+                upload_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                return jsonify({'valid': False, 'error': f'업로드 폴더 생성 실패: {str(e)}'}), 500
             
             excel_path = upload_folder / excel_filename
-            excel_file.save(str(excel_path))
             
-            # 파일이 제대로 저장되었는지 확인
+            # 파일 저장 시도
+            try:
+                excel_file.save(str(excel_path))
+            except Exception as e:
+                return jsonify({'valid': False, 'error': f'파일 저장 중 오류가 발생했습니다: {str(e)}'}), 500
+            
+            # 파일이 제대로 저장되었는지 확인 (크기도 확인)
             if not excel_path.exists():
                 return jsonify({'valid': False, 'error': '파일 저장에 실패했습니다.'}), 400
+            
+            # 파일 크기 확인 (0바이트 파일 방지)
+            if excel_path.stat().st_size == 0:
+                return jsonify({'valid': False, 'error': '저장된 파일이 비어있습니다.'}), 400
         else:
             # 기본 엑셀 파일 사용
             if not DEFAULT_EXCEL_FILE.exists():
@@ -513,9 +557,24 @@ def validate_files():
                     'error': f'엑셀 파일을 찾을 수 없습니다: {excel_path}'
                 }), 400
             
+            # 파일 크기 확인
+            file_size = excel_path.stat().st_size
+            if file_size == 0:
+                return jsonify({
+                    'valid': False,
+                    'error': '엑셀 파일이 비어있습니다.'
+                }), 400
+            
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
             sheet_names = excel_extractor.get_sheet_names()
+            
+            if not sheet_names:
+                excel_extractor.close()
+                return jsonify({
+                    'valid': False,
+                    'error': '엑셀 파일에 시트가 없습니다.'
+                }), 400
             
             # 각 시트별로 사용 가능한 연도/분기 정보 수집
             period_detector = PeriodDetector(excel_extractor)
@@ -543,10 +602,22 @@ def validate_files():
                 'valid': False,
                 'error': f'엑셀 파일을 찾을 수 없습니다: {str(e)}'
             }), 400
-        except Exception as e:
+        except PermissionError as e:
             return jsonify({
                 'valid': False,
-                'error': f'엑셀 파일을 읽을 수 없습니다: {str(e)}'
+                'error': f'엑셀 파일에 접근할 수 없습니다. 파일이 다른 프로그램에서 사용 중일 수 있습니다: {str(e)}'
+            }), 400
+        except Exception as e:
+            error_details = str(e)
+            # 더 자세한 오류 정보 제공
+            if 'BadZipFile' in str(type(e)) or 'zipfile' in str(e).lower():
+                error_details = '엑셀 파일이 손상되었거나 올바른 형식이 아닙니다. 파일을 다시 확인해주세요.'
+            elif 'openpyxl' in str(e).lower():
+                error_details = f'엑셀 파일을 읽는 중 오류가 발생했습니다: {str(e)}'
+            
+            return jsonify({
+                'valid': False,
+                'error': f'엑셀 파일을 읽을 수 없습니다: {error_details}'
             }), 400
         finally:
             # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
@@ -701,31 +772,9 @@ def create_template():
         }), 500
 
 
-# 10개 템플릿 순서 정의
-TEMPLATE_ORDER = [
-    '광공업생산.html',
-    '서비스업생산.html',
-    '소매판매.html',
-    '건설수주.html',
-    '수출.html',
-    '수입.html',
-    '고용률.html',
-    '실업률.html',
-    '물가동향.html',
-    '국내인구이동.html'
-]
-
-
 @app.route('/api/generate-pdf', methods=['POST'])
 def generate_pdf():
     """10개 템플릿을 순서대로 처리하여 10페이지 PDF 생성"""
-    if not PDF_GENERATOR:
-        return jsonify({
-            'error': 'PDF 생성 라이브러리가 설치되지 않았습니다. 다음 중 하나를 설치해주세요:\n'
-                     '1. playwright: pip install playwright && playwright install chromium\n'
-                     '2. weasyprint: pip install weasyprint (macOS에서는 Homebrew로 시스템 라이브러리 설치 필요)'
-        }), 500
-    
     try:
         # 엑셀 파일 처리: 업로드된 파일이 있으면 사용, 없으면 기본 파일 사용
         excel_file = request.files.get('excel_file')
@@ -764,226 +813,27 @@ def generate_pdf():
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
         
-        # 파일 경로 검증
-        if not excel_path.exists():
-            return jsonify({'error': f'엑셀 파일을 찾을 수 없습니다: {excel_path}'}), 400
+        if not year_str or not quarter_str:
+            return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
         
-        # 엑셀 추출기 초기화
-        excel_extractor = ExcelExtractor(str(excel_path))
-        excel_extractor.load_workbook()
-            
-            # 사용 가능한 시트 목록 가져오기
-            sheet_names = excel_extractor.get_sheet_names()
-            
-            # 첫 번째 시트를 기본 시트로 사용 (연도/분기 감지용)
-            primary_sheet = sheet_names[0] if sheet_names else None
-            if not primary_sheet:
-                excel_extractor.close()
-                return jsonify({'error': '엑셀 파일에 시트가 없습니다.'}), 400
+        year = int(year_str)
+        quarter = int(quarter_str)
         
-        # 연도 및 분기 자동 감지 또는 사용자 입력값 사용
-        period_detector = PeriodDetector(excel_extractor)
-        periods_info = period_detector.detect_available_periods(primary_sheet)
+        # PDF 생성기 초기화
+        pdf_generator = PDFGenerator(app.config['OUTPUT_FOLDER'])
         
-        if year_str and quarter_str:
-            # 사용자가 입력한 값 사용
-            year = int(year_str)
-            quarter = int(quarter_str)
-            
-            # 유효성 검증
-            is_valid, error_msg = period_detector.validate_period(primary_sheet, year, quarter)
-            if not is_valid:
-                excel_extractor.close()
-                return jsonify({'error': error_msg}), 400
-        else:
-            # 자동 감지된 기본값 사용
-            year = periods_info['default_year']
-            quarter = periods_info['default_quarter']
-        
-        # 유연한 매퍼 초기화
-        flexible_mapper = FlexibleMapper(excel_extractor)
-        
-        # 각 템플릿 처리
-        filled_templates = []
-        errors = []
-        
-        for template_name in TEMPLATE_ORDER:
-            try:
-                template_path = Path('templates') / template_name
-                
-                if not template_path.exists():
-                    errors.append(f'템플릿 파일을 찾을 수 없습니다: {template_name}')
-                    continue
-                
-                # 템플릿 관리자 초기화
-                template_manager = TemplateManager(str(template_path))
-                template_manager.load_template()
-                
-                # 템플릿에서 필요한 시트 목록 추출
-                markers = template_manager.extract_markers()
-                required_sheets = set()
-                for marker in markers:
-                    sheet_name = marker.get('sheet_name', '').strip()
-                    if sheet_name:
-                        required_sheets.add(sheet_name)
-                
-                if not required_sheets:
-                    errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다.')
-                    continue
-                
-                # 필요한 시트가 모두 존재하는지 확인
-                missing_sheets = []
-                actual_sheet_mapping = {}
-                
-                for required_sheet in required_sheets:
-                    # 유연한 매핑으로 실제 시트 찾기
-                    actual_sheet = flexible_mapper.find_sheet_by_name(required_sheet)
-                    if actual_sheet:
-                        actual_sheet_mapping[required_sheet] = actual_sheet
-                    else:
-                        missing_sheets.append(required_sheet)
-                
-                if missing_sheets:
-                    errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다: {", ".join(missing_sheets)}')
-                    continue
-                
-                # 첫 번째 필요한 시트를 기본 시트로 사용
-                primary_sheet_for_template = list(actual_sheet_mapping.values())[0]
-                
-                # 템플릿 필러 초기화 및 처리
-                template_filler = TemplateFiller(template_manager, excel_extractor)
-                
-                filled_template = template_filler.fill_template(
-                    sheet_name=primary_sheet_for_template,
-                    year=year,
-                    quarter=quarter
-                )
-                
-                # HTML에서 body와 style 내용 추출 (완전한 HTML 문서인 경우)
-                try:
-                    soup = BeautifulSoup(filled_template, 'html.parser')
-                    body = soup.find('body')
-                    style = soup.find('style')
-                    
-                    template_content = ''
-                    # 스타일 추가
-                    if style:
-                        template_content += f'<style>{style.string}</style>'
-                    # body 내용 추가
-                    if body:
-                        # body 내용만 추출 (body 태그 제외)
-                        body_content = ''.join(str(child) for child in body.children)
-                        template_content += body_content
-                    else:
-                        # body가 없으면 전체 내용 사용
-                        template_content = filled_template
-                    
-                    filled_templates.append(template_content)
-                except:
-                    # 파싱 실패 시 원본 사용
-                    filled_templates.append(filled_template)
-                
-            except Exception as e:
-                errors.append(f'{template_name}: {str(e)}')
-                continue
-        
-        # 엑셀 파일 닫기
-        excel_extractor.close()
-        
-        if not filled_templates:
-            return jsonify({
-                'error': f'처리된 템플릿이 없습니다. 오류: {"; ".join(errors)}'
-            }), 400
-        
-        # 모든 HTML을 하나로 합치기 (페이지 브레이크 추가)
-        combined_html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
-        combined_html += '''
-            @page {
-                size: A4;
-                margin: 2cm;
-            }
-            body {
-                font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
-            }
-            .page-break {
-                page-break-after: always;
-            }
-            .page-break:last-child {
-                page-break-after: auto;
-            }
-        '''
-        combined_html += '</style></head><body>'
-        
-        for i, template_html in enumerate(filled_templates):
-            # 각 템플릿을 div로 감싸고 페이지 브레이크 추가
-            combined_html += f'<div class="page-break">{template_html}</div>'
-        
-        combined_html += '</body></html>'
+        # PDF 생성 라이브러리 확인
+        is_available, error_msg = pdf_generator.check_pdf_generator_available()
+        if not is_available:
+            return jsonify({'error': error_msg}), 500
         
         # PDF 생성
-        pdf_path = Path(app.config['OUTPUT_FOLDER']) / f"{year}년_{quarter}분기_지역경제동향_보도자료_전체.pdf"
-        
-        try:
-            if PDF_GENERATOR == 'playwright':
-                # playwright를 사용하여 PDF 생성
-                with sync_playwright() as p:
-                    browser = p.chromium.launch()
-                    page = browser.new_page()
-                    
-                    # HTML 파일을 임시로 저장하여 로드
-                    temp_html_path = Path(app.config['OUTPUT_FOLDER']) / 'temp_combined.html'
-                    with open(temp_html_path, 'w', encoding='utf-8') as f:
-                        f.write(combined_html)
-                    
-                    # 파일 경로를 file:// URL로 변환
-                    file_url = f"file://{temp_html_path.absolute()}"
-                    page.goto(file_url)
-                    
-                    # PDF 생성
-                    page.pdf(
-                        path=str(pdf_path),
-                        format='A4',
-                        margin={'top': '2cm', 'right': '2cm', 'bottom': '2cm', 'left': '2cm'},
-                        print_background=True
-                    )
-                    
-                    browser.close()
-                    
-                    # 임시 HTML 파일 삭제
-                    if temp_html_path.exists():
-                        temp_html_path.unlink()
-                        
-            elif PDF_GENERATOR == 'weasyprint':
-                # weasyprint를 사용하여 PDF 생성
-                from weasyprint import HTML
-                HTML(string=combined_html, base_url=str(Path('templates').absolute())).write_pdf(str(pdf_path))
-            else:
-                return jsonify({
-                    'error': 'PDF 생성 라이브러리를 사용할 수 없습니다.'
-                }), 500
-                
-        except Exception as e:
-            # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
-            if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
-                try:
-                    excel_path.unlink()
-                except Exception:
-                    pass  # 파일 삭제 실패는 무시
-            return jsonify({
-                'error': f'PDF 생성 중 오류가 발생했습니다: {str(e)}'
-            }), 500
-        
-        # 결과 반환
-        result = {
-            'success': True,
-            'output_filename': pdf_path.name,
-            'message': f'{len(filled_templates)}개 템플릿이 성공적으로 PDF로 생성되었습니다.',
-            'processed_templates': len(filled_templates),
-            'total_templates': len(TEMPLATE_ORDER)
-        }
-        
-        if errors:
-            result['warnings'] = errors
+        success, result = pdf_generator.generate_pdf(
+            excel_path=str(excel_path),
+            year=year,
+            quarter=quarter,
+            templates_dir='templates'
+        )
         
         # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
         if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
@@ -992,7 +842,10 @@ def generate_pdf():
             except Exception:
                 pass  # 파일 삭제 실패는 무시
         
-        return jsonify(result)
+        if success:
+            return jsonify(result)
+        else:
+            return jsonify({'error': result}), 500
     
     except Exception as e:
         return jsonify({
