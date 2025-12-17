@@ -21,6 +21,7 @@ from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
 from src.template_generator import TemplateGenerator
 from src.excel_header_parser import ExcelHeaderParser
+from src.flexible_mapper import FlexibleMapper
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -143,18 +144,85 @@ def index():
 
 @app.route('/api/templates', methods=['GET'])
 def get_templates():
-    """사용 가능한 템플릿 목록 반환"""
+    """사용 가능한 템플릿 목록 반환 (각 템플릿이 필요한 시트 정보 포함)"""
     templates_dir = Path('templates')
     templates = []
     
     if templates_dir.exists():
         for file in templates_dir.glob('*.html'):
-            templates.append({
-                'name': file.name,
-                'path': str(file)
-            })
+            template_path = str(file)
+            template_name = file.name
+            
+            # 템플릿에서 필요한 시트 목록 추출
+            try:
+                template_manager = TemplateManager(template_path)
+                template_manager.load_template()
+                markers = template_manager.extract_markers()
+                
+                # 마커에서 시트명 추출 (중복 제거)
+                required_sheets = set()
+                for marker in markers:
+                    sheet_name = marker.get('sheet_name', '').strip()
+                    if sheet_name:
+                        required_sheets.add(sheet_name)
+                
+                # display_name 찾기 (SHEET_TEMPLATE_MAPPING에서)
+                display_name = template_name.replace('.html', '')
+                for sheet_name, info in SHEET_TEMPLATE_MAPPING.items():
+                    if info['template'] == template_name:
+                        display_name = info['display_name']
+                        break
+                
+                templates.append({
+                    'name': template_name,
+                    'path': template_path,
+                    'display_name': display_name,
+                    'required_sheets': list(required_sheets)
+                })
+            except Exception as e:
+                # 템플릿 파싱 실패 시 기본 정보만 반환
+                templates.append({
+                    'name': template_name,
+                    'path': template_path,
+                    'display_name': template_name.replace('.html', ''),
+                    'required_sheets': []
+                })
     
     return jsonify({'templates': templates})
+
+
+@app.route('/api/template-sheets', methods=['POST'])
+def get_template_sheets():
+    """템플릿이 필요한 시트 목록 반환"""
+    try:
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            return jsonify({'error': '템플릿명이 필요합니다.'}), 400
+        
+        template_path = Path('templates') / template_name
+        if not template_path.exists():
+            return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다: {template_name}'}), 404
+        
+        # 템플릿에서 필요한 시트 목록 추출
+        template_manager = TemplateManager(str(template_path))
+        template_manager.load_template()
+        markers = template_manager.extract_markers()
+        
+        # 마커에서 시트명 추출 (중복 제거)
+        required_sheets = set()
+        for marker in markers:
+            sheet_name = marker.get('sheet_name', '').strip()
+            if sheet_name:
+                required_sheets.add(sheet_name)
+        
+        return jsonify({
+            'template_name': template_name,
+            'required_sheets': list(required_sheets)
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'템플릿 분석 중 오류가 발생했습니다: {str(e)}'
+        }), 500
 
 
 @app.route('/api/process', methods=['POST'])
@@ -172,18 +240,13 @@ def process_template():
         if not allowed_file(excel_file.filename):
             return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
         
-        # 시트명, 연도 및 분기 파라미터 가져오기
-        sheet_name = request.form.get('sheet_name', '')
+        # 템플릿명, 연도 및 분기 파라미터 가져오기
+        template_name = request.form.get('template_name', '')
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
         
-        if not sheet_name:
-            return jsonify({'error': '시트명을 선택해주세요.'}), 400
-        
-        # 시트명에 따라 템플릿 자동 선택
-        template_info = get_template_for_sheet(sheet_name)
-        template_name = template_info['template']
-        sheet_display_name = template_info['display_name']
+        if not template_name:
+            return jsonify({'error': '템플릿을 선택해주세요.'}), 400
         
         template_path = Path('templates') / template_name
         
@@ -200,6 +263,19 @@ def process_template():
             template_manager = TemplateManager(str(template_path))
             template_manager.load_template()
             
+            # 템플릿에서 필요한 시트 목록 추출
+            markers = template_manager.extract_markers()
+            required_sheets = set()
+            for marker in markers:
+                sheet_name = marker.get('sheet_name', '').strip()
+                if sheet_name:
+                    required_sheets.add(sheet_name)
+            
+            if not required_sheets:
+                return jsonify({
+                    'error': '템플릿에서 필요한 시트를 찾을 수 없습니다.'
+                }), 400
+            
             # 엑셀 추출기 초기화
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
@@ -207,15 +283,30 @@ def process_template():
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
             
-            # 선택한 시트가 존재하는지 확인
-            if sheet_name not in sheet_names:
+            # 필요한 시트가 모두 존재하는지 확인
+            missing_sheets = []
+            actual_sheet_mapping = {}  # 템플릿 시트명 -> 실제 시트명 매핑
+            
+            flexible_mapper = FlexibleMapper(excel_extractor)
+            for required_sheet in required_sheets:
+                # 유연한 매핑으로 실제 시트 찾기
+                actual_sheet = flexible_mapper.find_sheet_by_name(required_sheet)
+                if actual_sheet:
+                    actual_sheet_mapping[required_sheet] = actual_sheet
+                else:
+                    missing_sheets.append(required_sheet)
+            
+            if missing_sheets:
                 return jsonify({
-                    'error': f'시트 "{sheet_name}"을 찾을 수 없습니다. 사용 가능한 시트: {", ".join(sheet_names)}'
+                    'error': f'필요한 시트를 찾을 수 없습니다: {", ".join(missing_sheets)}. 사용 가능한 시트: {", ".join(sheet_names)}'
                 }), 400
+            
+            # 첫 번째 필요한 시트를 기본 시트로 사용 (연도/분기 감지용)
+            primary_sheet = list(actual_sheet_mapping.values())[0]
             
             # 연도 및 분기 자동 감지 또는 사용자 입력값 사용
             period_detector = PeriodDetector(excel_extractor)
-            periods_info = period_detector.detect_available_periods(sheet_name)
+            periods_info = period_detector.detect_available_periods(primary_sheet)
             
             if year_str and quarter_str:
                 # 사용자가 입력한 값 사용
@@ -233,15 +324,24 @@ def process_template():
             
             # 템플릿 필러 초기화 및 처리
             template_filler = TemplateFiller(template_manager, excel_extractor)
+            
+            # primary_sheet를 사용하여 연도/분기 감지 (템플릿은 자동으로 필요한 시트를 찾음)
             filled_template = template_filler.fill_template(
-                sheet_name=sheet_name,
+                sheet_name=primary_sheet,  # 연도/분기 감지용
                 year=year, 
                 quarter=quarter
             )
             
+            # display_name 찾기
+            display_name = template_name.replace('.html', '')
+            for sheet_name, info in SHEET_TEMPLATE_MAPPING.items():
+                if info['template'] == template_name:
+                    display_name = info['display_name']
+                    break
+            
             # 결과 저장
-            # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(시트명).html
-            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({sheet_display_name}).html"
+            # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(템플릿명).html
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({display_name}).html"
             output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(filled_template)

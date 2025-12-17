@@ -1,6 +1,8 @@
 // 전역 변수
 let selectedExcelFile = null;
 let currentOutputFilename = null;
+let selectedTemplate = null;
+let templatesList = [];
 
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,7 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 앱 초기화
 function initializeApp() {
+    loadTemplates();
     setupFileUpload();
+    setupTemplateSelect();
     setupProcessButton();
 }
 
@@ -76,8 +80,16 @@ async function handleFileSelect(file) {
     selectedExcelFile = file;
     displayFileInfo(file);
     
-    // 시트 목록 로드
-    await loadSheetNames(file);
+    // 필요한 시트 확인
+    if (selectedTemplate) {
+        const validation = await validateRequiredSheets(file);
+        if (!validation.valid) {
+            showError(validation.error);
+            selectedExcelFile = null;
+            document.getElementById('excelFileInfo').style.display = 'none';
+            return;
+        }
+    }
     
     updateProcessButton();
 }
@@ -97,19 +109,85 @@ function removeExcelFile() {
     document.getElementById('excelFile').value = '';
     document.getElementById('excelFileInfo').style.display = 'none';
     
-    // 시트 선택 초기화
-    const sheetSelect = document.getElementById('sheetSelect');
-    sheetSelect.innerHTML = '<option value="">엑셀 파일을 업로드하세요</option>';
-    sheetSelect.disabled = true;
+    // 시트 확인 정보 숨기기
+    document.getElementById('requiredSheetsInfo').style.display = 'none';
     
     updateProcessButton();
 }
 
-// 시트 목록 로드
-async function loadSheetNames(file) {
-    const sheetSelect = document.getElementById('sheetSelect');
-    sheetSelect.disabled = true;
-    sheetSelect.innerHTML = '<option value="">로딩 중...</option>';
+// 템플릿 목록 로드
+async function loadTemplates() {
+    const templateSelect = document.getElementById('templateSelect');
+    templateSelect.disabled = true;
+    templateSelect.innerHTML = '<option value="">템플릿 목록을 불러오는 중...</option>';
+    
+    try {
+        const response = await fetch('/api/templates');
+        const data = await response.json();
+        
+        if (response.ok && data.templates) {
+            templatesList = data.templates;
+            templateSelect.innerHTML = '<option value="">템플릿을 선택하세요</option>';
+            
+            data.templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.name;
+                option.textContent = template.display_name || template.name;
+                option.dataset.requiredSheets = JSON.stringify(template.required_sheets || []);
+                templateSelect.appendChild(option);
+            });
+            
+            templateSelect.disabled = false;
+        } else {
+            templateSelect.innerHTML = '<option value="">템플릿을 불러올 수 없습니다</option>';
+            showError('템플릿 목록을 불러올 수 없습니다.');
+        }
+    } catch (error) {
+        console.error('템플릿 목록 로드 오류:', error);
+        templateSelect.innerHTML = '<option value="">템플릿을 불러올 수 없습니다</option>';
+        showError('템플릿 목록을 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+// 템플릿 선택 설정
+function setupTemplateSelect() {
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            selectedTemplate = this.value;
+            updateRequiredSheetsInfo();
+            updateProcessButton();
+        });
+    }
+}
+
+// 필요한 시트 정보 업데이트
+function updateRequiredSheetsInfo() {
+    const templateSelect = document.getElementById('templateSelect');
+    const requiredSheetsInfo = document.getElementById('requiredSheetsInfo');
+    const requiredSheetsList = document.getElementById('requiredSheetsList');
+    
+    if (!templateSelect.value) {
+        requiredSheetsInfo.style.display = 'none';
+        return;
+    }
+    
+    const selectedOption = templateSelect.options[templateSelect.selectedIndex];
+    const requiredSheets = JSON.parse(selectedOption.dataset.requiredSheets || '[]');
+    
+    if (requiredSheets.length > 0) {
+        requiredSheetsList.textContent = requiredSheets.join(', ');
+        requiredSheetsInfo.style.display = 'block';
+    } else {
+        requiredSheetsInfo.style.display = 'none';
+    }
+}
+
+// 엑셀 파일 업로드 후 필요한 시트 확인
+async function validateRequiredSheets(file) {
+    if (!selectedTemplate) {
+        return { valid: true };
+    }
     
     try {
         const formData = new FormData();
@@ -123,40 +201,61 @@ async function loadSheetNames(file) {
         const data = await response.json();
         
         if (response.ok && data.valid && data.sheet_names) {
-            // 시트 목록 채우기
-            sheetSelect.innerHTML = '';
-            const defaultSheetName = '광공업생산';
+            const templateSelect = document.getElementById('templateSelect');
+            const selectedOption = templateSelect.options[templateSelect.selectedIndex];
+            const requiredSheets = JSON.parse(selectedOption.dataset.requiredSheets || '[]');
             
-            data.sheet_names.forEach(sheetName => {
-                const option = document.createElement('option');
-                option.value = sheetName;
-                option.textContent = sheetName;
-                sheetSelect.appendChild(option);
+            // 필요한 시트가 모두 있는지 확인
+            const missingSheets = requiredSheets.filter(sheet => {
+                // 유연한 매칭: 정확한 매칭 또는 부분 매칭
+                return !data.sheet_names.some(availableSheet => {
+                    const normalizedRequired = sheet.toLowerCase().trim();
+                    const normalizedAvailable = availableSheet.toLowerCase().trim();
+                    return normalizedRequired === normalizedAvailable ||
+                           normalizedRequired.includes(normalizedAvailable) ||
+                           normalizedAvailable.includes(normalizedRequired);
+                });
             });
             
-            // 기본 시트 "광공업생산"이 있으면 선택, 없으면 첫 번째 시트 선택
-            if (data.sheet_names.includes(defaultSheetName)) {
-                sheetSelect.value = defaultSheetName;
-            } else if (data.sheet_names.length > 0) {
-                sheetSelect.value = data.sheet_names[0];
+            if (missingSheets.length > 0) {
+                return {
+                    valid: false,
+                    error: `필요한 시트를 찾을 수 없습니다: ${missingSheets.join(', ')}`
+                };
             }
-            
-            sheetSelect.disabled = false;
             
             // 시트별 연도/분기 정보 저장
             if (data.sheets_info) {
                 window.sheetsInfo = data.sheets_info;
-                // 선택된 시트의 연도/분기 업데이트
-                updateYearQuarterOptions(sheetSelect.value);
+                // 첫 번째 필요한 시트의 연도/분기 업데이트
+                if (requiredSheets.length > 0) {
+                    const firstRequiredSheet = requiredSheets[0];
+                    const matchedSheet = data.sheet_names.find(sheet => {
+                        const normalizedRequired = firstRequiredSheet.toLowerCase().trim();
+                        const normalizedAvailable = sheet.toLowerCase().trim();
+                        return normalizedRequired === normalizedAvailable ||
+                               normalizedRequired.includes(normalizedAvailable) ||
+                               normalizedAvailable.includes(normalizedRequired);
+                    });
+                    if (matchedSheet && window.sheetsInfo[matchedSheet]) {
+                        updateYearQuarterOptions(matchedSheet);
+                    }
+                }
             }
+            
+            return { valid: true };
         } else {
-            sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
-            showError(data.error || '시트 목록을 불러올 수 없습니다.');
+            return {
+                valid: false,
+                error: data.error || '엑셀 파일 검증에 실패했습니다.'
+            };
         }
     } catch (error) {
-        console.error('시트 목록 로드 오류:', error);
-        sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
-        showError('시트 목록을 불러오는 중 오류가 발생했습니다.');
+        console.error('시트 검증 오류:', error);
+        return {
+            valid: false,
+            error: '시트 검증 중 오류가 발생했습니다.'
+        };
     }
 }
 
@@ -170,9 +269,9 @@ function setupProcessButton() {
 // 처리 버튼 상태 업데이트
 function updateProcessButton() {
     const processBtn = document.getElementById('processBtn');
-    const sheetSelect = document.getElementById('sheetSelect');
+    const templateSelect = document.getElementById('templateSelect');
     
-    if (selectedExcelFile && sheetSelect.value) {
+    if (selectedExcelFile && templateSelect.value) {
         processBtn.disabled = false;
     } else {
         processBtn.disabled = true;
@@ -186,17 +285,24 @@ async function handleProcess() {
         return;
     }
 
-    // 시트, 연도 및 분기 가져오기
-    const sheetSelect = document.getElementById('sheetSelect');
+    // 템플릿, 연도 및 분기 가져오기
+    const templateSelect = document.getElementById('templateSelect');
     const yearSelect = document.getElementById('yearSelect');
     const quarterSelect = document.getElementById('quarterSelect');
     
-    const sheetName = sheetSelect.value;
+    const templateName = templateSelect.value;
     const year = yearSelect.value;
     const quarter = quarterSelect.value;
     
-    if (!sheetName) {
-        showError('시트를 선택해주세요.');
+    if (!templateName) {
+        showError('템플릿을 선택해주세요.');
+        return;
+    }
+    
+    // 필요한 시트 확인
+    const validation = await validateRequiredSheets(selectedExcelFile);
+    if (!validation.valid) {
+        showError(validation.error);
         return;
     }
 
@@ -216,7 +322,7 @@ async function handleProcess() {
         // FormData 생성
         const formData = new FormData();
         formData.append('excel_file', selectedExcelFile);
-        formData.append('sheet_name', sheetName);
+        formData.append('template_name', templateName);
         formData.append('year', year);
         formData.append('quarter', quarter);
 
@@ -326,14 +432,20 @@ function updateYearQuarterOptions(sheetName) {
     }
 }
 
-// 시트 선택 변경 시 처리 버튼 상태 업데이트 및 연도/분기 옵션 업데이트
+// 템플릿 선택 변경 시 처리 버튼 상태 업데이트
 document.addEventListener('DOMContentLoaded', function() {
-    const sheetSelect = document.getElementById('sheetSelect');
-    if (sheetSelect) {
-        sheetSelect.addEventListener('change', function() {
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
             updateProcessButton();
-            if (window.sheetsInfo && this.value) {
-                updateYearQuarterOptions(this.value);
+            updateRequiredSheetsInfo();
+            // 엑셀 파일이 이미 업로드되어 있으면 시트 검증
+            if (selectedExcelFile) {
+                validateRequiredSheets(selectedExcelFile).then(validation => {
+                    if (!validation.valid) {
+                        showError(validation.error);
+                    }
+                });
             }
         });
     }

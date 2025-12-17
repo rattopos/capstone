@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서비스업생산</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        .document-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+            line-height: 1.4;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.7;
+            color: #000;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 13px;
+            border: 1px solid #000;
+        }
+        
+        th, td {
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 12px;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>나:</th>
+            <th>서비스업생산</th>
+        </tr>
+        <tr>
+            <td>서비스업생산은</td>
+            <td>경기예술-스포츠</td>
+            <td>여가</td>
+            <td>인젠예술-스포츠</td>
+            <td>여가);</td>
+            <td>세중전문</td>
+            <td>과학</td>
+            <td>기술)</td>
+            <td>등</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}개</td>
+            <td>시도에서</td>
+            <td>전년동분기대비</td>
+            <td>증가</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:전국_이름}년 {서비스업생산:전국_이름}/{서비스업생산:전국_이름}분기   전국   서비스업생산은   보건: 복지   금움 보험</td>
+            <td>등의</td>
+            <td>생산이</td>
+        </tr>
+        <tr>
+            <td>늘어   전년동분기대비</td>
+            <td>{서비스업생산:value}스업생산:전국_증감률}   증가</td>
+        </tr>
+        <tr>
+            <td>경기({서비스업생산:value}스업생산:전국_증감률})</td>
+            <td>인천({서비스업생산:value}스업생산:전국_증감률}),</td>
+            <td>세중({서비스업생산:value}스업생산:전국_증감률})은</td>
+            <td>예술</td>
+            <td>스포츠</td>
+            <td>여가</td>
+            <td>전문:</td>
+            <td>과학</td>
+            <td>기술</td>
+        </tr>
+        <tr>
+            <td>등의</td>
+            <td>생산이</td>
+            <td>늘어</td>
+            <td>증가하없으며</td>
+            <td>제주({서비스업생산:value}업생산:전국_증감률})</td>
+            <td>,</td>
+            <td>경남({서비스업생산:value}스업생산:전국_증감률})</td>
+            <td>강원({서비스업생산:value}업생산:전국_증감률})은</td>
+        </tr>
+        <tr>
+            <td>정보통신</td>
+            <td>부동산</td>
+            <td>예술</td>
+            <td>스포츠</td>
+            <td>여가</td>
+            <td>등의</td>
+            <td>생산이</td>
+            <td>줄어</td>
+            <td>감소</td>
+        </tr>
+        <tr>
+            <td>주요</td>
+            <td>증감지역</td>
+            <td>및</td>
+            <td>업종 ></td>
+        </tr>
+        <tr>
+            <td>전국(</td>
+            <td>{서비스업생산:value}):</td>
+            <td>보건 ' 복지({서비스업생산:value}),</td>
+            <td>금움 보험({서비스업생산:value}),</td>
+            <td>운수 . 창고({서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>경기</td>
+            <td>{서비스업생산:value}): 예술 스포츠 여가 {서비스업생산:value}),</td>
+            <td>정보통신({서비스업생산:value}),</td>
+            <td>전문 과학 기술({서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>인천</td>
+            <td>{서비스업생산:value}): 예술 스포츠 ' 여가({서비스업생산:value},</td>
+            <td>보건 복지({서비스업생산:value}),</td>
+            <td>도소매 ({서비스업생산:value} {서비스업생산:value}서비스업생산:전국_증감률}</td>
+        </tr>
+        <tr>
+            <td>세종(</td>
+            <td>{서비스업생산:value}): 전문 과학 기술({서비스업생산:value},{서비스업생산:value},</td>
+            <td>부동산({서비스업생산:value},</td>
+            <td>사업시설관리 사업지원 임대({서비스업생산:사업시_이름})</td>
+        </tr>
+        <tr>
+            <td>제주( {서비스업생산:value}): 정보통신({서비스업생산:value},</td>
+            <td>부동산({서비스업생산:사업시_이름}),  사업시설관리  사업지원 임대 ({서비스업생산:사업시_이름})</td>
+        </tr>
+        <tr>
+            <td>경남( {서비스업생산:value}): 부동산{서비스업생산:value}) ,  예술 스포츠 여가{서비스업생산:value},</td>
+            <td>사업시설관리 사업지원 임대({서비스업생산:사업시_이름} {서비스업생산:사업시_이름}서비스업생산:사업시_증감률}</td>
+        </tr>
+        <tr>
+            <td>강원</td>
+            <td>{서비스업생산:사업시_이름}): 예술 스포츠-여개{서비스업생산:사업시_이름}, 전문- 과학기술 G{서비스업생산:사업시_이름}Pld 사업시설곤리 사업지원-임대{서비스업생산:사업시_이름}/{서비스업생산:사업시_이름}</td>
+        </tr>
+        <tr>
+            <td>서비스업생산</td>
+            <td>중감물-(불변)</td>
+            <td>></td>
+        </tr>
+        <tr>
+            <td>[전년동분기비,</td>
+            <td>%]</td>
+        </tr>
+        <tr>
+            <td>시-도</td>
+            <td>{서비스업생산:2023}</td>
+            <td>{서비스업생산:2023}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>리{서비스업생산:value}P</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>국</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>,{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>출</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>.{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>물</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>세</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>경 기</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>강</td>
+            <td>:</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>춤</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>춤</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>출</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>~{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>경</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>~{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>제</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>자료</td>
+            <td>통계청</td>
+            <td>국가통계 포털 (KOSIS)  서비스업동향조사</td>
+        </tr>
+    </table>
+</body>
+</html>

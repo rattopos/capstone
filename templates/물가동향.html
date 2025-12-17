@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>물가동향</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        .document-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+            line-height: 1.4;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.7;
+            color: #000;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 13px;
+            border: 1px solid #000;
+        }
+        
+        th, td {
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 12px;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>{서비스업생산:value}</th>
+            <th>물가</th>
+            <th>동향</th>
+        </tr>
+        <tr>
+            <td>소비자물가는   외식제외개인서비스</td>
+            <td>둥이   올라</td>
+            <td>모든</td>
+            <td>시도에서   전년동분기</td>
+        </tr>
+        <tr>
+            <td>대비</td>
+            <td>상숨</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}년</td>
+            <td>{서비스업생산:value}분기</td>
+            <td>전국</td>
+            <td>물가는</td>
+            <td>외식제외개인서비스</td>
+            <td>외식</td>
+            <td>둥이</td>
+            <td>올라</td>
+            <td>전년동분기</td>
+        </tr>
+        <tr>
+            <td>대비</td>
+            <td>{서비스업생산:value}스업생산:전국_증감률}</td>
+            <td>상승</td>
+        </tr>
+        <tr>
+            <td>부산({서비스업생산:value}은</td>
+            <td>외식제외개인서비스</td>
+            <td>둥이</td>
+            <td>올라</td>
+            <td>전국</td>
+            <td>평균보다</td>
+            <td>높게</td>
+            <td>상승하엿으며</td>
+        </tr>
+        <tr>
+            <td>제주({서비스업생산:value});</td>
+            <td>광주({서비스업생산:value}스업생산:전국_증감률});</td>
+            <td>울산{서비스업생산:value}</td>
+            <td>{서비스업생산:value}은</td>
+            <td>농산물</td>
+            <td>둥이</td>
+            <td>내려</td>
+            <td>전국</td>
+            <td>평균보다</td>
+            <td>낯게</td>
+            <td>상숨</td>
+        </tr>
+        <tr>
+            <td>주요</td>
+            <td>등락지역</td>
+            <td>및 품목 ></td>
+        </tr>
+        <tr>
+            <td>전국({서비스업생산:전국_이름}스업생산:전국_증감률}{서비스업생산:전국_이름}):   외식제외개인서비스({서비스업생산:전국_이름}),</td>
+            <td>외식({서비스업생산:value}),</td>
+            <td>가공식 품({서비스업생산:value}) ,   공공서비스({서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>부산({서비스업생산:value}):</td>
+            <td>외식제 외개인서비스({서비스업생산:value}),</td>
+            <td>외식({서비스업생산:value}),</td>
+            <td>가공식 품({서비스업생산:value}이),</td>
+            <td>공공서비스({서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>경기({서비스업생산:value}):</td>
+            <td>외식제 외개인서비스({서비스업생산:value}),</td>
+            <td>외식({서비스업생산:value}),</td>
+            <td>가공식 품({서비스업생산:value}) ,  공공서비스(.{서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>대구({서비스업생산:대구_이름}스업생산:대구_증감률}{서비스업생산:대구_이름}):   외식제외개인서비스({서비스업생산:대구_이름}    가공식 품({서비스업생산:대구_이름}) ,</td>
+            <td>외식({서비스업생산:value}스업생산:전국_증감률}),</td>
+            <td>축산물({서비스업생산:value}스업생산:전국_증감률})</td>
+        </tr>
+        <tr>
+            <td>제주 ({서비스업생산:value}): 농산물({서비스업생산:value}업생산:전국_증감률}),</td>
+            <td>석유류({서비스업생산:value},{서비스업생산:value}) ,  의약품({서비스업생산:value})    출판물({서비스업생산:value})</td>
+        </tr>
+        <tr>
+            <td>광주 ({서비스업생산:value},{서비스업생산:value}): 농산물({서비스업생산:value}),</td>
+            <td>석유류({서비스업생산:value},{서비스업생산:value}서비스업생산:전국_증감률}),</td>
+            <td>내구재 ({서비스업생산:내구_이름}),</td>
+            <td>출판물({서비스업생산:value},{서비스업생산:value}}</td>
+        </tr>
+        <tr>
+            <td>울산({서비스업생산:value}): 농산물({서비스업생산:value},</td>
+            <td>석유류({서비스업생산:value}),</td>
+            <td>내구재 ({서비스업생산:내구_이름}),</td>
+            <td>출판물({서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>소비자물가</td>
+            <td>등락률</td>
+            <td>></td>
+        </tr>
+        <tr>
+            <td>[전년동분기비,</td>
+            <td>미]</td>
+        </tr>
+        <tr>
+            <td>시 -도</td>
+            <td>{서비스업생산:2023}</td>
+            <td>{서비스업생산:2023}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:2024}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>리{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>{서비스업생산:value}/{서비스업생산:value}</td>
+            <td>리{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>세</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>경 기</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>강</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>총</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value},{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+            <td>{서비스업생산:value}</td>
+        </tr>
+        <tr>
+            <td>자료</td>
+            <td>통계청</td>
+            <td>국가통계 포털 (KOSIS),</td>
+            <td>소비자물가조사</td>
+        </tr>
+    </table>
+</body>
+</html>

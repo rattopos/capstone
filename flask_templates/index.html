@@ -64,8 +64,21 @@
                 </div>
             </div>
 
+            <div class="template-section" style="margin-bottom: 40px;">
+                <h2>1. 템플릿 선택</h2>
+                <div class="selector-group">
+                    <label for="templateSelect">템플릿</label>
+                    <select id="templateSelect" class="period-select">
+                        <option value="">템플릿 목록을 불러오는 중...</option>
+                    </select>
+                </div>
+                <div id="requiredSheetsInfo" style="display: none; margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 4px; font-size: 0.9em;">
+                    <strong>필요한 시트:</strong> <span id="requiredSheetsList"></span>
+                </div>
+            </div>
+
             <div class="upload-section">
-                <h2>1. 파일 업로드</h2>
+                <h2>2. 파일 업로드</h2>
                 <div class="upload-box">
                     <div class="file-upload-area" id="excelUploadArea">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -84,15 +97,6 @@
                 </div>
             </div>
 
-            <div class="sheet-section">
-                <h2>2. 시트 선택</h2>
-                <div class="selector-group">
-                    <label for="sheetSelect">시트명</label>
-                    <select id="sheetSelect" class="period-select" disabled>
-                        <option value="">엑셀 파일을 업로드하세요</option>
-                    </select>
-                </div>
-            </div>
 
             <div class="period-section">
                 <h2>3. 연도 및 분기 선택</h2>

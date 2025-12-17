@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소매판매</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        .document-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+            line-height: 1.4;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 25px 0 12px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.7;
+            color: #000;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 13px;
+            border: 1px solid #000;
+        }
+        
+        th, td {
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 12px;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>{소비(소매, 추가):value} 소비</th>
+            <th>건설 동향</th>
+        </tr>
+        <tr>
+            <td>가:</td>
+            <td>소매판매</td>
+        </tr>
+        <tr>
+            <td>소매판매는</td>
+            <td>제주(면세점)</td>
+            <td>경북(전문소매점)</td>
+            <td>서울(면세점)</td>
+            <td>등</td>
+            <td>{소비(소매, 추가):value}개</td>
+            <td>시도에서</td>
+        </tr>
+        <tr>
+            <td>전년동분기대비</td>
+            <td>감소</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}년 {소비(소매, 추가):value}/{소비(소매, 추가):value}분기</td>
+            <td>전국   소매판매는   슈퍼마켓 . 잡화점 ,</td>
+            <td>면세점</td>
+            <td>등의</td>
+            <td>판매가</td>
+        </tr>
+        <tr>
+            <td>줄어</td>
+            <td>전년동분기대비</td>
+            <td>{소비(소매, 추가):value}(소매, 추가):전국_증감률}</td>
+            <td>감소</td>
+        </tr>
+        <tr>
+            <td>울산({소비(소매, 추가):value}(소매, 추가):전국_증감률});</td>
+            <td>인천({소비(소매, 추가):value},{소비(소매, 추가):value}소비(소매, 추가):전국_증감률}),</td>
+            <td>세중({소비(소매, 추가):value}(소매, 추가):전국_증감률})은</td>
+            <td>승용차</td>
+            <td>연료소매점</td>
+            <td>등의</td>
+            <td>판매가</td>
+            <td>늘어</td>
+        </tr>
+        <tr>
+            <td>증가하없으다</td>
+            <td>,</td>
+            <td>제주({소비(소매, 추가):value}소매, 추가):전국_증감률})</td>
+            <td>경북({소비(소매, 추가):value}(소매, 추가):전국_증감률}),</td>
+            <td>서울({소비(소매, 추가):value}(소매, 추가):전국_증감률}</td>
+            <td>은</td>
+            <td>면세점,</td>
+            <td>전문소매점</td>
+        </tr>
+        <tr>
+            <td>등의</td>
+            <td>판매가</td>
+            <td>줄어</td>
+            <td>감소</td>
+        </tr>
+        <tr>
+            <td>주요</td>
+            <td>증감지역</td>
+            <td>및</td>
+            <td>업태</td>
+            <td>></td>
+        </tr>
+        <tr>
+            <td>전국( {소비(소매, 추가):전국_이름}); 슈퍼마켓-잡화점({소비(소매, 추가):전국_이름}),</td>
+            <td>면세점({소비(소매, 추가):value}) ,  전문소매점({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>울산(</td>
+            <td>{소비(소매, 추가):value}):</td>
+            <td>승용차 연료소매점 ({소비(소매, 추가):value}),</td>
+            <td>슈퍼마켓 . 잡화점 편의점({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>인천</td>
+            <td>{소비(소매, 추가):value}): 승용차  연료소매 점 ({소비(소매, 추가):value}소매, 추가):전국_증감률}),</td>
+            <td>면세점({소비(소매, 추가):value}) ,  대형마트({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>세종-</td>
+            <td>{소비(소매, 추가):value}); 승용차 연료소매 점({소비(소매, 추가):value}),</td>
+            <td>대형마트({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>제주( {소비(소매, 추가):value}):</td>
+            <td>면세점({소비(소매, 추가):value}),</td>
+            <td>슈퍼마켓 . 잡화점  편의점({소비(소매, 추가):value}),</td>
+            <td>대형마트({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>경북( {소비(소매, 추가):value}):</td>
+            <td>전문소매점({소비(소매, 추가):value}) ,   슈퍼마켓 . 잡화점-편의점({소비(소매, 추가):value}),</td>
+            <td>대형마트({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>서울( {소비(소매, 추가):value}):</td>
+            <td>면세점({소비(소매, 추가):value}),  슈퍼마켓 -잡화점-편의점({소비(소매, 추가):value}) ,</td>
+            <td>백화점({소비(소매, 추가):value})</td>
+        </tr>
+        <tr>
+            <td>소매판매</td>
+            <td>중감물-(불변) ></td>
+        </tr>
+        <tr>
+            <td>[전년동분기비,</td>
+            <td>%]</td>
+        </tr>
+        <tr>
+            <td>시 -도</td>
+            <td>{소비(소매, 추가):2023}</td>
+            <td>{소비(소매, 추가):2023}</td>
+            <td>{소비(소매, 추가):2024}</td>
+            <td>{소비(소매, 추가):2024}</td>
+            <td>{소비(소매, 추가):2024}</td>
+            <td>{소비(소매, 추가):2024}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}/{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}/{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}/{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}/{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>리{소비(소매, 추가):value}p</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>~{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>~{소비(소매, 추가):value}</td>
+            <td>-</td>
+            <td>.{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>세</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>경</td>
+            <td>기</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>-</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>감</td>
+            <td>월</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>~{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>충</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>:</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value},{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>~{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+            <td>{소비(소매, 추가):value}</td>
+        </tr>
+        <tr>
+            <td>자료:</td>
+            <td>통계청</td>
+            <td>국가통계포털 (KOSIS) , 서비스업동향조사</td>
+        </tr>
+    </table>
+</body>
+</html>
