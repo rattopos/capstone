@@ -1,6 +1,8 @@
 // 전역 변수
+let selectedPdfFile = null;
 let selectedExcelFile = null;
 let currentOutputFilename = null;
+let sheetsInfo = {};
 
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,15 +11,122 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 앱 초기화
 function initializeApp() {
-    setupFileUpload();
+    setupPdfUpload();
+    setupExcelUpload();
     setupProcessButton();
+    setupWorkflowSteps();
 }
 
-// 파일 업로드 설정
-function setupFileUpload() {
+// 워크플로우 단계 설정
+function setupWorkflowSteps() {
+    // 시트 선택 변경 시
+    const sheetSelect = document.getElementById('sheetSelect');
+    if (sheetSelect) {
+        sheetSelect.addEventListener('change', function() {
+            if (this.value) {
+                updateWorkflowStep(3);
+                updateYearQuarterOptions(this.value);
+            }
+        });
+    }
+}
+
+// 워크플로우 단계 업데이트
+function updateWorkflowStep(step) {
+    // 모든 단계 비활성화
+    document.querySelectorAll('.workflow-steps .step').forEach((s, index) => {
+        if (index + 1 <= step) {
+            s.classList.add('active');
+        } else {
+            s.classList.remove('active');
+        }
+    });
+}
+
+// PDF 파일 업로드 설정
+function setupPdfUpload() {
+    const uploadArea = document.getElementById('pdfUploadArea');
+    const fileInput = document.getElementById('pdfFile');
+    const fileInfo = document.getElementById('pdfFileInfo');
+
+    if (!uploadArea || !fileInput) return;
+
+    // 클릭 이벤트
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', (e) => {
+        handlePdfSelect(e.target.files[0]);
+    });
+
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            handlePdfSelect(file);
+        }
+    });
+}
+
+// PDF 파일 선택 처리
+function handlePdfSelect(file) {
+    if (!file) return;
+
+    // 파일 크기 검증
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+        showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        return;
+    }
+
+    // 파일 형식 검증
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showError('지원하지 않는 파일 형식입니다. PDF 파일만 업로드 가능합니다.');
+        return;
+    }
+
+    selectedPdfFile = file;
+    displayPdfFileInfo(file);
+    updateProcessButton();
+}
+
+// PDF 파일 정보 표시
+function displayPdfFileInfo(file) {
+    const fileInfo = document.getElementById('pdfFileInfo');
+    const fileName = fileInfo.querySelector('.file-name');
+    
+    fileName.textContent = file.name;
+    fileInfo.style.display = 'flex';
+}
+
+// PDF 파일 제거
+function removePdfFile() {
+    selectedPdfFile = null;
+    document.getElementById('pdfFile').value = '';
+    document.getElementById('pdfFileInfo').style.display = 'none';
+    updateProcessButton();
+}
+
+// Excel 파일 업로드 설정
+function setupExcelUpload() {
     const uploadArea = document.getElementById('excelUploadArea');
     const fileInput = document.getElementById('excelFile');
     const fileInfo = document.getElementById('excelFileInfo');
+
+    if (!uploadArea || !fileInput) return;
 
     // 클릭 이벤트
     uploadArea.addEventListener('click', () => {
@@ -26,7 +135,7 @@ function setupFileUpload() {
 
     // 파일 선택 이벤트
     fileInput.addEventListener('change', async (e) => {
-        await handleFileSelect(e.target.files[0]);
+        await handleExcelSelect(e.target.files[0]);
     });
 
     // 드래그 앤 드롭 이벤트
@@ -44,16 +153,16 @@ function setupFileUpload() {
         uploadArea.classList.remove('dragover');
         const file = e.dataTransfer.files[0];
         if (file) {
-            await handleFileSelect(file);
+            await handleExcelSelect(file);
         }
     });
 }
 
-// 파일 선택 처리
-async function handleFileSelect(file) {
+// Excel 파일 선택 처리
+async function handleExcelSelect(file) {
     if (!file) return;
 
-    // 파일 크기 검증 (100MB = 100 * 1024 * 1024 bytes)
+    // 파일 크기 검증
     const maxFileSize = 100 * 1024 * 1024;
     if (file.size > maxFileSize) {
         showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
@@ -61,20 +170,16 @@ async function handleFileSelect(file) {
     }
 
     // 파일 형식 검증
-    const allowedTypes = [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel'
-    ];
     const allowedExtensions = ['.xlsx', '.xls'];
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
 
-    if (!allowedExtensions.includes(fileExtension) && !allowedTypes.includes(file.type)) {
+    if (!allowedExtensions.includes(fileExtension)) {
         showError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
         return;
     }
 
     selectedExcelFile = file;
-    displayFileInfo(file);
+    displayExcelFileInfo(file);
     
     // 시트 목록 로드
     await loadSheetNames(file);
@@ -82,8 +187,8 @@ async function handleFileSelect(file) {
     updateProcessButton();
 }
 
-// 파일 정보 표시
-function displayFileInfo(file) {
+// Excel 파일 정보 표시
+function displayExcelFileInfo(file) {
     const fileInfo = document.getElementById('excelFileInfo');
     const fileName = fileInfo.querySelector('.file-name');
     
@@ -91,7 +196,7 @@ function displayFileInfo(file) {
     fileInfo.style.display = 'flex';
 }
 
-// 엑셀 파일 제거
+// Excel 파일 제거
 function removeExcelFile() {
     selectedExcelFile = null;
     document.getElementById('excelFile').value = '';
@@ -102,7 +207,12 @@ function removeExcelFile() {
     sheetSelect.innerHTML = '<option value="">엑셀 파일을 업로드하세요</option>';
     sheetSelect.disabled = true;
     
+    // 섹션 숨기기
+    document.getElementById('sheetSection').style.display = 'none';
+    document.getElementById('periodSection').style.display = 'none';
+    
     updateProcessButton();
+    updateWorkflowStep(1);
 }
 
 // 시트 목록 로드
@@ -125,7 +235,6 @@ async function loadSheetNames(file) {
         if (response.ok && data.valid && data.sheet_names) {
             // 시트 목록 채우기
             sheetSelect.innerHTML = '';
-            const defaultSheetName = '광공업생산';
             
             data.sheet_names.forEach(sheetName => {
                 const option = document.createElement('option');
@@ -134,10 +243,8 @@ async function loadSheetNames(file) {
                 sheetSelect.appendChild(option);
             });
             
-            // 기본 시트 "광공업생산"이 있으면 선택, 없으면 첫 번째 시트 선택
-            if (data.sheet_names.includes(defaultSheetName)) {
-                sheetSelect.value = defaultSheetName;
-            } else if (data.sheet_names.length > 0) {
+            // 첫 번째 시트 선택
+            if (data.sheet_names.length > 0) {
                 sheetSelect.value = data.sheet_names[0];
             }
             
@@ -145,10 +252,15 @@ async function loadSheetNames(file) {
             
             // 시트별 연도/분기 정보 저장
             if (data.sheets_info) {
-                window.sheetsInfo = data.sheets_info;
+                sheetsInfo = data.sheets_info;
                 // 선택된 시트의 연도/분기 업데이트
                 updateYearQuarterOptions(sheetSelect.value);
             }
+            
+            // 시트 섹션 표시
+            document.getElementById('sheetSection').style.display = 'block';
+            document.getElementById('periodSection').style.display = 'block';
+            updateWorkflowStep(2);
         } else {
             sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
             showError(data.error || '시트 목록을 불러올 수 없습니다.');
@@ -159,7 +271,6 @@ async function loadSheetNames(file) {
         showError('시트 목록을 불러오는 중 오류가 발생했습니다.');
     }
 }
-
 
 // 처리 버튼 설정
 function setupProcessButton() {
@@ -172,7 +283,7 @@ function updateProcessButton() {
     const processBtn = document.getElementById('processBtn');
     const sheetSelect = document.getElementById('sheetSelect');
     
-    if (selectedExcelFile && sheetSelect.value) {
+    if (selectedPdfFile && selectedExcelFile && sheetSelect && sheetSelect.value) {
         processBtn.disabled = false;
     } else {
         processBtn.disabled = true;
@@ -181,8 +292,8 @@ function updateProcessButton() {
 
 // 보도자료 생성 처리
 async function handleProcess() {
-    if (!selectedExcelFile) {
-        showError('엑셀 파일을 선택해주세요.');
+    if (!selectedPdfFile || !selectedExcelFile) {
+        showError('PDF 파일과 엑셀 파일을 모두 업로드해주세요.');
         return;
     }
 
@@ -211,17 +322,26 @@ async function handleProcess() {
     
     hideError();
     hideResult();
+    
+    // 진행 상황 섹션 표시
+    const progressSection = document.getElementById('progressSection');
+    progressSection.style.display = 'block';
+    updateProgress(0);
 
     try {
         // FormData 생성
         const formData = new FormData();
+        formData.append('pdf_file', selectedPdfFile);
         formData.append('excel_file', selectedExcelFile);
         formData.append('sheet_name', sheetName);
         formData.append('year', year);
         formData.append('quarter', quarter);
 
+        // 진행 상황 시뮬레이션
+        simulateProgress();
+
         // API 호출
-        const response = await fetch('/api/process', {
+        const response = await fetch('/api/process-word-template', {
             method: 'POST',
             body: formData
         });
@@ -230,9 +350,14 @@ async function handleProcess() {
 
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
-            showResult(data.message);
+            updateProgress(100);
+            setTimeout(() => {
+                progressSection.style.display = 'none';
+                showResult(data.message);
+                updateWorkflowStep(4);
+            }, 500);
         } else {
-            // 413 에러 (파일 크기 초과) 처리
+            progressSection.style.display = 'none';
             if (response.status === 413) {
                 showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
             } else {
@@ -241,7 +366,7 @@ async function handleProcess() {
         }
     } catch (error) {
         console.error('처리 오류:', error);
-        // 네트워크 오류나 파일 크기 초과 등의 경우
+        progressSection.style.display = 'none';
         if (error.message && error.message.includes('413')) {
             showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
         } else {
@@ -256,6 +381,50 @@ async function handleProcess() {
     }
 }
 
+// 진행 상황 시뮬레이션
+function simulateProgress() {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 5;
+        if (progress <= 90) {
+            updateProgress(progress);
+        } else {
+            clearInterval(interval);
+        }
+    }, 500);
+}
+
+// 진행 상황 업데이트
+function updateProgress(percentage) {
+    const progressBar = document.getElementById('progressBar');
+    progressBar.style.width = percentage + '%';
+    
+    // 단계별 아이콘 업데이트
+    const steps = [
+        { id: 'step1', threshold: 25 },
+        { id: 'step2', threshold: 50 },
+        { id: 'step3', threshold: 75 },
+        { id: 'step4', threshold: 100 }
+    ];
+    
+    steps.forEach((step, index) => {
+        const stepElement = document.getElementById(step.id);
+        const icon = stepElement.querySelector('.progress-icon');
+        const text = stepElement.querySelector('.progress-text');
+        
+        if (percentage >= step.threshold) {
+            icon.textContent = '✅';
+            stepElement.classList.add('completed');
+        } else if (percentage >= step.threshold - 10) {
+            icon.textContent = '⏳';
+            stepElement.classList.add('active');
+        } else {
+            icon.textContent = '⏸️';
+            stepElement.classList.remove('active', 'completed');
+        }
+    });
+}
+
 // 결과 표시
 function showResult(message) {
     const resultSection = document.getElementById('resultSection');
@@ -264,8 +433,11 @@ function showResult(message) {
     resultMessage.textContent = message;
     resultSection.style.display = 'block';
     
-    // 미리보기 및 다운로드 버튼 설정
-    setupResultButtons();
+    // 다운로드 버튼 설정
+    setupDownloadButton();
+    
+    // 결과 섹션으로 스크롤
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // 결과 숨기기
@@ -273,31 +445,24 @@ function hideResult() {
     document.getElementById('resultSection').style.display = 'none';
 }
 
-// 결과 버튼 설정
-function setupResultButtons() {
-    const previewBtn = document.getElementById('previewBtn');
+// 다운로드 버튼 설정
+function setupDownloadButton() {
     const downloadBtn = document.getElementById('downloadBtn');
-    
-    previewBtn.onclick = () => {
-        if (currentOutputFilename) {
-            window.open(`/api/preview/${currentOutputFilename}`, '_blank');
-        }
-    };
     
     downloadBtn.onclick = () => {
         if (currentOutputFilename) {
-            window.location.href = `/api/download/${currentOutputFilename}`;
+            window.location.href = `/api/download/${encodeURIComponent(currentOutputFilename)}`;
         }
     };
 }
 
 // 연도/분기 옵션 업데이트
 function updateYearQuarterOptions(sheetName) {
-    if (!window.sheetsInfo || !window.sheetsInfo[sheetName]) {
+    if (!sheetsInfo || !sheetsInfo[sheetName]) {
         return;
     }
     
-    const sheetInfo = window.sheetsInfo[sheetName];
+    const sheetInfo = sheetsInfo[sheetName];
     const yearSelect = document.getElementById('yearSelect');
     const quarterSelect = document.getElementById('quarterSelect');
     
@@ -313,7 +478,7 @@ function updateYearQuarterOptions(sheetName) {
         yearSelect.appendChild(option);
     }
     
-    // 분기 옵션 업데이트 (항상 1-4)
+    // 분기 옵션 업데이트
     quarterSelect.innerHTML = '';
     for (let quarter = 1; quarter <= 4; quarter++) {
         const option = document.createElement('option');
@@ -325,19 +490,6 @@ function updateYearQuarterOptions(sheetName) {
         quarterSelect.appendChild(option);
     }
 }
-
-// 시트 선택 변경 시 처리 버튼 상태 업데이트 및 연도/분기 옵션 업데이트
-document.addEventListener('DOMContentLoaded', function() {
-    const sheetSelect = document.getElementById('sheetSelect');
-    if (sheetSelect) {
-        sheetSelect.addEventListener('change', function() {
-            updateProcessButton();
-            if (window.sheetsInfo && this.value) {
-                updateYearQuarterOptions(this.value);
-            }
-        });
-    }
-});
 
 // 에러 표시
 function showError(message) {
@@ -355,284 +507,3 @@ function showError(message) {
 function hideError() {
     document.getElementById('errorSection').style.display = 'none';
 }
-
-// 템플릿 생성 관련 함수들
-let selectedImageFile = null;
-let selectedExcelFileForTemplate = null;
-
-// 이미지 업로드 설정
-function setupImageUpload() {
-    const uploadArea = document.getElementById('imageUploadArea');
-    const fileInput = document.getElementById('imageFile');
-    const fileInfo = document.getElementById('imageFileInfo');
-
-    if (!uploadArea || !fileInput) return;
-
-    // 클릭 이벤트
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // 파일 선택 이벤트
-    fileInput.addEventListener('change', (e) => {
-        handleImageSelect(e.target.files[0]);
-    });
-
-    // 드래그 앤 드롭 이벤트
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            handleImageSelect(file);
-        }
-    });
-}
-
-// 이미지 파일 선택 처리
-function handleImageSelect(file) {
-    if (!file) return;
-
-    // 파일 크기 검증
-    const maxFileSize = 100 * 1024 * 1024;
-    if (file.size > maxFileSize) {
-        showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
-        return;
-    }
-
-    // 이미지 파일 형식 검증
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-        showError('지원하지 않는 이미지 형식입니다. PNG, JPG, JPEG, GIF, BMP, WEBP 파일만 업로드 가능합니다.');
-        return;
-    }
-
-    selectedImageFile = file;
-    displayImageFileInfo(file);
-    updateCreateTemplateButton();
-}
-
-// 이미지 파일 정보 표시
-function displayImageFileInfo(file) {
-    const fileInfo = document.getElementById('imageFileInfo');
-    const fileName = fileInfo.querySelector('.file-name');
-    
-    fileName.textContent = file.name;
-    fileInfo.style.display = 'flex';
-}
-
-// 이미지 파일 제거
-function removeImageFile() {
-    selectedImageFile = null;
-    document.getElementById('imageFile').value = '';
-    document.getElementById('imageFileInfo').style.display = 'none';
-    document.getElementById('templateCreateResult').style.display = 'none';
-    updateCreateTemplateButton();
-}
-
-// 템플릿 생성 버튼 상태 업데이트
-function updateCreateTemplateButton() {
-    const createBtn = document.getElementById('createTemplateBtn');
-    if (createBtn) {
-        createBtn.disabled = !selectedImageFile;
-    }
-}
-
-// 템플릿 생성 처리
-async function handleCreateTemplate() {
-    if (!selectedImageFile) {
-        showError('이미지 파일을 선택해주세요.');
-        return;
-    }
-
-    const templateName = document.getElementById('templateName').value.trim();
-    const sheetName = document.getElementById('sheetName').value.trim() || '시트1';
-
-    // UI 업데이트
-    const createBtn = document.getElementById('createTemplateBtn');
-    const btnText = createBtn.querySelector('.btn-text');
-    const btnLoader = createBtn.querySelector('.btn-loader');
-    
-    createBtn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoader.style.display = 'inline-block';
-    
-    hideError();
-    document.getElementById('templateCreateResult').style.display = 'none';
-
-    try {
-        // FormData 생성
-        const formData = new FormData();
-        formData.append('image_file', selectedImageFile);
-        
-        // 엑셀 파일이 있으면 추가
-        if (selectedExcelFileForTemplate) {
-            formData.append('excel_file', selectedExcelFileForTemplate);
-        }
-        
-        if (templateName) {
-            formData.append('template_name', templateName);
-        }
-        formData.append('sheet_name', sheetName);
-
-        // API 호출
-        const response = await fetch('/api/create-template', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            const resultDiv = document.getElementById('templateCreateResult');
-            const messageDiv = document.getElementById('templateCreateMessage');
-            messageDiv.innerHTML = `
-                <strong>✅ ${data.message}</strong><br>
-                <small>템플릿 파일: ${data.template_name}</small>
-            `;
-            resultDiv.style.display = 'block';
-            resultDiv.style.backgroundColor = '#e8f5e9';
-        } else {
-            showError(data.error || '템플릿 생성 중 오류가 발생했습니다.');
-        }
-    } catch (error) {
-        console.error('템플릿 생성 오류:', error);
-        showError('서버와 통신하는 중 오류가 발생했습니다.');
-    } finally {
-        // UI 복원
-        createBtn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoader.style.display = 'none';
-        updateCreateTemplateButton();
-    }
-}
-
-// 엑셀 파일 업로드 설정 (템플릿 생성용)
-function setupExcelUploadForTemplate() {
-    const uploadArea = document.getElementById('excelUploadAreaForTemplate');
-    const fileInput = document.getElementById('excelFileForTemplate');
-    const fileInfo = document.getElementById('excelFileInfoForTemplate');
-
-    if (!uploadArea || !fileInput) return;
-
-    // 클릭 이벤트
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // 파일 선택 이벤트
-    fileInput.addEventListener('change', (e) => {
-        handleExcelSelectForTemplate(e.target.files[0]);
-    });
-
-    // 드래그 앤 드롭 이벤트
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            handleExcelSelectForTemplate(file);
-        }
-    });
-}
-
-// 엑셀 파일 선택 처리 (템플릿 생성용)
-async function handleExcelSelectForTemplate(file) {
-    if (!file) return;
-
-    // 파일 크기 검증
-    const maxFileSize = 100 * 1024 * 1024;
-    if (file.size > maxFileSize) {
-        showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
-        return;
-    }
-
-    // 엑셀 파일 형식 검증
-    const allowedExtensions = ['.xlsx', '.xls'];
-    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-
-    if (!allowedExtensions.includes(fileExtension)) {
-        showError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
-        return;
-    }
-
-    selectedExcelFileForTemplate = file;
-    displayExcelFileInfoForTemplate(file);
-    
-    // 엑셀 파일의 시트 목록 가져오기
-    await loadSheetNamesForTemplate(file);
-}
-
-// 엑셀 파일 정보 표시 (템플릿 생성용)
-function displayExcelFileInfoForTemplate(file) {
-    const fileInfo = document.getElementById('excelFileInfoForTemplate');
-    const fileName = fileInfo.querySelector('.file-name');
-    
-    fileName.textContent = file.name;
-    fileInfo.style.display = 'flex';
-}
-
-// 엑셀 파일 제거 (템플릿 생성용)
-function removeExcelFileForTemplate() {
-    selectedExcelFileForTemplate = null;
-    document.getElementById('excelFileForTemplate').value = '';
-    document.getElementById('excelFileInfoForTemplate').style.display = 'none';
-    document.getElementById('sheetName').value = '';
-    updateCreateTemplateButton();
-}
-
-// 시트 목록 로드 (템플릿 생성용)
-async function loadSheetNamesForTemplate(file) {
-    const sheetNameInput = document.getElementById('sheetName');
-    
-    try {
-        const formData = new FormData();
-        formData.append('excel_file', file);
-        
-        const response = await fetch('/api/validate', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.valid && data.sheet_names && data.sheet_names.length > 0) {
-            // 첫 번째 시트를 기본값으로 설정
-            sheetNameInput.value = data.sheet_names[0];
-            sheetNameInput.placeholder = `사용 가능한 시트: ${data.sheet_names.join(', ')}`;
-        }
-    } catch (error) {
-        console.error('시트 목록 로드 오류:', error);
-    }
-}
-
-// 초기화 시 이미지 업로드 설정
-document.addEventListener('DOMContentLoaded', function() {
-    setupImageUpload();
-    setupExcelUploadForTemplate();
-    
-    // 템플릿 생성 버튼 이벤트
-    const createBtn = document.getElementById('createTemplateBtn');
-    if (createBtn) {
-        createBtn.addEventListener('click', handleCreateTemplate);
-    }
-});
-

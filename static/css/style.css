@@ -55,6 +55,135 @@ header h1 {
     font-weight: 300;
 }
 
+/* 워크플로우 단계 표시 */
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding: 20px;
+    background: var(--bg-color);
+    border-radius: 12px;
+}
+
+.workflow-steps .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.workflow-steps .step.active {
+    opacity: 1;
+}
+
+.workflow-steps .step::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 60%;
+    width: 100%;
+    height: 2px;
+    background: var(--border-color);
+    z-index: 0;
+}
+
+.workflow-steps .step:last-child::after {
+    display: none;
+}
+
+.workflow-steps .step.active::after {
+    background: var(--primary-color);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--border-color);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s;
+}
+
+.workflow-steps .step.active .step-number {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.step-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: center;
+}
+
+.workflow-steps .step.active .step-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* 섹션 스타일 */
+.section {
+    margin-bottom: 40px;
+    animation: fadeIn 0.3s ease;
+}
+
+.section-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+/* 업로드 그리드 */
+.upload-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.upload-card {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s;
+}
+
+.upload-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.upload-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.upload-icon {
+    font-size: 24px;
+}
+
+.upload-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
 main {
     padding: 40px 30px;
 }
@@ -305,6 +434,109 @@ footer {
     font-size: 14px;
 }
 
+/* 진행 상황 표시 */
+.progress-section {
+    margin-bottom: 40px;
+    padding: 30px;
+    background: var(--bg-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+
+.progress-step.active {
+    border-color: var(--primary-color);
+    background: #eff6ff;
+}
+
+.progress-step.completed {
+    border-color: var(--success-color);
+    background: #f0fdf4;
+}
+
+.progress-icon {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+/* 에러 박스 개선 */
+.error-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    border-left: 4px solid var(--error-color);
+}
+
+.error-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.error-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--error-color);
+}
+
+.error-message {
+    font-size: 14px;
+    color: var(--error-color);
+    opacity: 0.9;
+}
+
+/* 푸터 개선 */
+.footer-note {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 8px;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 640px) {
     body {
@@ -334,6 +566,23 @@ footer {
 
     .result-actions {
         flex-direction: column;
+    }
+
+    .upload-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-steps {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .workflow-steps .step::after {
+        display: none;
+    }
+
+    .step-label {
+        font-size: 12px;
     }
 }
 
