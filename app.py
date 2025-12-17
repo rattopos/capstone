@@ -20,6 +20,7 @@ from src.excel_extractor import ExcelExtractor
 from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
 from src.template_generator import TemplateGenerator
+from src.excel_header_parser import ExcelHeaderParser
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -360,7 +361,7 @@ def validate_files():
 
 @app.route('/api/create-template', methods=['POST'])
 def create_template():
-    """이미지에서 템플릿 생성"""
+    """이미지와 엑셀 파일에서 템플릿 생성 (헤더 기반 마커)"""
     try:
         # 파일 검증
         if 'image_file' not in request.files:
@@ -373,14 +374,40 @@ def create_template():
         if not allowed_image_file(image_file.filename):
             return jsonify({'error': '지원하지 않는 이미지 형식입니다. (png, jpg, jpeg, gif, bmp, webp만 가능)'}), 400
         
+        # 엑셀 파일 검증 (선택사항이지만 권장)
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        header_parser = None
+        
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+            
+            # 엑셀 파일 저장
+            excel_filename = secure_filename(excel_file.filename)
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            excel_file.save(str(excel_path))
+        
         # 템플릿 이름 가져오기
         template_name = request.form.get('template_name', '').strip()
         if not template_name:
             # 파일명에서 확장자 제거하여 템플릿 이름으로 사용
             template_name = Path(image_file.filename).stem
         
-        # 시트명 가져오기 (선택사항)
-        sheet_name = request.form.get('sheet_name', '시트1').strip()
+        # 시트명 가져오기
+        sheet_name = request.form.get('sheet_name', '').strip()
+        if not sheet_name and excel_path:
+            # 엑셀 파일이 있으면 첫 번째 시트 사용
+            try:
+                extractor = ExcelExtractor(str(excel_path))
+                extractor.load_workbook()
+                sheet_names = extractor.get_sheet_names()
+                if sheet_names:
+                    sheet_name = sheet_names[0]
+                extractor.close()
+            except:
+                pass
+        
         if not sheet_name:
             sheet_name = '시트1'
         
@@ -390,14 +417,19 @@ def create_template():
         image_file.save(str(image_path))
         
         try:
+            # 엑셀 헤더 파서 초기화 (엑셀 파일이 있는 경우)
+            if excel_path and excel_path.exists():
+                header_parser = ExcelHeaderParser(str(excel_path))
+            
             # 템플릿 생성기 초기화
             generator = TemplateGenerator(use_easyocr=True)
             
-            # HTML 템플릿 생성
-            html_template = generator.generate_html_template(
+            # HTML 템플릿 생성 (헤더 파서 전달)
+            html_template = generator.generate_html_template_from_excel(
                 str(image_path),
                 template_name,
-                sheet_name
+                sheet_name,
+                header_parser
             )
             
             # 템플릿 저장
@@ -410,9 +442,13 @@ def create_template():
             with open(template_path, 'w', encoding='utf-8') as f:
                 f.write(html_template)
             
-            # 임시 이미지 파일 삭제
+            # 임시 파일 삭제
             if image_path.exists():
                 image_path.unlink()
+            if excel_path and excel_path.exists():
+                excel_path.unlink()
+            if header_parser:
+                header_parser.close()
             
             return jsonify({
                 'success': True,
@@ -422,9 +458,13 @@ def create_template():
             })
             
         except Exception as e:
-            # 임시 이미지 파일 삭제
+            # 임시 파일 삭제
             if image_path.exists():
                 image_path.unlink()
+            if excel_path and excel_path.exists():
+                excel_path.unlink()
+            if header_parser:
+                header_parser.close()
             return jsonify({
                 'error': f'템플릿 생성 중 오류가 발생했습니다: {str(e)}'
             }), 500
