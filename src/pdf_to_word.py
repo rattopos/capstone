@@ -68,9 +68,77 @@ class PDFToWordConverter:
                 self.use_easyocr = False
                 self.reader = None
     
+    def extract_text_from_pdf_direct(self, pdf_path: str) -> List[List[Dict]]:
+        """
+        PDF에서 직접 텍스트와 레이아웃 정보를 추출합니다 (이미지 변환 없이).
+        
+        Args:
+            pdf_path: PDF 파일 경로
+            
+        Returns:
+            페이지별 텍스트 정보 리스트. 각 페이지는 텍스트 정보 딕셔너리 리스트를 포함:
+            - 'text': 추출된 텍스트
+            - 'bbox': 바운딩 박스 좌표 (x1, y1, x2, y2)
+            - 'font_size': 폰트 크기
+            - 'is_bold': 굵은 글씨 여부
+            - 'page_num': 페이지 번호
+        """
+        if not PYMUPDF_AVAILABLE:
+            return []
+        
+        pages_text_data = []
+        
+        try:
+            doc = fitz.open(pdf_path)
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                page_text_data = []
+                
+                # PDF에서 텍스트 딕셔너리 형식으로 추출
+                text_dict = page.get_text("dict")
+                
+                # 텍스트 블록 처리
+                for block in text_dict.get("blocks", []):
+                    if "lines" not in block:
+                        continue
+                    
+                    for line in block["lines"]:
+                        for span in line.get("spans", []):
+                            text = span.get("text", "").strip()
+                            if not text:
+                                continue
+                            
+                            # 바운딩 박스
+                            bbox = span.get("bbox", [0, 0, 0, 0])
+                            
+                            # 폰트 정보
+                            font_size = span.get("size", 12)
+                            font_flags = span.get("flags", 0)
+                            is_bold = (font_flags & 16) != 0  # bit 4는 bold
+                            
+                            page_text_data.append({
+                                'text': text,
+                                'bbox': tuple(bbox),
+                                'font_size': font_size,
+                                'is_bold': is_bold,
+                                'confidence': 1.0,  # 직접 추출이므로 신뢰도 100%
+                                'page_num': page_num + 1
+                            })
+                
+                pages_text_data.append(page_text_data)
+            
+            doc.close()
+            
+        except Exception as e:
+            print(f"PDF 직접 텍스트 추출 실패: {e}")
+            return []
+        
+        return pages_text_data
+    
     def pdf_to_images(self, pdf_path: str) -> List[Image.Image]:
         """
-        PDF 파일을 이미지 리스트로 변환합니다.
+        PDF 파일을 이미지 리스트로 변환합니다 (스캔된 PDF용).
         
         Args:
             pdf_path: PDF 파일 경로
@@ -253,6 +321,7 @@ class PDFToWordConverter:
     def convert_pdf_to_word(self, pdf_path: str, output_path: str) -> str:
         """
         PDF 파일을 Word 템플릿으로 변환합니다.
+        텍스트 기반 PDF는 직접 추출하고, 스캔된 PDF는 OCR을 사용합니다.
         
         Args:
             pdf_path: PDF 파일 경로
@@ -264,11 +333,23 @@ class PDFToWordConverter:
         if not DOCX_AVAILABLE:
             raise ValueError("python-docx가 설치되어 있지 않습니다. pip install python-docx를 실행해주세요.")
         
+        if not PYMUPDF_AVAILABLE:
+            raise ValueError("PyMuPDF가 설치되어 있지 않습니다. pip install PyMuPDF를 실행해주세요.")
+        
         print(f"PDF 파일 로딩 중: {pdf_path}")
         
-        # PDF를 이미지로 변환
-        images = self.pdf_to_images(pdf_path)
-        print(f"총 {len(images)}페이지를 이미지로 변환했습니다.")
+        # 1단계: PDF에서 직접 텍스트 추출 시도 (텍스트 기반 PDF)
+        print("텍스트 기반 추출 시도 중...")
+        pages_text_data = self.extract_text_from_pdf_direct(pdf_path)
+        
+        # 텍스트가 충분히 추출되었는지 확인
+        total_text_chars = sum(len(item['text']) for page_data in pages_text_data for item in page_data)
+        use_ocr = total_text_chars < 100  # 100자 미만이면 스캔된 PDF로 간주
+        
+        if use_ocr:
+            print(f"텍스트가 부족합니다 ({total_text_chars}자). 스캔된 PDF로 판단하여 OCR을 사용합니다.")
+        else:
+            print(f"텍스트 기반 PDF로 확인되었습니다 ({total_text_chars}자 추출). 직접 추출 방식을 사용합니다.")
         
         # Word 문서 생성
         doc = Document()
@@ -282,26 +363,50 @@ class PDFToWordConverter:
         section.top_margin = Inches(0.79)
         section.bottom_margin = Inches(0.79)
         
+        # PDF 열기 (페이지 크기 정보를 위해)
+        pdf_doc = fitz.open(pdf_path)
+        total_pages = len(pdf_doc)
+        
         # 각 페이지 처리
-        for page_num, image in enumerate(images, 1):
-            print(f"페이지 {page_num}/{len(images)} 처리 중...")
+        for page_num in range(total_pages):
+            print(f"페이지 {page_num + 1}/{total_pages} 처리 중...")
             
-            if page_num > 1:
+            if page_num > 0:
                 # 페이지 나누기
                 doc.add_page_break()
             
-            # 텍스트 추출
-            text_data = self.extract_text_and_layout(image)
+            page = pdf_doc[page_num]
+            page_rect = page.rect
+            page_width = page_rect.width
+            page_height = page_rect.height
             
-            if not text_data:
+            if use_ocr:
+                # OCR 방식: 이미지 변환 후 OCR
+                zoom = self.dpi / 72.0
+                mat = fitz.Matrix(zoom, zoom)
+                pix = page.get_pixmap(matrix=mat)
+                img_data = pix.tobytes("png")
+                image = Image.open(io.BytesIO(img_data))
+                
+                text_data = self.extract_text_and_layout(image)
+                organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1])
+            else:
+                # 직접 추출 방식: 이미 추출된 텍스트 사용
+                page_text_data = pages_text_data[page_num] if page_num < len(pages_text_data) else []
+                
+                if not page_text_data:
+                    para = doc.add_paragraph()
+                    para.add_run(f"(페이지 {page_num + 1} - 텍스트를 추출할 수 없습니다)")
+                    continue
+                
+                # 직접 추출된 텍스트를 organize_text_by_layout 형식으로 변환
+                organized_text = self.organize_text_by_layout(page_text_data, page_width, page_height)
+            
+            if not organized_text:
                 # 텍스트가 없으면 빈 단락 추가
                 para = doc.add_paragraph()
-                para.add_run(f"(페이지 {page_num} - 텍스트를 추출할 수 없습니다)")
+                para.add_run(f"(페이지 {page_num + 1} - 텍스트를 추출할 수 없습니다)")
                 continue
-            
-            # 레이아웃 정리
-            page_width, page_height = image.size
-            organized_text = self.organize_text_by_layout(text_data, page_width, page_height)
             
             # Word 문서에 추가
             prev_y = None
@@ -325,7 +430,7 @@ class PDFToWordConverter:
                     run.font.name = '맑은 고딕'
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
                     
-                    # 굵은 글씨 설정 (추정)
+                    # 굵은 글씨 설정
                     if text_item.get('is_bold', False):
                         run.bold = True
                     
@@ -340,6 +445,8 @@ class PDFToWordConverter:
                 para.paragraph_format.line_spacing = 1.15
                 
                 prev_y = item['y']
+        
+        pdf_doc.close()
         
         # Word 파일 저장
         output_file = Path(output_path)
