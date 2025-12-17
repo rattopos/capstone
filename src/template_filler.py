@@ -109,7 +109,7 @@ SHEET_CONFIG = {
         'category_column': 6,  # F열에 품목 이름
         'base_year': 2023,
         'base_quarter': 3,  # 2023년 3분기부터 시작
-        'base_col': 57,  # 2023년 3분기 (정답 이미지 기준)
+        'base_col': 62,  # 2023년 3분기 (실제 엑셀 파일 기준)
         'name_mapping': INDUSTRY_NAME_MAPPING,
         'national_priorities': None,  # 절대값 기준 정렬
         'region_priorities': {},
@@ -118,7 +118,7 @@ SHEET_CONFIG = {
         'category_column': 6,  # F열에 품목 이름
         'base_year': 2023,
         'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기
+        'base_col': 60,  # 2023년 1분기 (실제 엑셀 파일 기준)
         'name_mapping': INDUSTRY_NAME_MAPPING,
         'national_priorities': None,  # 절대값 기준 정렬
         'region_priorities': {},
@@ -127,7 +127,7 @@ SHEET_CONFIG = {
         'category_column': 4,  # D열에 연령대 이름
         'base_year': 2023,
         'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기
+        'base_col': 58,  # 2023년 1분기 (실제 엑셀 파일 기준)
         'name_mapping': {},
         'national_priorities': None,
         'region_priorities': {},
@@ -136,7 +136,16 @@ SHEET_CONFIG = {
         'category_column': 6,  # F열에 품목 이름
         'base_year': 2023,
         'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기 (확인 필요)
+        'base_col': 50,  # 2023년 1분기 (실제 엑셀 파일 기준)
+        'name_mapping': {},
+        'national_priorities': None,
+        'region_priorities': {},
+    },
+    '실업자 수': {
+        'category_column': 2,  # B열에 연령계층 이름
+        'base_year': 2023,
+        'base_quarter': 1,
+        'base_col': 53,  # 2023년 1분기 (실제 엑셀 파일 기준)
         'name_mapping': {},
         'national_priorities': None,
         'region_priorities': {},
@@ -1039,9 +1048,9 @@ class TemplateFiller:
             
             # 연령대 매핑
             age_mapping = {
-                '60대이상': ['60세이상', '60대이상', '60세 이상', '60세이상'],
-                '30대59세': ['30~59세', '30-59세', '30대59세', '30세~59세', '30 - 59세'],
-                '15대29세': ['15~29세', '15-29세', '15대29세', '15세~29세', '15 - 29세'],
+                '60대이상': ['60세이상', '60대이상', '60세 이상', '60세이상', '60 - 이상'],
+                '30대59세': ['30~59세', '30-59세', '30대59세', '30세~59세', '30 - 59세', '30 ~ 59세'],
+                '15대29세': ['15~29세', '15-29세', '15대29세', '15세~29세', '15 - 29세', '15 ~ 29세'],
                 # 고용률용 연령대
                 '30대': ['30 - 39세', '30~39세', '30-39세', '30대', '30대39세'],
                 '40대': ['40 - 49세', '40~49세', '40-49세', '40대', '40대49세'],
