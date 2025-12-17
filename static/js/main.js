@@ -356,3 +356,167 @@ function hideError() {
     document.getElementById('errorSection').style.display = 'none';
 }
 
+// 템플릿 생성 관련 함수들
+let selectedImageFile = null;
+
+// 이미지 업로드 설정
+function setupImageUpload() {
+    const uploadArea = document.getElementById('imageUploadArea');
+    const fileInput = document.getElementById('imageFile');
+    const fileInfo = document.getElementById('imageFileInfo');
+
+    if (!uploadArea || !fileInput) return;
+
+    // 클릭 이벤트
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', (e) => {
+        handleImageSelect(e.target.files[0]);
+    });
+
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            handleImageSelect(file);
+        }
+    });
+}
+
+// 이미지 파일 선택 처리
+function handleImageSelect(file) {
+    if (!file) return;
+
+    // 파일 크기 검증
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+        showError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        return;
+    }
+
+    // 이미지 파일 형식 검증
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        showError('지원하지 않는 이미지 형식입니다. PNG, JPG, JPEG, GIF, BMP, WEBP 파일만 업로드 가능합니다.');
+        return;
+    }
+
+    selectedImageFile = file;
+    displayImageFileInfo(file);
+    updateCreateTemplateButton();
+}
+
+// 이미지 파일 정보 표시
+function displayImageFileInfo(file) {
+    const fileInfo = document.getElementById('imageFileInfo');
+    const fileName = fileInfo.querySelector('.file-name');
+    
+    fileName.textContent = file.name;
+    fileInfo.style.display = 'flex';
+}
+
+// 이미지 파일 제거
+function removeImageFile() {
+    selectedImageFile = null;
+    document.getElementById('imageFile').value = '';
+    document.getElementById('imageFileInfo').style.display = 'none';
+    document.getElementById('templateCreateResult').style.display = 'none';
+    updateCreateTemplateButton();
+}
+
+// 템플릿 생성 버튼 상태 업데이트
+function updateCreateTemplateButton() {
+    const createBtn = document.getElementById('createTemplateBtn');
+    if (createBtn) {
+        createBtn.disabled = !selectedImageFile;
+    }
+}
+
+// 템플릿 생성 처리
+async function handleCreateTemplate() {
+    if (!selectedImageFile) {
+        showError('이미지 파일을 선택해주세요.');
+        return;
+    }
+
+    const templateName = document.getElementById('templateName').value.trim();
+    const sheetName = document.getElementById('sheetName').value.trim() || '시트1';
+
+    // UI 업데이트
+    const createBtn = document.getElementById('createTemplateBtn');
+    const btnText = createBtn.querySelector('.btn-text');
+    const btnLoader = createBtn.querySelector('.btn-loader');
+    
+    createBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    
+    hideError();
+    document.getElementById('templateCreateResult').style.display = 'none';
+
+    try {
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('image_file', selectedImageFile);
+        if (templateName) {
+            formData.append('template_name', templateName);
+        }
+        formData.append('sheet_name', sheetName);
+
+        // API 호출
+        const response = await fetch('/api/create-template', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            const resultDiv = document.getElementById('templateCreateResult');
+            const messageDiv = document.getElementById('templateCreateMessage');
+            messageDiv.innerHTML = `
+                <strong>✅ ${data.message}</strong><br>
+                <small>템플릿 파일: ${data.template_name}</small>
+            `;
+            resultDiv.style.display = 'block';
+            resultDiv.style.backgroundColor = '#e8f5e9';
+        } else {
+            showError(data.error || '템플릿 생성 중 오류가 발생했습니다.');
+        }
+    } catch (error) {
+        console.error('템플릿 생성 오류:', error);
+        showError('서버와 통신하는 중 오류가 발생했습니다.');
+    } finally {
+        // UI 복원
+        createBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoader.style.display = 'none';
+        updateCreateTemplateButton();
+    }
+}
+
+// 초기화 시 이미지 업로드 설정
+document.addEventListener('DOMContentLoaded', function() {
+    setupImageUpload();
+    
+    // 템플릿 생성 버튼 이벤트
+    const createBtn = document.getElementById('createTemplateBtn');
+    if (createBtn) {
+        createBtn.addEventListener('click', handleCreateTemplate);
+    }
+});
+

@@ -19,6 +19,7 @@ from src.template_manager import TemplateManager
 from src.excel_extractor import ExcelExtractor
 from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
+from src.template_generator import TemplateGenerator
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -27,6 +28,7 @@ app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
 # 시트명과 템플릿 파일 매핑
 SHEET_TEMPLATE_MAPPING = {
@@ -96,6 +98,11 @@ SHEET_TEMPLATE_MAPPING = {
 def allowed_file(filename):
     """파일 확장자 검증"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def allowed_image_file(filename):
+    """이미지 파일 확장자 검증"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 
 def get_template_for_sheet(sheet_name):
@@ -348,6 +355,83 @@ def validate_files():
         return jsonify({
             'valid': False,
             'error': f'검증 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/create-template', methods=['POST'])
+def create_template():
+    """이미지에서 템플릿 생성"""
+    try:
+        # 파일 검증
+        if 'image_file' not in request.files:
+            return jsonify({'error': '이미지 파일이 없습니다.'}), 400
+        
+        image_file = request.files['image_file']
+        if image_file.filename == '':
+            return jsonify({'error': '이미지 파일을 선택해주세요.'}), 400
+        
+        if not allowed_image_file(image_file.filename):
+            return jsonify({'error': '지원하지 않는 이미지 형식입니다. (png, jpg, jpeg, gif, bmp, webp만 가능)'}), 400
+        
+        # 템플릿 이름 가져오기
+        template_name = request.form.get('template_name', '').strip()
+        if not template_name:
+            # 파일명에서 확장자 제거하여 템플릿 이름으로 사용
+            template_name = Path(image_file.filename).stem
+        
+        # 시트명 가져오기 (선택사항)
+        sheet_name = request.form.get('sheet_name', '시트1').strip()
+        if not sheet_name:
+            sheet_name = '시트1'
+        
+        # 이미지 파일 저장
+        image_filename = secure_filename(image_file.filename)
+        image_path = Path(app.config['UPLOAD_FOLDER']) / image_filename
+        image_file.save(str(image_path))
+        
+        try:
+            # 템플릿 생성기 초기화
+            generator = TemplateGenerator(use_easyocr=True)
+            
+            # HTML 템플릿 생성
+            html_template = generator.generate_html_template(
+                str(image_path),
+                template_name,
+                sheet_name
+            )
+            
+            # 템플릿 저장
+            templates_dir = Path('templates')
+            templates_dir.mkdir(exist_ok=True)
+            
+            template_filename = secure_filename(template_name) + '.html'
+            template_path = templates_dir / template_filename
+            
+            with open(template_path, 'w', encoding='utf-8') as f:
+                f.write(html_template)
+            
+            # 임시 이미지 파일 삭제
+            if image_path.exists():
+                image_path.unlink()
+            
+            return jsonify({
+                'success': True,
+                'template_name': template_filename,
+                'template_path': str(template_path),
+                'message': f'템플릿 "{template_name}"이 성공적으로 생성되었습니다.'
+            })
+            
+        except Exception as e:
+            # 임시 이미지 파일 삭제
+            if image_path.exists():
+                image_path.unlink()
+            return jsonify({
+                'error': f'템플릿 생성 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
         }), 500
 
 
