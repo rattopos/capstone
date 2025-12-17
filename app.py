@@ -22,6 +22,7 @@ from src.period_detector import PeriodDetector
 from src.template_generator import TemplateGenerator
 from src.excel_header_parser import ExcelHeaderParser
 from src.flexible_mapper import FlexibleMapper
+from src.pdf_generator import PDFGenerator
 from bs4 import BeautifulSoup
 
 # PDF 생성 라이브러리 선택 (playwright 우선, 없으면 weasyprint)
