@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 앱 초기화
 function initializeApp() {
+    checkDefaultFile();
     loadTemplates();
     setupFileUpload();
     setupTemplateSelect();
@@ -174,6 +175,21 @@ function removeExcelFile() {
     document.getElementById('requiredSheetsInfo').style.display = 'none';
     
     updateProcessButton();
+}
+
+// 기본 파일 존재 여부 확인
+async function checkDefaultFile() {
+    try {
+        const response = await fetch('/api/check-default-file');
+        const data = await response.json();
+        
+        if (!data.exists) {
+            showError(data.message || `기본 엑셀 파일을 찾을 수 없습니다: ${data.filename || '기초자료 수집표_2025년 2분기_캡스톤.xlsx'}`);
+        }
+    } catch (error) {
+        console.error('기본 파일 확인 오류:', error);
+        // 오류가 발생해도 앱은 계속 실행되도록 함
+    }
 }
 
 // 템플릿 목록 로드

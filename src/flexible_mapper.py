@@ -50,6 +50,29 @@ class FlexibleMapper:
             if target_normalized in sheet_normalized or sheet_normalized in target_normalized:
                 return sheet
         
+        # 키워드 기반 매칭 (2글자 이상의 공통 키워드가 있는 경우)
+        target_keywords = self._extract_keywords(target_sheet_name)
+        if target_keywords:
+            # 키워드가 2글자 이상인 것만 필터링
+            significant_keywords = [kw for kw in target_keywords if len(kw) >= 2]
+            
+            best_keyword_match = None
+            best_keyword_score = 0
+            
+            for sheet in available_sheets:
+                sheet_keywords = self._extract_keywords(sheet)
+                # 공통 키워드 개수 계산
+                common_keywords = set(significant_keywords) & set(sheet_keywords)
+                if common_keywords:
+                    # 공통 키워드가 많을수록, 그리고 긴 키워드일수록 높은 점수
+                    score = sum(len(kw) for kw in common_keywords)
+                    if score > best_keyword_score:
+                        best_keyword_score = score
+                        best_keyword_match = sheet
+            
+            if best_keyword_match:
+                return best_keyword_match
+        
         # 유사도 기반 매칭
         best_match = None
         best_score = 0.0
@@ -293,12 +316,25 @@ class FlexibleMapper:
         if not text:
             return []
         
-        # 숫자, 한글, 영문 단어 추출
-        keywords = re.findall(r'[가-힣]+|[a-zA-Z]+|\d+', text)
-        # 1자리 숫자나 너무 짧은 단어 제외
-        keywords = [kw for kw in keywords if len(kw) > 1 or kw.isdigit()]
+        keywords = set()
         
-        return keywords
+        # 숫자, 한글, 영문 단어 추출
+        words = re.findall(r'[가-힣]+|[a-zA-Z]+|\d+', text)
+        for word in words:
+            # 1자리 숫자나 너무 짧은 단어 제외
+            if len(word) > 1 or word.isdigit():
+                keywords.add(word)
+            
+            # 한글의 경우 2글자 이상인 경우 부분 문자열도 추가 (예: "실업률" -> "실업", "률")
+            if re.match(r'^[가-힣]+$', word) and len(word) >= 3:
+                # 2글자 이상의 부분 문자열 추출
+                for i in range(len(word) - 1):
+                    for j in range(i + 2, len(word) + 1):
+                        substring = word[i:j]
+                        if len(substring) >= 2:
+                            keywords.add(substring)
+        
+        return list(keywords)
     
     def _calculate_similarity(self, str1: str, str2: str) -> float:
         """두 문자열의 유사도를 계산합니다."""

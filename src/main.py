@@ -33,8 +33,8 @@ def main():
     parser.add_argument(
         '--template', '-t',
         type=str,
-        default='templates/mining_manufacturing_production.html',
-        help='HTML 템플릿 파일 경로 (기본값: templates/mining_manufacturing_production.html)'
+        default='templates/광공업생산.html',
+        help='HTML 템플릿 파일 경로 (기본값: templates/광공업생산.html)'
     )
     
     parser.add_argument(

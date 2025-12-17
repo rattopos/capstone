@@ -41,7 +41,7 @@ python app.py
 
 ### CLI 사용 (명령줄)
 
-기본 템플릿(`templates/mining_manufacturing_production.html`) 사용:
+기본 템플릿(`templates/광공업생산.html`) 사용:
 
 ```bash
 python -m src.main --excel data/data.xlsx --output output/result.html
@@ -55,7 +55,7 @@ python -m src.main --template templates/template.html --excel data/data.xlsx --o
 
 ### 옵션
 
-- `--template, -t`: HTML 템플릿 파일 경로 (선택, 기본값: `templates/mining_manufacturing_production.html`)
+- `--template, -t`: HTML 템플릿 파일 경로 (선택, 기본값: `templates/광공업생산.html`)
 - `--excel, -e`: 엑셀 데이터 파일 경로 (필수)
 - `--output, -o`: 출력 파일 경로 (필수)
 - `--verbose, -v`: 상세한 로그 출력
