@@ -5,12 +5,14 @@
 
 import html
 import re
+import math
 from typing import Any, Dict, Optional
 from .template_manager import TemplateManager
 from .excel_extractor import ExcelExtractor
 from .calculator import Calculator
 from .data_analyzer import DataAnalyzer
 from .period_detector import PeriodDetector
+from .flexible_mapper import FlexibleMapper
 
 # 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
 INDUSTRY_NAME_MAPPING = {
@@ -131,6 +133,7 @@ class TemplateFiller:
         self.calculator = Calculator()
         self.data_analyzer = DataAnalyzer(excel_extractor)
         self.period_detector = PeriodDetector(excel_extractor)
+        self.flexible_mapper = FlexibleMapper(excel_extractor)
         self._analyzed_data_cache = None
         self._current_year = None  # 현재 처리 중인 연도
         self._current_quarter = None  # 현재 처리 중인 분기
@@ -146,11 +149,22 @@ class TemplateFiller:
             decimal_places: 소수점 자릿수 (기본값: 1)
             
         Returns:
-            포맷팅된 문자열
+            포맷팅된 문자열 (오류 시 "N/A")
         """
         try:
+            # None이나 빈 값 체크
+            if value is None:
+                return "N/A"
+            if isinstance(value, str) and not value.strip():
+                return "N/A"
+            
             # 숫자로 변환
             num = float(value)
+            
+            # NaN이나 Infinity 체크
+            import math
+            if math.isnan(num) or math.isinf(num):
+                return "N/A"
             
             # 소수점 처리
             num = round(num, decimal_places)
@@ -171,9 +185,9 @@ class TemplateFiller:
                 formatted = '.'.join(parts)
             
             return formatted
-        except (ValueError, TypeError):
-            # 숫자로 변환할 수 없으면 원본 반환
-            return str(value) if value is not None else ""
+        except (ValueError, TypeError, OverflowError):
+            # 숫자로 변환할 수 없으면 N/A 반환
+            return "N/A"
     
     def format_percentage(self, value: Any, decimal_places: int = 1, include_percent: bool = True) -> str:
         """
@@ -185,17 +199,29 @@ class TemplateFiller:
             include_percent: % 기호 포함 여부
             
         Returns:
-            포맷팅된 퍼센트 문자열 (예: "5.5%" 또는 "5.5")
+            포맷팅된 퍼센트 문자열 (예: "5.5%" 또는 "5.5", 오류 시 "N/A")
         """
         try:
+            # None이나 빈 값 체크
+            if value is None:
+                return "N/A"
+            if isinstance(value, str) and not value.strip():
+                return "N/A"
+            
             num = float(value)
+            
+            # NaN이나 Infinity 체크
+            import math
+            if math.isnan(num) or math.isinf(num):
+                return "N/A"
+            
             # 항상 소수점 첫째자리까지 표시 (0이어도 0.0으로 표시)
             formatted = f"{num:.{decimal_places}f}"
             if include_percent:
                 return f"{formatted}%"
             return formatted
-        except (ValueError, TypeError):
-            return str(value) if value is not None else ""
+        except (ValueError, TypeError, OverflowError):
+            return "N/A"
     
     def escape_html(self, value: Any) -> str:
         """
@@ -315,8 +341,26 @@ class TemplateFiller:
                 region_row = row
                 current = sheet.cell(row=row, column=current_col).value
                 prev = sheet.cell(row=row, column=prev_col).value
-                if current is not None and prev is not None and prev != 0:
-                    region_growth_rate = ((current / prev) - 1) * 100
+                
+                # 결측치 체크
+                if current is not None and prev is not None:
+                    # 빈 문자열 체크
+                    if isinstance(current, str) and not current.strip():
+                        break
+                    if isinstance(prev, str) and not prev.strip():
+                        break
+                    
+                    try:
+                        prev_num = float(prev)
+                        if prev_num != 0:
+                            current_num = float(current)
+                            region_growth_rate = ((current_num / prev_num) - 1) * 100
+                            # NaN이나 Infinity 체크
+                            import math
+                            if math.isnan(region_growth_rate) or math.isinf(region_growth_rate):
+                                region_growth_rate = None
+                    except (ValueError, TypeError, ZeroDivisionError, OverflowError):
+                        region_growth_rate = None
                 break
         
         if region_row is None:
@@ -345,15 +389,31 @@ class TemplateFiller:
                     current = sheet.cell(row=row, column=current_col).value
                     prev = sheet.cell(row=row, column=prev_col).value
                     
-                    if current is not None and prev is not None and prev != 0:
-                        growth_rate = ((current / prev) - 1) * 100
-                        categories.append({
-                            'name': str(cell_category.value).strip(),
-                            'growth_rate': growth_rate,
-                            'row': row,
-                            'current': current,
-                            'prev': prev
-                        })
+                    # 결측치 체크
+                    if current is not None and prev is not None:
+                        # 빈 문자열 체크
+                        if isinstance(current, str) and not current.strip():
+                            continue
+                        if isinstance(prev, str) and not prev.strip():
+                            continue
+                        
+                        try:
+                            prev_num = float(prev)
+                            if prev_num != 0:
+                                current_num = float(current)
+                                growth_rate = ((current_num / prev_num) - 1) * 100
+                                # NaN이나 Infinity 체크
+                                import math
+                                if not (math.isnan(growth_rate) or math.isinf(growth_rate)):
+                                    categories.append({
+                                        'name': str(cell_category.value).strip(),
+                                        'growth_rate': growth_rate,
+                                        'row': row,
+                                        'current': current,
+                                        'prev': prev
+                                    })
+                        except (ValueError, TypeError, ZeroDivisionError, OverflowError):
+                            continue
             else:
                 # 다른 지역이 나오면 중단
                 if cell_b.value and cell_b.value != region_name:
@@ -472,12 +532,35 @@ class TemplateFiller:
         current_value = sheet.cell(row=region_row, column=current_col).value
         prev_value = sheet.cell(row=region_row, column=prev_col).value
         
-        if current_value is None or prev_value is None or prev_value == 0:
+        # 결측치 체크
+        if current_value is None or prev_value is None:
+            return None
+        
+        # 빈 문자열 체크
+        if isinstance(current_value, str) and not current_value.strip():
+            return None
+        if isinstance(prev_value, str) and not prev_value.strip():
+            return None
+        
+        # 0으로 나누기 방지
+        try:
+            prev_num = float(prev_value)
+            if prev_num == 0:
+                return None
+            current_num = float(current_value)
+        except (ValueError, TypeError):
             return None
         
         # 증감률 계산
-        growth_rate = ((current_value / prev_value) - 1) * 100
-        return growth_rate
+        try:
+            growth_rate = ((current_num / prev_num) - 1) * 100
+            # NaN이나 Infinity 체크
+            import math
+            if math.isnan(growth_rate) or math.isinf(growth_rate):
+                return None
+            return growth_rate
+        except (ZeroDivisionError, OverflowError):
+            return None
     
     def _process_dynamic_marker(self, sheet_name: str, key: str, year: int = 2025, quarter: int = 2) -> Optional[str]:
         """
@@ -765,17 +848,18 @@ class TemplateFiller:
     def process_marker(self, marker_info: Dict[str, str]) -> str:
         """
         마커 정보를 처리하여 값을 추출하고 계산합니다.
+        유연한 매핑을 사용하여 시트명과 컬럼명이 바뀌어도 자동으로 매핑합니다.
         
         Args:
             marker_info: 마커 정보 딕셔너리
                 - 'sheet_name': 시트명
-                - 'cell_address': 셀 주소 또는 범위
+                - 'cell_address': 셀 주소 또는 범위 또는 헤더 기반 키
                 - 'operation': 계산식 (선택적)
         
         Returns:
             처리된 값 (문자열)
         """
-        sheet_name = marker_info['sheet_name']
+        marker_sheet_name = marker_info['sheet_name']
         cell_address = marker_info['cell_address']
         operation = marker_info.get('operation')
         
@@ -785,41 +869,70 @@ class TemplateFiller:
                 # 동적 마커 처리 (현재 저장된 연도/분기 사용)
                 current_year = self._current_year if self._current_year is not None else 2025
                 current_quarter = self._current_quarter if self._current_quarter is not None else 2
-                dynamic_value = self._process_dynamic_marker(sheet_name, cell_address, current_year, current_quarter)
-                if dynamic_value is not None:
+                dynamic_value = self._process_dynamic_marker(marker_sheet_name, cell_address, current_year, current_quarter)
+                if dynamic_value is not None and dynamic_value != "N/A":
                     return dynamic_value
+                
+                # 동적 마커가 실패하면 유연한 매핑 시도
+                resolved = self.flexible_mapper.resolve_marker(marker_sheet_name, cell_address)
+                if resolved:
+                    actual_sheet, resolved_address = resolved
+                    try:
+                        raw_value = self.excel_extractor.extract_value(actual_sheet, resolved_address)
+                        
+                        # 결측치 체크
+                        if raw_value is None:
+                            return "N/A"
+                        if isinstance(raw_value, str) and not raw_value.strip():
+                            return "N/A"
+                        if isinstance(raw_value, list):
+                            filtered = [v for v in raw_value if v is not None and (not isinstance(v, str) or v.strip())]
+                            if not filtered:
+                                return "N/A"
+                            raw_value = filtered
+                        
+                        # 계산 처리
+                        if operation:
+                            calculated = self._apply_operation(raw_value, operation)
+                            return self._format_value(calculated, operation)
+                        return self._format_value(raw_value)
+                    except Exception:
+                        return "N/A"
+                
                 # 동적 마커를 찾을 수 없으면 N/A 반환
                 return "N/A"
             
-            # 엑셀에서 값 추출
+            # 셀 주소 형식인 경우
+            # 먼저 정확한 시트명으로 시도
+            raw_value = None
             try:
-                raw_value = self.excel_extractor.extract_value(sheet_name, cell_address)
+                raw_value = self.excel_extractor.extract_value(marker_sheet_name, cell_address)
             except Exception:
-                # 시트나 셀을 찾을 수 없으면 N/A 반환
-                return "N/A"
-            
-            # 계산이 필요한 경우
-            if operation:
-                operation_lower = operation.lower().strip()
-                
-                # 범위인 경우 (리스트)
-                if isinstance(raw_value, list):
-                    # 증감률/증감액 계산의 경우 범위에서 첫 두 값 사용
-                    if operation_lower in ['growth_rate', '증감률', '증가율', 'growth_amount', '증감액', '증가액']:
-                        if len(raw_value) >= 2:
-                            calculated = self.calculator.calculate(operation_lower, raw_value[0], raw_value[1])
-                        else:
-                            raise ValueError(f"{operation} 계산에는 최소 2개의 값이 필요합니다.")
-                    else:
-                        # 다른 계산 (sum, average, max, min 등)
-                        calculated = self.calculator.calculate_from_cell_refs(operation_lower, raw_value)
+                # 시트를 찾을 수 없으면 유연한 매핑 시도
+                actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet_name)
+                if actual_sheet:
+                    try:
+                        raw_value = self.excel_extractor.extract_value(actual_sheet, cell_address)
+                    except Exception:
+                        return "N/A"
                 else:
-                    # 단일 값인 경우
-                    # 일부 계산식은 단일 값도 처리 (예: format)
-                    if operation_lower in ['format', '포맷']:
-                        return self.format_number(raw_value, decimal_places=1)
-                    # 계산식이 있지만 단일 값인 경우 그대로 사용
-                    calculated = raw_value
+                    return "N/A"
+            
+            # 결측치 체크 (None, 빈 문자열, 공백만 있는 값)
+            if raw_value is None:
+                return "N/A"
+            if isinstance(raw_value, str) and not raw_value.strip():
+                return "N/A"
+            if isinstance(raw_value, list):
+                # 리스트인 경우 None이나 빈 값 필터링
+                filtered = [v for v in raw_value if v is not None and (not isinstance(v, str) or v.strip())]
+                if not filtered:
+                    return "N/A"
+                raw_value = filtered
+            
+            # 계산 처리
+            if operation:
+                calculated = self._apply_operation(raw_value, operation)
             else:
                 # 계산이 필요없는 경우
                 if isinstance(raw_value, list):
@@ -829,24 +942,94 @@ class TemplateFiller:
                     calculated = raw_value
             
             # 결과 포맷팅
-            if calculated is not None:
-                try:
-                    float_val = float(calculated)
-                    # 퍼센트 연산인 경우 퍼센트 포맷
-                    if operation and operation.lower() in ['growth_rate', '증감률', '증가율']:
-                        return self.format_percentage(float_val, decimal_places=1)
-                    # 일반 숫자 포맷팅 (천 단위 구분, 소수점 첫째자리까지)
-                    return self.format_number(float_val, use_comma=True, decimal_places=1)
-                except (ValueError, TypeError):
-                    # 숫자가 아닌 경우 그대로 반환 (HTML 이스케이프는 하지 않음 - HTML 내에서 사용)
-                    return str(calculated)
-            else:
-                # 값이 없으면 N/A 반환
-                return "N/A"
+            return self._format_value(calculated, operation)
                 
         except Exception as e:
             # 에러 발생 시 N/A 반환
             return "N/A"
+    
+    def _apply_operation(self, raw_value: Any, operation: str) -> Any:
+        """계산식을 적용합니다. 오류 발생 시 None 반환."""
+        try:
+            operation_lower = operation.lower().strip()
+            
+            # 결측치 체크
+            if raw_value is None:
+                return None
+            
+            # 범위인 경우 (리스트)
+            if isinstance(raw_value, list):
+                # 빈 리스트 체크
+                if not raw_value:
+                    return None
+                
+                # None 값 필터링
+                filtered_values = [v for v in raw_value if v is not None and str(v).strip() != '']
+                if not filtered_values:
+                    return None
+                
+                # 증감률/증감액 계산의 경우 범위에서 첫 두 값 사용
+                if operation_lower in ['growth_rate', '증감률', '증가율', 'growth_amount', '증감액', '증가액']:
+                    if len(filtered_values) >= 2:
+                        try:
+                            return self.calculator.calculate(operation_lower, filtered_values[0], filtered_values[1])
+                        except (ValueError, ZeroDivisionError, TypeError):
+                            return None
+                    else:
+                        return None
+                else:
+                    # 다른 계산 (sum, average, max, min 등)
+                    try:
+                        return self.calculator.calculate_from_cell_refs(operation_lower, filtered_values)
+                    except (ValueError, ZeroDivisionError, TypeError):
+                        return None
+            else:
+                # 단일 값인 경우
+                # 빈 문자열이나 공백만 있는 값 체크
+                if isinstance(raw_value, str) and not raw_value.strip():
+                    return None
+                
+                # 일부 계산식은 단일 값도 처리 (예: format)
+                if operation_lower in ['format', '포맷']:
+                    try:
+                        return self.format_number(raw_value, decimal_places=1)
+                    except (ValueError, TypeError):
+                        return None
+                # 계산식이 있지만 단일 값인 경우 그대로 사용
+                return raw_value
+        except Exception:
+            # 모든 예외를 None으로 변환
+            return None
+    
+    def _format_value(self, value: Any, operation: str = None) -> str:
+        """값을 포맷팅합니다. 결측치나 오류는 N/A로 반환."""
+        # None 체크
+        if value is None:
+            return "N/A"
+        
+        # 빈 문자열이나 공백만 있는 값 체크
+        if isinstance(value, str):
+            if not value.strip():
+                return "N/A"
+            # "N/A", "n/a", "null", "None" 등의 문자열도 N/A로 처리
+            value_lower = value.strip().lower()
+            if value_lower in ['n/a', 'na', 'null', 'none', '#n/a', '#na', '#null', '#ref!', '#value!', '#div/0!']:
+                return "N/A"
+        
+        try:
+            float_val = float(value)
+            # NaN이나 Infinity 체크
+            if math.isnan(float_val) or math.isinf(float_val):
+                return "N/A"
+            
+            # 퍼센트 연산인 경우 퍼센트 포맷
+            if operation and operation.lower() in ['growth_rate', '증감률', '증가율']:
+                return self.format_percentage(float_val, decimal_places=1)
+            # 일반 숫자 포맷팅 (천 단위 구분, 소수점 첫째자리까지)
+            return self.format_number(float_val, use_comma=True, decimal_places=1)
+        except (ValueError, TypeError, OverflowError):
+            # 숫자가 아닌 경우 그대로 반환 (하지만 빈 문자열은 이미 N/A 처리됨)
+            return str(value) if value else "N/A"
     
     def fill_template(self, sheet_name: str = None, year: int = None, quarter: int = None) -> str:
         """
@@ -938,6 +1121,13 @@ class TemplateFiller:
             # sheet_name이 제공되면 마커의 시트명을 덮어쓰기
             if sheet_name:
                 marker_info['sheet_name'] = sheet_name
+            else:
+                # 시트명이 제공되지 않으면 유연한 매핑으로 찾기
+                marker_sheet = marker_info['sheet_name']
+                actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
+                if actual_sheet:
+                    marker_info['sheet_name'] = actual_sheet
+            
             processed_value = self.process_marker(marker_info)
             
             # 값이 비어있거나 에러인 경우 N/A로 채움

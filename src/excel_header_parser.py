@@ -24,20 +24,22 @@ class ExcelHeaderParser:
         self.extractor.load_workbook()
         self.header_cache = {}  # 시트별 헤더 캐시
     
-    def parse_sheet_headers(self, sheet_name: str, header_row: int = 1) -> Dict[str, Any]:
+    def parse_sheet_headers(self, sheet_name: str, header_row: int = 1, max_header_rows: int = 3) -> Dict[str, Any]:
         """
         시트의 헤더를 파싱하여 객체로 만듭니다.
+        여러 행의 헤더도 고려합니다.
         
         Args:
             sheet_name: 시트 이름
-            header_row: 헤더가 있는 행 번호 (기본값: 1)
+            header_row: 헤더가 시작하는 행 번호 (기본값: 1)
+            max_header_rows: 최대 헤더 행 수 (기본값: 3)
             
         Returns:
             헤더 정보 딕셔너리:
             {
                 'columns': [
-                    {'index': 1, 'letter': 'A', 'header': '시·도', 'normalized': '시도'},
-                    {'index': 2, 'letter': 'B', 'header': '2023 3/4', 'normalized': '2023_3_4'},
+                    {'index': 1, 'letter': 'A', 'header': '시·도', 'normalized': '시도', 'full_header': '시·도'},
+                    {'index': 2, 'letter': 'B', 'header': '2023 3/4', 'normalized': '2023_3_4', 'full_header': '2023 3/4'},
                     ...
                 ],
                 'header_map': {
@@ -52,48 +54,83 @@ class ExcelHeaderParser:
                 }
             }
         """
-        if sheet_name in self.header_cache:
-            return self.header_cache[sheet_name]
+        cache_key = f"{sheet_name}_{header_row}"
+        if cache_key in self.header_cache:
+            return self.header_cache[cache_key]
         
         sheet = self.extractor.get_sheet(sheet_name)
         
-        # 헤더 행 읽기
+        # 헤더 행 읽기 (여러 행 고려)
         headers = []
         header_map = {}
         
-        max_col = sheet.max_column
+        max_col = min(sheet.max_column, 200)  # 최대 200개 컬럼
+        
+        # 여러 행의 헤더를 조합
         for col in range(1, max_col + 1):
-            cell = sheet.cell(row=header_row, column=col)
-            header_value = cell.value
+            header_parts = []
             
-            if header_value is None:
-                header_value = f"Column{col}"
+            # 여러 행의 헤더 읽기
+            for row_offset in range(max_header_rows):
+                row = header_row + row_offset
+                if row > sheet.max_row:
+                    break
+                
+                cell = sheet.cell(row=row, column=col)
+                cell_value = cell.value
+                
+                if cell_value is not None:
+                    cell_value = str(cell_value).strip()
+                    if cell_value:
+                        header_parts.append(cell_value)
+            
+            # 헤더 조합
+            if header_parts:
+                full_header = ' '.join(header_parts)
+                primary_header = header_parts[0]  # 첫 번째 행의 헤더를 주 헤더로
             else:
-                header_value = str(header_value).strip()
+                full_header = f"Column{col}"
+                primary_header = full_header
             
             # 열 문자 계산 (A, B, C, ...)
             col_letter = self._number_to_column_letter(col)
             
             # 헤더 정규화 (마커 이름으로 사용 가능하도록)
-            normalized = self._normalize_header(header_value)
+            normalized = self._normalize_header(full_header)
+            normalized_primary = self._normalize_header(primary_header)
             
             header_info = {
                 'index': col,
                 'letter': col_letter,
-                'header': header_value,
-                'normalized': normalized
+                'header': primary_header,
+                'full_header': full_header,
+                'normalized': normalized,
+                'normalized_primary': normalized_primary
             }
             
             headers.append(header_info)
+            # 여러 키로 매핑 (전체 헤더와 주 헤더 모두)
             header_map[normalized] = col_letter
+            if normalized_primary != normalized:
+                header_map[normalized_primary] = col_letter
         
         # 행 헤더도 찾기 (첫 번째 열의 값들을 행 식별자로 사용)
         row_map = {}
         max_row = sheet.max_row
         
         # 첫 번째 열의 값들을 읽어서 행 매핑 생성
-        for row in range(header_row + 1, min(header_row + 50, max_row + 1)):  # 최대 50개 행만
-            cell = sheet.cell(row=row, column=1)
+        # 지역명이 있는 열 찾기 (보통 2번째 열)
+        region_col = 2  # 기본값: B열
+        for col in range(1, min(6, max_col + 1)):  # 처음 5개 열 중에서 찾기
+            cell = sheet.cell(row=header_row, column=col)
+            if cell.value:
+                header_text = str(cell.value).strip().lower()
+                if any(keyword in header_text for keyword in ['시도', '지역', 'region', 'area']):
+                    region_col = col
+                    break
+        
+        for row in range(header_row + 1, min(header_row + 200, max_row + 1)):
+            cell = sheet.cell(row=row, column=region_col)
             row_value = cell.value
             
             if row_value is None:
@@ -102,16 +139,18 @@ class ExcelHeaderParser:
             row_value = str(row_value).strip()
             if row_value:
                 normalized_row = self._normalize_header(row_value)
-                row_map[normalized_row] = row
+                if normalized_row not in row_map:  # 중복 방지
+                    row_map[normalized_row] = row
         
         result = {
             'columns': headers,
             'header_map': header_map,
             'row_map': row_map,
-            'header_row': header_row
+            'header_row': header_row,
+            'region_column': region_col
         }
         
-        self.header_cache[sheet_name] = result
+        self.header_cache[cache_key] = result
         return result
     
     def _number_to_column_letter(self, col_num: int) -> str:
