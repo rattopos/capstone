@@ -17,7 +17,7 @@ except ImportError:
 
 try:
     from docx import Document
-    from docx.shared import Inches, Pt, RGBColor
+    from docx.shared import Inches, Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
     from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
@@ -71,6 +71,7 @@ class PDFToWordConverter:
     def extract_text_from_pdf_direct(self, pdf_path: str) -> List[List[Dict]]:
         """
         PDF에서 직접 텍스트와 레이아웃 정보를 추출합니다 (이미지 변환 없이).
+        표 정보도 함께 추출합니다.
         
         Args:
             pdf_path: PDF 파일 경로
@@ -94,6 +95,18 @@ class PDFToWordConverter:
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 page_text_data = []
+                
+                # PyMuPDF의 표 감지 시도 (최신 버전)
+                try:
+                    # find_tables() 메서드가 있는지 확인
+                    if hasattr(page, 'find_tables'):
+                        tables = page.find_tables()
+                        if tables:
+                            print(f"[DEBUG PDFToWord] 페이지 {page_num + 1}에서 {len(tables.tables)}개 표 발견 (PyMuPDF find_tables)")
+                            # 표 데이터는 별도로 처리하므로 여기서는 텍스트만 추출
+                except Exception as e:
+                    # find_tables가 없거나 실패한 경우 무시
+                    pass
                 
                 # PDF에서 텍스트 딕셔너리 형식으로 추출
                 text_dict = page.get_text("dict")
@@ -135,6 +148,84 @@ class PDFToWordConverter:
             return []
         
         return pages_text_data
+    
+    def extract_images_from_pdf(self, pdf_path: str) -> List[List[Dict]]:
+        """
+        PDF에서 이미지를 추출합니다 (그래프, 인포그래픽 등).
+        
+        Args:
+            pdf_path: PDF 파일 경로
+            
+        Returns:
+            페이지별 이미지 정보 리스트. 각 페이지는 이미지 정보 딕셔너리 리스트를 포함:
+            - 'image_data': 이미지 바이너리 데이터
+            - 'bbox': 바운딩 박스 좌표 (x1, y1, x2, y2)
+            - 'width': 이미지 너비
+            - 'height': 이미지 높이
+            - 'page_num': 페이지 번호
+        """
+        if not PYMUPDF_AVAILABLE:
+            return []
+        
+        pages_images = []
+        
+        try:
+            doc = fitz.open(pdf_path)
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                page_images = []
+                
+                # 페이지에서 이미지 리스트 가져오기
+                image_list = page.get_images()
+                
+                for img_idx, img in enumerate(image_list):
+                    try:
+                        # 이미지 정보
+                        xref = img[0]  # 이미지 참조 번호
+                        base_image = doc.extract_image(xref)
+                        image_bytes = base_image["image"]
+                        image_ext = base_image["ext"]
+                        
+                        # 이미지의 위치 정보 가져오기
+                        # 이미지가 포함된 블록 찾기
+                        image_rects = page.get_image_rects(xref)
+                        
+                        for rect in image_rects:
+                            # 바운딩 박스 (PDF 좌표계)
+                            bbox = (rect.x0, rect.y0, rect.x1, rect.y1)
+                            
+                            # 이미지 크기
+                            width = rect.width
+                            height = rect.height
+                            
+                            # 최소 크기 필터링 (너무 작은 아이콘 제외)
+                            if width < 50 or height < 50:
+                                continue
+                            
+                            page_images.append({
+                                'image_data': image_bytes,
+                                'image_ext': image_ext,
+                                'bbox': bbox,
+                                'width': width,
+                                'height': height,
+                                'page_num': page_num + 1
+                            })
+                    except Exception as e:
+                        print(f"[DEBUG PDFToWord] 이미지 {img_idx} 추출 실패: {e}")
+                        continue
+                
+                pages_images.append(page_images)
+                if page_images:
+                    print(f"[DEBUG PDFToWord] 페이지 {page_num + 1}에서 {len(page_images)}개 이미지 발견")
+            
+            doc.close()
+            
+        except Exception as e:
+            print(f"PDF 이미지 추출 실패: {e}")
+            return []
+        
+        return pages_images
     
     def pdf_to_images(self, pdf_path: str) -> List[Image.Image]:
         """
@@ -264,6 +355,7 @@ class PDFToWordConverter:
     def organize_text_by_layout(self, text_data: List[Dict], page_width: int, page_height: int) -> List[Dict]:
         """
         텍스트 데이터를 레이아웃에 따라 정리합니다.
+        표를 감지하여 별도로 처리합니다.
         
         Args:
             text_data: extract_text_and_layout()의 결과
@@ -276,6 +368,9 @@ class PDFToWordConverter:
         if not text_data:
             return []
         
+        # 표 감지 시도
+        tables = self._detect_tables(text_data, page_width, page_height)
+        
         # y 좌표 기준으로 정렬
         sorted_text = sorted(text_data, key=lambda x: (x['bbox'][1], x['bbox'][0]))
         
@@ -284,7 +379,23 @@ class PDFToWordConverter:
         current_y = None
         line_threshold = page_height * 0.02
         
-        for item in sorted_text:
+        # 표 영역에 포함된 텍스트는 제외 (bbox 좌표로 판단)
+        text_in_tables = set()
+        for table in tables:
+            table_bbox = table.get('bbox', (0, 0, page_width, page_height))
+            for idx, item in enumerate(sorted_text):
+                item_bbox = item['bbox']
+                # 텍스트가 표 영역 안에 있는지 확인 (약간의 여유 공간 포함)
+                margin = page_width * 0.01  # 1% 여유
+                if (table_bbox[0] - margin <= item_bbox[0] <= table_bbox[2] + margin and
+                    table_bbox[1] - margin <= item_bbox[1] <= table_bbox[3] + margin):
+                    text_in_tables.add(idx)
+        
+        for idx, item in enumerate(sorted_text):
+            # 표에 포함된 텍스트는 건너뛰기
+            if idx in text_in_tables:
+                continue
+            
             y = item['bbox'][1]
             
             if current_y is None or abs(y - current_y) < line_threshold:
@@ -316,7 +427,99 @@ class PDFToWordConverter:
                 'font_size': max([item['font_size'] for item in current_paragraph], default=12)
             })
         
+        # 표를 organized 리스트에 추가 (y 좌표 기준으로 정렬)
+        for table in tables:
+            organized.append({
+                'type': 'table',
+                'table_data': table,
+                'y': table.get('bbox', [0, 0, 0, 0])[1]
+            })
+        
+        # y 좌표 기준으로 다시 정렬
+        organized.sort(key=lambda x: x.get('y', 0))
+        
         return organized
+    
+    def _detect_tables(self, text_data: List[Dict], page_width: int, page_height: int) -> List[Dict]:
+        """
+        텍스트 데이터에서 표를 감지합니다.
+        
+        Args:
+            text_data: 텍스트 데이터 리스트
+            page_width: 페이지 너비
+            page_height: 페이지 높이
+            
+        Returns:
+            표 정보 리스트. 각 표는 다음 키를 포함:
+            - 'rows': 행 리스트
+            - 'bbox': 표의 바운딩 박스
+        """
+        if not text_data:
+            return []
+        
+        # y 좌표 기준으로 그룹화 (행 감지)
+        y_groups = {}
+        y_threshold = page_height * 0.015  # 1.5% 높이 차이를 같은 행으로 간주
+        
+        for item in text_data:
+            y = item['bbox'][1]
+            # 가장 가까운 y 그룹 찾기
+            matched_group = None
+            for group_y in y_groups.keys():
+                if abs(y - group_y) < y_threshold:
+                    matched_group = group_y
+                    break
+            
+            if matched_group is not None:
+                y_groups[matched_group].append(item)
+            else:
+                y_groups[y] = [item]
+        
+        # 각 행을 x 좌표 기준으로 정렬
+        rows = []
+        for y, items in sorted(y_groups.items()):
+            items_sorted = sorted(items, key=lambda x: x['bbox'][0])
+            rows.append(items_sorted)
+        
+        # 표 감지: 여러 행이 있고, 각 행에 여러 셀이 있는 경우
+        tables = []
+        if len(rows) >= 2:  # 최소 2행 이상
+            # 연속된 행들을 그룹화하여 표로 인식
+            current_table_rows = []
+            min_x = min(item['bbox'][0] for row in rows for item in row)
+            max_x = max(item['bbox'][2] for row in rows for item in row)
+            min_y = rows[0][0]['bbox'][1]
+            max_y = rows[-1][0]['bbox'][3]
+            
+            # 각 행의 셀 개수 확인
+            cells_per_row = [len(row) for row in rows]
+            avg_cells = sum(cells_per_row) / len(cells_per_row) if cells_per_row else 0
+            
+            # 평균적으로 2개 이상의 셀이 있는 행이 3개 이상이면 표로 간주
+            rows_with_multiple_cells = sum(1 for count in cells_per_row if count >= 2)
+            
+            if rows_with_multiple_cells >= 3 and avg_cells >= 2:
+                # 표 데이터 구성
+                table_rows = []
+                for row in rows:
+                    table_row = []
+                    for item in row:
+                        table_row.append({
+                            'text': item['text'],
+                            'bbox': item['bbox'],
+                            'font_size': item.get('font_size', 12),
+                            'is_bold': item.get('is_bold', False)
+                        })
+                    table_rows.append(table_row)
+                
+                tables.append({
+                    'rows': table_rows,
+                    'bbox': (min_x, min_y, max_x, max_y),
+                    'num_rows': len(table_rows),
+                    'num_cols': max(cells_per_row) if cells_per_row else 0
+                })
+        
+        return tables
     
     def convert_pdf_to_word(self, pdf_path: str, output_path: str) -> str:
         """
@@ -342,6 +545,12 @@ class PDFToWordConverter:
         print("텍스트 기반 추출 시도 중...")
         pages_text_data = self.extract_text_from_pdf_direct(pdf_path)
         
+        # 1-1단계: PDF에서 이미지 추출 (그래프, 인포그래픽)
+        print("이미지 추출 중...")
+        pages_images = self.extract_images_from_pdf(pdf_path)
+        total_images = sum(len(imgs) for imgs in pages_images)
+        print(f"[DEBUG PDFToWord] 총 {total_images}개 이미지 발견")
+        
         # 텍스트가 충분히 추출되었는지 확인
         total_text_chars = sum(len(item['text']) for page_data in pages_text_data for item in page_data)
         total_pages_with_text = len([p for p in pages_text_data if len(p) > 0])
@@ -360,21 +569,35 @@ class PDFToWordConverter:
         else:
             print(f"[DEBUG PDFToWord] 텍스트 기반 PDF로 확인되었습니다 ({total_text_chars}자 추출). 직접 추출 방식을 사용합니다.")
         
-        # Word 문서 생성
-        doc = Document()
-        
-        # 페이지 설정 (A4 크기)
-        section = doc.sections[0]
-        section.page_height = Inches(11.69)  # A4 높이
-        section.page_width = Inches(8.27)    # A4 너비
-        section.left_margin = Inches(0.79)
-        section.right_margin = Inches(0.79)
-        section.top_margin = Inches(0.79)
-        section.bottom_margin = Inches(0.79)
-        
         # PDF 열기 (페이지 크기 정보를 위해)
         pdf_doc = fitz.open(pdf_path)
         total_pages = len(pdf_doc)
+        
+        # 첫 페이지의 크기로 Word 문서 설정
+        first_page = pdf_doc[0]
+        first_page_rect = first_page.rect
+        pdf_page_width_pt = first_page_rect.width
+        pdf_page_height_pt = first_page_rect.height
+        
+        # 포인트를 인치로 변환 (72 DPI 기준)
+        pdf_page_width_inch = pdf_page_width_pt / 72.0
+        pdf_page_height_inch = pdf_page_height_pt / 72.0
+        
+        # Word 문서 생성
+        doc = Document()
+        
+        # 페이지 설정 (PDF 페이지 크기에 맞춤)
+        section = doc.sections[0]
+        section.page_height = Inches(pdf_page_height_inch)
+        section.page_width = Inches(pdf_page_width_inch)
+        
+        # 마진 설정 (PDF와 유사하게)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        
+        print(f"[DEBUG PDFToWord] PDF 페이지 크기: {pdf_page_width_inch:.2f} x {pdf_page_height_inch:.2f} 인치")
         
         # 각 페이지 처리
         for page_num in range(total_pages):
@@ -399,6 +622,49 @@ class PDFToWordConverter:
                 
                 text_data = self.extract_text_and_layout(image)
                 organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1])
+                
+                # OCR 방식에서도 이미지 추출 (그래프, 인포그래픽)
+                # 페이지 전체를 이미지로 사용하지 않고, 개별 이미지 객체만 추출
+                page_images_for_ocr = []
+                try:
+                    image_list = page.get_images()
+                    for img_idx, img in enumerate(image_list):
+                        try:
+                            xref = img[0]
+                            base_image = pdf_doc.extract_image(xref)
+                            image_bytes = base_image["image"]
+                            image_ext = base_image["ext"]
+                            
+                            image_rects = page.get_image_rects(xref)
+                            for rect in image_rects:
+                                bbox = (rect.x0, rect.y0, rect.x1, rect.y1)
+                                width = rect.width
+                                height = rect.height
+                                
+                                # 최소 크기 필터링
+                                if width >= 50 and height >= 50:
+                                    page_images_for_ocr.append({
+                                        'image_data': image_bytes,
+                                        'image_ext': image_ext,
+                                        'bbox': bbox,
+                                        'width': width,
+                                        'height': height,
+                                        'page_num': page_num + 1
+                                    })
+                        except Exception as e:
+                            print(f"[DEBUG PDFToWord] OCR 모드에서 이미지 {img_idx} 추출 실패: {e}")
+                            continue
+                    
+                    # OCR 모드의 이미지를 pages_images에 추가
+                    if page_num < len(pages_images):
+                        pages_images[page_num].extend(page_images_for_ocr)
+                    else:
+                        # 페이지가 없으면 새로 추가
+                        while len(pages_images) <= page_num:
+                            pages_images.append([])
+                        pages_images[page_num] = page_images_for_ocr
+                except Exception as e:
+                    print(f"[DEBUG PDFToWord] OCR 모드에서 이미지 추출 실패: {e}")
             else:
                 # 직접 추출 방식: 이미 추출된 텍스트 사용
                 page_text_data = pages_text_data[page_num] if page_num < len(pages_text_data) else []
@@ -425,44 +691,196 @@ class PDFToWordConverter:
                     text_sample = ' '.join([ti['text'] for ti in item['items']])
                     print(f"  단락 {i+1}: {repr(text_sample[:100])}")
             
+            # 페이지의 이미지 가져오기
+            page_images = pages_images[page_num] if page_num < len(pages_images) else []
+            
+            # 모든 요소 (텍스트, 표, 이미지)를 y 좌표 기준으로 정렬
+            all_elements = []
+            
+            # 텍스트/표 요소 추가
+            for item in organized_text:
+                all_elements.append({
+                    'type': item.get('type', 'paragraph'),
+                    'data': item,
+                    'y': item.get('y', 0)
+                })
+            
+            # 이미지 요소 추가
+            for img_info in page_images:
+                img_y = img_info['bbox'][1]  # 이미지의 상단 y 좌표
+                all_elements.append({
+                    'type': 'image',
+                    'data': img_info,
+                    'y': img_y
+                })
+            
+            # y 좌표 기준으로 정렬
+            all_elements.sort(key=lambda x: x.get('y', 0))
+            
             # Word 문서에 추가
             prev_y = None
-            for item in organized_text:
+            for element in all_elements:
+                element_y = element.get('y', 0)
+                
                 # 큰 간격이 있으면 단락 구분
-                if prev_y is not None and (item['y'] - prev_y) > page_height * 0.05:
+                if prev_y is not None and (element_y - prev_y) > page_height * 0.05:
                     doc.add_paragraph()  # 빈 단락 추가
                 
-                # 단락 생성
-                para = doc.add_paragraph()
+                # 이미지인 경우
+                if element.get('type') == 'image':
+                    img_info = element.get('data', {})
+                    try:
+                        # 이미지를 임시 파일로 저장
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{img_info.get('image_ext', 'png')}") as tmp_file:
+                            tmp_file.write(img_info.get('image_data', b''))
+                            tmp_path = tmp_file.name
+                        
+                        # 이미지 크기 계산 (PDF 좌표를 인치로 변환)
+                        # PDF 좌표는 포인트 단위 (72 DPI 기준)
+                        img_width_pt = img_info.get('width', 0)
+                        img_height_pt = img_info.get('height', 0)
+                        
+                        # 포인트를 인치로 변환
+                        img_width_inch = img_width_pt / 72.0
+                        img_height_inch = img_height_pt / 72.0
+                        
+                        # 페이지 너비에 맞게 조정 (너무 크면 축소)
+                        max_width_inch = 6.5  # A4 페이지 너비에서 마진 제외
+                        if img_width_inch > max_width_inch:
+                            ratio = max_width_inch / img_width_inch
+                            img_width_inch = max_width_inch
+                            img_height_inch = img_height_inch * ratio
+                        
+                        # 단락 생성 및 이미지 추가
+                        para = doc.add_paragraph()
+                        run = para.add_run()
+                        run.add_picture(tmp_path, width=Inches(img_width_inch))
+                        
+                        # 이미지 정렬 (중앙 정렬)
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        
+                        # 임시 파일 삭제
+                        import os
+                        if os.path.exists(tmp_path):
+                            os.unlink(tmp_path)
+                        
+                        print(f"[DEBUG PDFToWord] 이미지 추가: {img_width_inch:.2f} x {img_height_inch:.2f} 인치")
+                        prev_y = element_y
+                        continue
+                    except Exception as e:
+                        print(f"[DEBUG PDFToWord] 이미지 추가 실패: {e}")
+                        continue
                 
-                # 텍스트 아이템들을 순서대로 추가
-                # 숫자나 데이터를 의미 기반 마커로 변환
-                full_text = ' '.join([ti['text'] for ti in item['items']])
-                processed_text = self._convert_data_to_semantic_markers(full_text, item['items'])
-                
-                # 처리된 텍스트를 Run으로 추가
-                run = para.add_run(processed_text)
-                
-                # 폰트 크기 설정 (첫 번째 아이템 기준)
-                if item['items']:
-                    font_size = item['items'][0].get('font_size', 12)
-                    run.font.size = Pt(font_size)
+                # 표인 경우
+                if element.get('type') == 'table':
+                    item = element.get('data', {})
+                    table_data = item.get('table_data', {})
+                    table_rows = table_data.get('rows', [])
                     
-                    # 폰트 이름 설정 (한글 지원)
-                    run.font.name = '맑은 고딕'
-                    run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
+                    if table_rows:
+                        # Word 표 생성
+                        num_rows = len(table_rows)
+                        num_cols = max(len(row) for row in table_rows) if table_rows else 1
+                        
+                        # 표 생성
+                        table = doc.add_table(rows=num_rows, cols=num_cols)
+                        table.style = 'Light Grid Accent 1'  # 표 스타일
+                        
+                        # 표에 데이터 채우기
+                        for row_idx, row_data in enumerate(table_rows):
+                            for col_idx, cell_data in enumerate(row_data):
+                                if row_idx < num_rows and col_idx < num_cols:
+                                    cell = table.rows[row_idx].cells[col_idx]
+                                    cell_text = cell_data.get('text', '')
+                                    
+                                    # 숫자나 데이터를 의미 기반 마커로 변환
+                                    processed_text = self._convert_data_to_semantic_markers(
+                                        cell_text, [cell_data]
+                                    )
+                                    
+                                    # 셀에 텍스트 추가
+                                    cell_para = cell.paragraphs[0]
+                                    cell_para.clear()
+                                    run = cell_para.add_run(processed_text)
+                                    
+                                    # 폰트 설정
+                                    font_size = cell_data.get('font_size', 10)
+                                    run.font.size = Pt(font_size)
+                                    run.font.name = '맑은 고딕'
+                                    run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
+                                    
+                                    if cell_data.get('is_bold', False):
+                                        run.bold = True
+                                    
+                                    # 셀 정렬 (첫 번째 행은 중앙 정렬, 나머지는 왼쪽 정렬)
+                                    if row_idx == 0:
+                                        cell_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                                    else:
+                                        cell_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                        
+                        print(f"[DEBUG PDFToWord] 표 추가: {num_rows}행 x {num_cols}열")
+                        doc.add_paragraph()  # 표 다음에 빈 단락 추가
+                        prev_y = element_y
+                        continue
+                
+                # 단락인 경우
+                if element.get('type') == 'paragraph':
+                    item = element.get('data', {})
+                    para = doc.add_paragraph()
                     
-                    # 굵은 글씨 설정
-                    if item['items'][0].get('is_bold', False):
-                        run.bold = True
-                
-                # 단락 정렬 (왼쪽 정렬 기본)
-                para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                
-                # 줄 간격 설정
-                para.paragraph_format.line_spacing = 1.15
-                
-                prev_y = item['y']
+                    # 텍스트 아이템들을 순서대로 추가 (폰트 정보 유지)
+                    items = item.get('items', [])
+                    if items:
+                        for idx, text_item in enumerate(items):
+                            text = text_item.get('text', '')
+                            
+                            # 숫자나 데이터를 의미 기반 마커로 변환 (단일 아이템 기준)
+                            processed_text = self._convert_data_to_semantic_markers(text, [text_item])
+                            
+                            # 각 텍스트 아이템을 별도 Run으로 추가 (폰트 정보 유지)
+                            run = para.add_run(processed_text)
+                            
+                            # 폰트 크기 설정 (정확한 크기 유지)
+                            font_size = text_item.get('font_size', 12)
+                            run.font.size = Pt(font_size)
+                            
+                            # 폰트 이름 설정 (한글 지원)
+                            run.font.name = '맑은 고딕'
+                            run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
+                            
+                            # 굵은 글씨 설정
+                            if text_item.get('is_bold', False):
+                                run.bold = True
+                            
+                            # 다음 아이템과 공백 추가 (같은 줄의 경우)
+                            if idx < len(items) - 1:
+                                # 다음 아이템과의 x 좌표 차이 확인
+                                current_x = text_item.get('bbox', [0, 0, 0, 0])[2]
+                                next_x = items[idx + 1].get('bbox', [0, 0, 0, 0])[0]
+                                gap = next_x - current_x
+                                
+                                # 적절한 간격이면 공백 추가
+                                if 5 < gap < 100:  # 5~100 픽셀 간격
+                                    run.add_text(' ')
+                    else:
+                        # 아이템이 없는 경우 빈 단락
+                        para.add_run('')
+                    
+                    # 단락 정렬 (왼쪽 정렬 기본)
+                    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    
+                    # 줄 간격 설정 (원본과 유사하게)
+                    para.paragraph_format.line_spacing = 1.15
+                    
+                    # 단락 간격 설정 (y 좌표 차이 기반)
+                    if prev_y is not None:
+                        y_diff = element_y - prev_y
+                        # 큰 간격이면 단락 간격 추가
+                        if y_diff > page_height * 0.02:
+                            para.paragraph_format.space_before = Pt(max(6, int(y_diff * 0.1)))
+                    
+                    prev_y = element_y
         
         pdf_doc.close()
         
