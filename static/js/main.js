@@ -19,16 +19,7 @@ function initializeApp() {
 
 // 워크플로우 단계 설정
 function setupWorkflowSteps() {
-    // 시트 선택 변경 시
-    const sheetSelect = document.getElementById('sheetSelect');
-    if (sheetSelect) {
-        sheetSelect.addEventListener('change', function() {
-            if (this.value) {
-                updateWorkflowStep(3);
-                updateYearQuarterOptions(this.value);
-            }
-        });
-    }
+    // 더 이상 시트 선택이 없으므로 이 함수는 비워둠
 }
 
 // 워크플로우 단계 업데이트
@@ -181,8 +172,12 @@ async function handleExcelSelect(file) {
     selectedExcelFile = file;
     displayExcelFileInfo(file);
     
-    // 시트 목록 로드
-    await loadSheetNames(file);
+    // 연도/분기 옵션 업데이트 (시트는 자동 감지되므로 시트 목록 로드 불필요)
+    await updateYearQuarterFromExcel(file);
+    
+    // 연도/분기 섹션 표시
+    document.getElementById('periodSection').style.display = 'block';
+    updateWorkflowStep(2);
     
     updateProcessButton();
 }
@@ -202,25 +197,15 @@ function removeExcelFile() {
     document.getElementById('excelFile').value = '';
     document.getElementById('excelFileInfo').style.display = 'none';
     
-    // 시트 선택 초기화
-    const sheetSelect = document.getElementById('sheetSelect');
-    sheetSelect.innerHTML = '<option value="">엑셀 파일을 업로드하세요</option>';
-    sheetSelect.disabled = true;
-    
     // 섹션 숨기기
-    document.getElementById('sheetSection').style.display = 'none';
     document.getElementById('periodSection').style.display = 'none';
     
     updateProcessButton();
     updateWorkflowStep(1);
 }
 
-// 시트 목록 로드
-async function loadSheetNames(file) {
-    const sheetSelect = document.getElementById('sheetSelect');
-    sheetSelect.disabled = true;
-    sheetSelect.innerHTML = '<option value="">로딩 중...</option>';
-    
+// 엑셀 파일에서 연도/분기 정보 가져오기
+async function updateYearQuarterFromExcel(file) {
     try {
         const formData = new FormData();
         formData.append('excel_file', file);
@@ -232,43 +217,18 @@ async function loadSheetNames(file) {
         
         const data = await response.json();
         
-        if (response.ok && data.valid && data.sheet_names) {
-            // 시트 목록 채우기
-            sheetSelect.innerHTML = '';
+        if (response.ok && data.valid && data.sheets_info) {
+            sheetsInfo = data.sheets_info;
             
-            data.sheet_names.forEach(sheetName => {
-                const option = document.createElement('option');
-                option.value = sheetName;
-                option.textContent = sheetName;
-                sheetSelect.appendChild(option);
-            });
-            
-            // 첫 번째 시트 선택
-            if (data.sheet_names.length > 0) {
-                sheetSelect.value = data.sheet_names[0];
+            // 첫 번째 시트의 연도/분기 정보 사용 (백엔드에서 자동으로 필요한 시트를 찾을 것)
+            const firstSheetName = Object.keys(data.sheets_info)[0];
+            if (firstSheetName && data.sheets_info[firstSheetName]) {
+                updateYearQuarterOptions(firstSheetName);
             }
-            
-            sheetSelect.disabled = false;
-            
-            // 시트별 연도/분기 정보 저장
-            if (data.sheets_info) {
-                sheetsInfo = data.sheets_info;
-                // 선택된 시트의 연도/분기 업데이트
-                updateYearQuarterOptions(sheetSelect.value);
-            }
-            
-            // 시트 섹션 표시
-            document.getElementById('sheetSection').style.display = 'block';
-            document.getElementById('periodSection').style.display = 'block';
-            updateWorkflowStep(2);
-        } else {
-            sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
-            showError(data.error || '시트 목록을 불러올 수 없습니다.');
         }
     } catch (error) {
-        console.error('시트 목록 로드 오류:', error);
-        sheetSelect.innerHTML = '<option value="">시트를 불러올 수 없습니다</option>';
-        showError('시트 목록을 불러오는 중 오류가 발생했습니다.');
+        console.error('연도/분기 정보 로드 오류:', error);
+        // 에러가 발생해도 기본값 사용
     }
 }
 
@@ -281,9 +241,8 @@ function setupProcessButton() {
 // 처리 버튼 상태 업데이트
 function updateProcessButton() {
     const processBtn = document.getElementById('processBtn');
-    const sheetSelect = document.getElementById('sheetSelect');
     
-    if (selectedPdfFile && selectedExcelFile && sheetSelect && sheetSelect.value) {
+    if (selectedPdfFile && selectedExcelFile) {
         processBtn.disabled = false;
     } else {
         processBtn.disabled = true;
@@ -297,19 +256,12 @@ async function handleProcess() {
         return;
     }
 
-    // 시트, 연도 및 분기 가져오기
-    const sheetSelect = document.getElementById('sheetSelect');
+    // 연도 및 분기 가져오기 (시트는 백엔드에서 자동 감지)
     const yearSelect = document.getElementById('yearSelect');
     const quarterSelect = document.getElementById('quarterSelect');
     
-    const sheetName = sheetSelect.value;
     const year = yearSelect.value;
     const quarter = quarterSelect.value;
-    
-    if (!sheetName) {
-        showError('시트를 선택해주세요.');
-        return;
-    }
 
     // UI 업데이트
     const processBtn = document.getElementById('processBtn');
@@ -329,11 +281,10 @@ async function handleProcess() {
     updateProgress(0);
 
     try {
-        // FormData 생성
+        // FormData 생성 (시트명은 백엔드에서 자동 감지)
         const formData = new FormData();
         formData.append('pdf_file', selectedPdfFile);
         formData.append('excel_file', selectedExcelFile);
-        formData.append('sheet_name', sheetName);
         formData.append('year', year);
         formData.append('quarter', quarter);
 
@@ -354,7 +305,7 @@ async function handleProcess() {
             setTimeout(() => {
                 progressSection.style.display = 'none';
                 showResult(data.message);
-                updateWorkflowStep(4);
+                updateWorkflowStep(3);
             }, 500);
         } else {
             progressSection.style.display = 'none';

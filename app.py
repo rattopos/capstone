@@ -718,34 +718,53 @@ def process_word_template():
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
             
-            # 선택한 시트가 존재하는지 확인
-            if sheet_name not in sheet_names:
+            # 4단계: Word 템플릿에서 필요한 시트 자동 감지
+            print("4단계: 템플릿에서 필요한 시트 자동 감지 중...")
+            markers = word_template_manager.extract_markers()
+            required_sheets = set()
+            for marker in markers:
+                marker_sheet = marker['sheet_name']
+                # 유연한 매핑으로 실제 시트명 찾기
+                from src.flexible_mapper import FlexibleMapper
+                flexible_mapper = FlexibleMapper(excel_extractor)
+                actual_sheet = flexible_mapper.find_sheet_by_name(marker_sheet)
+                if actual_sheet:
+                    required_sheets.add(actual_sheet)
+                elif marker_sheet in sheet_names:
+                    required_sheets.add(marker_sheet)
+            
+            if not required_sheets:
                 return jsonify({
-                    'error': f'시트 "{sheet_name}"을 찾을 수 없습니다. 사용 가능한 시트: {", ".join(sheet_names)}'
+                    'error': '템플릿에서 사용 가능한 시트를 찾을 수 없습니다. 템플릿의 마커 형식을 확인해주세요.'
                 }), 400
             
-            # 4단계: 연도 및 분기 자동 감지 또는 사용자 입력값 사용
-            print("4단계: 연도/분기 감지 중...")
+            print(f"발견된 필요한 시트: {', '.join(required_sheets)}")
+            
+            # 5단계: 연도 및 분기 자동 감지 또는 사용자 입력값 사용
+            print("5단계: 연도/분기 감지 중...")
             period_detector = PeriodDetector(excel_extractor)
-            periods_info = period_detector.detect_available_periods(sheet_name)
+            
+            # 첫 번째 필요한 시트를 기준으로 연도/분기 감지
+            primary_sheet = list(required_sheets)[0]
+            periods_info = period_detector.detect_available_periods(primary_sheet)
             
             if year_str and quarter_str:
                 year = int(year_str)
                 quarter = int(quarter_str)
                 
-                # 유효성 검증
-                is_valid, error_msg = period_detector.validate_period(sheet_name, year, quarter)
+                # 유효성 검증 (첫 번째 시트 기준)
+                is_valid, error_msg = period_detector.validate_period(primary_sheet, year, quarter)
                 if not is_valid:
                     return jsonify({'error': error_msg}), 400
             else:
                 year = periods_info['default_year']
                 quarter = periods_info['default_quarter']
             
-            # 5단계: Word 템플릿에 데이터 채우기
-            print("5단계: Word 템플릿에 데이터 채우는 중...")
+            # 6단계: Word 템플릿에 데이터 채우기 (시트명 없이 자동 처리)
+            print("6단계: Word 템플릿에 데이터 채우는 중...")
             word_template_filler = WordTemplateFiller(word_template_manager, excel_extractor)
             word_template_filler.fill_template(
-                sheet_name=sheet_name,
+                sheet_name=None,  # None으로 설정하면 마커에서 자동으로 시트 찾음
                 year=year,
                 quarter=quarter
             )
@@ -754,10 +773,11 @@ def process_word_template():
             filled_word_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_filled.docx"
             word_template_filler.save_filled_template(str(filled_word_path))
             
-            # 6단계: Word를 PDF로 변환
-            print("6단계: Word를 PDF로 변환 중...")
+            # 7단계: Word를 PDF로 변환
+            print("7단계: Word를 PDF로 변환 중...")
             word_to_pdf = WordToPDFConverter()
-            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({sheet_name}).pdf"
+            sheets_display = ', '.join(sorted(required_sheets))[:50]  # 시트명이 너무 길면 잘라냄
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.pdf"
             output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
             word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
             
@@ -778,8 +798,10 @@ def process_word_template():
             return jsonify({
                 'success': True,
                 'output_filename': output_filename,
-                'sheet_names': sheet_names,
-                'message': '보도자료가 성공적으로 생성되었습니다.'
+                'used_sheets': list(required_sheets),
+                'year': year,
+                'quarter': quarter,
+                'message': f'보도자료가 성공적으로 생성되었습니다. (사용된 시트: {", ".join(sorted(required_sheets))})'
             })
             
         except Exception as e:
