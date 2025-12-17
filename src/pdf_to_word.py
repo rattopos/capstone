@@ -739,171 +739,171 @@ class PDFToWordConverter:
                     
                     # 이미지인 경우
                     if element.get('type') == 'image':
-                    img_info = element.get('data', {})
-                    try:
-                        # 이미지를 임시 파일로 저장
-                        import tempfile
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{img_info.get('image_ext', 'png')}") as tmp_file:
-                            tmp_file.write(img_info.get('image_data', b''))
-                            tmp_path = tmp_file.name
+                        img_info = element.get('data', {})
+                        try:
+                            # 이미지를 임시 파일로 저장
+                            import tempfile
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{img_info.get('image_ext', 'png')}") as tmp_file:
+                                tmp_file.write(img_info.get('image_data', b''))
+                                tmp_path = tmp_file.name
+                            
+                            # 이미지 크기 계산 (PDF 좌표를 인치로 변환)
+                            # PDF 좌표는 포인트 단위 (72 DPI 기준)
+                            img_width_pt = img_info.get('width', 0)
+                            img_height_pt = img_info.get('height', 0)
+                            
+                            # 포인트를 인치로 변환
+                            img_width_inch = img_width_pt / 72.0
+                            img_height_inch = img_height_pt / 72.0
+                            
+                            # 페이지 너비에 맞게 조정 (너무 크면 축소)
+                            max_width_inch = 6.5  # A4 페이지 너비에서 마진 제외
+                            if img_width_inch > max_width_inch:
+                                ratio = max_width_inch / img_width_inch
+                                img_width_inch = max_width_inch
+                                img_height_inch = img_height_inch * ratio
+                            
+                            # 단락 생성 및 이미지 추가
+                            para = doc.add_paragraph()
+                            run = para.add_run()
+                            run.add_picture(tmp_path, width=Inches(img_width_inch))
+                            
+                            # 이미지 정렬 (중앙 정렬)
+                            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            
+                            # 임시 파일 삭제
+                            import os
+                            if os.path.exists(tmp_path):
+                                os.unlink(tmp_path)
+                            
+                            print(f"[DEBUG PDFToWord] 이미지 추가: {img_width_inch:.2f} x {img_height_inch:.2f} 인치")
+                            prev_y = element_y
+                            continue
+                        except Exception as e:
+                            print(f"[DEBUG PDFToWord] 이미지 추가 실패: {e}")
+                            continue
+                    
+                    # 표인 경우
+                    if element.get('type') == 'table':
+                        item = element.get('data', {})
+                        table_data = item.get('table_data', {})
+                        table_rows = table_data.get('rows', [])
                         
-                        # 이미지 크기 계산 (PDF 좌표를 인치로 변환)
-                        # PDF 좌표는 포인트 단위 (72 DPI 기준)
-                        img_width_pt = img_info.get('width', 0)
-                        img_height_pt = img_info.get('height', 0)
+                        if table_rows:
+                            # Word 표 생성
+                            num_rows = len(table_rows)
+                            num_cols = max(len(row) for row in table_rows) if table_rows else 1
+                            
+                            # 표 생성
+                            table = doc.add_table(rows=num_rows, cols=num_cols)
+                            table.style = 'Light Grid Accent 1'  # 표 스타일
+                            
+                            # 표에 데이터 채우기
+                            for row_idx, row_data in enumerate(table_rows):
+                                for col_idx, cell_data in enumerate(row_data):
+                                    if row_idx < num_rows and col_idx < num_cols:
+                                        cell = table.rows[row_idx].cells[col_idx]
+                                        cell_text = cell_data.get('text', '')
+                                        
+                                        # 숫자나 데이터를 의미 기반 마커로 변환
+                                        processed_text = self._convert_data_to_semantic_markers(
+                                            cell_text, [cell_data]
+                                        )
+                                        
+                                        # 셀에 텍스트 추가
+                                        cell_para = cell.paragraphs[0]
+                                        cell_para.clear()
+                                        run = cell_para.add_run(processed_text)
+                                        
+                                        # 폰트 설정
+                                        font_size = cell_data.get('font_size', 10)
+                                        run.font.size = Pt(font_size)
+                                        run.font.name = '맑은 고딕'
+                                        run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
+                                        
+                                        if cell_data.get('is_bold', False):
+                                            run.bold = True
+                                        
+                                        # 셀 정렬 (첫 번째 행은 중앙 정렬, 나머지는 왼쪽 정렬)
+                                        if row_idx == 0:
+                                            cell_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                                        else:
+                                            cell_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                            
+                            print(f"[DEBUG PDFToWord] 표 추가: {num_rows}행 x {num_cols}열")
+                            doc.add_paragraph()  # 표 다음에 빈 단락 추가
+                            prev_y = element_y
+                            continue
+                    
+                    # 단락인 경우
+                    if element.get('type') == 'paragraph':
+                        item = element.get('data', {})
+                        if not item:
+                            continue
                         
-                        # 포인트를 인치로 변환
-                        img_width_inch = img_width_pt / 72.0
-                        img_height_inch = img_height_pt / 72.0
-                        
-                        # 페이지 너비에 맞게 조정 (너무 크면 축소)
-                        max_width_inch = 6.5  # A4 페이지 너비에서 마진 제외
-                        if img_width_inch > max_width_inch:
-                            ratio = max_width_inch / img_width_inch
-                            img_width_inch = max_width_inch
-                            img_height_inch = img_height_inch * ratio
-                        
-                        # 단락 생성 및 이미지 추가
                         para = doc.add_paragraph()
-                        run = para.add_run()
-                        run.add_picture(tmp_path, width=Inches(img_width_inch))
                         
-                        # 이미지 정렬 (중앙 정렬)
-                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        
-                        # 임시 파일 삭제
-                        import os
-                        if os.path.exists(tmp_path):
-                            os.unlink(tmp_path)
-                        
-                        print(f"[DEBUG PDFToWord] 이미지 추가: {img_width_inch:.2f} x {img_height_inch:.2f} 인치")
-                        prev_y = element_y
-                        continue
-                    except Exception as e:
-                        print(f"[DEBUG PDFToWord] 이미지 추가 실패: {e}")
-                        continue
-                
-                # 표인 경우
-                if element.get('type') == 'table':
-                    item = element.get('data', {})
-                    table_data = item.get('table_data', {})
-                    table_rows = table_data.get('rows', [])
-                    
-                    if table_rows:
-                        # Word 표 생성
-                        num_rows = len(table_rows)
-                        num_cols = max(len(row) for row in table_rows) if table_rows else 1
-                        
-                        # 표 생성
-                        table = doc.add_table(rows=num_rows, cols=num_cols)
-                        table.style = 'Light Grid Accent 1'  # 표 스타일
-                        
-                        # 표에 데이터 채우기
-                        for row_idx, row_data in enumerate(table_rows):
-                            for col_idx, cell_data in enumerate(row_data):
-                                if row_idx < num_rows and col_idx < num_cols:
-                                    cell = table.rows[row_idx].cells[col_idx]
-                                    cell_text = cell_data.get('text', '')
-                                    
-                                    # 숫자나 데이터를 의미 기반 마커로 변환
-                                    processed_text = self._convert_data_to_semantic_markers(
-                                        cell_text, [cell_data]
-                                    )
-                                    
-                                    # 셀에 텍스트 추가
-                                    cell_para = cell.paragraphs[0]
-                                    cell_para.clear()
-                                    run = cell_para.add_run(processed_text)
-                                    
-                                    # 폰트 설정
-                                    font_size = cell_data.get('font_size', 10)
+                        # 텍스트 아이템들을 순서대로 추가 (폰트 정보 유지)
+                        items = item.get('items', [])
+                        if items and isinstance(items, list):
+                            for idx, text_item in enumerate(items):
+                                if not isinstance(text_item, dict):
+                                    continue
+                                
+                                text = text_item.get('text', '')
+                                if not text:
+                                    continue
+                                
+                                # 숫자나 데이터를 의미 기반 마커로 변환 (단일 아이템 기준)
+                                processed_text = self._convert_data_to_semantic_markers(text, [text_item])
+                                
+                                # 각 텍스트 아이템을 별도 Run으로 추가 (폰트 정보 유지)
+                                run = para.add_run(processed_text)
+                                
+                                # 폰트 크기 설정 (정확한 크기 유지)
+                                font_size = text_item.get('font_size', 12)
+                                if font_size:
                                     run.font.size = Pt(font_size)
-                                    run.font.name = '맑은 고딕'
-                                    run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
-                                    
-                                    if cell_data.get('is_bold', False):
-                                        run.bold = True
-                                    
-                                    # 셀 정렬 (첫 번째 행은 중앙 정렬, 나머지는 왼쪽 정렬)
-                                    if row_idx == 0:
-                                        cell_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                    else:
-                                        cell_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                                
+                                # 폰트 이름 설정 (한글 지원)
+                                run.font.name = '맑은 고딕'
+                                run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
+                                
+                                # 굵은 글씨 설정
+                                if text_item.get('is_bold', False):
+                                    run.bold = True
+                                
+                                # 다음 아이템과 공백 추가 (같은 줄의 경우)
+                                if idx < len(items) - 1 and isinstance(items[idx + 1], dict):
+                                    # 다음 아이템과의 x 좌표 차이 확인
+                                    current_bbox = text_item.get('bbox', [0, 0, 0, 0])
+                                    next_bbox = items[idx + 1].get('bbox', [0, 0, 0, 0])
+                                    if len(current_bbox) >= 3 and len(next_bbox) >= 1:
+                                        current_x = current_bbox[2]
+                                        next_x = next_bbox[0]
+                                        gap = next_x - current_x
+                                        
+                                        # 적절한 간격이면 공백 추가
+                                        if 5 < gap < 100:  # 5~100 픽셀 간격
+                                            run.add_text(' ')
+                        else:
+                            # 아이템이 없는 경우 빈 단락
+                            para.add_run('')
                         
-                        print(f"[DEBUG PDFToWord] 표 추가: {num_rows}행 x {num_cols}열")
-                        doc.add_paragraph()  # 표 다음에 빈 단락 추가
+                        # 단락 정렬 (왼쪽 정렬 기본)
+                        para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                        
+                        # 줄 간격 설정 (원본과 유사하게)
+                        para.paragraph_format.line_spacing = 1.15
+                        
+                        # 단락 간격 설정 (y 좌표 차이 기반)
+                        if prev_y is not None:
+                            y_diff = element_y - prev_y
+                            # 큰 간격이면 단락 간격 추가
+                            if y_diff > page_height * 0.02:
+                                para.paragraph_format.space_before = Pt(max(6, int(y_diff * 0.1)))
+                        
                         prev_y = element_y
-                        continue
-                
-                # 단락인 경우
-                if element.get('type') == 'paragraph':
-                    item = element.get('data', {})
-                    if not item:
-                        continue
-                    
-                    para = doc.add_paragraph()
-                    
-                    # 텍스트 아이템들을 순서대로 추가 (폰트 정보 유지)
-                    items = item.get('items', [])
-                    if items and isinstance(items, list):
-                        for idx, text_item in enumerate(items):
-                            if not isinstance(text_item, dict):
-                                continue
-                            
-                            text = text_item.get('text', '')
-                            if not text:
-                                continue
-                            
-                            # 숫자나 데이터를 의미 기반 마커로 변환 (단일 아이템 기준)
-                            processed_text = self._convert_data_to_semantic_markers(text, [text_item])
-                            
-                            # 각 텍스트 아이템을 별도 Run으로 추가 (폰트 정보 유지)
-                            run = para.add_run(processed_text)
-                            
-                            # 폰트 크기 설정 (정확한 크기 유지)
-                            font_size = text_item.get('font_size', 12)
-                            if font_size:
-                                run.font.size = Pt(font_size)
-                            
-                            # 폰트 이름 설정 (한글 지원)
-                            run.font.name = '맑은 고딕'
-                            run._element.rPr.rFonts.set(qn('w:eastAsia'), '맑은 고딕')
-                            
-                            # 굵은 글씨 설정
-                            if text_item.get('is_bold', False):
-                                run.bold = True
-                            
-                            # 다음 아이템과 공백 추가 (같은 줄의 경우)
-                            if idx < len(items) - 1 and isinstance(items[idx + 1], dict):
-                                # 다음 아이템과의 x 좌표 차이 확인
-                                current_bbox = text_item.get('bbox', [0, 0, 0, 0])
-                                next_bbox = items[idx + 1].get('bbox', [0, 0, 0, 0])
-                                if len(current_bbox) >= 3 and len(next_bbox) >= 1:
-                                    current_x = current_bbox[2]
-                                    next_x = next_bbox[0]
-                                    gap = next_x - current_x
-                                    
-                                    # 적절한 간격이면 공백 추가
-                                    if 5 < gap < 100:  # 5~100 픽셀 간격
-                                        run.add_text(' ')
-                    else:
-                        # 아이템이 없는 경우 빈 단락
-                        para.add_run('')
-                    
-                    # 단락 정렬 (왼쪽 정렬 기본)
-                    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    
-                    # 줄 간격 설정 (원본과 유사하게)
-                    para.paragraph_format.line_spacing = 1.15
-                    
-                    # 단락 간격 설정 (y 좌표 차이 기반)
-                    if prev_y is not None:
-                        y_diff = element_y - prev_y
-                        # 큰 간격이면 단락 간격 추가
-                        if y_diff > page_height * 0.02:
-                            para.paragraph_format.space_before = Pt(max(6, int(y_diff * 0.1)))
-                    
-                    prev_y = element_y
                 except Exception as e:
                     print(f"[DEBUG PDFToWord] 요소 처리 중 오류 발생: {e}")
                     import traceback
