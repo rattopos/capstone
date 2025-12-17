@@ -5,6 +5,17 @@ let currentOutputFilename = null;
 let currentOutputFormat = 'pdf';
 let sheetsInfo = {};
 
+// 시간 추정 관련 변수
+let stepStartTimes = {};
+let stepDurations = {
+    step1: [], // PDF to Word 변환 시간들
+    step2: [], // 시트 감지 시간들
+    step3: [], // 데이터 채우기 시간들
+    step4: []  // 최종 변환 시간들
+};
+let currentStep = null;
+let currentStepStartTime = null;
+
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -269,6 +280,9 @@ async function handleProcess() {
     // 출력 포맷 가져오기
     const formatRadio = document.querySelector('input[name="outputFormat"]:checked');
     const outputFormat = formatRadio ? formatRadio.value : 'pdf';
+    
+    // 진행 상황 텍스트를 포맷에 맞게 업데이트
+    updateProgressTexts(outputFormat);
 
     // UI 업데이트
     const processBtn = document.getElementById('processBtn');
@@ -285,6 +299,15 @@ async function handleProcess() {
     // 진행 상황 섹션 표시
     const progressSection = document.getElementById('progressSection');
     progressSection.style.display = 'block';
+    
+    // 시간 추정 초기화
+    stepStartTimes = {};
+    currentStep = null;
+    currentStepStartTime = null;
+    
+    // 첫 번째 단계 시작
+    startStep('step1');
+    
     updateProgress(0);
 
     try {
@@ -310,12 +333,18 @@ async function handleProcess() {
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
             currentOutputFormat = data.output_format || outputFormat;
+            
+            // 모든 단계 완료 처리
+            if (currentStep) {
+                endStep(currentStep);
+            }
+            
             updateProgress(100);
             setTimeout(() => {
                 progressSection.style.display = 'none';
                 showResult(data.message, currentOutputFormat);
                 updateWorkflowStep(3);
-            }, 500);
+            }, 1000);
         } else {
             progressSection.style.display = 'none';
             if (response.status === 413) {
@@ -354,12 +383,128 @@ function simulateProgress() {
     }, 500);
 }
 
+// 단계 시작
+function startStep(stepId) {
+    if (currentStep && currentStep !== stepId) {
+        // 이전 단계 종료 시간 기록
+        endStep(currentStep);
+    }
+    currentStep = stepId;
+    currentStepStartTime = Date.now();
+    stepStartTimes[stepId] = currentStepStartTime;
+}
+
+// 단계 종료
+function endStep(stepId) {
+    if (stepStartTimes[stepId]) {
+        const duration = Date.now() - stepStartTimes[stepId];
+        if (stepDurations[stepId]) {
+            stepDurations[stepId].push(duration);
+            // 최근 5개만 유지
+            if (stepDurations[stepId].length > 5) {
+                stepDurations[stepId].shift();
+            }
+        }
+    }
+}
+
+// 평균 시간 계산
+function getAverageTime(stepId) {
+    const times = stepDurations[stepId] || [];
+    if (times.length === 0) return null;
+    return times.reduce((a, b) => a + b, 0) / times.length;
+}
+
+// 남은 시간 추정
+function estimateRemainingTime(currentStepId, currentProgress) {
+    const steps = ['step1', 'step2', 'step3', 'step4'];
+    const currentIndex = steps.indexOf(currentStepId);
+    
+    if (currentIndex === -1) return null;
+    
+    let remainingTime = 0;
+    
+    // 현재 단계 남은 시간
+    if (currentStepStartTime) {
+        const elapsed = Date.now() - currentStepStartTime;
+        const avgTime = getAverageTime(currentStepId);
+        if (avgTime) {
+            const estimatedTotal = avgTime;
+            const remaining = Math.max(0, estimatedTotal - elapsed);
+            remainingTime += remaining;
+        } else {
+            // 평균 시간이 없으면 현재 진행률 기반 추정
+            const estimatedTotal = elapsed / (currentProgress / 100);
+            const remaining = Math.max(0, estimatedTotal - elapsed);
+            remainingTime += remaining;
+        }
+    }
+    
+    // 남은 단계들의 예상 시간
+    for (let i = currentIndex + 1; i < steps.length; i++) {
+        const stepId = steps[i];
+        const avgTime = getAverageTime(stepId);
+        if (avgTime) {
+            remainingTime += avgTime;
+        } else {
+            // 기본 추정 시간 (초)
+            const defaultTimes = {
+                step1: 30000, // 30초
+                step2: 5000,  // 5초
+                step3: 15000, // 15초
+                step4: 10000  // 10초
+            };
+            remainingTime += defaultTimes[stepId] || 10000;
+        }
+    }
+    
+    return remainingTime;
+}
+
+// 시간 포맷팅
+function formatTime(ms) {
+    if (!ms || ms < 0) return '';
+    const seconds = Math.ceil(ms / 1000);
+    if (seconds < 60) {
+        return `약 ${seconds}초`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (remainingSeconds === 0) {
+        return `약 ${minutes}분`;
+    }
+    return `약 ${minutes}분 ${remainingSeconds}초`;
+}
+
+// 진행 상황 텍스트 업데이트 (포맷에 따라)
+function updateProgressTexts(format) {
+    const step1Text = document.getElementById('step1Text');
+    const step4Text = document.getElementById('step4Text');
+    
+    if (step1Text) {
+        step1Text.textContent = 'PDF를 Word 템플릿으로 변환 중...';
+    }
+    
+    if (step4Text) {
+        if (format === 'word') {
+            step4Text.textContent = 'Word 파일 생성 중...';
+        } else {
+            step4Text.textContent = 'PDF로 변환 중...';
+        }
+    }
+}
+
 // 진행 상황 업데이트
 function updateProgress(percentage) {
     const progressBar = document.getElementById('progressBar');
-    progressBar.style.width = percentage + '%';
+    const progressPercentage = document.getElementById('progressPercentage');
     
-    // 단계별 아이콘 업데이트
+    progressBar.style.width = percentage + '%';
+    if (progressPercentage) {
+        progressPercentage.textContent = Math.round(percentage) + '%';
+    }
+    
+    // 단계별 아이콘 및 시간 업데이트
     const steps = [
         { id: 'step1', threshold: 25 },
         { id: 'step2', threshold: 50 },
@@ -367,22 +512,69 @@ function updateProgress(percentage) {
         { id: 'step4', threshold: 100 }
     ];
     
+    let activeStepId = null;
+    
     steps.forEach((step, index) => {
         const stepElement = document.getElementById(step.id);
         const icon = stepElement.querySelector('.progress-icon');
-        const text = stepElement.querySelector('.progress-text');
+        const timeElement = document.getElementById(step.id + 'Time');
         
         if (percentage >= step.threshold) {
+            // 완료된 단계
             icon.textContent = '✅';
             stepElement.classList.add('completed');
+            stepElement.classList.remove('active');
+            if (timeElement) {
+                const duration = stepDurations[step.id]?.[stepDurations[step.id].length - 1];
+                if (duration) {
+                    timeElement.textContent = `완료 (${formatTime(duration)})`;
+                } else {
+                    timeElement.textContent = '완료';
+                }
+            }
+            endStep(step.id);
         } else if (percentage >= step.threshold - 10) {
+            // 진행 중인 단계
+            if (!activeStepId) {
+                activeStepId = step.id;
+                startStep(step.id);
+            }
             icon.textContent = '⏳';
             stepElement.classList.add('active');
+            stepElement.classList.remove('completed');
+            
+            // 남은 시간 추정
+            if (timeElement && currentStepStartTime) {
+                const remaining = estimateRemainingTime(step.id, percentage);
+                if (remaining !== null) {
+                    timeElement.textContent = formatTime(remaining) + ' 남음';
+                }
+            }
         } else {
+            // 대기 중인 단계
             icon.textContent = '⏸️';
             stepElement.classList.remove('active', 'completed');
+            if (timeElement) {
+                const avgTime = getAverageTime(step.id);
+                if (avgTime) {
+                    timeElement.textContent = `예상: ${formatTime(avgTime)}`;
+                } else {
+                    timeElement.textContent = '';
+                }
+            }
         }
     });
+    
+    // 전체 남은 시간 표시
+    const timeEstimate = document.getElementById('progressTimeEstimate');
+    if (timeEstimate && activeStepId) {
+        const remaining = estimateRemainingTime(activeStepId, percentage);
+        if (remaining !== null && remaining > 0) {
+            timeEstimate.textContent = `⏱️ 예상 남은 시간: ${formatTime(remaining)}`;
+        } else {
+            timeEstimate.textContent = '';
+        }
+    }
 }
 
 // 결과 표시
