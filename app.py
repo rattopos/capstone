@@ -5,7 +5,6 @@ Flask 웹 애플리케이션
 
 import os
 import sys
-import json
 from pathlib import Path
 from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
 
@@ -13,14 +12,22 @@ from flask import Flask, request, render_template, jsonify, send_file, send_from
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from werkzeug.utils import secure_filename
 import tempfile
-import shutil
 
-from src.template_manager import TemplateManager
+# 새로운 Word 템플릿 워크플로우 (메인)
 from src.excel_extractor import ExcelExtractor
-from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
+from src.pdf_to_word import PDFToWordConverter
+from src.word_template_manager import WordTemplateManager
+from src.word_template_filler import WordTemplateFiller
+from src.word_to_pdf import WordToPDFConverter
+
+# 기존 HTML 템플릿 워크플로우 (하위 호환성)
+from src.template_manager import TemplateManager
+from src.template_filler import TemplateFiller
+from src.model_based_filler import ModelBasedFiller
 from src.template_generator import TemplateGenerator
 from src.excel_header_parser import ExcelHeaderParser
+from src.pdf_to_html import PDFToHTMLConverter
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -30,68 +37,89 @@ app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+ALLOWED_PDF_EXTENSIONS = {'pdf'}
 
 # 시트명과 템플릿 파일 매핑
 SHEET_TEMPLATE_MAPPING = {
+    '전체': {
+        'template': 'regional_economic_trends_full.html',
+        'display_name': '전체 보도자료',
+        'use_model_based': True
+    },
     '광공업생산': {
         'template': 'mining_manufacturing_production.html',
-        'display_name': '광공업생산'
+        'display_name': '광공업생산',
+        'use_model_based': False
     },
     '서비스업생산': {
         'template': 'service_production.html',
-        'display_name': '서비스업생산'
+        'display_name': '서비스업생산',
+        'use_model_based': False
     },
     '소비(소매, 추가)': {
         'template': 'retail_sales.html',
-        'display_name': '소비(소매, 추가)'
+        'display_name': '소비(소매, 추가)',
+        'use_model_based': False
     },
     '고용': {
         'template': 'employment.html',
-        'display_name': '고용'
+        'display_name': '고용',
+        'use_model_based': False
     },
     '고용(kosis)': {
         'template': 'employment_kosis.html',
-        'display_name': '고용(kosis)'
+        'display_name': '고용(kosis)',
+        'use_model_based': False
     },
     '고용률': {
         'template': 'employment_rate.html',
-        'display_name': '고용률'
+        'display_name': '고용률',
+        'use_model_based': False
     },
     '실업자 수': {
         'template': 'unemployed.html',
-        'display_name': '실업자 수'
+        'display_name': '실업자 수',
+        'use_model_based': False
     },
     '지출목적별 물가': {
         'template': 'price_by_purpose.html',
-        'display_name': '지출목적별 물가'
+        'display_name': '지출목적별 물가',
+        'use_model_based': False
     },
     '품목성질별 물가': {
         'template': 'price_by_item.html',
-        'display_name': '품목성질별 물가'
+        'display_name': '품목성질별 물가',
+        'use_model_based': False
     },
     '건설 (공표자료)': {
         'template': 'construction_orders.html',
-        'display_name': '건설수주'
+        'display_name': '건설수주',
+        'use_model_based': False
     },
     '수출': {
         'template': 'exports.html',
-        'display_name': '수출'
+        'display_name': '수출',
+        'use_model_based': False
     },
     '수입': {
         'template': 'imports.html',
-        'display_name': '수입'
+        'display_name': '수입',
+        'use_model_based': False
     },
     '연령별 인구이동': {
         'template': 'population_movement_by_age.html',
-        'display_name': '연령별 인구이동'
+        'display_name': '연령별 인구이동',
+        'use_model_based': False
     },
     '시도 간 이동': {
         'template': 'inter_sido_movement.html',
-        'display_name': '시도 간 이동'
+        'display_name': '시도 간 이동',
+        'use_model_based': False
     },
     '시군구인구이동': {
         'template': 'population_movement_sigungu.html',
-        'display_name': '시군구인구이동'
+        'display_name': '시군구인구이동',
+        'use_model_based': False
     }
 }
 
@@ -104,6 +132,11 @@ def allowed_file(filename):
 def allowed_image_file(filename):
     """이미지 파일 확장자 검증"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def allowed_pdf_file(filename):
+    """PDF 파일 확장자 검증"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PDF_EXTENSIONS
 
 
 def get_template_for_sheet(sheet_name):
@@ -232,12 +265,23 @@ def process_template():
                 quarter = periods_info['default_quarter']
             
             # 템플릿 필러 초기화 및 처리
-            template_filler = TemplateFiller(template_manager, excel_extractor)
-            filled_template = template_filler.fill_template(
-                sheet_name=sheet_name,
-                year=year, 
-                quarter=quarter
-            )
+            use_model_based = template_info.get('use_model_based', False)
+            
+            if use_model_based:
+                # 모델 기반 필러 사용 (전체 보도자료)
+                model_filler = ModelBasedFiller(template_manager, excel_extractor)
+                filled_template = model_filler.fill_template(
+                    year=year,
+                    quarter=quarter
+                )
+            else:
+                # 기존 필러 사용 (개별 시트)
+                template_filler = TemplateFiller(template_manager, excel_extractor)
+                filled_template = template_filler.fill_template(
+                    sheet_name=sheet_name,
+                    year=year, 
+                    quarter=quarter
+                )
             
             # 결과 저장
             # 파일명 형식: (연도)년_(분기)분기_지역경제동향_보도자료(시트명).html
@@ -470,6 +514,293 @@ def create_template():
             }), 500
     
     except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/pdf-to-html', methods=['POST'])
+def pdf_to_html():
+    """PDF 파일을 이미지로 변환하고 OCR을 통해 HTML로 생성"""
+    try:
+        # 파일 검증
+        if 'pdf_file' not in request.files:
+            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
+        
+        pdf_file = request.files['pdf_file']
+        if pdf_file.filename == '':
+            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
+        
+        if not allowed_pdf_file(pdf_file.filename):
+            return jsonify({'error': '지원하지 않는 파일 형식입니다. (.pdf만 가능)'}), 400
+        
+        # OCR 엔진 선택 (기본값: easyocr)
+        use_easyocr = request.form.get('use_easyocr', 'true').lower() == 'true'
+        
+        # DPI 설정 (기본값: 300)
+        try:
+            dpi = int(request.form.get('dpi', '300'))
+        except ValueError:
+            dpi = 300
+        
+        # PDF 파일 저장
+        pdf_filename = secure_filename(pdf_file.filename)
+        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
+        pdf_file.save(str(pdf_path))
+        
+        try:
+            # PDF 변환기 초기화
+            converter = PDFToHTMLConverter(use_easyocr=use_easyocr, dpi=dpi)
+            
+            # 출력 파일명 생성
+            pdf_stem = Path(pdf_filename).stem
+            output_filename = f"{pdf_stem}_ocr.html"
+            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+            
+            # PDF를 HTML로 변환
+            html_content = converter.generate_html_from_pdf(
+                str(pdf_path),
+                str(output_path)
+            )
+            
+            # 임시 PDF 파일 삭제
+            if pdf_path.exists():
+                pdf_path.unlink()
+            
+            return jsonify({
+                'success': True,
+                'output_filename': output_filename,
+                'message': f'PDF 파일이 성공적으로 HTML로 변환되었습니다. ({len(html_content)} 문자)'
+            })
+            
+        except Exception as e:
+            # 임시 파일 삭제
+            if pdf_path.exists():
+                pdf_path.unlink()
+            return jsonify({
+                'error': f'PDF 처리 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/pdf-to-word-template', methods=['POST'])
+def pdf_to_word_template():
+    """PDF 파일을 Word 템플릿으로 변환"""
+    try:
+        # 파일 검증
+        if 'pdf_file' not in request.files:
+            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
+        
+        pdf_file = request.files['pdf_file']
+        if pdf_file.filename == '':
+            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
+        
+        if not allowed_pdf_file(pdf_file.filename):
+            return jsonify({'error': '지원하지 않는 파일 형식입니다. (.pdf만 가능)'}), 400
+        
+        # OCR 엔진 선택 (기본값: easyocr)
+        use_easyocr = request.form.get('use_easyocr', 'true').lower() == 'true'
+        
+        # DPI 설정 (기본값: 300)
+        try:
+            dpi = int(request.form.get('dpi', '300'))
+        except ValueError:
+            dpi = 300
+        
+        # PDF 파일 저장
+        pdf_filename = secure_filename(pdf_file.filename)
+        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
+        pdf_file.save(str(pdf_path))
+        
+        try:
+            # PDF to Word 변환기 초기화
+            converter = PDFToWordConverter(use_easyocr=use_easyocr, dpi=dpi)
+            
+            # 출력 파일명 생성
+            pdf_stem = Path(pdf_filename).stem
+            output_filename = f"{pdf_stem}_template.docx"
+            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+            
+            # PDF를 Word 템플릿으로 변환
+            word_path = converter.convert_pdf_to_word(
+                str(pdf_path),
+                str(output_path)
+            )
+            
+            # 임시 PDF 파일 삭제
+            if pdf_path.exists():
+                pdf_path.unlink()
+            
+            return jsonify({
+                'success': True,
+                'output_filename': output_filename,
+                'message': f'PDF 파일이 성공적으로 Word 템플릿으로 변환되었습니다.'
+            })
+            
+        except Exception as e:
+            # 임시 파일 삭제
+            if pdf_path.exists():
+                pdf_path.unlink()
+            return jsonify({
+                'error': f'PDF 처리 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/process-word-template', methods=['POST'])
+def process_word_template():
+    """PDF → Word 템플릿 → 데이터 채우기 → PDF 출력 워크플로우"""
+    try:
+        # 파일 검증
+        if 'pdf_file' not in request.files:
+            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
+        
+        if 'excel_file' not in request.files:
+            return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
+        
+        pdf_file = request.files['pdf_file']
+        excel_file = request.files['excel_file']
+        
+        if pdf_file.filename == '':
+            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
+        
+        if excel_file.filename == '':
+            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
+        
+        if not allowed_pdf_file(pdf_file.filename):
+            return jsonify({'error': '지원하지 않는 PDF 파일 형식입니다.'}), 400
+        
+        if not allowed_file(excel_file.filename):
+            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+        
+        # 시트명, 연도 및 분기 파라미터 가져오기
+        sheet_name = request.form.get('sheet_name', '')
+        year_str = request.form.get('year', '')
+        quarter_str = request.form.get('quarter', '')
+        
+        if not sheet_name:
+            return jsonify({'error': '시트명을 선택해주세요.'}), 400
+        
+        # 파일 저장
+        pdf_filename = secure_filename(pdf_file.filename)
+        excel_filename = secure_filename(excel_file.filename)
+        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
+        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+        pdf_file.save(str(pdf_path))
+        excel_file.save(str(excel_path))
+        
+        try:
+            # 1단계: PDF를 Word 템플릿으로 변환
+            print("1단계: PDF를 Word 템플릿으로 변환 중...")
+            pdf_to_word = PDFToWordConverter(use_easyocr=True, dpi=300)
+            pdf_stem = Path(pdf_filename).stem
+            word_template_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_temp_template.docx"
+            pdf_to_word.convert_pdf_to_word(str(pdf_path), str(word_template_path))
+            
+            # 2단계: Word 템플릿 관리자 초기화
+            print("2단계: Word 템플릿 로드 중...")
+            word_template_manager = WordTemplateManager(str(word_template_path))
+            word_template_manager.load_template()
+            
+            # 3단계: 엑셀 추출기 초기화
+            print("3단계: 엑셀 데이터 로드 중...")
+            excel_extractor = ExcelExtractor(str(excel_path))
+            excel_extractor.load_workbook()
+            
+            # 사용 가능한 시트 목록 가져오기
+            sheet_names = excel_extractor.get_sheet_names()
+            
+            # 선택한 시트가 존재하는지 확인
+            if sheet_name not in sheet_names:
+                return jsonify({
+                    'error': f'시트 "{sheet_name}"을 찾을 수 없습니다. 사용 가능한 시트: {", ".join(sheet_names)}'
+                }), 400
+            
+            # 4단계: 연도 및 분기 자동 감지 또는 사용자 입력값 사용
+            print("4단계: 연도/분기 감지 중...")
+            period_detector = PeriodDetector(excel_extractor)
+            periods_info = period_detector.detect_available_periods(sheet_name)
+            
+            if year_str and quarter_str:
+                year = int(year_str)
+                quarter = int(quarter_str)
+                
+                # 유효성 검증
+                is_valid, error_msg = period_detector.validate_period(sheet_name, year, quarter)
+                if not is_valid:
+                    return jsonify({'error': error_msg}), 400
+            else:
+                year = periods_info['default_year']
+                quarter = periods_info['default_quarter']
+            
+            # 5단계: Word 템플릿에 데이터 채우기
+            print("5단계: Word 템플릿에 데이터 채우는 중...")
+            word_template_filler = WordTemplateFiller(word_template_manager, excel_extractor)
+            word_template_filler.fill_template(
+                sheet_name=sheet_name,
+                year=year,
+                quarter=quarter
+            )
+            
+            # 채워진 Word 파일 저장
+            filled_word_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_filled.docx"
+            word_template_filler.save_filled_template(str(filled_word_path))
+            
+            # 6단계: Word를 PDF로 변환
+            print("6단계: Word를 PDF로 변환 중...")
+            word_to_pdf = WordToPDFConverter()
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({sheet_name}).pdf"
+            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+            word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
+            
+            # 엑셀 파일 닫기
+            excel_extractor.close()
+            
+            # 임시 파일 정리
+            if pdf_path.exists():
+                pdf_path.unlink()
+            if excel_path.exists():
+                excel_path.unlink()
+            if word_template_path.exists():
+                word_template_path.unlink()
+            if filled_word_path.exists():
+                filled_word_path.unlink()
+            
+            # 결과 반환
+            return jsonify({
+                'success': True,
+                'output_filename': output_filename,
+                'sheet_names': sheet_names,
+                'message': '보도자료가 성공적으로 생성되었습니다.'
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'error': f'처리 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            # 임시 파일 정리
+            pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            if pdf_path.exists():
+                pdf_path.unlink()
+            if excel_path.exists():
+                excel_path.unlink()
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'error': f'서버 오류가 발생했습니다: {str(e)}'
         }), 500

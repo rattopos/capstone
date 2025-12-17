@@ -85,6 +85,12 @@ class TemplateManager:
         
         return self.markers
     
+    def parse_markers(self) -> List[Dict[str, str]]:
+        """
+        extract_markers의 별칭 (하위 호환성)
+        """
+        return self.extract_markers()
+    
     def validate_template(self, required_markers: List[str] = None) -> Tuple[bool, List[str]]:
         """
         템플릿의 유효성을 검증합니다.

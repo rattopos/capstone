@@ -13,6 +13,7 @@ from .calculator import Calculator
 from .data_analyzer import DataAnalyzer
 from .period_detector import PeriodDetector
 from .flexible_mapper import FlexibleMapper
+from .sheet_resolver import SheetResolver
 
 # 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
 INDUSTRY_NAME_MAPPING = {
@@ -134,6 +135,10 @@ class TemplateFiller:
         self.data_analyzer = DataAnalyzer(excel_extractor)
         self.period_detector = PeriodDetector(excel_extractor)
         self.flexible_mapper = FlexibleMapper(excel_extractor)
+        
+        # 시트 해석기는 나중에 초기화 (workbook이 로드된 후)
+        self.sheet_resolver = None
+        
         self._analyzed_data_cache = None
         self._current_year = None  # 현재 처리 중인 연도
         self._current_quarter = None  # 현재 처리 중인 분기
@@ -863,6 +868,25 @@ class TemplateFiller:
         cell_address = marker_info['cell_address']
         operation = marker_info.get('operation')
         
+        # "완료체크" 시트명인 경우 템플릿 내용 기반으로 올바른 시트명 찾기
+        if marker_sheet_name == '완료체크':
+            # 시트 해석기 초기화 (아직 안 된 경우)
+            if self.sheet_resolver is None:
+                available_sheets = self.excel_extractor.get_sheet_names()
+                self.sheet_resolver = SheetResolver(available_sheets)
+            
+            full_marker = marker_info.get('full_match', '')
+            resolved_sheet = self.sheet_resolver.resolve_marker_in_template(
+                self.template_manager.template_content,
+                full_marker
+            )
+            if resolved_sheet:
+                marker_sheet_name = resolved_sheet
+            else:
+                # 컨텍스트에서 찾지 못한 경우 기본값으로 "건설 (공표자료)" 사용
+                # (construction.html 템플릿이므로)
+                marker_sheet_name = '건설 (공표자료)'
+        
         try:
             # 동적 마커인지 확인 (셀 주소 형식이 아닌 경우)
             if not re.match(r'^[A-Z]+\d+', cell_address):
@@ -1099,6 +1123,24 @@ class TemplateFiller:
                     try:
                         # sheet_name이 제공되지 않으면 마커에서 추출한 시트명 사용
                         marker_sheet_name = sheet_name if sheet_name else match.group(1)
+                        
+                        # "완료체크" 시트명인 경우 템플릿 내용 기반으로 올바른 시트명 찾기
+                        if marker_sheet_name == '완료체크':
+                            # 시트 해석기 초기화 (아직 안 된 경우)
+                            if self.sheet_resolver is None:
+                                available_sheets = self.excel_extractor.get_sheet_names()
+                                self.sheet_resolver = SheetResolver(available_sheets)
+                            
+                            resolved_sheet = self.sheet_resolver.resolve_marker_in_template(
+                                self.template_manager.template_content,
+                                full_match
+                            )
+                            if resolved_sheet:
+                                marker_sheet_name = resolved_sheet
+                            else:
+                                # 컨텍스트에서 찾지 못한 경우 기본값으로 "건설 (공표자료)" 사용
+                                marker_sheet_name = '건설 (공표자료)'
+                        
                         # 현재 저장된 연도/분기 사용
                         current_year = year if year is not None else (self._current_year or 2025)
                         current_quarter = quarter if quarter is not None else (self._current_quarter or 2)
