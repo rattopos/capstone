@@ -17,6 +17,7 @@ let stepDurations = {
     step3: [], // 데이터 채우기 시간들
     step4: []  // 최종 변환 시간들
 };
+let pageOcrTimes = {}; // 페이지별 OCR 시간 추적
 let currentStep = null;
 let currentStepStartTime = null;
 
@@ -468,18 +469,37 @@ function updateProgressFromBackend(progressData) {
     const stepName = progressData.step_name || '';
     const message = progressData.message || '';
     const pageInfo = progressData.page_info || {current: 0, total: 0};
+    const ocrProgress = progressData.ocr_progress;
+    const ocrTimes = progressData.ocr_times || {};
+    
+    // OCR 시간 정보 업데이트
+    Object.keys(ocrTimes).forEach(pageNum => {
+        if (!pageOcrTimes[pageNum]) {
+            pageOcrTimes[pageNum] = [];
+        }
+        const time = ocrTimes[pageNum];
+        // 중복 방지: 최근 값과 다를 때만 추가
+        if (pageOcrTimes[pageNum].length === 0 || 
+            pageOcrTimes[pageNum][pageOcrTimes[pageNum].length - 1] !== time) {
+            pageOcrTimes[pageNum].push(time);
+            // 최근 10개만 유지
+            if (pageOcrTimes[pageNum].length > 10) {
+                pageOcrTimes[pageNum].shift();
+            }
+        }
+    });
     
     // 진행률 업데이트 (백엔드 단계 정보 포함)
-    updateProgress(progress, step);
+    updateProgress(progress, step, progressData);
     
-    // 단계별 텍스트 업데이트
-    updateStepTexts(step, stepName, message, pageInfo);
+    // 단계별 텍스트 업데이트 (OCR 진행률 포함)
+    updateStepTexts(step, stepName, message, pageInfo, ocrProgress);
     
     // 완료 시 결과 처리는 폴링 루프에서 처리
 }
 
 // 단계별 텍스트 동적 업데이트
-function updateStepTexts(step, stepName, message, pageInfo) {
+function updateStepTexts(step, stepName, message, pageInfo, ocrProgress) {
     // 단계별 요소 찾기
     const stepElements = {
         1: { text: document.getElementById('step1Text'), time: document.getElementById('step1Time') },
@@ -503,11 +523,20 @@ function updateStepTexts(step, stepName, message, pageInfo) {
                     displayText += ` (${pageInfo.current}/${pageInfo.total})`;
                 }
                 
+                // OCR 진행률이 있으면 추가 (step1인 경우)
+                if (stepNumInt === 1 && ocrProgress !== undefined && ocrProgress !== null) {
+                    displayText += ` - OCR ${ocrProgress}%`;
+                }
+                
                 // 메시지가 있으면 추가 (stepName과 다를 때만)
                 if (message && message !== stepName) {
                     displayText = message;
                     if (pageInfo && pageInfo.total > 0) {
                         displayText += ` (${pageInfo.current}/${pageInfo.total})`;
+                    }
+                    // OCR 진행률이 있으면 추가
+                    if (stepNumInt === 1 && ocrProgress !== undefined && ocrProgress !== null && ocrProgress < 100) {
+                        displayText += ` (${ocrProgress}%)`;
                     }
                 }
                 
@@ -549,8 +578,36 @@ function getAverageTime(stepId) {
     return times.reduce((a, b) => a + b, 0) / times.length;
 }
 
-// 남은 시간 추정
-function estimateRemainingTime(currentStepId, currentProgress) {
+// 가중 이동 평균(EMA) 계산
+function calculateEMA(times, alpha = 0.3) {
+    if (times.length === 0) return null;
+    let ema = times[0];
+    for (let i = 1; i < times.length; i++) {
+        ema = alpha * times[i] + (1 - alpha) * ema;
+    }
+    return ema;
+}
+
+// 페이지별 OCR 평균 시간 계산
+function getAverageOcrTime(pageNum) {
+    const times = pageOcrTimes[pageNum] || [];
+    if (times.length === 0) return null;
+    // EMA 사용 (최근 데이터에 더 높은 가중치)
+    return calculateEMA(times, 0.4);
+}
+
+// 전체 OCR 평균 시간 계산 (모든 페이지)
+function getOverallAverageOcrTime() {
+    const allTimes = [];
+    Object.values(pageOcrTimes).forEach(times => {
+        allTimes.push(...times);
+    });
+    if (allTimes.length === 0) return null;
+    return calculateEMA(allTimes, 0.3);
+}
+
+// 남은 시간 추정 (개선된 알고리즘)
+function estimateRemainingTime(currentStepId, currentProgress, progressData = null) {
     const steps = ['step1', 'step2', 'step3', 'step4'];
     const currentIndex = steps.indexOf(currentStepId);
     
@@ -558,26 +615,71 @@ function estimateRemainingTime(currentStepId, currentProgress) {
     
     let remainingTime = 0;
     
-    // 현재 단계 남은 시간
+    // step1 (PDF to Word 변환)인 경우 OCR 시간 기반 추정
+    if (currentStepId === 'step1' && progressData) {
+        const pageInfo = progressData.page_info || {};
+        const ocrProgress = progressData.ocr_progress || 0;
+        const ocrTimes = progressData.ocr_times || {};
+        const currentPage = pageInfo.current || 0;
+        const totalPages = pageInfo.total || 1;
+        
+        if (currentPage > 0 && totalPages > 0) {
+            // 현재 페이지의 OCR 진행률 고려
+            const currentPageOcrAvg = getAverageOcrTime(currentPage);
+            const overallOcrAvg = getOverallAverageOcrTime() || currentPageOcrAvg;
+            
+            if (currentPageOcrAvg) {
+                // 현재 페이지 남은 OCR 시간
+                const currentPageRemaining = currentPageOcrAvg * (1 - ocrProgress / 100);
+                remainingTime += currentPageRemaining;
+            } else if (overallOcrAvg) {
+                // 전체 평균 사용
+                const currentPageRemaining = overallOcrAvg * (1 - ocrProgress / 100);
+                remainingTime += currentPageRemaining;
+            }
+            
+            // 남은 페이지들의 예상 OCR 시간
+            const remainingPages = totalPages - currentPage;
+            if (remainingPages > 0) {
+                const avgOcrTime = currentPageOcrAvg || overallOcrAvg;
+                if (avgOcrTime) {
+                    remainingTime += remainingPages * avgOcrTime;
+                } else {
+                    // 기본 OCR 시간 (페이지당 5초)
+                    remainingTime += remainingPages * 5000;
+                }
+            }
+            
+            // Word 문서 생성 시간 추가 (페이지당 1초)
+            remainingTime += totalPages * 1000;
+            
+            return remainingTime;
+        }
+    }
+    
+    // 현재 단계 남은 시간 (EMA 사용)
     if (currentStepStartTime) {
         const elapsed = Date.now() - currentStepStartTime;
-        const avgTime = getAverageTime(currentStepId);
+        const avgTime = calculateEMA(stepDurations[currentStepId] || [], 0.3);
+        
         if (avgTime) {
             const estimatedTotal = avgTime;
             const remaining = Math.max(0, estimatedTotal - elapsed);
             remainingTime += remaining;
         } else {
             // 평균 시간이 없으면 현재 진행률 기반 추정
-            const estimatedTotal = elapsed / (currentProgress / 100);
-            const remaining = Math.max(0, estimatedTotal - elapsed);
-            remainingTime += remaining;
+            if (currentProgress > 0) {
+                const estimatedTotal = elapsed / (currentProgress / 100);
+                const remaining = Math.max(0, estimatedTotal - elapsed);
+                remainingTime += remaining;
+            }
         }
     }
     
-    // 남은 단계들의 예상 시간
+    // 남은 단계들의 예상 시간 (EMA 사용)
     for (let i = currentIndex + 1; i < steps.length; i++) {
         const stepId = steps[i];
-        const avgTime = getAverageTime(stepId);
+        const avgTime = calculateEMA(stepDurations[stepId] || [], 0.3);
         if (avgTime) {
             remainingTime += avgTime;
         } else {
@@ -629,7 +731,7 @@ function updateProgressTexts(format) {
 }
 
 // 진행 상황 업데이트
-function updateProgress(percentage, backendStep = null) {
+function updateProgress(percentage, backendStep = null, progressData = null) {
     const progressBar = document.getElementById('progressBar');
     const progressPercentage = document.getElementById('progressPercentage');
     
@@ -676,7 +778,7 @@ function updateProgress(percentage, backendStep = null) {
             
             // 남은 시간 추정
             if (timeElement && currentStepStartTime) {
-                const remaining = estimateRemainingTime(step.id, percentage);
+                const remaining = estimateRemainingTime(step.id, percentage, progressData);
                 if (remaining !== null) {
                     timeElement.textContent = formatTime(remaining) + ' 남음';
                 }
@@ -721,7 +823,7 @@ function updateProgress(percentage, backendStep = null) {
             
             // 남은 시간 추정
             if (timeElement && currentStepStartTime) {
-                const remaining = estimateRemainingTime(step.id, percentage);
+                const remaining = estimateRemainingTime(step.id, percentage, progressData);
                 if (remaining !== null) {
                     timeElement.textContent = formatTime(remaining) + ' 남음';
                 }
@@ -744,7 +846,7 @@ function updateProgress(percentage, backendStep = null) {
     // 전체 남은 시간 표시
     const timeEstimate = document.getElementById('progressTimeEstimate');
     if (timeEstimate && activeStepId) {
-        const remaining = estimateRemainingTime(activeStepId, percentage);
+        const remaining = estimateRemainingTime(activeStepId, percentage, progressData);
         if (remaining !== null && remaining > 0) {
             timeEstimate.textContent = `⏱️ 예상 남은 시간: ${formatTime(remaining)}`;
         } else {

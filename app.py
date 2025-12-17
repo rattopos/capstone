@@ -733,14 +733,39 @@ def process_word_template():
             total_pages = len(pdf_doc_temp)
             pdf_doc_temp.close()
             
+            # OCR 시간 추적용
+            ocr_times = {}
+            page_ocr_start_times = {}
+            
             # 진행 상황 콜백 함수 정의
-            def progress_callback(current_page, total_pages, message):
-                page_progress = int((current_page / total_pages) * 40)  # 1단계의 40%를 페이지 처리에 할당
-                overall_progress = 5 + page_progress  # 초기 5% + 페이지 진행률
+            def progress_callback(current_page, total_pages, message, ocr_progress=None):
+                # OCR 진행률이 있으면 반영
+                if ocr_progress is not None:
+                    # OCR 진행률을 고려한 전체 진행률 계산
+                    page_base_progress = int(((current_page - 1) / total_pages) * 40)
+                    page_ocr_progress = int((ocr_progress / 100) * (40 / total_pages))
+                    overall_progress = 5 + page_base_progress + page_ocr_progress
+                    
+                    # OCR 진행률이 0%면 시작 시간 기록
+                    if ocr_progress == 0 and current_page not in page_ocr_start_times:
+                        page_ocr_start_times[current_page] = time.time()
+                    
+                    # OCR 진행률이 100%면 종료 시간 기록
+                    if ocr_progress == 100 and current_page in page_ocr_start_times:
+                        ocr_duration = (time.time() - page_ocr_start_times[current_page]) * 1000  # 밀리초
+                        ocr_times[str(current_page)] = int(ocr_duration)
+                        del page_ocr_start_times[current_page]
+                else:
+                    # 페이지 진행률만 계산
+                    page_progress = int((current_page / total_pages) * 40)
+                    overall_progress = 5 + page_progress
+                
                 update_progress(
                     session_id, 1, 'PDF를 Word 템플릿으로 변환 중',
                     overall_progress, message,
-                    {'current': current_page, 'total': total_pages}
+                    {'current': current_page, 'total': total_pages},
+                    ocr_progress=ocr_progress,
+                    ocr_times=ocr_times if ocr_times else None
                 )
             
             # PDF to Word 변환 (진행 상황 콜백 전달)
@@ -1112,7 +1137,7 @@ def get_progress(session_id):
         return jsonify(progress_data)
 
 
-def update_progress(session_id, step, step_name, progress, message, page_info=None):
+def update_progress(session_id, step, step_name, progress, message, page_info=None, ocr_progress=None, ocr_times=None):
     """진행 상황 업데이트 헬퍼 함수"""
     with progress_lock:
         if session_id not in progress_store:
@@ -1123,17 +1148,30 @@ def update_progress(session_id, step, step_name, progress, message, page_info=No
                 'progress': 0,
                 'message': '',
                 'page_info': {'current': 0, 'total': 0},
+                'ocr_progress': 0,
+                'ocr_times': {},
                 'last_update': time.time()
             }
         
-        progress_store[session_id].update({
+        update_data = {
             'step': step,
             'step_name': step_name,
             'progress': progress,
             'message': message,
             'page_info': page_info or {'current': 0, 'total': 0},
             'last_update': time.time()
-        })
+        }
+        
+        if ocr_progress is not None:
+            update_data['ocr_progress'] = ocr_progress
+        
+        if ocr_times is not None:
+            # 기존 OCR 시간 정보 업데이트
+            existing_times = progress_store[session_id].get('ocr_times', {})
+            existing_times.update(ocr_times)
+            update_data['ocr_times'] = existing_times
+        
+        progress_store[session_id].update(update_data)
 
 
 def cleanup_old_progress():

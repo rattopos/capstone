@@ -169,12 +169,13 @@ class PDFToWordConverter:
         
         raise ValueError("PDF를 이미지로 변환할 수 있는 라이브러리가 설치되어 있지 않습니다. PyMuPDF를 설치해주세요.")
     
-    def extract_text_and_layout(self, image: Image.Image) -> List[Dict]:
+    def extract_text_and_layout(self, image: Image.Image, ocr_progress_callback=None) -> List[Dict]:
         """
         이미지에서 텍스트와 레이아웃 정보를 추출합니다.
         
         Args:
             image: PIL Image 객체
+            ocr_progress_callback: OCR 진행 상황 콜백 함수 (progress_percent: int) -> None
             
         Returns:
             텍스트 정보 딕셔너리 리스트. 각 딕셔너리는 다음 키를 포함:
@@ -199,6 +200,10 @@ class PDFToWordConverter:
         else:
             processed_image = image.convert('L')
         
+        # 이미지 전처리 완료 (10%)
+        if ocr_progress_callback:
+            ocr_progress_callback(10)
+        
         if self.use_easyocr and self.reader:
             try:
                 if CV2_AVAILABLE:
@@ -207,7 +212,12 @@ class PDFToWordConverter:
                 else:
                     results = self.reader.readtext(processed_image)
                 
-                for (bbox, text, confidence) in results:
+                # OCR 결과 처리 시작 (20%)
+                if ocr_progress_callback:
+                    ocr_progress_callback(20)
+                
+                total_results = len(results)
+                for idx, (bbox, text, confidence) in enumerate(results):
                     x_coords = [point[0] for point in bbox]
                     y_coords = [point[1] for point in bbox]
                     x1, y1 = min(x_coords), min(y_coords)
@@ -223,25 +233,43 @@ class PDFToWordConverter:
                         'font_size': font_size,
                         'is_bold': False  # OCR로는 정확히 판단 어려움
                     })
+                    
+                    # 진행 상황 업데이트 (20% ~ 90%)
+                    if ocr_progress_callback and total_results > 0:
+                        progress = 20 + int((idx + 1) / total_results * 70)
+                        ocr_progress_callback(progress)
+                
+                # OCR 완료 (100%)
+                if ocr_progress_callback:
+                    ocr_progress_callback(100)
             except Exception as e:
                 print(f"EasyOCR 처리 중 오류: {e}")
                 if PYTESSERACT_AVAILABLE:
-                    return self._extract_with_pytesseract(processed_image)
+                    return self._extract_with_pytesseract(processed_image, ocr_progress_callback)
         
         elif PYTESSERACT_AVAILABLE:
-            return self._extract_with_pytesseract(processed_image)
+            return self._extract_with_pytesseract(processed_image, ocr_progress_callback)
         else:
             raise ValueError("OCR 라이브러리가 설치되어 있지 않습니다. easyocr 또는 pytesseract를 설치해주세요.")
         
         return text_data
     
-    def _extract_with_pytesseract(self, image: Image.Image) -> List[Dict]:
+    def _extract_with_pytesseract(self, image: Image.Image, ocr_progress_callback=None) -> List[Dict]:
         """pytesseract를 사용하여 텍스트 추출"""
         text_data = []
         try:
+            # OCR 시작 (30%)
+            if ocr_progress_callback:
+                ocr_progress_callback(30)
+            
             data = pytesseract.image_to_data(image, lang='kor+eng', output_type=pytesseract.Output.DICT)
             
-            for i in range(len(data['text'])):
+            # OCR 결과 처리 시작 (50%)
+            if ocr_progress_callback:
+                ocr_progress_callback(50)
+            
+            total_items = len(data['text'])
+            for i in range(total_items):
                 text = data['text'][i].strip()
                 if text and int(data['conf'][i]) > 0:
                     x1 = data['left'][i]
@@ -258,6 +286,15 @@ class PDFToWordConverter:
                         'font_size': font_size,
                         'is_bold': False
                     })
+                
+                # 진행 상황 업데이트 (50% ~ 100%)
+                if ocr_progress_callback and total_items > 0:
+                    progress = 50 + int((i + 1) / total_items * 50)
+                    ocr_progress_callback(progress)
+            
+            # OCR 완료 (100%)
+            if ocr_progress_callback:
+                ocr_progress_callback(100)
         except Exception as e:
             raise ValueError(f"OCR 처리 중 오류 발생: {e}")
         
@@ -323,7 +360,7 @@ class PDFToWordConverter:
         
         return organized
     
-    def convert_pdf_to_word(self, pdf_path: str, output_path: str, progress_callback=None) -> str:
+    def convert_pdf_to_word(self, pdf_path: str, output_path: str, progress_callback=None, ocr_progress_callback=None) -> str:
         """
         PDF 파일을 Word 템플릿으로 변환합니다.
         모든 PDF를 이미지로 변환한 후 OCR을 사용하여 텍스트를 추출합니다.
@@ -331,7 +368,8 @@ class PDFToWordConverter:
         Args:
             pdf_path: PDF 파일 경로
             output_path: 출력 Word 파일 경로
-            progress_callback: 진행 상황 콜백 함수 (current_page, total_pages, message) -> None
+            progress_callback: 진행 상황 콜백 함수 (current_page, total_pages, message, ocr_progress=None) -> None
+            ocr_progress_callback: OCR 진행 상황 콜백 함수 (ocr_progress: int) -> None
             
         Returns:
             생성된 Word 파일 경로
@@ -401,10 +439,27 @@ class PDFToWordConverter:
             
             # OCR로 텍스트 추출
             print(f"  - OCR로 텍스트 추출 중...")
-            if progress_callback:
-                progress_callback(page_num + 1, total_pages, f"페이지 {page_num + 1}/{total_pages}: OCR로 텍스트 추출 중...")
             
-            text_data = self.extract_text_and_layout(image)
+            # OCR 진행 상황 콜백 래퍼 함수
+            def ocr_progress_wrapper(ocr_progress):
+                """OCR 진행률을 전체 진행률에 반영"""
+                if progress_callback:
+                    # 페이지 내 OCR 진행률을 전체 진행률에 반영
+                    # 1단계의 40% 중에서 현재 페이지의 OCR 진행률 반영
+                    page_base_progress = int((page_num / total_pages) * 40)
+                    page_ocr_progress = int((ocr_progress / 100) * (40 / total_pages))
+                    overall_progress = 5 + page_base_progress + page_ocr_progress
+                    
+                    message = f"페이지 {page_num + 1}/{total_pages}: OCR 처리 중"
+                    if ocr_progress < 100:
+                        message += f" ({ocr_progress}%)"
+                    
+                    progress_callback(page_num + 1, total_pages, message, ocr_progress)
+            
+            # OCR 진행 상황 콜백 전달
+            effective_ocr_callback = ocr_progress_callback if ocr_progress_callback else ocr_progress_wrapper
+            
+            text_data = self.extract_text_and_layout(image, ocr_progress_callback=effective_ocr_callback)
             organized_text = self.organize_text_by_layout(text_data, image.size[0], image.size[1]) if text_data else []
             
             if not organized_text:
