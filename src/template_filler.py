@@ -14,184 +14,24 @@ from .data_analyzer import DataAnalyzer
 from .period_detector import PeriodDetector
 from .flexible_mapper import FlexibleMapper
 from .dynamic_sheet_parser import DynamicSheetParser
-
-# 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
-INDUSTRY_NAME_MAPPING = {
-    '전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
-    '전자부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
-    '전기장비 제조업': '전기장비',
-    '담배 제조업': '담배',
-    '기타 기계 및 장비 제조업': '기타기계장비',
-    '기타 기계장비 제조업': '기타기계장비',
-    '기타기계장비': '기타기계장비',
-    '의료용 기기 및 정밀 기기 제조업': '의료·정밀',
-    '의료, 정밀, 광학 기기 및 시계 제조업': '의료·정밀',
-    '측정, 시험, 항해, 제어 및 기타 정밀 기기 제조업; 광학 기기 제외': '의료·정밀',
-    '금속 제조업': '금속',
-    '금속 가공제품 제조업; 기계 및 가구 제외': '금속가공제품',
-    '금속가공제품 제조업': '금속가공제품',
-    '기타 운송장비 제조업': '기타 운송장비',
-    '자동차 및 트레일러 제조업': '자동차·트레일러',
-    '의약품 제조업': '의약품',
-    '전기업 및 가스업': '전기·가스업',
-    '전기, 가스, 증기 및 공기 조절 공급업': '전기·가스업',
-    '식료품 제조업': '식료품',
-    # 부분 일치를 위한 키워드 매핑
-    '반도체': '반도체·전자부품',
-    '전자부품': '반도체·전자부품',
-    '전자 부품': '반도체·전자부품',
-}
-
-# 소매판매 업태 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
-RETAIL_CATEGORY_MAPPING = {
-    '백화점': '백화점',
-    '대형마트': '대형마트',  # 스크린샷에서는 "대형마트"로만 표시
-    '면세점': '면세점',
-    '슈퍼마켓 및 잡화점': '슈퍼마켓·잡화점',
-    '슈퍼마켓· 잡화점 및 편의점': '슈퍼마켓·잡화점 및 편의점',  # 공백 포함
-    '편의점': '편의점',
-    '승용차 및 연료 소매점': '승용차·연료소매점',
-    '승용차 및 연료소매점': '승용차·연료소매점',  # 공백 없는 버전도
-    '전문소매점': '전문점',
-    '무점포 소매': '무점포 소매',
-}
-
-# 시트별 설정
-SHEET_CONFIG = {
-    '소비(소매, 추가)': {
-        'category_column': 5,  # E열에 업태 종류
-        'base_year': 2023,
-        'base_quarter': 3,
-        'base_col': 57,  # 2023년 3분기
-        'name_mapping': RETAIL_CATEGORY_MAPPING,
-        'national_priorities': ['슈퍼마켓 및 잡화점', '면세점', '전문소매점'],
-        'region_priorities': {
-            '제주': ['면세점', '슈퍼마켓', '잡화점', '대형마트'],
-            '경북': ['전문소매점', '슈퍼마켓', '잡화점', '대형마트'],
-            '서울': ['면세점', '슈퍼마켓', '잡화점', '백화점'],
-        },
-    },
-    '광공업생산': {
-        'category_column': 6,  # F열에 산업 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기
-        'name_mapping': INDUSTRY_NAME_MAPPING,
-        'national_priorities': None,  # 절대값 기준 정렬
-        'region_priorities': {
-            '충북': ['반도체·전자부품', '전기장치', '의약품'],
-            '경기': ['반도체·전자부품', '기타 기계', '의료·정밀기기'],
-            '광주': ['전기장치', '담배', '자동차·트레일러'],
-            '서울': ['의료·정밀기기', '전기·가스업', '식품'],
-            '충남': ['반도체·전자부품', '전기장치', '전기·가스업'],
-            '부산': ['금속', '기타 수송기기', '금속가공제품'],
-        }
-    },
-    '서비스업생산': {
-        'category_column': 6,  # F열에 산업 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기
-        'name_mapping': INDUSTRY_NAME_MAPPING,
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-    '건설 (공표자료)': {
-        'category_column': 5,  # E열에 공정 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 59,  # 2023년 1분기
-        'name_mapping': {
-            '   계': '계',
-            '   건축': '건축',
-            '   토목': '토목',
-            '계': '계',
-            '건축': '건축',
-            '토목': '토목',
-        },
-        'national_priorities': None,  # 절대값 기준 정렬
-        'region_priorities': {},
-    },
-    '수출': {
-        'category_column': 6,  # F열에 품목 이름
-        'base_year': 2023,
-        'base_quarter': 3,  # 2023년 3분기부터 시작
-        'base_col': 62,  # 2023년 3분기 (실제 엑셀 파일 기준)
-        'name_mapping': INDUSTRY_NAME_MAPPING,
-        'national_priorities': None,  # 절대값 기준 정렬
-        'region_priorities': {},
-    },
-    '수입': {
-        'category_column': 6,  # F열에 품목 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 60,  # 2023년 1분기 (실제 엑셀 파일 기준)
-        'name_mapping': INDUSTRY_NAME_MAPPING,
-        'national_priorities': None,  # 절대값 기준 정렬
-        'region_priorities': {},
-    },
-    '고용률': {
-        'category_column': 4,  # D열에 연령대 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 58,  # 2023년 1분기 (실제 엑셀 파일 기준)
-        'name_mapping': {},
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-    '지출목적별 물가': {
-        'category_column': 6,  # F열에 품목 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 50,  # 2023년 1분기 (실제 엑셀 파일 기준)
-        'name_mapping': {},
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-    '실업자 수': {
-        'category_column': 2,  # B열에 연령계층 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 53,  # 2023년 1분기 (실제 엑셀 파일 기준)
-        'name_mapping': {},
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-    '품목성질별 물가': {
-        'category_column': 6,  # F열에 품목 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기 (확인 필요)
-        'name_mapping': {},
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-    # 기본 설정 (다른 시트들)
-    'default': {
-        'category_column': 6,  # F열에 산업 이름
-        'base_year': 2023,
-        'base_quarter': 1,
-        'base_col': 56,  # 2023년 1분기
-        'name_mapping': INDUSTRY_NAME_MAPPING,
-        'national_priorities': None,
-        'region_priorities': {},
-    },
-}
+from .schema_loader import SchemaLoader
 
 
 class TemplateFiller:
     """템플릿에 데이터를 채우는 클래스"""
     
-    def __init__(self, template_manager: TemplateManager, excel_extractor: ExcelExtractor):
+    def __init__(self, template_manager: TemplateManager, excel_extractor: ExcelExtractor, schema_loader: Optional[SchemaLoader] = None):
         """
         템플릿 필러 초기화
         
         Args:
             template_manager: 템플릿 관리자 인스턴스
             excel_extractor: 엑셀 추출기 인스턴스
+            schema_loader: 스키마 로더 인스턴스 (기본값: 새로 생성)
         """
         self.template_manager = template_manager
         self.excel_extractor = excel_extractor
+        self.schema_loader = schema_loader if schema_loader is not None else SchemaLoader()
         self.calculator = Calculator()
         self.data_analyzer = DataAnalyzer(excel_extractor)
         self.period_detector = PeriodDetector(excel_extractor)
@@ -231,11 +71,8 @@ class TemplateFiller:
             
             # 소수점 처리
             num = round(num, decimal_places)
-            # 소수점이 0이면 정수로 표시
-            if decimal_places == 0:
-                num = int(num)
             
-            # 문자열로 변환
+            # 문자열로 변환 (항상 지정된 소수점 자릿수까지 표시)
             if decimal_places > 0:
                 formatted = f"{num:.{decimal_places}f}"
             else:
@@ -244,8 +81,14 @@ class TemplateFiller:
             # 천 단위 구분
             if use_comma:
                 parts = formatted.split('.')
-                parts[0] = f"{int(parts[0]):,}"
-                formatted = '.'.join(parts)
+                # 정수 부분에 천 단위 구분 적용 (음수 처리 포함)
+                try:
+                    integer_part = int(float(parts[0]))
+                    # 천 단위 구분 적용 (음수도 올바르게 처리)
+                    parts[0] = f"{integer_part:,}"
+                except (ValueError, TypeError):
+                    pass  # 변환 실패 시 원본 유지
+                formatted = '.'.join(parts) if len(parts) > 1 else parts[0]
             
             return formatted
         except (ValueError, TypeError, OverflowError):
@@ -277,6 +120,9 @@ class TemplateFiller:
             import math
             if math.isnan(num) or math.isinf(num):
                 return "N/A"
+            
+            # 소수점 반올림
+            num = round(num, decimal_places)
             
             # 항상 소수점 첫째자리까지 표시 (0이어도 0.0으로 표시)
             formatted = f"{num:.{decimal_places}f}"
@@ -329,7 +175,7 @@ class TemplateFiller:
         Returns:
             시트 설정 딕셔너리
         """
-        return SHEET_CONFIG.get(sheet_name, SHEET_CONFIG['default'])
+        return self.schema_loader.load_sheet_config(sheet_name)
     
     def _get_quarter_columns(self, year: int, quarter: int, sheet_name: str = None) -> tuple:
         """
@@ -377,7 +223,7 @@ class TemplateFiller:
                     return (current_col, prev_col)
         
         # 헤더 기반으로 찾지 못한 경우, 기존 로직 사용 (하위 호환성)
-        config = self._get_sheet_config(sheet_name) if sheet_name else SHEET_CONFIG['default']
+        config = self._get_sheet_config(sheet_name) if sheet_name else self.schema_loader.load_sheet_config('default')
         
         base_year = config['base_year']
         base_quarter = config['base_quarter']
@@ -704,33 +550,10 @@ class TemplateFiller:
         # 지역별로 증가/감소에 따라 필터링
         if region_growth_rate is not None:
             if region_growth_rate > 0:
-                # 증가한 지역: 증가한 산업/업태만 선택
+                # 증가한 지역: 증가한 산업/업태만 선택, 증가율이 큰 순서
                 positive_categories = [c for c in categories if c['growth_rate'] > 0]
-                
-                # data_analyzer의 get_top_industries_for_region과 동일한 로직 사용
-                # 지역별 우선순위가 있으면 우선순위 적용, 없으면 증가율 큰 순서
-                region_priorities = config.get('region_priorities', {})
-                priority_list = region_priorities.get(region_name, [])
-                
-                if priority_list:
-                    # 우선순위에 따라 선택
-                    result = []
-                    for priority_keyword in priority_list:
-                        for cat in positive_categories:
-                            if priority_keyword in cat['name'] and cat not in result:
-                                result.append(cat)
-                                break
-                    
-                    # 우선순위에 없는 산업/업태는 증가율 큰 순서로 추가
-                    remaining = [c for c in positive_categories if c not in result]
-                    remaining.sort(key=lambda x: x['growth_rate'], reverse=True)
-                    result.extend(remaining)
-                    
-                    return result[:top_n]
-                else:
-                    # 우선순위가 없으면 증가율 큰 순서
-                    positive_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
-                    return positive_categories[:top_n]
+                positive_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
+                return positive_categories[:top_n]
             else:
                 # 감소한 지역: 감소한 산업/업태만 선택, 지역별 우선순위 적용
                 negative_categories = [c for c in categories if c['growth_rate'] < 0]
