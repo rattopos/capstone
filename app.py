@@ -23,6 +23,7 @@ from src.template_generator import TemplateGenerator
 from src.excel_header_parser import ExcelHeaderParser
 from src.flexible_mapper import FlexibleMapper
 from src.pdf_generator import PDFGenerator
+from src.schema_loader import SchemaLoader
 from bs4 import BeautifulSoup
 
 # PDF 생성 라이브러리 선택 (playwright 우선, 없으면 weasyprint)
@@ -50,69 +51,8 @@ DEFAULT_EXCEL_FILE = BASE_DIR / '기초자료 수집표_2025년 2분기_캡스�
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
-# 시트명과 템플릿 파일 매핑
-SHEET_TEMPLATE_MAPPING = {
-    '광공업생산': {
-        'template': '광공업생산.html',
-        'display_name': '광공업생산'
-    },
-    '서비스업생산': {
-        'template': 'service_production.html',
-        'display_name': '서비스업생산'
-    },
-    '소비(소매, 추가)': {
-        'template': 'retail_sales.html',
-        'display_name': '소비(소매, 추가)'
-    },
-    '고용': {
-        'template': 'employment.html',
-        'display_name': '고용'
-    },
-    '고용(kosis)': {
-        'template': 'employment_kosis.html',
-        'display_name': '고용(kosis)'
-    },
-    '고용률': {
-        'template': 'employment_rate.html',
-        'display_name': '고용률'
-    },
-    '실업자 수': {
-        'template': 'unemployed.html',
-        'display_name': '실업자 수'
-    },
-    '지출목적별 물가': {
-        'template': 'price_by_purpose.html',
-        'display_name': '지출목적별 물가'
-    },
-    '품목성질별 물가': {
-        'template': 'price_by_item.html',
-        'display_name': '품목성질별 물가'
-    },
-    '건설 (공표자료)': {
-        'template': 'construction_orders.html',
-        'display_name': '건설수주'
-    },
-    '수출': {
-        'template': 'exports.html',
-        'display_name': '수출'
-    },
-    '수입': {
-        'template': 'imports.html',
-        'display_name': '수입'
-    },
-    '연령별 인구이동': {
-        'template': 'population_movement_by_age.html',
-        'display_name': '연령별 인구이동'
-    },
-    '시도 간 이동': {
-        'template': 'inter_sido_movement.html',
-        'display_name': '시도 간 이동'
-    },
-    '시군구인구이동': {
-        'template': 'population_movement_sigungu.html',
-        'display_name': '시군구인구이동'
-    }
-}
+# 스키마 로더 초기화
+schema_loader = SchemaLoader()
 
 
 def allowed_file(filename):
@@ -136,22 +76,13 @@ def get_template_for_sheet(sheet_name):
         dict: {'template': 템플릿 파일명, 'display_name': 표시용 이름}
         매핑이 없으면 기본값 반환
     """
-    # 정확한 매칭 시도
-    if sheet_name in SHEET_TEMPLATE_MAPPING:
-        return SHEET_TEMPLATE_MAPPING[sheet_name]
-    
-    # 부분 매칭 시도 (키워드 기반)
-    sheet_lower = sheet_name.lower()
-    for key, value in SHEET_TEMPLATE_MAPPING.items():
-        if key.lower() in sheet_lower or sheet_lower in key.lower():
-            return value
-    
-    # 특수 케이스: 소비/소매 관련
-    if '소비' in sheet_name or '소매' in sheet_name:
-        return SHEET_TEMPLATE_MAPPING['소비(소매, 추가)']
+    template_info = schema_loader.get_template_for_sheet(sheet_name)
+    if template_info:
+        return template_info
     
     # 기본값: 광공업생산 템플릿 사용
-    return SHEET_TEMPLATE_MAPPING['광공업생산']
+    template_mapping = schema_loader.load_template_mapping()
+    return template_mapping.get('광공업생산', {'template': '광공업생산.html', 'display_name': '광공업생산'})
 
 
 @app.route('/')
@@ -187,9 +118,10 @@ def get_templates():
                     if sheet_name:
                         required_sheets.add(sheet_name)
                 
-                # display_name 찾기 (SHEET_TEMPLATE_MAPPING에서 먼저 찾고, 없으면 파일명 사용)
+                # display_name 찾기 (템플릿 매핑에서 먼저 찾고, 없으면 파일명 사용)
                 display_name = template_name.replace('.html', '')
-                for sheet_name, info in SHEET_TEMPLATE_MAPPING.items():
+                template_mapping = schema_loader.load_template_mapping()
+                for sheet_name, info in template_mapping.items():
                     if info['template'] == template_name:
                         display_name = info['display_name']
                         break
@@ -203,7 +135,8 @@ def get_templates():
             except Exception as e:
                 # 템플릿 파싱 실패 시 기본 정보만 반환
                 display_name = template_name.replace('.html', '')
-                for sheet_name, info in SHEET_TEMPLATE_MAPPING.items():
+                template_mapping = schema_loader.load_template_mapping()
+                for sheet_name, info in template_mapping.items():
                     if info['template'] == template_name:
                         display_name = info['display_name']
                         break
@@ -391,7 +324,7 @@ def process_template():
                 quarter = periods_info['default_quarter']
             
             # 템플릿 필러 초기화 및 처리
-            template_filler = TemplateFiller(template_manager, excel_extractor)
+            template_filler = TemplateFiller(template_manager, excel_extractor, schema_loader)
             
             # primary_sheet를 사용하여 연도/분기 감지 (템플릿은 자동으로 필요한 시트를 찾음)
             filled_template = template_filler.fill_template(
@@ -402,7 +335,8 @@ def process_template():
             
             # display_name 찾기
             display_name = template_name.replace('.html', '')
-            for sheet_name, info in SHEET_TEMPLATE_MAPPING.items():
+            template_mapping = schema_loader.load_template_mapping()
+            for sheet_name, info in template_mapping.items():
                 if info['template'] == template_name:
                     display_name = info['display_name']
                     break
@@ -480,6 +414,79 @@ def preview_file(filename):
         if file_path.exists():
             return send_file(str(file_path))
         return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+    except Exception as e:
+        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
+
+
+@app.route('/api/compare-answer', methods=['POST'])
+def compare_answer():
+    """생성된 결과와 정답 파일 비교"""
+    try:
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            return jsonify({'error': '템플릿명이 필요합니다.'}), 400
+        
+        # 정답 파일 경로 찾기
+        correct_answer_dir = BASE_DIR / 'correct_answer'
+        
+        # 템플릿명에서 정답 파일명 찾기
+        template_mapping = schema_loader.load_template_mapping()
+        answer_filename = None
+        
+        # 템플릿 매핑에서 display_name 찾기
+        for sheet_name, info in template_mapping.items():
+            if info['template'] == template_name:
+                # display_name을 파일명으로 변환
+                display_name = info['display_name']
+                # 한글 파일명으로 변환
+                answer_filename = f"{display_name}.png"
+                break
+        
+        if not answer_filename:
+            # 기본값: 템플릿명에서 확장자 제거
+            answer_filename = template_name.replace('.html', '.png')
+        
+        answer_path = correct_answer_dir / answer_filename
+        
+        if not answer_path.exists():
+            return jsonify({
+                'error': f'정답 파일을 찾을 수 없습니다: {answer_filename}',
+                'answer_file': answer_filename
+            }), 404
+        
+        # 생성된 파일 경로
+        output_filename = request.form.get('output_filename', '')
+        if not output_filename:
+            return jsonify({'error': '출력 파일명이 필요합니다.'}), 400
+        
+        output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+        
+        if not output_path.exists():
+            return jsonify({'error': '생성된 파일을 찾을 수 없습니다.'}), 404
+        
+        return jsonify({
+            'success': True,
+            'answer_file': answer_filename,
+            'answer_path': str(answer_path.relative_to(BASE_DIR)),
+            'output_file': output_filename,
+            'output_path': str(output_path.relative_to(BASE_DIR)),
+            'message': '정답 파일과 비교할 준비가 되었습니다.'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'비교 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/answer-image/<filename>')
+def get_answer_image(filename):
+    """정답 이미지 파일 반환"""
+    try:
+        answer_path = BASE_DIR / 'correct_answer' / filename
+        if answer_path.exists():
+            return send_file(str(answer_path))
+        return jsonify({'error': '정답 파일을 찾을 수 없습니다.'}), 404
     except Exception as e:
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 

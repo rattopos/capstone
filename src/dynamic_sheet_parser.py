@@ -164,12 +164,11 @@ class DynamicSheetParser:
     
     def _parse_period_from_header(self, header: str) -> Optional[Tuple[int, int]]:
         """헤더에서 연도와 분기를 파싱합니다."""
-        # "2023 3/4", "2024 1/4", "2025 2/4p" 등의 패턴
+        # "2023 3/4", "2024 1/4", "2025 2/4p" 등의 패턴 (분기별만 인식)
+        # 주의: "2024. 1" 같은 월별 패턴은 분기로 잘못 해석될 수 있으므로 제외
         patterns = [
             r'(\d{4})\s+(\d)/4[pP]?',  # "2023 3/4", "2025 2/4p"
             r'(\d{4})\s*(\d)/4[pP]?',  # "2023 3/4" (공백 없음)
-            r'(\d{4})\.\s*(\d)',  # "2024. 1"
-            r'(\d{4})\.(\d)',  # "2024.1"
         ]
         
         for pattern in patterns:

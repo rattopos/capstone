@@ -49,17 +49,17 @@ class DataAnalyzer:
         
         # 모든 지역 총지수 행 찾기 (총지수인 행을 찾되, 분류 단계는 0 또는 1)
         seen_regions = set()  # 중복 방지
-        for row in range(4, min(1000, sheet.max_row + 1)):
+        for row in range(4, min(5000, sheet.max_row + 1)):
             cell_a = sheet.cell(row=row, column=1)  # 지역 코드
             cell_b = sheet.cell(row=row, column=2)  # 지역 이름
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
             cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
             
-            # 총지수 또는 계인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
+            # 총지수, 계, 합계인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
             is_total = False
             if cell_category.value:
                 category_str = str(cell_category.value).strip()
-                if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                if category_str in ['총지수', '계', '   계', '합계']:
                     is_total = True
             
             if cell_b.value and is_total:
@@ -418,6 +418,25 @@ class DataAnalyzer:
                     if len(result) >= top_n:
                         break
         
+        # 카테고리 매칭이 전혀 되지 않은 경우 (예: 수출/수입 시트)
+        # 직접 증감률 기준으로 상위 N개 반환
+        if len(result) < top_n:
+            # 분류단계 1의 산업 우선 선택 (대분류)
+            level1_industries = [ind for ind in industries if ind.get('classification_level', 0) == 1]
+            level2_industries = [ind for ind in industries if ind.get('classification_level', 0) == 2]
+            
+            # 분류단계 2의 산업 중 상위 선택
+            if should_use_weighted:
+                level2_industries.sort(key=lambda x: abs(x.get('weighted_growth_rate', x['growth_rate'])), reverse=True)
+            else:
+                level2_industries.sort(key=lambda x: abs(x['growth_rate']), reverse=True)
+            
+            for ind in level2_industries:
+                if ind not in result:
+                    result.append(ind)
+                    if len(result) >= top_n:
+                        break
+        
         return result[:top_n]
     
     def analyze_quarter_data(self, sheet_name: str, quarter_cols: Dict[str, Tuple[int, int]]) -> Dict[str, Any]:
@@ -443,14 +462,14 @@ class DataAnalyzer:
             sheet_config = self.schema_loader.load_sheet_config(sheet_name)
             category_col = sheet_config.get('category_column', 6)
             
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_b = sheet.cell(row=row, column=2)
                 cell_category = sheet.cell(row=row, column=category_col)
-                # 총지수 또는 계
+                # 총지수, 계, 합계 인식
                 is_total = False
                 if cell_category.value:
                     category_str = str(cell_category.value).strip()
-                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                    if category_str in ['총지수', '계', '   계', '합계']:
                         is_total = True
                 
                 if cell_b.value == '전국' and is_total:

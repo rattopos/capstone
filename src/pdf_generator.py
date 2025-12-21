@@ -12,6 +12,7 @@ from src.excel_extractor import ExcelExtractor
 from src.template_filler import TemplateFiller
 from src.period_detector import PeriodDetector
 from src.flexible_mapper import FlexibleMapper
+from src.schema_loader import SchemaLoader
 
 # PDF 생성 라이브러리 선택 (playwright 우선, 없으면 weasyprint)
 PDF_GENERATOR = None
@@ -124,6 +125,9 @@ class PDFGenerator:
             # 유연한 매퍼 초기화
             flexible_mapper = FlexibleMapper(excel_extractor)
             
+            # 스키마 로더 초기화
+            schema_loader = SchemaLoader()
+            
             # 각 템플릿 처리
             filled_templates = []
             errors = []
@@ -153,30 +157,37 @@ class PDFGenerator:
                         errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다.')
                         continue
                     
-                    # 필요한 시트가 모두 존재하는지 확인
-                    missing_sheets = []
-                    actual_sheet_mapping = {}
+                    # 템플릿 매핑에서 실제 시트 이름 찾기
+                    template_mapping = schema_loader.load_template_mapping()
+                    actual_sheet_name = None
                     
-                    for required_sheet in required_sheets:
-                        # 유연한 매핑으로 실제 시트 찾기
-                        actual_sheet = flexible_mapper.find_sheet_by_name(required_sheet)
-                        if actual_sheet:
-                            actual_sheet_mapping[required_sheet] = actual_sheet
+                    # template_mapping에서 템플릿 파일명으로 시트 이름 찾기
+                    for sheet_name, info in template_mapping.items():
+                        if info.get('template') == template_name:
+                            actual_sheet_name = sheet_name
+                            break
+                    
+                    # 템플릿 매핑에서 찾지 못한 경우, 마커에서 추출한 첫 번째 시트 이름 사용
+                    if not actual_sheet_name:
+                        # 마커에서 추출한 시트 이름 중 첫 번째 사용
+                        if required_sheets:
+                            actual_sheet_name = list(required_sheets)[0]
                         else:
-                            missing_sheets.append(required_sheet)
+                            errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다.')
+                            continue
                     
-                    if missing_sheets:
-                        errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다: {", ".join(missing_sheets)}')
+                    # 실제 시트가 존재하는지 확인
+                    actual_sheet = flexible_mapper.find_sheet_by_name(actual_sheet_name)
+                    if not actual_sheet:
+                        errors.append(f'{template_name}: 필요한 시트를 찾을 수 없습니다: {actual_sheet_name}')
                         continue
                     
-                    # 첫 번째 필요한 시트를 기본 시트로 사용
-                    primary_sheet_for_template = list(actual_sheet_mapping.values())[0]
-                    
                     # 템플릿 필러 초기화 및 처리
-                    template_filler = TemplateFiller(template_manager, excel_extractor)
+                    template_filler = TemplateFiller(template_manager, excel_extractor, schema_loader)
                     
+                    # 템플릿 채우기 (시트 이름은 실제 엑셀 시트 이름 사용)
                     filled_template = template_filler.fill_template(
-                        sheet_name=primary_sheet_for_template,
+                        sheet_name=actual_sheet,
                         year=year,
                         quarter=quarter
                     )

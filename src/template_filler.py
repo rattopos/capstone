@@ -833,7 +833,7 @@ class TemplateFiller:
         
         region_row = None
         
-        for row in range(4, min(1000, sheet.max_row + 1)):
+        for row in range(4, min(5000, sheet.max_row + 1)):
             cell_b = sheet.cell(row=row, column=2)  # 지역 이름
             cell_c = sheet.cell(row=row, column=3)  # 분류 단계
             cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
@@ -985,7 +985,7 @@ class TemplateFiller:
             if not is_unemployment_sheet:
                 # 일반 시트는 캐시에서 가져오기
                 if 'national_region' in data and data['national_region']:
-                    return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1)
+                    return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1, include_percent=False)
                 return "N/A"
             # 실업률/고용률 시트는 아래 로직으로 처리 (계속 진행)
         elif key == '전국_증감방향':
@@ -1005,9 +1005,9 @@ class TemplateFiller:
             if 'national_region' in data and data['national_region']:
                 national_growth = data['national_region']['growth_rate']
                 if national_growth >= 0:
-                    return self._process_marker_key(sheet_name, year, quarter, '증가_시도수')
+                    return self._process_dynamic_marker(sheet_name, '증가_시도수', year, quarter)
                 else:
-                    return self._process_marker_key(sheet_name, year, quarter, '감소_시도수')
+                    return self._process_dynamic_marker(sheet_name, '감소_시도수', year, quarter)
             return "N/A"
         elif key == '강조_증감방향':
             # 전국이 증가면 "증가", 감소면 "감소"
@@ -1039,17 +1039,23 @@ class TemplateFiller:
                         if field == '이름':
                             return region['name']
                         elif field == '증감률':
-                            return self.format_percentage(region['growth_rate'], decimal_places=1)
+                            return self.format_percentage(region['growth_rate'], decimal_places=1, include_percent=False)
                         elif field.startswith('업태') or field.startswith('산업'):
                             industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
                             if industry_match:
                                 industry_idx = int(industry_match.group(2)) - 1
                                 industry_field = industry_match.group(3)
                                 
-                                categories = self._get_categories_for_region(
-                                    sheet_name, region['name'], year, quarter, top_n=3
-                                )
-                                if industry_idx < len(categories):
+                                # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
+                                categories = region.get('top_industries', [])
+                                
+                                # top_industries가 비어있으면 _get_categories_for_region 호출
+                                if not categories:
+                                    categories = self._get_categories_for_region(
+                                        sheet_name, region['name'], year, quarter, top_n=3
+                                    )
+                                
+                                if categories and industry_idx < len(categories):
                                     category = categories[industry_idx]
                                     
                                     if industry_field == '이름':
@@ -1064,7 +1070,7 @@ class TemplateFiller:
                                                     break
                                         return mapped_name if mapped_name else category_name
                                     elif industry_field == '증감률':
-                                        return self.format_percentage(category['growth_rate'], decimal_places=1)
+                                        return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
                             return "N/A"
                 return "N/A"
             return "N/A"
@@ -1076,8 +1082,16 @@ class TemplateFiller:
                 industry_idx = int(industry_match.group(2)) - 1
                 industry_field = industry_match.group(3)
                 
-                categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=3)
-                if industry_idx < len(categories):
+                # 분석된 데이터의 national_region.top_industries 사용 (이미 계산되어 있음)
+                categories = []
+                if 'national_region' in data and data['national_region']:
+                    categories = data['national_region'].get('top_industries', [])
+                
+                # top_industries가 비어있으면 _get_categories_for_region 호출
+                if not categories:
+                    categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=3)
+                
+                if categories and industry_idx < len(categories):
                     category = categories[industry_idx]
                     
                     if industry_field == '이름':
@@ -1093,7 +1107,7 @@ class TemplateFiller:
                                     break
                         return mapped_name if mapped_name else category_name
                     elif industry_field == '증감률':
-                        return self.format_percentage(category['growth_rate'], decimal_places=1)
+                        return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
                 return "N/A"
             return "N/A"
         
@@ -1109,7 +1123,7 @@ class TemplateFiller:
                 if field == '이름':
                     return region['name']
                 elif field == '증감률':
-                    return self.format_percentage(region['growth_rate'], decimal_places=1)
+                    return self.format_percentage(region['growth_rate'], decimal_places=1, include_percent=False)
                 elif field.startswith('업태') or field.startswith('산업'):
                     # 업태1_이름, 업태1_증감률, 산업1_이름, 산업1_증감률 등 (일반화)
                     industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
@@ -1118,10 +1132,16 @@ class TemplateFiller:
                         industry_idx = int(industry_match.group(2)) - 1
                         industry_field = industry_match.group(3)
                         
-                        categories = self._get_categories_for_region(
-                            sheet_name, region['name'], year, quarter, top_n=3
-                        )
-                        if industry_idx < len(categories):
+                        # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
+                        categories = region.get('top_industries', [])
+                        
+                        # top_industries가 비어있으면 _get_categories_for_region 호출
+                        if not categories:
+                            categories = self._get_categories_for_region(
+                                sheet_name, region['name'], year, quarter, top_n=3
+                            )
+                        
+                        if categories and industry_idx < len(categories):
                             category = categories[industry_idx]
                             
                             if industry_field == '이름':
@@ -1137,7 +1157,7 @@ class TemplateFiller:
                                             break
                                 return mapped_name if mapped_name else category_name
                             elif industry_field == '증감률':
-                                return self.format_percentage(category['growth_rate'], decimal_places=1)
+                                return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
                     return "N/A"
                 return "N/A"
             return "N/A"
@@ -1154,7 +1174,7 @@ class TemplateFiller:
                 if field == '이름':
                     return region['name']
                 elif field == '증감률':
-                    return self.format_percentage(region['growth_rate'], decimal_places=1)
+                    return self.format_percentage(region['growth_rate'], decimal_places=1, include_percent=False)
                 elif field.startswith('업태') or field.startswith('산업'):
                     # 업태1_이름, 업태1_증감률, 산업1_이름, 산업1_증감률 등 (일반화)
                     industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
@@ -1163,10 +1183,16 @@ class TemplateFiller:
                         industry_idx = int(industry_match.group(2)) - 1
                         industry_field = industry_match.group(3)
                         
-                        categories = self._get_categories_for_region(
-                            sheet_name, region['name'], year, quarter, top_n=3
-                        )
-                        if industry_idx < len(categories):
+                        # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
+                        categories = region.get('top_industries', [])
+                        
+                        # top_industries가 비어있으면 _get_categories_for_region 호출
+                        if not categories:
+                            categories = self._get_categories_for_region(
+                                sheet_name, region['name'], year, quarter, top_n=3
+                            )
+                        
+                        if categories and industry_idx < len(categories):
                             category = categories[industry_idx]
                             
                             if industry_field == '이름':
@@ -1182,7 +1208,7 @@ class TemplateFiller:
                                             break
                                 return mapped_name if mapped_name else category_name
                             elif industry_field == '증감률':
-                                return self.format_percentage(category['growth_rate'], decimal_places=1)
+                                return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
                     return "N/A"
                 return "N/A"
             return "N/A"
@@ -1279,7 +1305,7 @@ class TemplateFiller:
             if is_unemployment_sheet:
                 # 실업자 수 시트: 1열에 시도, 2열에 연령계층
                 current_region = None
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
@@ -1305,7 +1331,7 @@ class TemplateFiller:
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                     cell_category = sheet.cell(row=row, column=category_col)  # 연령대
@@ -1340,7 +1366,7 @@ class TemplateFiller:
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
                 # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
@@ -1366,7 +1392,7 @@ class TemplateFiller:
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                     cell_category = sheet.cell(row=row, column=category_col)  # 연령대
@@ -1420,7 +1446,7 @@ class TemplateFiller:
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
                 # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
@@ -1450,7 +1476,7 @@ class TemplateFiller:
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                     cell_category = sheet.cell(row=row, column=category_col)  # 연령대
@@ -1649,7 +1675,7 @@ class TemplateFiller:
             config = self._get_sheet_config(sheet_name)
             category_col = config['category_column']
             
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
                 cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                 cell_c = sheet.cell(row=row, column=3)  # 분류 단계
@@ -1725,17 +1751,17 @@ class TemplateFiller:
             config = self._get_sheet_config(sheet_name)
             category_col = config['category_column']
             
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
                 cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                 cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                 cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
                 
-                # 총지수 또는 계 (분류 단계가 0인 경우)
+                # 총지수, 계, 합계 인식 (분류 단계가 0인 경우)
                 is_total = False
                 if cell_category.value:
                     category_str = str(cell_category.value).strip()
-                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                    if category_str in ['총지수', '계', '   계', '합계']:
                         is_total = True
                 
                 if cell_b.value and is_total:
@@ -1753,7 +1779,7 @@ class TemplateFiller:
                                 positive_count += 1
             
             return str(positive_count)
-        elif key == '감소시도수':
+        elif key == '감소시도수' or key == '감소_시도수':
             # 감소한 시도 개수
             sheet = self.excel_extractor.get_sheet(sheet_name)
             negative_count = 0
@@ -1766,60 +1792,17 @@ class TemplateFiller:
             config = self._get_sheet_config(sheet_name)
             category_col = config['category_column']
             
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 지역 코드
                 cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                 cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                 cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
                 
-                # 총지수 또는 계 (분류 단계가 0인 경우)
+                # 총지수, 계, 합계 인식 (분류 단계가 0인 경우)
                 is_total = False
                 if cell_category.value:
                     category_str = str(cell_category.value).strip()
-                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
-                        is_total = True
-                
-                if cell_b.value and is_total:
-                    # 시도 코드 확인: 2자리 숫자이고 00이 아닌 것
-                    code_str = str(cell_a.value).strip() if cell_a.value else ''
-                    is_sido = (len(code_str) == 2 and code_str.isdigit() and code_str != '00')
-                    
-                    region_name = str(cell_b.value).strip()
-                    if is_sido and region_name not in seen_regions:
-                        seen_regions.add(region_name)
-                        current = sheet.cell(row=row, column=current_col).value
-                        prev = sheet.cell(row=row, column=prev_col).value
-                        
-                        if current is not None and prev is not None and prev != 0:
-                            growth_rate = ((current / prev) - 1) * 100
-                            if growth_rate < 0:
-                                negative_count += 1
-            
-            return str(negative_count)
-        elif key == '감소_시도수' or key == '감소시도수':
-            # 감소한 시도 개수 (위의 감소시도수 처리와 동일)
-            sheet = self.excel_extractor.get_sheet(sheet_name)
-            negative_count = 0
-            seen_regions = set()
-            
-            # 연도/분기에 해당하는 열 번호 가져오기
-            current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
-            
-            # 시트별 설정 가져오기
-            config = self._get_sheet_config(sheet_name)
-            category_col = config['category_column']
-            
-            for row in range(4, min(1000, sheet.max_row + 1)):
-                cell_a = sheet.cell(row=row, column=1)  # 지역 코드
-                cell_b = sheet.cell(row=row, column=2)  # 지역 이름
-                cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-                cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
-                
-                # 총지수 또는 계 (분류 단계가 0인 경우)
-                is_total = False
-                if cell_category.value:
-                    category_str = str(cell_category.value).strip()
-                    if category_str == '총지수' or category_str == '계' or category_str == '   계':
+                    if category_str in ['총지수', '계', '   계', '합계']:
                         is_total = True
                 
                 if cell_b.value and is_total:
@@ -1858,7 +1841,7 @@ class TemplateFiller:
             
             if is_unemployment_sheet:
                 # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
@@ -1882,7 +1865,7 @@ class TemplateFiller:
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 지역 코드
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
@@ -1941,7 +1924,7 @@ class TemplateFiller:
                 current_col, _ = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
@@ -1967,7 +1950,7 @@ class TemplateFiller:
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(1000, sheet.max_row + 1)):
+                for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
                     cell_category = sheet.cell(row=row, column=category_col)  # 연령대
@@ -2014,7 +1997,7 @@ class TemplateFiller:
             sheet = self.excel_extractor.get_sheet(sheet_name)
             
             # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 시도
                 cell_b = sheet.cell(row=row, column=2)  # 연령계층
                 
@@ -2057,7 +2040,7 @@ class TemplateFiller:
             sheet = self.excel_extractor.get_sheet(sheet_name)
             
             # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-            for row in range(4, min(1000, sheet.max_row + 1)):
+            for row in range(4, min(5000, sheet.max_row + 1)):
                 cell_a = sheet.cell(row=row, column=1)  # 시도
                 cell_b = sheet.cell(row=row, column=2)  # 연령계층
                 

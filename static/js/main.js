@@ -78,6 +78,7 @@ function initializeApp() {
     setupTabNavigation();
     setupPdfFileUpload();
     setupPdfGenerateButton();
+    setupCompareButtons();
 }
 
 // 파일 업로드 설정
@@ -489,6 +490,7 @@ function hideResult() {
 function setupResultButtons() {
     const previewBtn = document.getElementById('previewBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const compareBtn = document.getElementById('compareBtn');
     const closePreviewBtn = document.getElementById('closePreviewBtn');
     
     previewBtn.onclick = () => {
@@ -504,10 +506,80 @@ function setupResultButtons() {
         }
     };
     
+    // 정답 비교 버튼
+    if (compareBtn) {
+        compareBtn.onclick = async () => {
+            if (currentOutputFilename && selectedTemplate) {
+                await showCompare(selectedTemplate, currentOutputFilename);
+            }
+        };
+    }
+    
     // 미리보기 닫기 버튼
     if (closePreviewBtn) {
         closePreviewBtn.onclick = () => {
             hidePreview();
+        };
+    }
+}
+
+// 정답 비교 표시
+async function showCompare(templateName, outputFilename) {
+    try {
+        showToast('정답 파일을 불러오는 중...', 'info', 2000);
+        
+        const formData = new FormData();
+        formData.append('template_name', templateName);
+        formData.append('output_filename', outputFilename);
+        
+        const response = await fetch('/api/compare-answer', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            const compareSection = document.getElementById('compareSection');
+            const answerImage = document.getElementById('answerImage');
+            const comparePreviewFrame = document.getElementById('comparePreviewFrame');
+            
+            // 정답 이미지 로드
+            answerImage.src = `/api/answer-image/${data.answer_file}`;
+            
+            // 생성된 결과 미리보기
+            comparePreviewFrame.src = `/api/preview/${outputFilename}`;
+            
+            // 비교 섹션 표시
+            compareSection.style.display = 'block';
+            
+            // 스크롤 이동
+            compareSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            showToast('정답 파일과 비교할 준비가 되었습니다.', 'success', 3000);
+        } else {
+            showError(data.error || '정답 파일을 불러올 수 없습니다.');
+        }
+    } catch (error) {
+        console.error('비교 오류:', error);
+        showError('정답 파일을 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+// 비교 섹션 닫기
+function hideCompare() {
+    const compareSection = document.getElementById('compareSection');
+    if (compareSection) {
+        compareSection.style.display = 'none';
+    }
+}
+
+// 비교 닫기 버튼 설정
+function setupCompareButtons() {
+    const closeCompareBtn = document.getElementById('closeCompareBtn');
+    if (closeCompareBtn) {
+        closeCompareBtn.onclick = () => {
+            hideCompare();
         };
     }
 }
