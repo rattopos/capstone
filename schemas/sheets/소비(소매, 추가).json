@@ -1,0 +1,22 @@
+{
+  "category_column": 5,
+  "base_year": 2023,
+  "base_quarter": 3,
+  "base_col": 57,
+  "name_mapping": "retail_category_mapping",
+  "national_priorities": [
+    "슈퍼마켓 및 잡화점",
+    "면세점",
+    "전문소매점"
+  ],
+  "region_priorities": {
+    "제주": ["면세점", "슈퍼마켓", "잡화점", "대형마트"],
+    "경북": ["전문소매점", "슈퍼마켓", "잡화점", "대형마트"],
+    "서울": ["면세점", "슈퍼마켓", "잡화점", "백화점"]
+  }
+}
+
+
+
+
+

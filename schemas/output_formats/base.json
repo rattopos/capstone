@@ -1,0 +1,57 @@
+{
+  "_comment": "기본 출력 형식 스키마 - 모든 템플릿에서 공통으로 사용",
+  
+  "direction_expressions": {
+    "increase": {
+      "rate": "증가",
+      "production": "늘어",
+      "result": "증가"
+    },
+    "decrease": {
+      "rate": "감소",
+      "production": "줄어",
+      "result": "감소"
+    },
+    "rise": {
+      "rate": "상승",
+      "change": "올라",
+      "result": "상승"
+    },
+    "fall": {
+      "rate": "하락",
+      "change": "내려",
+      "result": "하락"
+    }
+  },
+  
+  "format_rules": {
+    "percentage": {
+      "decimal_places": 1,
+      "include_sign": false,
+      "suffix": "%"
+    },
+    "percentage_point": {
+      "decimal_places": 1,
+      "include_sign": false,
+      "suffix": "%p"
+    },
+    "count": {
+      "decimal_places": 0,
+      "use_comma": true,
+      "suffix": ""
+    },
+    "population": {
+      "decimal_places": 0,
+      "use_comma": true,
+      "suffix": "명"
+    }
+  },
+  
+  "bullet_styles": {
+    "diamond": "◆",
+    "square": "□",
+    "circle": "○",
+    "dot": "·"
+  }
+}
+

@@ -1,0 +1,62 @@
+{
+  "_comment": "국내인구이동 출력 형식 스키마",
+  
+  "template_type": "population_movement",
+  "sheet_name": "시도 간 이동",
+  "display_name": "국내인구이동",
+  "template_file": "국내인구이동.html",
+  
+  "data_type": {
+    "unit": "명",
+    "direction_positive": "inflow",
+    "direction_negative": "outflow",
+    "category_name": "연령별 유입인구"
+  },
+  
+  "sentence_patterns": {
+    "diamond_summary": {
+      "pattern": "국내 인구이동은 {inflow_regions} 등 {inflow_count}개 시도 인구 순유입, {outflow_regions} 등 {outflow_count}개 시도 인구 순유출",
+      "description": "순유입/순유출 시도 요약"
+    },
+    "square_inflow": {
+      "pattern": "{year}년 {quarter}분기 국내 인구 순유입지역은 {region1}({count1}명), {region2}({count2}명), {region3}({count3}명) 등 {count}개 시도로 나타났음",
+      "description": "순유입 지역 요약"
+    },
+    "square_outflow": {
+      "pattern": "국내 인구 순유출지역은 {region1}({count1}명), {region2}({count2}명), {region3}({count3}명) 등 {count}개 시도로 나타났음",
+      "description": "순유출 지역 요약"
+    }
+  },
+  
+  "detail_section": {
+    "inflow_title": "< 주요 유입지역 및 연령별 유입인구 >",
+    "outflow_title": "< 주요 유출지역 및 연령별 유출인구 >",
+    "format": {
+      "inflow_region": "{region}( {count}명): {age1}({count1}명), {age2}({count2}명), {age3}({count3}명)",
+      "outflow_region": "{region}({count}명): {age1}({count1}명), {age2}({count2}명), {age3}({count3}명)"
+    }
+  },
+  
+  "table": {
+    "title": "《 국내 인구 순이동¹⁾ 》",
+    "unit_text": "[명]",
+    "columns": 8,
+    "source": "1) 순이동 = 전입자 수 - 전출자 수 (전국 순이동 = 0)\n자료: 통계청 국가통계포털(KOSIS), 국내 인구이동 통계"
+  },
+  
+  "region_category_selection": {
+    "inflow_regions": {
+      "count": 3,
+      "sort_by": "net_movement",
+      "sort_order": "descending",
+      "filter": "positive"
+    },
+    "outflow_regions": {
+      "count": 3,
+      "sort_by": "net_movement",
+      "sort_order": "ascending",
+      "filter": "negative"
+    }
+  }
+}
+

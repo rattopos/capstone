@@ -1,0 +1,64 @@
+{
+  "_comment": "물가동향 출력 형식 스키마",
+  
+  "template_type": "price",
+  "sheet_name": "지출목적별 물가",
+  "display_name": "물가동향",
+  "template_file": "물가동향.html",
+  
+  "data_type": {
+    "unit": "%",
+    "direction_positive": "rise",
+    "direction_negative": "fall",
+    "category_name": "품목"
+  },
+  
+  "sentence_patterns": {
+    "diamond_summary": {
+      "pattern": "소비자물가는 {categories} 등이 올라 모든 시도에서 전년동분기대비 {direction}",
+      "count_condition": "all_positive",
+      "description": "모든 시도가 상승인 경우"
+    },
+    "square_national": {
+      "pattern": "{year}년 {quarter}분기 전국 물가는 {categories} 등이 올라 전년동분기대비 {rate} {direction}",
+      "description": "전국 데이터 요약"
+    },
+    "circle_regions": {
+      "pattern_high": "{high_region1}({high_rate1})은 {high_categories} 등이 올라 전국 평균보다 높게 상승하였으며,",
+      "pattern_low": "{low_region1}({low_rate1}), {low_region2}({low_rate2}), {low_region3}({low_rate3})은 {low_categories} 등이 내려 전국 평균보다 낮게 상승",
+      "description": "전국 평균 대비 높음/낮음 비교"
+    }
+  },
+  
+  "detail_section": {
+    "title": "< 주요 등락지역 및 품목 >",
+    "format": {
+      "national": "{region}({rate}): {item1}({rate1}), {item2}({rate2}), {item3}({rate3}), {item4}({rate4})",
+      "high_region": "{region}({rate}): {item1}({rate1}), {item2}({rate2}), {item3}({rate3}), {item4}({rate4})",
+      "low_region": "{region}({rate}): {item1}({rate1}), {item2}({rate2}), {item3}({rate3}), {item4}({rate4})"
+    }
+  },
+  
+  "table": {
+    "title": "《 소비자물가 등락률 》",
+    "unit_text": "[전년동분기비, %]",
+    "columns": 8,
+    "source": "자료: 통계청 국가통계포털(KOSIS), 소비자물가조사"
+  },
+  
+  "region_category_selection": {
+    "high_regions": {
+      "count": 3,
+      "sort_by": "rate",
+      "sort_order": "descending",
+      "compare_to": "national_average"
+    },
+    "low_regions": {
+      "count": 3,
+      "sort_by": "rate",
+      "sort_order": "ascending",
+      "compare_to": "national_average"
+    }
+  }
+}
+
