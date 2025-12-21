@@ -61,9 +61,12 @@ Thumbs.db
 # Project specific - Generated output files
 output/
 demo_output/
+test_output/
 # templates/ 폴더의 HTML 파일은 소스 코드이므로 포함됨
 
 # Project specific - Data files
+# 참고용 PDF 파일 (선택적)
+*.pdf
 # 문서 파일 및 이미지 파일은 Git으로 관리됨
 
 # Testing

@@ -55,6 +55,97 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 # 스키마 로더 초기화
 schema_loader = SchemaLoader()
 
+# 엑셀 파일 캐시 (파일 경로 -> ExcelExtractor 인스턴스)
+_excel_cache = {}
+_excel_cache_timestamps = {}
+
+# 템플릿 캐시 (템플릿 경로 -> TemplateManager 인스턴스)
+_template_cache = {}
+_template_cache_timestamps = {}
+
+
+def get_excel_extractor(excel_path: Path, force_reload: bool = False) -> ExcelExtractor:
+    """
+    엑셀 추출기를 가져오거나 캐시에서 반환합니다.
+    
+    Args:
+        excel_path: 엑셀 파일 경로
+        force_reload: 강제로 다시 로드할지 여부
+        
+    Returns:
+        ExcelExtractor 인스턴스
+    """
+    excel_path_str = str(excel_path.resolve())
+    
+    # 강제 리로드가 아니고 캐시에 있으면 반환
+    if not force_reload and excel_path_str in _excel_cache:
+        # 파일이 수정되었는지 확인
+        try:
+            current_mtime = excel_path.stat().st_mtime
+            cached_mtime = _excel_cache_timestamps.get(excel_path_str, 0)
+            
+            # 파일이 수정되지 않았으면 캐시 반환
+            if current_mtime == cached_mtime:
+                return _excel_cache[excel_path_str]
+        except (OSError, FileNotFoundError):
+            # 파일 접근 오류 시 캐시에서 제거
+            _excel_cache.pop(excel_path_str, None)
+            _excel_cache_timestamps.pop(excel_path_str, None)
+    
+    # 새로 로드
+    excel_extractor = ExcelExtractor(excel_path_str)
+    excel_extractor.load_workbook()
+    
+    # 캐시에 저장
+    _excel_cache[excel_path_str] = excel_extractor
+    try:
+        _excel_cache_timestamps[excel_path_str] = excel_path.stat().st_mtime
+    except (OSError, FileNotFoundError):
+        pass
+    
+    return excel_extractor
+
+
+def get_template_manager(template_path: Path, force_reload: bool = False) -> TemplateManager:
+    """
+    템플릿 매니저를 가져오거나 캐시에서 반환합니다.
+    
+    Args:
+        template_path: 템플릿 파일 경로
+        force_reload: 강제로 다시 로드할지 여부
+        
+    Returns:
+        TemplateManager 인스턴스
+    """
+    template_path_str = str(template_path.resolve())
+    
+    # 강제 리로드가 아니고 캐시에 있으면 반환
+    if not force_reload and template_path_str in _template_cache:
+        # 파일이 수정되었는지 확인
+        try:
+            current_mtime = template_path.stat().st_mtime
+            cached_mtime = _template_cache_timestamps.get(template_path_str, 0)
+            
+            # 파일이 수정되지 않았으면 캐시 반환
+            if current_mtime == cached_mtime:
+                return _template_cache[template_path_str]
+        except (OSError, FileNotFoundError):
+            # 파일 접근 오류 시 캐시에서 제거
+            _template_cache.pop(template_path_str, None)
+            _template_cache_timestamps.pop(template_path_str, None)
+    
+    # 새로 로드
+    template_manager = get_template_manager(template_path)
+    
+    # 캐시에 저장
+    _template_cache[template_path_str] = template_manager
+    try:
+        _template_cache_timestamps[template_path_str] = template_path.stat().st_mtime
+    except (OSError, FileNotFoundError):
+        pass
+    
+    return template_manager
+
 
 def allowed_file(filename):
     """파일 확장자 검증"""
@@ -108,8 +199,7 @@ def get_templates():
             
             # 템플릿에서 필요한 시트 목록 추출
             try:
-                template_manager = TemplateManager(str(template_path))
-                template_manager.load_template()
+                template_manager = get_template_manager(template_path)
                 markers = template_manager.extract_markers()
                 
                 # 마커에서 시트명 추출 (중복 제거)
@@ -168,8 +258,7 @@ def get_template_sheets():
             return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다: {template_name}'}), 404
         
         # 템플릿에서 필요한 시트 목록 추출
-        template_manager = TemplateManager(str(template_path))
-        template_manager.load_template()
+        template_manager = get_template_manager(template_path)
         markers = template_manager.extract_markers()
         
         # 마커에서 시트명 추출 (중복 제거)
@@ -221,9 +310,8 @@ def check_missing_values():
         year = int(year_str)
         quarter = int(quarter_str)
         
-        # 엑셀 추출기 초기화
-        excel_extractor = ExcelExtractor(str(excel_path))
-        excel_extractor.load_workbook()
+        # 엑셀 추출기 초기화 (캐시 사용)
+        excel_extractor = get_excel_extractor(excel_path)
         
         # 템플릿 관리자 초기화
         template_path = Path('templates') / template_name
@@ -334,9 +422,8 @@ def process_template():
             if file_size == 0:
                 return jsonify({'error': '엑셀 파일이 비어있습니다.'}), 400
             
-            # 엑셀 추출기 초기화
-            excel_extractor = ExcelExtractor(str(excel_path))
-            excel_extractor.load_workbook()
+            # 엑셀 추출기 초기화 (캐시 사용)
+            excel_extractor = get_excel_extractor(excel_path)
             
             # 사용 가능한 시트 목록 가져오기
             sheet_names = excel_extractor.get_sheet_names()
@@ -630,8 +717,7 @@ def validate_files():
                     'error': '엑셀 파일이 비어있습니다.'
                 }), 400
             
-            excel_extractor = ExcelExtractor(str(excel_path))
-            excel_extractor.load_workbook()
+            excel_extractor = get_excel_extractor(excel_path)
             sheet_names = excel_extractor.get_sheet_names()
             
             if not sheet_names:
@@ -750,12 +836,10 @@ def create_template():
         if not sheet_name and excel_path:
             # 엑셀 파일이 있으면 첫 번째 시트 사용
             try:
-                extractor = ExcelExtractor(str(excel_path))
-                extractor.load_workbook()
+                extractor = get_excel_extractor(excel_path)
                 sheet_names = extractor.get_sheet_names()
                 if sheet_names:
                     sheet_name = sheet_names[0]
-                extractor.close()
             except:
                 pass
         
