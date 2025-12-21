@@ -33,10 +33,10 @@ class TemplateFiller:
         self.excel_extractor = excel_extractor
         self.schema_loader = schema_loader if schema_loader is not None else SchemaLoader()
         self.calculator = Calculator()
-        self.data_analyzer = DataAnalyzer(excel_extractor)
+        self.data_analyzer = DataAnalyzer(excel_extractor, self.schema_loader)
         self.period_detector = PeriodDetector(excel_extractor)
         self.flexible_mapper = FlexibleMapper(excel_extractor)
-        self.dynamic_parser = DynamicSheetParser(excel_extractor)
+        self.dynamic_parser = DynamicSheetParser(excel_extractor, self.schema_loader)
         self._analyzed_data_cache = None
         self._current_year = None  # 현재 처리 중인 연도
         self._current_quarter = None  # 현재 처리 중인 분기

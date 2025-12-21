@@ -1,31 +1,36 @@
 """
 동적 시트 파서 모듈
 헤더를 기반으로 시트 구조를 동적으로 파싱하여 데이터를 추출
+가중치 및 분류단계 필터링 지원
 """
 
 import re
 from typing import Dict, List, Optional, Tuple, Any
 from .excel_extractor import ExcelExtractor
 from .excel_header_parser import ExcelHeaderParser
+from .schema_loader import SchemaLoader
 
 
 class DynamicSheetParser:
     """헤더 기반으로 시트를 동적으로 파싱하는 클래스"""
     
-    def __init__(self, excel_extractor: ExcelExtractor):
+    def __init__(self, excel_extractor: ExcelExtractor, schema_loader: Optional[SchemaLoader] = None):
         """
         동적 시트 파서 초기화
         
         Args:
             excel_extractor: 엑셀 추출기 인스턴스
+            schema_loader: 스키마 로더 인스턴스 (기본값: 새로 생성)
         """
         self.excel_extractor = excel_extractor
+        self.schema_loader = schema_loader if schema_loader is not None else SchemaLoader()
         self.header_parser = ExcelHeaderParser(excel_extractor.excel_path)
         self.sheet_structure_cache = {}  # 시트별 구조 캐시
     
     def parse_sheet_structure(self, sheet_name: str) -> Dict[str, Any]:
         """
         시트의 구조를 동적으로 파싱합니다.
+        스키마에서 가중치 및 분류단계 설정을 가져옵니다.
         
         Args:
             sheet_name: 시트 이름
@@ -36,6 +41,9 @@ class DynamicSheetParser:
                 'region_column': 지역 이름이 있는 열 번호,
                 'category_column': 산업/업태/품목 이름이 있는 열 번호,
                 'classification_column': 분류 단계가 있는 열 번호 (선택),
+                'weight_column': 가중치 열 번호 (선택),
+                'weight_default': 가중치 기본값,
+                'max_classification_level': 최대 분류단계,
                 'quarter_columns': {
                     (2023, 3): 열 번호,
                     (2023, 4): 열 번호,
@@ -51,17 +59,24 @@ class DynamicSheetParser:
         sheet = self.excel_extractor.get_sheet(sheet_name)
         headers_info = self.header_parser.parse_sheet_headers(sheet_name, header_row=1, max_header_rows=5)
         
+        # 스키마에서 가중치 설정 가져오기
+        weight_config = self.schema_loader.get_weight_config(sheet_name)
+        
         # 지역 이름 열 찾기
         region_column = self._find_region_column(sheet, headers_info)
         
         # 산업/업태/품목 이름 열 찾기
         category_column = self._find_category_column(sheet, headers_info)
         
-        # 분류 단계 열 찾기 (선택)
-        classification_column = self._find_classification_column(sheet, headers_info)
+        # 분류 단계 열: 스키마에서 가져오거나 동적으로 찾기
+        classification_column = weight_config.get('classification_column')
+        if classification_column is None:
+            classification_column = self._find_classification_column(sheet, headers_info)
         
-        # 가중치 열 찾기
-        weight_column = self._find_weight_column(sheet, headers_info)
+        # 가중치 열: 스키마에서 가져오거나 동적으로 찾기
+        weight_column = weight_config.get('weight_column')
+        if weight_column is None:
+            weight_column = self._find_weight_column(sheet, headers_info)
         
         # 분기별 열 찾기
         quarter_columns = self._find_quarter_columns(sheet, headers_info)
@@ -77,6 +92,9 @@ class DynamicSheetParser:
             'category_column': category_column,
             'classification_column': classification_column,
             'weight_column': weight_column,
+            'weight_default': weight_config.get('weight_default', 1),
+            'max_classification_level': weight_config.get('max_classification_level', 2),
+            'use_weighted_ranking': weight_config.get('use_weighted_ranking', True),
             'quarter_columns': quarter_columns,
             'header_row': header_row,
             'data_start_row': data_start_row,
@@ -320,16 +338,16 @@ class DynamicSheetParser:
         sheet = self.excel_extractor.get_sheet(sheet_name)
         cell = sheet.cell(row=region_row, column=quarter_col)
         
-        # 가중치 확인 (비어있으면 100으로 처리)
-        weight_col = structure.get('weight_column', 4)
-        weight = sheet.cell(row=region_row, column=weight_col).value
-        if weight is None or (isinstance(weight, str) and not weight.strip()):
-            weight = 100
+        # 스키마에서 가중치 설정 가져오기
+        weight_col = structure.get('weight_column')
+        weight_default = structure.get('weight_default', 1)
+        
+        # 가중치 확인
+        if weight_col:
+            weight_value = sheet.cell(row=region_row, column=weight_col).value
+            weight = self.schema_loader.get_weight_value(sheet_name, weight_value)
         else:
-            try:
-                weight = float(weight)
-            except (ValueError, TypeError):
-                weight = 100
+            weight = weight_default
         
         # 값이 비어있고 가중치가 100이면 기본값 100 반환
         if cell.value is None or (isinstance(cell.value, str) and not cell.value.strip()):

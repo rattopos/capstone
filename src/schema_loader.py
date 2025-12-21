@@ -321,11 +321,99 @@ class SchemaLoader:
         
         sheets = []
         for sheet_file in sheets_dir.glob('*.json'):
-            if sheet_file.name != 'default.json':
+            if sheet_file.name != 'default.json' and sheet_file.name != 'weight_ranking_config.json':
                 sheet_name = sheet_file.stem
                 sheets.append(sheet_name)
         
         return sorted(sheets)
+    
+    def get_weight_config(self, sheet_name: str) -> Dict[str, Any]:
+        """
+        특정 시트의 가중치 설정을 반환합니다.
+        
+        Args:
+            sheet_name: 시트 이름
+            
+        Returns:
+            가중치 설정 딕셔너리:
+            {
+                'weight_column': 가중치 열 인덱스 (없으면 None),
+                'weight_default': 가중치 기본값 (열이 없으면 1, 공란이면 100),
+                'classification_column': 분류단계 열 인덱스,
+                'max_classification_level': 최대 분류단계 (2),
+                'use_weighted_ranking': 가중치 기반 순위 사용 여부
+            }
+        """
+        # 시트별 설정 로드
+        config = self.load_sheet_config(sheet_name)
+        
+        return {
+            'weight_column': config.get('weight_column'),
+            'weight_default': config.get('weight_default', 1),
+            'classification_column': config.get('classification_column', 2),
+            'max_classification_level': config.get('max_classification_level', 2),
+            'use_weighted_ranking': config.get('use_weighted_ranking', True)
+        }
+    
+    def get_weight_value(self, sheet_name: str, row_weight_value: Any) -> float:
+        """
+        행의 가중치 값을 결정합니다.
+        
+        Args:
+            sheet_name: 시트 이름
+            row_weight_value: 해당 행의 가중치 열 값
+            
+        Returns:
+            가중치 값 (float)
+        """
+        weight_config = self.get_weight_config(sheet_name)
+        weight_column = weight_config.get('weight_column')
+        weight_default = weight_config.get('weight_default', 1)
+        
+        # 가중치 열이 없는 경우 → 1
+        if weight_column is None:
+            return 1.0
+        
+        # 가중치 열이 있지만 값이 None이거나 빈 문자열인 경우 → 100
+        if row_weight_value is None:
+            return 100.0 if weight_default is None else float(weight_default)
+        
+        if isinstance(row_weight_value, str) and not row_weight_value.strip():
+            return 100.0 if weight_default is None else float(weight_default)
+        
+        # 실제 가중치 값 반환
+        try:
+            return float(row_weight_value)
+        except (ValueError, TypeError):
+            return 100.0 if weight_default is None else float(weight_default)
+    
+    def should_include_classification_level(self, sheet_name: str, classification_level: Any) -> bool:
+        """
+        분류단계가 포함되어야 하는지 확인합니다.
+        
+        Args:
+            sheet_name: 시트 이름
+            classification_level: 분류단계 값
+            
+        Returns:
+            포함 여부 (True/False)
+        """
+        weight_config = self.get_weight_config(sheet_name)
+        max_level = weight_config.get('max_classification_level')
+        
+        # 최대 분류단계 설정이 없으면 모든 레벨 포함
+        if max_level is None:
+            return True
+        
+        # 분류단계 값이 None이면 0으로 처리
+        if classification_level is None:
+            return True
+        
+        try:
+            level = float(classification_level)
+            return level <= max_level
+        except (ValueError, TypeError):
+            return True
 
 
 

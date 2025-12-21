@@ -1,23 +1,27 @@
 """
 데이터 분석 모듈
 엑셀 데이터에서 상위/하위 시도 및 산업을 동적으로 추출
+가중치 기반 순위 계산 지원
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .excel_extractor import ExcelExtractor
+from .schema_loader import SchemaLoader
 
 
 class DataAnalyzer:
     """엑셀 데이터를 분석하여 상위/하위 항목을 추출하는 클래스"""
     
-    def __init__(self, excel_extractor: ExcelExtractor):
+    def __init__(self, excel_extractor: ExcelExtractor, schema_loader: Optional[SchemaLoader] = None):
         """
         데이터 분석기 초기화
         
         Args:
             excel_extractor: 엑셀 추출기 인스턴스
+            schema_loader: 스키마 로더 인스턴스 (기본값: 새로 생성)
         """
         self.excel_extractor = excel_extractor
+        self.schema_loader = schema_loader if schema_loader is not None else SchemaLoader()
     
     def get_regions_with_growth_rate(self, sheet_name: str, current_col: int, prev_col: int) -> List[Dict[str, Any]]:
         """
@@ -34,10 +38,14 @@ class DataAnalyzer:
         sheet = self.excel_extractor.get_sheet(sheet_name)
         regions = []
         
-        # 시트별 설정에서 category_column 가져오기
-        from .template_filler import SHEET_CONFIG
-        config = SHEET_CONFIG.get(sheet_name, SHEET_CONFIG['default'])
-        category_col = config['category_column']
+        # 시트별 설정에서 category_column 가져오기 (스키마 로더 사용)
+        sheet_config = self.schema_loader.load_sheet_config(sheet_name)
+        category_col = sheet_config.get('category_column', 6)
+        
+        # 가중치 설정 가져오기
+        weight_config = self.schema_loader.get_weight_config(sheet_name)
+        weight_column = weight_config.get('weight_column')
+        max_classification_level = weight_config.get('max_classification_level', 2)
         
         # 모든 지역 총지수 행 찾기 (총지수인 행을 찾되, 분류 단계는 0 또는 1)
         seen_regions = set()  # 중복 방지
@@ -84,13 +92,23 @@ class DataAnalyzer:
                                     current = sheet.cell(row=row, column=current_col).value
                                     prev = sheet.cell(row=row, column=prev_col).value
                                     
+                                    # 가중치 가져오기
+                                    weight = 1.0
+                                    if weight_column:
+                                        weight_value = sheet.cell(row=row, column=weight_column).value
+                                        weight = self.schema_loader.get_weight_value(sheet_name, weight_value)
+                                    
                                     if current is not None and prev is not None and prev != 0:
                                         growth_rate = ((current / prev) - 1) * 100
+                                        # 가중치를 반영한 증감률 (순위용)
+                                        weighted_growth_rate = growth_rate * weight
                                         regions.append({
                                             'code': code_str,
                                             'name': mapped_name,  # 매핑된 이름 사용
                                             'row': row,
                                             'growth_rate': growth_rate,
+                                            'weighted_growth_rate': weighted_growth_rate,
+                                            'weight': weight,
                                             'current': current,
                                             'prev': prev
                                         })
@@ -128,6 +146,7 @@ class DataAnalyzer:
                                    current_col: int, prev_col: int) -> List[Dict[str, Any]]:
         """
         특정 지역의 산업별 증감률을 계산하여 반환
+        분류단계 2까지만 포함, 가중치 반영
         
         Args:
             sheet_name: 시트 이름
@@ -137,11 +156,16 @@ class DataAnalyzer:
             prev_col: 전년 동분기 열 번호
             
         Returns:
-            산업별 증감률 정보 리스트
+            산업별 증감률 정보 리스트 (가중치 반영)
         """
         sheet = self.excel_extractor.get_sheet(sheet_name)
         industries = []
         region_code = None
+        
+        # 가중치 설정 가져오기
+        weight_config = self.schema_loader.get_weight_config(sheet_name)
+        weight_column = weight_config.get('weight_column')
+        max_classification_level = weight_config.get('max_classification_level', 2)
         
         # 지역 코드 확인
         cell_a = sheet.cell(row=region_row, column=1)
@@ -189,15 +213,27 @@ class DataAnalyzer:
                 except (ValueError, TypeError):
                     classification_level = 0
                 
-                if classification_level >= 1:
+                # 분류단계 필터링: 1 이상이고 max_classification_level 이하인 경우만 포함
+                if classification_level >= 1 and classification_level <= max_classification_level:
                     current = sheet.cell(row=row, column=current_col).value
                     prev = sheet.cell(row=row, column=prev_col).value
                     
+                    # 가중치 가져오기
+                    weight = 1.0
+                    if weight_column:
+                        weight_value = sheet.cell(row=row, column=weight_column).value
+                        weight = self.schema_loader.get_weight_value(sheet_name, weight_value)
+                    
                     if current is not None and prev is not None and prev != 0:
                         growth_rate = ((current / prev) - 1) * 100
+                        # 가중치를 반영한 증감률 (순위용)
+                        weighted_growth_rate = growth_rate * weight
                         industries.append({
                             'name': str(cell_f.value).strip() if cell_f.value else '',
                             'growth_rate': growth_rate,
+                            'weighted_growth_rate': weighted_growth_rate,
+                            'weight': weight,
+                            'classification_level': classification_level,
                             'row': row,
                             'current': current,
                             'prev': prev
@@ -232,9 +268,10 @@ class DataAnalyzer:
         return industries
     
     def get_top_industries_for_region(self, sheet_name: str, region_name: str, region_row: int,
-                                      current_col: int, prev_col: int, top_n: int = 3) -> List[Dict]:
+                                      current_col: int, prev_col: int, top_n: int = 3,
+                                      use_weighted_ranking: bool = True) -> List[Dict]:
         """
-        특정 지역의 상위 N개 산업을 반환 (스크린샷 기준 정렬)
+        특정 지역의 상위 N개 산업을 반환 (가중치 기반 순위 지원)
         
         Args:
             sheet_name: 시트 이름
@@ -243,15 +280,20 @@ class DataAnalyzer:
             current_col: 현재 분기 열 번호
             prev_col: 전년 동분기 열 번호
             top_n: 상위 개수
+            use_weighted_ranking: 가중치 기반 순위 사용 여부 (기본값: True)
             
         Returns:
-            상위 산업 리스트 (스크린샷 기준 순서)
+            상위 산업 리스트 (가중치 반영 순위)
         """
         industries = self.get_industries_for_region(sheet_name, region_name, region_row, 
                                                     current_col, prev_col)
         
         if not industries:
             return []
+        
+        # 가중치 설정 확인
+        weight_config = self.schema_loader.get_weight_config(sheet_name)
+        should_use_weighted = use_weighted_ranking and weight_config.get('use_weighted_ranking', True)
         
         # 산업 이름 매핑을 위한 키워드 정의 (정확한 매칭)
         # 매칭 순서가 중요: 더 구체적인 키워드가 먼저
@@ -290,31 +332,47 @@ class DataAnalyzer:
                     categorized[category] = []
                 categorized[category].append(industry)
         
-        # 각 카테고리 내에서 우선순위 정렬
-        # 전국 지역의 경우: 특정 산업을 우선 선택
+        # 각 카테고리 내에서 정렬 (가중치 반영 여부에 따라)
         for category in categorized:
             if category == '반도체·전자부품' and region_name == '전국':
                 # '전자 부품, 컴퓨터'가 포함된 산업을 우선 선택
-                categorized[category].sort(key=lambda x: (
-                    '전자 부품, 컴퓨터' not in x['name'],  # '전자 부품, 컴퓨터' 포함이면 False (우선)
-                    -abs(x['growth_rate'])  # 그 다음 증감률 절대값 큰 순
-                ))
+                if should_use_weighted:
+                    categorized[category].sort(key=lambda x: (
+                        '전자 부품, 컴퓨터' not in x['name'],
+                        -abs(x.get('weighted_growth_rate', x['growth_rate']))
+                    ))
+                else:
+                    categorized[category].sort(key=lambda x: (
+                        '전자 부품, 컴퓨터' not in x['name'],
+                        -abs(x['growth_rate'])
+                    ))
             elif category == '의료·정밀' and region_name == '전국':
-                # '의료, 정밀, 광학 기기'가 포함된 산업을 우선 선택
-                categorized[category].sort(key=lambda x: (
-                    '의료, 정밀, 광학 기기' not in x['name'],  # '의료, 정밀, 광학 기기' 포함이면 False (우선)
-                    -abs(x['growth_rate'])  # 그 다음 증감률 절대값 큰 순
-                ))
+                if should_use_weighted:
+                    categorized[category].sort(key=lambda x: (
+                        '의료, 정밀, 광학 기기' not in x['name'],
+                        -abs(x.get('weighted_growth_rate', x['growth_rate']))
+                    ))
+                else:
+                    categorized[category].sort(key=lambda x: (
+                        '의료, 정밀, 광학 기기' not in x['name'],
+                        -abs(x['growth_rate'])
+                    ))
             else:
-                # 다른 카테고리는 증감률 절대값 기준 정렬
-                categorized[category].sort(key=lambda x: abs(x['growth_rate']), reverse=True)
+                # 다른 카테고리는 가중치 반영 증감률 절대값 기준 정렬
+                if should_use_weighted:
+                    categorized[category].sort(key=lambda x: abs(x.get('weighted_growth_rate', x['growth_rate'])), reverse=True)
+                else:
+                    categorized[category].sort(key=lambda x: abs(x['growth_rate']), reverse=True)
         
-        # 스크린샷 기준 순서
+        # 스크린샷 기준 순서 / 스키마 기반 우선순위
         result = []
         
-        # 지역별 우선순위 정의 (스크린샷 기준)
-        # 하위 시도는 감소율이 큰 산업 우선 (증감률 절대값 큰 순)
-        region_priorities = {
+        # 스키마에서 지역별 우선순위 가져오기
+        sheet_config = self.schema_loader.load_sheet_config(sheet_name)
+        region_priorities_from_schema = sheet_config.get('region_priorities', {})
+        
+        # 지역별 우선순위 정의 (스크린샷 기준 - 스키마가 없으면 기본값 사용)
+        default_region_priorities = {
             '전국': ['반도체·전자부품', '기타 운송장비', '의료·정밀'],
             '충북': ['반도체·전자부품', '전기장비', '의약품'],
             '경기': ['반도체·전자부품', '기타기계장비', '의료·정밀'],
@@ -324,7 +382,11 @@ class DataAnalyzer:
             '부산': ['금속', '기타 운송장비', '금속가공제품']
         }
         
-        priority_list = region_priorities.get(region_name, ['반도체·전자부품'])
+        # 스키마에 우선순위가 있으면 사용, 없으면 기본값 사용
+        if region_name in region_priorities_from_schema:
+            priority_list = region_priorities_from_schema[region_name]
+        else:
+            priority_list = default_region_priorities.get(region_name, ['반도체·전자부품'])
         
         # 우선순위에 따라 산업 추가 (각 카테고리에서 최대 1개씩)
         for priority in priority_list:
@@ -337,7 +399,6 @@ class DataAnalyzer:
                         break
         
         # 우선순위에 있는 산업만으로 부족한 경우에만 나머지 추가
-        # 하지만 우선순위에 있는 산업이 있으면 그것을 우선 선택
         if len(result) < top_n:
             # 우선순위에 없는 카테고리에서만 선택
             remaining = []
@@ -345,8 +406,11 @@ class DataAnalyzer:
                 if category not in priority_list:
                     remaining.extend(ind_list)
             
-            # 증감률 절대값 기준 정렬
-            remaining.sort(key=lambda x: abs(x['growth_rate']), reverse=True)
+            # 가중치 반영 증감률 절대값 기준 정렬
+            if should_use_weighted:
+                remaining.sort(key=lambda x: abs(x.get('weighted_growth_rate', x['growth_rate'])), reverse=True)
+            else:
+                remaining.sort(key=lambda x: abs(x['growth_rate']), reverse=True)
             
             for ind in remaining:
                 if ind not in result:
@@ -375,10 +439,9 @@ class DataAnalyzer:
             national_region = None
             sheet = self.excel_extractor.get_sheet(sheet_name)
             
-            # 시트별 설정에서 category_column 가져오기
-            from .template_filler import SHEET_CONFIG
-            config = SHEET_CONFIG.get(sheet_name, SHEET_CONFIG['default'])
-            category_col = config['category_column']
+            # 시트별 설정에서 category_column 가져오기 (스키마 로더 사용)
+            sheet_config = self.schema_loader.load_sheet_config(sheet_name)
+            category_col = sheet_config.get('category_column', 6)
             
             for row in range(4, min(1000, sheet.max_row + 1)):
                 cell_b = sheet.cell(row=row, column=2)

@@ -13,9 +13,9 @@
     "충남": ["반도체·전자부품", "전기장치", "전기·가스업"],
     "부산": ["금속", "기타 수송기기", "금속가공제품"]
   },
-  "weight_column": 3,
+  "weight_column": 4,
   "weight_default": null,
-  "classification_column": 2,
+  "classification_column": 3,
   "max_classification_level": 2,
   "use_weighted_ranking": true
 }
