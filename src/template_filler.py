@@ -988,6 +988,86 @@ class TemplateFiller:
                     return self.format_percentage(data['national_region']['growth_rate'], decimal_places=1)
                 return "N/A"
             # 실업률/고용률 시트는 아래 로직으로 처리 (계속 진행)
+        elif key == '전국_증감방향':
+            # 전국 증감률에 따라 "증가" 또는 "감소" 반환
+            if 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return self.get_growth_direction(growth_rate)
+            return "N/A"
+        elif key == '전국_변화표현':
+            # 전국 증감률에 따라 "늘어" 또는 "줄어" 반환
+            if 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return self.get_production_change_expression(growth_rate)
+            return "N/A"
+        elif key == '강조_시도수':
+            # 전국이 증가면 증가_시도수, 감소면 감소_시도수
+            if 'national_region' in data and data['national_region']:
+                national_growth = data['national_region']['growth_rate']
+                if national_growth >= 0:
+                    return self._process_marker_key(sheet_name, year, quarter, '증가_시도수')
+                else:
+                    return self._process_marker_key(sheet_name, year, quarter, '감소_시도수')
+            return "N/A"
+        elif key == '강조_증감방향':
+            # 전국이 증가면 "증가", 감소면 "감소"
+            if 'national_region' in data and data['national_region']:
+                growth_rate = data['national_region']['growth_rate']
+                return self.get_growth_direction(growth_rate)
+            return "N/A"
+        elif key.startswith('강조시도'):
+            # 강조시도N_이름, 강조시도N_증감률, 강조시도N_산업M_이름 등 처리
+            # 전국이 증가면 상위시도, 감소면 하위시도
+            emphasis_match = re.match(r'강조시도(\d+)_(.+)', key)
+            if emphasis_match:
+                idx = int(emphasis_match.group(1)) - 1  # 0-based
+                field = emphasis_match.group(2)
+                
+                # 전국 증감률에 따라 상위/하위 결정
+                if 'national_region' in data and data['national_region']:
+                    national_growth = data['national_region']['growth_rate']
+                    if national_growth >= 0:
+                        # 상위 시도 사용
+                        regions = data.get('top_regions', [])
+                    else:
+                        # 하위 시도 사용
+                        regions = data.get('bottom_regions', [])
+                    
+                    if idx < len(regions):
+                        region = regions[idx]
+                        
+                        if field == '이름':
+                            return region['name']
+                        elif field == '증감률':
+                            return self.format_percentage(region['growth_rate'], decimal_places=1)
+                        elif field.startswith('업태') or field.startswith('산업'):
+                            industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
+                            if industry_match:
+                                industry_idx = int(industry_match.group(2)) - 1
+                                industry_field = industry_match.group(3)
+                                
+                                categories = self._get_categories_for_region(
+                                    sheet_name, region['name'], year, quarter, top_n=3
+                                )
+                                if industry_idx < len(categories):
+                                    category = categories[industry_idx]
+                                    
+                                    if industry_field == '이름':
+                                        category_name = category['name']
+                                        config = self._get_sheet_config(sheet_name)
+                                        name_mapping = config.get('name_mapping', {})
+                                        mapped_name = name_mapping.get(category_name)
+                                        if not mapped_name:
+                                            for key_map, value_map in name_mapping.items():
+                                                if key_map in category_name or category_name in key_map:
+                                                    mapped_name = value_map
+                                                    break
+                                        return mapped_name if mapped_name else category_name
+                                    elif industry_field == '증감률':
+                                        return self.format_percentage(category['growth_rate'], decimal_places=1)
+                            return "N/A"
+                return "N/A"
+            return "N/A"
         elif key.startswith('전국_업태') or key.startswith('전국_산업'):
             # 전국 산업/업태 마커 처리 (일반화)
             industry_match = re.match(r'전국_(업태|산업)(\d+)_(.+)', key)
