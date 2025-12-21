@@ -7,21 +7,83 @@ import subprocess
 import time
 import sys
 import os
+import shutil
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 # 프로젝트 루트 디렉토리
 BASE_DIR = Path(__file__).parent
-OUTPUT_DIR = BASE_DIR / "demo_output"
-OUTPUT_DIR.mkdir(exist_ok=True)
+DEFAULT_OUTPUT_DIR = BASE_DIR / "demo_output"
 
 # Flask 서버 설정
 FLASK_HOST = "localhost"
 FLASK_PORT = 8000
 FLASK_URL = f"http://{FLASK_HOST}:{FLASK_PORT}"
 
-# 비디오 출력 경로
-VIDEO_OUTPUT = OUTPUT_DIR / "demo_video.mp4"
+
+def resolve_output_path(output_path, default_filename="demo_video.mp4"):
+    """
+    출력 경로를 해석합니다.
+    디렉토리면 기본 파일명을 추가하고, 파일이면 그대로 사용합니다.
+    """
+    output = Path(output_path)
+    
+    # 절대 경로로 변환
+    if not output.is_absolute():
+        output = BASE_DIR / output
+    
+    # 디렉토리인 경우 기본 파일명 추가
+    if output.suffix == '' or output.is_dir() or not output.suffix:
+        output = output / default_filename
+    
+    # 부모 디렉토리 생성
+    output.parent.mkdir(parents=True, exist_ok=True)
+    
+    return output
+
+
+def convert_webm_to_mp4(webm_path, mp4_path):
+    """
+    webm 파일을 mp4로 변환합니다.
+    ffmpeg가 설치되어 있으면 사용하고, 없으면 파일명만 변경합니다.
+    """
+    webm_path = Path(webm_path)
+    mp4_path = Path(mp4_path)
+    
+    if not webm_path.exists():
+        return False
+    
+    # ffmpeg가 설치되어 있는지 확인
+    ffmpeg_available = shutil.which('ffmpeg') is not None
+    
+    if ffmpeg_available:
+        try:
+            print(f"🔄 MP4로 변환 중... (ffmpeg 사용)")
+            subprocess.run(
+                ['ffmpeg', '-i', str(webm_path), '-c:v', 'libx264', '-c:a', 'aac', '-y', str(mp4_path)],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            # 원본 webm 파일 삭제
+            webm_path.unlink()
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ ffmpeg 변환 실패: {e}")
+            # 실패하면 파일명만 변경
+            shutil.move(str(webm_path), str(mp4_path))
+            return True
+        except Exception as e:
+            print(f"⚠️ 변환 중 오류 발생: {e}")
+            # 실패하면 파일명만 변경
+            shutil.move(str(webm_path), str(mp4_path))
+            return True
+    else:
+        # ffmpeg가 없으면 파일명만 변경 (실제로는 webm 형식이지만 확장자만 mp4)
+        print("⚠️ ffmpeg가 설치되어 있지 않습니다. 파일명만 변경합니다.")
+        print("   실제 MP4 변환을 원하시면 ffmpeg를 설치해주세요: https://ffmpeg.org/")
+        shutil.move(str(webm_path), str(mp4_path))
+        return True
 
 
 def start_flask_server():
@@ -71,9 +133,22 @@ def wait_for_element(page, selector, timeout=10000):
         return False
 
 
-def create_demo_video():
+def create_demo_video(output_path=None):
     """데모 비디오 생성"""
     flask_process = None
+    
+    # 출력 경로 설정
+    if output_path is None:
+        DEFAULT_OUTPUT_DIR.mkdir(exist_ok=True)
+        video_output = DEFAULT_OUTPUT_DIR / "demo_video.mp4"
+    else:
+        video_output = resolve_output_path(output_path, "demo_video.mp4")
+    
+    print(f"📹 비디오 저장 위치: {video_output}")
+    
+    # 임시 디렉토리 생성 (Playwright가 비디오를 여기에 먼저 저장)
+    temp_video_dir = video_output.parent / ".temp_video"
+    temp_video_dir.mkdir(parents=True, exist_ok=True)
     
     try:
         # Flask 서버 시작
@@ -92,7 +167,7 @@ def create_demo_video():
             # 컨텍스트 생성 (비디오 녹화 포함)
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
-                record_video_path=str(VIDEO_OUTPUT),
+                record_video_dir=str(temp_video_dir),
                 record_video_size={'width': 1920, 'height': 1080}
             )
             
@@ -172,9 +247,27 @@ def create_demo_video():
             context.close()
             browser.close()
             
-            print(f"\n✅ 데모 비디오가 생성되었습니다: {VIDEO_OUTPUT}")
-            if VIDEO_OUTPUT.exists():
-                print(f"   파일 크기: {VIDEO_OUTPUT.stat().st_size / (1024*1024):.2f} MB")
+            # Playwright가 생성한 비디오 파일을 찾아서 MP4로 변환
+            video_files = list(temp_video_dir.glob("*.webm"))
+            if video_files:
+                # 첫 번째 비디오 파일을 찾아서 MP4로 변환
+                temp_video = video_files[0]
+                convert_webm_to_mp4(temp_video, video_output)
+                print(f"\n✅ 데모 비디오가 생성되었습니다: {video_output}")
+                if video_output.exists():
+                    print(f"   파일 크기: {video_output.stat().st_size / (1024*1024):.2f} MB")
+            else:
+                print(f"\n⚠️ 비디오 파일을 찾을 수 없습니다. 임시 디렉토리를 확인하세요: {temp_video_dir}")
+            
+            # 임시 디렉토리 정리
+            try:
+                if temp_video_dir.exists():
+                    # 남은 파일이 있으면 삭제
+                    for file in temp_video_dir.iterdir():
+                        file.unlink()
+                    temp_video_dir.rmdir()
+            except:
+                pass  # 디렉토리 정리 실패는 무시
             
     except Exception as e:
         print(f"\n❌ 오류 발생: {e}")
@@ -186,9 +279,22 @@ def create_demo_video():
             stop_flask_server(flask_process)
 
 
-def create_advanced_demo():
+def create_advanced_demo(output_path=None):
     """고급 데모: 여러 템플릿 테스트"""
     flask_process = None
+    
+    # 출력 경로 설정
+    if output_path is None:
+        DEFAULT_OUTPUT_DIR.mkdir(exist_ok=True)
+        video_output = DEFAULT_OUTPUT_DIR / "advanced_demo.mp4"
+    else:
+        video_output = resolve_output_path(output_path, "advanced_demo.mp4")
+    
+    print(f"📹 비디오 저장 위치: {video_output}")
+    
+    # 임시 디렉토리 생성
+    temp_video_dir = video_output.parent / ".temp_video"
+    temp_video_dir.mkdir(parents=True, exist_ok=True)
     
     try:
         flask_process = start_flask_server()
@@ -200,7 +306,7 @@ def create_advanced_demo():
             browser = p.chromium.launch(headless=False, args=['--start-maximized'])
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
-                record_video_path=str(OUTPUT_DIR / "advanced_demo.mp4"),
+                record_video_dir=str(temp_video_dir),
                 record_video_size={'width': 1920, 'height': 1080}
             )
             
@@ -237,10 +343,25 @@ def create_advanced_demo():
             context.close()
             browser.close()
             
-            output_file = OUTPUT_DIR / "advanced_demo.mp4"
-            print(f"\n✅ 고급 데모 비디오 생성 완료: {output_file}")
-            if output_file.exists():
-                print(f"   파일 크기: {output_file.stat().st_size / (1024*1024):.2f} MB")
+            # Playwright가 생성한 비디오 파일을 찾아서 MP4로 변환
+            video_files = list(temp_video_dir.glob("*.webm"))
+            if video_files:
+                temp_video = video_files[0]
+                convert_webm_to_mp4(temp_video, video_output)
+                print(f"\n✅ 고급 데모 비디오 생성 완료: {video_output}")
+                if video_output.exists():
+                    print(f"   파일 크기: {video_output.stat().st_size / (1024*1024):.2f} MB")
+            else:
+                print(f"\n⚠️ 비디오 파일을 찾을 수 없습니다. 임시 디렉토리를 확인하세요: {temp_video_dir}")
+            
+            # 임시 디렉토리 정리
+            try:
+                if temp_video_dir.exists():
+                    for file in temp_video_dir.iterdir():
+                        file.unlink()
+                    temp_video_dir.rmdir()
+            except:
+                pass
             
     except Exception as e:
         print(f"\n❌ 오류 발생: {e}")
@@ -257,6 +378,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='웹 애플리케이션 데모 비디오 생성')
     parser.add_argument('--advanced', action='store_true', help='고급 데모 (여러 템플릿 테스트)')
     parser.add_argument('--headless', action='store_true', help='헤드리스 모드 (비디오만 녹화)')
+    parser.add_argument('--output', '-o', type=str, default=None, 
+                       help='비디오 저장 경로 (파일 또는 디렉토리). 지정하지 않으면 demo_output/ 폴더에 저장됩니다.')
     
     args = parser.parse_args()
     
@@ -265,9 +388,9 @@ if __name__ == '__main__':
     print("=" * 60)
     
     if args.advanced:
-        create_advanced_demo()
+        create_advanced_demo(args.output)
     else:
-        create_demo_video()
+        create_demo_video(args.output)
     
     print("\n" + "=" * 60)
     print("✨ 완료!")

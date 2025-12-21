@@ -129,7 +129,24 @@ pip install -r requirements.txt
 
 ### 사용 방법
 
-1. **기본 데모 비디오 생성**:
+#### 배쉬 스크립트 사용 (권장)
+
+대화형으로 저장 위치와 파일명을 입력받는 배쉬 스크립트를 사용할 수 있습니다:
+
+```bash
+./create_demo.sh
+```
+
+스크립트 실행 시:
+1. 저장 위치를 입력받습니다 (Enter: 기본값 `~/Desktop`)
+2. 파일명을 입력받습니다 (Enter: 기본값 `demo_video_YYYY-MM-DD_HH-MM-SS.mp4` - 날짜와 시간 자동 포함)
+3. 고급 데모 실행 여부를 확인합니다 (y/N)
+
+모든 입력에서 Enter만 누르면 기본값이 사용됩니다. 기본 저장 위치는 `~/Desktop`이며, 파일명에는 현재 날짜와 시간이 자동으로 포함됩니다.
+
+#### Python 스크립트 직접 사용
+
+1. **기본 데모 비디오 생성** (기본 위치: `demo_output/demo_video.mp4`):
 ```bash
 python create_demo_video.py
 ```
@@ -139,9 +156,28 @@ python create_demo_video.py
 python create_demo_video.py --advanced
 ```
 
-생성된 비디오는 `demo_output/` 폴더에 저장됩니다.
+3. **저장 위치 지정**:
+```bash
+# 특정 디렉토리에 저장
+python create_demo_video.py --output /path/to/my_videos
 
-**참고**: 데모 비디오 생성 중에는 Flask 서버가 자동으로 시작되고 종료됩니다. 이미 서버가 실행 중인 경우 포트 충돌이 발생할 수 있으니, 먼저 실행 중인 서버를 종료해주세요.
+# 특정 파일 경로로 저장
+python create_demo_video.py --output /path/to/my_videos/custom_name.mp4
+
+# 상대 경로 사용
+python create_demo_video.py --output ./videos/my_demo.mp4
+```
+
+### 비디오 형식
+
+- 생성된 비디오는 **MP4 형식**으로 저장됩니다.
+- Playwright가 생성하는 WebM 파일을 자동으로 MP4로 변환합니다.
+- **ffmpeg**가 설치되어 있으면 실제 MP4 변환이 수행되고, 없으면 파일명만 변경됩니다.
+- ffmpeg 설치: https://ffmpeg.org/
+
+**참고**: 
+- 데모 비디오 생성 중에는 Flask 서버가 자동으로 시작되고 종료됩니다. 이미 서버가 실행 중인 경우 포트 충돌이 발생할 수 있으니, 먼저 실행 중인 서버를 종료해주세요.
+- 비디오는 1920x1080 해상도로 녹화됩니다.
 
 ## 예시
 
