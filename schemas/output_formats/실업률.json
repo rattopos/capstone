@@ -6,6 +6,17 @@
   "display_name": "실업률",
   "template_file": "실업률.html",
   
+  "calculation": {
+    "enabled": true,
+    "type": "rate",
+    "formula": "(numerator / denominator) * 100",
+    "description": "실업률 = (실업자수 ÷ 경제활동인구) × 100",
+    "numerator_source": "실업자수",
+    "denominator_source": "경제활동인구",
+    "age_group_based": true,
+    "age_groups": ["15~29세", "30~59세", "60세이상", "계"]
+  },
+  
   "data_type": {
     "unit": "%",
     "change_unit": "%p",

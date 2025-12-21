@@ -2,9 +2,20 @@
   "_comment": "고용률 출력 형식 스키마",
   
   "template_type": "employment",
-  "sheet_name": "고용률",
+  "sheet_name": "고용",
   "display_name": "고용률",
   "template_file": "고용률.html",
+  
+  "calculation": {
+    "enabled": true,
+    "type": "rate",
+    "formula": "(numerator / denominator) * 100",
+    "description": "고용률 = (취업자수 ÷ 15세 이상 인구 수) × 100",
+    "numerator_source": "취업자수",
+    "denominator_source": "15세 이상 인구 수",
+    "age_group_based": true,
+    "age_groups": ["15~29세", "30~59세", "60세이상", "계"]
+  },
   
   "data_type": {
     "unit": "%",
