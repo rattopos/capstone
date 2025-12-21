@@ -23,6 +23,7 @@ from src.template_generator import TemplateGenerator
 from src.excel_header_parser import ExcelHeaderParser
 from src.flexible_mapper import FlexibleMapper
 from src.pdf_generator import PDFGenerator
+from src.docx_generator import DOCXGenerator
 from src.schema_loader import SchemaLoader
 from bs4 import BeautifulSoup
 
@@ -186,6 +187,62 @@ def get_template_sheets():
         return jsonify({
             'error': f'템플릿 분석 중 오류가 발생했습니다: {str(e)}'
         }), 500
+
+
+@app.route('/api/check-missing-values', methods=['POST'])
+def check_missing_values():
+    """결측치 확인 API"""
+    try:
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다.'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            excel_path = upload_folder / excel_filename
+            excel_file.save(str(excel_path))
+        else:
+            excel_path = DEFAULT_EXCEL_FILE
+        
+        template_name = request.form.get('template_name', '')
+        year_str = request.form.get('year', '')
+        quarter_str = request.form.get('quarter', '')
+        
+        if not template_name or not year_str or not quarter_str:
+            return jsonify({'error': '템플릿, 연도, 분기를 모두 입력해주세요.'}), 400
+        
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 엑셀 추출기 초기화
+        excel_extractor = ExcelExtractor(str(excel_path))
+        excel_extractor.load_workbook()
+        
+        # 템플릿 관리자 초기화
+        template_path = Path('templates') / template_name
+        template_manager = TemplateManager(str(template_path))
+        template_manager.load_template()
+        
+        # 결측치 확인 (간단한 버전 - 실제로는 더 복잡한 로직 필요)
+        missing_values = []
+        # 여기에 결측치 확인 로직 추가 가능
+        
+        excel_extractor.close()
+        
+        return jsonify({
+            'success': True,
+            'missing_values': missing_values,
+            'has_missing': len(missing_values) > 0
+        })
+    except Exception as e:
+        return jsonify({'error': f'결측치 확인 중 오류: {str(e)}'}), 500
 
 
 @app.route('/api/process', methods=['POST'])
@@ -837,6 +894,87 @@ def generate_pdf():
         
         # PDF 생성
         success, result = pdf_generator.generate_pdf(
+            excel_path=str(excel_path),
+            year=year,
+            quarter=quarter,
+            templates_dir='templates'
+        )
+        
+        # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)
+        if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
+            try:
+                excel_path.unlink()
+            except Exception:
+                pass  # 파일 삭제 실패는 무시
+        
+        if success:
+            return jsonify(result)
+        else:
+            return jsonify({'error': result}), 500
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/generate-docx', methods=['POST'])
+def generate_docx():
+    """10개 템플릿을 순서대로 처리하여 DOCX 생성"""
+    try:
+        # 엑셀 파일 처리: 업로드된 파일이 있으면 사용, 없으면 기본 파일 사용
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        use_default_file = False
+        
+        if excel_file and excel_file.filename:
+            # 업로드된 파일이 있는 경우
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+            
+            # 엑셀 파일 저장
+            excel_filename = secure_filename(excel_file.filename)
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            # 업로드 폴더가 존재하는지 확인하고 없으면 생성
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
+            excel_file.save(str(excel_path))
+            
+            # 파일이 제대로 저장되었는지 확인
+            if not excel_path.exists():
+                return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
+        else:
+            # 기본 엑셀 파일 사용
+            if not DEFAULT_EXCEL_FILE.exists():
+                return jsonify({'error': f'기본 엑셀 파일을 찾을 수 없습니다: {DEFAULT_EXCEL_FILE.name}'}), 400
+            
+            excel_path = DEFAULT_EXCEL_FILE
+            use_default_file = True
+        
+        # 연도 및 분기 파라미터 가져오기
+        year_str = request.form.get('year', '')
+        quarter_str = request.form.get('quarter', '')
+        
+        if not year_str or not quarter_str:
+            return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
+        
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # DOCX 생성기 초기화
+        docx_generator = DOCXGenerator(app.config['OUTPUT_FOLDER'])
+        
+        # DOCX 생성 라이브러리 확인
+        is_available, error_msg = docx_generator.check_docx_generator_available()
+        if not is_available:
+            return jsonify({'error': error_msg}), 500
+        
+        # DOCX 생성
+        success, result = docx_generator.generate_docx(
             excel_path=str(excel_path),
             year=year,
             quarter=quarter,

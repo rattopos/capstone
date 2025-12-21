@@ -60,18 +60,11 @@ Thumbs.db
 
 # Project specific - Generated output files
 output/
+demo_output/
 # templates/ 폴더의 HTML 파일은 소스 코드이므로 포함됨
 
-# Project specific - Data files (사용자가 직접 제공해야 할 수도 있음)
-*.xlsx
-*.xls
-*.pdf
-*.png
-*.jpg
-*.jpeg
-# correct_answer 폴더는 예외로 포함
-!correct_answer/
-!correct_answer/**/*.png
+# Project specific - Data files
+# 문서 파일 및 이미지 파일은 Git으로 관리됨
 
 # Testing
 .pytest_cache/

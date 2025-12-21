@@ -111,6 +111,38 @@ capstone/
 python src/test_basic.py
 ```
 
+## 데모 비디오 생성
+
+웹 애플리케이션의 주요 기능을 자동으로 실행하고 녹화하는 데모 비디오를 생성할 수 있습니다.
+
+### 준비 사항
+
+1. Playwright 브라우저 설치:
+```bash
+playwright install chromium
+```
+
+2. 필요한 패키지 설치:
+```bash
+pip install -r requirements.txt
+```
+
+### 사용 방법
+
+1. **기본 데모 비디오 생성**:
+```bash
+python create_demo_video.py
+```
+
+2. **고급 데모 (여러 템플릿 테스트)**:
+```bash
+python create_demo_video.py --advanced
+```
+
+생성된 비디오는 `demo_output/` 폴더에 저장됩니다.
+
+**참고**: 데모 비디오 생성 중에는 Flask 서버가 자동으로 시작되고 종료됩니다. 이미 서버가 실행 중인 경우 포트 충돌이 발생할 수 있으니, 먼저 실행 중인 서버를 종료해주세요.
+
 ## 예시
 
 템플릿 파일 예시 (`templates/sample_template.html` 참조):

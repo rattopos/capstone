@@ -5,6 +5,8 @@ let selectedTemplate = null;
 let templatesList = [];
 let selectedPdfExcelFile = null;
 let currentPdfFilename = null;
+let selectedDocxExcelFile = null;
+let currentDocxFilename = null;
 
 // 토스트 알림 시스템
 function showToast(message, type = 'info', duration = 5000) {
@@ -41,15 +43,172 @@ function showToast(message, type = 'info', duration = 5000) {
     }
 }
 
-// 진행률 표시
-function showProgress(percentage) {
+// 진행률 추적 변수
+let progressTracker = {
+    startTime: null,
+    currentStep: 0,
+    stepStartTime: null,
+    stepProgress: 0,
+    stepTimes: {}, // 각 단계의 시작 시간 기록
+    stepEndTimes: {}, // 각 단계의 종료 시간 기록
+    estimatedTimes: {
+        0: 2,  // 파일 준비: 2초
+        1: 8,  // 데이터 분석: 8초
+        2: 12, // 템플릿 채우기: 12초
+        3: null // 결과 생성: 예상 시간 없음 (시스템별로 다름)
+    },
+    stepNames: {
+        0: '파일 준비',
+        1: '데이터 분석',
+        2: '템플릿 채우기',
+        3: '결과 생성'
+    }
+};
+
+// 진행률 표시 (개선된 버전)
+function showProgress(percentage, text = null, step = null, subStep = null) {
     const container = document.getElementById('progressContainer');
     const bar = document.getElementById('progressBar');
+    const header = container?.querySelector('.progress-header');
+    const textEl = document.getElementById('progressText');
+    const percentageEl = document.getElementById('progressPercentage');
+    const stepsEl = document.getElementById('progressSteps');
     
     if (container && bar) {
         container.classList.add('active');
-        bar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+        bar.style.setProperty('--progress-width', `${Math.min(100, Math.max(0, percentage))}%`);
+        
+        if (header) header.style.display = 'flex';
+        
+        // 상세 텍스트 구성
+        let displayText = text || '처리 중...';
+        if (subStep) {
+            displayText += ` - ${subStep}`;
+        }
+        if (textEl) textEl.textContent = displayText;
+        
+        if (percentageEl) percentageEl.textContent = `${Math.round(percentage)}%`;
+        if (stepsEl) stepsEl.style.display = 'flex';
+        
+        // 단계 업데이트
+        if (step !== null) {
+            // 단계 시작 시간 기록
+            if (!progressTracker.stepTimes[step]) {
+                progressTracker.stepTimes[step] = Date.now();
+            }
+            updateProgressSteps(step, subStep);
+        }
     }
+}
+
+// 시간 포맷팅 (초 -> "N초" 또는 "N분 N초")
+function formatSeconds(seconds) {
+    if (seconds < 60) {
+        return `${seconds}초`;
+    } else {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}분 ${secs}초`;
+    }
+}
+
+function updateProgressSteps(activeStep, subStep = null) {
+    const steps = ['progressStep1', 'progressStep2', 'progressStep3', 'progressStep4'];
+    const stepLabels = [
+        '파일 업로드 및 검증',
+        '데이터 분석',
+        '템플릿 채우기',
+        '결과 생성'
+    ];
+    
+    // 이전 단계가 완료되었을 때 종료 시간 기록
+    if (progressTracker.currentStep < activeStep) {
+        // 이전 단계의 종료 시간 기록
+        for (let i = 0; i < activeStep; i++) {
+            if (progressTracker.stepTimes[i] && !progressTracker.stepEndTimes[i]) {
+                progressTracker.stepEndTimes[i] = Date.now();
+            }
+        }
+        progressTracker.currentStep = activeStep;
+    }
+    
+    steps.forEach((stepId, index) => {
+        const stepEl = document.getElementById(stepId);
+        if (stepEl) {
+            stepEl.classList.remove('active', 'completed');
+            
+            let stepText = stepLabels[index];
+            let timeInfo = '';
+            
+            if (index < activeStep) {
+                // 완료된 단계: 실제 소요 시간 표시 (종료 시간이 기록되어 있으면 사용)
+                stepEl.classList.add('completed');
+                stepText = '✓ ' + stepText;
+                
+                const estimatedTime = progressTracker.estimatedTimes[index];
+                const stepStartTime = progressTracker.stepTimes[index];
+                const stepEndTime = progressTracker.stepEndTimes[index];
+                
+                if (stepStartTime) {
+                    // 종료 시간이 있으면 종료 시간 기준으로 계산
+                    if (stepEndTime) {
+                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
+                        } else {
+                            timeInfo = ` (실제: ${actualTime}초)`;
+                        }
+                    } else {
+                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초)`;
+                        }
+                    }
+                } else if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                }
+            } else if (index === activeStep) {
+                // 진행 중인 단계
+                stepEl.classList.add('active');
+                stepText = '⏳ ' + stepText;
+                
+                // 서브 단계 정보 추가
+                if (subStep) {
+                    stepText += ` - ${subStep}`;
+                }
+                
+                const estimatedTime = progressTracker.estimatedTimes[index];
+                const stepStartTime = progressTracker.stepTimes[index];
+                
+                if (index === 3) {
+                    // 결과 생성 단계: 예상 시간 대신 안내 문구
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                } else if (estimatedTime !== null) {
+                    // 예상 시간 표시
+                    timeInfo = ` (예상: ${estimatedTime}초`;
+                    
+                    // 실제 소요 시간도 표시 (1초 이상 경과한 경우)
+                    if (stepStartTime) {
+                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                        if (elapsed > 0) {
+                            timeInfo += `, 경과: ${elapsed}초`;
+                        }
+                    }
+                    timeInfo += ')';
+                }
+            } else {
+                // 아직 시작하지 않은 단계: 예상 시간만 표시
+                const estimatedTime = progressTracker.estimatedTimes[index];
+                if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                } else if (index === 3) {
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                }
+            }
+            
+            stepEl.textContent = stepText + timeInfo;
+        }
+    });
 }
 
 function hideProgress() {
@@ -58,9 +217,20 @@ function hideProgress() {
         container.classList.remove('active');
         setTimeout(() => {
             const bar = document.getElementById('progressBar');
-            if (bar) bar.style.width = '0%';
+            if (bar) bar.style.setProperty('--progress-width', '0%');
+            const header = container.querySelector('.progress-header');
+            if (header) header.style.display = 'none';
+            const stepsEl = document.getElementById('progressSteps');
+            if (stepsEl) stepsEl.style.display = 'none';
         }, 300);
     }
+    
+    // 진행률 추적 초기화
+    progressTracker.startTime = null;
+    progressTracker.currentStep = 0;
+    progressTracker.stepProgress = 0;
+    progressTracker.stepTimes = {};
+    progressTracker.stepEndTimes = {};
 }
 
 // DOM 로드 완료 시 초기화
@@ -78,6 +248,8 @@ function initializeApp() {
     setupTabNavigation();
     setupPdfFileUpload();
     setupPdfGenerateButton();
+    setupDocxFileUpload();
+    setupDocxGenerateButton();
     setupCompareButtons();
 }
 
@@ -401,7 +573,42 @@ async function handleProcess() {
     
     hideError();
     hideResult();
-    showProgress(10);
+    
+    // 진행률 추적 초기화
+    progressTracker.startTime = Date.now();
+    progressTracker.currentStep = 0;
+    progressTracker.stepProgress = 0;
+    
+    // 단계별 진행률 시뮬레이션
+    const progressSteps = [
+        { percentage: 5, text: '파일 준비 중...', step: 0, subStep: '파일 검증' },
+        { percentage: 10, text: '파일 준비 중...', step: 0, subStep: '파일 로드' },
+        { percentage: 15, text: '데이터 분석 중...', step: 1, subStep: '엑셀 파일 열기' },
+        { percentage: 25, text: '데이터 분석 중...', step: 1, subStep: '시트 목록 확인' },
+        { percentage: 35, text: '데이터 분석 중...', step: 1, subStep: '연도/분기 감지' },
+        { percentage: 45, text: '데이터 분석 중...', step: 1, subStep: '필요한 시트 매핑' },
+        { percentage: 55, text: '템플릿 채우는 중...', step: 2, subStep: '템플릿 로드' },
+        { percentage: 65, text: '템플릿 채우는 중...', step: 2, subStep: '마커 추출' },
+        { percentage: 75, text: '템플릿 채우는 중...', step: 2, subStep: '데이터 추출 및 치환' },
+        { percentage: 85, text: '템플릿 채우는 중...', step: 2, subStep: '포맷팅 처리' },
+        { percentage: 90, text: '결과 생성 중...', step: 3, subStep: '파일 저장' },
+        { percentage: 95, text: '결과 생성 중...', step: 3, subStep: '최종 검증' },
+        { percentage: 100, text: '완료!', step: 3, subStep: null }
+    ];
+    
+    let currentStepIndex = 0;
+    
+    // 진행률 업데이트 함수
+    const updateProgress = () => {
+        if (currentStepIndex < progressSteps.length) {
+            const step = progressSteps[currentStepIndex];
+            showProgress(step.percentage, step.text, step.step, step.subStep);
+            currentStepIndex++;
+        }
+    };
+    
+    // 초기 진행률 표시
+    showProgress(5, '파일 준비 중...', 0, '시작');
     if (selectedExcelFile) {
         showToast('파일을 업로드하고 처리 중입니다...', 'info', 2000);
     } else {
@@ -411,7 +618,6 @@ async function handleProcess() {
     try {
         // FormData 생성
         const formData = new FormData();
-        // 엑셀 파일이 선택된 경우에만 추가 (없으면 서버에서 기본 파일 사용)
         if (selectedExcelFile) {
             formData.append('excel_file', selectedExcelFile);
         }
@@ -419,23 +625,39 @@ async function handleProcess() {
         formData.append('year', year);
         formData.append('quarter', quarter);
 
-        // 진행률 업데이트
-        showProgress(30);
+        // 진행률 시뮬레이션 시작 (비동기로 진행)
+        const progressInterval = setInterval(() => {
+            if (currentStepIndex < progressSteps.length - 1) {
+                updateProgress();
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 800); // 0.8초마다 업데이트
         
         // API 호출
         const response = await fetch('/api/process', {
             method: 'POST',
             body: formData
         });
+
+        // 진행률 시뮬레이션 중지
+        clearInterval(progressInterval);
         
-        showProgress(60);
+        // 마지막 단계로 진행
+        showProgress(85, '템플릿 채우는 중...', 2, '데이터 처리 완료');
 
         const data = await response.json();
-        showProgress(90);
+        
+        // 결측치가 있는 경우 처리
+        if (data.missing_values && data.missing_values.length > 0) {
+            await handleMissingValues(data.missing_values, formData);
+        }
+        
+        showProgress(95, '결과 생성 중...', 3, '최종 처리');
 
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
-            showProgress(100);
+            showProgress(100, '완료!', 3, null);
             setTimeout(() => {
                 hideProgress();
                 showResult(data.message);
@@ -703,21 +925,36 @@ function showSuccess(message) {
 function setupTabNavigation() {
     const htmlTabBtn = document.getElementById('htmlTabBtn');
     const pdfTabBtn = document.getElementById('pdfTabBtn');
+    const docxTabBtn = document.getElementById('docxTabBtn');
     const htmlTab = document.getElementById('html-tab');
     const pdfTab = document.getElementById('pdf-tab');
+    const docxTab = document.getElementById('docx-tab');
     
     htmlTabBtn.addEventListener('click', () => {
         htmlTabBtn.classList.add('active');
         pdfTabBtn.classList.remove('active');
+        docxTabBtn.classList.remove('active');
         htmlTab.classList.add('active');
         pdfTab.classList.remove('active');
+        docxTab.classList.remove('active');
     });
     
     pdfTabBtn.addEventListener('click', () => {
         pdfTabBtn.classList.add('active');
         htmlTabBtn.classList.remove('active');
+        docxTabBtn.classList.remove('active');
         pdfTab.classList.add('active');
         htmlTab.classList.remove('active');
+        docxTab.classList.remove('active');
+    });
+    
+    docxTabBtn.addEventListener('click', () => {
+        docxTabBtn.classList.add('active');
+        htmlTabBtn.classList.remove('active');
+        pdfTabBtn.classList.remove('active');
+        docxTab.classList.add('active');
+        htmlTab.classList.remove('active');
+        pdfTab.classList.remove('active');
     });
 }
 
@@ -838,7 +1075,41 @@ async function handlePdfGenerate() {
     
     hidePdfError();
     hidePdfResult();
-    showPdfProgress(10);
+    
+    // PDF 진행률 추적 초기화
+    pdfProgressTracker.startTime = Date.now();
+    pdfProgressTracker.currentTemplate = 0;
+    
+    // PDF 생성 단계별 진행률 시뮬레이션
+    const pdfProgressSteps = [
+        { percentage: 5, text: '파일 준비 중...', templateIndex: 0, subStep: '파일 검증' },
+        { percentage: 10, text: '파일 준비 중...', templateIndex: 0, subStep: '파일 로드' },
+        { percentage: 15, text: '템플릿 처리 중...', templateIndex: 0, subStep: '템플릿 목록 확인' },
+        { percentage: 20, text: '템플릿 처리 중...', templateIndex: 1, subStep: '템플릿 1/10 처리' },
+        { percentage: 30, text: '템플릿 처리 중...', templateIndex: 3, subStep: '템플릿 3/10 처리' },
+        { percentage: 40, text: '템플릿 처리 중...', templateIndex: 5, subStep: '템플릿 5/10 처리' },
+        { percentage: 50, text: '템플릿 처리 중...', templateIndex: 7, subStep: '템플릿 7/10 처리' },
+        { percentage: 60, text: '템플릿 처리 중...', templateIndex: 9, subStep: '템플릿 9/10 처리' },
+        { percentage: 70, text: '템플릿 처리 중...', templateIndex: 10, subStep: '템플릿 처리 완료' },
+        { percentage: 80, text: 'PDF 생성 중...', templateIndex: 10, subStep: 'HTML 변환' },
+        { percentage: 90, text: 'PDF 생성 중...', templateIndex: 10, subStep: 'PDF 렌더링' },
+        { percentage: 95, text: 'PDF 생성 중...', templateIndex: 10, subStep: '최종 검증' },
+        { percentage: 100, text: '완료!', templateIndex: 10, subStep: null }
+    ];
+    
+    let currentPdfStepIndex = 0;
+    
+    // 진행률 업데이트 함수
+    const updatePdfProgress = () => {
+        if (currentPdfStepIndex < pdfProgressSteps.length) {
+            const step = pdfProgressSteps[currentPdfStepIndex];
+            showPdfProgress(step.percentage, step.text, step.templateIndex, step.subStep);
+            currentPdfStepIndex++;
+        }
+    };
+    
+    // 초기 진행률 표시
+    showPdfProgress(5, '파일 준비 중...', 0, '시작');
     if (selectedPdfExcelFile) {
         showToast('파일을 업로드하고 PDF를 생성 중입니다...', 'info', 2000);
     } else {
@@ -848,15 +1119,20 @@ async function handlePdfGenerate() {
     try {
         // FormData 생성
         const formData = new FormData();
-        // 엑셀 파일이 선택된 경우에만 추가 (없으면 서버에서 기본 파일 사용)
         if (selectedPdfExcelFile) {
             formData.append('excel_file', selectedPdfExcelFile);
         }
         formData.append('year', year);
         formData.append('quarter', quarter);
         
-        // 진행률 업데이트
-        showPdfProgress(30);
+        // 진행률 시뮬레이션 시작 (비동기로 진행)
+        const pdfProgressInterval = setInterval(() => {
+            if (currentPdfStepIndex < pdfProgressSteps.length - 1) {
+                updatePdfProgress();
+            } else {
+                clearInterval(pdfProgressInterval);
+            }
+        }, 1200); // 1.2초마다 업데이트
         
         // API 호출
         const response = await fetch('/api/generate-pdf', {
@@ -864,14 +1140,18 @@ async function handlePdfGenerate() {
             body: formData
         });
         
-        showPdfProgress(60);
+        // 진행률 시뮬레이션 중지
+        clearInterval(pdfProgressInterval);
+        
+        // 마지막 단계로 진행
+        showPdfProgress(85, 'PDF 생성 중...', 10, '데이터 처리 완료');
         
         const data = await response.json();
-        showPdfProgress(90);
+        showPdfProgress(95, 'PDF 생성 중...', 10, '최종 처리');
         
         if (response.ok && data.success) {
             currentPdfFilename = data.output_filename;
-            showPdfProgress(100);
+            showPdfProgress(100, '완료!', 10, null);
             setTimeout(() => {
                 hidePdfProgress();
                 showPdfResult(data.message);
@@ -903,15 +1183,163 @@ async function handlePdfGenerate() {
     }
 }
 
-// PDF 진행률 표시
-function showPdfProgress(percentage) {
+// PDF 진행률 추적 변수
+let pdfProgressTracker = {
+    startTime: null,
+    currentTemplate: 0,
+    totalTemplates: 10,
+    stepTimes: {}, // 각 단계의 시작 시간 기록
+    stepEndTimes: {}, // 각 단계의 종료 시간 기록
+    estimatedTimes: {
+        0: 2,  // 파일 준비: 2초
+        1: 30, // 템플릿 처리: 30초 (10개 템플릿)
+        2: null // PDF 생성: 예상 시간 없음 (시스템별로 다름)
+    }
+};
+
+// PDF 진행률 표시 (개선된 버전)
+function showPdfProgress(percentage, text = null, templateIndex = null, subStep = null) {
     const container = document.getElementById('pdfProgressContainer');
     const bar = document.getElementById('pdfProgressBar');
+    const header = container?.querySelector('.progress-header');
+    const textEl = document.getElementById('pdfProgressText');
+    const percentageEl = document.getElementById('pdfProgressPercentage');
+    const stepsEl = document.getElementById('pdfProgressSteps');
     
     if (container && bar) {
         container.classList.add('active');
-        bar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+        bar.style.setProperty('--progress-width', `${Math.min(100, Math.max(0, percentage))}%`);
+        
+        if (header) header.style.display = 'flex';
+        
+        // 상세 텍스트 구성
+        let displayText = text || '처리 중...';
+        if (subStep) {
+            displayText += ` - ${subStep}`;
+        }
+        if (textEl) textEl.textContent = displayText;
+        
+        if (percentageEl) percentageEl.textContent = `${Math.round(percentage)}%`;
+        if (stepsEl) stepsEl.style.display = 'flex';
+        
+        // 단계별 시간 정보 업데이트
+        updatePdfProgressSteps(templateIndex, subStep, percentage);
     }
+}
+
+// PDF 진행 단계 업데이트
+function updatePdfProgressSteps(templateIndex, subStep, percentage) {
+    const steps = ['pdfProgressStep1', 'pdfProgressStep2', 'pdfProgressStep3'];
+    const stepLabels = [
+        '파일 업로드 및 검증',
+        '템플릿 처리 중',
+        'PDF 생성'
+    ];
+    
+    // 현재 단계 판단
+    let currentStep = 0;
+    if (percentage >= 70) {
+        currentStep = 2; // PDF 생성
+    } else if (percentage >= 15) {
+        currentStep = 1; // 템플릿 처리
+    } else {
+        currentStep = 0; // 파일 준비
+    }
+    
+    // 단계 시작 시간 기록
+    if (!pdfProgressTracker.stepTimes[currentStep]) {
+        pdfProgressTracker.stepTimes[currentStep] = Date.now();
+    }
+    
+    // 이전 단계가 완료되었을 때 종료 시간 기록
+    if (pdfProgressTracker.currentTemplate < currentStep) {
+        // 이전 단계의 종료 시간 기록
+        for (let i = 0; i < currentStep; i++) {
+            if (pdfProgressTracker.stepTimes[i] && !pdfProgressTracker.stepEndTimes[i]) {
+                pdfProgressTracker.stepEndTimes[i] = Date.now();
+            }
+        }
+        pdfProgressTracker.currentTemplate = currentStep;
+    }
+    
+    steps.forEach((stepId, index) => {
+        const stepEl = document.getElementById(stepId);
+        if (stepEl) {
+            stepEl.classList.remove('active', 'completed');
+            
+            let stepText = stepLabels[index];
+            let timeInfo = '';
+            
+            if (index < currentStep) {
+                // 완료된 단계
+                stepEl.classList.add('completed');
+                stepText = '✓ ' + stepText;
+                
+                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
+                const stepStartTime = pdfProgressTracker.stepTimes[index];
+                const stepEndTime = pdfProgressTracker.stepEndTimes[index];
+                
+                if (stepStartTime) {
+                    // 종료 시간이 있으면 종료 시간 기준으로 계산
+                    if (stepEndTime) {
+                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
+                        } else {
+                            timeInfo = ` (실제: ${actualTime}초)`;
+                        }
+                    } else {
+                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초)`;
+                        }
+                    }
+                } else if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                }
+            } else if (index === currentStep) {
+                // 진행 중인 단계
+                stepEl.classList.add('active');
+                stepText = '⏳ ' + stepText;
+                
+                if (index === 1 && templateIndex !== null) {
+                    stepText += ` (${templateIndex}/10)`;
+                    if (subStep) {
+                        stepText += ` - ${subStep}`;
+                    }
+                } else if (subStep) {
+                    stepText += ` - ${subStep}`;
+                }
+                
+                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
+                const stepStartTime = pdfProgressTracker.stepTimes[index];
+                
+                if (index === 2) {
+                    // PDF 생성 단계: 예상 시간 대신 안내 문구
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                } else if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초`;
+                    if (stepStartTime) {
+                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                        if (elapsed > 0) {
+                            timeInfo += `, 경과: ${elapsed}초`;
+                        }
+                    }
+                    timeInfo += ')';
+                }
+            } else {
+                // 아직 시작하지 않은 단계
+                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
+                if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                } else if (index === 2) {
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                }
+            }
+            
+            stepEl.textContent = stepText + timeInfo;
+        }
+    });
 }
 
 function hidePdfProgress() {
@@ -920,9 +1348,19 @@ function hidePdfProgress() {
         container.classList.remove('active');
         setTimeout(() => {
             const bar = document.getElementById('pdfProgressBar');
-            if (bar) bar.style.width = '0%';
+            if (bar) bar.style.setProperty('--progress-width', '0%');
+            const header = container.querySelector('.progress-header');
+            if (header) header.style.display = 'none';
+            const stepsEl = document.getElementById('pdfProgressSteps');
+            if (stepsEl) stepsEl.style.display = 'none';
         }, 300);
     }
+    
+    // 진행률 추적 초기화
+    pdfProgressTracker.startTime = null;
+    pdfProgressTracker.currentTemplate = 0;
+    pdfProgressTracker.stepTimes = {};
+    pdfProgressTracker.stepEndTimes = {};
 }
 
 // PDF 결과 표시
@@ -980,5 +1418,578 @@ function hidePdfError() {
     if (errorSection) {
         errorSection.style.display = 'none';
     }
+}
+
+// DOCX 엑셀 파일 업로드 설정
+function setupDocxFileUpload() {
+    const uploadArea = document.getElementById('docxExcelUploadArea');
+    const fileInput = document.getElementById('docxExcelFile');
+    
+    if (!uploadArea || !fileInput) return;
+    
+    // 클릭 이벤트
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', async (e) => {
+        await handleDocxFileSelect(e.target.files[0]);
+    });
+    
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            await handleDocxFileSelect(file);
+        }
+    });
+}
+
+// DOCX 파일 선택 처리
+async function handleDocxFileSelect(file) {
+    if (!file) return;
+
+    // 파일 크기 검증
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+        showDocxError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        return;
+    }
+
+    // 파일 형식 검증
+    const allowedExtensions = ['.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!allowedExtensions.includes(fileExtension)) {
+        showDocxError('지원하지 않는 파일 형식입니다. .xlsx 또는 .xls 파일만 업로드 가능합니다.');
+        return;
+    }
+    
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    showToast(`파일 업로드: ${file.name} (${fileSizeMB} MB)`, 'info', 3000);
+
+    selectedDocxExcelFile = file;
+    displayDocxFileInfo(file);
+}
+
+// DOCX 파일 정보 표시
+function displayDocxFileInfo(file) {
+    const fileInfo = document.getElementById('docxExcelFileInfo');
+    const fileName = fileInfo?.querySelector('.file-name');
+    
+    if (fileInfo && fileName) {
+        fileName.textContent = file.name;
+        fileInfo.style.display = 'flex';
+    }
+}
+
+// DOCX 엑셀 파일 제거
+function removeDocxExcelFile() {
+    selectedDocxExcelFile = null;
+    const fileInput = document.getElementById('docxExcelFile');
+    if (fileInput) fileInput.value = '';
+    const fileInfo = document.getElementById('docxExcelFileInfo');
+    if (fileInfo) fileInfo.style.display = 'none';
+}
+
+// DOCX 생성 버튼 설정
+function setupDocxGenerateButton() {
+    const generateDocxBtn = document.getElementById('generateDocxBtn');
+    if (generateDocxBtn) {
+        generateDocxBtn.addEventListener('click', handleDocxGenerate);
+    }
+}
+
+// DOCX 생성 처리
+async function handleDocxGenerate() {
+    const yearSelect = document.getElementById('docxYearSelect');
+    const quarterSelect = document.getElementById('docxQuarterSelect');
+    
+    const year = yearSelect.value;
+    const quarter = quarterSelect.value;
+    
+    if (!year || !quarter) {
+        showDocxError('연도와 분기를 선택해주세요.');
+        return;
+    }
+    
+    // UI 업데이트
+    const generateDocxBtn = document.getElementById('generateDocxBtn');
+    const btnText = generateDocxBtn.querySelector('.btn-text');
+    const btnLoader = generateDocxBtn.querySelector('.btn-loader');
+    
+    generateDocxBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    
+    hideDocxError();
+    hideDocxResult();
+    
+    // DOCX 진행률 추적 초기화
+    docxProgressTracker.startTime = Date.now();
+    docxProgressTracker.currentTemplate = 0;
+    
+    // DOCX 생성 단계별 진행률 시뮬레이션
+    const docxProgressSteps = [
+        { percentage: 5, text: '파일 준비 중...', templateIndex: 0, subStep: '파일 검증' },
+        { percentage: 10, text: '파일 준비 중...', templateIndex: 0, subStep: '파일 로드' },
+        { percentage: 15, text: '템플릿 처리 중...', templateIndex: 0, subStep: '템플릿 목록 확인' },
+        { percentage: 20, text: '템플릿 처리 중...', templateIndex: 1, subStep: '템플릿 1/10 처리' },
+        { percentage: 30, text: '템플릿 처리 중...', templateIndex: 3, subStep: '템플릿 3/10 처리' },
+        { percentage: 40, text: '템플릿 처리 중...', templateIndex: 5, subStep: '템플릿 5/10 처리' },
+        { percentage: 50, text: '템플릿 처리 중...', templateIndex: 7, subStep: '템플릿 7/10 처리' },
+        { percentage: 60, text: '템플릿 처리 중...', templateIndex: 9, subStep: '템플릿 9/10 처리' },
+        { percentage: 70, text: '템플릿 처리 중...', templateIndex: 10, subStep: '템플릿 처리 완료' },
+        { percentage: 80, text: 'DOCX 생성 중...', templateIndex: 10, subStep: '문서 구조 생성' },
+        { percentage: 90, text: 'DOCX 생성 중...', templateIndex: 10, subStep: '콘텐츠 삽입' },
+        { percentage: 95, text: 'DOCX 생성 중...', templateIndex: 10, subStep: '최종 검증' },
+        { percentage: 100, text: '완료!', templateIndex: 10, subStep: null }
+    ];
+    
+    let currentDocxStepIndex = 0;
+    
+    // 진행률 업데이트 함수
+    const updateDocxProgress = () => {
+        if (currentDocxStepIndex < docxProgressSteps.length) {
+            const step = docxProgressSteps[currentDocxStepIndex];
+            showDocxProgress(step.percentage, step.text, step.templateIndex, step.subStep);
+            currentDocxStepIndex++;
+        }
+    };
+    
+    // 초기 진행률 표시
+    showDocxProgress(5, '파일 준비 중...', 0, '시작');
+    if (selectedDocxExcelFile) {
+        showToast('파일을 업로드하고 DOCX를 생성 중입니다...', 'info', 2000);
+    } else {
+        showToast('기본 엑셀 파일을 사용하여 DOCX를 생성 중입니다...', 'info', 2000);
+    }
+    
+    try {
+        // FormData 생성
+        const formData = new FormData();
+        if (selectedDocxExcelFile) {
+            formData.append('excel_file', selectedDocxExcelFile);
+        }
+        formData.append('year', year);
+        formData.append('quarter', quarter);
+        
+        // 진행률 시뮬레이션 시작 (비동기로 진행)
+        const docxProgressInterval = setInterval(() => {
+            if (currentDocxStepIndex < docxProgressSteps.length - 1) {
+                updateDocxProgress();
+            } else {
+                clearInterval(docxProgressInterval);
+            }
+        }, 1200); // 1.2초마다 업데이트
+        
+        // API 호출
+        const response = await fetch('/api/generate-docx', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // 진행률 시뮬레이션 중지
+        clearInterval(docxProgressInterval);
+        
+        // 마지막 단계로 진행
+        showDocxProgress(85, 'DOCX 생성 중...', 10, '데이터 처리 완료');
+        
+        const data = await response.json();
+        showDocxProgress(95, 'DOCX 생성 중...', 10, '최종 처리');
+        
+        if (response.ok && data.success) {
+            currentDocxFilename = data.output_filename;
+            showDocxProgress(100, '완료!', 10, null);
+            setTimeout(() => {
+                hideDocxProgress();
+                showDocxResult(data.message);
+                showSuccess('DOCX가 성공적으로 생성되었습니다!');
+            }, 500);
+        } else {
+            hideDocxProgress();
+            // 413 에러 (파일 크기 초과) 처리
+            if (response.status === 413) {
+                showDocxError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+            } else {
+                showDocxError(data.error || 'DOCX 생성 중 오류가 발생했습니다.');
+            }
+        }
+    } catch (error) {
+        console.error('DOCX 생성 오류:', error);
+        hideDocxProgress();
+        // 네트워크 오류나 파일 크기 초과 등의 경우
+        if (error.message && error.message.includes('413')) {
+            showDocxError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        } else {
+            showDocxError('서버와 통신하는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+        }
+    } finally {
+        // UI 복원
+        generateDocxBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoader.style.display = 'none';
+    }
+}
+
+// DOCX 진행률 추적 변수
+let docxProgressTracker = {
+    startTime: null,
+    currentTemplate: 0,
+    totalTemplates: 10,
+    stepTimes: {}, // 각 단계의 시작 시간 기록
+    stepEndTimes: {}, // 각 단계의 종료 시간 기록
+    estimatedTimes: {
+        0: 2,  // 파일 준비: 2초
+        1: 30, // 템플릿 처리: 30초 (10개 템플릿)
+        2: null // DOCX 생성: 예상 시간 없음 (시스템별로 다름)
+    }
+};
+
+// DOCX 진행률 표시
+function showDocxProgress(percentage, text = null, templateIndex = null, subStep = null) {
+    const container = document.getElementById('docxProgressContainer');
+    const bar = document.getElementById('docxProgressBar');
+    const header = container?.querySelector('.progress-header');
+    const textEl = document.getElementById('docxProgressText');
+    const percentageEl = document.getElementById('docxProgressPercentage');
+    const stepsEl = document.getElementById('docxProgressSteps');
+    
+    if (container && bar) {
+        container.classList.add('active');
+        bar.style.setProperty('--progress-width', `${Math.min(100, Math.max(0, percentage))}%`);
+        
+        if (header) header.style.display = 'flex';
+        
+        // 상세 텍스트 구성
+        let displayText = text || '처리 중...';
+        if (subStep) {
+            displayText += ` - ${subStep}`;
+        }
+        if (textEl) textEl.textContent = displayText;
+        
+        if (percentageEl) percentageEl.textContent = `${Math.round(percentage)}%`;
+        if (stepsEl) stepsEl.style.display = 'flex';
+        
+        // 단계별 시간 정보 업데이트
+        updateDocxProgressSteps(templateIndex, subStep, percentage);
+    }
+}
+
+// DOCX 진행 단계 업데이트
+function updateDocxProgressSteps(templateIndex, subStep, percentage) {
+    const steps = ['docxProgressStep1', 'docxProgressStep2', 'docxProgressStep3'];
+    const stepLabels = [
+        '파일 업로드 및 검증',
+        '템플릿 처리 중',
+        'DOCX 생성'
+    ];
+    
+    // 현재 단계 판단
+    let currentStep = 0;
+    if (percentage >= 70) {
+        currentStep = 2; // DOCX 생성
+    } else if (percentage >= 15) {
+        currentStep = 1; // 템플릿 처리
+    } else {
+        currentStep = 0; // 파일 준비
+    }
+    
+    // 단계 시작 시간 기록
+    if (!docxProgressTracker.stepTimes[currentStep]) {
+        docxProgressTracker.stepTimes[currentStep] = Date.now();
+    }
+    
+    // 이전 단계가 완료되었을 때 종료 시간 기록
+    if (docxProgressTracker.currentTemplate < currentStep) {
+        // 이전 단계의 종료 시간 기록
+        for (let i = 0; i < currentStep; i++) {
+            if (docxProgressTracker.stepTimes[i] && !docxProgressTracker.stepEndTimes[i]) {
+                docxProgressTracker.stepEndTimes[i] = Date.now();
+            }
+        }
+        docxProgressTracker.currentTemplate = currentStep;
+    }
+    
+    steps.forEach((stepId, index) => {
+        const stepEl = document.getElementById(stepId);
+        if (stepEl) {
+            stepEl.classList.remove('active', 'completed');
+            
+            let stepText = stepLabels[index];
+            let timeInfo = '';
+            
+            if (index < currentStep) {
+                // 완료된 단계
+                stepEl.classList.add('completed');
+                stepText = '✓ ' + stepText;
+                
+                const estimatedTime = docxProgressTracker.estimatedTimes[index];
+                const stepStartTime = docxProgressTracker.stepTimes[index];
+                const stepEndTime = docxProgressTracker.stepEndTimes[index];
+                
+                if (stepStartTime) {
+                    // 종료 시간이 있으면 종료 시간 기준으로 계산
+                    if (stepEndTime) {
+                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
+                        } else {
+                            timeInfo = ` (실제: ${actualTime}초)`;
+                        }
+                    } else {
+                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
+                        if (estimatedTime !== null) {
+                            timeInfo = ` (예상: ${estimatedTime}초)`;
+                        }
+                    }
+                } else if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                }
+            } else if (index === currentStep) {
+                // 진행 중인 단계
+                stepEl.classList.add('active');
+                stepText = '⏳ ' + stepText;
+                
+                if (index === 1 && templateIndex !== null) {
+                    stepText += ` (${templateIndex}/10)`;
+                    if (subStep) {
+                        stepText += ` - ${subStep}`;
+                    }
+                } else if (subStep) {
+                    stepText += ` - ${subStep}`;
+                }
+                
+                const estimatedTime = docxProgressTracker.estimatedTimes[index];
+                const stepStartTime = docxProgressTracker.stepTimes[index];
+                
+                if (index === 2) {
+                    // DOCX 생성 단계: 예상 시간 대신 안내 문구
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                } else if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초`;
+                    if (stepStartTime) {
+                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                        if (elapsed > 0) {
+                            timeInfo += `, 경과: ${elapsed}초`;
+                        }
+                    }
+                    timeInfo += ')';
+                }
+            } else {
+                // 아직 시작하지 않은 단계
+                const estimatedTime = docxProgressTracker.estimatedTimes[index];
+                if (estimatedTime !== null) {
+                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                } else if (index === 2) {
+                    timeInfo = ' (잠시만 기다려주십시오)';
+                }
+            }
+            
+            stepEl.textContent = stepText + timeInfo;
+        }
+    });
+}
+
+function hideDocxProgress() {
+    const container = document.getElementById('docxProgressContainer');
+    if (container) {
+        container.classList.remove('active');
+        setTimeout(() => {
+            const bar = document.getElementById('docxProgressBar');
+            if (bar) bar.style.setProperty('--progress-width', '0%');
+            const header = container.querySelector('.progress-header');
+            if (header) header.style.display = 'none';
+            const stepsEl = document.getElementById('docxProgressSteps');
+            if (stepsEl) stepsEl.style.display = 'none';
+        }, 300);
+    }
+    
+    // 진행률 추적 초기화
+    docxProgressTracker.startTime = null;
+    docxProgressTracker.currentTemplate = 0;
+    docxProgressTracker.stepTimes = {};
+    docxProgressTracker.stepEndTimes = {};
+}
+
+// DOCX 결과 표시
+function showDocxResult(message) {
+    const resultSection = document.getElementById('docxResultSection');
+    const resultMessage = document.getElementById('docxResultMessage');
+    
+    if (resultMessage) {
+        resultMessage.textContent = message;
+    }
+    if (resultSection) {
+        resultSection.style.display = 'block';
+        
+        // 다운로드 버튼 설정
+        const docxDownloadBtn = document.getElementById('docxDownloadBtn');
+        if (docxDownloadBtn) {
+            docxDownloadBtn.onclick = () => {
+                if (currentDocxFilename) {
+                    showToast('DOCX를 다운로드합니다...', 'info', 2000);
+                    window.location.href = `/api/download/${currentDocxFilename}`;
+                }
+            };
+        }
+    }
+}
+
+// DOCX 결과 숨기기
+function hideDocxResult() {
+    const resultSection = document.getElementById('docxResultSection');
+    if (resultSection) {
+        resultSection.style.display = 'none';
+    }
+}
+
+// DOCX 에러 표시
+function showDocxError(message) {
+    const errorSection = document.getElementById('docxErrorSection');
+    const errorMessage = document.getElementById('docxErrorMessage');
+    
+    if (errorSection && errorMessage) {
+        errorMessage.textContent = message;
+        errorSection.style.display = 'block';
+        
+        // 스크롤하여 에러 메시지가 보이도록
+        errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    // 토스트 알림도 표시
+    showToast(message, 'error', 7000);
+}
+
+// DOCX 에러 숨기기
+function hideDocxError() {
+    const errorSection = document.getElementById('docxErrorSection');
+    if (errorSection) {
+        errorSection.style.display = 'none';
+    }
+}
+
+// 결측치 모달 관련 변수
+let missingValueQueue = [];
+let currentMissingValue = null;
+let missingValueResolve = null;
+
+// 결측치 모달 표시
+function showMissingValueModal(missingInfo) {
+    const modal = document.getElementById('missingValueModal');
+    const sheetNameEl = document.getElementById('missingSheetName');
+    const regionNameEl = document.getElementById('missingRegionName');
+    const categoryNameEl = document.getElementById('missingCategoryName');
+    const periodEl = document.getElementById('missingPeriod');
+    const inputEl = document.getElementById('missingValueInput');
+    
+    if (modal && missingInfo) {
+        if (sheetNameEl) sheetNameEl.textContent = missingInfo.sheet || 'N/A';
+        if (regionNameEl) regionNameEl.textContent = missingInfo.region || 'N/A';
+        if (categoryNameEl) categoryNameEl.textContent = missingInfo.category || 'N/A';
+        if (periodEl) periodEl.textContent = `${missingInfo.year}년 ${missingInfo.quarter}분기`;
+        if (inputEl) {
+            inputEl.value = '';
+            inputEl.focus();
+        }
+        
+        currentMissingValue = missingInfo;
+        modal.style.display = 'flex';
+        
+        // Enter 키로 제출
+        inputEl?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitMissingValue();
+            }
+        });
+    }
+}
+
+// 결측치 모달 닫기
+function closeMissingValueModal() {
+    const modal = document.getElementById('missingValueModal');
+    if (modal) {
+        modal.style.display = 'none';
+        currentMissingValue = null;
+    }
+}
+
+// 결측치 값 제출
+function submitMissingValue() {
+    const inputEl = document.getElementById('missingValueInput');
+    const value = inputEl?.value;
+    
+    if (value === '' || value === null) {
+        showToast('값을 입력해주세요.', 'error', 3000);
+        return;
+    }
+    
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        showToast('올바른 숫자를 입력해주세요.', 'error', 3000);
+        return;
+    }
+    
+    if (currentMissingValue && missingValueResolve) {
+        missingValueResolve(numValue);
+        closeMissingValueModal();
+        missingValueResolve = null;
+    }
+}
+
+// 결측치 건너뛰기
+function skipMissingValue() {
+    if (currentMissingValue && missingValueResolve) {
+        missingValueResolve(null);
+        closeMissingValueModal();
+        missingValueResolve = null;
+    }
+}
+
+// 결측치 입력 요청 (Promise 기반)
+function requestMissingValue(missingInfo) {
+    return new Promise((resolve) => {
+        missingValueResolve = resolve;
+        showMissingValueModal(missingInfo);
+    });
+}
+
+// 결측치 처리
+async function handleMissingValues(missingValues, formData) {
+    const missingValueMap = {};
+    
+    for (const missing of missingValues) {
+        const value = await requestMissingValue({
+            sheet: missing.sheet,
+            region: missing.region,
+            category: missing.category,
+            year: missing.year,
+            quarter: missing.quarter
+        });
+        
+        if (value !== null) {
+            const key = `${missing.sheet}_${missing.region}_${missing.category}_${missing.year}_${missing.quarter}`;
+            missingValueMap[key] = value;
+        }
+    }
+    
+    // 결측치 값을 formData에 추가
+    if (Object.keys(missingValueMap).length > 0) {
+        formData.append('missing_values', JSON.stringify(missingValueMap));
+    }
+    
+    return missingValueMap;
 }
 

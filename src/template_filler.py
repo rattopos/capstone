@@ -1068,6 +1068,11 @@ class TemplateFiller:
                                                 if key_map in category_name or category_name in key_map:
                                                     mapped_name = value_map
                                                     break
+                                        # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
+                                        if not mapped_name:
+                                            item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
+                                            if item_display_mapping:
+                                                mapped_name = item_display_mapping.get(category_name)
                                         return mapped_name if mapped_name else category_name
                                     elif industry_field == '증감률':
                                         return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
@@ -1105,6 +1110,11 @@ class TemplateFiller:
                                 if key_map in category_name or category_name in key_map:
                                     mapped_name = value_map
                                     break
+                        # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
+                        if not mapped_name:
+                            item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
+                            if item_display_mapping:
+                                mapped_name = item_display_mapping.get(category_name)
                         return mapped_name if mapped_name else category_name
                     elif industry_field == '증감률':
                         return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
@@ -1155,6 +1165,11 @@ class TemplateFiller:
                                         if key_map in category_name or category_name in key_map:
                                             mapped_name = value_map
                                             break
+                                # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
+                                if not mapped_name:
+                                    item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
+                                    if item_display_mapping:
+                                        mapped_name = item_display_mapping.get(category_name)
                                 return mapped_name if mapped_name else category_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
@@ -1206,6 +1221,11 @@ class TemplateFiller:
                                         if key_map in category_name or category_name in key_map:
                                             mapped_name = value_map
                                             break
+                                # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
+                                if not mapped_name:
+                                    item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
+                                    if item_display_mapping:
+                                        mapped_name = item_display_mapping.get(category_name)
                                 return mapped_name if mapped_name else category_name
                             elif industry_field == '증감률':
                                 return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
@@ -1509,44 +1529,12 @@ class TemplateFiller:
         if national_item_match:
             item_name = national_item_match.group(1)
             # 품목 이름 매핑 (템플릿에서 사용하는 이름 -> 엑셀에서 찾을 이름)
-            # 시트별로 다른 매핑이 필요할 수 있음
-            item_mapping = {
-                '메모리반도체': ['메모리 반도체', '메모리반도체'],
-                '선박': ['선박'],
-                '중화학공업품': ['기타 중화학 공업품', '중화학 공업품', '중화학공업품'],
-                '원유': ['원유'],
-                '석탄': ['석탄'],
-                '나프타': ['나프타'],
-                '외식제외개인서비스': ['외식제외개인서비스', '외식 제외 개인서비스'],
-                '외식': ['외식'],
-                '가공식품': ['가공식품', '가공 식품'],
-                '공공서비스': ['공공서비스', '공공 서비스'],
-                '농산물': ['농산물'],
-                '석유류': ['석유류', '석유'],
-                '의약품': ['의약품'],
-                '출판물': ['출판물'],
-                '내구재': ['내구재'],
-                '축산물': ['축산물'],
-                '철도궤도': ['철도·궤도', '철도궤도', '철도 궤도'],
-                '기계설치': ['기계설치', '기계 설치'],
-                '사무실점포': ['사무실·점포', '사무실점포', '사무실 점포'],
-                '토목': ['토목'],
-                '건축': ['건축'],
-                # 광공업생산용
-                '반도체전자부품': ['반도체·전자부품', '반도체 전자부품', '반도체전자부품', '전자 부품', '전자부품', '컴퓨터', '영상', '음향', '통신장비', '전자 부품, 컴퓨터'],
-                '기타수송기기': ['기타 수송기기', '기타수송기기', '기타 운송장비', '기타운송장비', '운송장비', '기타 운송장비 제조업'],
-                '의료정밀기기': ['의료·정밀기기', '의료 정밀기기', '의료정밀기기', '의료', '정밀', '광학 기기', '시계', '의료용 기기'],
-                '전기장치': ['전기장치'],
-                '기타기계': ['기타 기계', '기타기계'],
-                '담배': ['담배'],
-                '자동차트레일러': ['자동차·트레일러', '자동차 트레일러', '자동차트레일러'],
-                '전기가스업': ['전기·가스업', '전기가스업'],
-                '식품': ['식품'],
-                '금속': ['금속'],
-                '금속가공제품': ['금속가공제품'],
-            }
-            # 매핑된 이름 찾기
-            search_names = item_mapping.get(item_name, [item_name])
+            # 스키마에서 가져오기
+            item_name_mapping = self.schema_loader.get_name_mapping('item_name_mapping')
+            if item_name_mapping:
+                search_names = item_name_mapping.get(item_name, [item_name])
+            else:
+                search_names = [item_name]
             if isinstance(search_names, str):
                 search_names = [search_names]
             
@@ -1582,45 +1570,12 @@ class TemplateFiller:
             region_name = region_item_match.group(1)
             item_name = region_item_match.group(2)
             
-            # 전국 품목별과 동일한 매핑 사용
-            item_mapping = {
-                '메모리반도체': ['메모리 반도체', '메모리반도체'],
-                '선박': ['선박'],
-                '중화학공업품': ['기타 중화학 공업품', '중화학 공업품', '중화학공업품'],
-                '원유': ['원유'],
-                '석탄': ['석탄'],
-                '나프타': ['나프타'],
-                '외식제외개인서비스': ['외식제외개인서비스', '외식 제외 개인서비스'],
-                '외식': ['외식'],
-                '가공식품': ['가공식품', '가공 식품'],
-                '공공서비스': ['공공서비스', '공공 서비스'],
-                '농산물': ['농산물'],
-                '석유류': ['석유류', '석유'],
-                '의약품': ['의약품'],
-                '출판물': ['출판물'],
-                '내구재': ['내구재'],
-                '축산물': ['축산물'],
-                '철도궤도': ['철도·궤도', '철도궤도', '철도 궤도'],
-                '기계설치': ['기계설치', '기계 설치'],
-                '사무실점포': ['사무실·점포', '사무실점포', '사무실 점포'],
-                '토목': ['토목'],
-                '건축': ['건축'],
-                # 광공업생산용
-                '반도체전자부품': ['반도체·전자부품', '반도체 전자부품', '반도체전자부품', '전자 부품', '전자부품', '컴퓨터', '영상', '음향', '통신장비', '전자 부품, 컴퓨터'],
-                '기타수송기기': ['기타 수송기기', '기타수송기기', '기타 운송장비', '기타운송장비', '운송장비', '기타 운송장비 제조업'],
-                '의료정밀기기': ['의료·정밀기기', '의료 정밀기기', '의료정밀기기', '의료', '정밀', '광학 기기', '시계', '의료용 기기'],
-                '전기장치': ['전기장치'],
-                '기타기계': ['기타 기계', '기타기계'],
-                '담배': ['담배'],
-                '자동차트레일러': ['자동차·트레일러', '자동차 트레일러', '자동차트레일러'],
-                '전기가스업': ['전기·가스업', '전기가스업'],
-                '식품': ['식품'],
-                '금속': ['금속'],
-                '금속가공제품': ['금속가공제품'],
-            }
-            
-            # 매핑된 이름 찾기
-            search_names = item_mapping.get(item_name, [item_name])
+            # 전국 품목별과 동일한 매핑 사용 (스키마에서 가져오기)
+            item_name_mapping = self.schema_loader.get_name_mapping('item_name_mapping')
+            if item_name_mapping:
+                search_names = item_name_mapping.get(item_name, [item_name])
+            else:
+                search_names = [item_name]
             if isinstance(search_names, str):
                 search_names = [search_names]
             

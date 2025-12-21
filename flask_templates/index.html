@@ -25,12 +25,38 @@
                 <button class="tab-btn" data-tab="pdf-tab" id="pdfTabBtn" aria-label="PDF 생성 탭">
                     PDF 생성
                 </button>
+                <button class="tab-btn" data-tab="docx-tab" id="docxTabBtn" aria-label="DOCX 생성 탭">
+                    DOCX 생성
+                </button>
             </div>
 
             <!-- HTML 보도자료 생성 탭 -->
             <div id="html-tab" class="tab-content active">
+                <div class="period-section" style="margin-bottom: 40px;">
+                    <h2>1. 연도 및 분기 선택</h2>
+                    <div class="period-selectors">
+                        <div class="selector-group">
+                            <label for="yearSelect">연도</label>
+                            <select id="yearSelect" class="period-select" aria-label="연도 선택">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label for="quarterSelect">분기</label>
+                            <select id="quarterSelect" class="period-select" aria-label="분기 선택">
+                                <option value="1">1분기</option>
+                                <option value="2" selected>2분기</option>
+                                <option value="3">3분기</option>
+                                <option value="4">4분기</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="template-section" style="margin-bottom: 40px;">
-                    <h2>1. 템플릿 선택</h2>
+                    <h2>2. 템플릿 선택</h2>
                     <div class="selector-group">
                         <label for="templateSelect">템플릿</label>
                         <select id="templateSelect" class="period-select" aria-label="템플릿 선택">
@@ -43,7 +69,7 @@
                 </div>
 
                 <div class="upload-section">
-                    <h2>2. 파일 업로드 (선택사항)</h2>
+                    <h2>3. 파일 업로드 (선택사항)</h2>
                     <div style="margin-bottom: 15px; padding: 12px; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #2196F3;">
                         <p style="margin: 0; color: #1976D2; font-size: 0.95em;">
                             <strong>ℹ️ 기본 엑셀 파일 사용:</strong> 엑셀 파일을 업로드하지 않으면 기본 파일(기초자료 수집표_2025년 2분기_캡스톤.xlsx)이 자동으로 사용됩니다.
@@ -67,36 +93,24 @@
                     </div>
                 </div>
 
-                <div class="period-section">
-                    <h2>3. 연도 및 분기 선택</h2>
-                    <div class="period-selectors">
-                        <div class="selector-group">
-                            <label for="yearSelect">연도</label>
-                            <select id="yearSelect" class="period-select" aria-label="연도 선택">
-                                <option value="2023">2023</option>
-                                <option value="2024">2024</option>
-                                <option value="2025" selected>2025</option>
-                            </select>
-                        </div>
-                        <div class="selector-group">
-                            <label for="quarterSelect">분기</label>
-                            <select id="quarterSelect" class="period-select" aria-label="분기 선택">
-                                <option value="1">1분기</option>
-                                <option value="2" selected>2분기</option>
-                                <option value="3">3분기</option>
-                                <option value="4">4분기</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="action-section">
                     <button id="processBtn" class="btn btn-primary" disabled aria-label="보도자료 생성">
                         <span class="btn-text">보도자료 생성</span>
                         <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
                     </button>
                     <div class="progress-container" id="progressContainer">
+                        <div class="progress-header" style="display: none; margin-bottom: 8px;">
+                            <span class="progress-text" id="progressText">처리 중...</span>
+                            <span class="progress-percentage" id="progressPercentage">0%</span>
+                        </div>
                         <div class="progress-bar" id="progressBar"></div>
+                        <div class="progress-steps" id="progressSteps" style="display: none; margin-top: 12px; font-size: 0.9em; color: var(--text-secondary);">
+                            <div class="progress-step" id="progressStep1">✓ 파일 업로드 및 검증</div>
+                            <div class="progress-step" id="progressStep2">⏳ 데이터 분석</div>
+                            <div class="progress-step" id="progressStep3">⏳ 템플릿 채우기</div>
+                            <div class="progress-step" id="progressStep4">⏳ 결과 생성</div>
+                        </div>
+                        <div id="progressTimeRemaining" style="display: none; margin-top: 8px; font-size: 0.85em; color: var(--text-secondary); text-align: center;"></div>
                     </div>
                 </div>
 
@@ -149,12 +163,64 @@
                         <iframe id="previewFrame" src="" frameborder="0"></iframe>
                     </div>
                 </div>
+
+                <!-- 결측치 입력 모달 -->
+                <div id="missingValueModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>결측치 입력</h3>
+                            <button class="modal-close" onclick="closeMissingValueModal()">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="missingValueMessage" style="margin-bottom: 20px; color: var(--text-secondary);">
+                                다음 위치의 데이터가 누락되었습니다. 값을 입력해주세요.
+                            </p>
+                            <div class="missing-value-info" id="missingValueInfo" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div><strong>시트:</strong> <span id="missingSheetName"></span></div>
+                                <div><strong>지역:</strong> <span id="missingRegionName"></span></div>
+                                <div><strong>항목:</strong> <span id="missingCategoryName"></span></div>
+                                <div><strong>연도/분기:</strong> <span id="missingPeriod"></span></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="missingValueInput">값 입력:</label>
+                                <input type="number" id="missingValueInput" class="form-input" step="any" placeholder="숫자를 입력하세요">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="skipMissingValue()">건너뛰기</button>
+                            <button class="btn btn-primary" onclick="submitMissingValue()">확인</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- PDF 생성 탭 -->
             <div id="pdf-tab" class="tab-content">
+                <div class="period-section" style="margin-bottom: 40px;">
+                    <h2>1. 연도 및 분기 선택</h2>
+                    <div class="period-selectors">
+                        <div class="selector-group">
+                            <label for="pdfYearSelect">연도</label>
+                            <select id="pdfYearSelect" class="period-select" aria-label="연도 선택">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label for="pdfQuarterSelect">분기</label>
+                            <select id="pdfQuarterSelect" class="period-select" aria-label="분기 선택">
+                                <option value="1">1분기</option>
+                                <option value="2" selected>2분기</option>
+                                <option value="3">3분기</option>
+                                <option value="4">4분기</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="upload-section">
-                    <h2>1. 파일 업로드 (선택사항)</h2>
+                    <h2>2. 파일 업로드 (선택사항)</h2>
                     <div style="margin-bottom: 15px; padding: 12px; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #2196F3;">
                         <p style="margin: 0; color: #1976D2; font-size: 0.95em;">
                             <strong>ℹ️ 기본 엑셀 파일 사용:</strong> 엑셀 파일을 업로드하지 않으면 기본 파일(기초자료 수집표_2025년 2분기_캡스톤.xlsx)이 자동으로 사용됩니다.
@@ -178,36 +244,23 @@
                     </div>
                 </div>
 
-                <div class="period-section">
-                    <h2>2. 연도 및 분기 선택</h2>
-                    <div class="period-selectors">
-                        <div class="selector-group">
-                            <label for="pdfYearSelect">연도</label>
-                            <select id="pdfYearSelect" class="period-select" aria-label="연도 선택">
-                                <option value="2023">2023</option>
-                                <option value="2024">2024</option>
-                                <option value="2025" selected>2025</option>
-                            </select>
-                        </div>
-                        <div class="selector-group">
-                            <label for="pdfQuarterSelect">분기</label>
-                            <select id="pdfQuarterSelect" class="period-select" aria-label="분기 선택">
-                                <option value="1">1분기</option>
-                                <option value="2" selected>2분기</option>
-                                <option value="3">3분기</option>
-                                <option value="4">4분기</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="action-section">
                     <button id="generatePdfBtn" class="btn btn-primary" aria-label="PDF 생성">
                         <span class="btn-text">PDF 생성</span>
                         <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
                     </button>
                     <div class="progress-container" id="pdfProgressContainer">
+                        <div class="progress-header" style="display: none; margin-bottom: 8px;">
+                            <span class="progress-text" id="pdfProgressText">처리 중...</span>
+                            <span class="progress-percentage" id="pdfProgressPercentage">0%</span>
+                        </div>
                         <div class="progress-bar" id="pdfProgressBar"></div>
+                        <div class="progress-steps" id="pdfProgressSteps" style="display: none; margin-top: 12px; font-size: 0.9em; color: var(--text-secondary);">
+                            <div class="progress-step" id="pdfProgressStep1">✓ 파일 업로드 및 검증</div>
+                            <div class="progress-step" id="pdfProgressStep2">⏳ 템플릿 처리 중 (0/10)</div>
+                            <div class="progress-step" id="pdfProgressStep3">⏳ PDF 생성</div>
+                        </div>
+                        <div id="pdfProgressTimeRemaining" style="display: none; margin-top: 8px; font-size: 0.85em; color: var(--text-secondary); text-align: center;"></div>
                     </div>
                 </div>
 
@@ -225,6 +278,94 @@
                     <div class="error-box">
                         <span class="error-icon">⚠️</span>
                         <span class="error-message" id="pdfErrorMessage"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOCX 생성 탭 -->
+            <div id="docx-tab" class="tab-content">
+                <div class="period-section" style="margin-bottom: 40px;">
+                    <h2>1. 연도 및 분기 선택</h2>
+                    <div class="period-selectors">
+                        <div class="selector-group">
+                            <label for="docxYearSelect">연도</label>
+                            <select id="docxYearSelect" class="period-select" aria-label="연도 선택">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                            </select>
+                        </div>
+                        <div class="selector-group">
+                            <label for="docxQuarterSelect">분기</label>
+                            <select id="docxQuarterSelect" class="period-select" aria-label="분기 선택">
+                                <option value="1">1분기</option>
+                                <option value="2" selected>2분기</option>
+                                <option value="3">3분기</option>
+                                <option value="4">4분기</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-section">
+                    <h2>2. 파일 업로드 (선택사항)</h2>
+                    <div style="margin-bottom: 15px; padding: 12px; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #2196F3;">
+                        <p style="margin: 0; color: #1976D2; font-size: 0.95em;">
+                            <strong>ℹ️ 기본 엑셀 파일 사용:</strong> 엑셀 파일을 업로드하지 않으면 기본 파일(기초자료 수집표_2025년 2분기_캡스톤.xlsx)이 자동으로 사용됩니다.
+                        </p>
+                    </div>
+                    <div class="upload-box">
+                        <div class="file-upload-area" id="docxExcelUploadArea">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p class="upload-text">엑셀 파일을 드래그하거나 클릭하여 업로드 (선택사항)</p>
+                            <p class="upload-hint">.xlsx, .xls 파일만 지원됩니다 (최대 100MB)</p>
+                            <input type="file" id="docxExcelFile" accept=".xlsx,.xls" style="display: none;">
+                        </div>
+                        <div id="docxExcelFileInfo" class="file-info" style="display: none;">
+                            <span class="file-name"></span>
+                            <button class="remove-file" onclick="removeDocxExcelFile()">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-section">
+                    <button id="generateDocxBtn" class="btn btn-primary" aria-label="DOCX 생성">
+                        <span class="btn-text">DOCX 생성</span>
+                        <span class="btn-loader" style="display: none;" aria-hidden="true"></span>
+                    </button>
+                    <div class="progress-container" id="docxProgressContainer">
+                        <div class="progress-header" style="display: none; margin-bottom: 8px;">
+                            <span class="progress-text" id="docxProgressText">처리 중...</span>
+                            <span class="progress-percentage" id="docxProgressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar" id="docxProgressBar"></div>
+                        <div class="progress-steps" id="docxProgressSteps" style="display: none; margin-top: 12px; font-size: 0.9em; color: var(--text-secondary);">
+                            <div class="progress-step" id="docxProgressStep1">✓ 파일 업로드 및 검증</div>
+                            <div class="progress-step" id="docxProgressStep2">⏳ 템플릿 처리 중 (0/10)</div>
+                            <div class="progress-step" id="docxProgressStep3">⏳ DOCX 생성</div>
+                        </div>
+                        <div id="docxProgressTimeRemaining" style="display: none; margin-top: 8px; font-size: 0.85em; color: var(--text-secondary); text-align: center;"></div>
+                    </div>
+                </div>
+
+                <div id="docxResultSection" class="result-section" style="display: none;">
+                    <h2>3. 결과</h2>
+                    <div class="result-box">
+                        <div class="result-message" id="docxResultMessage"></div>
+                        <div class="result-actions">
+                            <button id="docxDownloadBtn" class="btn btn-primary" aria-label="DOCX 다운로드">DOCX 다운로드</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="docxErrorSection" class="error-section" style="display: none;">
+                    <div class="error-box">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-message" id="docxErrorMessage"></span>
                     </div>
                 </div>
             </div>

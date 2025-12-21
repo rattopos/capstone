@@ -199,22 +199,24 @@ class PDFGenerator:
                         style = soup.find('style')
                         
                         template_content = ''
-                        # 스타일 추가
-                        if style:
-                            template_content += f'<style>{style.string}</style>'
-                        # body 내용 추가
+                        # body 내용 추가 (스타일은 PDF 생성 시 전역 스타일로 처리)
                         if body:
                             # body 내용만 추출 (body 태그 제외)
                             body_content = ''.join(str(child) for child in body.children)
-                            template_content += body_content
+                            template_content = body_content
                         else:
                             # body가 없으면 전체 내용 사용
                             template_content = filled_template
                         
-                        filled_templates.append(template_content)
+                        # 템플릿별 스타일 추출 (나중에 사용할 수 있도록)
+                        template_style = ''
+                        if style:
+                            template_style = style.string or str(style)
+                        
+                        filled_templates.append((template_name, template_content, template_style))
                     except:
                         # 파싱 실패 시 원본 사용
-                        filled_templates.append(filled_template)
+                        filled_templates.append((template_name, filled_template, ''))
                     
                 except Exception as e:
                     errors.append(f'{template_name}: {str(e)}')
@@ -231,23 +233,157 @@ class PDFGenerator:
             combined_html += '''
                 @page {
                     size: A4;
-                    margin: 2cm;
+                    margin: 1cm;
                 }
                 body {
                     font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+                    margin: 0;
+                    padding: 0;
                 }
                 .page-break {
                     page-break-after: always;
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 0;
+                    margin: 0;
                 }
                 .page-break:last-child {
                     page-break-after: auto;
                 }
+                
+                /* 템플릿별 공통 스타일 - 한 페이지에 맞추기 */
+                .page-break .template-content {
+                    padding: 15px 20px !important;
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                    font-size: 11px !important;
+                    line-height: 1.4 !important;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                }
+                
+                .page-break .template-content > * {
+                    font-size: inherit !important;
+                }
+                
+                .page-break .section-title {
+                    font-size: 13px !important;
+                    font-weight: bold !important;
+                    margin: 8px 0 5px 0 !important;
+                    line-height: 1.3 !important;
+                }
+                
+                .page-break .subsection-title {
+                    font-size: 12px !important;
+                    font-weight: bold !important;
+                    margin: 6px 0 4px 0 !important;
+                    line-height: 1.3 !important;
+                }
+                
+                .page-break .content-text {
+                    font-size: 11px !important;
+                    margin-bottom: 5px !important;
+                    line-height: 1.5 !important;
+                    text-align: justify !important;
+                }
+                
+                .page-break .key-section {
+                    font-size: 11px !important;
+                    font-weight: bold !important;
+                    margin: 8px 0 4px 0 !important;
+                }
+                
+                .page-break .key-item {
+                    font-size: 10px !important;
+                    margin-bottom: 3px !important;
+                    line-height: 1.4 !important;
+                }
+                
+                .page-break .table-title {
+                    font-size: 11px !important;
+                    font-weight: bold !important;
+                    margin: 8px 0 3px 0 !important;
+                    text-align: center !important;
+                }
+                
+                .page-break .table-subtitle {
+                    font-size: 10px !important;
+                    margin-bottom: 5px !important;
+                    text-align: center !important;
+                }
+                
+                .page-break table {
+                    width: 100% !important;
+                    margin: 5px 0 8px 0 !important;
+                    font-size: 9px !important;
+                    border-collapse: collapse !important;
+                    border: 1px solid #000 !important;
+                    table-layout: fixed !important;
+                }
+                
+                .page-break th {
+                    background-color: #f5f5f5 !important;
+                    font-weight: bold !important;
+                    padding: 4px 3px !important;
+                    font-size: 9px !important;
+                    line-height: 1.2 !important;
+                    text-align: center !important;
+                    border: 1px solid #000 !important;
+                    vertical-align: middle !important;
+                }
+                
+                .page-break td {
+                    padding: 4px 3px !important;
+                    font-size: 9px !important;
+                    line-height: 1.2 !important;
+                    text-align: center !important;
+                    border: 1px solid #000 !important;
+                    vertical-align: middle !important;
+                }
+                
+                .page-break .source {
+                    font-size: 9px !important;
+                    margin-top: 5px !important;
+                }
+                
+                /* 리스트 스타일 */
+                .page-break ul,
+                .page-break ol {
+                    margin: 5px 0 !important;
+                    padding-left: 20px !important;
+                }
+                
+                .page-break li {
+                    font-size: 10px !important;
+                    line-height: 1.4 !important;
+                    margin-bottom: 2px !important;
+                }
             '''
             combined_html += '</style></head><body>'
             
-            for i, template_html in enumerate(filled_templates):
-                # 각 템플릿을 div로 감싸고 페이지 브레이크 추가
-                combined_html += f'<div class="page-break">{template_html}</div>'
+            for i, template_data in enumerate(filled_templates):
+                # 템플릿 데이터가 튜플인지 확인
+                if isinstance(template_data, tuple):
+                    if len(template_data) == 3:
+                        template_name, template_html, template_style = template_data
+                    else:
+                        template_name, template_html = template_data
+                        template_style = ''
+                else:
+                    # 이전 형식 호환성 유지
+                    template_name = TEMPLATE_ORDER[i] if i < len(TEMPLATE_ORDER) else f'template_{i}'
+                    template_html = template_data
+                    template_style = ''
+                
+                # 템플릿 클래스명 생성
+                template_class = template_name.replace('.html', '').replace('(', '').replace(')', '').replace(' ', '-')
+                
+                # 각 템플릿을 div로 감싸고 페이지 브레이크 및 템플릿 클래스 추가
+                combined_html += f'<div class="page-break template-{template_class}"><div class="template-content">{template_html}</div></div>'
             
             combined_html += '</body></html>'
             
@@ -274,8 +410,9 @@ class PDFGenerator:
                         page.pdf(
                             path=str(pdf_path),
                             format='A4',
-                            margin={'top': '2cm', 'right': '2cm', 'bottom': '2cm', 'left': '2cm'},
-                            print_background=True
+                            margin={'top': '1cm', 'right': '1cm', 'bottom': '1cm', 'left': '1cm'},
+                            print_background=True,
+                            prefer_css_page_size=True
                         )
                         
                         browser.close()
