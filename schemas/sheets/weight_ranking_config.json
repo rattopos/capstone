@@ -1,9 +1,10 @@
 {
   "_description": "가중치 기반 증감률 순위 설정 스키마 (열 번호는 1-based)",
   "_rules": {
-    "weight_column_exists_with_values": "가중치 열에 값이 있으면 해당 값 사용",
-    "weight_column_exists_empty": "가중치 열이 있지만 공란이면 weight_default=100",
-    "weight_column_not_exists": "가중치 열이 없으면 weight_default=1",
+    "weight_column_exists_with_values": "가중치 열에 값이 있으면 해당 값 사용하여 가중합 계산",
+    "weight_column_exists_empty": "가중치 열이 있지만 공란이면 원데이터로 비교 (가중합 계산 안 함)",
+    "weight_column_not_exists": "가중치 열이 없으면 원데이터로 비교 (가중합 계산 안 함), weight_default는 사용되지 않음",
+    "missing_value_handling": "결측치(- 또는 빈 값)는 1.0으로 채워짐 (기존 100.0에서 변경)",
     "max_classification_level": "분류단계는 2단계까지만 사용"
   },
   "sheets": {

@@ -339,28 +339,16 @@ class DynamicSheetParser:
         
         # 스키마에서 가중치 설정 가져오기
         weight_col = structure.get('weight_column')
-        weight_default = structure.get('weight_default', 1)
         
-        # 가중치 확인
-        if weight_col:
-            weight_value = sheet.cell(row=region_row, column=weight_col).value
-            weight = self.schema_loader.get_weight_value(sheet_name, weight_value)
-        else:
-            weight = weight_default
-        
-        # 값이 비어있고 가중치가 100이면 기본값 100 반환
-        if cell.value is None or (isinstance(cell.value, str) and not cell.value.strip()):
-            if weight == 100:
-                return 100.0
-            return None
+        # 값이 비어있거나 "-"이면 기본값 1 반환
+        if cell.value is None or (isinstance(cell.value, str) and (not cell.value.strip() or cell.value.strip() == '-')):
+            return 1.0
         
         try:
             return float(cell.value)
         except (ValueError, TypeError):
-            # 변환 실패 시 가중치가 100이면 기본값 반환
-            if weight == 100:
-                return 100.0
-            return None
+            # 변환 실패 시 기본값 1 반환
+            return 1.0
     
     def calculate_growth_rate(self, sheet_name: str, region_name: str, year: int, quarter: int) -> Optional[float]:
         """

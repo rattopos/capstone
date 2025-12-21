@@ -1,4 +1,5 @@
 {
+  "_comment": "수입 시트 설정 - 가중치 열이 없으므로 원데이터로 비교하며, 결측치는 1.0으로 채워짐",
   "category_column": 6,
   "base_year": 2023,
   "base_quarter": 1,

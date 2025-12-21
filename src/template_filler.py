@@ -544,49 +544,42 @@ class TemplateFiller:
                 current = sheet.cell(row=region_row, column=current_col).value
                 prev = sheet.cell(row=region_row, column=prev_col).value
                 
-                # 가중치 확인 (비어있으면 100으로 처리)
-                weight_col = structure.get('weight_column', 4)
-                weight = sheet.cell(row=region_row, column=weight_col).value
-                if weight is None or (isinstance(weight, str) and not weight.strip()):
-                    weight = 100
-                else:
-                    try:
-                        weight = float(weight)
-                    except (ValueError, TypeError):
-                        weight = 100
+                # 가중치 확인 - 가중치 열이 없으면 원데이터로 비교
+                weight_col = structure.get('weight_column')
+                has_weight_column = weight_col is not None
                 
-                # 결측치 체크 - 가중치가 100이면 데이터가 비어있어도 처리
-                if current is None or (isinstance(current, str) and not current.strip()):
-                    if weight == 100:
-                        current = prev if prev is not None else 100
+                if has_weight_column:
+                    weight = sheet.cell(row=region_row, column=weight_col).value
+                    if weight is None or (isinstance(weight, str) and not weight.strip()):
+                        has_weight_column = False
                     else:
-                        current = None
-                if prev is None or (isinstance(prev, str) and not prev.strip()):
-                    if weight == 100:
-                        prev = current if current is not None else 100
-                    else:
-                        prev = None
+                        try:
+                            weight = float(weight)
+                        except (ValueError, TypeError):
+                            has_weight_column = False
+                
+                # 결측치 체크 - 결측치는 1로 채움
+                if current is None or (isinstance(current, str) and (not current.strip() or current.strip() == '-')):
+                    current = prev if prev is not None else 1.0
+                if prev is None or (isinstance(prev, str) and (not prev.strip() or prev.strip() == '-')):
+                    prev = current if current is not None else 1.0
                 
                 # 결측치 체크
                 if current is not None and prev is not None:
-                    # 빈 문자열 체크
-                    if isinstance(current, str) and not current.strip():
-                        if weight == 100:
-                            current = prev if prev is not None else 100
-                        else:
-                            pass
-                    elif isinstance(prev, str) and not prev.strip():
-                        if weight == 100:
-                            prev = current if current is not None else 100
-                        else:
-                            pass
+                    # 빈 문자열 또는 "-" 체크
+                    if isinstance(current, str):
+                        if not current.strip() or current.strip() == '-':
+                            current = prev if prev is not None else 1.0
+                    if isinstance(prev, str):
+                        if not prev.strip() or prev.strip() == '-':
+                            prev = current if current is not None else 1.0
                     
                     try:
                         prev_num = float(prev)
                         current_num = float(current)
                         
-                        # 가중치가 100이고 값이 100이면 스킵 (기본값)
-                        if weight == 100 and current_num == 100 and prev_num == 100:
+                        # 값이 1이고 둘 다 1이면 스킵 (기본값)
+                        if current_num == 1.0 and prev_num == 1.0:
                             region_growth_rate = None
                         elif prev_num != 0:
                             region_growth_rate = ((current_num / prev_num) - 1) * 100
@@ -602,8 +595,9 @@ class TemplateFiller:
         
         categories = []
         
-        # 가중치 열 찾기
-        weight_col = structure.get('weight_column', 4)
+        # 가중치 열 찾기 - 가중치 열이 없으면 원데이터로 비교
+        weight_col = structure.get('weight_column')
+        has_weight_column = weight_col is not None
         
         # 해당 지역의 산업/업태별 데이터 찾기
         for row in range(region_row + 1, min(region_row + 500, sheet.max_row + 1)):
@@ -645,48 +639,36 @@ class TemplateFiller:
                     current = sheet.cell(row=row, column=current_col).value
                     prev = sheet.cell(row=row, column=prev_col).value
                     
-                    # 가중치 확인 (비어있으면 100으로 처리)
-                    weight = sheet.cell(row=row, column=weight_col).value
-                    if weight is None or (isinstance(weight, str) and not weight.strip()):
-                        weight = 100
-                    else:
-                        try:
-                            weight = float(weight)
-                        except (ValueError, TypeError):
-                            weight = 100
+                    # 가중치 확인 - 가중치 열이 없으면 원데이터로 비교
+                    weight = 1.0
+                    if has_weight_column:
+                        weight_value = sheet.cell(row=row, column=weight_col).value
+                        if weight_value is not None and not (isinstance(weight_value, str) and not weight_value.strip()):
+                            try:
+                                weight = float(weight_value)
+                            except (ValueError, TypeError):
+                                weight = 1.0
                     
-                    # 결측치 체크 - 가중치가 100이면 데이터가 비어있어도 처리
-                    if current is None or (isinstance(current, str) and not current.strip()):
-                        if weight == 100:
-                            # 가중치가 100이면 기본값 사용 (이전 값과 동일하게 가정)
-                            current = prev
-                        else:
-                            continue
-                    if prev is None or (isinstance(prev, str) and not prev.strip()):
-                        if weight == 100:
-                            # 가중치가 100이면 기본값 사용
-                            prev = current if current is not None else 100
-                        else:
-                            continue
+                    # 결측치 체크 - 결측치는 1로 채움
+                    if current is None or (isinstance(current, str) and (not current.strip() or current.strip() == '-')):
+                        current = prev if prev is not None else 1.0
+                    if prev is None or (isinstance(prev, str) and (not prev.strip() or prev.strip() == '-')):
+                        prev = current if current is not None else 1.0
                     
-                    # 빈 문자열 체크
-                    if isinstance(current, str) and not current.strip():
-                        if weight == 100:
-                            current = prev if prev is not None else 100
-                        else:
-                            continue
-                    if isinstance(prev, str) and not prev.strip():
-                        if weight == 100:
-                            prev = current if current is not None else 100
-                        else:
-                            continue
+                    # 빈 문자열 또는 "-" 체크
+                    if isinstance(current, str):
+                        if not current.strip() or current.strip() == '-':
+                            current = prev if prev is not None else 1.0
+                    if isinstance(prev, str):
+                        if not prev.strip() or prev.strip() == '-':
+                            prev = current if current is not None else 1.0
                     
                     try:
                         prev_num = float(prev)
                         current_num = float(current)
                         
-                        # 가중치가 100이고 값이 100이면 스킵 (기본값)
-                        if weight == 100 and current_num == 100 and prev_num == 100:
+                        # 값이 1이고 둘 다 1이면 스킵 (기본값)
+                        if current_num == 1.0 and prev_num == 1.0:
                             continue
                         
                         if prev_num != 0:
@@ -827,9 +809,10 @@ class TemplateFiller:
         config = self._get_sheet_config(sheet_name)
         category_col = config['category_column']
         
-        # 가중치 열 찾기
+        # 가중치 열 찾기 - 가중치 열이 없으면 원데이터로 비교
         structure = self.dynamic_parser.parse_sheet_structure(sheet_name)
-        weight_col = structure.get('weight_column', 4)
+        weight_col = structure.get('weight_column')
+        has_weight_column = weight_col is not None
         
         region_row = None
         
@@ -883,31 +866,19 @@ class TemplateFiller:
         # 엑셀의 해당 열이 이미 증감률인지 확인 필요
         # 일단 기존 로직대로 전년 동분기와 비교하여 계산
         
-        # 가중치 확인 (비어있으면 100으로 처리)
-        weight = sheet.cell(row=region_row, column=weight_col).value
-        if weight is None or (isinstance(weight, str) and not weight.strip()):
-            weight = 100
-        else:
-            try:
-                weight = float(weight)
-            except (ValueError, TypeError):
-                weight = 100
+        # 가중치 열 찾기 - 가중치 열이 없으면 원데이터로 비교
+        weight_col = structure.get('weight_column')
+        has_weight_column = weight_col is not None
         
         # 현재 분기와 전년 동분기 값 가져오기
         current_value = sheet.cell(row=region_row, column=current_col).value
         prev_value = sheet.cell(row=region_row, column=prev_col).value
         
-        # 결측치 체크 - 가중치가 100이면 데이터가 비어있어도 처리
-        if current_value is None or (isinstance(current_value, str) and not current_value.strip()):
-            if weight == 100:
-                current_value = prev_value if prev_value is not None else 100
-            else:
-                current_value = None
-        if prev_value is None or (isinstance(prev_value, str) and not prev_value.strip()):
-            if weight == 100:
-                prev_value = current_value if current_value is not None else 100
-            else:
-                prev_value = None
+        # 결측치 체크 - 결측치는 1로 채움
+        if current_value is None or (isinstance(current_value, str) and (not current_value.strip() or current_value.strip() == '-')):
+            current_value = prev_value if prev_value is not None else 1.0
+        if prev_value is None or (isinstance(prev_value, str) and (not prev_value.strip() or prev_value.strip() == '-')):
+            prev_value = current_value if current_value is not None else 1.0
         
         # 결측치 체크
         if current_value is None or prev_value is None:
@@ -1320,7 +1291,7 @@ class TemplateFiller:
             
             # 실업률/고용률 시트 구조 확인
             is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
-            is_employment_rate_sheet = ('고용률' in sheet_name or sheet_name == '고용률')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 실업자 수 시트: 1열에 시도, 2열에 연령계층
@@ -1378,7 +1349,7 @@ class TemplateFiller:
         if key == '전국_증감률':
             # 실업률/고용률 시트인지 확인
             is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
-            is_employment_rate_sheet = ('고용률' in sheet_name or sheet_name == '고용률')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 현재 연도/분기의 증감률 계산
@@ -1405,31 +1376,69 @@ class TemplateFiller:
                 
                 return "N/A"
             elif is_employment_rate_sheet:
-                # 고용률 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대
+                # 고용 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대/항목
+                # 고용률 증감률 계산: 현재 고용률 - 전년 동분기 고용률 (%p 단위)
                 current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_b = sheet.cell(row=row, column=2)  # 지역 이름
-                    cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-                    cell_category = sheet.cell(row=row, column=category_col)  # 연령대
-                    
-                    if cell_b.value and cell_c.value and cell_category.value:
-                        region_str = str(cell_b.value).strip()
-                        class_str = str(cell_c.value).strip()
-                        category_str = str(cell_category.value).strip()
+                # 전국 고용률 계산 함수
+                def calculate_employment_rate(region_name, col):
+                    # 먼저 "계" 행에서 직접 값을 읽어봄
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
                         
-                        # 전국이고 분류 단계가 0이고 카테고리가 "계"인 경우
-                        if (region_str == '전국' and class_str == '0' and category_str == '계'):
-                            current = sheet.cell(row=row, column=current_col).value
-                            prev = sheet.cell(row=row, column=prev_col).value
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
                             
-                            if current is not None and prev is not None and prev != 0:
-                                growth_rate = ((current / prev) - 1) * 100
-                                return self.format_percentage(growth_rate, decimal_places=1)
+                            if (region_str == region_name and class_str == '0' and category_str == '계'):
+                                value = sheet.cell(row=row, column=col).value
+                                if value is not None:
+                                    return float(value) if isinstance(value, (int, float)) else None
+                    
+                    # "계" 행에서 값을 찾지 못한 경우, 취업자수와 인구수로 계산
+                    employment_count = None
+                    population_count = None
+                    
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
+                        
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
+                            
+                            if (region_str == region_name and class_str == '0'):
+                                value = sheet.cell(row=row, column=col).value
+                                
+                                if ('취업자' in category_str or '취업' in category_str) and '인구' not in category_str:
+                                    if value is not None:
+                                        employment_count = float(value) if isinstance(value, (int, float)) else None
+                                
+                                if ('15세' in category_str or '15세이상' in category_str or '15세 이상' in category_str) and '인구' in category_str:
+                                    if value is not None:
+                                        population_count = float(value) if isinstance(value, (int, float)) else None
+                    
+                    if employment_count is not None and population_count is not None and population_count != 0:
+                        return (employment_count / population_count) * 100
+                    return None
+                
+                # 전국 고용률 계산
+                current_rate = calculate_employment_rate('전국', current_col)
+                prev_rate = calculate_employment_rate('전국', prev_col)
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 고용률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
                 
                 return "N/A"
             else:
@@ -1447,7 +1456,7 @@ class TemplateFiller:
             
             # 실업률/고용률 시트인지 확인
             is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
-            is_employment_rate_sheet = ('고용률' in sheet_name or sheet_name == '고용률')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 지역명 매핑
@@ -1489,31 +1498,69 @@ class TemplateFiller:
                 
                 return "N/A"
             elif is_employment_rate_sheet:
-                # 고용률 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대
+                # 고용 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대/항목
+                # 고용률 증감률 계산: 현재 고용률 - 전년 동분기 고용률 (%p 단위)
                 current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_b = sheet.cell(row=row, column=2)  # 지역 이름
-                    cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-                    cell_category = sheet.cell(row=row, column=category_col)  # 연령대
-                    
-                    if cell_b.value and cell_c.value and cell_category.value:
-                        region_str = str(cell_b.value).strip()
-                        class_str = str(cell_c.value).strip()
-                        category_str = str(cell_category.value).strip()
+                # 지역별 고용률 계산 함수
+                def calculate_employment_rate(region_name, col):
+                    # 먼저 "계" 행에서 직접 값을 읽어봄
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
                         
-                        # 지역명 매칭 및 분류 단계가 0이고 카테고리가 "계"인 경우
-                        if (region_str == region_name and class_str == '0' and category_str == '계'):
-                            current = sheet.cell(row=row, column=current_col).value
-                            prev = sheet.cell(row=row, column=prev_col).value
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
                             
-                            if current is not None and prev is not None and prev != 0:
-                                growth_rate = ((current / prev) - 1) * 100
-                                return self.format_percentage(growth_rate, decimal_places=1)
+                            if (region_str == region_name and class_str == '0' and category_str == '계'):
+                                value = sheet.cell(row=row, column=col).value
+                                if value is not None:
+                                    return float(value) if isinstance(value, (int, float)) else None
+                    
+                    # "계" 행에서 값을 찾지 못한 경우, 취업자수와 인구수로 계산
+                    employment_count = None
+                    population_count = None
+                    
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
+                        
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
+                            
+                            if (region_str == region_name and class_str == '0'):
+                                value = sheet.cell(row=row, column=col).value
+                                
+                                if ('취업자' in category_str or '취업' in category_str) and '인구' not in category_str:
+                                    if value is not None:
+                                        employment_count = float(value) if isinstance(value, (int, float)) else None
+                                
+                                if ('15세' in category_str or '15세이상' in category_str or '15세 이상' in category_str) and '인구' in category_str:
+                                    if value is not None:
+                                        population_count = float(value) if isinstance(value, (int, float)) else None
+                    
+                    if employment_count is not None and population_count is not None and population_count != 0:
+                        return (employment_count / population_count) * 100
+                    return None
+                
+                # 지역별 고용률 계산
+                current_rate = calculate_employment_rate(region_name, current_col)
+                prev_rate = calculate_employment_rate(region_name, prev_col)
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 고용률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
                 
                 return "N/A"
             else:
@@ -1654,36 +1701,23 @@ class TemplateFiller:
                         current = sheet.cell(row=row, column=current_col).value
                         prev = sheet.cell(row=row, column=prev_col).value
                         
-                        # 가중치 확인 (비어있으면 100으로 처리)
+                        # 가중치 열 찾기 - 가중치 열이 없으면 원데이터로 비교
                         structure = self.dynamic_parser.parse_sheet_structure(sheet_name)
-                        weight_col = structure.get('weight_column', 4)
-                        weight = sheet.cell(row=row, column=weight_col).value
-                        if weight is None or (isinstance(weight, str) and not weight.strip()):
-                            weight = 100
-                        else:
-                            try:
-                                weight = float(weight)
-                            except (ValueError, TypeError):
-                                weight = 100
+                        weight_col = structure.get('weight_column')
+                        has_weight_column = weight_col is not None
                         
-                        # 결측치 체크 - 가중치가 100이면 데이터가 비어있어도 처리
-                        if current is None or (isinstance(current, str) and not current.strip()):
-                            if weight == 100:
-                                current = prev if prev is not None else 100
-                            else:
-                                current = None
-                        if prev is None or (isinstance(prev, str) and not prev.strip()):
-                            if weight == 100:
-                                prev = current if current is not None else 100
-                            else:
-                                prev = None
+                        # 결측치 체크 - 결측치는 1로 채움
+                        if current is None or (isinstance(current, str) and (not current.strip() or current.strip() == '-')):
+                            current = prev if prev is not None else 1.0
+                        if prev is None or (isinstance(prev, str) and (not prev.strip() or prev.strip() == '-')):
+                            prev = current if current is not None else 1.0
                         
                         if current is not None and prev is not None and prev != 0:
-                            # 가중치가 100이고 값이 100이면 스킵 (기본값)
+                            # 값이 1이고 둘 다 1이면 스킵 (기본값)
                             try:
                                 current_num = float(current)
                                 prev_num = float(prev)
-                                if weight == 100 and current_num == 100 and prev_num == 100:
+                                if current_num == 1.0 and prev_num == 1.0:
                                     continue
                                 growth_rate = ((current_num / prev_num) - 1) * 100
                                 if growth_rate > 0:
@@ -1792,7 +1826,8 @@ class TemplateFiller:
             current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
             
             # 실업률/고용률 시트인지 확인 (시트명에 "실업" 또는 "고용"이 포함되고 category_column이 없는 경우)
-            is_unemployment_sheet = ('실업' in sheet_name or '고용' in sheet_name)
+            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
@@ -1860,7 +1895,7 @@ class TemplateFiller:
             
             # 실업률 시트인지 고용률 시트인지 확인
             is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
-            is_employment_rate_sheet = ('고용률' in sheet_name or sheet_name == '고용률')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 실업자 수 시트 구조: 1열에 시도, 2열에 연령계층
@@ -1897,18 +1932,19 @@ class TemplateFiller:
                 
                 return "N/A"
             elif is_employment_rate_sheet:
-                # 고용률 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대
-                # 현재 연도/분기의 값 가져오기
+                # 고용 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대/항목
+                # 고용률 계산: (취업자수 ÷ 15세 이상 인구 수) × 100
                 current_col, _ = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
                 config = self._get_sheet_config(sheet_name)
                 category_col = config['category_column']
                 
+                # 먼저 "계" 행에서 직접 값을 읽어봄 (이미 계산된 고용률이 있을 수 있음)
                 for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_b = sheet.cell(row=row, column=2)  # 지역 이름
                     cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-                    cell_category = sheet.cell(row=row, column=category_col)  # 연령대
+                    cell_category = sheet.cell(row=row, column=category_col)  # 연령대/항목
                     
                     if cell_b.value and cell_c.value and cell_category.value:
                         region_str = str(cell_b.value).strip()
@@ -1923,6 +1959,39 @@ class TemplateFiller:
                             if value is not None:
                                 return self.format_number(value, decimal_places=1)
                 
+                # "계" 행에서 값을 찾지 못한 경우, 취업자수와 인구수로 계산
+                employment_count = None  # 취업자수
+                population_count = None   # 15세 이상 인구 수
+                
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_b = sheet.cell(row=row, column=2)  # 지역 이름
+                    cell_c = sheet.cell(row=row, column=3)  # 분류 단계
+                    cell_category = sheet.cell(row=row, column=category_col)  # 항목
+                    
+                    if cell_b.value and cell_c.value and cell_category.value:
+                        region_str = str(cell_b.value).strip()
+                        class_str = str(cell_c.value).strip()
+                        category_str = str(cell_category.value).strip()
+                        
+                        # 지역명 매칭 및 분류 단계가 0인 경우
+                        if (region_str == region_name and class_str == '0'):
+                            value = sheet.cell(row=row, column=current_col).value
+                            
+                            # 취업자수 찾기
+                            if ('취업자' in category_str or '취업' in category_str) and '인구' not in category_str:
+                                if value is not None:
+                                    employment_count = float(value) if isinstance(value, (int, float)) else None
+                            
+                            # 15세 이상 인구 수 찾기
+                            if ('15세' in category_str or '15세이상' in category_str or '15세 이상' in category_str) and '인구' in category_str:
+                                if value is not None:
+                                    population_count = float(value) if isinstance(value, (int, float)) else None
+                
+                # 고용률 계산: (취업자수 ÷ 15세 이상 인구 수) × 100
+                if employment_count is not None and population_count is not None and population_count != 0:
+                    employment_rate = (employment_count / population_count) * 100
+                    return self.format_number(employment_rate, decimal_places=1)
+                
                 return "N/A"
             else:
                 # 일반 시트 처리
@@ -1936,39 +2005,101 @@ class TemplateFiller:
             target_year = int(region_quarter_value_match.group(3))
             target_quarter = int(region_quarter_value_match.group(4))
             
-            # 지역명 매핑
-            region_mapping = {
-                '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
-                '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
-                '울산': '울산광역시', '세종': '세종특별자치시', '경기': '경기도',
-                '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
-                '전북': '전라북도', '전남': '전라남도', '경북': '경상북도',
-                '경남': '경상남도', '제주': '제주특별자치도',
-            }
-            actual_region_name = region_mapping.get(region_name, region_name)
+            # 실업률 시트인지 고용률 시트인지 확인
+            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
-            # 해당 분기의 열 번호 가져오기
-            target_col, _ = self._get_quarter_columns(target_year, target_quarter, sheet_name)
-            sheet = self.excel_extractor.get_sheet(sheet_name)
-            
-            # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-            for row in range(4, min(5000, sheet.max_row + 1)):
-                cell_a = sheet.cell(row=row, column=1)  # 시도
-                cell_b = sheet.cell(row=row, column=2)  # 연령계층
+            if is_unemployment_sheet:
+                # 지역명 매핑
+                region_mapping = {
+                    '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
+                    '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
+                    '울산': '울산광역시', '세종': '세종특별자치시', '경기': '경기도',
+                    '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
+                    '전북': '전라북도', '전남': '전라남도', '경북': '경상북도',
+                    '경남': '경상남도', '제주': '제주특별자치도',
+                }
+                actual_region_name = region_mapping.get(region_name, region_name)
                 
-                if cell_a.value and cell_b.value:
-                    region_str = str(cell_a.value).strip()
-                    age_str = str(cell_b.value).strip()
+                # 해당 분기의 열 번호 가져오기
+                target_col, _ = self._get_quarter_columns(target_year, target_quarter, sheet_name)
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                
+                # 실업률 시트 구조: 1열에 시도, 2열에 연령계층
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_a = sheet.cell(row=row, column=1)  # 시도
+                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
-                    # 지역명 매칭
-                    if (region_str == actual_region_name or 
-                        actual_region_name in region_str or 
-                        region_str in actual_region_name):
-                        # "계" 행인지 확인
-                        if age_str == '계':
+                    if cell_a.value and cell_b.value:
+                        region_str = str(cell_a.value).strip()
+                        age_str = str(cell_b.value).strip()
+                        
+                        # 지역명 매칭
+                        if (region_str == actual_region_name or 
+                            actual_region_name in region_str or 
+                            region_str in actual_region_name):
+                            # "계" 행인지 확인
+                            if age_str == '계':
+                                value = sheet.cell(row=row, column=target_col).value
+                                if value is not None:
+                                    return self.format_number(value, decimal_places=1)
+                
+                return "N/A"
+            elif is_employment_rate_sheet:
+                # 고용 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대/항목
+                # 고용률 계산: (취업자수 ÷ 15세 이상 인구 수) × 100
+                target_col, _ = self._get_quarter_columns(target_year, target_quarter, sheet_name)
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                
+                config = self._get_sheet_config(sheet_name)
+                category_col = config['category_column']
+                
+                # 먼저 "계" 행에서 직접 값을 읽어봄
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_b = sheet.cell(row=row, column=2)
+                    cell_c = sheet.cell(row=row, column=3)
+                    cell_category = sheet.cell(row=row, column=category_col)
+                    
+                    if cell_b.value and cell_c.value and cell_category.value:
+                        region_str = str(cell_b.value).strip()
+                        class_str = str(cell_c.value).strip()
+                        category_str = str(cell_category.value).strip()
+                        
+                        if (region_str == region_name and class_str == '0' and category_str == '계'):
                             value = sheet.cell(row=row, column=target_col).value
                             if value is not None:
                                 return self.format_number(value, decimal_places=1)
+                
+                # "계" 행에서 값을 찾지 못한 경우, 취업자수와 인구수로 계산
+                employment_count = None
+                population_count = None
+                
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_b = sheet.cell(row=row, column=2)
+                    cell_c = sheet.cell(row=row, column=3)
+                    cell_category = sheet.cell(row=row, column=category_col)
+                    
+                    if cell_b.value and cell_c.value and cell_category.value:
+                        region_str = str(cell_b.value).strip()
+                        class_str = str(cell_c.value).strip()
+                        category_str = str(cell_category.value).strip()
+                        
+                        if (region_str == region_name and class_str == '0'):
+                            value = sheet.cell(row=row, column=target_col).value
+                            
+                            if ('취업자' in category_str or '취업' in category_str) and '인구' not in category_str:
+                                if value is not None:
+                                    employment_count = float(value) if isinstance(value, (int, float)) else None
+                            
+                            if ('15세' in category_str or '15세이상' in category_str or '15세 이상' in category_str) and '인구' in category_str:
+                                if value is not None:
+                                    population_count = float(value) if isinstance(value, (int, float)) else None
+                
+                if employment_count is not None and population_count is not None and population_count != 0:
+                    employment_rate = (employment_count / population_count) * 100
+                    return self.format_number(employment_rate, decimal_places=1)
+                
+                return "N/A"
             
             return "N/A"
         
@@ -1979,42 +2110,115 @@ class TemplateFiller:
             target_year = int(region_quarter_growth_match.group(2))
             target_quarter = int(region_quarter_growth_match.group(3))
             
-            # 지역명 매핑
-            region_mapping = {
-                '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
-                '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
-                '울산': '울산광역시', '세종': '세종특별자치시', '경기': '경기도',
-                '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
-                '전북': '전라북도', '전남': '전라남도', '경북': '경상북도',
-                '경남': '경상남도', '제주': '제주특별자치도',
-            }
-            actual_region_name = region_mapping.get(region_name, region_name)
+            # 실업률 시트인지 고용률 시트인지 확인
+            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
-            # 해당 분기와 이전 분기의 열 번호 가져오기
-            current_col, prev_col = self._get_quarter_columns(target_year, target_quarter, sheet_name)
-            sheet = self.excel_extractor.get_sheet(sheet_name)
-            
-            # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-            for row in range(4, min(5000, sheet.max_row + 1)):
-                cell_a = sheet.cell(row=row, column=1)  # 시도
-                cell_b = sheet.cell(row=row, column=2)  # 연령계층
+            if is_unemployment_sheet:
+                # 지역명 매핑
+                region_mapping = {
+                    '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
+                    '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
+                    '울산': '울산광역시', '세종': '세종특별자치시', '경기': '경기도',
+                    '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
+                    '전북': '전라북도', '전남': '전라남도', '경북': '경상북도',
+                    '경남': '경상남도', '제주': '제주특별자치도',
+                }
+                actual_region_name = region_mapping.get(region_name, region_name)
                 
-                if cell_a.value and cell_b.value:
-                    region_str = str(cell_a.value).strip()
-                    age_str = str(cell_b.value).strip()
+                # 해당 분기와 이전 분기의 열 번호 가져오기
+                current_col, prev_col = self._get_quarter_columns(target_year, target_quarter, sheet_name)
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                
+                # 실업률 시트 구조: 1열에 시도, 2열에 연령계층
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_a = sheet.cell(row=row, column=1)  # 시도
+                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
-                    # 지역명 매칭
-                    if (region_str == actual_region_name or 
-                        actual_region_name in region_str or 
-                        region_str in actual_region_name):
-                        # "계" 행인지 확인
-                        if age_str == '계':
-                            current = sheet.cell(row=row, column=current_col).value
-                            prev = sheet.cell(row=row, column=prev_col).value
+                    if cell_a.value and cell_b.value:
+                        region_str = str(cell_a.value).strip()
+                        age_str = str(cell_b.value).strip()
+                        
+                        # 지역명 매칭
+                        if (region_str == actual_region_name or 
+                            actual_region_name in region_str or 
+                            region_str in actual_region_name):
+                            # "계" 행인지 확인
+                            if age_str == '계':
+                                current = sheet.cell(row=row, column=current_col).value
+                                prev = sheet.cell(row=row, column=prev_col).value
+                                
+                                if current is not None and prev is not None and prev != 0:
+                                    growth_rate = ((current / prev) - 1) * 100
+                                    return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
+                
+                return "N/A"
+            elif is_employment_rate_sheet:
+                # 고용 시트 구조: 1열에 지역 코드, 2열에 지역 이름, 3열에 분류 단계, 4열에 연령대/항목
+                # 고용률 증감률 계산: 현재 고용률 - 전년 동분기 고용률 (%p 단위)
+                current_col, prev_col = self._get_quarter_columns(target_year, target_quarter, sheet_name)
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                
+                config = self._get_sheet_config(sheet_name)
+                category_col = config['category_column']
+                
+                # 지역별 고용률 계산 함수
+                def calculate_employment_rate(region_name, col):
+                    # 먼저 "계" 행에서 직접 값을 읽어봄
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
+                        
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
                             
-                            if current is not None and prev is not None and prev != 0:
-                                growth_rate = ((current / prev) - 1) * 100
-                                return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
+                            if (region_str == region_name and class_str == '0' and category_str == '계'):
+                                value = sheet.cell(row=row, column=col).value
+                                if value is not None:
+                                    return float(value) if isinstance(value, (int, float)) else None
+                    
+                    # "계" 행에서 값을 찾지 못한 경우, 취업자수와 인구수로 계산
+                    employment_count = None
+                    population_count = None
+                    
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_b = sheet.cell(row=row, column=2)
+                        cell_c = sheet.cell(row=row, column=3)
+                        cell_category = sheet.cell(row=row, column=category_col)
+                        
+                        if cell_b.value and cell_c.value and cell_category.value:
+                            region_str = str(cell_b.value).strip()
+                            class_str = str(cell_c.value).strip()
+                            category_str = str(cell_category.value).strip()
+                            
+                            if (region_str == region_name and class_str == '0'):
+                                value = sheet.cell(row=row, column=col).value
+                                
+                                if ('취업자' in category_str or '취업' in category_str) and '인구' not in category_str:
+                                    if value is not None:
+                                        employment_count = float(value) if isinstance(value, (int, float)) else None
+                                
+                                if ('15세' in category_str or '15세이상' in category_str or '15세 이상' in category_str) and '인구' in category_str:
+                                    if value is not None:
+                                        population_count = float(value) if isinstance(value, (int, float)) else None
+                    
+                    if employment_count is not None and population_count is not None and population_count != 0:
+                        return (employment_count / population_count) * 100
+                    return None
+                
+                # 지역별 고용률 계산
+                current_rate = calculate_employment_rate(region_name, current_col)
+                prev_rate = calculate_employment_rate(region_name, prev_col)
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 고용률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
+                
+                return "N/A"
             
             return "N/A"
         
