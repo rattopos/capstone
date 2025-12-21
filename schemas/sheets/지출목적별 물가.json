@@ -5,7 +5,12 @@
   "base_col": 50,
   "name_mapping": null,
   "national_priorities": null,
-  "region_priorities": {}
+  "region_priorities": {},
+  "weight_column": 3,
+  "weight_default": null,
+  "classification_column": 2,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
 }
 
 

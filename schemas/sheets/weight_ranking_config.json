@@ -1,0 +1,147 @@
+{
+  "_description": "가중치 기반 증감률 순위 설정 스키마",
+  "_rules": {
+    "weight_column_exists_with_values": "가중치 열에 값이 있으면 해당 값 사용",
+    "weight_column_exists_empty": "가중치 열이 있지만 공란이면 weight_default=100",
+    "weight_column_not_exists": "가중치 열이 없으면 weight_default=1",
+    "max_classification_level": "분류단계는 2단계까지만 사용"
+  },
+  "sheets": {
+    "광공업생산": {
+      "weight_column": 3,
+      "weight_default": null,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 5,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열에 실제 값이 있음 (예: 10000, 23.7 등)"
+    },
+    "서비스업생산": {
+      "weight_column": 3,
+      "weight_default": 100,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 5,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 있으나 값이 공란"
+    },
+    "소비(소매, 추가)": {
+      "weight_column": 3,
+      "weight_default": 100,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 4,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 있으나 값이 공란"
+    },
+    "고용": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 4,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "고용(kosis)": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 4,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "고용률": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 3,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "실업자 수": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": null,
+      "max_classification_level": null,
+      "category_column": 1,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 및 분류단계 열 없음"
+    },
+    "지출목적별 물가": {
+      "weight_column": 3,
+      "weight_default": null,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 5,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열에 실제 값이 있음 (예: 1000, 142 등)"
+    },
+    "품목성질별 물가": {
+      "weight_column": 2,
+      "weight_default": null,
+      "classification_column": 1,
+      "max_classification_level": 2,
+      "category_column": 3,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열에 실제 값이 있음 (예: 1000, 447.6 등)"
+    },
+    "건설 (공표자료)": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 4,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "수출": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 5,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "수입": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 5,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "연령별 인구이동": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 3,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    },
+    "시도 간 이동": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 2,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음, 분류단계가 유입/유출인구 구분"
+    },
+    "시군구인구이동": {
+      "weight_column": null,
+      "weight_default": 1,
+      "classification_column": 2,
+      "max_classification_level": 2,
+      "category_column": 4,
+      "use_weighted_ranking": true,
+      "notes": "가중치 열 없음"
+    }
+  }
+}
+

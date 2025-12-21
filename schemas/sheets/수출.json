@@ -5,7 +5,12 @@
   "base_col": 62,
   "name_mapping": "industry_name_mapping",
   "national_priorities": null,
-  "region_priorities": {}
+  "region_priorities": {},
+  "weight_column": null,
+  "weight_default": 1,
+  "classification_column": 2,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
 }
 
 

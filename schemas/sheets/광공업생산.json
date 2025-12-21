@@ -12,7 +12,12 @@
     "서울": ["의료·정밀기기", "전기·가스업", "식품"],
     "충남": ["반도체·전자부품", "전기장치", "전기·가스업"],
     "부산": ["금속", "기타 수송기기", "금속가공제품"]
-  }
+  },
+  "weight_column": 3,
+  "weight_default": null,
+  "classification_column": 2,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
 }
 
 

@@ -1,11 +1,16 @@
 {
-  "category_column": 6,
+  "category_column": 4,
   "base_year": 2023,
   "base_quarter": 1,
   "base_col": 56,
   "name_mapping": null,
   "national_priorities": null,
-  "region_priorities": {}
+  "region_priorities": {},
+  "weight_column": 2,
+  "weight_default": null,
+  "classification_column": 1,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
 }
 
 

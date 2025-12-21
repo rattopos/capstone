@@ -13,7 +13,12 @@
     "제주": ["면세점", "슈퍼마켓", "잡화점", "대형마트"],
     "경북": ["전문소매점", "슈퍼마켓", "잡화점", "대형마트"],
     "서울": ["면세점", "슈퍼마켓", "잡화점", "백화점"]
-  }
+  },
+  "weight_column": 3,
+  "weight_default": 100,
+  "classification_column": 2,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
 }
 
 
