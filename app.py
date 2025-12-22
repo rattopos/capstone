@@ -5,15 +5,14 @@ Flask 웹 애플리케이션
 
 import os
 import sys
-import json
-from pathlib import Path
-from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
-
-# Flask 템플릿 폴더 설정
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from werkzeug.utils import secure_filename
 import tempfile
-import shutil
+from pathlib import Path
+
+from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
+from werkzeug.utils import secure_filename
+
+# 모듈 경로 설정
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.template_manager import TemplateManager
 from src.excel_extractor import ExcelExtractor
@@ -26,18 +25,6 @@ from src.pdf_generator import PDFGenerator
 from src.docx_generator import DOCXGenerator
 from src.schema_loader import SchemaLoader
 from bs4 import BeautifulSoup
-
-# PDF 생성 라이브러리 선택 (playwright 우선, 없으면 weasyprint)
-PDF_GENERATOR = None
-try:
-    from playwright.sync_api import sync_playwright
-    PDF_GENERATOR = 'playwright'
-except ImportError:
-    try:
-        from weasyprint import HTML
-        PDF_GENERATOR = 'weasyprint'
-    except ImportError:
-        PDF_GENERATOR = None
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -55,94 +42,42 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 # 스키마 로더 초기화
 schema_loader = SchemaLoader()
 
-# 엑셀 파일 캐시 (파일 경로 -> ExcelExtractor 인스턴스)
-_excel_cache = {}
-_excel_cache_timestamps = {}
-
-# 템플릿 캐시 (템플릿 경로 -> TemplateManager 인스턴스)
-_template_cache = {}
-_template_cache_timestamps = {}
-
+# 성능 최적화: 템플릿 목록 캐시
+_templates_cache = None
+_templates_cache_mtime = None  # 템플릿 폴더 수정 시간
 
 def get_excel_extractor(excel_path: Path, force_reload: bool = False) -> ExcelExtractor:
     """
-    엑셀 추출기를 가져오거나 캐시에서 반환합니다.
+    엑셀 추출기를 새로 생성합니다 (캐시 없이).
     
     Args:
         excel_path: 엑셀 파일 경로
-        force_reload: 강제로 다시 로드할지 여부
+        force_reload: 강제로 다시 로드할지 여부 (사용되지 않음, 항상 새로 생성)
         
     Returns:
         ExcelExtractor 인스턴스
     """
-    excel_path_str = str(excel_path.resolve())
-    
-    # 강제 리로드가 아니고 캐시에 있으면 반환
-    if not force_reload and excel_path_str in _excel_cache:
-        # 파일이 수정되었는지 확인
-        try:
-            current_mtime = excel_path.stat().st_mtime
-            cached_mtime = _excel_cache_timestamps.get(excel_path_str, 0)
-            
-            # 파일이 수정되지 않았으면 캐시 반환
-            if current_mtime == cached_mtime:
-                return _excel_cache[excel_path_str]
-        except (OSError, FileNotFoundError):
-            # 파일 접근 오류 시 캐시에서 제거
-            _excel_cache.pop(excel_path_str, None)
-            _excel_cache_timestamps.pop(excel_path_str, None)
-    
-    # 새로 로드
-    excel_extractor = ExcelExtractor(excel_path_str)
+    # 항상 새로 생성
+    excel_extractor = ExcelExtractor(str(excel_path.resolve()))
     excel_extractor.load_workbook()
-    
-    # 캐시에 저장
-    _excel_cache[excel_path_str] = excel_extractor
-    try:
-        _excel_cache_timestamps[excel_path_str] = excel_path.stat().st_mtime
-    except (OSError, FileNotFoundError):
-        pass
     
     return excel_extractor
 
 
 def get_template_manager(template_path: Path, force_reload: bool = False) -> TemplateManager:
     """
-    템플릿 매니저를 가져오거나 캐시에서 반환합니다.
+    템플릿 매니저를 새로 생성합니다 (캐시 없이).
     
     Args:
         template_path: 템플릿 파일 경로
-        force_reload: 강제로 다시 로드할지 여부
+        force_reload: 강제로 다시 로드할지 여부 (사용되지 않음, 항상 새로 생성)
         
     Returns:
         TemplateManager 인스턴스
     """
-    template_path_str = str(template_path.resolve())
-    
-    # 강제 리로드가 아니고 캐시에 있으면 반환
-    if not force_reload and template_path_str in _template_cache:
-        # 파일이 수정되었는지 확인
-        try:
-            current_mtime = template_path.stat().st_mtime
-            cached_mtime = _template_cache_timestamps.get(template_path_str, 0)
-            
-            # 파일이 수정되지 않았으면 캐시 반환
-            if current_mtime == cached_mtime:
-                return _template_cache[template_path_str]
-        except (OSError, FileNotFoundError):
-            # 파일 접근 오류 시 캐시에서 제거
-            _template_cache.pop(template_path_str, None)
-            _template_cache_timestamps.pop(template_path_str, None)
-    
-    # 새로 로드
-    template_manager = get_template_manager(template_path)
-    
-    # 캐시에 저장
-    _template_cache[template_path_str] = template_manager
-    try:
-        _template_cache_timestamps[template_path_str] = template_path.stat().st_mtime
-    except (OSError, FileNotFoundError):
-        pass
+    # 항상 새로 생성
+    template_manager = TemplateManager(str(template_path.resolve()))
+    template_manager.load_template()
     
     return template_manager
 
@@ -185,14 +120,36 @@ def index():
 
 @app.route('/api/templates', methods=['GET'])
 def get_templates():
-    """사용 가능한 템플릿 목록 반환 (각 템플릿이 필요한 시트 정보 포함)"""
+    """사용 가능한 템플릿 목록 반환 (각 템플릿이 필요한 시트 정보 포함)
+    
+    성능 최적화: 결과를 캐시하여 반복 호출 시 재파싱하지 않습니다.
+    템플릿 폴더의 수정 시간이 변경되면 캐시를 무효화합니다.
+    """
+    global _templates_cache, _templates_cache_mtime
+    
     templates_dir = Path('templates')
+    
+    # 캐시 유효성 확인
+    if templates_dir.exists():
+        current_mtime = templates_dir.stat().st_mtime
+        # 개별 파일 수정 시간도 확인
+        for f in templates_dir.glob('*.html'):
+            file_mtime = f.stat().st_mtime
+            if file_mtime > current_mtime:
+                current_mtime = file_mtime
+        
+        if _templates_cache is not None and _templates_cache_mtime == current_mtime:
+            return jsonify({'templates': _templates_cache})
+    
     templates = []
     
     # templates 디렉토리의 모든 HTML 파일을 스캔
     if templates_dir.exists():
         # 모든 HTML 파일 찾기
         html_files = list(templates_dir.glob('*.html'))
+        
+        # 템플릿 매핑 한 번만 로드
+        template_mapping = schema_loader.load_template_mapping()
         
         for template_path in html_files:
             template_name = template_path.name
@@ -211,7 +168,6 @@ def get_templates():
                 
                 # display_name 찾기 (템플릿 매핑에서 먼저 찾고, 없으면 파일명 사용)
                 display_name = template_name.replace('.html', '')
-                template_mapping = schema_loader.load_template_mapping()
                 for sheet_name, info in template_mapping.items():
                     if info['template'] == template_name:
                         display_name = info['display_name']
@@ -226,7 +182,6 @@ def get_templates():
             except Exception as e:
                 # 템플릿 파싱 실패 시 기본 정보만 반환
                 display_name = template_name.replace('.html', '')
-                template_mapping = schema_loader.load_template_mapping()
                 for sheet_name, info in template_mapping.items():
                     if info['template'] == template_name:
                         display_name = info['display_name']
@@ -239,8 +194,16 @@ def get_templates():
                     'required_sheets': []
                 })
     
+    # 서울 관련 템플릿 제외 (서울.html, 서울주요지표.html)
+    excluded_templates = {'서울.html', '서울주요지표.html'}
+    templates = [t for t in templates if t['name'] not in excluded_templates]
+    
     # 템플릿 이름으로 정렬
     templates.sort(key=lambda x: x['display_name'])
+    
+    # 캐시에 저장
+    _templates_cache = templates
+    _templates_cache_mtime = current_mtime if templates_dir.exists() else None
     
     return jsonify({'templates': templates})
 
@@ -278,9 +241,126 @@ def get_template_sheets():
         }), 500
 
 
+def detect_sheet_scale(excel_extractor, sheet_name):
+    """
+    시트의 데이터 스케일을 감지하여 적절한 기본값 반환
+    - 한 자리 수 (1-9) → 1
+    - 두 자리 수 (10-99) → 10
+    - 세 자리 수 (100-999) → 100
+    - 네 자리 수 이상 (1000+) → 1000
+    """
+    import math
+    try:
+        sheet = excel_extractor.get_sheet(sheet_name)
+        values = []
+        
+        # 데이터 영역에서 숫자 값 수집 (4행부터, 7열 이후)
+        for row in range(4, min(104, sheet.max_row + 1)):
+            for col in range(7, min(sheet.max_column + 1, 20)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value is not None:
+                    try:
+                        val = float(cell.value)
+                        if not math.isnan(val) and not math.isinf(val) and val > 0:
+                            values.append(abs(val))
+                    except (ValueError, TypeError):
+                        continue
+        
+        if not values:
+            return 1.0
+        
+        # 중앙값 기준으로 스케일 결정
+        values.sort()
+        median_value = values[len(values) // 2]
+        
+        if median_value < 10:
+            return 1.0
+        elif median_value < 100:
+            return 10.0
+        elif median_value < 1000:
+            return 100.0
+        else:
+            return 1000.0
+    except Exception:
+        return 1.0
+
+
+def find_missing_values_in_sheet(excel_extractor, sheet_name, year, quarter):
+    """시트에서 결측치 찾기"""
+    import re
+    missing_values = []
+    
+    try:
+        sheet = excel_extractor.get_sheet(sheet_name)
+        
+        # 분기별 열 찾기
+        target_col = None
+        prev_col = None
+        
+        # 헤더에서 해당 분기 열 찾기 (1-3행 검사)
+        for row in range(1, 4):
+            for col in range(1, min(sheet.max_column + 1, 100)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    cell_str = str(cell.value).strip()
+                    # 현재 분기 열 찾기 (예: "2025 2/4" 또는 "2025 2/4p")
+                    pattern = rf'{year}\s*{quarter}/4[pP]?'
+                    if re.search(pattern, cell_str):
+                        target_col = col
+                    # 전년 동분기 열 찾기
+                    prev_pattern = rf'{year-1}\s*{quarter}/4[pP]?'
+                    if re.search(prev_pattern, cell_str):
+                        prev_col = col
+        
+        if not target_col:
+            return missing_values
+        
+        # 스케일 감지
+        scale = detect_sheet_scale(excel_extractor, sheet_name)
+        
+        # 지역 열 찾기 (보통 2번째 열)
+        region_col = 2
+        category_col = 6  # 품목/산업 열
+        
+        # 데이터 영역 검사 (4행부터)
+        for row in range(4, min(sheet.max_row + 1, 500)):
+            cell_value = sheet.cell(row=row, column=target_col).value
+            region_value = sheet.cell(row=row, column=region_col).value
+            category_value = sheet.cell(row=row, column=category_col).value
+            
+            # 결측치 확인 (None, 빈 문자열, '-')
+            is_missing = (
+                cell_value is None or 
+                (isinstance(cell_value, str) and (not cell_value.strip() or cell_value.strip() == '-'))
+            )
+            
+            if is_missing and region_value:
+                region_str = str(region_value).strip()
+                category_str = str(category_value).strip() if category_value else ''
+                
+                # 지역명이 있고, 총지수/계 등인 경우만 추가
+                if region_str and category_str in ['총지수', '계', '   계', '합계', '']:
+                    missing_values.append({
+                        'sheet': sheet_name,
+                        'region': region_str,
+                        'category': category_str or '합계',
+                        'year': year,
+                        'quarter': quarter,
+                        'row': row,
+                        'col': target_col,
+                        'default_value': scale,
+                        'cell_address': f'{chr(64 + target_col)}{row}' if target_col <= 26 else f'{chr(64 + (target_col-1)//26)}{chr(64 + (target_col-1)%26 + 1)}{row}'
+                    })
+        
+        return missing_values
+    except Exception as e:
+        print(f"[ERROR] 결측치 확인 중 오류: {sheet_name}, {str(e)}")
+        return missing_values
+
+
 @app.route('/api/check-missing-values', methods=['POST'])
 def check_missing_values():
-    """결측치 확인 API"""
+    """결측치 확인 API - 스케일 기반 기본값 제공"""
     try:
         excel_file = request.files.get('excel_file')
         excel_path = None
@@ -310,7 +390,7 @@ def check_missing_values():
         year = int(year_str)
         quarter = int(quarter_str)
         
-        # 엑셀 추출기 초기화 (캐시 사용)
+        # 엑셀 추출기 초기화
         excel_extractor = get_excel_extractor(excel_path)
         
         # 템플릿 관리자 초기화
@@ -318,18 +398,36 @@ def check_missing_values():
         template_manager = TemplateManager(str(template_path))
         template_manager.load_template()
         
-        # 결측치 확인 (간단한 버전 - 실제로는 더 복잡한 로직 필요)
-        missing_values = []
-        # 여기에 결측치 확인 로직 추가 가능
+        # 템플릿에서 필요한 시트 목록 추출
+        markers = template_manager.extract_markers()
+        required_sheets = set()
+        for marker in markers:
+            sheet_name = marker.get('sheet_name', '').strip()
+            if sheet_name:
+                required_sheets.add(sheet_name)
+        
+        # 각 시트에서 결측치 찾기
+        all_missing_values = []
+        flexible_mapper = FlexibleMapper(excel_extractor)
+        
+        for sheet_name in required_sheets:
+            actual_sheet = flexible_mapper.find_sheet_by_name(sheet_name)
+            if actual_sheet:
+                missing = find_missing_values_in_sheet(excel_extractor, actual_sheet, year, quarter)
+                all_missing_values.extend(missing)
         
         excel_extractor.close()
         
         return jsonify({
             'success': True,
-            'missing_values': missing_values,
-            'has_missing': len(missing_values) > 0
+            'missing_values': all_missing_values,
+            'has_missing': len(all_missing_values) > 0,
+            'count': len(all_missing_values)
         })
     except Exception as e:
+        import traceback
+        print(f"[ERROR] 결측치 확인 중 오류: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({'error': f'결측치 확인 중 오류: {str(e)}'}), 500
 
 
@@ -386,6 +484,14 @@ def process_template():
         template_name = request.form.get('template_name', '')
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
+        missing_values_str = request.form.get('missing_values', '{}')
+        
+        # 사용자가 입력한 결측치 값 파싱
+        try:
+            import json
+            user_missing_values = json.loads(missing_values_str) if missing_values_str else {}
+        except json.JSONDecodeError:
+            user_missing_values = {}
         
         if not template_name:
             return jsonify({'error': '템플릿을 선택해주세요.'}), 400
@@ -459,7 +565,7 @@ def process_template():
                 quarter = int(quarter_str)
                 
                 # 유효성 검증
-                is_valid, error_msg = period_detector.validate_period(sheet_name, year, quarter)
+                is_valid, error_msg = period_detector.validate_period(primary_sheet, year, quarter)
                 if not is_valid:
                     return jsonify({'error': error_msg}), 400
             else:
@@ -470,12 +576,25 @@ def process_template():
             # 템플릿 필러 초기화 및 처리
             template_filler = TemplateFiller(template_manager, excel_extractor, schema_loader)
             
+            # 사용자가 입력한 결측치 값 설정
+            if user_missing_values:
+                template_filler.set_missing_value_overrides(user_missing_values)
+                print(f"[DEBUG] 사용자 결측치 값 설정: {len(user_missing_values)}개")
+            
             # primary_sheet를 사용하여 연도/분기 감지 (템플릿은 자동으로 필요한 시트를 찾음)
-            filled_template = template_filler.fill_template(
-                sheet_name=primary_sheet,  # 연도/분기 감지용
-                year=year, 
-                quarter=quarter
-            )
+            print(f"[DEBUG] 템플릿 채우기 시작: {template_name}, 연도={year}, 분기={quarter}, primary_sheet={primary_sheet}")
+            try:
+                filled_template = template_filler.fill_template(
+                    sheet_name=primary_sheet,  # 연도/분기 감지용
+                    year=year, 
+                    quarter=quarter
+                )
+                print(f"[DEBUG] 템플릿 채우기 완료: {template_name}")
+            except Exception as e:
+                import traceback
+                print(f"[ERROR] 템플릿 채우기 중 오류 발생: {str(e)}")
+                print(f"[ERROR] 트레이스백:\n{traceback.format_exc()}")
+                raise
             
             # display_name 찾기
             display_name = template_name.replace('.html', '')
@@ -562,76 +681,6 @@ def preview_file(filename):
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 
-@app.route('/api/compare-answer', methods=['POST'])
-def compare_answer():
-    """생성된 결과와 정답 파일 비교"""
-    try:
-        template_name = request.form.get('template_name', '')
-        if not template_name:
-            return jsonify({'error': '템플릿명이 필요합니다.'}), 400
-        
-        # 정답 파일 경로 찾기
-        correct_answer_dir = BASE_DIR / 'correct_answer'
-        
-        # 템플릿명에서 정답 파일명 찾기
-        template_mapping = schema_loader.load_template_mapping()
-        answer_filename = None
-        
-        # 템플릿 매핑에서 display_name 찾기
-        for sheet_name, info in template_mapping.items():
-            if info['template'] == template_name:
-                # display_name을 파일명으로 변환
-                display_name = info['display_name']
-                # 한글 파일명으로 변환
-                answer_filename = f"{display_name}.png"
-                break
-        
-        if not answer_filename:
-            # 기본값: 템플릿명에서 확장자 제거
-            answer_filename = template_name.replace('.html', '.png')
-        
-        answer_path = correct_answer_dir / answer_filename
-        
-        if not answer_path.exists():
-            return jsonify({
-                'error': f'정답 파일을 찾을 수 없습니다: {answer_filename}',
-                'answer_file': answer_filename
-            }), 404
-        
-        # 생성된 파일 경로
-        output_filename = request.form.get('output_filename', '')
-        if not output_filename:
-            return jsonify({'error': '출력 파일명이 필요합니다.'}), 400
-        
-        output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-        
-        if not output_path.exists():
-            return jsonify({'error': '생성된 파일을 찾을 수 없습니다.'}), 404
-        
-        return jsonify({
-            'success': True,
-            'answer_file': answer_filename,
-            'answer_path': str(answer_path.relative_to(BASE_DIR)),
-            'output_file': output_filename,
-            'output_path': str(output_path.relative_to(BASE_DIR)),
-            'message': '정답 파일과 비교할 준비가 되었습니다.'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': f'비교 중 오류가 발생했습니다: {str(e)}'
-        }), 500
-
-
-@app.route('/api/answer-image/<filename>')
-def get_answer_image(filename):
-    """정답 이미지 파일 반환"""
-    try:
-        answer_path = BASE_DIR / 'correct_answer' / filename
-        if answer_path.exists():
-            return send_file(str(answer_path))
-        return jsonify({'error': '정답 파일을 찾을 수 없습니다.'}), 404
-    except Exception as e:
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 
@@ -727,18 +776,30 @@ def validate_files():
                     'error': '엑셀 파일에 시트가 없습니다.'
                 }), 400
             
-            # 각 시트별로 사용 가능한 연도/분기 정보 수집
+            # 성능 최적화: 첫 번째 시트에 대해서만 상세 정보 수집
+            # 대부분의 시트가 동일한 연도/분기 범위를 가지므로,
+            # 첫 번째 시트의 정보를 기본값으로 사용
             period_detector = PeriodDetector(excel_extractor)
+            
+            # 첫 번째 시트의 상세 정보 수집
+            primary_sheet = sheet_names[0]
+            periods_info = period_detector.detect_available_periods(primary_sheet)
+            primary_sheet_info = {
+                'min_year': periods_info['min_year'],
+                'max_year': periods_info['max_year'],
+                'default_year': periods_info['default_year'],
+                'default_quarter': periods_info['default_quarter'],
+                'available_periods': periods_info['available_periods']
+            }
+            
+            # 나머지 시트는 기본값 사용 (성능 최적화)
             sheets_info = {}
             for sheet_name in sheet_names:
-                periods_info = period_detector.detect_available_periods(sheet_name)
-                sheets_info[sheet_name] = {
-                    'min_year': periods_info['min_year'],
-                    'max_year': periods_info['max_year'],
-                    'default_year': periods_info['default_year'],
-                    'default_quarter': periods_info['default_quarter'],
-                    'available_periods': periods_info['available_periods']
-                }
+                if sheet_name == primary_sheet:
+                    sheets_info[sheet_name] = primary_sheet_info
+                else:
+                    # 첫 번째 시트와 동일한 기본값 사용
+                    sheets_info[sheet_name] = primary_sheet_info.copy()
             
             excel_extractor.close()
             
@@ -746,6 +807,7 @@ def validate_files():
                 'valid': True,
                 'sheet_names': sheet_names,
                 'sheets_info': sheets_info,
+                'primary_sheet': primary_sheet,
                 'message': '파일이 유효합니다.'
             })
         except FileNotFoundError as e:
@@ -999,6 +1061,207 @@ def generate_pdf():
     except Exception as e:
         return jsonify({
             'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/test-all-templates', methods=['POST'])
+def test_all_templates():
+    """모든 템플릿을 실행하고 N/A 값을 분석"""
+    import re
+    from collections import defaultdict
+    
+    try:
+        # 엑셀 파일 처리
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        use_default_file = False
+        
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            
+            excel_path = upload_folder / excel_filename
+            excel_file.save(str(excel_path))
+            
+            if not excel_path.exists():
+                return jsonify({'error': '파일 저장에 실패했습니다.'}), 400
+        else:
+            if not DEFAULT_EXCEL_FILE.exists():
+                return jsonify({'error': f'기본 엑셀 파일을 찾을 수 없습니다: {DEFAULT_EXCEL_FILE.name}'}), 400
+            
+            excel_path = DEFAULT_EXCEL_FILE
+            use_default_file = True
+        
+        # 연도 및 분기 파라미터
+        year_str = request.form.get('year', '')
+        quarter_str = request.form.get('quarter', '')
+        
+        if not year_str or not quarter_str:
+            return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
+        
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 템플릿 목록 가져오기
+        templates_dir = Path('templates')
+        if not templates_dir.exists():
+            return jsonify({'error': '템플릿 디렉토리를 찾을 수 없습니다.'}), 404
+        
+        template_files = list(templates_dir.glob('*.html'))
+        if not template_files:
+            return jsonify({'error': '템플릿 파일이 없습니다.'}), 404
+        
+        results = []
+        excel_extractor = get_excel_extractor(excel_path)
+        
+        try:
+            # 사용 가능한 시트 목록
+            sheet_names = excel_extractor.get_sheet_names()
+            
+            # 첫 번째 시트로 연도/분기 검증
+            period_detector = PeriodDetector(excel_extractor)
+            primary_sheet = sheet_names[0] if sheet_names else None
+            if primary_sheet:
+                is_valid, error_msg = period_detector.validate_period(primary_sheet, year, quarter)
+                if not is_valid:
+                    excel_extractor.close()
+                    return jsonify({'error': error_msg}), 400
+            
+            # 각 템플릿 처리
+            for template_path in template_files:
+                template_name = template_path.name
+                print(f"\n[DEBUG] 템플릿 처리 중: {template_name}")
+                
+                try:
+                    # 템플릿 관리자 초기화
+                    template_manager = get_template_manager(template_path)
+                    markers = template_manager.extract_markers()
+                    
+                    # 필요한 시트 확인
+                    required_sheets = set()
+                    for marker in markers:
+                        sheet_name = marker.get('sheet_name', '').strip()
+                        if sheet_name:
+                            required_sheets.add(sheet_name)
+                    
+                    # 유연한 매핑으로 시트 찾기
+                    flexible_mapper = FlexibleMapper(excel_extractor)
+                    actual_sheet_mapping = {}
+                    missing_sheets = []
+                    
+                    for required_sheet in required_sheets:
+                        actual_sheet = flexible_mapper.find_sheet_by_name(required_sheet)
+                        if actual_sheet:
+                            actual_sheet_mapping[required_sheet] = actual_sheet
+                        else:
+                            missing_sheets.append(required_sheet)
+                    
+                    if missing_sheets:
+                        results.append({
+                            'template': template_name,
+                            'success': False,
+                            'error': f'필요한 시트를 찾을 수 없습니다: {", ".join(missing_sheets)}',
+                            'na_count': 0,
+                            'na_markers': []
+                        })
+                        continue
+                    
+                    # 템플릿 필러 초기화
+                    template_filler = TemplateFiller(template_manager, excel_extractor, schema_loader)
+                    
+                    # primary_sheet 찾기
+                    primary_sheet = list(actual_sheet_mapping.values())[0] if actual_sheet_mapping else sheet_names[0]
+                    
+                    # 템플릿 채우기
+                    filled_template = template_filler.fill_template(
+                        sheet_name=primary_sheet,
+                        year=year,
+                        quarter=quarter
+                    )
+                    
+                    # N/A 값 찾기 (HTML에서 "N/A" 패턴 찾기, 마커는 제외)
+                    na_pattern = re.compile(r'(?<!\{[^}]*:)(?:&lt;|<)(?:!--|!)\s*N/A\s*(?:--|!)(?:&gt;|>)|(?<!\{[^}]*:)\bN/A\b(?!\})')
+                    na_matches = na_pattern.findall(filled_template)
+                    
+                    # 마커 패턴으로 남아있는 마커도 N/A로 간주
+                    marker_pattern = re.compile(r'\{([^:{}]+):([^:}]+)(?::([^}]+))?\}')
+                    remaining_markers = marker_pattern.findall(filled_template)
+                    
+                    # N/A가 포함된 마커 정보 수집
+                    na_markers = []
+                    for marker_match in marker_pattern.finditer(filled_template):
+                        marker_full = marker_match.group(0)
+                        marker_sheet = marker_match.group(1)
+                        marker_key = marker_match.group(2)
+                        na_markers.append({
+                            'marker': marker_full,
+                            'sheet': marker_sheet,
+                            'key': marker_key,
+                            'reason': '마커가 치환되지 않음'
+                        })
+                    
+                    # 템플릿 내용에서 N/A 위치 찾기
+                    na_count = len([m for m in na_matches if m]) + len(remaining_markers)
+                    
+                    results.append({
+                        'template': template_name,
+                        'success': True,
+                        'error': None,
+                        'na_count': na_count,
+                        'na_markers': na_markers[:20],  # 최대 20개만 반환
+                        'total_markers': len(markers),
+                        'filled_markers': len(markers) - len(remaining_markers)
+                    })
+                    
+                except Exception as e:
+                    import traceback
+                    error_trace = traceback.format_exc()
+                    print(f"[ERROR] 템플릿 {template_name} 처리 중 오류: {str(e)}")
+                    print(f"[ERROR] {error_trace}")
+                    results.append({
+                        'template': template_name,
+                        'success': False,
+                        'error': str(e),
+                        'na_count': 0,
+                        'na_markers': []
+                    })
+            
+        finally:
+            excel_extractor.close()
+            # 임시 엑셀 파일 삭제
+            if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
+                try:
+                    excel_path.unlink()
+                except Exception:
+                    pass
+        
+        # 결과 요약
+        total_templates = len(results)
+        success_count = sum(1 for r in results if r['success'])
+        total_na = sum(r.get('na_count', 0) for r in results)
+        
+        return jsonify({
+            'success': True,
+            'summary': {
+                'total_templates': total_templates,
+                'success_count': success_count,
+                'total_na_count': total_na
+            },
+            'results': results
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}',
+            'traceback': traceback.format_exc()
         }), 500
 
 

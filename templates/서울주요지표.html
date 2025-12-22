@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울특별시 주요지표</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        .document-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #000;
+            line-height: 1.4;
+            text-align: center;
+        }
+        
+        .chart-container {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .chart-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .chart-subtitle {
+            font-size: 12px;
+            margin-bottom: 15px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-line {
+            width: 30px;
+            height: 2px;
+            display: inline-block;
+        }
+        
+        .legend-line.nationwide {
+            background-color: #d3d3d3;
+        }
+        
+        .legend-line.seoul {
+            background-color: #0066cc;
+        }
+        
+        .chart-data {
+            border: 1px solid #ddd;
+            padding: 15px;
+            background-color: #f9f9f9;
+            font-size: 12px;
+        }
+        
+        .chart-data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .chart-data-row:last-child {
+            border-bottom: none;
+        }
+        
+        .chart-data-label {
+            font-weight: bold;
+        }
+        
+        .chart-data-value {
+            color: #333;
+        }
+        
+        .table-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 40px 0 10px 0;
+            text-align: center;
+            color: #000;
+        }
+        
+        .table-subtitle {
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #000;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0 25px 0;
+            font-size: 12px;
+            border: 1px solid #000;
+        }
+        
+        th, td {
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 11px;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .indicator-name {
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .footnote {
+            font-size: 11px;
+            margin-top: 20px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .source {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="document-title">《서울특별시 주요지표》</div>
+    
+    <!-- 1. 광공업생산 -->
+    <div class="chart-container">
+        <div class="chart-title">1. 광공업생산</div>
+        <div class="chart-subtitle">[전년동분기대비 증감률]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {광공업생산:전국_2025_2분기}%, 서울: {광공업생산:서울_2025_2분기}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 2. 서비스업생산 -->
+    <div class="chart-container">
+        <div class="chart-title">2. 서비스업생산</div>
+        <div class="chart-subtitle">[전년동분기대비 증감률]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {서비스업생산:전국_2025_2분기}%, 서울: {서비스업생산:서울_2025_2분기}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3. 소매판매 -->
+    <div class="chart-container">
+        <div class="chart-title">3. 소매판매</div>
+        <div class="chart-subtitle">[전년동분기대비 증감률]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {소비(소매, 추가):전국_2025_2분기}%, 서울: {소비(소매, 추가):서울_2025_2분기}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 4. 수출 -->
+    <div class="chart-container">
+        <div class="chart-title">4. 수출</div>
+        <div class="chart-subtitle">[전년동분기대비 증감률]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {수출:전국_2025_2분기}%, 서울: {수출:서울_2025_2분기}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 5. 고용률 -->
+    <div class="chart-container">
+        <div class="chart-title">5. 고용률</div>
+        <div class="chart-subtitle">[전년동분기대비 증감]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {고용률:전국_증감_2025_2분기}%p, 서울: {고용률:서울_증감_2025_2분기}%p</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 6. 소비자물가 -->
+    <div class="chart-container">
+        <div class="chart-title">6. 소비자물가</div>
+        <div class="chart-subtitle">[전년동분기대비 등락률]</div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <span class="legend-line nationwide"></span>
+                <span>전국</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line seoul"></span>
+                <span>서울</span>
+            </div>
+        </div>
+        <div class="chart-data">
+            <div class="chart-data-row">
+                <span class="chart-data-label">2025년 2분기</span>
+                <span class="chart-data-value">전국: {품목성질별 물가:전국_2025_2분기}%, 서울: {품목성질별 물가:서울_2025_2분기}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 주요지표 테이블 -->
+    <div class="table-title">주요지표</div>
+    <div class="table-subtitle">[전년 동분기대비, %, %p, 명]</div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2">주요지표</th>
+                <th colspan="2">2023</th>
+                <th colspan="4">2024</th>
+                <th colspan="2">2025</th>
+            </tr>
+            <tr>
+                <th>{광공업생산:2023_3분기}</th>
+                <th>{광공업생산:2023_4분기}</th>
+                <th>{광공업생산:2024_1분기}</th>
+                <th>{광공업생산:2024_2분기}</th>
+                <th>{광공업생산:2024_3분기}</th>
+                <th>{광공업생산:2024_4분기}</th>
+                <th>{광공업생산:2025_1분기}</th>
+                <th>{광공업생산:2025_2분기}P</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="indicator-name">광공업생산지수</td>
+                <td>{광공업생산:서울_2023_3분기}</td>
+                <td>{광공업생산:서울_2023_4분기}</td>
+                <td>{광공업생산:서울_2024_1분기}</td>
+                <td>{광공업생산:서울_2024_2분기}</td>
+                <td>{광공업생산:서울_2024_3분기}</td>
+                <td>{광공업생산:서울_2024_4분기}</td>
+                <td>{광공업생산:서울_2025_1분기}</td>
+                <td>{광공업생산:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">서비스업생산지수</td>
+                <td>{서비스업생산:서울_2023_3분기}</td>
+                <td>{서비스업생산:서울_2023_4분기}</td>
+                <td>{서비스업생산:서울_2024_1분기}</td>
+                <td>{서비스업생산:서울_2024_2분기}</td>
+                <td>{서비스업생산:서울_2024_3분기}</td>
+                <td>{서비스업생산:서울_2024_4분기}</td>
+                <td>{서비스업생산:서울_2025_1분기}</td>
+                <td>{서비스업생산:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">소매판매지수</td>
+                <td>{소비(소매, 추가):서울_2023_3분기}</td>
+                <td>{소비(소매, 추가):서울_2023_4분기}</td>
+                <td>{소비(소매, 추가):서울_2024_1분기}</td>
+                <td>{소비(소매, 추가):서울_2024_2분기}</td>
+                <td>{소비(소매, 추가):서울_2024_3분기}</td>
+                <td>{소비(소매, 추가):서울_2024_4분기}</td>
+                <td>{소비(소매, 추가):서울_2025_1분기}</td>
+                <td>{소비(소매, 추가):서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">건설수주</td>
+                <td>{건설 (공표자료):서울_2023_3분기}</td>
+                <td>{건설 (공표자료):서울_2023_4분기}</td>
+                <td>{건설 (공표자료):서울_2024_1분기}</td>
+                <td>{건설 (공표자료):서울_2024_2분기}</td>
+                <td>{건설 (공표자료):서울_2024_3분기}</td>
+                <td>{건설 (공표자료):서울_2024_4분기}</td>
+                <td>{건설 (공표자료):서울_2025_1분기}</td>
+                <td>{건설 (공표자료):서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">수출</td>
+                <td>{수출:서울_2023_3분기}</td>
+                <td>{수출:서울_2023_4분기}</td>
+                <td>{수출:서울_2024_1분기}</td>
+                <td>{수출:서울_2024_2분기}</td>
+                <td>{수출:서울_2024_3분기}</td>
+                <td>{수출:서울_2024_4분기}</td>
+                <td>{수출:서울_2025_1분기}</td>
+                <td>{수출:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">수입</td>
+                <td>{수입:서울_2023_3분기}</td>
+                <td>{수입:서울_2023_4분기}</td>
+                <td>{수입:서울_2024_1분기}</td>
+                <td>{수입:서울_2024_2분기}</td>
+                <td>{수입:서울_2024_3분기}</td>
+                <td>{수입:서울_2024_4분기}</td>
+                <td>{수입:서울_2025_1분기}</td>
+                <td>{수입:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">고용률(%p)</td>
+                <td>{고용률:서울_증감_2023_3분기}</td>
+                <td>{고용률:서울_증감_2023_4분기}</td>
+                <td>{고용률:서울_증감_2024_1분기}</td>
+                <td>{고용률:서울_증감_2024_2분기}</td>
+                <td>{고용률:서울_증감_2024_3분기}</td>
+                <td>{고용률:서울_증감_2024_4분기}</td>
+                <td>{고용률:서울_증감_2025_1분기}</td>
+                <td>{고용률:서울_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">실업률(%p)</td>
+                <td>{실업자 수:서울_증감_2023_3분기}</td>
+                <td>{실업자 수:서울_증감_2023_4분기}</td>
+                <td>{실업자 수:서울_증감_2024_1분기}</td>
+                <td>{실업자 수:서울_증감_2024_2분기}</td>
+                <td>{실업자 수:서울_증감_2024_3분기}</td>
+                <td>{실업자 수:서울_증감_2024_4분기}</td>
+                <td>{실업자 수:서울_증감_2025_1분기}</td>
+                <td>{실업자 수:서울_증감_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">소비자물가</td>
+                <td>{품목성질별 물가:서울_2023_3분기}</td>
+                <td>{품목성질별 물가:서울_2023_4분기}</td>
+                <td>{품목성질별 물가:서울_2024_1분기}</td>
+                <td>{품목성질별 물가:서울_2024_2분기}</td>
+                <td>{품목성질별 물가:서울_2024_3분기}</td>
+                <td>{품목성질별 물가:서울_2024_4분기}</td>
+                <td>{품목성질별 물가:서울_2025_1분기}</td>
+                <td>{품목성질별 물가:서울_2025_2분기}</td>
+            </tr>
+            <tr>
+                <td class="indicator-name">인구 순이동(명)</td>
+                <td>{시도 간 이동:서울_2023_3분기}</td>
+                <td>{시도 간 이동:서울_2023_4분기}</td>
+                <td>{시도 간 이동:서울_2024_1분기}</td>
+                <td>{시도 간 이동:서울_2024_2분기}</td>
+                <td>{시도 간 이동:서울_2024_3분기}</td>
+                <td>{시도 간 이동:서울_2024_4분기}</td>
+                <td>{시도 간 이동:서울_2025_1분기}</td>
+                <td>{시도 간 이동:서울_2025_2분기}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="footnote">
+        * 광공업생산지수, 서비스업생산지수, 소매판매지수, 건설수주, 수출, 수입의 최근 수치는 잠정치임
+    </div>
+</body>
+</html>
+

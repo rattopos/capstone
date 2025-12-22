@@ -22,12 +22,16 @@ class ExcelHeaderParser:
         self.excel_path = excel_path
         self.extractor = ExcelExtractor(excel_path)
         self.extractor.load_workbook()
-        self.header_cache = {}  # 시트별 헤더 캐시
+        
+        # 성능 최적화: 헤더 캐시
+        self._headers_cache: Dict[str, Dict[str, Any]] = {}
     
     def parse_sheet_headers(self, sheet_name: str, header_row: int = 1, max_header_rows: int = 3) -> Dict[str, Any]:
         """
         시트의 헤더를 파싱하여 객체로 만듭니다.
         여러 행의 헤더도 고려합니다.
+        
+        성능 최적화: 결과를 캐시하여 반복 호출 시 재파싱하지 않습니다.
         
         Args:
             sheet_name: 시트 이름
@@ -54,9 +58,10 @@ class ExcelHeaderParser:
                 }
             }
         """
-        cache_key = f"{sheet_name}_{header_row}"
-        if cache_key in self.header_cache:
-            return self.header_cache[cache_key]
+        # 캐시 키 생성
+        cache_key = f"{sheet_name}_{header_row}_{max_header_rows}"
+        if cache_key in self._headers_cache:
+            return self._headers_cache[cache_key]
         
         sheet = self.extractor.get_sheet(sheet_name)
         
@@ -150,7 +155,9 @@ class ExcelHeaderParser:
             'region_column': region_col
         }
         
-        self.header_cache[cache_key] = result
+        # 캐시에 저장
+        self._headers_cache[cache_key] = result
+        
         return result
     
     def _number_to_column_letter(self, col_num: int) -> str:
@@ -279,4 +286,10 @@ class ExcelHeaderParser:
         """리소스 정리"""
         if self.extractor:
             self.extractor.close()
+        # 캐시 초기화
+        self._headers_cache.clear()
+    
+    def clear_cache(self):
+        """캐시만 초기화 (리소스는 유지)"""
+        self._headers_cache.clear()
 

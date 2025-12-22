@@ -27,11 +27,6 @@ class SchemaLoader:
             schemas_dir = Path(schemas_dir)
         
         self.schemas_dir = Path(schemas_dir)
-        self._name_mappings_cache = None
-        self._sheet_configs_cache = {}
-        self._template_mapping_cache = None
-        self._output_formats_cache = {}
-        self._base_format_cache = None
     
     def load_name_mappings(self) -> Dict[str, Dict[str, str]]:
         """
@@ -40,17 +35,12 @@ class SchemaLoader:
         Returns:
             이름 매핑 딕셔너리
         """
-        if self._name_mappings_cache is not None:
-            return self._name_mappings_cache
-        
         mappings_file = self.schemas_dir / 'name_mappings.json'
         if not mappings_file.exists():
             raise FileNotFoundError(f"이름 매핑 파일을 찾을 수 없습니다: {mappings_file}")
         
         with open(mappings_file, 'r', encoding='utf-8') as f:
-            self._name_mappings_cache = json.load(f)
-        
-        return self._name_mappings_cache
+            return json.load(f)
     
     def get_name_mapping(self, mapping_name: str) -> Optional[Dict[str, str]]:
         """
@@ -75,10 +65,6 @@ class SchemaLoader:
         Returns:
             시트 설정 딕셔너리
         """
-        # 캐시 확인
-        if sheet_name in self._sheet_configs_cache:
-            return self._sheet_configs_cache[sheet_name]
-        
         sheets_dir = self.schemas_dir / 'sheets'
         
         # 시트별 설정 파일 경로
@@ -116,9 +102,6 @@ class SchemaLoader:
         elif config.get('name_mapping') is None:
             config['name_mapping'] = {}
         
-        # 캐시에 저장
-        self._sheet_configs_cache[sheet_name] = config
-        
         return config
     
     def load_template_mapping(self) -> Dict[str, Dict[str, str]]:
@@ -128,17 +111,12 @@ class SchemaLoader:
         Returns:
             템플릿 매핑 딕셔너리
         """
-        if self._template_mapping_cache is not None:
-            return self._template_mapping_cache
-        
         mapping_file = self.schemas_dir / 'template_mapping.json'
         if not mapping_file.exists():
             raise FileNotFoundError(f"템플릿 매핑 파일을 찾을 수 없습니다: {mapping_file}")
         
         with open(mapping_file, 'r', encoding='utf-8') as f:
-            self._template_mapping_cache = json.load(f)
-        
-        return self._template_mapping_cache
+            return json.load(f)
     
     def get_template_for_sheet(self, sheet_name: str) -> Optional[Dict[str, str]]:
         """
@@ -170,12 +148,8 @@ class SchemaLoader:
         return None
     
     def reload(self):
-        """스키마 캐시를 초기화하여 다시 로드합니다."""
-        self._name_mappings_cache = None
-        self._sheet_configs_cache = {}
-        self._template_mapping_cache = None
-        self._output_formats_cache = {}
-        self._base_format_cache = None
+        """스키마 캐시를 초기화하여 다시 로드합니다. (캐시가 없으므로 아무 동작도 하지 않음)"""
+        pass
     
     def load_base_format(self) -> Dict[str, Any]:
         """
@@ -184,13 +158,10 @@ class SchemaLoader:
         Returns:
             기본 출력 형식 딕셔너리
         """
-        if self._base_format_cache is not None:
-            return self._base_format_cache
-        
         base_file = self.schemas_dir / 'output_formats' / 'base.json'
         if not base_file.exists():
             # 기본값 반환
-            self._base_format_cache = {
+            return {
                 "direction_expressions": {
                     "increase": {"rate": "증가", "production": "늘어", "result": "증가"},
                     "decrease": {"rate": "감소", "production": "줄어", "result": "감소"},
@@ -207,9 +178,7 @@ class SchemaLoader:
             }
         else:
             with open(base_file, 'r', encoding='utf-8') as f:
-                self._base_format_cache = json.load(f)
-        
-        return self._base_format_cache
+                return json.load(f)
     
     def load_output_format(self, display_name: str) -> Optional[Dict[str, Any]]:
         """
@@ -221,10 +190,6 @@ class SchemaLoader:
         Returns:
             출력 형식 딕셔너리 또는 None
         """
-        # 캐시 확인
-        if display_name in self._output_formats_cache:
-            return self._output_formats_cache[display_name]
-        
         output_formats_dir = self.schemas_dir / 'output_formats'
         if not output_formats_dir.exists():
             return None
@@ -234,12 +199,7 @@ class SchemaLoader:
             return None
         
         with open(format_file, 'r', encoding='utf-8') as f:
-            output_format = json.load(f)
-        
-        # 캐시에 저장
-        self._output_formats_cache[display_name] = output_format
-        
-        return output_format
+            return json.load(f)
     
     def get_output_format_for_sheet(self, sheet_name: str) -> Optional[Dict[str, Any]]:
         """

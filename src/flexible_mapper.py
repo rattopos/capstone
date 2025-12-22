@@ -11,6 +11,11 @@ from difflib import SequenceMatcher
 class FlexibleMapper:
     """유연한 시트 및 컬럼 매핑 클래스"""
     
+    # 시트명 매핑 (가상 시트명 -> 실제 시트명)
+    SHEET_NAME_MAPPING = {
+        '실업률': '실업자 수'
+    }
+    
     def __init__(self, excel_extractor):
         """
         매퍼 초기화
@@ -19,8 +24,6 @@ class FlexibleMapper:
             excel_extractor: ExcelExtractor 인스턴스
         """
         self.excel_extractor = excel_extractor
-        self.sheet_cache = {}  # 시트 정보 캐시
-        self.header_cache = {}  # 헤더 정보 캐시
     
     def find_sheet_by_name(self, target_sheet_name: str, similarity_threshold: float = 0.6) -> Optional[str]:
         """
@@ -33,6 +36,9 @@ class FlexibleMapper:
         Returns:
             실제 시트명 또는 None
         """
+        # 시트명 매핑 적용 (가상 시트명 -> 실제 시트명)
+        target_sheet_name = self.SHEET_NAME_MAPPING.get(target_sheet_name, target_sheet_name)
+        
         if not self.excel_extractor.workbook:
             self.excel_extractor.load_workbook()
         
@@ -106,12 +112,8 @@ class FlexibleMapper:
         """
         sheet = self.excel_extractor.get_sheet(sheet_name)
         
-        # 헤더 캐시 확인
-        cache_key = f"{sheet_name}_{header_row}"
-        if cache_key not in self.header_cache:
-            self.header_cache[cache_key] = self._parse_headers(sheet, header_row)
-        
-        headers = self.header_cache[cache_key]
+        # 캐시 없이 항상 새로 파싱
+        headers = self._parse_headers(sheet, header_row)
         
         # 정확한 매칭
         target_normalized = self._normalize_name(target_header)

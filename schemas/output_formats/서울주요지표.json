@@ -1,0 +1,121 @@
+{
+  "_comment": "서울특별시 주요지표 출력 형식 스키마",
+  
+  "template_type": "region_indicators",
+  "sheet_name": "서울주요지표",
+  "display_name": "서울특별시 주요지표",
+  "template_file": "서울주요지표.html",
+  
+  "data_type": {
+    "unit": "mixed",
+    "direction_positive": "increase",
+    "direction_negative": "decrease",
+    "category_name": "지표"
+  },
+  
+  "charts": {
+    "광공업생산": {
+      "sheet": "광공업생산",
+      "title": "광공업생산",
+      "subtitle": "[전년동분기대비 증감률]",
+      "unit": "%"
+    },
+    "서비스업생산": {
+      "sheet": "서비스업생산",
+      "title": "서비스업생산",
+      "subtitle": "[전년동분기대비 증감률]",
+      "unit": "%"
+    },
+    "소매판매": {
+      "sheet": "소비(소매, 추가)",
+      "title": "소매판매",
+      "subtitle": "[전년동분기대비 증감률]",
+      "unit": "%"
+    },
+    "수출": {
+      "sheet": "수출",
+      "title": "수출",
+      "subtitle": "[전년동분기대비 증감률]",
+      "unit": "%"
+    },
+    "고용률": {
+      "sheet": "고용률",
+      "title": "고용률",
+      "subtitle": "[전년동분기대비 증감]",
+      "unit": "%p"
+    },
+    "소비자물가": {
+      "sheet": "품목성질별 물가",
+      "title": "소비자물가",
+      "subtitle": "[전년동분기대비 등락률]",
+      "unit": "%"
+    }
+  },
+  
+  "indicators_table": {
+    "title": "주요지표",
+    "subtitle": "[전년 동분기대비, %, %p, 명]",
+    "indicators": [
+      {
+        "name": "광공업생산지수",
+        "sheet": "광공업생산",
+        "unit": "%"
+      },
+      {
+        "name": "서비스업생산지수",
+        "sheet": "서비스업생산",
+        "unit": "%"
+      },
+      {
+        "name": "소매판매지수",
+        "sheet": "소비(소매, 추가)",
+        "unit": "%"
+      },
+      {
+        "name": "건설수주",
+        "sheet": "건설 (공표자료)",
+        "unit": "%"
+      },
+      {
+        "name": "수출",
+        "sheet": "수출",
+        "unit": "%"
+      },
+      {
+        "name": "수입",
+        "sheet": "수입",
+        "unit": "%"
+      },
+      {
+        "name": "고용률(%p)",
+        "sheet": "고용률",
+        "unit": "%p"
+      },
+      {
+        "name": "실업률(%p)",
+        "sheet": "실업자 수",
+        "unit": "%p"
+      },
+      {
+        "name": "소비자물가",
+        "sheet": "품목성질별 물가",
+        "unit": "%"
+      },
+      {
+        "name": "인구 순이동(명)",
+        "sheet": "시도 간 이동",
+        "unit": "명"
+      }
+    ]
+  },
+  
+  "marker_patterns": {
+    "chart_nationwide": "{sheet}:전국_{year}_{quarter}분기",
+    "chart_region": "{sheet}:서울_{year}_{quarter}분기",
+    "table_region_quarter": "{sheet}:서울_{year}_{quarter}분기",
+    "table_region_growth_quarter": "{sheet}:서울_증감_{year}_{quarter}분기"
+  },
+  
+  "footnote": "* 광공업생산지수, 서비스업생산지수, 소매판매지수, 건설수주, 수출, 수입의 최근 수치는 잠정치임"
+}
+

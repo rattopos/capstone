@@ -29,15 +29,30 @@
     "display_name": "실업률",
     "output_format": "실업률"
   },
+  "실업률": {
+    "template": "실업률.html",
+    "display_name": "실업률",
+    "output_format": "실업률",
+    "source_sheet": "실업자 수"
+  },
+  "물가동향": {
+    "template": "물가동향.html",
+    "display_name": "물가동향",
+    "output_format": "물가동향",
+    "source_sheets": ["품목성질별 물가", "지출목적별 물가"],
+    "_comment": "품목성질별 물가: 시도별 전체 등락률/표 데이터, 지출목적별 물가: 품목별 등락률"
+  },
   "지출목적별 물가": {
     "template": "물가동향.html",
     "display_name": "물가동향",
-    "output_format": "물가동향"
+    "output_format": "물가동향",
+    "paired_sheet": "품목성질별 물가"
   },
   "품목성질별 물가": {
     "template": "물가동향.html",
     "display_name": "물가동향",
-    "output_format": "물가동향"
+    "output_format": "물가동향",
+    "paired_sheet": "지출목적별 물가"
   },
   "건설 (공표자료)": {
     "template": "건설수주.html",
@@ -63,5 +78,15 @@
     "template": "국내인구이동.html",
     "display_name": "국내인구이동",
     "output_format": "국내인구이동"
+  },
+  "서울": {
+    "template": "서울.html",
+    "display_name": "서울 경제동향",
+    "output_format": "서울"
+  },
+  "서울주요지표": {
+    "template": "서울주요지표.html",
+    "display_name": "서울특별시 주요지표",
+    "output_format": "서울주요지표"
   }
 }

@@ -1,55 +1,18 @@
 {
-  "_comment": "실업률 출력 형식 스키마",
+  "_comment": "실업률 출력 형식 스키마 (실업자 수 시트에서 직접 매핑)",
   
-  "template_type": "unemployment",
-  "sheet_name": "실업자 수",
+  "template_type": "unemployment_rate",
+  "sheet_name": "실업률",
   "display_name": "실업률",
   "template_file": "실업률.html",
-  
-  "calculation": {
-    "enabled": true,
-    "type": "rate",
-    "formula": "(numerator / denominator) * 100",
-    "description": "실업률 = (실업자수 ÷ 경제활동인구) × 100",
-    "numerator_source": "실업자수",
-    "denominator_source": "경제활동인구",
-    "age_group_based": true,
-    "age_groups": ["15~29세", "30~59세", "60세이상", "계"]
-  },
   
   "data_type": {
     "unit": "%",
     "change_unit": "%p",
-    "direction_positive": "rise",
-    "direction_negative": "fall",
+    "direction_positive": "fall",
+    "direction_negative": "rise",
     "category_name": "연령별 실업률",
     "inverse_direction": true
-  },
-  
-  "sentence_patterns": {
-    "diamond_summary": {
-      "pattern": "실업률은 {bottom_regions} 등 {count}개 시도에서 전년동분기대비 {direction}",
-      "count_condition": "negative",
-      "description": "하락한 시도 수를 카운트 (실업률은 하락이 긍정적)"
-    },
-    "square_national": {
-      "pattern": "{year}년 {quarter}분기 전국 실업률은 {national_rate}로, {age_groups}의 모든 연령대에서 실업률이 {change_direction} 전년동분기대비 {change_rate} {direction}",
-      "description": "전국 데이터 요약"
-    },
-    "circle_regions": {
-      "pattern_increase": "{top_region1}({top_change1}), {top_region2}({top_change2}), {top_region3}({top_change3}) 등의 실업률은 상승하였으며,",
-      "pattern_decrease": "{bottom_region1}({bottom_change1}), {bottom_region2}({bottom_change2}), {bottom_region3}({bottom_change3}) 등의 실업률은 하락",
-      "description": "상위/하위 시도 요약"
-    }
-  },
-  
-  "detail_section": {
-    "title": "< 주요 등락지역 및 연령별 실업률 >",
-    "format": {
-      "national": "{region}( {change}): {age1}({change1}), {age2}({change2})",
-      "top_region": "{region}( {change}): {age1}({change1}), {age2}({change2})",
-      "bottom_region": "{region}( {change}): {age1}({change1}), {age2}({change2})"
-    }
   },
   
   "table": {
@@ -76,4 +39,3 @@
     }
   }
 }
-

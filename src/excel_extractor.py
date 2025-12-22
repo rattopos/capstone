@@ -24,9 +24,12 @@ class ExcelExtractor:
         self.workbook = None
         self.sheets = {}
         
-    def load_workbook(self) -> None:
+    def load_workbook(self, read_only: bool = False) -> None:
         """
         엑셀 파일을 로드합니다.
+        
+        Args:
+            read_only: 읽기 전용 모드 (대용량 파일에서 성능 향상)
         
         Raises:
             FileNotFoundError: 엑셀 파일이 존재하지 않을 때
@@ -36,7 +39,13 @@ class ExcelExtractor:
             raise FileNotFoundError(f"엑셀 파일을 찾을 수 없습니다: {self.excel_path}")
         
         try:
-            self.workbook = load_workbook(self.excel_path, data_only=True)
+            # data_only=True: 수식 대신 계산된 값 사용
+            # read_only=True: 대용량 파일에서 메모리 사용량 감소 및 속도 향상
+            self.workbook = load_workbook(
+                self.excel_path, 
+                data_only=True,
+                read_only=read_only
+            )
         except IOError as e:
             raise IOError(f"엑셀 파일 읽기 실패: {e}")
     

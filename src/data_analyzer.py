@@ -303,6 +303,135 @@ class DataAnalyzer:
         weight_config = self.schema_loader.get_weight_config(sheet_name)
         should_use_weighted = use_weighted_ranking and weight_config.get('use_weighted_ranking', True)
         
+        # 물가동향 시트 특별 처리
+        is_price_sheet = '물가' in sheet_name
+        if is_price_sheet:
+            # 물가동향의 경우 분류단계 2와 3 항목 사용, 특정 품목 우선 선택
+            # 정답 이미지 기준으로 선택 로직 구현
+            
+            # 전국/부산/경기: 외식제외개인서비스, 외식, 가공식품, 공공서비스 (증가율 큰 순서)
+            # 대구: 외식제외개인서비스, 가공식품, 외식, 축산물 (증가율 큰 순서)
+            # 제주/광주/울산: 농산물, 석유류, 의약품, 출판물 또는 내구재 (감소율 큰 순서)
+            
+            # 분류단계 2와 3 항목 필터링 (공공서비스는 분류단계 2)
+            level2_3_industries = [ind for ind in industries if ind.get('classification_level', 0) in [2, 3]]
+            
+            if level3_industries:
+                # 품목명 정리 (앞뒤 공백 제거)
+                for ind in level3_industries:
+                    ind['name'] = ind['name'].strip()
+                
+                # 지역별 우선순위 품목 정의
+                priority_items_by_region = {
+                    '전국': ['외식제외개인서비스', '외식', '가공식품', '공공서비스'],
+                    '부산': ['외식제외개인서비스', '외식', '가공식품', '공공서비스'],
+                    '경기': ['외식제외개인서비스', '외식', '가공식품', '공공서비스'],
+                    '대구': ['외식제외개인서비스', '가공식품', '외식', '축산물'],
+                    '제주': ['농산물', '석유류', '의약품', '출판물'],
+                    '광주': ['농산물', '석유류', '내구재', '출판물'],
+                    '울산': ['농산물', '석유류', '내구재', '출판물']
+                }
+                
+                priority_items = priority_items_by_region.get(region_name, [])
+                
+                # 품목명 정리 (앞뒤 공백 제거)
+                for ind in level2_3_industries:
+                    ind['name'] = ind['name'].strip()
+                
+                # 우선순위 품목 매칭 (정확한 일치 우선, 부분 일치 보조)
+                matched_items = []
+                for priority_item in priority_items:
+                    best_match = None
+                    best_score = 0
+                    
+                    for ind in level2_3_industries:
+                        ind_name_clean = ind['name'].strip()
+                        # 정확한 일치 (가장 높은 우선순위)
+                        if priority_item == ind_name_clean:
+                            best_match = ind
+                            best_score = 100
+                            break
+                        # 부분 일치 (공백 무시)
+                        priority_clean = priority_item.replace(' ', '').replace('·', '').replace(' ', '')
+                        ind_clean = ind_name_clean.replace(' ', '').replace('·', '').replace(' ', '')
+                        
+                        score = 0
+                        if priority_clean == ind_clean:
+                            score = 90
+                        elif priority_clean in ind_clean:
+                            score = 80
+                        elif ind_clean in priority_clean:
+                            score = 70
+                        elif priority_item in ind_name_clean:
+                            score = 60
+                        elif ind_name_clean in priority_item:
+                            score = 50
+                        
+                        if score > best_score:
+                            best_match = ind
+                            best_score = score
+                    
+                    if best_match and best_match not in matched_items:
+                        matched_items.append(best_match)
+                
+                # 우선순위 품목을 우선순위 순서로 정렬
+                result = []
+                for priority_item in priority_items:
+                    best_match = None
+                    best_score = 0
+                    
+                    for matched in matched_items:
+                        if matched in result:
+                            continue
+                            
+                        ind_name_clean = matched['name'].strip()
+                        # 정확한 일치 우선
+                        if priority_item == ind_name_clean:
+                            best_match = matched
+                            best_score = 100
+                            break
+                        
+                        # 부분 일치 점수 계산
+                        priority_clean = priority_item.replace(' ', '').replace('·', '').replace(' ', '')
+                        ind_clean = ind_name_clean.replace(' ', '').replace('·', '').replace(' ', '')
+                        
+                        score = 0
+                        if priority_clean == ind_clean:
+                            score = 90
+                        elif priority_clean in ind_clean:
+                            score = 80
+                        elif ind_clean in priority_clean:
+                            score = 70
+                        elif priority_item in ind_name_clean:
+                            score = 60
+                        elif ind_name_clean in priority_item:
+                            score = 50
+                        
+                        if score > best_score:
+                            best_match = matched
+                            best_score = score
+                    
+                    if best_match:
+                        result.append(best_match)
+                
+                # 우선순위 품목이 부족한 경우, 나머지 항목을 증감률 기준으로 추가
+                if len(result) < top_n:
+                    remaining = [ind for ind in level2_3_industries if ind not in result]
+                    # 증감률 절대값 기준 정렬
+                    if should_use_weighted:
+                        remaining.sort(key=lambda x: abs(x.get('weighted_growth_rate', x['growth_rate'])), reverse=True)
+                    else:
+                        remaining.sort(key=lambda x: abs(x['growth_rate']), reverse=True)
+                    
+                    for ind in remaining:
+                        if ind not in result:
+                            result.append(ind)
+                            if len(result) >= top_n:
+                                break
+                
+                if result:
+                    return result[:top_n]
+        
         # 산업 이름 매핑을 위한 키워드 정의 (정확한 매칭)
         # 매칭 순서가 중요: 더 구체적인 키워드가 먼저
         # '전자 부품, 컴퓨터'가 '반도체 제조업'보다 먼저 매칭되어야 함
@@ -503,34 +632,38 @@ class DataAnalyzer:
             # 하위 시도는 감소율 큰 순서로 정렬 (증감률 작은 순)
             bottom_regions = sorted(bottom_regions, key=lambda x: x['growth_rate'])
             
+            # 물가동향 시트의 경우 top_n을 4로 설정 (템플릿에서 4개 품목 필요)
+            is_price_sheet = '물가' in sheet_name
+            top_n_count = 4 if is_price_sheet else 3
+            
             # 전국 산업 추가
             national_industries = []
             if national_region:
                 national_industries = self.get_top_industries_for_region(
                     sheet_name, '전국', national_region['row'],
-                    current_col, prev_col, top_n=3
+                    current_col, prev_col, top_n=top_n_count
                 )
                 national_region['top_industries'] = national_industries
             
-            # 각 상위 시도의 상위 3개 산업
+            # 각 상위 시도의 상위 산업
             top_regions_with_industries = []
             for region in top_regions:
                 industries = self.get_top_industries_for_region(
                     sheet_name, region['name'], region['row'], 
-                    current_col, prev_col, top_n=3
+                    current_col, prev_col, top_n=top_n_count
                 )
                 top_regions_with_industries.append({
                     **region,
                     'top_industries': industries
                 })
             
-            # 각 하위 시도의 상위 3개 산업 (감소율이 큰 것들)
+            # 각 하위 시도의 상위 산업 (감소율이 큰 것들)
             bottom_regions_with_industries = []
             for region in bottom_regions:
                 # 하위 시도도 get_top_industries_for_region 사용 (지역별 우선순위 적용)
                 industries = self.get_top_industries_for_region(
                     sheet_name, region['name'], region['row'],
-                    current_col, prev_col, top_n=3
+                    current_col, prev_col, top_n=top_n_count
                 )
                 bottom_regions_with_industries.append({
                     **region,

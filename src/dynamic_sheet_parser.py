@@ -25,12 +25,18 @@ class DynamicSheetParser:
         self.excel_extractor = excel_extractor
         self.schema_loader = schema_loader if schema_loader is not None else SchemaLoader()
         self.header_parser = ExcelHeaderParser(excel_extractor.excel_path)
-        self.sheet_structure_cache = {}  # 시트별 구조 캐시
+        
+        # 성능 최적화: 시트 구조 캐시
+        self._structure_cache: Dict[str, Dict[str, Any]] = {}
+        # 성능 최적화: 지역 행 캐시 (시트명_지역명_카테고리 -> 행 번호)
+        self._region_row_cache: Dict[str, Optional[int]] = {}
     
     def parse_sheet_structure(self, sheet_name: str) -> Dict[str, Any]:
         """
         시트의 구조를 동적으로 파싱합니다.
         스키마에서 가중치 및 분류단계 설정을 가져옵니다.
+        
+        성능 최적화: 결과를 캐시하여 반복 호출 시 재계산하지 않습니다.
         
         Args:
             sheet_name: 시트 이름
@@ -53,8 +59,9 @@ class DynamicSheetParser:
                 'data_start_row': 데이터가 시작하는 행 번호
             }
         """
-        if sheet_name in self.sheet_structure_cache:
-            return self.sheet_structure_cache[sheet_name]
+        # 캐시 확인
+        if sheet_name in self._structure_cache:
+            return self._structure_cache[sheet_name]
         
         sheet = self.excel_extractor.get_sheet(sheet_name)
         headers_info = self.header_parser.parse_sheet_headers(sheet_name, header_row=1, max_header_rows=5)
@@ -101,7 +108,9 @@ class DynamicSheetParser:
             'headers_info': headers_info
         }
         
-        self.sheet_structure_cache[sheet_name] = structure
+        # 캐시에 저장
+        self._structure_cache[sheet_name] = structure
+        
         return structure
     
     def _find_region_column(self, sheet, headers_info: Dict) -> int:
@@ -225,6 +234,8 @@ class DynamicSheetParser:
         """
         특정 지역의 행을 찾습니다.
         
+        성능 최적화: 결과를 캐시하여 반복 호출 시 재검색하지 않습니다.
+        
         Args:
             sheet_name: 시트 이름
             region_name: 지역 이름
@@ -233,6 +244,11 @@ class DynamicSheetParser:
         Returns:
             행 번호 또는 None
         """
+        # 캐시 키 생성
+        cache_key = f"{sheet_name}_{region_name}_{category_filter or 'none'}"
+        if cache_key in self._region_row_cache:
+            return self._region_row_cache[cache_key]
+        
         structure = self.parse_sheet_structure(sheet_name)
         sheet = self.excel_extractor.get_sheet(sheet_name)
         region_col = structure['region_column']
@@ -241,6 +257,7 @@ class DynamicSheetParser:
         classification_col = structure.get('classification_column')
         
         # 지역 이름으로 행 찾기
+        result = None
         for row in range(data_start_row, min(data_start_row + 500, sheet.max_row + 1)):
             cell = sheet.cell(row=row, column=region_col)
             if not cell.value:
@@ -272,7 +289,8 @@ class DynamicSheetParser:
                         if cat_str and cat_str not in ['총지수', '계', '   계']:
                             # 품목별 데이터일 수 있으므로 계속 확인
                             pass
-                return row
+                result = row
+                break
             else:
                 # 다른 시트: 분류 단계가 0이거나 카테고리가 "총지수"/"계"인 경우
                 if classification_col:
@@ -285,14 +303,18 @@ class DynamicSheetParser:
                     if cat_cell.value:
                         cat_str = str(cat_cell.value).strip()
                         if cat_str in ['총지수', '계', '   계']:
-                            return row
+                            result = row
+                            break
                     else:
                         # 카테고리가 비어있으면 스킵
                         continue
                 else:
-                    return row
+                    result = row
+                    break
         
-        return None
+        # 캐시에 저장 (None도 저장하여 재검색 방지)
+        self._region_row_cache[cache_key] = result
+        return result
     
     def get_quarter_column(self, sheet_name: str, year: int, quarter: int) -> Optional[int]:
         """
@@ -388,4 +410,12 @@ class DynamicSheetParser:
         """리소스 정리"""
         if self.header_parser:
             self.header_parser.close()
+        # 캐시 초기화
+        self._structure_cache.clear()
+        self._region_row_cache.clear()
+    
+    def clear_cache(self):
+        """캐시만 초기화 (리소스는 유지)"""
+        self._structure_cache.clear()
+        self._region_row_cache.clear()
 

@@ -1,0 +1,81 @@
+{
+  "_comment": "서울 경제동향 출력 형식 스키마",
+  
+  "template_type": "region_summary",
+  "sheet_name": "서울",
+  "display_name": "서울 경제동향",
+  "template_file": "서울.html",
+  
+  "data_type": {
+    "unit": "mixed",
+    "direction_positive": "increase",
+    "direction_negative": "decrease",
+    "category_name": "항목"
+  },
+  
+  "sections": {
+    "production": {
+      "광공업생산": {
+        "sheet": "광공업생산",
+        "description": "광공업생산 동향"
+      },
+      "서비스업생산": {
+        "sheet": "서비스업생산",
+        "description": "서비스업생산 동향"
+      }
+    },
+    "consumption_construction": {
+      "소매판매": {
+        "sheet": "소비(소매, 추가)",
+        "description": "소매판매 동향"
+      },
+      "건설수주": {
+        "sheet": "건설 (공표자료)",
+        "description": "건설수주 동향"
+      }
+    },
+    "exports_imports": {
+      "수출": {
+        "sheet": "수출",
+        "description": "수출 동향"
+      },
+      "수입": {
+        "sheet": "수입",
+        "description": "수입 동향"
+      }
+    },
+    "employment": {
+      "고용률": {
+        "sheet": "고용률",
+        "description": "고용률 동향"
+      },
+      "실업률": {
+        "sheet": "실업자 수",
+        "description": "실업률 동향"
+      }
+    },
+    "prices": {
+      "소비자물가": {
+        "sheet": "품목성질별 물가",
+        "description": "소비자물가 동향"
+      }
+    },
+    "population_movement": {
+      "인구": {
+        "sheet": "연령별 인구이동",
+        "description": "국내 인구이동 동향"
+      }
+    }
+  },
+  
+  "marker_patterns": {
+    "region_growth_rate": "{sheet}:서울_증감률",
+    "region_growth_direction": "{sheet}:서울_증감방향",
+    "region_item_growth_rate": "{sheet}:서울_{item}_증감률",
+    "region_age_group_growth_rate": "{sheet}:서울_{age_group}_증감률",
+    "region_population_net_movement": "{sheet}:서울_순이동",
+    "region_age_group_inflow": "{sheet}:서울_{age_group}_유입",
+    "region_age_group_outflow": "{sheet}:서울_{age_group}_유출"
+  }
+}
+
