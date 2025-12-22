@@ -69,11 +69,15 @@ class DynamicSheetParser:
         # 스키마에서 가중치 설정 가져오기
         weight_config = self.schema_loader.get_weight_config(sheet_name)
         
-        # 지역 이름 열 찾기
-        region_column = self._find_region_column(sheet, headers_info)
+        # 지역 이름 열: 스키마에서 가져오거나 동적으로 찾기
+        region_column = weight_config.get('region_column')
+        if region_column is None:
+            region_column = self._find_region_column(sheet, headers_info)
         
-        # 산업/업태/품목 이름 열 찾기
-        category_column = self._find_category_column(sheet, headers_info)
+        # 산업/업태/품목 이름 열: 스키마에서 가져오거나 동적으로 찾기
+        category_column = weight_config.get('category_column')
+        if category_column is None:
+            category_column = self._find_category_column(sheet, headers_info)
         
         # 분류 단계 열: 스키마에서 가져오거나 동적으로 찾기
         classification_column = weight_config.get('classification_column')
@@ -257,6 +261,12 @@ class DynamicSheetParser:
         classification_col = structure.get('classification_column')
         
         # 지역 이름으로 행 찾기
+        # 공백을 무시하고 비교하기 위한 정규화 함수
+        def normalize_name(name: str) -> str:
+            return name.replace(' ', '').replace('　', '')  # 일반 공백과 전각 공백 제거
+        
+        normalized_region = normalize_name(region_name)
+        
         result = None
         for row in range(data_start_row, min(data_start_row + 500, sheet.max_row + 1)):
             cell = sheet.cell(row=row, column=region_col)
@@ -264,7 +274,10 @@ class DynamicSheetParser:
                 continue
             
             cell_str = str(cell.value).strip()
-            if cell_str != region_name:
+            cell_normalized = normalize_name(cell_str)
+            
+            # 정확한 매칭 또는 정규화된 이름 비교
+            if cell_str != region_name and cell_normalized != normalized_region:
                 continue
             
             # 카테고리 필터 적용
@@ -278,8 +291,8 @@ class DynamicSheetParser:
                     # 카테고리가 비어있으면 스킵 (필터가 있는 경우)
                     continue
             
-            # 수출/수입 시트의 경우: 카테고리나 분류 단계 체크 완화
-            if sheet_name in ['수출', '수입']:
+            # 수출/수입/물가 시트의 경우: 카테고리나 분류 단계 체크 완화
+            if sheet_name in ['수출', '수입'] or '물가' in sheet_name:
                 # 카테고리 열이 비어있거나 None이면 OK
                 if category_col and not category_filter:
                     cat_cell = sheet.cell(row=row, column=category_col)

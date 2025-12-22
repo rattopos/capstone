@@ -312,7 +312,9 @@ class SchemaLoader:
             'weight_default': config.get('weight_default', 1),
             'classification_column': config.get('classification_column', 2),
             'max_classification_level': config.get('max_classification_level', 2),
-            'use_weighted_ranking': config.get('use_weighted_ranking', True)
+            'use_weighted_ranking': config.get('use_weighted_ranking', True),
+            'region_column': config.get('region_column'),
+            'category_column': config.get('category_column')
         }
     
     def get_weight_value(self, sheet_name: str, row_weight_value: Any) -> float:

@@ -316,9 +316,9 @@ class DataAnalyzer:
             # 분류단계 2와 3 항목 필터링 (공공서비스는 분류단계 2)
             level2_3_industries = [ind for ind in industries if ind.get('classification_level', 0) in [2, 3]]
             
-            if level3_industries:
+            if level2_3_industries:
                 # 품목명 정리 (앞뒤 공백 제거)
-                for ind in level3_industries:
+                for ind in level2_3_industries:
                     ind['name'] = ind['name'].strip()
                 
                 # 지역별 우선순위 품목 정의

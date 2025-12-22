@@ -17,9 +17,19 @@
     "age_groups": ["15~29세", "30~59세", "60세이상", "계"]
   },
   
+  "change_calculation": {
+    "_comment": "고용률은 퍼센트포인트(%p) 증감으로 계산 - 증감률이 아님",
+    "type": "percentage_point",
+    "formula": "current_rate - previous_rate",
+    "description": "고용률 증감(%p) = 현재 고용률 - 전년동분기 고용률",
+    "unit": "%p",
+    "marker_suffix": "증감pp"
+  },
+  
   "data_type": {
     "unit": "%",
     "change_unit": "%p",
+    "change_calculation_type": "percentage_point",
     "direction_positive": "rise",
     "direction_negative": "fall",
     "category_name": "연령별 고용률"

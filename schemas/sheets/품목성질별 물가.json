@@ -8,7 +8,7 @@
   "national_priorities": null,
   "region_priorities": {},
   "weight_column": 3,
-  "weight_default": null,
+  "weight_default": 1,
   "classification_column": 2,
   "max_classification_level": 3,
   "use_weighted_ranking": true

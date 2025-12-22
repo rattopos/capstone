@@ -574,7 +574,8 @@ class TemplateFiller:
             year: 연도
             quarter: 분기 (1-4)
         """
-        cache_key = f"{year}_{quarter}"
+        # 시트별로 다른 캐시 키 사용 (시트가 다르면 다시 분석)
+        cache_key = f"{sheet_name}_{year}_{quarter}"
         # 이미 분석된 데이터가 있으면 재분석하지 않음
         if hasattr(self, '_current_analyzed_data') and cache_key in self._current_analyzed_data:
             return
@@ -585,7 +586,7 @@ class TemplateFiller:
             if quarter_cols and len(quarter_cols) == 2:
                 quarter_data = {f"{year}_{quarter}/4": quarter_cols}
                 analyzed = self.data_analyzer.analyze_quarter_data(sheet_name, quarter_data)
-                # 캐시 대신 인스턴스 변수에 임시 저장 (이 메서드 호출 중에만 사용)
+                # 캐시 대신 인스턴스 변수에 임시 저장 (시트별로 구분)
                 if not hasattr(self, '_current_analyzed_data'):
                     self._current_analyzed_data = {}
                 self._current_analyzed_data[cache_key] = analyzed.get(f"{year}_{quarter}/4", {})
@@ -683,6 +684,247 @@ class TemplateFiller:
         prev_col = current_col - 4
         
         return (current_col, prev_col)
+    
+    def _get_unemployment_rate_regions_data(self, year: int, quarter: int) -> list:
+        """
+        실업률 테이블에서 모든 지역의 증감률(백분율포인트)을 계산하여 반환합니다.
+        
+        Args:
+            year: 연도
+            quarter: 분기
+            
+        Returns:
+            지역별 증감률 정보 리스트 [{'name': '서울', 'growth_rate': 0.2}, ...]
+        """
+        # 17개 시도 리스트 (전국 제외)
+        region_list = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                       '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        # 실업자 수 시트에서 실업률 테이블 설정 가져오기
+        actual_sheet_name = '실업자 수'
+        sheet = self.excel_extractor.get_sheet(actual_sheet_name)
+        if not sheet:
+            return []
+        
+        sheet_config = self._get_sheet_config(actual_sheet_name)
+        unemployment_table_config = sheet_config.get('unemployment_rate_table', {})
+        
+        if not unemployment_table_config.get('enabled', True):
+            return []
+        
+        start_row = unemployment_table_config.get('start_row', 81)
+        title_row = unemployment_table_config.get('title_row', 79)
+        region_col = unemployment_table_config.get('region_column', 1)
+        age_group_col = unemployment_table_config.get('age_group_column', 2)
+        age_group_filter = unemployment_table_config.get('age_group_filter', '계')
+        header_row_number = unemployment_table_config.get('header_row_number', 3)
+        region_mapping = unemployment_table_config.get('region_mapping', {})
+        
+        # 역매핑 (긴 이름 -> 짧은 이름)
+        reverse_mapping = {v: k for k, v in region_mapping.items()}
+        
+        # 헤더 행 찾기
+        title_text = unemployment_table_config.get('title_text', '시도별 실업률(%)')
+        header_row = None
+        
+        for row in range(1, min(200, sheet.max_row + 1)):
+            for col in range(1, min(10, sheet.max_column + 1)):
+                cell_val = sheet.cell(row=row, column=col).value
+                if cell_val and title_text in str(cell_val):
+                    for offset in [header_row_number, 1, 2, 3]:
+                        test_row = row + offset
+                        if test_row <= sheet.max_row:
+                            for test_col in range(1, min(20, sheet.max_column + 1)):
+                                test_val = sheet.cell(row=test_row, column=test_col).value
+                                if test_val and ('분기' in str(test_val) or '/4' in str(test_val)):
+                                    header_row = test_row
+                                    break
+                            if header_row:
+                                break
+                    break
+            if header_row:
+                break
+        
+        if header_row is None:
+            header_row = title_row + header_row_number if title_row else header_row_number
+        
+        # 현재 분기와 전년 동분기 열 찾기
+        current_col = None
+        prev_col = None
+        patterns_current = [f"{year}  {quarter}/4", f"{year} {quarter}/4", f"{year}년 {quarter}/4"]
+        patterns_prev = [f"{year-1}  {quarter}/4", f"{year-1} {quarter}/4", f"{year-1}년 {quarter}/4"]
+        
+        for col in range(1, min(100, sheet.max_column + 1)):
+            header_val = sheet.cell(row=header_row, column=col).value
+            if header_val:
+                header_str = str(header_val).strip()
+                for pattern in patterns_current:
+                    if pattern in header_str:
+                        current_col = col
+                        break
+                for pattern in patterns_prev:
+                    if pattern in header_str:
+                        prev_col = col
+                        break
+        
+        if not current_col or not prev_col:
+            return []
+        
+        # 지역별 데이터 추출
+        regions = []
+        seen_regions = set()
+        current_region_name = None
+        
+        for row in range(start_row, min(start_row + 500, sheet.max_row + 1)):
+            cell_region = sheet.cell(row=row, column=region_col).value
+            cell_age = sheet.cell(row=row, column=age_group_col).value
+            
+            # 지역 셀이 있으면 갱신
+            if cell_region:
+                region_str = str(cell_region).strip()
+                # 역매핑으로 짧은 이름 가져오기
+                current_region_name = reverse_mapping.get(region_str, region_str)
+                # 매핑되지 않은 경우 직접 확인
+                if current_region_name == region_str and region_str not in region_list:
+                    for short_name in region_list:
+                        if short_name in region_str:
+                            current_region_name = short_name
+                            break
+            
+            if not current_region_name or not cell_age:
+                continue
+            
+            age_str = str(cell_age).strip()
+            
+            # '계' 연령대만, 전국 제외, 중복 제외
+            if age_str != age_group_filter:
+                continue
+            if current_region_name == '전국' or current_region_name in seen_regions:
+                continue
+            if current_region_name not in region_list:
+                continue
+            
+            seen_regions.add(current_region_name)
+            
+            # 현재 분기와 전년 동분기 값 가져오기
+            current_val = sheet.cell(row=row, column=current_col).value
+            prev_val = sheet.cell(row=row, column=prev_col).value
+            
+            try:
+                current_float = float(current_val) if current_val is not None else None
+                prev_float = float(prev_val) if prev_val is not None else None
+            except (ValueError, TypeError):
+                continue
+            
+            if current_float is not None and prev_float is not None:
+                growth_rate = current_float - prev_float
+                regions.append({
+                    'name': current_region_name,
+                    'growth_rate': round(growth_rate, 1)
+                })
+        
+        return regions
+    
+    def _get_unemployment_rate_age_groups(self, region_name: str, year: int, quarter: int) -> list:
+        """
+        실업률 테이블에서 특정 지역의 연령별 증감률(백분율포인트)을 계산하여 반환합니다.
+        
+        Args:
+            region_name: 지역 이름 (짧은 이름, 예: '서울', '전국')
+            year: 연도
+            quarter: 분기
+            
+        Returns:
+            연령별 증감률 정보 리스트 [{'name': '30~59세', 'growth_rate': 0.5}, ...]
+            증감률 절대값 기준 내림차순 정렬
+        """
+        actual_sheet_name = '실업자 수'
+        sheet = self.excel_extractor.get_sheet(actual_sheet_name)
+        if not sheet:
+            return []
+        
+        # 실업자 수 시트의 스키마에서 실업률 테이블 설정 가져오기
+        sheet_config = self.schema_loader.load_sheet_config('실업자 수')
+        unemployment_table_config = sheet_config.get('unemployment_rate_table', {})
+        
+        if not unemployment_table_config.get('enabled', True):
+            return []
+        
+        start_row = unemployment_table_config.get('start_row', 81)
+        header_row = unemployment_table_config.get('header_row', 80)
+        region_col = unemployment_table_config.get('region_column', 1)
+        age_group_col = unemployment_table_config.get('age_group_column', 2)
+        region_mapping = unemployment_table_config.get('region_mapping', {})
+        quarter_header_pattern = unemployment_table_config.get('quarter_header_pattern', '{year}  {quarter}/4')
+        
+        # 지역명 매핑 (짧은 이름 -> 긴 이름)
+        target_region = region_mapping.get(region_name, region_name)
+        
+        # 현재 분기와 전년 동분기 열 찾기
+        current_header = quarter_header_pattern.format(year=year, quarter=quarter)
+        prev_header = quarter_header_pattern.format(year=year-1, quarter=quarter)
+        
+        current_col = None
+        prev_col = None
+        
+        for col in range(1, min(sheet.max_column + 1, 100)):
+            cell_value = sheet.cell(row=header_row, column=col).value
+            if cell_value:
+                cell_str = str(cell_value).strip()
+                if cell_str == current_header:
+                    current_col = col
+                elif cell_str == prev_header:
+                    prev_col = col
+        
+        if not current_col or not prev_col:
+            return []
+        
+        age_groups = []
+        last_region = None
+        in_target_region = False
+        
+        for row in range(start_row, min(start_row + 500, sheet.max_row + 1)):
+            region_cell = sheet.cell(row=row, column=region_col).value
+            age_group_cell = sheet.cell(row=row, column=age_group_col).value
+            
+            # 지역 셀이 있으면 갱신
+            if region_cell:
+                region_str = str(region_cell).strip()
+                if region_str:
+                    last_region = region_str
+                    in_target_region = (last_region == target_region)
+            
+            if not in_target_region or not age_group_cell:
+                continue
+            
+            age_group_str = str(age_group_cell).strip()
+            
+            # '계'는 총계이므로 제외
+            if age_group_str == '계':
+                continue
+            
+            current_value = sheet.cell(row=row, column=current_col).value
+            prev_value = sheet.cell(row=row, column=prev_col).value
+            
+            try:
+                current_float = float(current_value) if current_value is not None else None
+                prev_float = float(prev_value) if prev_value is not None else None
+            except (ValueError, TypeError):
+                continue
+            
+            if current_float is not None and prev_float is not None:
+                growth_rate = round(current_float - prev_float, 1)
+                age_groups.append({
+                    'name': age_group_str,
+                    'growth_rate': growth_rate,
+                    'current_value': current_float,
+                    'prev_value': prev_float
+                })
+        
+        # 증감률 절대값 기준 내림차순 정렬 (가장 큰 변화가 먼저)
+        age_groups.sort(key=lambda x: abs(x.get('growth_rate', 0)), reverse=True)
+        
+        return age_groups
     
     def _get_categories_for_region(self, sheet_name: str, region_name: str,
                                     year: int, quarter: int, top_n: int = 3) -> list:
@@ -1175,7 +1417,8 @@ class TemplateFiller:
         
         self._analyze_data_if_needed(sheet_name, year, quarter)
         
-        cache_key = f"{year}_{quarter}"
+        # 시트별로 다른 캐시 키 사용
+        cache_key = f"{sheet_name}_{year}_{quarter}"
         if not hasattr(self, '_current_analyzed_data') or cache_key not in self._current_analyzed_data:
             # 캐시에 데이터가 없으면 빈 딕셔너리로 초기화하고 직접 계산 시도
             if not hasattr(self, '_current_analyzed_data'):
@@ -1241,6 +1484,97 @@ class TemplateFiller:
             if growth_rate is not None:
                 return self.get_growth_direction(growth_rate, direction_type="rise_fall", expression_key="rate")
             return "N/A"
+        
+        # 전국 산업/업태 마커는 연령 패턴보다 먼저 처리 (패턴 충돌 방지)
+        elif key.startswith('전국_업태') or key.startswith('전국_산업'):
+            # 전국 산업/업태 마커 처리 (일반화)
+            industry_match = re.match(r'전국_(업태|산업)(\d+)_(.+)', key)
+            if industry_match:
+                industry_type = industry_match.group(1)  # '업태' 또는 '산업'
+                industry_idx = int(industry_match.group(2)) - 1
+                industry_field = industry_match.group(3)
+                
+                # 물가 시트 여부 확인 (물가동향은 4개 산업이 필요)
+                is_price_sheet = ('물가' in sheet_name)
+                top_n = 4 if is_price_sheet else 3
+                
+                # 분석된 데이터의 national_region.top_industries 사용 (이미 계산되어 있음)
+                categories = []
+                if 'national_region' in data and data['national_region']:
+                    categories = data['national_region'].get('top_industries', [])
+                
+                # top_industries가 비어있으면 _get_categories_for_region 호출
+                if not categories:
+                    categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=top_n)
+                    # 여전히 비어있으면 다른 방법 시도
+                    if not categories:
+                        current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+                        if current_col and prev_col:
+                            try:
+                                industries_data = self.data_analyzer.get_top_industries_for_region(
+                                    sheet_name, '전국', None, current_col, prev_col, top_n=top_n
+                                )
+                                if industries_data:
+                                    categories = industries_data
+                            except:
+                                pass
+                
+                if categories and industry_idx < len(categories):
+                    category = categories[industry_idx]
+                    
+                    if industry_field == '이름':
+                        category_name = category['name']
+                        config = self._get_sheet_config(sheet_name)
+                        name_mapping = config.get('name_mapping', {})
+                        mapped_name = name_mapping.get(category_name)
+                        if not mapped_name:
+                            # 부분 일치 확인
+                            for key_map, value_map in name_mapping.items():
+                                if key_map in category_name or category_name in key_map:
+                                    mapped_name = value_map
+                                    break
+                        # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
+                        if not mapped_name:
+                            item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
+                            if item_display_mapping:
+                                mapped_name = item_display_mapping.get(category_name)
+                        return mapped_name if mapped_name else category_name
+                    elif industry_field == '증감률':
+                        return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
+                return "N/A"
+            return "N/A"
+        
+        # 전국 연령별 증감률/증감pp 마커 처리 (실업률용)
+        # 예: 전국_60세이상_증감률, 전국_30_59세_증감pp, 전국_15_29세_증감pp
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        national_age_match = re.match(r'^전국_(.+)_증감(?:률|pp)$', key)
+        if national_age_match:
+            age_group_key = national_age_match.group(1)
+            
+            # 실업률 시트 여부 확인
+            is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            
+            if is_unemployment_sheet:
+                # 연령대 이름 매핑 (마커 이름 -> 엑셀 이름 리스트)
+                # Excel에서 "30 - 59세" 형식을 사용할 수 있음
+                age_mapping = {
+                    '60세이상': ['60세이상', '60 세이상', '60세 이상'],
+                    '30_59세': ['30~59세', '30 - 59세', '30-59세', '30 ~ 59세'],
+                    '15_29세': ['15~29세', '15 - 29세', '15-29세', '15 ~ 29세']
+                }
+                target_ages = age_mapping.get(age_group_key, [age_group_key])
+                
+                # 전국의 연령별 데이터 가져오기
+                age_groups = self._get_unemployment_rate_age_groups('전국', year, quarter)
+                
+                for age_group in age_groups:
+                    age_name = age_group.get('name', '')
+                    for target_age in target_ages:
+                        if age_name == target_age or target_age in age_name or age_name in target_age:
+                            return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
+                
+            return "N/A"
+        
         elif key == '강조_시도수':
             # 전국이 증가면 증가_시도수, 감소면 감소_시도수
             national_growth = None
@@ -1375,59 +1709,6 @@ class TemplateFiller:
                             return "N/A"
                 return "N/A"
             return "N/A"
-        elif key.startswith('전국_업태') or key.startswith('전국_산업'):
-            # 전국 산업/업태 마커 처리 (일반화)
-            industry_match = re.match(r'전국_(업태|산업)(\d+)_(.+)', key)
-            if industry_match:
-                industry_type = industry_match.group(1)  # '업태' 또는 '산업'
-                industry_idx = int(industry_match.group(2)) - 1
-                industry_field = industry_match.group(3)
-                
-                # 분석된 데이터의 national_region.top_industries 사용 (이미 계산되어 있음)
-                categories = []
-                if 'national_region' in data and data['national_region']:
-                    categories = data['national_region'].get('top_industries', [])
-                
-                # top_industries가 비어있으면 _get_categories_for_region 호출
-                if not categories:
-                    categories = self._get_categories_for_region(sheet_name, '전국', year, quarter, top_n=3)
-                    # 여전히 비어있으면 다른 방법 시도
-                    if not categories:
-                        current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
-                        if current_col and prev_col:
-                            try:
-                                industries_data = self.data_analyzer.get_top_industries_for_region(
-                                    sheet_name, '전국', None, current_col, prev_col, top_n=3
-                                )
-                                if industries_data:
-                                    categories = industries_data
-                            except:
-                                pass
-                
-                if categories and industry_idx < len(categories):
-                    category = categories[industry_idx]
-                    
-                    if industry_field == '이름':
-                        category_name = category['name']
-                        config = self._get_sheet_config(sheet_name)
-                        name_mapping = config.get('name_mapping', {})
-                        mapped_name = name_mapping.get(category_name)
-                        if not mapped_name:
-                            # 부분 일치 확인
-                            for key_map, value_map in name_mapping.items():
-                                if key_map in category_name or category_name in key_map:
-                                    mapped_name = value_map
-                                    break
-                        # 품목명 표시 매핑 적용 (엑셀 이름 -> 표시용 이름)
-                        if not mapped_name:
-                            item_display_mapping = self.schema_loader.get_name_mapping('item_display_mapping')
-                            if item_display_mapping:
-                                mapped_name = item_display_mapping.get(category_name)
-                        return mapped_name if mapped_name else category_name
-                    elif industry_field == '증감률':
-                        return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
-                return "N/A"
-            return "N/A"
         
         # 상위 시도 패턴
         top_match = re.match(r'상위시도(\d+)_(.+)', key)
@@ -1435,22 +1716,49 @@ class TemplateFiller:
             idx = int(top_match.group(1)) - 1  # 0-based
             field = top_match.group(2)
             
-            regions = data.get('top_regions', [])
-            if not regions:
-                # 캐시에 없으면 직접 계산 시도
-                current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+            # 실업률 시트 여부 확인
+            is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            # 물가 시트 여부 확인
+            is_price_sheet = ('물가' in sheet_name)
+            
+            regions = []
+            if is_unemployment_sheet:
+                # 실업률 시트: 전용 함수로 백분율포인트 단위 증감률 계산 (캐시 무시)
+                regions_data = self._get_unemployment_rate_regions_data(year, quarter)
+                if regions_data:
+                    # 상위시도 = 실업률이 가장 많이 상승한 지역 (양수가 큰 순서)
+                    regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0), reverse=True)
+            elif is_price_sheet:
+                # 물가 시트: 항상 '품목성질별 물가' 시트 기준으로 상위시도 결정
+                price_base_sheet = '품목성질별 물가'
+                current_col, prev_col = self._get_quarter_columns(year, quarter, price_base_sheet)
                 if current_col and prev_col:
-                    regions_data = self.data_analyzer.get_regions_with_growth_rate(sheet_name, current_col, prev_col)
+                    regions_data = self.data_analyzer.get_regions_with_growth_rate(price_base_sheet, current_col, prev_col)
                     if regions_data:
                         regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0), reverse=True)
+            else:
+                # 일반 시트: 캐시 우선 사용
+                regions = data.get('top_regions', [])
+                if not regions:
+                    current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+                    if current_col and prev_col:
+                        regions_data = self.data_analyzer.get_regions_with_growth_rate(sheet_name, current_col, prev_col)
+                        if regions_data:
+                            regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0), reverse=True)
             
             if regions and idx < len(regions):
                 region = regions[idx]
                 
                 if field == '이름':
                     return region.get('name', '')
-                elif field == '증감률':
+                elif field == '증감률' or field == '증감pp':
                     return self.format_percentage(region.get('growth_rate', 0), decimal_places=1, include_percent=False)
+                elif field == '방향':
+                    # 상위시도 증감률에 따라 "상승" 또는 "하강" 반환
+                    return self.get_growth_direction(region['growth_rate'], direction_type="rise_fall", expression_key="rate")
+                elif field == '변화표현':
+                    # 상위시도 증감률에 따라 "올라" 또는 "내려" 반환
+                    return self.get_production_change_expression(region['growth_rate'], direction_type="rise_fall")
                 elif field.startswith('업태') or field.startswith('산업'):
                     # 업태1_이름, 업태1_증감률, 산업1_이름, 산업1_증감률 등 (일반화)
                     industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
@@ -1459,13 +1767,15 @@ class TemplateFiller:
                         industry_idx = int(industry_match.group(2)) - 1
                         industry_field = industry_match.group(3)
                         
+                        # 물가 시트의 경우: 해당 시도의 품목 데이터는 해당 시트에서 가져옴
                         # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
                         categories = region.get('top_industries', [])
                         
                         # top_industries가 비어있으면 _get_categories_for_region 호출
                         if not categories:
+                            # 물가 시트의 경우 현재 시트(지출목적별 물가 등)에서 품목 데이터 가져옴
                             categories = self._get_categories_for_region(
-                                sheet_name, region['name'], year, quarter, top_n=3
+                                sheet_name, region['name'], year, quarter, top_n=4
                             )
                         
                         if categories and industry_idx < len(categories):
@@ -1491,6 +1801,28 @@ class TemplateFiller:
                             elif industry_field == '증감률':
                                 return self.format_percentage(category['growth_rate'], decimal_places=1, include_percent=False)
                     return "N/A"
+                elif field.startswith('연령'):
+                    # 연령1_이름, 연령1_증감률, 연령2_있음? 등 (실업률 시트용)
+                    age_match = re.match(r'연령(\d+)_(.+)', field)
+                    if age_match:
+                        age_idx = int(age_match.group(1)) - 1
+                        age_field = age_match.group(2)
+                        
+                        # 실업률 시트인 경우 연령별 데이터 가져오기
+                        if is_unemployment_sheet:
+                            age_groups = self._get_unemployment_rate_age_groups(region['name'], year, quarter)
+                            
+                            if age_field == '있음?':
+                                # 해당 연령대 존재 여부 확인 (조건부 출력용)
+                                return '' if age_idx < len(age_groups) else 'N/A'
+                            
+                            if age_groups and age_idx < len(age_groups):
+                                age_group = age_groups[age_idx]
+                                if age_field == '이름':
+                                    return age_group.get('name', '')
+                                elif age_field in ('증감률', '증감pp'):
+                                    return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
+                    return "N/A"
                 return "N/A"
             return "N/A"
         
@@ -1500,21 +1832,42 @@ class TemplateFiller:
             idx = int(bottom_match.group(1)) - 1  # 0-based
             field = bottom_match.group(2)
             
-            regions = data.get('bottom_regions', [])
-            if not regions:
-                # 캐시에 없으면 직접 계산 시도
-                current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+            # 실업률 시트 여부 확인
+            is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            # 물가 시트 여부 확인
+            is_price_sheet = ('물가' in sheet_name)
+            
+            regions = []
+            if is_unemployment_sheet:
+                # 실업률 시트: 전용 함수로 백분율포인트 단위 증감률 계산 (캐시 무시)
+                regions_data = self._get_unemployment_rate_regions_data(year, quarter)
+                if regions_data:
+                    # 하위시도 = 실업률이 가장 많이 하락한 지역 (음수가 큰 순서 = 오름차순)
+                    regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0))
+            elif is_price_sheet:
+                # 물가 시트: 항상 '품목성질별 물가' 시트 기준으로 하위시도 결정
+                price_base_sheet = '품목성질별 물가'
+                current_col, prev_col = self._get_quarter_columns(year, quarter, price_base_sheet)
                 if current_col and prev_col:
-                    regions_data = self.data_analyzer.get_regions_with_growth_rate(sheet_name, current_col, prev_col)
+                    regions_data = self.data_analyzer.get_regions_with_growth_rate(price_base_sheet, current_col, prev_col)
                     if regions_data:
                         regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0))
+            else:
+                # 일반 시트: 캐시 우선 사용
+                regions = data.get('bottom_regions', [])
+                if not regions:
+                    current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+                    if current_col and prev_col:
+                        regions_data = self.data_analyzer.get_regions_with_growth_rate(sheet_name, current_col, prev_col)
+                        if regions_data:
+                            regions = sorted(regions_data, key=lambda x: x.get('growth_rate', 0))
             
             if regions and idx < len(regions):
                 region = regions[idx]
                 
                 if field == '이름':
                     return region.get('name', '')
-                elif field == '증감률':
+                elif field == '증감률' or field == '증감pp':
                     return self.format_percentage(region.get('growth_rate', 0), decimal_places=1, include_percent=False)
                 elif field == '방향':
                     # 하위시도 증감률에 따라 "상승" 또는 "하강" 반환
@@ -1535,8 +1888,9 @@ class TemplateFiller:
                         
                         # top_industries가 비어있으면 _get_categories_for_region 호출
                         if not categories:
+                            # 물가 시트의 경우 현재 시트에서 품목 데이터 가져옴
                             categories = self._get_categories_for_region(
-                                sheet_name, region['name'], year, quarter, top_n=3
+                                sheet_name, region['name'], year, quarter, top_n=4
                             )
                         
                         if categories and industry_idx < len(categories):
@@ -1570,6 +1924,28 @@ class TemplateFiller:
                                     )
                                 # 일반적인 경우는 현재 값 반환
                                 return str(int(category.get('current', 0))) if category.get('current') is not None else "N/A"
+                    return "N/A"
+                elif field.startswith('연령'):
+                    # 연령1_이름, 연령1_증감률, 연령2_있음? 등 (실업률 시트용)
+                    age_match = re.match(r'연령(\d+)_(.+)', field)
+                    if age_match:
+                        age_idx = int(age_match.group(1)) - 1
+                        age_field = age_match.group(2)
+                        
+                        # 실업률 시트인 경우 연령별 데이터 가져오기
+                        if is_unemployment_sheet:
+                            age_groups = self._get_unemployment_rate_age_groups(region['name'], year, quarter)
+                            
+                            if age_field == '있음?':
+                                # 해당 연령대 존재 여부 확인 (조건부 출력용)
+                                return '' if age_idx < len(age_groups) else 'N/A'
+                            
+                            if age_groups and age_idx < len(age_groups):
+                                age_group = age_groups[age_idx]
+                                if age_field == '이름':
+                                    return age_group.get('name', '')
+                                elif age_field in ('증감률', '증감pp'):
+                                    return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
                     return "N/A"
                 return "N/A"
             return "N/A"
@@ -1638,9 +2014,10 @@ class TemplateFiller:
             # 정답지 확인 필요하지만 일단 "2023.3" 형식 사용
             return f'{target_year}.{target_quarter}'
         
-        # 지역별 연령대별 증감률 (예: 전국_60대이상_증감률, 서울_30대59세_증감률, 경북_15대29세_증감률, 전국_30대_증감률)
+        # 지역별 연령대별 증감률/증감pp (예: 전국_60대이상_증감pp, 서울_30대59세_증감pp, 경북_15대29세_증감pp, 전국_30대_증감pp)
         # region_growth_match보다 먼저 처리해야 함
-        region_age_match = re.match(r'^([가-힣]+)_(\d+대이상|\d+대\d+세|\d+대)_증감률$', key)
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        region_age_match = re.match(r'^([가-힣]+)_(\d+대이상|\d+대\d+세|\d+대)_증감(?:률|pp)$', key)
         if region_age_match:
             region_name = region_age_match.group(1)
             age_group = region_age_match.group(2)  # '60대이상', '30대59세', '15대29세'
@@ -1722,8 +2099,10 @@ class TemplateFiller:
             
             return "N/A"
         
-        # 전국 증감률 처리 (동적 연도/분기)
-        if key == '전국_증감률':
+        # 전국 증감률/증감pp 처리 (동적 연도/분기)
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        # 증감률: 증감률 (%) 계산
+        if key == '전국_증감률' or key == '전국_증감pp':
             # 실업률/고용률 시트인지 확인
             is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
@@ -1858,8 +2237,9 @@ class TemplateFiller:
                     return self.format_percentage(growth_rate, decimal_places=1)
                 return "N/A"
         
-        # 지역별 증감률 마커 처리 (예: 서울_증감률, 울산_증감률)
-        region_growth_match = re.match(r'^([가-힣]+)_증감률$', key)
+        # 지역별 증감률/증감pp 마커 처리 (예: 서울_증감률, 울산_증감pp)
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        region_growth_match = re.match(r'^([가-힣]+)_증감(?:률|pp)$', key)
         if region_growth_match:
             region_name = region_growth_match.group(1)
             
@@ -2019,8 +2399,8 @@ class TemplateFiller:
             is_employment_rate_sheet = ('고용' in sheet_name or '고용률' in sheet_name)
             
             if is_unemployment_sheet or is_employment_rate_sheet:
-                # 실업률/고용률은 %p 단위이므로 증감률을 가져와서 방향 결정
-                growth_rate_str = self._process_dynamic_marker(sheet_name, f'{region_name}_증감률', year, quarter)
+                # 실업률/고용률은 %p 단위이므로 증감pp를 가져와서 방향 결정
+                growth_rate_str = self._process_dynamic_marker(sheet_name, f'{region_name}_증감pp', year, quarter)
                 try:
                     growth_rate = float(growth_rate_str)
                     return self.get_growth_direction(growth_rate)
@@ -2074,8 +2454,9 @@ class TemplateFiller:
                         return self.format_percentage(category['growth_rate'], decimal_places=1)
             return "N/A"
         
-        # 지역별 품목별 증감률 마커 처리 (예: 부산_외식제외개인서비스_증감률, 제주_농산물_증감률)
-        region_item_match = re.match(r'^([가-힣]+)_(.+)_증감률$', key)
+        # 지역별 품목별 증감률/증감pp 마커 처리 (예: 부산_외식제외개인서비스_증감pp, 제주_농산물_증감pp)
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        region_item_match = re.match(r'^([가-힣]+)_(.+)_증감(?:률|pp)$', key)
         if region_item_match:
             region_name = region_item_match.group(1)
             item_name = region_item_match.group(2)
@@ -2330,42 +2711,29 @@ class TemplateFiller:
         
         # 하락_시도수 처리 (감소시도수와 동일)
         if key == '하락_시도수' or key == '하락시도수':
-            sheet = self.excel_extractor.get_sheet(sheet_name)
-            negative_count = 0
-            seen_regions = set()
-            
-            # 연도/분기에 해당하는 열 번호 가져오기
-            current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
-            
-            # 실업률/고용률 시트인지 확인 (시트명에 "실업" 또는 "고용"이 포함되고 category_column이 없는 경우)
-            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
+            # 실업률 시트 여부 확인
+            is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
-                # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_a = sheet.cell(row=row, column=1)  # 시도
-                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
-                    
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
-                        age_str = str(cell_b.value).strip()
-                        
-                        # "계" 행이고, 시도명이 있는 경우 (전국 제외)
-                        if age_str == '계' and region_str and region_str != '전국':
-                            if region_str not in seen_regions:
-                                seen_regions.add(region_str)
-                                current = sheet.cell(row=row, column=current_col).value
-                                prev = sheet.cell(row=row, column=prev_col).value
-                                
-                                if current is not None and prev is not None and prev != 0:
-                                    growth_rate = ((current / prev) - 1) * 100
-                                    if growth_rate < 0:
-                                        negative_count += 1
-            else:
-                # 일반 시트 구조
+                # 실업률 시트: 전용 함수로 백분율포인트 단위 증감률 계산
+                regions_data = self._get_unemployment_rate_regions_data(year, quarter)
+                # 하락 = 실업률이 내려간 지역 (증감률 < 0)
+                negative_count = sum(1 for r in regions_data if r.get('growth_rate', 0) < 0)
+                return str(negative_count)
+            elif is_employment_rate_sheet:
+                # 고용률 시트: 별도 로직 (필요시 추가)
+                pass
+            
+            # 일반 시트 구조 (실업률/고용률 아닌 경우)
+            if not is_unemployment_sheet:
+                sheet = self.excel_extractor.get_sheet(sheet_name)
+                negative_count = 0
+                seen_regions = set()
+                current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+                
                 config = self._get_sheet_config(sheet_name)
-                category_col = config['category_column']
+                category_col = config.get('category_column', 6)
                 
                 for row in range(4, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 지역 코드
@@ -2814,8 +3182,9 @@ class TemplateFiller:
             
             return "N/A"
         
-        # 분기별 지역별 증감률 (예: 전국_증감_2024_3분기, 서울_증감_2025_2분기)
-        region_quarter_growth_match = re.match(r'^([가-힣]+)_증감_(\d{4})_(\d)분기$', key)
+        # 분기별 지역별 증감률/증감pp (예: 전국_증감_2024_3분기, 서울_증감pp_2025_2분기)
+        # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
+        region_quarter_growth_match = re.match(r'^([가-힣]+)_증감(?:pp)?_(\d{4})_(\d)분기$', key)
         if region_quarter_growth_match:
             region_name = region_quarter_growth_match.group(1)
             target_year = int(region_quarter_growth_match.group(2))

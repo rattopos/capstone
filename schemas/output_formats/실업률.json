@@ -6,9 +6,19 @@
   "display_name": "실업률",
   "template_file": "실업률.html",
   
+  "change_calculation": {
+    "_comment": "실업률은 퍼센트포인트(%p) 증감으로 계산 - 증감률이 아님",
+    "type": "percentage_point",
+    "formula": "current_rate - previous_rate",
+    "description": "실업률 증감(%p) = 현재 실업률 - 전년동분기 실업률",
+    "unit": "%p",
+    "marker_suffix": "증감pp"
+  },
+  
   "data_type": {
     "unit": "%",
     "change_unit": "%p",
+    "change_calculation_type": "percentage_point",
     "direction_positive": "fall",
     "direction_negative": "rise",
     "category_name": "연령별 실업률",
