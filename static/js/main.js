@@ -997,7 +997,15 @@ function setupResultButtons() {
     downloadBtn.onclick = () => {
         if (currentOutputFilename) {
             showToast('파일을 다운로드합니다...', 'info', 2000);
-            window.location.href = `/api/download/${currentOutputFilename}`;
+            // iframe을 통한 다운로드 트리거
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = `/api/download/${encodeURIComponent(currentOutputFilename)}`;
+            document.body.appendChild(iframe);
+            // 5초 후 iframe 제거
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 5000);
         }
     };
     
@@ -1764,7 +1772,15 @@ function showPdfResult(message, elapsedTimeSeconds = null) {
             pdfDownloadBtn.onclick = () => {
                 if (currentPdfFilename) {
                     showToast('PDF를 다운로드합니다...', 'info', 2000);
-                    window.location.href = `/api/download/${currentPdfFilename}`;
+                    // iframe을 통한 다운로드 트리거
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = `/api/download/${encodeURIComponent(currentPdfFilename)}`;
+                    document.body.appendChild(iframe);
+                    // 5초 후 iframe 제거
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 5000);
                 }
             };
         }
@@ -2421,7 +2437,15 @@ function showDocxResult(message, elapsedTimeSeconds = null) {
             docxDownloadBtn.onclick = () => {
                 if (currentDocxFilename) {
                     showToast('DOCX를 다운로드합니다...', 'info', 2000);
-                    window.location.href = `/api/download/${currentDocxFilename}`;
+                    // iframe을 통한 다운로드 트리거
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = `/api/download/${encodeURIComponent(currentDocxFilename)}`;
+                    document.body.appendChild(iframe);
+                    // 5초 후 iframe 제거
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 5000);
                 }
             };
         }
