@@ -4,11 +4,155 @@
 """
 
 import math
-import tempfile
+import time
+from dataclasses import dataclass, field, asdict
+from hashlib import md5
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Dict, Any
 
-from flask import current_app
+from flask import current_app, jsonify
+
+
+# ============================================================
+# 검증 관련 데이터 클래스
+# ============================================================
+
+@dataclass
+class ValidationError:
+    """검증 오류 정보"""
+    code: str           # 예: "SHEET_NOT_FOUND"
+    message: str        # 사용자 친화적 메시지
+    detail: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {k: v for k, v in asdict(self).items() if v is not None}
+
+
+@dataclass
+class ValidationResult:
+    """검증 결과"""
+    success: bool
+    errors: List[ValidationError] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    template_name: str = ""
+    required_sheets: List[str] = field(default_factory=list)
+    found_sheets: Dict[str, str] = field(default_factory=dict)
+    missing_sheets: List[str] = field(default_factory=list)
+    available_sheets: List[str] = field(default_factory=list)
+    periods_info: Optional[Dict[str, Any]] = None
+    period_valid: bool = True
+    period_error: Optional[str] = None
+    marker_count: int = 0
+    data_completeness: Optional[Dict[str, Any]] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        result = {
+            'success': self.success,
+            'template_name': self.template_name,
+            'required_sheets': self.required_sheets,
+            'found_sheets': self.found_sheets,
+            'missing_sheets': self.missing_sheets,
+            'available_sheets': self.available_sheets,
+            'periods_info': self.periods_info,
+            'period_valid': self.period_valid,
+            'period_error': self.period_error,
+            'marker_count': self.marker_count,
+        }
+        
+        if self.errors:
+            result['errors'] = [e.to_dict() for e in self.errors]
+        if self.warnings:
+            result['warnings'] = self.warnings
+        if self.data_completeness:
+            result['data_completeness'] = self.data_completeness
+            
+        return result
+
+
+# ============================================================
+# 에러 코드 상수
+# ============================================================
+
+class ErrorCodes:
+    """검증 에러 코드"""
+    TEMPLATE_NOT_SELECTED = "TEMPLATE_NOT_SELECTED"
+    TEMPLATE_NOT_FOUND = "TEMPLATE_NOT_FOUND"
+    EXCEL_NOT_FOUND = "EXCEL_NOT_FOUND"
+    INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
+    SHEET_NOT_FOUND = "SHEET_NOT_FOUND"
+    PERIOD_NOT_FOUND = "PERIOD_NOT_FOUND"
+    DATA_INCOMPLETE = "DATA_INCOMPLETE"
+    INVALID_MARKER = "INVALID_MARKER"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+
+
+# ============================================================
+# 검증 결과 캐시
+# ============================================================
+
+class ValidationCache:
+    """검증 결과 캐싱"""
+    _cache: Dict[str, Tuple[float, ValidationResult]] = {}
+    TTL = 300  # 5분
+    
+    @classmethod
+    def get_cache_key(cls, excel_path: str, template_name: str, year: int, quarter: int) -> str:
+        """캐시 키 생성"""
+        return md5(f"{excel_path}:{template_name}:{year}:{quarter}".encode()).hexdigest()
+    
+    @classmethod
+    def get(cls, key: str) -> Optional[ValidationResult]:
+        """캐시에서 결과 조회"""
+        if key in cls._cache:
+            timestamp, result = cls._cache[key]
+            if time.time() - timestamp < cls.TTL:
+                return result
+            else:
+                # 만료된 캐시 삭제
+                del cls._cache[key]
+        return None
+    
+    @classmethod
+    def set(cls, key: str, result: ValidationResult) -> None:
+        """캐시에 결과 저장"""
+        cls._cache[key] = (time.time(), result)
+    
+    @classmethod
+    def clear(cls) -> None:
+        """캐시 초기화"""
+        cls._cache.clear()
+    
+    @classmethod
+    def cleanup_expired(cls) -> int:
+        """만료된 캐시 정리"""
+        now = time.time()
+        expired_keys = [
+            key for key, (timestamp, _) in cls._cache.items()
+            if now - timestamp >= cls.TTL
+        ]
+        for key in expired_keys:
+            del cls._cache[key]
+        return len(expired_keys)
+
+
+# ============================================================
+# 에러 응답 헬퍼 함수
+# ============================================================
+
+def error_response(error: ValidationError, status_code: int = 400):
+    """표준화된 에러 응답 생성"""
+    return jsonify({
+        'success': False,
+        'error': error.to_dict()
+    }), status_code
+
+
+def validation_error_response(errors: List[ValidationError], status_code: int = 400):
+    """여러 에러에 대한 응답 생성"""
+    return jsonify({
+        'success': False,
+        'errors': [e.to_dict() for e in errors]
+    }), status_code
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
