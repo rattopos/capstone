@@ -41,18 +41,20 @@ class DataAnalyzer:
         # 시트별 설정에서 category_column 가져오기 (스키마 로더 사용)
         sheet_config = self.schema_loader.load_sheet_config(sheet_name)
         category_col = sheet_config.get('category_column', 6)
+        region_column = sheet_config.get('region_column', 2)  # 지역 이름 열 (기본값: 2)
         
         # 가중치 설정 가져오기
         weight_config = self.schema_loader.get_weight_config(sheet_name)
         weight_column = weight_config.get('weight_column')
         max_classification_level = weight_config.get('max_classification_level', 2)
+        classification_column = weight_config.get('classification_column', sheet_config.get('classification_column', 3))
         
         # 모든 지역 총지수 행 찾기 (총지수인 행을 찾되, 분류 단계는 0 또는 1)
         seen_regions = set()  # 중복 방지
         for row in range(4, min(5000, sheet.max_row + 1)):
             cell_a = sheet.cell(row=row, column=1)  # 지역 코드
-            cell_b = sheet.cell(row=row, column=2)  # 지역 이름
-            cell_c = sheet.cell(row=row, column=3)  # 분류 단계
+            cell_b = sheet.cell(row=row, column=region_column)  # 지역 이름 (스키마에서 가져온 열 번호 사용)
+            cell_c = sheet.cell(row=row, column=classification_column)  # 분류 단계 (스키마에서 가져온 열 번호 사용)
             cell_category = sheet.cell(row=row, column=category_col)  # 업태/산업 이름
             
             # 총지수, 계, 합계인 행 찾기 (분류 단계는 0 또는 1일 수 있음)
@@ -167,6 +169,12 @@ class DataAnalyzer:
         weight_column = weight_config.get('weight_column')
         max_classification_level = weight_config.get('max_classification_level', 2)
         
+        # 시트 설정에서 열 번호 가져오기
+        sheet_config = self.schema_loader.load_sheet_config(sheet_name)
+        classification_column = weight_config.get('classification_column', sheet_config.get('classification_column', 3))
+        category_column = sheet_config.get('category_column', 6)
+        region_column = sheet_config.get('region_column', 2)  # 지역 이름 열 (기본값: 2)
+        
         # 지역 코드 확인
         cell_a = sheet.cell(row=region_row, column=1)
         if cell_a.value:
@@ -175,9 +183,9 @@ class DataAnalyzer:
         # 해당 지역의 산업 데이터 찾기
         for row in range(region_row + 1, min(region_row + 500, sheet.max_row + 1)):
             cell_a = sheet.cell(row=row, column=1)  # 지역 코드
-            cell_b = sheet.cell(row=row, column=2)  # 지역 이름
-            cell_c = sheet.cell(row=row, column=3)  # 분류 단계
-            cell_f = sheet.cell(row=row, column=6)  # 산업 이름
+            cell_b = sheet.cell(row=row, column=region_column)  # 지역 이름 (스키마에서 가져온 열 번호 사용)
+            cell_c = sheet.cell(row=row, column=classification_column)  # 분류 단계 (스키마에서 가져온 열 번호 사용)
+            cell_f = sheet.cell(row=row, column=category_column)  # 산업/품목 이름 (스키마에서 가져온 열 번호 사용)
             
             # 같은 지역인지 확인 (지역명 매핑 고려)
             is_same_region = False
@@ -461,9 +469,10 @@ class DataAnalyzer:
             # 시트별 설정에서 category_column 가져오기 (스키마 로더 사용)
             sheet_config = self.schema_loader.load_sheet_config(sheet_name)
             category_col = sheet_config.get('category_column', 6)
+            region_column = sheet_config.get('region_column', 2)  # 지역 이름 열 (기본값: 2)
             
             for row in range(4, min(5000, sheet.max_row + 1)):
-                cell_b = sheet.cell(row=row, column=2)
+                cell_b = sheet.cell(row=row, column=region_column)  # 지역 이름 (스키마에서 가져온 열 번호 사용)
                 cell_category = sheet.cell(row=row, column=category_col)
                 # 총지수, 계, 합계 인식
                 is_total = False

@@ -1,5 +1,6 @@
 {
   "category_column": 4,
+  "region_column": 1,
   "base_year": 2023,
   "base_quarter": 1,
   "base_col": 56,
