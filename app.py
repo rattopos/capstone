@@ -5,6 +5,7 @@ Flask 웹 애플리케이션
 
 import os
 import sys
+import json
 import tempfile
 from pathlib import Path
 
@@ -1424,12 +1425,19 @@ def generate_docx():
         # 연도 및 분기 파라미터 가져오기
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
+        missing_values_str = request.form.get('missing_values', '{}')
         
         if not year_str or not quarter_str:
             return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
         
         year = int(year_str)
         quarter = int(quarter_str)
+        
+        # 결측치 값 파싱
+        try:
+            user_missing_values = json.loads(missing_values_str) if missing_values_str else {}
+        except json.JSONDecodeError:
+            user_missing_values = {}
         
         # DOCX 생성기 초기화
         docx_generator = DOCXGenerator(app.config['OUTPUT_FOLDER'])
@@ -1444,7 +1452,8 @@ def generate_docx():
             excel_path=str(excel_path),
             year=year,
             quarter=quarter,
-            templates_dir='templates'
+            templates_dir='templates',
+            missing_values=user_missing_values if user_missing_values else None
         )
         
         # 임시 엑셀 파일 삭제 (기본 파일이 아닌 경우에만)

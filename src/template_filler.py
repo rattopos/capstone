@@ -986,6 +986,120 @@ class TemplateFiller:
         
         return age_groups
     
+    def _get_employment_rate_age_groups(self, region_name: str, year: int, quarter: int) -> list:
+        """
+        고용률 테이블에서 특정 지역의 연령별 증감률(백분율포인트)을 계산하여 반환합니다.
+        
+        Args:
+            region_name: 지역 이름 (짧은 이름, 예: '서울', '전국')
+            year: 연도
+            quarter: 분기
+            
+        Returns:
+            연령별 증감률 정보 리스트 [{'name': '30~39세', 'growth_rate': 0.5}, ...]
+            증감률 절대값 기준 내림차순 정렬
+        """
+        actual_sheet_name = '고용률'
+        sheet = self.excel_extractor.get_sheet(actual_sheet_name)
+        if not sheet:
+            return []
+        
+        # 고용률 시트의 스키마에서 고용률 테이블 설정 가져오기
+        sheet_config = self._get_sheet_config(actual_sheet_name)
+        employment_table_config = sheet_config.get('employment_rate_table', {})
+        
+        if not employment_table_config.get('enabled', True):
+            return []
+        
+        start_row = employment_table_config.get('start_row', 4)
+        region_column = employment_table_config.get('region_column', 2)
+        age_group_column = employment_table_config.get('age_group_column', 4)
+        age_group_filter = employment_table_config.get('age_group_filter', '계')
+        region_mapping = employment_table_config.get('region_mapping', {})
+        age_groups_config = employment_table_config.get('age_groups', {})
+        age_display_names = employment_table_config.get('age_display_names', {})
+        
+        # 지역명 매핑 (짧은 이름 -> 긴 이름)
+        target_region = region_mapping.get(region_name, region_name)
+        
+        # 현재 분기와 전년 동분기 열 찾기
+        current_col, prev_col = self._get_quarter_columns(year, quarter, actual_sheet_name)
+        
+        if not current_col or not prev_col:
+            return []
+        
+        age_groups = []
+        current_region = None
+        
+        for row in range(start_row, min(start_row + 5000, sheet.max_row + 1)):
+            cell_region = sheet.cell(row=row, column=region_column).value
+            cell_class = sheet.cell(row=row, column=3).value  # 분류 단계
+            cell_age = sheet.cell(row=row, column=age_group_column).value
+            
+            # 지역 셀이 있으면 갱신
+            if cell_region:
+                region_str = str(cell_region).strip()
+                if region_str:
+                    current_region = region_str
+            
+            if not current_region or not cell_age or not cell_class:
+                continue
+            
+            # 지역명 매칭 및 분류 단계가 1인 경우 (연령대별)
+            if (current_region == target_region or 
+                target_region in current_region or 
+                current_region in target_region):
+                class_str = str(cell_class).strip()
+                if class_str != '1':  # 분류 단계가 1이 아니면 연령대별 데이터가 아님
+                    continue
+                
+                age_group_str = str(cell_age).strip()
+                
+                # '계'는 총계이므로 제외
+                if age_group_str == age_group_filter:
+                    continue
+                
+                # age_groups_config를 사용하여 여러 형식의 연령대 이름 매칭
+                matched_age_key = None
+                display_name = age_group_str
+                
+                # age_groups_config에서 매칭되는 키 찾기
+                for age_key, age_variants in age_groups_config.items():
+                    if age_group_str in age_variants or any(variant in age_group_str for variant in age_variants):
+                        matched_age_key = age_key
+                        # age_display_names에서 표시 이름 가져오기
+                        display_name = age_display_names.get(age_key, age_key)
+                        break
+                
+                # 매칭되지 않으면 age_display_names에서 직접 찾기
+                if matched_age_key is None:
+                    display_name = age_display_names.get(age_group_str, age_group_str)
+                
+                current_value = sheet.cell(row=row, column=current_col).value
+                prev_value = sheet.cell(row=row, column=prev_col).value
+                
+                try:
+                    current_float = float(current_value) if current_value is not None else None
+                    prev_float = float(prev_value) if prev_value is not None else None
+                except (ValueError, TypeError):
+                    continue
+                
+                if current_float is not None and prev_float is not None:
+                    # 고용률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate = round(current_float - prev_float, 1)
+                    
+                    age_groups.append({
+                        'name': display_name,
+                        'growth_rate': growth_rate,
+                        'current_value': current_float,
+                        'prev_value': prev_float
+                    })
+        
+        # 증감률 절대값 기준 내림차순 정렬 (가장 큰 변화가 먼저)
+        age_groups.sort(key=lambda x: abs(x.get('growth_rate', 0)), reverse=True)
+        
+        return age_groups
+    
     def _get_categories_for_region(self, sheet_name: str, region_name: str,
                                     year: int, quarter: int, top_n: int = 3) -> list:
         """
@@ -1458,6 +1572,224 @@ class TemplateFiller:
         except (ZeroDivisionError, OverflowError):
             return None
     
+    def _get_region_net_movement_ranking(self, year: int, quarter: int) -> Dict[str, Any]:
+        """
+        시도 간 이동 시트에서 순유입/순유출 시도 순위를 계산합니다.
+        
+        Args:
+            year: 연도
+            quarter: 분기
+            
+        Returns:
+            순위 정보 딕셔너리:
+            {
+                'inflow_regions': [{'name': '경기', 'value': 10426}, ...],  # 순유입 시도 (양수, 내림차순)
+                'outflow_regions': [{'name': '서울', 'value': -10051}, ...],  # 순유출 시도 (음수, 오름차순)
+                'inflow_count': 7,  # 순유입 시도 수
+                'outflow_count': 10  # 순유출 시도 수
+            }
+        """
+        sheet_name = '시도 간 이동'
+        regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        result = {
+            'inflow_regions': [],
+            'outflow_regions': [],
+            'inflow_count': 0,
+            'outflow_count': 0
+        }
+        
+        try:
+            current_col, _ = self._get_quarter_columns(year, quarter, sheet_name)
+            if not current_col:
+                return result
+            
+            sheet = self.excel_extractor.get_sheet(sheet_name)
+            if not sheet:
+                return result
+            
+            region_values = []
+            
+            # 각 시도의 순이동 값 찾기
+            for region in regions:
+                for row in range(4, min(5000, sheet.max_row + 1)):
+                    cell_region = sheet.cell(row=row, column=2).value
+                    cell_classification = sheet.cell(row=row, column=3).value
+                    
+                    if cell_region and str(cell_region).strip() == region:
+                        # 분류가 '순인구이동 수'인 행 찾기
+                        # 시도 간 이동 시트는 각 시도별로 3행 (유입인구 수, 유출인구 수, 순인구이동 수)
+                        classification_str = str(cell_classification).strip() if cell_classification else ''
+                        
+                        # 분류가 '순인구이동 수'인 행
+                        if classification_str == '순인구이동 수':
+                            value = sheet.cell(row=row, column=current_col).value
+                            if value is not None:
+                                try:
+                                    num_value = float(value)
+                                    region_values.append({
+                                        'name': region,
+                                        'value': int(num_value)
+                                    })
+                                except (ValueError, TypeError):
+                                    pass
+                            break
+            
+            # 순유입(양수)과 순유출(음수) 분리
+            inflow = [r for r in region_values if r['value'] > 0]
+            outflow = [r for r in region_values if r['value'] < 0]
+            
+            # 순유입: 값 내림차순 정렬
+            inflow.sort(key=lambda x: x['value'], reverse=True)
+            # 순유출: 값 오름차순 정렬 (가장 큰 음수가 먼저)
+            outflow.sort(key=lambda x: x['value'])
+            
+            result['inflow_regions'] = inflow
+            result['outflow_regions'] = outflow
+            result['inflow_count'] = len(inflow)
+            result['outflow_count'] = len(outflow)
+            
+        except Exception as e:
+            print(f"[WARNING] 순이동 순위 계산 중 오류: {str(e)}")
+        
+        return result
+    
+    def _get_age_ranking_for_region(self, region_name: str, direction: str, year: int, quarter: int, top_n: int = 3) -> list:
+        """
+        연령별 인구이동 시트에서 특정 지역의 연령대별 순이동 순위를 반환합니다.
+        
+        Args:
+            region_name: 지역 이름
+            direction: 'inflow' (순유입) 또는 'outflow' (순유출)
+            year: 연도
+            quarter: 분기
+            top_n: 상위 개수
+            
+        Returns:
+            연령대별 순위 리스트: [{'name': '30~34세', 'value': 2336}, ...]
+        """
+        sheet_name = '연령별 인구이동'
+        
+        try:
+            current_col, _ = self._get_quarter_columns(year, quarter, sheet_name)
+            if not current_col:
+                return []
+            
+            sheet = self.excel_extractor.get_sheet(sheet_name)
+            if not sheet:
+                return []
+            
+            age_values = []
+            
+            # 지역의 시작 행 찾기 및 연령별 데이터 수집
+            region_found = False
+            for row in range(4, min(5000, sheet.max_row + 1)):
+                cell_region = sheet.cell(row=row, column=2).value
+                cell_classification = sheet.cell(row=row, column=3).value
+                cell_age = sheet.cell(row=row, column=4).value
+                
+                if cell_region:
+                    current_region = str(cell_region).strip()
+                    if current_region == region_name:
+                        region_found = True
+                    elif region_found:
+                        # 다른 지역이 나오면 종료
+                        break
+                
+                if region_found and cell_age:
+                    age_str = str(cell_age).strip()
+                    classification_str = str(cell_classification).strip() if cell_classification else ''
+                    
+                    # 분류단계 1인 연령별 데이터만 (계 제외)
+                    if classification_str == '1' or classification_str == '1.0':
+                        if age_str != '계':
+                            value = sheet.cell(row=row, column=current_col).value
+                            if value is not None:
+                                try:
+                                    num_value = float(value)
+                                    age_values.append({
+                                        'name': age_str,
+                                        'value': int(num_value)
+                                    })
+                                except (ValueError, TypeError):
+                                    pass
+            
+            # 방향에 따라 필터링 및 정렬
+            if direction == 'inflow':
+                # 순유입: 양수 값만, 내림차순
+                filtered = [a for a in age_values if a['value'] > 0]
+                filtered.sort(key=lambda x: x['value'], reverse=True)
+            else:
+                # 순유출: 음수 값만, 절대값 내림차순 (가장 큰 유출)
+                filtered = [a for a in age_values if a['value'] < 0]
+                filtered.sort(key=lambda x: abs(x['value']), reverse=True)
+            
+            return filtered[:top_n]
+            
+        except Exception as e:
+            print(f"[WARNING] 연령별 순위 계산 중 오류 ({region_name}): {str(e)}")
+            return []
+    
+    def _get_table_period_columns(self, year: int, quarter: int) -> list:
+        """
+        테이블에 표시할 8개 기간의 열 번호와 헤더 정보를 반환합니다.
+        
+        Args:
+            year: 기준 연도
+            quarter: 기준 분기
+            
+        Returns:
+            기간 정보 리스트: [{'year': 2023, 'quarter': 3, 'col': 74}, ...]
+        """
+        sheet_name = '시도 간 이동'
+        periods = []
+        
+        # 8개 기간 계산 (현재 분기부터 역순으로 8개)
+        # 예: 2025년 2분기 기준이면: 2023 3/4, 2023 4/4, 2024 1/4, 2024 2/4, 2024 3/4, 2024 4/4, 2025 1/4, 2025 2/4
+        current_year = year
+        current_quarter = quarter
+        
+        # 8개 기간 역산
+        period_list = []
+        for i in range(8):
+            period_list.append((current_year, current_quarter))
+            current_quarter -= 1
+            if current_quarter < 1:
+                current_quarter = 4
+                current_year -= 1
+        
+        # 역순으로 정렬 (과거부터 현재 순)
+        period_list.reverse()
+        
+        # 각 기간의 열 번호 찾기
+        for y, q in period_list:
+            col = self.dynamic_parser.get_quarter_column(sheet_name, y, q)
+            if col:
+                periods.append({
+                    'year': y,
+                    'quarter': q,
+                    'col': col
+                })
+            else:
+                # 열을 찾지 못한 경우 기본값 계산
+                config = self._get_sheet_config(sheet_name)
+                base_year = config.get('base_year', 2023)
+                base_quarter = config.get('base_quarter', 3)
+                base_col = config.get('base_col', 74)
+                
+                year_diff = y - base_year
+                quarter_offset = q - base_quarter
+                calculated_col = base_col + (year_diff * 4) + quarter_offset
+                
+                periods.append({
+                    'year': y,
+                    'quarter': q,
+                    'col': calculated_col
+                })
+        
+        return periods
+    
     def _process_dynamic_marker(self, sheet_name: str, key: str, year: int = 2025, quarter: int = 2) -> Optional[str]:
         """
         동적 마커를 처리합니다.
@@ -1604,8 +1936,9 @@ class TemplateFiller:
                 return "N/A"
             return "N/A"
         
-        # 전국 연령별 증감률/증감pp 마커 처리 (실업률용)
+        # 전국 연령별 증감률/증감pp 마커 처리 (실업률/고용률용)
         # 예: 전국_60세이상_증감률, 전국_30_59세_증감pp, 전국_15_29세_증감pp
+        # 예: 전국_30대_증감pp, 전국_40대_증감pp, 전국_60대이상_증감pp (고용률용)
         # 증감pp: 퍼센트포인트 차이 (현재값 - 이전값)
         national_age_match = re.match(r'^전국_(.+)_증감(?:률|pp)$', key)
         if national_age_match:
@@ -1613,6 +1946,8 @@ class TemplateFiller:
             
             # 실업률 시트 여부 확인
             is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            # 고용률 시트 여부 확인
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
                 # 연령대 이름 매핑 (마커 이름 -> 엑셀 이름 리스트)
@@ -1631,6 +1966,28 @@ class TemplateFiller:
                     age_name = age_group.get('name', '')
                     for target_age in target_ages:
                         if age_name == target_age or target_age in age_name or age_name in target_age:
+                            return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
+            elif is_employment_rate_sheet:
+                # 고용률용 연령대 매핑 (마커 이름 -> 엑셀 이름 리스트)
+                age_mapping = {
+                    '30대': ['30~39세', '30 - 39세', '30-39세', '30대', '30대39세', '30 ~ 39세'],
+                    '40대': ['40~49세', '40 - 49세', '40-49세', '40대', '40대49세', '40 ~ 49세'],
+                    '60대이상': ['60세이상', '60 세이상', '60세 이상', '60대이상']
+                }
+                target_ages = age_mapping.get(age_group_key, [age_group_key])
+                
+                # 전국의 연령별 데이터 가져오기
+                age_groups = self._get_employment_rate_age_groups('전국', year, quarter)
+                
+                for age_group in age_groups:
+                    age_name = age_group.get('name', '')
+                    # age_name과 target_ages의 각 항목을 비교
+                    for target_age in target_ages:
+                        # 정확히 일치하거나 서로 포함 관계인지 확인
+                        if (age_name == target_age or 
+                            target_age in age_name or 
+                            age_name in target_age or
+                            age_name.replace(' ', '').replace('~', '-') == target_age.replace(' ', '').replace('~', '-')):
                             return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
                 
             return "N/A"
@@ -1778,6 +2135,8 @@ class TemplateFiller:
             
             # 실업률 시트 여부 확인
             is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            # 고용률 시트 여부 확인
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             # 물가 시트 여부 확인
             is_price_sheet = ('물가' in sheet_name)
             
@@ -1821,11 +2180,24 @@ class TemplateFiller:
                     return self.get_production_change_expression(region['growth_rate'], direction_type="rise_fall")
                 elif field.startswith('업태') or field.startswith('산업'):
                     # 업태1_이름, 업태1_증감률, 산업1_이름, 산업1_증감률 등 (일반화)
+                    # 고용률 시트인 경우 업태는 실제로 연령대를 의미
                     industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
                     if industry_match:
                         industry_type = industry_match.group(1)  # '업태' 또는 '산업'
                         industry_idx = int(industry_match.group(2)) - 1
                         industry_field = industry_match.group(3)
+                        
+                        # 고용률 시트인 경우 연령대로 처리
+                        if is_employment_rate_sheet:
+                            age_groups = self._get_employment_rate_age_groups(region['name'], year, quarter)
+                            
+                            if age_groups and industry_idx < len(age_groups):
+                                age_group = age_groups[industry_idx]
+                                if industry_field == '이름':
+                                    return age_group.get('name', '')
+                                elif industry_field in ('증감률', '증감pp'):
+                                    return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
+                            return "N/A"
                         
                         # 물가 시트의 경우: 해당 시도의 품목 데이터는 해당 시트에서 가져옴
                         # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
@@ -1894,6 +2266,8 @@ class TemplateFiller:
             
             # 실업률 시트 여부 확인
             is_unemployment_sheet = (sheet_name == '실업률' or sheet_name == '실업자 수')
+            # 고용률 시트 여부 확인
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             # 물가 시트 여부 확인
             is_price_sheet = ('물가' in sheet_name)
             
@@ -1937,11 +2311,24 @@ class TemplateFiller:
                     return self.get_production_change_expression(region['growth_rate'], direction_type="rise_fall")
                 elif field.startswith('업태') or field.startswith('산업'):
                     # 업태1_이름, 업태1_증감률, 산업1_이름, 산업1_증감률 등 (일반화)
+                    # 고용률 시트인 경우 업태는 실제로 연령대를 의미
                     industry_match = re.match(r'(업태|산업)(\d+)_(.+)', field)
                     if industry_match:
                         industry_type = industry_match.group(1)  # '업태' 또는 '산업'
                         industry_idx = int(industry_match.group(2)) - 1
                         industry_field = industry_match.group(3)
+                        
+                        # 고용률 시트인 경우 연령대로 처리
+                        if is_employment_rate_sheet:
+                            age_groups = self._get_employment_rate_age_groups(region['name'], year, quarter)
+                            
+                            if age_groups and industry_idx < len(age_groups):
+                                age_group = age_groups[industry_idx]
+                                if industry_field == '이름':
+                                    return age_group.get('name', '')
+                                elif industry_field in ('증감률', '증감pp'):
+                                    return self.format_percentage(age_group.get('growth_rate', 0), decimal_places=1, include_percent=False)
+                            return "N/A"
                         
                         # 분석된 데이터의 top_industries 사용 (이미 계산되어 있음)
                         categories = region.get('top_industries', [])
@@ -2616,6 +3003,149 @@ class TemplateFiller:
             return str(year)
         elif key == '분기':
             return str(quarter)
+        
+        # ============ 국내인구이동 마커 처리 (시도 간 이동/연령별 인구이동 시트) ============
+        
+        # 순유입/순유출 시도 목록 마커 (예: 순유입시도1, 순유출시도2)
+        sido_list_match = re.match(r'^순(유입|유출)시도(\d+)$', key)
+        if sido_list_match:
+            direction = sido_list_match.group(1)  # '유입' 또는 '유출'
+            idx = int(sido_list_match.group(2)) - 1
+            
+            ranking = self._get_region_net_movement_ranking(year, quarter)
+            regions = ranking['inflow_regions'] if direction == '유입' else ranking['outflow_regions']
+            
+            if regions and idx < len(regions):
+                return regions[idx]['name']
+            return "N/A"
+        
+        # 순유입/순유출 시도수 마커 (예: 순유입시도수, 순유출시도수)
+        sido_count_match = re.match(r'^순(유입|유출)시도수$', key)
+        if sido_count_match:
+            direction = sido_count_match.group(1)
+            
+            ranking = self._get_region_net_movement_ranking(year, quarter)
+            count = ranking['inflow_count'] if direction == '유입' else ranking['outflow_count']
+            
+            return str(count)
+        
+        # 순유입/순유출 N위 시도 마커 (예: 순유입1위시도, 순유출2위시도)
+        rank_sido_match = re.match(r'^순(유입|유출)(\d+)위시도$', key)
+        if rank_sido_match:
+            direction = rank_sido_match.group(1)
+            idx = int(rank_sido_match.group(2)) - 1
+            
+            ranking = self._get_region_net_movement_ranking(year, quarter)
+            regions = ranking['inflow_regions'] if direction == '유입' else ranking['outflow_regions']
+            
+            if regions and idx < len(regions):
+                return regions[idx]['name']
+            return "N/A"
+        
+        # 순유입/순유출 N위 값 마커 (예: 순유입1위값, 순유출2위값)
+        rank_value_match = re.match(r'^순(유입|유출)(\d+)위값$', key)
+        if rank_value_match:
+            direction = rank_value_match.group(1)
+            idx = int(rank_value_match.group(2)) - 1
+            
+            ranking = self._get_region_net_movement_ranking(year, quarter)
+            regions = ranking['inflow_regions'] if direction == '유입' else ranking['outflow_regions']
+            
+            if regions and idx < len(regions):
+                value = regions[idx]['value']
+                return str(value)
+            return "N/A"
+        
+        # 테이블 헤더 연도 마커 (예: 테이블연도1, 테이블연도2, 테이블연도3)
+        table_year_match = re.match(r'^테이블연도(\d+)$', key)
+        if table_year_match:
+            year_idx = int(table_year_match.group(1)) - 1
+            periods = self._get_table_period_columns(year, quarter)
+            
+            # 연도 그룹: 1=기간1-2, 2=기간3-6, 3=기간7-8
+            if year_idx == 0 and len(periods) >= 2:
+                return str(periods[0]['year'])
+            elif year_idx == 1 and len(periods) >= 6:
+                return str(periods[2]['year'])
+            elif year_idx == 2 and len(periods) >= 8:
+                return str(periods[6]['year'])
+            return "N/A"
+        
+        # 테이블 헤더 분기 마커 (예: 테이블분기1 ~ 테이블분기8)
+        table_quarter_match = re.match(r'^테이블분기(\d+)$', key)
+        if table_quarter_match:
+            quarter_idx = int(table_quarter_match.group(1)) - 1
+            periods = self._get_table_period_columns(year, quarter)
+            
+            if periods and quarter_idx < len(periods):
+                q = periods[quarter_idx]['quarter']
+                return f"{q}/4"
+            return "N/A"
+        
+        # 테이블 데이터 마커 (예: 서울_기간1, 부산_기간2)
+        table_data_match = re.match(r'^([가-힣]+)_기간(\d+)$', key)
+        if table_data_match:
+            region_name = table_data_match.group(1)
+            period_idx = int(table_data_match.group(2)) - 1
+            
+            periods = self._get_table_period_columns(year, quarter)
+            
+            if periods and period_idx < len(periods):
+                col = periods[period_idx]['col']
+                sheet = self.excel_extractor.get_sheet('시도 간 이동')
+                
+                if sheet:
+                    # 해당 지역의 순인구이동 행 찾기
+                    for row in range(4, min(5000, sheet.max_row + 1)):
+                        cell_region = sheet.cell(row=row, column=2).value
+                        cell_classification = sheet.cell(row=row, column=3).value
+                        
+                        if cell_region and str(cell_region).strip() == region_name:
+                            classification_str = str(cell_classification).strip() if cell_classification else ''
+                            
+                            # 분류가 '순인구이동 수'인 행
+                            if classification_str == '순인구이동 수':
+                                value = sheet.cell(row=row, column=col).value
+                                if value is not None:
+                                    try:
+                                        num_value = int(float(value))
+                                        return str(num_value)
+                                    except (ValueError, TypeError):
+                                        pass
+                                break
+            return "N/A"
+        
+        # ============ 연령별 인구이동 마커 처리 ============
+        
+        # 순유입/순유출 N위 시도의 연령 M위 마커
+        # 예: 순유입1위시도_연령1위, 순유출2위시도_연령3위값
+        age_rank_match = re.match(r'^순(유입|유출)(\d+)위시도_연령(\d+)위(값)?$', key)
+        if age_rank_match:
+            direction = age_rank_match.group(1)  # '유입' 또는 '유출'
+            region_rank = int(age_rank_match.group(2)) - 1
+            age_rank = int(age_rank_match.group(3)) - 1
+            is_value = age_rank_match.group(4) is not None  # '값' 유무
+            
+            # 먼저 해당 순위의 시도 찾기
+            ranking = self._get_region_net_movement_ranking(year, quarter)
+            regions = ranking['inflow_regions'] if direction == '유입' else ranking['outflow_regions']
+            
+            if regions and region_rank < len(regions):
+                region_name = regions[region_rank]['name']
+                
+                # 해당 시도의 연령별 순위 가져오기
+                age_direction = 'inflow' if direction == '유입' else 'outflow'
+                age_ranking = self._get_age_ranking_for_region(region_name, age_direction, year, quarter)
+                
+                if age_ranking and age_rank < len(age_ranking):
+                    if is_value:
+                        return str(age_ranking[age_rank]['value'])
+                    else:
+                        return age_ranking[age_rank]['name']
+            
+            return "N/A"
+        
+        # ============ 국내인구이동 마커 처리 끝 ============
         
         # 상승_시도수 처리 (고용률용)
         if key == '상승_시도수' or key == '상승시도수':

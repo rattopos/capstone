@@ -91,6 +91,7 @@ def check_missing_values():
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
         template_name = request.form.get('template_name', '')
+        check_all_templates = request.form.get('check_all_templates', 'false').lower() == 'true'
         
         if not year_str or not quarter_str:
             return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
@@ -116,18 +117,49 @@ def check_missing_values():
         
         excel_extractor = get_excel_extractor(excel_path)
         
-        # 템플릿에서 필요한 시트 목록 추출
-        template_path = Path('templates') / template_name
-        if not template_path.exists():
-            return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다.'}), 404
-        
-        template_manager = get_template_manager(template_path)
-        markers = template_manager.extract_markers()
+        # 필요한 시트 목록 추출
         required_sheets = set()
-        for marker in markers:
-            sheet_name = marker.get('sheet_name', '').strip()
-            if sheet_name:
-                required_sheets.add(sheet_name)
+        
+        if check_all_templates:
+            # 모든 템플릿에서 필요한 시트 추출 (PDF/DOCX 생성용)
+            templates_dir = Path('templates')
+            excluded_templates = {'서울.html', '서울주요지표.html'}
+            
+            if templates_dir.exists():
+                for template_path in templates_dir.glob('*.html'):
+                    if template_path.name in excluded_templates:
+                        continue
+                    try:
+                        template_manager = get_template_manager(template_path)
+                        markers = template_manager.extract_markers()
+                        for marker in markers:
+                            sheet_name = marker.get('sheet_name', '').strip()
+                            if sheet_name:
+                                required_sheets.add(sheet_name)
+                    except Exception as e:
+                        print(f"[WARNING] 템플릿 분석 실패 ({template_path.name}): {str(e)}")
+        else:
+            # 단일 템플릿에서 필요한 시트 추출
+            if not template_name:
+                excel_extractor.close()
+                return jsonify({
+                    'success': True,
+                    'missing_values': [],
+                    'has_missing': False,
+                    'count': 0
+                })
+            
+            template_path = Path('templates') / template_name
+            if not template_path.exists():
+                excel_extractor.close()
+                return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다.'}), 404
+            
+            template_manager = get_template_manager(template_path)
+            markers = template_manager.extract_markers()
+            for marker in markers:
+                sheet_name = marker.get('sheet_name', '').strip()
+                if sheet_name:
+                    required_sheets.add(sheet_name)
         
         # 각 시트에서 결측치 찾기
         from src.flexible_mapper import FlexibleMapper
@@ -135,11 +167,19 @@ def check_missing_values():
         all_missing_values = []
         flexible_mapper = FlexibleMapper(excel_extractor)
         
+        # 중복 제거를 위한 set
+        seen_keys = set()
+        
         for sheet_name in required_sheets:
             actual_sheet = flexible_mapper.find_sheet_by_name(sheet_name)
             if actual_sheet:
                 missing = find_missing_values_in_sheet(excel_extractor, actual_sheet, year, quarter)
-                all_missing_values.extend(missing)
+                for m in missing:
+                    # 중복 체크용 키 생성
+                    key = f"{m['sheet']}_{m['region']}_{m['category']}_{m['year']}_{m['quarter']}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        all_missing_values.append(m)
         
         excel_extractor.close()
         

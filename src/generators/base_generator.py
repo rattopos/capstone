@@ -154,7 +154,8 @@ class BaseDocumentGenerator:
         flexible_mapper: FlexibleMapper,
         year: int,
         quarter: int,
-        templates_dir: str = 'templates'
+        templates_dir: str = 'templates',
+        missing_value_overrides: Optional[Dict] = None
     ) -> Tuple[List[Tuple[str, str, str]], List[str]]:
         """
         모든 템플릿 처리
@@ -165,6 +166,7 @@ class BaseDocumentGenerator:
             year: 연도
             quarter: 분기
             templates_dir: 템플릿 디렉토리 경로
+            missing_value_overrides: 사용자가 입력한 결측치 값
             
         Returns:
             (처리된 템플릿 리스트, 에러 리스트)
@@ -181,7 +183,8 @@ class BaseDocumentGenerator:
                     excel_extractor=excel_extractor,
                     flexible_mapper=flexible_mapper,
                     year=year,
-                    quarter=quarter
+                    quarter=quarter,
+                    missing_value_overrides=missing_value_overrides
                 )
                 
                 if result is None:
@@ -203,7 +206,8 @@ class BaseDocumentGenerator:
         excel_extractor: ExcelExtractor,
         flexible_mapper: FlexibleMapper,
         year: int,
-        quarter: int
+        quarter: int,
+        missing_value_overrides: Optional[Dict] = None
     ) -> Optional[Tuple[str, str, str]]:
         """
         단일 템플릿 처리
@@ -215,6 +219,7 @@ class BaseDocumentGenerator:
             flexible_mapper: FlexibleMapper 객체
             year: 연도
             quarter: 분기
+            missing_value_overrides: 사용자가 입력한 결측치 값
             
         Returns:
             (템플릿명, HTML 내용, 스타일) 또는 에러 문자열 또는 None
@@ -251,6 +256,10 @@ class BaseDocumentGenerator:
         template_filler = TemplateFiller(
             template_manager, excel_extractor, self.schema_loader
         )
+        
+        # 결측치 값 설정
+        if missing_value_overrides:
+            template_filler.set_missing_value_overrides(missing_value_overrides)
         
         filled_template = template_filler.fill_template(
             sheet_name=actual_sheet,

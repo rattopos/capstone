@@ -3,6 +3,7 @@
 /api/generate-pdf, /api/generate-docx, /api/download, /api/preview
 """
 
+import json
 from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app, send_file, send_from_directory
 from werkzeug.utils import secure_filename
@@ -46,12 +47,19 @@ def generate_pdf():
         
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
+        missing_values_str = request.form.get('missing_values', '{}')
         
         if not year_str or not quarter_str:
             return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
         
         year = int(year_str)
         quarter = int(quarter_str)
+        
+        # 결측치 값 파싱
+        try:
+            user_missing_values = json.loads(missing_values_str) if missing_values_str else {}
+        except json.JSONDecodeError:
+            user_missing_values = {}
         
         pdf_generator = PDFGenerator(current_app.config['OUTPUT_FOLDER'])
         
@@ -63,7 +71,8 @@ def generate_pdf():
             excel_path=str(excel_path),
             year=year,
             quarter=quarter,
-            templates_dir='templates'
+            templates_dir='templates',
+            missing_values=user_missing_values if user_missing_values else None
         )
         
         if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:
@@ -115,12 +124,19 @@ def generate_docx():
         
         year_str = request.form.get('year', '')
         quarter_str = request.form.get('quarter', '')
+        missing_values_str = request.form.get('missing_values', '{}')
         
         if not year_str or not quarter_str:
             return jsonify({'error': '연도와 분기를 입력해주세요.'}), 400
         
         year = int(year_str)
         quarter = int(quarter_str)
+        
+        # 결측치 값 파싱
+        try:
+            user_missing_values = json.loads(missing_values_str) if missing_values_str else {}
+        except json.JSONDecodeError:
+            user_missing_values = {}
         
         docx_generator = DOCXGenerator(current_app.config['OUTPUT_FOLDER'])
         
@@ -132,7 +148,8 @@ def generate_docx():
             excel_path=str(excel_path),
             year=year,
             quarter=quarter,
-            templates_dir='templates'
+            templates_dir='templates',
+            missing_values=user_missing_values if user_missing_values else None
         )
         
         if not use_default_file and excel_path and excel_path.exists() and excel_path != DEFAULT_EXCEL_FILE:

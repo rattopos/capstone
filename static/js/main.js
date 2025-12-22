@@ -919,9 +919,14 @@ async function handleProcess() {
         if (response.ok && data.success) {
             currentOutputFilename = data.output_filename;
             showProgress(100, '완료!', 3, null);
+            
+            // 최종 소요시간 계산
+            const finalElapsedTime = progressTracker.startTime ? 
+                Math.ceil((Date.now() - progressTracker.startTime) / 1000) : 0;
+            
             setTimeout(() => {
                 hideProgress();
-                showResult(data.message);
+                showResult(data.message, finalElapsedTime);
                 showSuccess('보도자료가 성공적으로 생성되었습니다!');
             }, 500);
         } else {
@@ -954,12 +959,18 @@ async function handleProcess() {
 }
 
 // 결과 표시
-function showResult(message) {
+function showResult(message, elapsedTimeSeconds = null) {
     const resultSection = document.getElementById('resultSection');
     const resultMessage = document.getElementById('resultMessage');
+    const finalElapsedTimeEl = document.getElementById('finalElapsedTime');
     
     resultMessage.textContent = message;
     resultSection.style.display = 'block';
+    
+    // 최종 소요시간 표시
+    if (finalElapsedTimeEl && elapsedTimeSeconds !== null) {
+        finalElapsedTimeEl.textContent = formatSeconds(elapsedTimeSeconds);
+    }
     
     // 미리보기 및 다운로드 버튼 설정
     setupResultButtons();
@@ -1360,6 +1371,10 @@ async function handlePdfGenerate() {
         formData.append('year', year);
         formData.append('quarter', quarter);
         
+        // 결측치 확인 및 처리 (처리 전에 수행)
+        showPdfProgress(10, '결측치 확인 중...', 0, '데이터 검증');
+        await checkAndHandlePdfMissingValues(formData);
+        
         // 진행률 시뮬레이션 시작 (비동기로 진행)
         const pdfProgressInterval = setInterval(() => {
             if (currentPdfStepIndex < pdfProgressSteps.length - 1) {
@@ -1390,9 +1405,14 @@ async function handlePdfGenerate() {
         if (response.ok && data.success) {
             currentPdfFilename = data.output_filename;
             showPdfProgress(100, '완료!', 10, null);
+            
+            // 최종 소요시간 계산
+            const finalElapsedTime = pdfProgressTracker.startTime ? 
+                Math.ceil((Date.now() - pdfProgressTracker.startTime) / 1000) : 0;
+            
             setTimeout(() => {
                 hidePdfProgress();
-                showPdfResult(data.message);
+                showPdfResult(data.message, finalElapsedTime);
                 showSuccess('PDF가 성공적으로 생성되었습니다!');
             }, 500);
         } else {
@@ -1721,13 +1741,20 @@ function hidePdfProgress() {
 }
 
 // PDF 결과 표시
-function showPdfResult(message) {
+function showPdfResult(message, elapsedTimeSeconds = null) {
     const resultSection = document.getElementById('pdfResultSection');
     const resultMessage = document.getElementById('pdfResultMessage');
+    const finalElapsedTimeEl = document.getElementById('pdfFinalElapsedTime');
     
     if (resultMessage) {
         resultMessage.textContent = message;
     }
+    
+    // 최종 소요시간 표시
+    if (finalElapsedTimeEl && elapsedTimeSeconds !== null) {
+        finalElapsedTimeEl.textContent = formatSeconds(elapsedTimeSeconds);
+    }
+    
     if (resultSection) {
         resultSection.style.display = 'block';
         
@@ -2001,6 +2028,10 @@ async function handleDocxGenerate() {
         formData.append('year', year);
         formData.append('quarter', quarter);
         
+        // 결측치 확인 및 처리 (처리 전에 수행)
+        showDocxProgress(10, '결측치 확인 중...', 0, '데이터 검증');
+        await checkAndHandleDocxMissingValues(formData);
+        
         // 진행률 시뮬레이션 시작 (비동기로 진행)
         const docxProgressInterval = setInterval(() => {
             if (currentDocxStepIndex < docxProgressSteps.length - 1) {
@@ -2031,9 +2062,14 @@ async function handleDocxGenerate() {
         if (response.ok && data.success) {
             currentDocxFilename = data.output_filename;
             showDocxProgress(100, '완료!', 10, null);
+            
+            // 최종 소요시간 계산
+            const finalElapsedTime = docxProgressTracker.startTime ? 
+                Math.ceil((Date.now() - docxProgressTracker.startTime) / 1000) : 0;
+            
             setTimeout(() => {
                 hideDocxProgress();
-                showDocxResult(data.message);
+                showDocxResult(data.message, finalElapsedTime);
                 showSuccess('DOCX가 성공적으로 생성되었습니다!');
             }, 500);
         } else {
@@ -2362,13 +2398,20 @@ function hideDocxProgress() {
 }
 
 // DOCX 결과 표시
-function showDocxResult(message) {
+function showDocxResult(message, elapsedTimeSeconds = null) {
     const resultSection = document.getElementById('docxResultSection');
     const resultMessage = document.getElementById('docxResultMessage');
+    const finalElapsedTimeEl = document.getElementById('docxFinalElapsedTime');
     
     if (resultMessage) {
         resultMessage.textContent = message;
     }
+    
+    // 최종 소요시간 표시
+    if (finalElapsedTimeEl && elapsedTimeSeconds !== null) {
+        finalElapsedTimeEl.textContent = formatSeconds(elapsedTimeSeconds);
+    }
+    
     if (resultSection) {
         resultSection.style.display = 'block';
         
@@ -2624,5 +2667,79 @@ async function handleMissingValues(missingValues, formData) {
     }
     
     return userValues;
+}
+
+// PDF 결측치 확인 및 처리
+async function checkAndHandlePdfMissingValues(formData) {
+    try {
+        // 결측치 확인 API 호출 (모든 템플릿에 대해)
+        const checkFormData = new FormData();
+        if (selectedPdfExcelFile) {
+            checkFormData.append('excel_file', selectedPdfExcelFile);
+        }
+        checkFormData.append('year', formData.get('year'));
+        checkFormData.append('quarter', formData.get('quarter'));
+        checkFormData.append('check_all_templates', 'true'); // 모든 템플릿 확인
+        
+        const response = await fetch('/api/check-missing-values', {
+            method: 'POST',
+            body: checkFormData
+        });
+        
+        const data = await response.json();
+        
+        if (data.has_missing && data.missing_values && data.missing_values.length > 0) {
+            // 결측치가 있으면 모달 표시
+            const userValues = await requestMissingValues(data.missing_values);
+            
+            if (userValues && Object.keys(userValues).length > 0) {
+                formData.append('missing_values', JSON.stringify(userValues));
+            }
+            
+            return userValues;
+        }
+        
+        return {};
+    } catch (error) {
+        console.error('PDF 결측치 확인 중 오류:', error);
+        return {};
+    }
+}
+
+// DOCX 결측치 확인 및 처리
+async function checkAndHandleDocxMissingValues(formData) {
+    try {
+        // 결측치 확인 API 호출 (모든 템플릿에 대해)
+        const checkFormData = new FormData();
+        if (selectedDocxExcelFile) {
+            checkFormData.append('excel_file', selectedDocxExcelFile);
+        }
+        checkFormData.append('year', formData.get('year'));
+        checkFormData.append('quarter', formData.get('quarter'));
+        checkFormData.append('check_all_templates', 'true'); // 모든 템플릿 확인
+        
+        const response = await fetch('/api/check-missing-values', {
+            method: 'POST',
+            body: checkFormData
+        });
+        
+        const data = await response.json();
+        
+        if (data.has_missing && data.missing_values && data.missing_values.length > 0) {
+            // 결측치가 있으면 모달 표시
+            const userValues = await requestMissingValues(data.missing_values);
+            
+            if (userValues && Object.keys(userValues).length > 0) {
+                formData.append('missing_values', JSON.stringify(userValues));
+            }
+            
+            return userValues;
+        }
+        
+        return {};
+    } catch (error) {
+        console.error('DOCX 결측치 확인 중 오류:', error);
+        return {};
+    }
 }
 

@@ -115,7 +115,7 @@ class DOCXGenerator(BaseDocumentGenerator):
                         if para.runs:
                             para.runs[0].bold = True
     
-    def generate_docx(self, excel_path, year, quarter, templates_dir='templates'):
+    def generate_docx(self, excel_path, year, quarter, templates_dir='templates', missing_values=None):
         """
         여러 템플릿을 처리하여 하나의 DOCX 파일로 생성
         
@@ -124,6 +124,7 @@ class DOCXGenerator(BaseDocumentGenerator):
             year: 연도
             quarter: 분기
             templates_dir: 템플릿 디렉토리 경로
+            missing_values: 사용자가 입력한 결측치 값
             
         Returns:
             tuple: (성공 여부, 결과 dict 또는 에러 메시지)
@@ -168,7 +169,8 @@ class DOCXGenerator(BaseDocumentGenerator):
                         excel_extractor=excel_extractor,
                         flexible_mapper=flexible_mapper,
                         year=year,
-                        quarter=quarter
+                        quarter=quarter,
+                        missing_value_overrides=missing_values
                     )
                     
                     if result is None or isinstance(result, str):

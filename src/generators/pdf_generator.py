@@ -205,7 +205,7 @@ class PDFGenerator(BaseDocumentGenerator):
         from weasyprint import HTML
         HTML(string=combined_html, base_url=str(templates_dir_path.absolute())).write_pdf(str(pdf_path))
     
-    def generate_pdf(self, excel_path, year, quarter, templates_dir='templates'):
+    def generate_pdf(self, excel_path, year, quarter, templates_dir='templates', missing_values=None):
         """
         여러 템플릿을 처리하여 하나의 PDF 파일로 생성
         
@@ -214,6 +214,7 @@ class PDFGenerator(BaseDocumentGenerator):
             year: 연도
             quarter: 분기
             templates_dir: 템플릿 디렉토리 경로
+            missing_values: 사용자가 입력한 결측치 값
             
         Returns:
             tuple: (성공 여부, 결과 dict 또는 에러 메시지)
@@ -240,7 +241,8 @@ class PDFGenerator(BaseDocumentGenerator):
         try:
             # 템플릿 처리
             filled_templates, errors = self.process_templates(
-                excel_extractor, flexible_mapper, year, quarter, templates_dir
+                excel_extractor, flexible_mapper, year, quarter, templates_dir,
+                missing_value_overrides=missing_values
             )
             
             if not filled_templates:
