@@ -8,6 +8,7 @@
 ## 2. Code Integrity & Minimal Impact
 * **Atomic Changes:** Apply changes within the smallest possible scope. Avoid rewriting entire functions if only a single line needs a fix.
 * **Side-effect Prevention:** Do not refactor or change unrelated logic unless it is critical for the current fix.
+* **Excel Files Read-Only:** Excel files (`.xlsx`, `.xls`) are read-only. Never modify, write, or overwrite Excel files. Only read data from them when necessary for the task.
 
 ## 3. Communication & Rule Compliance
 * **Consent for Rule Changes:** Ask for explicit user permission before modifying or adding any rules in `.cursorrules`.

@@ -1352,27 +1352,46 @@ class TemplateFiller:
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
-                # 현재 연도/분기의 증감률 계산
-                current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
+                # 실업률 증감 계산: 현재 실업률 - 전년 동분기 실업률 (%p 단위)
+                # 실업률 표에서 직접 값 가져오기 (Row 81부터)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
-                # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_a = sheet.cell(row=row, column=1)  # 시도
-                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
+                # 실업률 가져오기 헬퍼 함수
+                def get_unemployment_rate(calc_year, calc_quarter, region='전국'):
+                    """특정 연도/분기의 실업률을 실업률 표에서 가져옵니다."""
+                    target_col, _ = self._get_quarter_columns(calc_year, calc_quarter, sheet_name)
+                    current_region = None
                     
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
-                        age_str = str(cell_b.value).strip()
+                    for row in range(81, min(5000, sheet.max_row + 1)):
+                        cell_a = sheet.cell(row=row, column=1)  # 시도
+                        cell_b = sheet.cell(row=row, column=2)  # 연령계층
                         
-                        # 전국이고 "계" 행인지 확인
-                        if region_str == '전국' and age_str == '계':
-                            current = sheet.cell(row=row, column=current_col).value
-                            prev = sheet.cell(row=row, column=prev_col).value
+                        if cell_a.value:
+                            current_region = str(cell_a.value).strip()
+                        
+                        if cell_b.value and current_region:
+                            region_str = current_region
+                            age_str = str(cell_b.value).strip()
                             
-                            if current is not None and prev is not None and prev != 0:
-                                growth_rate = ((current / prev) - 1) * 100
-                                return self.format_percentage(growth_rate, decimal_places=1)
+                            if region_str == region and age_str == '계':
+                                value = sheet.cell(row=row, column=target_col).value
+                                if value is not None:
+                                    try:
+                                        return float(value)
+                                    except (ValueError, TypeError):
+                                        pass
+                                break
+                    return None
+                
+                # 현재 실업률과 전년 동분기 실업률 가져오기
+                current_rate = get_unemployment_rate(year, quarter, '전국')
+                prev_year = year - 1
+                prev_rate = get_unemployment_rate(prev_year, quarter, '전국')
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 실업률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
                 
                 return "N/A"
             elif is_employment_rate_sheet:
@@ -1459,7 +1478,8 @@ class TemplateFiller:
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
-                # 지역명 매핑
+                # 실업률 증감 계산: 현재 실업률 - 전년 동분기 실업률 (%p 단위)
+                # 실업률 표에서 직접 값 가져오기 (Row 81부터)
                 region_mapping = {
                     '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
                     '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
@@ -1469,32 +1489,47 @@ class TemplateFiller:
                     '경남': '경상남도', '제주': '제주특별자치도',
                 }
                 actual_region_name = region_mapping.get(region_name, region_name)
-                
-                # 현재 연도/분기의 증감률 계산
-                current_col, prev_col = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
-                # 실업률/고용률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_a = sheet.cell(row=row, column=1)  # 시도
-                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
+                # 실업률 가져오기 헬퍼 함수
+                def get_unemployment_rate(calc_year, calc_quarter, region_name_val):
+                    """특정 연도/분기의 실업률을 실업률 표에서 가져옵니다."""
+                    target_col, _ = self._get_quarter_columns(calc_year, calc_quarter, sheet_name)
+                    current_region = None
                     
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
-                        age_str = str(cell_b.value).strip()
+                    for row in range(81, min(5000, sheet.max_row + 1)):
+                        cell_a = sheet.cell(row=row, column=1)  # 시도
+                        cell_b = sheet.cell(row=row, column=2)  # 연령계층
                         
-                        # 지역명 매칭
-                        if (region_str == actual_region_name or 
-                            actual_region_name in region_str or 
-                            region_str in actual_region_name):
-                            # "계" 행인지 확인
-                            if age_str == '계':
-                                current = sheet.cell(row=row, column=current_col).value
-                                prev = sheet.cell(row=row, column=prev_col).value
-                                
-                                if current is not None and prev is not None and prev != 0:
-                                    growth_rate = ((current / prev) - 1) * 100
-                                    return self.format_percentage(growth_rate, decimal_places=1)
+                        if cell_a.value:
+                            current_region = str(cell_a.value).strip()
+                        
+                        if cell_b.value and current_region:
+                            region_str = current_region
+                            age_str = str(cell_b.value).strip()
+                            
+                            if (region_str == region_name_val or 
+                                region_name_val in region_str or 
+                                region_str in region_name_val):
+                                if age_str == '계':
+                                    value = sheet.cell(row=row, column=target_col).value
+                                    if value is not None:
+                                        try:
+                                            return float(value)
+                                        except (ValueError, TypeError):
+                                            pass
+                                    break
+                    return None
+                
+                # 현재 실업률과 전년 동분기 실업률 가져오기
+                current_rate = get_unemployment_rate(year, quarter, actual_region_name)
+                prev_year = year - 1
+                prev_rate = get_unemployment_rate(prev_year, quarter, actual_region_name)
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 실업률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
                 
                 return "N/A"
             elif is_employment_rate_sheet:
@@ -1898,8 +1933,10 @@ class TemplateFiller:
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
-                # 실업자 수 시트 구조: 1열에 시도, 2열에 연령계층
-                # 지역명 매핑
+                # 실업자 수 시트에는 실업률 표가 Row 81부터 있음
+                # Row 79: "시도별 실업률(%)" 제목
+                # Row 80: 헤더 행
+                # Row 81부터: 실업률 데이터
                 region_mapping = {
                     '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
                     '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
@@ -1910,16 +1947,21 @@ class TemplateFiller:
                 }
                 actual_region_name = region_mapping.get(region_name, region_name)
                 
-                # 현재 연도/분기의 값 가져오기
+                # 현재 연도/분기의 열 번호 가져오기
                 current_col, _ = self._get_quarter_columns(year, quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
-                for row in range(4, min(5000, sheet.max_row + 1)):
+                # 실업률 표에서 직접 값 가져오기 (Row 81부터 시작)
+                current_region = None
+                for row in range(81, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
+                    if cell_a.value:
+                        current_region = str(cell_a.value).strip()
+                    
+                    if cell_b.value and current_region:
+                        region_str = current_region
                         age_str = str(cell_b.value).strip()
                         
                         if (region_str == actual_region_name or 
@@ -2006,11 +2048,15 @@ class TemplateFiller:
             target_quarter = int(region_quarter_value_match.group(4))
             
             # 실업률 시트인지 고용률 시트인지 확인
-            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수')
-            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
+            # key에 "실업률"이 포함되어 있으면 실업률 시트로 간주
+            is_unemployment_sheet = ('실업' in sheet_name or sheet_name == '실업자 수' or value_type == '실업률')
+            is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률' or value_type == '고용률')
             
             if is_unemployment_sheet:
-                # 지역명 매핑
+                # 실업자 수 시트에는 실업률 표가 Row 81부터 있음
+                # Row 79: "시도별 실업률(%)" 제목
+                # Row 80: 헤더 행
+                # Row 81부터: 실업률 데이터
                 region_mapping = {
                     '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
                     '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
@@ -2025,20 +2071,22 @@ class TemplateFiller:
                 target_col, _ = self._get_quarter_columns(target_year, target_quarter, sheet_name)
                 sheet = self.excel_extractor.get_sheet(sheet_name)
                 
-                # 실업률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(5000, sheet.max_row + 1)):
+                # 실업률 표에서 직접 값 가져오기 (Row 81부터 시작)
+                current_region = None
+                for row in range(81, min(5000, sheet.max_row + 1)):
                     cell_a = sheet.cell(row=row, column=1)  # 시도
                     cell_b = sheet.cell(row=row, column=2)  # 연령계층
                     
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
+                    if cell_a.value:
+                        current_region = str(cell_a.value).strip()
+                    
+                    if cell_b.value and current_region:
+                        region_str = current_region
                         age_str = str(cell_b.value).strip()
                         
-                        # 지역명 매칭
                         if (region_str == actual_region_name or 
                             actual_region_name in region_str or 
                             region_str in actual_region_name):
-                            # "계" 행인지 확인
                             if age_str == '계':
                                 value = sheet.cell(row=row, column=target_col).value
                                 if value is not None:
@@ -2115,6 +2163,10 @@ class TemplateFiller:
             is_employment_rate_sheet = ('고용' in sheet_name or sheet_name == '고용' or '고용률' in sheet_name or sheet_name == '고용률')
             
             if is_unemployment_sheet:
+                # 실업률 증감 계산: 현재 실업률 - 전년 동분기 실업률 (%p 단위)
+                # 실업률 = (실업자수 ÷ 경제활동인구) × 100
+                # 경제활동인구 = 실업자수 + 취업자수
+                
                 # 지역명 매핑
                 region_mapping = {
                     '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
@@ -2126,31 +2178,45 @@ class TemplateFiller:
                 }
                 actual_region_name = region_mapping.get(region_name, region_name)
                 
-                # 해당 분기와 이전 분기의 열 번호 가져오기
-                current_col, prev_col = self._get_quarter_columns(target_year, target_quarter, sheet_name)
-                sheet = self.excel_extractor.get_sheet(sheet_name)
-                
-                # 실업률 시트 구조: 1열에 시도, 2열에 연령계층
-                for row in range(4, min(5000, sheet.max_row + 1)):
-                    cell_a = sheet.cell(row=row, column=1)  # 시도
-                    cell_b = sheet.cell(row=row, column=2)  # 연령계층
+                # 실업률 가져오기 헬퍼 함수 (실업률 표에서 직접 읽기)
+                def get_unemployment_rate(calc_year, calc_quarter, region_name_val):
+                    """특정 연도/분기의 실업률을 실업률 표에서 가져옵니다."""
+                    target_col, _ = self._get_quarter_columns(calc_year, calc_quarter, sheet_name)
+                    current_region = None
                     
-                    if cell_a.value and cell_b.value:
-                        region_str = str(cell_a.value).strip()
-                        age_str = str(cell_b.value).strip()
+                    for row in range(81, min(5000, sheet.max_row + 1)):
+                        cell_a = sheet.cell(row=row, column=1)  # 시도
+                        cell_b = sheet.cell(row=row, column=2)  # 연령계층
                         
-                        # 지역명 매칭
-                        if (region_str == actual_region_name or 
-                            actual_region_name in region_str or 
-                            region_str in actual_region_name):
-                            # "계" 행인지 확인
-                            if age_str == '계':
-                                current = sheet.cell(row=row, column=current_col).value
-                                prev = sheet.cell(row=row, column=prev_col).value
-                                
-                                if current is not None and prev is not None and prev != 0:
-                                    growth_rate = ((current / prev) - 1) * 100
-                                    return self.format_percentage(growth_rate, decimal_places=1, include_percent=False)
+                        if cell_a.value:
+                            current_region = str(cell_a.value).strip()
+                        
+                        if cell_b.value and current_region:
+                            region_str = current_region
+                            age_str = str(cell_b.value).strip()
+                            
+                            if (region_str == region_name_val or 
+                                region_name_val in region_str or 
+                                region_str in region_name_val):
+                                if age_str == '계':
+                                    value = sheet.cell(row=row, column=target_col).value
+                                    if value is not None:
+                                        try:
+                                            return float(value)
+                                        except (ValueError, TypeError):
+                                            pass
+                                    break
+                    return None
+                
+                # 현재 실업률과 전년 동분기 실업률 계산
+                current_rate = calculate_unemployment_rate(target_year, target_quarter)
+                prev_year = target_year - 1
+                prev_rate = calculate_unemployment_rate(prev_year, target_quarter)
+                
+                if current_rate is not None and prev_rate is not None:
+                    # 실업률 증감은 %p 단위 (퍼센트 포인트)
+                    growth_rate_pp = current_rate - prev_rate
+                    return self.format_percentage(growth_rate_pp, decimal_places=1, include_percent=False)
                 
                 return "N/A"
             elif is_employment_rate_sheet:
@@ -2481,8 +2547,8 @@ class TemplateFiller:
                 # 실제 마커인지 확인 (한글, 숫자, 언더스코어 포함)
                 if re.search(r'[가-힣0-9_]', dynamic_key):
                     try:
-                        # sheet_name이 제공되지 않으면 마커에서 추출한 시트명 사용
-                        marker_sheet_name = sheet_name if sheet_name else match.group(1)
+                        # 마커에서 추출한 시트명을 항상 사용 (파라미터의 sheet_name은 무시)
+                        marker_sheet_name = match.group(1)
                         # 실제 시트명 찾기 (유연한 매핑 사용)
                         actual_sheet_name = self.flexible_mapper.find_sheet_by_name(marker_sheet_name)
                         if not actual_sheet_name:

@@ -233,7 +233,12 @@ class PDFGenerator:
             combined_html += '''
                 @page {
                     size: A4;
-                    margin: 1cm;
+                    margin: 0.8cm;
+                }
+                /* 표가 한 페이지에 들어가도록 전체 크기 조정 */
+                html, body {
+                    width: 100%;
+                    height: 100%;
                 }
                 body {
                     font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
@@ -253,14 +258,15 @@ class PDFGenerator:
                 }
                 
                 /* 템플릿별 공통 스타일 - 한 페이지에 맞추기 */
+                /* 최소 폰트: 10pt 기준, 비례적으로 큰 글자 설정 */
                 .page-break .template-content {
-                    padding: 15px 20px !important;
+                    padding: 10px 15px !important;
                     margin: 0 !important;
                     max-width: 100% !important;
                     width: 100% !important;
                     box-sizing: border-box !important;
-                    font-size: 11px !important;
-                    line-height: 1.4 !important;
+                    font-size: 10pt !important;
+                    line-height: 1.3 !important;
                     display: flex;
                     flex-direction: column;
                     height: 100%;
@@ -271,55 +277,56 @@ class PDFGenerator:
                 }
                 
                 .page-break .section-title {
-                    font-size: 13px !important;
+                    font-size: 16pt !important;
                     font-weight: bold !important;
-                    margin: 8px 0 5px 0 !important;
-                    line-height: 1.3 !important;
+                    margin: 6px 0 4px 0 !important;
+                    line-height: 1.2 !important;
                 }
                 
                 .page-break .subsection-title {
-                    font-size: 12px !important;
+                    font-size: 14pt !important;
                     font-weight: bold !important;
-                    margin: 6px 0 4px 0 !important;
-                    line-height: 1.3 !important;
+                    margin: 5px 0 3px 0 !important;
+                    line-height: 1.2 !important;
                 }
                 
                 .page-break .content-text {
-                    font-size: 11px !important;
-                    margin-bottom: 5px !important;
-                    line-height: 1.5 !important;
+                    font-size: 12pt !important;
+                    margin-bottom: 4px !important;
+                    line-height: 1.4 !important;
                     text-align: justify !important;
                 }
                 
                 .page-break .key-section {
-                    font-size: 11px !important;
+                    font-size: 12pt !important;
                     font-weight: bold !important;
-                    margin: 8px 0 4px 0 !important;
+                    margin: 6px 0 3px 0 !important;
                 }
                 
                 .page-break .key-item {
-                    font-size: 10px !important;
-                    margin-bottom: 3px !important;
-                    line-height: 1.4 !important;
+                    font-size: 10pt !important;
+                    margin-bottom: 2px !important;
+                    line-height: 1.3 !important;
                 }
                 
                 .page-break .table-title {
-                    font-size: 11px !important;
+                    font-size: 12pt !important;
                     font-weight: bold !important;
-                    margin: 8px 0 3px 0 !important;
+                    margin: 6px 0 2px 0 !important;
                     text-align: center !important;
                 }
                 
                 .page-break .table-subtitle {
-                    font-size: 10px !important;
-                    margin-bottom: 5px !important;
+                    font-size: 10pt !important;
+                    margin-bottom: 3px !important;
                     text-align: center !important;
                 }
                 
                 .page-break table {
                     width: 100% !important;
+                    max-width: 100% !important;
                     margin: 5px 0 8px 0 !important;
-                    font-size: 9px !important;
+                    font-size: 10pt !important;
                     border-collapse: collapse !important;
                     border: 1px solid #000 !important;
                     table-layout: fixed !important;
@@ -328,25 +335,50 @@ class PDFGenerator:
                 .page-break th {
                     background-color: #f5f5f5 !important;
                     font-weight: bold !important;
-                    padding: 4px 3px !important;
-                    font-size: 9px !important;
+                    padding: 3px 2px !important;
+                    font-size: 10pt !important;
                     line-height: 1.2 !important;
                     text-align: center !important;
                     border: 1px solid #000 !important;
                     vertical-align: middle !important;
+                    word-wrap: break-word !important;
+                    overflow: hidden !important;
                 }
                 
                 .page-break td {
-                    padding: 4px 3px !important;
-                    font-size: 9px !important;
+                    padding: 3px 2px !important;
+                    font-size: 10pt !important;
                     line-height: 1.2 !important;
                     text-align: center !important;
                     border: 1px solid #000 !important;
                     vertical-align: middle !important;
+                    word-wrap: break-word !important;
+                    overflow: hidden !important;
+                }
+                
+                /* 첫 번째 열(시·도)은 좀 더 넓게, 나머지 열은 균등하게 분배 */
+                .page-break table th:first-child,
+                .page-break table td:first-child {
+                    width: 13% !important;
+                    min-width: 13% !important;
+                    max-width: 13% !important;
+                }
+                
+                /* 나머지 열들은 균등하게 분배 (8개 열이면 각각 약 10.875%) */
+                .page-break table th:not(:first-child),
+                .page-break table td:not(:first-child) {
+                    width: calc(87% / 8) !important;
+                    min-width: calc(87% / 8) !important;
+                    max-width: calc(87% / 8) !important;
                 }
                 
                 .page-break .source {
-                    font-size: 9px !important;
+                    font-size: 10pt !important;
+                    margin-top: 5px !important;
+                }
+                
+                .page-break .footnote {
+                    font-size: 10pt !important;
                     margin-top: 5px !important;
                 }
                 
@@ -358,7 +390,7 @@ class PDFGenerator:
                 }
                 
                 .page-break li {
-                    font-size: 10px !important;
+                    font-size: 10pt !important;
                     line-height: 1.4 !important;
                     margin-bottom: 2px !important;
                 }
@@ -410,7 +442,7 @@ class PDFGenerator:
                         page.pdf(
                             path=str(pdf_path),
                             format='A4',
-                            margin={'top': '1cm', 'right': '1cm', 'bottom': '1cm', 'left': '1cm'},
+                            margin={'top': '0.8cm', 'right': '0.8cm', 'bottom': '0.8cm', 'left': '0.8cm'},
                             print_background=True,
                             prefer_css_page_size=True
                         )

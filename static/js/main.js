@@ -51,12 +51,8 @@ let progressTracker = {
     stepProgress: 0,
     stepTimes: {}, // 각 단계의 시작 시간 기록
     stepEndTimes: {}, // 각 단계의 종료 시간 기록
-    estimatedTimes: {
-        0: 2,  // 파일 준비: 2초
-        1: 8,  // 데이터 분석: 8초
-        2: 12, // 템플릿 채우기: 12초
-        3: null // 결과 생성: 예상 시간 없음 (시스템별로 다름)
-    },
+    stepPercentages: {}, // 각 단계의 진행률 기록
+    averageTimes: {}, // 각 단계의 평균 소요 시간 (localStorage에서 로드)
     stepNames: {
         0: '파일 준비',
         1: '데이터 분석',
@@ -64,6 +60,50 @@ let progressTracker = {
         3: '결과 생성'
     }
 };
+
+// localStorage에서 평균 시간 로드
+function loadAverageTimes() {
+    try {
+        const saved = localStorage.getItem('stepAverageTimes');
+        if (saved) {
+            progressTracker.averageTimes = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('평균 시간 로드 실패:', e);
+    }
+}
+
+// 평균 시간 저장
+function saveAverageTime(step, actualTime) {
+    if (!progressTracker.averageTimes[step]) {
+        progressTracker.averageTimes[step] = [];
+    }
+    progressTracker.averageTimes[step].push(actualTime);
+    
+    // 최근 5개 기록만 유지
+    if (progressTracker.averageTimes[step].length > 5) {
+        progressTracker.averageTimes[step].shift();
+    }
+    
+    try {
+        localStorage.setItem('stepAverageTimes', JSON.stringify(progressTracker.averageTimes));
+    } catch (e) {
+        console.warn('평균 시간 저장 실패:', e);
+    }
+}
+
+// 평균 시간 계산
+function getAverageTime(step) {
+    const times = progressTracker.averageTimes[step];
+    if (!times || times.length === 0) {
+        return null;
+    }
+    const sum = times.reduce((a, b) => a + b, 0);
+    return Math.ceil(sum / times.length);
+}
+
+// 초기화 시 평균 시간 로드
+loadAverageTimes();
 
 // 진행률 표시 (개선된 버전)
 function showProgress(percentage, text = null, step = null, subStep = null) {
@@ -96,7 +136,9 @@ function showProgress(percentage, text = null, step = null, subStep = null) {
             if (!progressTracker.stepTimes[step]) {
                 progressTracker.stepTimes[step] = Date.now();
             }
-            updateProgressSteps(step, subStep);
+            // 진행률 기록
+            progressTracker.stepPercentages[step] = percentage;
+            updateProgressSteps(step, subStep, percentage);
         }
     }
 }
@@ -112,7 +154,7 @@ function formatSeconds(seconds) {
     }
 }
 
-function updateProgressSteps(activeStep, subStep = null) {
+function updateProgressSteps(activeStep, subStep = null, currentPercentage = 0) {
     const steps = ['progressStep1', 'progressStep2', 'progressStep3', 'progressStep4'];
     const stepLabels = [
         '파일 업로드 및 검증',
@@ -121,12 +163,15 @@ function updateProgressSteps(activeStep, subStep = null) {
         '결과 생성'
     ];
     
-    // 이전 단계가 완료되었을 때 종료 시간 기록
+    // 이전 단계가 완료되었을 때 종료 시간 기록 및 평균 시간 업데이트
     if (progressTracker.currentStep < activeStep) {
         // 이전 단계의 종료 시간 기록
         for (let i = 0; i < activeStep; i++) {
             if (progressTracker.stepTimes[i] && !progressTracker.stepEndTimes[i]) {
                 progressTracker.stepEndTimes[i] = Date.now();
+                // 실제 소요 시간 계산 및 평균 시간 업데이트
+                const actualTime = Math.ceil((progressTracker.stepEndTimes[i] - progressTracker.stepTimes[i]) / 1000);
+                saveAverageTime(i, actualTime);
             }
         }
         progressTracker.currentStep = activeStep;
@@ -141,34 +186,19 @@ function updateProgressSteps(activeStep, subStep = null) {
             let timeInfo = '';
             
             if (index < activeStep) {
-                // 완료된 단계: 실제 소요 시간 표시 (종료 시간이 기록되어 있으면 사용)
+                // 완료된 단계: 실제 소요 시간만 표시
                 stepEl.classList.add('completed');
                 stepText = '✓ ' + stepText;
                 
-                const estimatedTime = progressTracker.estimatedTimes[index];
                 const stepStartTime = progressTracker.stepTimes[index];
                 const stepEndTime = progressTracker.stepEndTimes[index];
                 
-                if (stepStartTime) {
-                    // 종료 시간이 있으면 종료 시간 기준으로 계산
-                    if (stepEndTime) {
-                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
-                        } else {
-                            timeInfo = ` (실제: ${actualTime}초)`;
-                        }
-                    } else {
-                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초)`;
-                        }
-                    }
-                } else if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                if (stepStartTime && stepEndTime) {
+                    const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                    timeInfo = ` (${actualTime}초)`;
                 }
             } else if (index === activeStep) {
-                // 진행 중인 단계
+                // 진행 중인 단계: 경과 시간만 표시
                 stepEl.classList.add('active');
                 stepText = '⏳ ' + stepText;
                 
@@ -177,32 +207,13 @@ function updateProgressSteps(activeStep, subStep = null) {
                     stepText += ` - ${subStep}`;
                 }
                 
-                const estimatedTime = progressTracker.estimatedTimes[index];
                 const stepStartTime = progressTracker.stepTimes[index];
                 
-                if (index === 3) {
-                    // 결과 생성 단계: 예상 시간 대신 안내 문구
-                    timeInfo = ' (잠시만 기다려주십시오)';
-                } else if (estimatedTime !== null) {
-                    // 예상 시간 표시
-                    timeInfo = ` (예상: ${estimatedTime}초`;
-                    
-                    // 실제 소요 시간도 표시 (1초 이상 경과한 경우)
-                    if (stepStartTime) {
-                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
-                        if (elapsed > 0) {
-                            timeInfo += `, 경과: ${elapsed}초`;
-                        }
+                if (stepStartTime) {
+                    const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                    if (elapsed > 0) {
+                        timeInfo = ` (경과: ${elapsed}초)`;
                     }
-                    timeInfo += ')';
-                }
-            } else {
-                // 아직 시작하지 않은 단계: 예상 시간만 표시
-                const estimatedTime = progressTracker.estimatedTimes[index];
-                if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
-                } else if (index === 3) {
-                    timeInfo = ' (잠시만 기다려주십시오)';
                 }
             }
             
@@ -231,6 +242,7 @@ function hideProgress() {
     progressTracker.stepProgress = 0;
     progressTracker.stepTimes = {};
     progressTracker.stepEndTimes = {};
+    progressTracker.stepPercentages = {};
 }
 
 // DOM 로드 완료 시 초기화
@@ -1190,12 +1202,53 @@ let pdfProgressTracker = {
     totalTemplates: 10,
     stepTimes: {}, // 각 단계의 시작 시간 기록
     stepEndTimes: {}, // 각 단계의 종료 시간 기록
-    estimatedTimes: {
-        0: 2,  // 파일 준비: 2초
-        1: 30, // 템플릿 처리: 30초 (10개 템플릿)
-        2: null // PDF 생성: 예상 시간 없음 (시스템별로 다름)
-    }
+    stepPercentages: {}, // 각 단계의 진행률 기록
+    averageTimes: {} // 각 단계의 평균 소요 시간 (localStorage에서 로드)
 };
+
+// PDF 평균 시간 로드
+function loadPdfAverageTimes() {
+    try {
+        const saved = localStorage.getItem('pdfStepAverageTimes');
+        if (saved) {
+            pdfProgressTracker.averageTimes = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('PDF 평균 시간 로드 실패:', e);
+    }
+}
+
+// PDF 평균 시간 저장
+function savePdfAverageTime(step, actualTime) {
+    if (!pdfProgressTracker.averageTimes[step]) {
+        pdfProgressTracker.averageTimes[step] = [];
+    }
+    pdfProgressTracker.averageTimes[step].push(actualTime);
+    
+    // 최근 5개 기록만 유지
+    if (pdfProgressTracker.averageTimes[step].length > 5) {
+        pdfProgressTracker.averageTimes[step].shift();
+    }
+    
+    try {
+        localStorage.setItem('pdfStepAverageTimes', JSON.stringify(pdfProgressTracker.averageTimes));
+    } catch (e) {
+        console.warn('PDF 평균 시간 저장 실패:', e);
+    }
+}
+
+// PDF 평균 시간 계산
+function getPdfAverageTime(step) {
+    const times = pdfProgressTracker.averageTimes[step];
+    if (!times || times.length === 0) {
+        return null;
+    }
+    const sum = times.reduce((a, b) => a + b, 0);
+    return Math.ceil(sum / times.length);
+}
+
+// 초기화 시 PDF 평균 시간 로드
+loadPdfAverageTimes();
 
 // PDF 진행률 표시 (개선된 버전)
 function showPdfProgress(percentage, text = null, templateIndex = null, subStep = null) {
@@ -1221,6 +1274,9 @@ function showPdfProgress(percentage, text = null, templateIndex = null, subStep 
         
         if (percentageEl) percentageEl.textContent = `${Math.round(percentage)}%`;
         if (stepsEl) stepsEl.style.display = 'flex';
+        
+        // 진행률 기록
+        pdfProgressTracker.stepPercentages[pdfProgressTracker.currentTemplate] = percentage;
         
         // 단계별 시간 정보 업데이트
         updatePdfProgressSteps(templateIndex, subStep, percentage);
@@ -1251,12 +1307,15 @@ function updatePdfProgressSteps(templateIndex, subStep, percentage) {
         pdfProgressTracker.stepTimes[currentStep] = Date.now();
     }
     
-    // 이전 단계가 완료되었을 때 종료 시간 기록
+    // 이전 단계가 완료되었을 때 종료 시간 기록 및 평균 시간 업데이트
     if (pdfProgressTracker.currentTemplate < currentStep) {
         // 이전 단계의 종료 시간 기록
         for (let i = 0; i < currentStep; i++) {
             if (pdfProgressTracker.stepTimes[i] && !pdfProgressTracker.stepEndTimes[i]) {
                 pdfProgressTracker.stepEndTimes[i] = Date.now();
+                // 실제 소요 시간 계산 및 평균 시간 업데이트
+                const actualTime = Math.ceil((pdfProgressTracker.stepEndTimes[i] - pdfProgressTracker.stepTimes[i]) / 1000);
+                savePdfAverageTime(i, actualTime);
             }
         }
         pdfProgressTracker.currentTemplate = currentStep;
@@ -1271,34 +1330,19 @@ function updatePdfProgressSteps(templateIndex, subStep, percentage) {
             let timeInfo = '';
             
             if (index < currentStep) {
-                // 완료된 단계
+                // 완료된 단계: 실제 소요 시간만 표시
                 stepEl.classList.add('completed');
                 stepText = '✓ ' + stepText;
                 
-                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
                 const stepStartTime = pdfProgressTracker.stepTimes[index];
                 const stepEndTime = pdfProgressTracker.stepEndTimes[index];
                 
-                if (stepStartTime) {
-                    // 종료 시간이 있으면 종료 시간 기준으로 계산
-                    if (stepEndTime) {
-                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
-                        } else {
-                            timeInfo = ` (실제: ${actualTime}초)`;
-                        }
-                    } else {
-                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초)`;
-                        }
-                    }
-                } else if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                if (stepStartTime && stepEndTime) {
+                    const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                    timeInfo = ` (${actualTime}초)`;
                 }
             } else if (index === currentStep) {
-                // 진행 중인 단계
+                // 진행 중인 단계: 경과 시간만 표시
                 stepEl.classList.add('active');
                 stepText = '⏳ ' + stepText;
                 
@@ -1311,29 +1355,13 @@ function updatePdfProgressSteps(templateIndex, subStep, percentage) {
                     stepText += ` - ${subStep}`;
                 }
                 
-                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
                 const stepStartTime = pdfProgressTracker.stepTimes[index];
                 
-                if (index === 2) {
-                    // PDF 생성 단계: 예상 시간 대신 안내 문구
-                    timeInfo = ' (잠시만 기다려주십시오)';
-                } else if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초`;
-                    if (stepStartTime) {
-                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
-                        if (elapsed > 0) {
-                            timeInfo += `, 경과: ${elapsed}초`;
-                        }
+                if (stepStartTime) {
+                    const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                    if (elapsed > 0) {
+                        timeInfo = ` (경과: ${elapsed}초)`;
                     }
-                    timeInfo += ')';
-                }
-            } else {
-                // 아직 시작하지 않은 단계
-                const estimatedTime = pdfProgressTracker.estimatedTimes[index];
-                if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
-                } else if (index === 2) {
-                    timeInfo = ' (잠시만 기다려주십시오)';
                 }
             }
             
@@ -1361,6 +1389,7 @@ function hidePdfProgress() {
     pdfProgressTracker.currentTemplate = 0;
     pdfProgressTracker.stepTimes = {};
     pdfProgressTracker.stepEndTimes = {};
+    pdfProgressTracker.stepPercentages = {};
 }
 
 // PDF 결과 표시
@@ -1651,12 +1680,53 @@ let docxProgressTracker = {
     totalTemplates: 10,
     stepTimes: {}, // 각 단계의 시작 시간 기록
     stepEndTimes: {}, // 각 단계의 종료 시간 기록
-    estimatedTimes: {
-        0: 2,  // 파일 준비: 2초
-        1: 30, // 템플릿 처리: 30초 (10개 템플릿)
-        2: null // DOCX 생성: 예상 시간 없음 (시스템별로 다름)
-    }
+    stepPercentages: {}, // 각 단계의 진행률 기록
+    averageTimes: {} // 각 단계의 평균 소요 시간 (localStorage에서 로드)
 };
+
+// DOCX 평균 시간 로드
+function loadDocxAverageTimes() {
+    try {
+        const saved = localStorage.getItem('docxStepAverageTimes');
+        if (saved) {
+            docxProgressTracker.averageTimes = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('DOCX 평균 시간 로드 실패:', e);
+    }
+}
+
+// DOCX 평균 시간 저장
+function saveDocxAverageTime(step, actualTime) {
+    if (!docxProgressTracker.averageTimes[step]) {
+        docxProgressTracker.averageTimes[step] = [];
+    }
+    docxProgressTracker.averageTimes[step].push(actualTime);
+    
+    // 최근 5개 기록만 유지
+    if (docxProgressTracker.averageTimes[step].length > 5) {
+        docxProgressTracker.averageTimes[step].shift();
+    }
+    
+    try {
+        localStorage.setItem('docxStepAverageTimes', JSON.stringify(docxProgressTracker.averageTimes));
+    } catch (e) {
+        console.warn('DOCX 평균 시간 저장 실패:', e);
+    }
+}
+
+// DOCX 평균 시간 계산
+function getDocxAverageTime(step) {
+    const times = docxProgressTracker.averageTimes[step];
+    if (!times || times.length === 0) {
+        return null;
+    }
+    const sum = times.reduce((a, b) => a + b, 0);
+    return Math.ceil(sum / times.length);
+}
+
+// 초기화 시 DOCX 평균 시간 로드
+loadDocxAverageTimes();
 
 // DOCX 진행률 표시
 function showDocxProgress(percentage, text = null, templateIndex = null, subStep = null) {
@@ -1682,6 +1752,9 @@ function showDocxProgress(percentage, text = null, templateIndex = null, subStep
         
         if (percentageEl) percentageEl.textContent = `${Math.round(percentage)}%`;
         if (stepsEl) stepsEl.style.display = 'flex';
+        
+        // 진행률 기록
+        docxProgressTracker.stepPercentages[docxProgressTracker.currentTemplate] = percentage;
         
         // 단계별 시간 정보 업데이트
         updateDocxProgressSteps(templateIndex, subStep, percentage);
@@ -1712,12 +1785,15 @@ function updateDocxProgressSteps(templateIndex, subStep, percentage) {
         docxProgressTracker.stepTimes[currentStep] = Date.now();
     }
     
-    // 이전 단계가 완료되었을 때 종료 시간 기록
+    // 이전 단계가 완료되었을 때 종료 시간 기록 및 평균 시간 업데이트
     if (docxProgressTracker.currentTemplate < currentStep) {
         // 이전 단계의 종료 시간 기록
         for (let i = 0; i < currentStep; i++) {
             if (docxProgressTracker.stepTimes[i] && !docxProgressTracker.stepEndTimes[i]) {
                 docxProgressTracker.stepEndTimes[i] = Date.now();
+                // 실제 소요 시간 계산 및 평균 시간 업데이트
+                const actualTime = Math.ceil((docxProgressTracker.stepEndTimes[i] - docxProgressTracker.stepTimes[i]) / 1000);
+                saveDocxAverageTime(i, actualTime);
             }
         }
         docxProgressTracker.currentTemplate = currentStep;
@@ -1732,34 +1808,19 @@ function updateDocxProgressSteps(templateIndex, subStep, percentage) {
             let timeInfo = '';
             
             if (index < currentStep) {
-                // 완료된 단계
+                // 완료된 단계: 실제 소요 시간만 표시
                 stepEl.classList.add('completed');
                 stepText = '✓ ' + stepText;
                 
-                const estimatedTime = docxProgressTracker.estimatedTimes[index];
                 const stepStartTime = docxProgressTracker.stepTimes[index];
                 const stepEndTime = docxProgressTracker.stepEndTimes[index];
                 
-                if (stepStartTime) {
-                    // 종료 시간이 있으면 종료 시간 기준으로 계산
-                    if (stepEndTime) {
-                        const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초, 실제: ${actualTime}초)`;
-                        } else {
-                            timeInfo = ` (실제: ${actualTime}초)`;
-                        }
-                    } else {
-                        // 종료 시간이 아직 기록되지 않았으면 예상 시간만 표시
-                        if (estimatedTime !== null) {
-                            timeInfo = ` (예상: ${estimatedTime}초)`;
-                        }
-                    }
-                } else if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
+                if (stepStartTime && stepEndTime) {
+                    const actualTime = Math.ceil((stepEndTime - stepStartTime) / 1000);
+                    timeInfo = ` (${actualTime}초)`;
                 }
             } else if (index === currentStep) {
-                // 진행 중인 단계
+                // 진행 중인 단계: 경과 시간만 표시
                 stepEl.classList.add('active');
                 stepText = '⏳ ' + stepText;
                 
@@ -1772,29 +1833,13 @@ function updateDocxProgressSteps(templateIndex, subStep, percentage) {
                     stepText += ` - ${subStep}`;
                 }
                 
-                const estimatedTime = docxProgressTracker.estimatedTimes[index];
                 const stepStartTime = docxProgressTracker.stepTimes[index];
                 
-                if (index === 2) {
-                    // DOCX 생성 단계: 예상 시간 대신 안내 문구
-                    timeInfo = ' (잠시만 기다려주십시오)';
-                } else if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초`;
-                    if (stepStartTime) {
-                        const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
-                        if (elapsed > 0) {
-                            timeInfo += `, 경과: ${elapsed}초`;
-                        }
+                if (stepStartTime) {
+                    const elapsed = Math.ceil((Date.now() - stepStartTime) / 1000);
+                    if (elapsed > 0) {
+                        timeInfo = ` (경과: ${elapsed}초)`;
                     }
-                    timeInfo += ')';
-                }
-            } else {
-                // 아직 시작하지 않은 단계
-                const estimatedTime = docxProgressTracker.estimatedTimes[index];
-                if (estimatedTime !== null) {
-                    timeInfo = ` (예상: ${estimatedTime}초)`;
-                } else if (index === 2) {
-                    timeInfo = ' (잠시만 기다려주십시오)';
                 }
             }
             
@@ -1822,6 +1867,7 @@ function hideDocxProgress() {
     docxProgressTracker.currentTemplate = 0;
     docxProgressTracker.stepTimes = {};
     docxProgressTracker.stepEndTimes = {};
+    docxProgressTracker.stepPercentages = {};
 }
 
 // DOCX 결과 표시
