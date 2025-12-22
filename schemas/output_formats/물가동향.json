@@ -2,7 +2,7 @@
   "_comment": "물가동향 출력 형식 스키마",
   
   "template_type": "price",
-  "sheet_name": "지출목적별 물가",
+  "sheet_name": "품목성질별 물가",
   "display_name": "물가동향",
   "template_file": "물가동향.html",
   
