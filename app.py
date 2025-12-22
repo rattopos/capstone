@@ -26,10 +26,16 @@ from src.docx_generator import DOCXGenerator
 from src.schema_loader import SchemaLoader
 from bs4 import BeautifulSoup
 
+# Blueprint 임포트
+from routes import validation_bp
+
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
+
+# Blueprint 등록
+app.register_blueprint(validation_bp)
 
 # 기본 엑셀 파일 경로
 BASE_DIR = Path(__file__).parent
@@ -286,7 +292,7 @@ def detect_sheet_scale(excel_extractor, sheet_name):
 
 
 def find_missing_values_in_sheet(excel_extractor, sheet_name, year, quarter):
-    """시트에서 결측치 찾기"""
+    """시트에서 결측치 찾기 - 동적 열 탐색 사용"""
     import re
     missing_values = []
     
@@ -297,9 +303,9 @@ def find_missing_values_in_sheet(excel_extractor, sheet_name, year, quarter):
         target_col = None
         prev_col = None
         
-        # 헤더에서 해당 분기 열 찾기 (1-3행 검사)
-        for row in range(1, 4):
-            for col in range(1, min(sheet.max_column + 1, 100)):
+        # 헤더에서 해당 분기 열 찾기 (1-5행 검사)
+        for row in range(1, 6):
+            for col in range(1, min(sheet.max_column + 1, 150)):
                 cell = sheet.cell(row=row, column=col)
                 if cell.value:
                     cell_str = str(cell.value).strip()
@@ -318,15 +324,20 @@ def find_missing_values_in_sheet(excel_extractor, sheet_name, year, quarter):
         # 스케일 감지
         scale = detect_sheet_scale(excel_extractor, sheet_name)
         
-        # 지역 열 찾기 (보통 2번째 열)
-        region_col = 2
-        category_col = 6  # 품목/산업 열
+        # 지역 열을 동적으로 찾기
+        region_col = _find_region_column_in_sheet(sheet)
         
-        # 데이터 영역 검사 (4행부터)
-        for row in range(4, min(sheet.max_row + 1, 500)):
+        # 카테고리 열을 동적으로 찾기
+        category_col = _find_category_column_in_sheet(sheet)
+        
+        # 데이터 시작 행 찾기
+        data_start_row = _find_data_start_row(sheet, region_col)
+        
+        # 데이터 영역 검사
+        for row in range(data_start_row, min(sheet.max_row + 1, 500)):
             cell_value = sheet.cell(row=row, column=target_col).value
             region_value = sheet.cell(row=row, column=region_col).value
-            category_value = sheet.cell(row=row, column=category_col).value
+            category_value = sheet.cell(row=row, column=category_col).value if category_col else None
             
             # 결측치 확인 (None, 빈 문자열, '-')
             is_missing = (
@@ -349,13 +360,339 @@ def find_missing_values_in_sheet(excel_extractor, sheet_name, year, quarter):
                         'row': row,
                         'col': target_col,
                         'default_value': scale,
-                        'cell_address': f'{chr(64 + target_col)}{row}' if target_col <= 26 else f'{chr(64 + (target_col-1)//26)}{chr(64 + (target_col-1)%26 + 1)}{row}'
+                        'cell_address': _col_to_letter(target_col) + str(row)
                     })
         
         return missing_values
     except Exception as e:
         print(f"[ERROR] 결측치 확인 중 오류: {sheet_name}, {str(e)}")
         return missing_values
+
+
+def _find_region_column_in_sheet(sheet) -> int:
+    """시트에서 지역 열을 동적으로 찾습니다."""
+    region_names = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                   '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    region_keywords = ['시도', '지역', 'region', 'area', '시·도']
+    
+    # 헤더에서 키워드로 찾기
+    for row in range(1, 5):
+        for col in range(1, min(10, sheet.max_column + 1)):
+            cell = sheet.cell(row=row, column=col)
+            if cell.value:
+                header_text = str(cell.value).strip().lower()
+                if any(keyword in header_text for keyword in region_keywords):
+                    return col
+    
+    # 데이터에서 지역명이 포함된 열 찾기
+    best_col = 2
+    best_count = 0
+    
+    for col in range(1, min(10, sheet.max_column + 1)):
+        region_count = 0
+        for row in range(2, min(25, sheet.max_row + 1)):
+            cell = sheet.cell(row=row, column=col)
+            if cell.value:
+                cell_str = str(cell.value).strip()
+                if any(region in cell_str for region in region_names):
+                    region_count += 1
+        
+        if region_count > best_count:
+            best_count = region_count
+            best_col = col
+    
+    return best_col
+
+
+def _find_category_column_in_sheet(sheet) -> int:
+    """시트에서 카테고리 열을 동적으로 찾습니다."""
+    category_keywords = ['산업', '업태', '품목', 'category', 'industry', '업종', '분류명']
+    category_values = ['총지수', '계', '합계', '반도체', '전자', '서비스', '제조업', '백화점']
+    
+    # 헤더에서 키워드로 찾기
+    for row in range(1, 5):
+        for col in range(3, min(12, sheet.max_column + 1)):
+            cell = sheet.cell(row=row, column=col)
+            if cell.value:
+                header_text = str(cell.value).strip().lower()
+                if any(keyword in header_text for keyword in category_keywords):
+                    return col
+    
+    # 데이터에서 카테고리 값이 포함된 열 찾기
+    best_col = 6
+    best_count = 0
+    
+    for col in range(3, min(12, sheet.max_column + 1)):
+        cat_count = 0
+        for row in range(2, min(30, sheet.max_row + 1)):
+            cell = sheet.cell(row=row, column=col)
+            if cell.value:
+                cell_str = str(cell.value).strip()
+                if any(cat in cell_str for cat in category_values):
+                    cat_count += 1
+        
+        if cat_count > best_count:
+            best_count = cat_count
+            best_col = col
+    
+    return best_col
+
+
+def _find_data_start_row(sheet, region_col: int) -> int:
+    """데이터 시작 행을 찾습니다."""
+    region_names = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                   '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    
+    for row in range(1, min(20, sheet.max_row + 1)):
+        cell = sheet.cell(row=row, column=region_col)
+        if cell.value:
+            cell_str = str(cell.value).strip()
+            if any(region in cell_str for region in region_names):
+                return row
+    
+    return 4
+
+
+def _col_to_letter(col: int) -> str:
+    """열 번호를 열 문자로 변환"""
+    result = ""
+    while col > 0:
+        col -= 1
+        result = chr(65 + (col % 26)) + result
+        col //= 26
+    return result
+
+
+def detect_structure_changes(excel_extractor, sheet_name: str) -> dict:
+    """
+    시트의 구조 변경을 감지합니다.
+    
+    Args:
+        excel_extractor: 엑셀 추출기
+        sheet_name: 시트 이름
+        
+    Returns:
+        구조 분석 결과 및 경고 메시지
+    """
+    warnings = []
+    structure_info = {}
+    
+    try:
+        sheet = excel_extractor.get_sheet(sheet_name)
+        
+        # 지역 열 탐색
+        region_col = _find_region_column_in_sheet(sheet)
+        structure_info['region_column'] = region_col
+        
+        # 기존 기대값과 다르면 경고
+        if region_col != 2:
+            warnings.append(f"지역 열이 B열이 아닌 {_col_to_letter(region_col)}열에서 발견됨")
+        
+        # 카테고리 열 탐색
+        category_col = _find_category_column_in_sheet(sheet)
+        structure_info['category_column'] = category_col
+        
+        if category_col != 6:
+            warnings.append(f"카테고리 열이 F열이 아닌 {_col_to_letter(category_col)}열에서 발견됨")
+        
+        # 데이터 시작 행 탐색
+        data_start_row = _find_data_start_row(sheet, region_col)
+        structure_info['data_start_row'] = data_start_row
+        
+        if data_start_row > 5:
+            warnings.append(f"데이터 시작 행이 {data_start_row}행으로 예상보다 늦음")
+        
+        # 분기 열 확인
+        quarter_cols_found = 0
+        for row in range(1, 6):
+            for col in range(1, min(sheet.max_column + 1, 150)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    import re
+                    cell_str = str(cell.value).strip()
+                    if re.search(r'\d{4}\s*\d/4[pP]?', cell_str):
+                        quarter_cols_found += 1
+        
+        structure_info['quarter_columns_count'] = quarter_cols_found
+        
+        if quarter_cols_found == 0:
+            warnings.append("분기별 데이터 열을 찾을 수 없음")
+        elif quarter_cols_found < 4:
+            warnings.append(f"분기별 데이터 열이 {quarter_cols_found}개만 발견됨 (최소 4개 권장)")
+        
+        # 지역 데이터 개수 확인
+        region_count = 0
+        region_names = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                       '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        for row in range(data_start_row, min(data_start_row + 100, sheet.max_row + 1)):
+            cell = sheet.cell(row=row, column=region_col)
+            if cell.value:
+                cell_str = str(cell.value).strip()
+                if any(region in cell_str for region in region_names):
+                    region_count += 1
+        
+        structure_info['region_count'] = region_count
+        
+        if region_count < 17:
+            warnings.append(f"지역 데이터가 {region_count}개만 발견됨 (18개 지역 필요)")
+        
+    except Exception as e:
+        warnings.append(f"구조 분석 중 오류: {str(e)}")
+    
+    return {
+        'sheet_name': sheet_name,
+        'structure': structure_info,
+        'warnings': warnings,
+        'has_warnings': len(warnings) > 0
+    }
+
+
+@app.route('/api/validate-template', methods=['POST'])
+def validate_template():
+    """템플릿의 마커를 검증하고 경고를 반환합니다."""
+    try:
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다.'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            excel_path = upload_folder / excel_filename
+            excel_file.save(str(excel_path))
+        else:
+            excel_path = DEFAULT_EXCEL_FILE
+        
+        template_name = request.form.get('template_name', '')
+        
+        if not template_name:
+            return jsonify({'error': '템플릿을 선택해주세요.'}), 400
+        
+        # 템플릿 관리자 초기화
+        template_path = Path('templates') / template_name
+        if not template_path.exists():
+            return jsonify({'error': f'템플릿 파일을 찾을 수 없습니다: {template_name}'}), 404
+        
+        template_manager = TemplateManager(str(template_path))
+        template_manager.load_template()
+        
+        # 엑셀 시트 목록 가져오기
+        excel_extractor = get_excel_extractor(excel_path)
+        excel_sheets = excel_extractor.get_sheet_names()
+        
+        # 마커 검증
+        validation_result = template_manager.validate_markers_against_excel(excel_sheets)
+        
+        # 마커 통계
+        statistics = template_manager.get_marker_statistics()
+        
+        excel_extractor.close()
+        
+        # 경고 메시지 생성
+        all_warnings = []
+        if validation_result['missing_sheets']:
+            for sheet in validation_result['missing_sheets']:
+                all_warnings.append(f"시트 '{sheet}'를 엑셀 파일에서 찾을 수 없습니다.")
+        
+        all_warnings.extend(validation_result['warnings'])
+        
+        return jsonify({
+            'success': True,
+            'valid': validation_result['valid'],
+            'missing_sheets': validation_result['missing_sheets'],
+            'warnings': all_warnings,
+            'has_warnings': len(all_warnings) > 0,
+            'statistics': statistics,
+            'sheet_summary': validation_result['sheet_summary']
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] 템플릿 검증 중 오류: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': f'템플릿 검증 중 오류: {str(e)}'}), 500
+
+
+@app.route('/api/check-structure', methods=['POST'])
+def check_structure():
+    """엑셀 파일의 구조를 확인하고 경고를 반환합니다."""
+    try:
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 파일 형식입니다.'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            if not excel_filename:
+                return jsonify({'error': '파일명이 유효하지 않습니다.'}), 400
+            
+            upload_folder = Path(app.config['UPLOAD_FOLDER'])
+            upload_folder.mkdir(parents=True, exist_ok=True)
+            excel_path = upload_folder / excel_filename
+            excel_file.save(str(excel_path))
+        else:
+            excel_path = DEFAULT_EXCEL_FILE
+        
+        template_name = request.form.get('template_name', '')
+        
+        if not template_name:
+            return jsonify({'error': '템플릿을 선택해주세요.'}), 400
+        
+        # 엑셀 추출기 초기화
+        excel_extractor = get_excel_extractor(excel_path)
+        
+        # 템플릿 관리자 초기화
+        template_path = Path('templates') / template_name
+        template_manager = TemplateManager(str(template_path))
+        template_manager.load_template()
+        
+        # 템플릿에서 필요한 시트 목록 추출
+        markers = template_manager.extract_markers()
+        required_sheets = set()
+        for marker in markers:
+            sheet_name = marker.get('sheet_name', '').strip()
+            if sheet_name:
+                required_sheets.add(sheet_name)
+        
+        # 각 시트의 구조 확인
+        all_results = []
+        all_warnings = []
+        flexible_mapper = FlexibleMapper(excel_extractor)
+        
+        for sheet_name in required_sheets:
+            actual_sheet = flexible_mapper.find_sheet_by_name(sheet_name)
+            if actual_sheet:
+                result = detect_structure_changes(excel_extractor, actual_sheet)
+                all_results.append(result)
+                if result['has_warnings']:
+                    all_warnings.extend([f"[{actual_sheet}] {w}" for w in result['warnings']])
+            else:
+                all_warnings.append(f"시트를 찾을 수 없음: {sheet_name}")
+        
+        excel_extractor.close()
+        
+        return jsonify({
+            'success': True,
+            'sheets_analyzed': len(all_results),
+            'results': all_results,
+            'all_warnings': all_warnings,
+            'has_warnings': len(all_warnings) > 0
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] 구조 확인 중 오류: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': f'구조 확인 중 오류: {str(e)}'}), 500
 
 
 @app.route('/api/check-missing-values', methods=['POST'])
@@ -681,29 +1018,12 @@ def preview_file(filename):
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 
-        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
+# /api/check-default-file, /api/validate 엔드포인트는 routes/validation.py Blueprint로 이동
 
 
-@app.route('/api/check-default-file', methods=['GET'])
-def check_default_file():
-    """기본 엑셀 파일 존재 여부 확인"""
-    try:
-        exists = DEFAULT_EXCEL_FILE.exists()
-        return jsonify({
-            'exists': exists,
-            'filename': DEFAULT_EXCEL_FILE.name,
-            'message': '기본 파일을 찾을 수 있습니다.' if exists else f'기본 엑셀 파일을 찾을 수 없습니다: {DEFAULT_EXCEL_FILE.name}'
-        })
-    except Exception as e:
-        return jsonify({
-            'exists': False,
-            'error': f'파일 확인 중 오류가 발생했습니다: {str(e)}'
-        }), 500
-
-
-@app.route('/api/validate', methods=['POST'])
-def validate_files():
-    """파일 유효성 검증"""
+@app.route('/api/validate-excel', methods=['POST'])
+def validate_excel_file():
+    """엑셀 파일 유효성 검증 (시트 정보, 기간 정보 반환)"""
     try:
         # 엑셀 파일 처리: 업로드된 파일이 있으면 사용, 없으면 기본 파일 사용
         excel_file = request.files.get('excel_file')

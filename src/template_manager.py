@@ -171,4 +171,121 @@ class TemplateManager:
         # 정확히 일치하는 마커만 치환 (부분 일치 방지)
         self.template_content = self.template_content.replace(marker, str(value))
         return self.template_content
+    
+    def validate_markers_against_excel(self, excel_sheets: List[str]) -> Dict:
+        """
+        템플릿의 마커가 엑셀 시트와 호환되는지 검증합니다.
+        
+        Args:
+            excel_sheets: 엑셀 파일에서 사용 가능한 시트 목록
+            
+        Returns:
+            검증 결과 딕셔너리:
+            {
+                'valid': 유효성 여부,
+                'missing_sheets': 누락된 시트 목록,
+                'warnings': 경고 메시지 목록,
+                'marker_count': 전체 마커 수,
+                'sheet_summary': 시트별 마커 수
+            }
+        """
+        if not self.template_content:
+            self.load_template()
+        
+        markers = self.extract_markers()
+        
+        # 시트별 마커 수 집계
+        sheet_summary = {}
+        for marker in markers:
+            sheet_name = marker['sheet_name']
+            if sheet_name not in sheet_summary:
+                sheet_summary[sheet_name] = 0
+            sheet_summary[sheet_name] += 1
+        
+        # 누락된 시트 찾기
+        missing_sheets = []
+        warnings = []
+        
+        for sheet_name in sheet_summary.keys():
+            # 정확한 매칭
+            if sheet_name in excel_sheets:
+                continue
+            
+            # 부분 매칭 시도
+            found = False
+            for excel_sheet in excel_sheets:
+                if sheet_name in excel_sheet or excel_sheet in sheet_name:
+                    found = True
+                    warnings.append(f"시트 '{sheet_name}'가 '{excel_sheet}'로 매핑될 수 있습니다.")
+                    break
+            
+            if not found:
+                missing_sheets.append(sheet_name)
+        
+        # 마커 형식 검증
+        for marker in markers:
+            cell_address = marker['cell_address']
+            
+            # 동적 마커 형식 검사 (예: 전국_증감률, 상위시도1_이름)
+            if '_' in cell_address:
+                # 동적 마커는 OK
+                continue
+            
+            # 셀 주소 형식 검사 (예: A1, B5:C10)
+            if not re.match(r'^[A-Z]+\d+(:[A-Z]+\d+)?$', cell_address):
+                warnings.append(f"마커 '{marker['full_match']}'의 형식이 표준과 다릅니다.")
+        
+        return {
+            'valid': len(missing_sheets) == 0,
+            'missing_sheets': missing_sheets,
+            'warnings': warnings,
+            'marker_count': len(markers),
+            'sheet_summary': sheet_summary
+        }
+    
+    def get_marker_statistics(self) -> Dict:
+        """
+        템플릿의 마커 통계를 반환합니다.
+        
+        Returns:
+            통계 딕셔너리:
+            {
+                'total_markers': 전체 마커 수,
+                'unique_sheets': 고유 시트 수,
+                'sheets': 시트 목록,
+                'markers_with_operations': 계산식이 있는 마커 수,
+                'dynamic_markers': 동적 마커 수 (헤더 기반),
+                'cell_address_markers': 셀 주소 기반 마커 수
+            }
+        """
+        if not self.template_content:
+            self.load_template()
+        
+        markers = self.extract_markers()
+        
+        sheets = set()
+        markers_with_ops = 0
+        dynamic_markers = 0
+        cell_address_markers = 0
+        
+        for marker in markers:
+            sheets.add(marker['sheet_name'])
+            
+            if marker['operation']:
+                markers_with_ops += 1
+            
+            cell_address = marker['cell_address']
+            if '_' in cell_address or not re.match(r'^[A-Z]+\d+', cell_address):
+                dynamic_markers += 1
+            else:
+                cell_address_markers += 1
+        
+        return {
+            'total_markers': len(markers),
+            'unique_sheets': len(sheets),
+            'sheets': list(sheets),
+            'markers_with_operations': markers_with_ops,
+            'dynamic_markers': dynamic_markers,
+            'cell_address_markers': cell_address_markers
+        }
 

@@ -183,11 +183,11 @@ class TemplateFiller:
                                region: str = None, category: str = None) -> Any:
         """
         결측치를 처리합니다. None, 빈 문자열, '-'를 fallback 값으로 대체합니다.
-        사용자가 입력한 값이 있으면 우선 사용하고, 없으면 시트 스케일 기반 기본값을 사용합니다.
+        사용자가 입력한 값이 있으면 우선 사용하고, 없으면 스마트 기본값을 추정합니다.
         
         Args:
             value: 처리할 값
-            fallback: 대체할 값 (None이면 시트 스케일 기반 값 사용)
+            fallback: 대체할 값 (None이면 스마트 기본값 추정)
             sheet_name: 시트 이름 (결측치 오버라이드 확인용)
             region: 지역명 (결측치 오버라이드 확인용)
             category: 카테고리명 (결측치 오버라이드 확인용)
@@ -205,7 +205,7 @@ class TemplateFiller:
                 is_missing = True
         
         if is_missing:
-            # 사용자가 입력한 값 확인
+            # 우선순위 1: 사용자가 입력한 값
             if sheet_name and region and self._current_year and self._current_quarter:
                 override = self._get_missing_value_override(
                     sheet_name, region, category or '합계',
@@ -214,17 +214,77 @@ class TemplateFiller:
                 if override is not None:
                     return override
             
-            # fallback 값이 있으면 사용
+            # 우선순위 2: fallback 값
             if fallback is not None:
                 return fallback
             
-            # 시트 스케일 기반 기본값 사용
+            # 우선순위 3: 스마트 기본값 추정
+            if sheet_name and region and self._current_year and self._current_quarter:
+                smart_default = self._estimate_missing_value(
+                    sheet_name, region, category,
+                    self._current_year, self._current_quarter
+                )
+                if smart_default is not None:
+                    return smart_default
+            
+            # 우선순위 4: 시트 스케일 기반 기본값
             if sheet_name:
                 return self._detect_sheet_scale(sheet_name)
             
             return 1.0  # 최종 기본값
         
         return value
+    
+    def _estimate_missing_value(self, sheet_name: str, region: str, category: str,
+                                  year: int, quarter: int) -> Optional[float]:
+        """
+        결측치의 스마트 기본값을 추정합니다.
+        이전 분기 값, 전년 동분기 값, 또는 지역 평균을 기반으로 추정합니다.
+        
+        Args:
+            sheet_name: 시트 이름
+            region: 지역명
+            category: 카테고리명
+            year: 연도
+            quarter: 분기
+            
+        Returns:
+            추정된 값 또는 None
+        """
+        try:
+            # 이전 분기 값 시도
+            prev_quarter = quarter - 1
+            prev_year = year
+            if prev_quarter < 1:
+                prev_quarter = 4
+                prev_year = year - 1
+            
+            prev_value = self.dynamic_parser.get_quarter_value(
+                sheet_name, region, prev_year, prev_quarter
+            )
+            if prev_value is not None and prev_value != 1.0:
+                return prev_value
+            
+            # 전년 동분기 값 시도
+            last_year_value = self.dynamic_parser.get_quarter_value(
+                sheet_name, region, year - 1, quarter
+            )
+            if last_year_value is not None and last_year_value != 1.0:
+                return last_year_value
+            
+            # 같은 시트의 전국 값 시도
+            if region != '전국':
+                national_value = self.dynamic_parser.get_quarter_value(
+                    sheet_name, '전국', year, quarter
+                )
+                if national_value is not None and national_value != 1.0:
+                    # 전국 값의 평균적인 비율로 추정
+                    return national_value
+            
+        except Exception:
+            pass
+        
+        return None
     
     def _safe_float(self, value: Any, default: float = None) -> Optional[float]:
         """값을 안전하게 float로 변환합니다."""

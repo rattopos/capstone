@@ -102,29 +102,53 @@ class PeriodDetector:
     def _parse_period_string(self, period_str: str) -> Optional[Tuple[int, int]]:
         """
         분기 문자열을 파싱합니다.
+        다양한 형식의 분기 표기를 지원합니다.
         
         Args:
-            period_str: "2023 3/4", "2024 1/4", "2025 2/4p" 등의 형식
+            period_str: 다양한 형식의 분기 문자열
             
         Returns:
             (연도, 분기) 튜플 또는 None
         """
         import re
         
-        # "2023 3/4", "2024 1/4", "2025 2/4p" 등의 패턴
+        # 지원하는 형식들:
+        # - "2023 3/4", "2025 2/4p", "2025 2/4P" (한국 표준)
+        # - "2024.Q1", "2024 Q2" (Q 표기)
+        # - "2024-1Q", "2024 1Q" (분기 뒤 Q)
+        # - "2024년 1분기", "2024년1분기" (한글)
+        # - "'23 3/4", "'24 1Q" (년도 축약)
+        # - "1/4분기 2024" (순서 뒤집힘)
+        
         patterns = [
-            r'(\d{4})\s+(\d)/4[pP]?',  # "2023 3/4", "2025 2/4p"
-            r'(\d{4})\s*(\d)/4[pP]?',  # "2023 3/4" (공백 없음)
-            r'(\d{4})\.\s*(\d)',  # "2024. 1"
+            # 한국 표준 형식
+            (r'(\d{4})\s*(\d)/4[pP]?', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # Q 표기 형식
+            (r'(\d{4})[\s\.]*[Qq](\d)', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 분기 뒤 Q
+            (r'(\d{4})[\s\-]*(\d)[Qq]', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 한글 형식
+            (r'(\d{4})년?\s*(\d)\s*분기', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 년도 축약 (2자리)
+            (r"'(\d{2})\s*(\d)/4[pP]?", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            (r"'(\d{2})\s*[Qq](\d)", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            (r"'(\d{2})\s*(\d)[Qq]", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            # 순서 뒤집힌 형식
+            (r'(\d)/4\s*분기?\s*(\d{4})', lambda m: (int(m.group(2)), int(m.group(1)))),
+            (r'[Qq](\d)\s*(\d{4})', lambda m: (int(m.group(2)), int(m.group(1)))),
+            # 영문 형식
+            (r'(\d{4})\s*(\d)(?:st|nd|rd|th)?\s*[Qq](?:uarter)?', lambda m: (int(m.group(1)), int(m.group(2)))),
         ]
         
-        for pattern in patterns:
+        for pattern, extractor in patterns:
             match = re.search(pattern, period_str)
             if match:
-                year = int(match.group(1))
-                quarter = int(match.group(2))
-                if 2000 <= year <= 2100 and 1 <= quarter <= 4:
-                    return (year, quarter)
+                try:
+                    year, quarter = extractor(match)
+                    if 2000 <= year <= 2100 and 1 <= quarter <= 4:
+                        return (year, quarter)
+                except (ValueError, TypeError, IndexError):
+                    continue
         
         return None
     

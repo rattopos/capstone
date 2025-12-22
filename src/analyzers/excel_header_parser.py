@@ -123,16 +123,8 @@ class ExcelHeaderParser:
         row_map = {}
         max_row = sheet.max_row
         
-        # 첫 번째 열의 값들을 읽어서 행 매핑 생성
-        # 지역명이 있는 열 찾기 (보통 2번째 열)
-        region_col = 2  # 기본값: B열
-        for col in range(1, min(6, max_col + 1)):  # 처음 5개 열 중에서 찾기
-            cell = sheet.cell(row=header_row, column=col)
-            if cell.value:
-                header_text = str(cell.value).strip().lower()
-                if any(keyword in header_text for keyword in ['시도', '지역', 'region', 'area']):
-                    region_col = col
-                    break
+        # 지역명이 있는 열을 동적으로 찾기
+        region_col = self._find_region_column_dynamic(sheet, header_row, max_col)
         
         for row in range(header_row + 1, min(header_row + 200, max_row + 1)):
             cell = sheet.cell(row=row, column=region_col)
@@ -159,6 +151,58 @@ class ExcelHeaderParser:
         self._headers_cache[cache_key] = result
         
         return result
+    
+    def _find_region_column_dynamic(self, sheet, header_row: int, max_col: int) -> int:
+        """
+        지역명이 있는 열을 동적으로 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
+        """
+        # 전략 1: 헤더에서 키워드로 찾기
+        region_keywords = ['시도', '지역', 'region', 'area', '시·도', '시 도']
+        for col in range(1, min(8, max_col + 1)):
+            cell = sheet.cell(row=header_row, column=col)
+            if cell.value:
+                header_text = str(cell.value).strip().lower()
+                if any(keyword in header_text for keyword in region_keywords):
+                    return col
+        
+        # 전략 2: 데이터에서 지역명이 포함된 열 찾기
+        region_names = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                       '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        best_col = None
+        best_count = 0
+        
+        for col in range(1, min(8, max_col + 1)):
+            region_count = 0
+            for row in range(header_row + 1, min(header_row + 25, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    cell_str = str(cell.value).strip()
+                    if any(region in cell_str for region in region_names):
+                        region_count += 1
+            
+            if region_count > best_count:
+                best_count = region_count
+                best_col = col
+        
+        if best_col and best_count >= 2:
+            return best_col
+        
+        # 전략 3: 코드-이름 패턴 확인
+        for row in range(header_row + 1, min(header_row + 10, sheet.max_row + 1)):
+            cell_a = sheet.cell(row=row, column=1)
+            cell_b = sheet.cell(row=row, column=2)
+            if cell_a.value and cell_b.value:
+                try:
+                    int(str(cell_a.value).strip())
+                    if any(region in str(cell_b.value).strip() for region in region_names):
+                        return 2
+                except (ValueError, TypeError):
+                    pass
+        
+        # 폴백: 기본값 2
+        return 2
     
     def _number_to_column_letter(self, col_num: int) -> str:
         """열 번호를 열 문자로 변환 (1 -> A, 2 -> B, ...)"""
@@ -223,6 +267,7 @@ class ExcelHeaderParser:
     def find_column_by_header(self, sheet_name: str, header_text: str) -> Optional[str]:
         """
         헤더 텍스트로 열을 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
         
         Args:
             sheet_name: 시트 이름
@@ -233,21 +278,46 @@ class ExcelHeaderParser:
         """
         headers_info = self.parse_sheet_headers(sheet_name)
         
-        # 정확한 매칭 시도
+        # 전략 1: 정확한 매칭 시도
         normalized = self._normalize_header(header_text)
         if normalized in headers_info['header_map']:
             return headers_info['header_map'][normalized]
         
-        # 부분 매칭 시도
+        # 전략 2: 부분 매칭 시도 (양방향)
         for col_info in headers_info['columns']:
             if header_text in col_info['header'] or col_info['header'] in header_text:
                 return col_info['letter']
         
-        return None
+        # 전략 3: 정규화된 형태로 부분 매칭
+        normalized_lower = normalized.lower()
+        for col_info in headers_info['columns']:
+            col_normalized = col_info['normalized'].lower()
+            if normalized_lower in col_normalized or col_normalized in normalized_lower:
+                return col_info['letter']
+        
+        # 전략 4: 유사도 기반 매칭 (difflib 사용)
+        best_match = None
+        best_ratio = 0.0
+        
+        for col_info in headers_info['columns']:
+            ratio = self._calculate_similarity(header_text, col_info['header'])
+            if ratio > best_ratio and ratio >= 0.6:  # 60% 이상 유사해야 함
+                best_ratio = ratio
+                best_match = col_info['letter']
+        
+        return best_match
+    
+    def _calculate_similarity(self, str1: str, str2: str) -> float:
+        """두 문자열의 유사도를 계산합니다."""
+        from difflib import SequenceMatcher
+        if not str1 or not str2:
+            return 0.0
+        return SequenceMatcher(None, str1.lower(), str2.lower()).ratio()
     
     def find_row_by_header(self, sheet_name: str, row_text: str) -> Optional[int]:
         """
         행 헤더 텍스트로 행을 찾습니다.
+        여러 전략을 시도하여 최적의 행을 찾습니다.
         
         Args:
             sheet_name: 시트 이름
@@ -258,17 +328,34 @@ class ExcelHeaderParser:
         """
         headers_info = self.parse_sheet_headers(sheet_name)
         
-        # 정규화된 행 헤더로 찾기
+        # 전략 1: 정규화된 행 헤더로 정확한 매칭
         normalized = self._normalize_header(row_text)
         if normalized in headers_info['row_map']:
             return headers_info['row_map'][normalized]
         
-        # 부분 매칭 시도
+        # 전략 2: 부분 매칭 시도 (양방향)
         for row_name, row_num in headers_info['row_map'].items():
             if row_text in row_name or row_name in row_text:
                 return row_num
         
-        return None
+        # 전략 3: 공백 제거 후 매칭
+        row_text_no_space = row_text.replace(' ', '').replace('　', '')
+        for row_name, row_num in headers_info['row_map'].items():
+            row_name_no_space = row_name.replace(' ', '').replace('　', '')
+            if row_text_no_space == row_name_no_space:
+                return row_num
+        
+        # 전략 4: 유사도 기반 매칭
+        best_match = None
+        best_ratio = 0.0
+        
+        for row_name, row_num in headers_info['row_map'].items():
+            ratio = self._calculate_similarity(row_text, row_name)
+            if ratio > best_ratio and ratio >= 0.7:  # 70% 이상 유사해야 함
+                best_ratio = ratio
+                best_match = row_num
+        
+        return best_match
     
     def get_all_headers(self, sheet_name: str) -> Dict[str, Any]:
         """

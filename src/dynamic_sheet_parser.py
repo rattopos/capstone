@@ -118,48 +118,197 @@ class DynamicSheetParser:
         return structure
     
     def _find_region_column(self, sheet, headers_info: Dict) -> int:
-        """지역 이름이 있는 열을 찾습니다."""
-        # 헤더에서 "시도", "지역" 등의 키워드로 찾기
+        """
+        지역 이름이 있는 열을 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
+        """
+        # 전략 1: 헤더에서 "시도", "지역" 등의 키워드로 찾기
+        region_keywords = ['시도', '지역', 'region', 'area', '시·도', '시 도', '광역시', '도']
         for col_info in headers_info['columns']:
             header_lower = col_info['header'].lower()
-            if any(keyword in header_lower for keyword in ['시도', '지역', 'region', 'area', '시·도']):
+            if any(keyword in header_lower for keyword in region_keywords):
                 return col_info['index']
         
-        # 기본값: 2번째 열 (B열)
+        # 전략 2: 데이터에서 지역명이 포함된 열 찾기 (처음 10개 열, 5-15행 검사)
+        region_names = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', 
+                       '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        best_col = None
+        best_count = 0
+        
+        for col in range(1, min(11, sheet.max_column + 1)):
+            region_count = 0
+            for row in range(1, min(20, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    cell_str = str(cell.value).strip()
+                    if any(region in cell_str for region in region_names):
+                        region_count += 1
+            
+            if region_count > best_count:
+                best_count = region_count
+                best_col = col
+        
+        if best_col and best_count >= 2:
+            return best_col
+        
+        # 전략 3: 첫 번째 열이 코드이고 두 번째 열이 이름인 패턴 확인
+        for row in range(1, min(10, sheet.max_row + 1)):
+            cell_a = sheet.cell(row=row, column=1)
+            cell_b = sheet.cell(row=row, column=2)
+            if cell_a.value and cell_b.value:
+                # A열이 숫자이고 B열이 지역명이면 B열 반환
+                try:
+                    int(str(cell_a.value).strip())
+                    if any(region in str(cell_b.value).strip() for region in region_names):
+                        return 2
+                except (ValueError, TypeError):
+                    pass
+        
+        # 폴백: 동적 탐색 결과 없을 경우 경고 후 2번째 열 반환
+        print(f"[WARNING] 지역 열을 동적으로 찾지 못했습니다. 기본값(열 2) 사용")
         return 2
     
     def _find_category_column(self, sheet, headers_info: Dict) -> int:
-        """산업/업태/품목 이름이 있는 열을 찾습니다."""
-        # 헤더에서 "산업", "업태", "품목" 등의 키워드로 찾기
+        """
+        산업/업태/품목 이름이 있는 열을 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
+        """
+        # 전략 1: 헤더에서 "산업", "업태", "품목" 등의 키워드로 찾기
+        category_keywords = ['산업', '업태', '품목', 'category', 'industry', 'item', '업종', '분류명', '항목']
         for col_info in headers_info['columns']:
             header_lower = col_info['header'].lower()
-            if any(keyword in header_lower for keyword in ['산업', '업태', '품목', 'category', 'industry', 'item']):
+            if any(keyword in header_lower for keyword in category_keywords):
                 return col_info['index']
         
-        # 기본값: 6번째 열 (F열)
+        # 전략 2: 데이터에서 일반적인 카테고리 값이 포함된 열 찾기
+        category_values = ['총지수', '계', '합계', '반도체', '전자', '서비스', '제조업', '백화점', '마트']
+        
+        best_col = None
+        best_count = 0
+        
+        for col in range(3, min(12, sheet.max_column + 1)):  # 3~11열 검사
+            cat_count = 0
+            for row in range(2, min(30, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    cell_str = str(cell.value).strip()
+                    if any(cat in cell_str for cat in category_values):
+                        cat_count += 1
+            
+            if cat_count > best_count:
+                best_count = cat_count
+                best_col = col
+        
+        if best_col and best_count >= 2:
+            return best_col
+        
+        # 전략 3: 텍스트가 많은 열 찾기 (숫자 열 제외)
+        for col in range(4, min(10, sheet.max_column + 1)):
+            text_count = 0
+            for row in range(4, min(20, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value:
+                    cell_str = str(cell.value).strip()
+                    # 숫자가 아닌 텍스트인지 확인
+                    try:
+                        float(cell_str.replace(',', ''))
+                    except ValueError:
+                        if len(cell_str) >= 2:  # 2자 이상 텍스트
+                            text_count += 1
+            
+            if text_count >= 5:
+                return col
+        
+        # 폴백: 동적 탐색 결과 없을 경우 경고 후 6번째 열 반환
+        print(f"[WARNING] 카테고리 열을 동적으로 찾지 못했습니다. 기본값(열 6) 사용")
         return 6
     
     def _find_classification_column(self, sheet, headers_info: Dict) -> Optional[int]:
-        """분류 단계가 있는 열을 찾습니다."""
-        # 헤더에서 "분류", "단계", "level" 등의 키워드로 찾기
+        """
+        분류 단계가 있는 열을 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
+        """
+        # 전략 1: 헤더에서 "분류", "단계", "level" 등의 키워드로 찾기
+        class_keywords = ['분류', '단계', 'level', 'classification', '레벨', '차수']
         for col_info in headers_info['columns']:
             header_lower = col_info['header'].lower()
-            if any(keyword in header_lower for keyword in ['분류', '단계', 'level', 'classification']):
+            if any(keyword in header_lower for keyword in class_keywords):
                 return col_info['index']
         
-        # 기본값: 3번째 열 (C열)
-        return 3
+        # 전략 2: 0, 1, 2 같은 작은 정수만 있는 열 찾기 (분류 단계 특성)
+        for col in range(2, min(8, sheet.max_column + 1)):
+            valid_count = 0
+            invalid_count = 0
+            
+            for row in range(4, min(30, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value is not None:
+                    try:
+                        val = float(cell.value)
+                        if val in [0, 1, 2, 3]:  # 분류 단계는 보통 0-3
+                            valid_count += 1
+                        else:
+                            invalid_count += 1
+                    except (ValueError, TypeError):
+                        invalid_count += 1
+            
+            # 대부분이 0-3 값이면 분류 열로 판단
+            if valid_count >= 5 and valid_count > invalid_count * 2:
+                return col
+        
+        # 전략 3: None 반환 (분류 열이 없는 시트일 수 있음)
+        return None
     
     def _find_weight_column(self, sheet, headers_info: Dict) -> Optional[int]:
-        """가중치 열을 찾습니다."""
-        # 헤더에서 "가중치", "weight" 등의 키워드로 찾기
+        """
+        가중치 열을 찾습니다.
+        여러 전략을 시도하여 최적의 열을 찾습니다.
+        """
+        # 전략 1: 헤더에서 "가중치", "weight" 등의 키워드로 찾기
+        weight_keywords = ['가중치', 'weight', '비중', '구성비']
         for col_info in headers_info['columns']:
             header_lower = col_info['header'].lower()
-            if any(keyword in header_lower for keyword in ['가중치', 'weight']):
+            if any(keyword in header_lower for keyword in weight_keywords):
                 return col_info['index']
         
-        # 기본값: 4번째 열 (D열)
-        return 4
+        # 전략 2: 0-1000 범위의 소수점 숫자가 있는 열 찾기 (가중치 특성)
+        for col in range(3, min(8, sheet.max_column + 1)):
+            weight_like_count = 0
+            total_count = 0
+            
+            for row in range(4, min(30, sheet.max_row + 1)):
+                cell = sheet.cell(row=row, column=col)
+                if cell.value is not None:
+                    try:
+                        val = float(cell.value)
+                        total_count += 1
+                        # 가중치는 보통 0-1000 범위
+                        if 0 <= val <= 1000:
+                            weight_like_count += 1
+                    except (ValueError, TypeError):
+                        pass
+            
+            # 대부분이 가중치 범위 내 값이면 가중치 열로 판단
+            if weight_like_count >= 5 and weight_like_count > total_count * 0.7:
+                # 분류 열과 구분: 분류 열은 0-3만 있음
+                has_large_values = False
+                for row in range(4, min(30, sheet.max_row + 1)):
+                    cell = sheet.cell(row=row, column=col)
+                    if cell.value is not None:
+                        try:
+                            val = float(cell.value)
+                            if val > 10:
+                                has_large_values = True
+                                break
+                        except (ValueError, TypeError):
+                            pass
+                
+                if has_large_values:
+                    return col
+        
+        # 전략 3: None 반환 (가중치 열이 없는 시트일 수 있음)
+        return None
     
     def _find_quarter_columns(self, sheet, headers_info: Dict) -> Dict[Tuple[int, int], int]:
         """분기별 열을 찾습니다."""
@@ -176,21 +325,48 @@ class DynamicSheetParser:
         return quarter_columns
     
     def _parse_period_from_header(self, header: str) -> Optional[Tuple[int, int]]:
-        """헤더에서 연도와 분기를 파싱합니다."""
-        # "2023 3/4", "2024 1/4", "2025 2/4p" 등의 패턴 (분기별만 인식)
-        # 주의: "2024. 1" 같은 월별 패턴은 분기로 잘못 해석될 수 있으므로 제외
+        """
+        헤더에서 연도와 분기를 파싱합니다.
+        다양한 형식의 분기 표기를 지원합니다.
+        """
+        # 지원하는 형식들:
+        # - "2023 3/4", "2025 2/4p", "2025 2/4P" (한국 표준)
+        # - "2024.Q1", "2024 Q2" (Q 표기)
+        # - "2024-1Q", "2024 1Q" (분기 뒤 Q)
+        # - "2024년 1분기", "2024년1분기" (한글)
+        # - "'23 3/4", "'24 1Q" (년도 축약)
+        # - "1/4분기 2024" (순서 뒤집힘)
+        
         patterns = [
-            r'(\d{4})\s+(\d)/4[pP]?',  # "2023 3/4", "2025 2/4p"
-            r'(\d{4})\s*(\d)/4[pP]?',  # "2023 3/4" (공백 없음)
+            # 한국 표준 형식
+            (r'(\d{4})\s*(\d)/4[pP]?', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # Q 표기 형식
+            (r'(\d{4})[\s\.]*[Qq](\d)', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 분기 뒤 Q
+            (r'(\d{4})[\s\-]*(\d)[Qq]', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 한글 형식
+            (r'(\d{4})년?\s*(\d)\s*분기', lambda m: (int(m.group(1)), int(m.group(2)))),
+            # 년도 축약 (2자리)
+            (r"'(\d{2})\s*(\d)/4[pP]?", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            (r"'(\d{2})\s*[Qq](\d)", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            (r"'(\d{2})\s*(\d)[Qq]", lambda m: (2000 + int(m.group(1)), int(m.group(2)))),
+            # 순서 뒤집힌 형식
+            (r'(\d)/4\s*분기?\s*(\d{4})', lambda m: (int(m.group(2)), int(m.group(1)))),
+            (r'[Qq](\d)\s*(\d{4})', lambda m: (int(m.group(2)), int(m.group(1)))),
+            # 반기 형식 (1반기=1Q+2Q, 2반기=3Q+4Q) - 참고용
+            # 영문 형식
+            (r'(\d{4})\s*(\d)(?:st|nd|rd|th)?\s*[Qq](?:uarter)?', lambda m: (int(m.group(1)), int(m.group(2)))),
         ]
         
-        for pattern in patterns:
+        for pattern, extractor in patterns:
             match = re.search(pattern, header)
             if match:
-                year = int(match.group(1))
-                quarter = int(match.group(2))
-                if 2000 <= year <= 2100 and 1 <= quarter <= 4:
-                    return (year, quarter)
+                try:
+                    year, quarter = extractor(match)
+                    if 2000 <= year <= 2100 and 1 <= quarter <= 4:
+                        return (year, quarter)
+                except (ValueError, TypeError, IndexError):
+                    continue
         
         return None
     
