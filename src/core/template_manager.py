@@ -1,0 +1,137 @@
+"""
+템플릿 관리 모듈
+HTML 템플릿 파일 로드 및 마커 파싱 기능 제공
+"""
+
+import re
+from pathlib import Path
+from typing import List, Dict, Tuple
+
+
+class TemplateManager:
+    """HTML 템플릿을 관리하고 마커를 파싱하는 클래스"""
+    
+    # 마커 패턴: {시트명:셀주소} 또는 {시트명:셀주소:계산식} 또는 {시트명:헤더기반키}
+    MARKER_PATTERN = re.compile(r'\{([^:{}]+):([^:}]+)(?::([^}]+))?\}')
+    
+    def __init__(self, template_path: str):
+        """
+        템플릿 매니저 초기화
+        
+        Args:
+            template_path: HTML 템플릿 파일 경로
+        """
+        self.template_path = Path(template_path)
+        self.template_content = ""
+        self.markers = []
+        
+    def load_template(self) -> str:
+        """
+        HTML 템플릿 파일을 로드합니다.
+        
+        Returns:
+            템플릿 내용 문자열
+            
+        Raises:
+            FileNotFoundError: 템플릿 파일이 존재하지 않을 때
+            IOError: 파일 읽기 실패 시
+        """
+        if not self.template_path.exists():
+            raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {self.template_path}")
+        
+        try:
+            with open(self.template_path, 'r', encoding='utf-8') as f:
+                self.template_content = f.read()
+            return self.template_content
+        except IOError as e:
+            raise IOError(f"템플릿 파일 읽기 실패: {e}")
+    
+    def extract_markers(self) -> List[Dict[str, str]]:
+        """
+        템플릿에서 모든 마커를 추출합니다.
+        CSS 스타일 블록과 스크립트 블록은 제외합니다.
+        
+        Returns:
+            마커 정보 딕셔너리 리스트
+        """
+        if not self.template_content:
+            self.load_template()
+        
+        # CSS 스타일 블록과 스크립트 블록 제거
+        content_without_style_script = self.template_content
+        
+        style_pattern = re.compile(r'<style[^>]*>.*?</style>', re.DOTALL | re.IGNORECASE)
+        content_without_style_script = style_pattern.sub('', content_without_style_script)
+        
+        script_pattern = re.compile(r'<script[^>]*>.*?</script>', re.DOTALL | re.IGNORECASE)
+        content_without_style_script = script_pattern.sub('', content_without_style_script)
+        
+        self.markers = []
+        matches = self.MARKER_PATTERN.finditer(content_without_style_script)
+        
+        for match in matches:
+            sheet_name = match.group(1).strip()
+            cell_address = match.group(2).strip()
+            operation = match.group(3).strip() if match.group(3) else None
+            
+            # CSS 속성명 제외
+            css_properties = {
+                'width', 'height', 'margin', 'padding', 'font-size', 'font-family',
+                'background-color', 'color', 'border', 'display', 'position',
+                'top', 'left', 'right', 'bottom', 'z-index', 'opacity', 'overflow',
+                'text-align', 'line-height', 'font-weight', 'box-sizing', 'max-width'
+            }
+            
+            if sheet_name.lower() in css_properties:
+                continue
+            
+            if re.match(r'^[\d.]+(px|%|em|rem|pt|vh|vw|cm|mm|in)$', cell_address, re.IGNORECASE):
+                continue
+            
+            marker_info = {
+                'full_match': match.group(0),
+                'sheet_name': sheet_name,
+                'cell_address': cell_address,
+                'operation': operation
+            }
+            
+            if marker_info not in self.markers:
+                self.markers.append(marker_info)
+        
+        return self.markers
+    
+    def validate_template(self, required_markers: List[str] = None) -> Tuple[bool, List[str]]:
+        """
+        템플릿의 유효성을 검증합니다.
+        """
+        if not self.template_content:
+            self.load_template()
+        
+        extracted = self.extract_markers()
+        extracted_full_matches = [m['full_match'] for m in extracted]
+        
+        if required_markers is None:
+            return True, []
+        
+        missing_markers = [
+            marker for marker in required_markers 
+            if marker not in extracted_full_matches
+        ]
+        
+        is_valid = len(missing_markers) == 0
+        return is_valid, missing_markers
+    
+    def get_template_content(self) -> str:
+        """현재 로드된 템플릿 내용을 반환합니다."""
+        if not self.template_content:
+            self.load_template()
+        return self.template_content
+    
+    def replace_marker(self, marker: str, value: str) -> str:
+        """템플릿에서 특정 마커를 값으로 치환합니다."""
+        if not self.template_content:
+            self.load_template()
+        
+        self.template_content = self.template_content.replace(marker, str(value))
+        return self.template_content
+
