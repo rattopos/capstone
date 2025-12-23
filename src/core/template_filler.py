@@ -442,8 +442,37 @@ class TemplateFiller:
         for i, style in enumerate(style_matches):
             content = content.replace(f"__STYLE_PLACEHOLDER_{i}__", style)
         
+        # 스크립트 블록 내 차트 데이터 마커 처리 후 복원
+        chart_marker_pattern = re.compile(r'\{([^:{}]+):([가-힣]+(?:_증감)?_chart_data)\}')
+        
         for i, script in enumerate(script_matches):
-            content = content.replace(f"__SCRIPT_PLACEHOLDER_{i}__", script)
+            processed_script = script
+            for match in chart_marker_pattern.finditer(script):
+                full_match = match.group(0)
+                marker_sheet = match.group(1)
+                dynamic_key = match.group(2)
+                
+                try:
+                    # 실제 시트명 찾기
+                    from ..utils.sheet_utils import get_actual_sheet_name
+                    actual_sheet = self.flexible_mapper.find_sheet_by_name(marker_sheet)
+                    if not actual_sheet:
+                        actual_sheet = marker_sheet
+                    
+                    current_year = year if year is not None else (self._current_year or 2025)
+                    current_quarter = quarter if quarter is not None else (self._current_quarter or 2)
+                    
+                    # 차트 데이터 생성
+                    chart_value = self._process_dynamic_marker(actual_sheet, dynamic_key, current_year, current_quarter)
+                    if chart_value and chart_value != "N/A":
+                        processed_script = processed_script.replace(full_match, chart_value)
+                    else:
+                        # 기본값: 9개의 null
+                        processed_script = processed_script.replace(full_match, "null, null, null, null, null, null, null, null, null")
+                except Exception:
+                    processed_script = processed_script.replace(full_match, "null, null, null, null, null, null, null, null, null")
+            
+            content = content.replace(f"__SCRIPT_PLACEHOLDER_{i}__", processed_script)
         
         return content
     

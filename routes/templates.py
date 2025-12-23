@@ -79,8 +79,8 @@ def get_templates():
                     'required_sheets': []
                 })
     
-    # 서울 관련 템플릿 제외
-    excluded_templates = {'서울.html', '서울주요지표.html'}
+    # 서울 관련 템플릿 제외 (서울.html만 제외, 서울주요지표는 포함)
+    excluded_templates = {'서울.html'}
     templates = [t for t in templates if t['name'] not in excluded_templates]
     
     templates.sort(key=lambda x: x['display_name'])

@@ -10,6 +10,7 @@ from .national import NationalMarkerHandler
 from .region_ranking import RegionRankingHandler
 from .statistics import StatisticsHandler
 from .unemployment import UnemploymentHandler
+from .chart_data import ChartDataHandler
 
 if TYPE_CHECKING:
     from ..utils.formatters import Formatter
@@ -51,6 +52,7 @@ class DynamicMarkerProcessor:
         
         # 핸들러 체인 설정 (순서 중요: 구체적인 핸들러를 먼저)
         handlers: List[MarkerHandler] = [
+            ChartDataHandler(),         # 차트 데이터 (가장 먼저)
             UnemploymentHandler(),      # 실업률/고용률 전용
             NationalMarkerHandler(),    # 전국 관련
             RegionRankingHandler(),     # 지역 순위 관련

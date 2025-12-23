@@ -15,7 +15,7 @@ from ..flexible_mapper import FlexibleMapper
 from ..core.schema_loader import SchemaLoader
 
 
-# 10개 템플릿 순서 정의 (공통)
+# 11개 템플릿 순서 정의 (공통)
 TEMPLATE_ORDER = [
     '광공업생산.html',
     '서비스업생산.html',
@@ -26,7 +26,8 @@ TEMPLATE_ORDER = [
     '고용률.html',
     '실업률.html',
     '물가동향.html',
-    '국내인구이동.html'
+    '국내인구이동.html',
+    '서울주요지표.html'
 ]
 
 

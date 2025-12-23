@@ -321,6 +321,17 @@ class DynamicSheetParser:
             if period:
                 year, quarter = period
                 quarter_columns[(year, quarter)] = col_info['index']
+            else:
+                # primary_header에서 못 찾은 경우, full_header에서도 시도
+                # (예: Row 2에 "(2020=100)", Row 3에 "2025 2/4p"인 경우)
+                full_header = col_info.get('full_header', '')
+                if full_header:
+                    period = self._parse_period_from_header(full_header)
+                    if period:
+                        year, quarter = period
+                        # 이미 해당 분기가 없는 경우에만 추가
+                        if (year, quarter) not in quarter_columns:
+                            quarter_columns[(year, quarter)] = col_info['index']
         
         return quarter_columns
     

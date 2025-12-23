@@ -189,7 +189,10 @@ class PDFGenerator(BaseDocumentGenerator):
                     wait_until='domcontentloaded',
                     timeout=60000
                 )
-                page.wait_for_timeout(500)
+                # Chart.js 렌더링을 위한 추가 대기 시간
+                # networkidle 대기 후 추가로 1.5초 대기하여 차트 렌더링 완료 보장
+                page.wait_for_load_state('networkidle', timeout=30000)
+                page.wait_for_timeout(1500)
                 page.pdf(
                     path=str(pdf_path),
                     format='A4',

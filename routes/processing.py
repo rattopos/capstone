@@ -123,7 +123,7 @@ def check_missing_values():
         if check_all_templates:
             # 모든 템플릿에서 필요한 시트 추출 (PDF/DOCX 생성용)
             templates_dir = Path('templates')
-            excluded_templates = {'서울.html', '서울주요지표.html'}
+            excluded_templates = {'서울.html'}
             
             if templates_dir.exists():
                 for template_path in templates_dir.glob('*.html'):
