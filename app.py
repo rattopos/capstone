@@ -295,22 +295,30 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                         'regions': module.get_table_data(df_analysis, df_index)
                     }
                 
-                # Top3 regions
+                # Top3 regions - 양쪽 키 이름 모두 제공 (템플릿 호환성)
                 if 'regional_data' in data:
                     top3_increase = []
                     for r in data['regional_data'].get('increase_regions', [])[:3]:
+                        rate_value = r.get('change', r.get('growth_rate', 0))
+                        items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
                         top3_increase.append({
                             'region': r.get('region', ''),
-                            'change': r.get('change', r.get('growth_rate', 0)),
-                            'age_groups': r.get('top_age_groups', r.get('industries', []))
+                            'change': rate_value,
+                            'growth_rate': rate_value,  # 템플릿 호환
+                            'age_groups': items,
+                            'industries': items  # 템플릿 호환
                         })
                     
                     top3_decrease = []
                     for r in data['regional_data'].get('decrease_regions', [])[:3]:
+                        rate_value = r.get('change', r.get('growth_rate', 0))
+                        items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
                         top3_decrease.append({
                             'region': r.get('region', ''),
-                            'change': r.get('change', r.get('growth_rate', 0)),
-                            'age_groups': r.get('top_age_groups', r.get('industries', []))
+                            'change': rate_value,
+                            'growth_rate': rate_value,  # 템플릿 호환
+                            'age_groups': items,
+                            'industries': items  # 템플릿 호환
                         })
                     
                     data['top3_increase_regions'] = top3_increase
