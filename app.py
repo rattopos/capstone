@@ -238,17 +238,17 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     top3_increase = []
                     for r in data['regional_data'].get('increase_regions', [])[:3]:
                         top3_increase.append({
-                            'region': r['region'],
-                            'change': r['change'],
-                            'age_groups': r.get('top_age_groups', [])
+                            'region': r.get('region', ''),
+                            'change': r.get('change', r.get('growth_rate', 0)),
+                            'age_groups': r.get('top_age_groups', r.get('industries', []))
                         })
                     
                     top3_decrease = []
                     for r in data['regional_data'].get('decrease_regions', [])[:3]:
                         top3_decrease.append({
-                            'region': r['region'],
-                            'change': r['change'],
-                            'age_groups': r.get('top_age_groups', [])
+                            'region': r.get('region', ''),
+                            'change': r.get('change', r.get('growth_rate', 0)),
+                            'age_groups': r.get('top_age_groups', r.get('industries', []))
                         })
                     
                     data['top3_increase_regions'] = top3_increase
