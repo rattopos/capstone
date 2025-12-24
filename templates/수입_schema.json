@@ -1,0 +1,63 @@
+{
+  "title": "수입 분석 보고서 스키마",
+  "description": "H 분석 및 H 참고 시트 데이터를 기반으로 수입 보고서를 생성하기 위한 스키마",
+  "version": "1.0",
+  
+  "data_sources": {
+    "analysis_sheet": "H 분석",
+    "reference_sheet": "H 참고",
+    "summary_sheet": "H(수입)집계"
+  },
+  
+  "sido_order": [
+    "전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+  ],
+  
+  "region_groups": {
+    "경인": ["서울", "인천", "경기"],
+    "충청": ["대전", "세종", "충북", "충남"],
+    "호남": ["광주", "전북", "전남", "제주"],
+    "동북": ["대구", "경북", "강원"],
+    "동남": ["부산", "울산", "경남"]
+  },
+  
+  "report_structure": {
+    "section_number": "나",
+    "section_title": "수입",
+    "page_number": "- 11 -",
+    
+    "summary_box": {
+      "template": "◆수입은 {regions} 등 {count}개 시도에서 전년동분기대비 {direction}",
+      "direction_increase": "증가",
+      "direction_decrease": "감소"
+    }
+  },
+  
+  "table_structure": {
+    "title": "《 수입액 및 증감률 》",
+    "headers": {
+      "change_section": "전년동분기대비 증감률(%)",
+      "amount_section": "수입액(억달러)"
+    },
+    "periods": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.2/4<sup>p</sup>"],
+    "amount_periods": ["2024.2/4", "2025.2/4<sup>p</sup>"]
+  },
+  
+  "footnotes": {
+    "note": "1) 수입신고서 상 납세의무자의 소재지 기준",
+    "source": "자료: 관세청 한국무역통계서비스"
+  },
+  
+  "product_name_mapping": {
+    "프로세스 및 컨트롤러": "프로세서·컨트롤러",
+    "프로세스와 컨트롤러": "프로세서·컨트롤러"
+  },
+  
+  "generation_rules": {
+    "top_products_count": 3,
+    "top_regions_count": 3,
+    "decimal_places": 1
+  }
+}
+

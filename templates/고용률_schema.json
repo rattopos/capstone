@@ -1,0 +1,192 @@
+{
+  "title": "고용률 보고서 스키마",
+  "description": "고용률 및 증감 보고서 생성을 위한 데이터 스키마",
+  
+  "excel_mapping": {
+    "source_file": "분석표_25년 2분기_캡스톤.xlsx",
+    "analysis_sheet": "D(고용률)분석",
+    "index_sheet": "D(고용률)집계",
+    
+    "analysis_columns": {
+      "reference": 0,
+      "region_code": 1,
+      "region_name": 2,
+      "classification_level": 3,
+      "rank": 4,
+      "age_group": 5,
+      "change_2023_2Q": 10,
+      "change_2024_2Q": 14,
+      "change_2025_1Q": 17,
+      "change_2025_2Q": 18,
+      "quarterly_rank": 19
+    },
+    
+    "index_columns": {
+      "region_name": 1,
+      "age_group": 3,
+      "rate_2024_2Q": 17,
+      "rate_2025_2Q": 21,
+      "rate_20_29": "20-29세 컬럼"
+    }
+  },
+  
+  "age_group_mapping": {
+    "계": "계",
+    "15 - 29세": "20~29세",
+    "30 - 39세": "30~39세",
+    "40 - 49세": "40~49세",
+    "50 - 59세": "50~59세",
+    "60세이상": "70세이상"
+  },
+  
+  "age_group_mapping_display": {
+    "계": "계",
+    "15 - 29세": "15~29세",
+    "30 - 39세": "30~39세",
+    "40 - 49세": "40~49세",
+    "50 - 59세": "50~59세",
+    "60세이상": "60세이상"
+  },
+  
+  "region_name_mapping": {
+    "전국": "전 국",
+    "서울": "서 울",
+    "부산": "부 산",
+    "대구": "대 구",
+    "인천": "인 천",
+    "광주": "광 주",
+    "대전": "대 전",
+    "울산": "울 산",
+    "세종": "세 종",
+    "경기": "경 기",
+    "강원": "강 원",
+    "충북": "충 북",
+    "충남": "충 남",
+    "전북": "전 북",
+    "전남": "전 남",
+    "경북": "경 북",
+    "경남": "경 남",
+    "제주": "제 주"
+  },
+  
+  "region_groups": {
+    "경인": ["서울", "인천", "경기"],
+    "충청": ["대전", "세종", "충북", "충남"],
+    "호남": ["광주", "전북", "전남", "제주"],
+    "동북": ["대구", "경북", "강원"],
+    "동남": ["부산", "울산", "경남"]
+  },
+  
+  "text_generation_rules": {
+    "nationwide_trend": {
+      "increase": {
+        "expression": "올라",
+        "result": "상승"
+      },
+      "decrease": {
+        "expression": "내려",
+        "result": "하락"
+      }
+    },
+    "regional_trend": {
+      "when_increase": {
+        "decrease_first": {
+          "regions": "감소율이 큰 3개 시도",
+          "expression": "하락하였으나"
+        },
+        "increase_then": {
+          "regions": "증가율이 큰 3개 시도",
+          "expression": "상승"
+        }
+      }
+    },
+    "age_selection": {
+      "increase_region": "양수 증감률 중 증감률이 큰 순서로 연령대 선택",
+      "decrease_region": "음수 증감률 중 증감률 절대값이 큰 순서로 연령대 선택"
+    }
+  },
+  
+  "output_data_structure": {
+    "report_info": {
+      "title": "6. 고용 동향",
+      "subtitle": "가. 고용률",
+      "section": "Ⅰ. 부문별 지역경제동향",
+      "page_number": 13,
+      "base_year": 2020,
+      "note": "1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100"
+    },
+    
+    "summary_box": {
+      "type": "object",
+      "properties": {
+        "main_increase_regions": {
+          "type": "array",
+          "items": "string",
+          "maxItems": 3
+        },
+        "region_count": "integer"
+      }
+    },
+    
+    "nationwide_data": {
+      "type": "object",
+      "properties": {
+        "employment_rate": "number",
+        "change": "number",
+        "main_age_groups": {
+          "type": "array",
+          "items": {
+            "name": "string",
+            "change": "number"
+          }
+        }
+      }
+    },
+    
+    "regional_data": {
+      "type": "object",
+      "properties": {
+        "increase_regions": {
+          "type": "array",
+          "items": {
+            "region": "string",
+            "change": "number",
+            "top_age_groups": ["object"]
+          }
+        },
+        "decrease_regions": {
+          "type": "array",
+          "items": {
+            "region": "string",
+            "change": "number",
+            "top_age_groups": ["object"]
+          }
+        }
+      }
+    },
+    
+    "top3_increase_regions": {
+      "type": "array",
+      "maxItems": 3
+    },
+    
+    "top3_decrease_regions": {
+      "type": "array",
+      "maxItems": 3
+    },
+    
+    "summary_table": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "change_columns": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.2/4"],
+          "rate_columns": ["2024.2/4", "2025.2/4", "20-29세"]
+        },
+        "regions": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}
+

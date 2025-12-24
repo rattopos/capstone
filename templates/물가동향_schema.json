@@ -1,0 +1,166 @@
+{
+  "title": "물가동향 분석 보고서 스키마",
+  "description": "E(품목성질물가)분석 시트 데이터를 기반으로 물가동향 보고서를 생성하기 위한 스키마",
+  "version": "1.0",
+  
+  "data_sources": {
+    "analysis_sheet": "E(품목성질물가)분석",
+    "summary_sheet": "E(품목성질물가)집계"
+  },
+  
+  "column_mapping": {
+    "summary_sheet": {
+      "sido": 0,
+      "level": 1,
+      "weight": 2,
+      "category": 3,
+      "index_2024_24": 17,
+      "index_2025_24": 21
+    },
+    "analysis_sheet": {
+      "sido": 0,
+      "level": 1,
+      "weight": 2,
+      "category": 3,
+      "change_2023_24": 12,
+      "change_2024_24": 16,
+      "contribution": 23,
+      "rank": 24
+    }
+  },
+  
+  "sido_mapping": {
+    "전국": "전국",
+    "서울특별시": "서울",
+    "서울": "서울",
+    "부산광역시": "부산",
+    "부산": "부산",
+    "대구광역시": "대구",
+    "대구": "대구",
+    "인천광역시": "인천",
+    "인천": "인천",
+    "광주광역시": "광주",
+    "광주": "광주",
+    "대전광역시": "대전",
+    "대전": "대전",
+    "울산광역시": "울산",
+    "울산": "울산",
+    "세종특별자치시": "세종",
+    "세종": "세종",
+    "경기도": "경기",
+    "경기": "경기",
+    "강원도": "강원",
+    "강원": "강원",
+    "충청북도": "충북",
+    "충북": "충북",
+    "충청남도": "충남",
+    "충남": "충남",
+    "전라북도": "전북",
+    "전북": "전북",
+    "전라남도": "전남",
+    "전남": "전남",
+    "경상북도": "경북",
+    "경북": "경북",
+    "경상남도": "경남",
+    "경남": "경남",
+    "제주특별자치도": "제주",
+    "제주": "제주"
+  },
+  
+  "sido_order": [
+    "전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+  ],
+  
+  "region_groups": {
+    "경인": ["서울", "인천", "경기"],
+    "충청": ["대전", "세종", "충북", "충남"],
+    "호남": ["광주", "전북", "전남", "제주"],
+    "동북": ["대구", "경북", "강원"],
+    "동남": ["부산", "울산", "경남"]
+  },
+  
+  "category_mapping": {
+    "외식제외개인서비스": "외식제외개인서비스",
+    "외식": "외식",
+    "가공식품": "가공식품",
+    "공공서비스": "공공서비스",
+    "농산물": "농산물",
+    "축산물": "축산물",
+    "수산물": "수산물",
+    "석유류": "석유류",
+    "내구재": "내구재",
+    "의약품": "의약품",
+    "출판물": "출판물",
+    "전기 · 수도 · 가스": "전기·수도·가스"
+  },
+  
+  "report_structure": {
+    "section_number": "5",
+    "section_title": "물가 동향",
+    "page_number": "- 12 -",
+    
+    "summary_box": {
+      "template": "◆소비자물가는 {main_factor} 등이 올라 모든 시도에서 전년동분기대비 {direction}",
+      "direction_increase": "상승",
+      "direction_decrease": "하락"
+    },
+    
+    "nationwide_summary": {
+      "template": "전국 소비자물가({index})는 {factors} 등이 올라 전년동분기대비 {change}% {direction}"
+    },
+    
+    "regional_summary": {
+      "below_national_template": "{regions}은 {factor} 등이 내려 전국보다 상승률이 낮았으나,",
+      "above_national_template": "{region}({rate}%)은 {factor} 등이 올라 전국보다 {comparison}"
+    }
+  },
+  
+  "table_structure": {
+    "title": "《 소비자물가지수 및 등락률 》",
+    "headers": {
+      "change_section": "전년동분기대비 등락률(%)",
+      "index_section": "소비자물가지수(2020=100)"
+    },
+    "periods": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.2/4"],
+    "index_periods": ["2024.2/4", "2025.2/4"]
+  },
+  
+  "footnotes": {
+    "source": "자료: 국가데이터처 국가통계포털(KOSIS), 소비자물가조사"
+  },
+  
+  "output_schema": {
+    "report_info": {
+      "section_number": "string",
+      "section_title": "string",
+      "page_number": "string"
+    },
+    "nationwide_data": {
+      "index": "number",
+      "change": "number",
+      "categories": [
+        {
+          "name": "string",
+          "change": "number",
+          "contribution": "number",
+          "rank": "number"
+        }
+      ]
+    },
+    "regional_data": {
+      "above_national": [],
+      "below_national": []
+    },
+    "summary_table": {
+      "rows": []
+    }
+  },
+  
+  "generation_rules": {
+    "top_categories_count": 4,
+    "top_regions_count": 3,
+    "decimal_places": 1
+  }
+}
+

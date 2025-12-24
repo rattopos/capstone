@@ -1,0 +1,3443 @@
+{
+  "summary_box": {
+    "main_increase_regions": [
+      {
+        "region": "경기",
+        "industries": [
+          "예술·스포츠·여가",
+          "정보통신"
+        ]
+      },
+      {
+        "region": "인천",
+        "industries": [
+          "예술·스포츠·여가",
+          "보건·복지"
+        ]
+      },
+      {
+        "region": "세종",
+        "industries": [
+          "전문·과학·기술",
+          "부동산"
+        ]
+      }
+    ],
+    "region_count": 8
+  },
+  "nationwide_data": {
+    "production_index": 119.2,
+    "growth_rate": 1.4,
+    "main_industries": [
+      {
+        "name": "보건·복지",
+        "growth_rate": 4.8
+      },
+      {
+        "name": "운수·창고",
+        "growth_rate": 4.6
+      },
+      {
+        "name": "금융·보험",
+        "growth_rate": 2.8
+      }
+    ]
+  },
+  "regional_data": {
+    "increase_regions": [
+      {
+        "region": "경기",
+        "growth_rate": 5.4,
+        "index_2024": 117,
+        "index_2025": 123.3,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 107.0,
+            "contribution": 3.3882632478632475
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 9.7,
+            "contribution": 0.9154863247863253
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.0,
+            "contribution": 0.6991376068376063
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -2.2,
+            "contribution": -0.024500000000000098
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.5,
+            "contribution": 0.3091410256410256
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.1,
+            "contribution": 0.07823247863247895
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -4.2,
+            "contribution": -0.2017333333333331
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 9.7,
+            "contribution": 0.9154863247863253
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.4,
+            "contribution": 0.10822564102564065
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -5.4,
+            "contribution": -0.46164615384615426
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.0,
+            "contribution": 0.6991376068376063
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 0.1,
+            "contribution": 0.004670085470085868
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.9,
+            "contribution": -0.13056410256410256
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 6.0,
+            "contribution": 0.6889333333333344
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 107.0,
+            "contribution": 3.3882632478632475
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -0.1,
+            "contribution": -0.0021170940170941975
+          }
+        ]
+      },
+      {
+        "region": "인천",
+        "growth_rate": 3.5,
+        "index_2024": 126.7,
+        "index_2025": 131.1,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 50.4,
+            "contribution": 2.3645264404104185
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.0,
+            "contribution": 0.9289613259668504
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.1,
+            "contribution": 0.45213575374901444
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -5.0,
+            "contribution": -0.06146250986582475
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.1,
+            "contribution": 0.45213575374901444
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.7,
+            "contribution": 0.1337348066298348
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -2.6,
+            "contribution": -0.11266298342541424
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -5.5,
+            "contribution": -0.12001894238358335
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.1,
+            "contribution": 0.2518508287292818
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -8.3,
+            "contribution": -0.656093133385951
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 5.6,
+            "contribution": 0.3228208366219417
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 2.0,
+            "contribution": 0.09059668508287327
+          },
+          {
+            "name": "교육",
+            "growth_rate": -2.8,
+            "contribution": -0.1893701657458562
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.0,
+            "contribution": 0.9289613259668504
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 50.4,
+            "contribution": 2.3645264404104185
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 5.7,
+            "contribution": 0.12525966850828749
+          }
+        ]
+      },
+      {
+        "region": "세종",
+        "growth_rate": 3.3,
+        "index_2024": 113.5,
+        "index_2025": 117.3,
+        "top_industries": [
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 23.0,
+            "contribution": 2.4936035242290746
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 26.5,
+            "contribution": 1.856992070484581
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 7.0,
+            "contribution": 0.31472511013215887
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -8.5,
+            "contribution": -0.12837885462555068
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -3.3,
+            "contribution": -0.426352422907489
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 6.9,
+            "contribution": 0.3126942731277537
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 3.9,
+            "contribution": 0.19768281938325993
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 2.2,
+            "contribution": 0.0714079295154186
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.2,
+            "contribution": 0.01387665198238004
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 26.5,
+            "contribution": 1.856992070484581
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 23.0,
+            "contribution": 2.4936035242290746
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 7.0,
+            "contribution": 0.31472511013215887
+          },
+          {
+            "name": "교육",
+            "growth_rate": 1.6,
+            "contribution": 0.22302555066079258
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": -0.5,
+            "contribution": -0.07135154185022127
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.5,
+            "contribution": -1.4992651982378853
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 1.0,
+            "contribution": 0.027958590308370293
+          }
+        ]
+      },
+      {
+        "region": "서울",
+        "growth_rate": 2.3,
+        "index_2024": 123.5,
+        "index_2025": 126.3,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": 12.7,
+            "contribution": 0.952769230769231
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.9,
+            "contribution": 0.723907692307689
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.7,
+            "contribution": 0.47343400809716585
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -5.2,
+            "contribution": -0.007230769230769234
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.5,
+            "contribution": 0.29551821862348177
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 3.7,
+            "contribution": 0.32627368421052677
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.0,
+            "contribution": -0.028487449392712083
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 0.8,
+            "contribution": 0.08137894736842156
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.9,
+            "contribution": 0.723907692307689
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 12.7,
+            "contribution": 0.952769230769231
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -5.7,
+            "contribution": -0.465383805668016
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -1.6,
+            "contribution": -0.07391902834008049
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.4,
+            "contribution": -0.045344129554655596
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.7,
+            "contribution": 0.47343400809716585
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -0.4,
+            "contribution": -0.009361133603238819
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 0.8,
+            "contribution": 0.013319838056680161
+          }
+        ]
+      },
+      {
+        "region": "부산",
+        "growth_rate": 2.1,
+        "index_2024": 113.4,
+        "index_2025": 115.8,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": 14.7,
+            "contribution": 1.202439153439154
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.4,
+            "contribution": 0.619875661375661
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.3,
+            "contribution": 0.431135802469137
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -7.8,
+            "contribution": -0.0690970017636685
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.0,
+            "contribution": 0.20886419753086577
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.4,
+            "contribution": 0.18583068783068812
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.5,
+            "contribution": -0.0743915343915346
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -0.8,
+            "contribution": -0.030095238095237814
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.3,
+            "contribution": 0.431135802469137
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 14.7,
+            "contribution": 1.202439153439154
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.1,
+            "contribution": 0.29144179894179895
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -6.2,
+            "contribution": -0.37688712522045886
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.8,
+            "contribution": -0.14122222222222308
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.4,
+            "contribution": 0.619875661375661
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -1.9,
+            "contribution": -0.03014814814814799
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -5.0,
+            "contribution": -0.08805114638447971
+          }
+        ]
+      },
+      {
+        "region": "충북",
+        "growth_rate": 0.9,
+        "index_2024": 113.3,
+        "index_2025": 114.3,
+        "top_industries": [
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.0,
+            "contribution": 0.7238305383936461
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 15.2,
+            "contribution": 0.6227263901147393
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 9.5,
+            "contribution": 0.5837458075904673
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": 14.1,
+            "contribution": 0.3777934686672551
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.4,
+            "contribution": -0.06477316857899475
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -1.4,
+            "contribution": -0.10657722859664664
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.2,
+            "contribution": -0.010063548102383198
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 5.0,
+            "contribution": 0.14412444836716712
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.5,
+            "contribution": 0.28088261253309793
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -19.1,
+            "contribution": -1.4125481023830533
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 9.5,
+            "contribution": 0.5837458075904673
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -0.7,
+            "contribution": -0.04851897616946115
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.6,
+            "contribution": 0.06190114739629244
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.0,
+            "contribution": 0.7238305383936461
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 15.2,
+            "contribution": 0.6227263901147393
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -8.4,
+            "contribution": -0.26701323918799635
+          }
+        ]
+      },
+      {
+        "region": "대전",
+        "growth_rate": 0.3,
+        "index_2024": 117.1,
+        "index_2025": 117.4,
+        "top_industries": [
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.4,
+            "contribution": 0.6830128095644754
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.9,
+            "contribution": 0.47685994876174337
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 2.8,
+            "contribution": 0.3922254483347559
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -3.6,
+            "contribution": -0.044772843723313444
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.9,
+            "contribution": 0.47685994876174337
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.9,
+            "contribution": 0.05252946199829156
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 2.3,
+            "contribution": 0.10114432109308323
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 4.3,
+            "contribution": 0.23960290350128083
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.5,
+            "contribution": 0.1770947907771133
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -14.4,
+            "contribution": -1.2634047822374033
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 2.8,
+            "contribution": 0.3922254483347559
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -6.9,
+            "contribution": -0.467933390264731
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.3,
+            "contribution": 0.023600341588385775
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.4,
+            "contribution": 0.6830128095644754
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -4.6,
+            "contribution": -0.10807856532877892
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.6,
+            "contribution": -0.06855678906917166
+          }
+        ]
+      },
+      {
+        "region": "광주",
+        "growth_rate": 0.2,
+        "index_2024": 115.4,
+        "index_2025": 115.6,
+        "top_industries": [
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 8.2,
+            "contribution": 0.4287348353552863
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 2.5,
+            "contribution": 0.39318370883882037
+          },
+          {
+            "name": "교육",
+            "growth_rate": 3.3,
+            "contribution": 0.3043778162911609
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -2.3,
+            "contribution": -0.017080589254766007
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.1,
+            "contribution": 0.20304332755632626
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -0.7,
+            "contribution": -0.0316091854419412
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.7,
+            "contribution": -0.06776776429809328
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 1.0,
+            "contribution": 0.05531455805892519
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.7,
+            "contribution": 0.08798613518197543
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -1.5,
+            "contribution": -0.1973535528596197
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -7.2,
+            "contribution": -0.3750606585788562
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 8.2,
+            "contribution": 0.4287348353552863
+          },
+          {
+            "name": "교육",
+            "growth_rate": 3.3,
+            "contribution": 0.3043778162911609
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 2.5,
+            "contribution": 0.39318370883882037
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -17.4,
+            "contribution": -0.5563266897746966
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.0,
+            "contribution": -0.05757365684575397
+          }
+        ]
+      }
+    ],
+    "decrease_regions": [
+      {
+        "region": "제주",
+        "growth_rate": -9.2,
+        "index_2024": 126.6,
+        "index_2025": 115,
+        "top_industries": [
+          {
+            "name": "정보통신",
+            "growth_rate": -37.4,
+            "contribution": -5.756431279620855
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -26.9,
+            "contribution": -1.3754691943127961
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.6,
+            "contribution": -0.6801895734597156
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -10.9,
+            "contribution": -0.12968088467614525
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.3,
+            "contribution": -0.31510900473933534
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.3,
+            "contribution": 0.09324170616113656
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -3.0,
+            "contribution": -0.3008807266982625
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -37.4,
+            "contribution": -5.756431279620855
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": -2.4,
+            "contribution": -0.29726145339652504
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -26.9,
+            "contribution": -1.3754691943127961
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -5.9,
+            "contribution": -0.22222195892575047
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.6,
+            "contribution": -0.6801895734597156
+          },
+          {
+            "name": "교육",
+            "growth_rate": -3.3,
+            "contribution": -0.2404881516587676
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 0.9,
+            "contribution": 0.08582938388625592
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 3.3,
+            "contribution": 0.15150552922590796
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -4.2,
+            "contribution": -0.11090047393364928
+          }
+        ]
+      },
+      {
+        "region": "경남",
+        "growth_rate": -2.8,
+        "index_2024": 113.5,
+        "index_2025": 110.3,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -27.6,
+            "contribution": -2.60204845814978
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -7.5,
+            "contribution": -0.23344493392070453
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -4.1,
+            "contribution": -0.1853039647577095
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -4.5,
+            "contribution": -0.08784493392070496
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -1.0,
+            "contribution": -0.17404405286343613
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.1,
+            "contribution": 0.006525110132158221
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.2,
+            "contribution": -0.06863083700440488
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 5.3,
+            "contribution": 0.13524581497797367
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.1,
+            "contribution": 0.133194713656388
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -27.6,
+            "contribution": -2.60204845814978
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -2.6,
+            "contribution": -0.15333392070484556
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -4.1,
+            "contribution": -0.1853039647577095
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.5,
+            "contribution": -0.14804405286343614
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.9,
+            "contribution": 0.6336079295154186
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -7.5,
+            "contribution": -0.23344493392070453
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.2,
+            "contribution": -0.06373215859030852
+          }
+        ]
+      },
+      {
+        "region": "강원",
+        "growth_rate": -1.6,
+        "index_2024": 113.8,
+        "index_2025": 112,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -25.7,
+            "contribution": -1.8471880492091384
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -6.9,
+            "contribution": -0.37525483304042184
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -5.2,
+            "contribution": -0.22775219683655512
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -3.2,
+            "contribution": -0.06771177504393679
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.9,
+            "contribution": -0.1319077328646757
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.0,
+            "contribution": 0.05736818980667809
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.2,
+            "contribution": -0.015975395430580193
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.2,
+            "contribution": 0.11051230228470992
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.7,
+            "contribution": 0.24420035149384883
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 1.2,
+            "contribution": 0.052710017574692264
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -6.9,
+            "contribution": -0.37525483304042184
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -5.2,
+            "contribution": -0.22775219683655512
+          },
+          {
+            "name": "교육",
+            "growth_rate": 2.4,
+            "contribution": 0.26397891036906757
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.0,
+            "contribution": 0.46116695957820664
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -25.7,
+            "contribution": -1.8471880492091384
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -3.9,
+            "contribution": -0.11683919156414747
+          }
+        ]
+      },
+      {
+        "region": "경북",
+        "growth_rate": -1.3,
+        "index_2024": 115.9,
+        "index_2025": 114.4,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -18.9,
+            "contribution": -1.1869335634167377
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -13.6,
+            "contribution": -0.48150129421915466
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.1,
+            "contribution": -0.3396617773943058
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": 4.0,
+            "contribution": 0.11701639344262331
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.1,
+            "contribution": -0.3396617773943058
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.4,
+            "contribution": 0.03821570319240869
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.9,
+            "contribution": -0.0553891285591024
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 4.5,
+            "contribution": 0.11748921484037965
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.5,
+            "contribution": 0.06869715271785956
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -18.9,
+            "contribution": -1.1869335634167377
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 7.8,
+            "contribution": 0.509043140638481
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 4.7,
+            "contribution": 0.21739775668679914
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.4,
+            "contribution": 0.043744607420190436
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": -1.5,
+            "contribution": -0.22226143226919795
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -13.6,
+            "contribution": -0.48150129421915466
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.7,
+            "contribution": -0.07926488352027602
+          }
+        ]
+      },
+      {
+        "region": "대구",
+        "growth_rate": -1.2,
+        "index_2024": 113,
+        "index_2025": 111.7,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -15.4,
+            "contribution": -0.9629982300884953
+          },
+          {
+            "name": "교육",
+            "growth_rate": -4.2,
+            "contribution": -0.3596389380530981
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -6.8,
+            "contribution": -0.28999292035398244
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -14.4,
+            "contribution": -0.1312654867256637
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.7,
+            "contribution": -0.13688407079646073
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -1.8,
+            "contribution": -0.08378495575221265
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -3.6,
+            "contribution": -0.19290796460177062
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -6.8,
+            "contribution": -0.28999292035398244
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.6,
+            "contribution": 0.2602159292035406
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.4,
+            "contribution": -0.9629982300884953
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -0.5,
+            "contribution": -0.02847079646017672
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 2.2,
+            "contribution": 0.10906194690265512
+          },
+          {
+            "name": "교육",
+            "growth_rate": -4.2,
+            "contribution": -0.3596389380530981
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.8,
+            "contribution": 0.8904380530973443
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -4.0,
+            "contribution": -0.06283274336283197
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -9.1,
+            "contribution": -0.24369911504424768
+          }
+        ]
+      },
+      {
+        "region": "전북",
+        "growth_rate": -1.2,
+        "index_2024": 114.6,
+        "index_2025": 113.2,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -20.2,
+            "contribution": -1.0718080279232107
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.3,
+            "contribution": -0.3562879581151834
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.3,
+            "contribution": -0.19275392670157235
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -4.1,
+            "contribution": -0.08417277486910985
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.5,
+            "contribution": -0.07512216404886563
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 3.6,
+            "contribution": 0.22901396160558465
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 0.7,
+            "contribution": 0.033165794066317505
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.8,
+            "contribution": 0.09493368237347287
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.2,
+            "contribution": 0.026535776614309142
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -20.2,
+            "contribution": -1.0718080279232107
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 1.9,
+            "contribution": 0.11767888307155339
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.3,
+            "contribution": -0.3562879581151834
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.3,
+            "contribution": -0.19275392670157235
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 1.5,
+            "contribution": 0.24626265270506148
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -3.5,
+            "contribution": -0.11641884816753947
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -0.6,
+            "contribution": -0.023001745200698
+          }
+        ]
+      },
+      {
+        "region": "전남",
+        "growth_rate": -0.6,
+        "index_2024": 110.4,
+        "index_2025": 109.7,
+        "top_industries": [
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -7.7,
+            "contribution": -0.5555244565217385
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.1,
+            "contribution": -0.48302717391304334
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -6.1,
+            "contribution": -0.33858695652173904
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -0.7,
+            "contribution": -0.016409420289854804
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -1.9,
+            "contribution": -0.31635688405797197
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.2,
+            "contribution": 0.015083333333333547
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -6.1,
+            "contribution": -0.33858695652173904
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.9,
+            "contribution": 0.11714130434782581
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": -1.6,
+            "contribution": -0.23638134057971089
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 14.4,
+            "contribution": 0.7769492753623193
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -2.6,
+            "contribution": -0.1340217391304348
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -7.7,
+            "contribution": -0.5555244565217385
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.8,
+            "contribution": 0.07899999999999971
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.3,
+            "contribution": 0.5413596014492758
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.1,
+            "contribution": -0.48302717391304334
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -5.0,
+            "contribution": -0.139608695652174
+          }
+        ]
+      },
+      {
+        "region": "울산",
+        "growth_rate": -0.5,
+        "index_2024": 116.3,
+        "index_2025": 115.7,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -29.0,
+            "contribution": -1.0751865864144454
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.0,
+            "contribution": -0.9612674118658638
+          },
+          {
+            "name": "수도·하수",
+            "growth_rate": -13.0,
+            "contribution": -0.2683989681857267
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -13.0,
+            "contribution": -0.2683989681857267
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 3.0,
+            "contribution": 0.5354858125537404
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.3,
+            "contribution": 0.029950128976783542
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -2.6,
+            "contribution": -0.1554170249355116
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -0.6,
+            "contribution": -0.012521066208082425
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.5,
+            "contribution": 0.24298710232158158
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.0,
+            "contribution": -0.9612674118658638
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 0.6,
+            "contribution": 0.04390799656061927
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 1.0,
+            "contribution": 0.0684711951848669
+          },
+          {
+            "name": "교육",
+            "growth_rate": 4.4,
+            "contribution": 0.5013723129836639
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.9,
+            "contribution": 0.6940490111779871
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -29.0,
+            "contribution": -1.0751865864144454
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -8.6,
+            "contribution": -0.23509028374892518
+          }
+        ]
+      }
+    ],
+    "all_regions": [
+      {
+        "region": "서울",
+        "growth_rate": 2.3,
+        "index_2024": 123.5,
+        "index_2025": 126.3,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": 12.7,
+            "contribution": 0.952769230769231
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.9,
+            "contribution": 0.723907692307689
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.7,
+            "contribution": 0.47343400809716585
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -5.2,
+            "contribution": -0.007230769230769234
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.5,
+            "contribution": 0.29551821862348177
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 3.7,
+            "contribution": 0.32627368421052677
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.0,
+            "contribution": -0.028487449392712083
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 0.8,
+            "contribution": 0.08137894736842156
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.9,
+            "contribution": 0.723907692307689
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 12.7,
+            "contribution": 0.952769230769231
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -5.7,
+            "contribution": -0.465383805668016
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -1.6,
+            "contribution": -0.07391902834008049
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.4,
+            "contribution": -0.045344129554655596
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.7,
+            "contribution": 0.47343400809716585
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -0.4,
+            "contribution": -0.009361133603238819
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 0.8,
+            "contribution": 0.013319838056680161
+          }
+        ]
+      },
+      {
+        "region": "부산",
+        "growth_rate": 2.1,
+        "index_2024": 113.4,
+        "index_2025": 115.8,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": 14.7,
+            "contribution": 1.202439153439154
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.4,
+            "contribution": 0.619875661375661
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.3,
+            "contribution": 0.431135802469137
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -7.8,
+            "contribution": -0.0690970017636685
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.0,
+            "contribution": 0.20886419753086577
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.4,
+            "contribution": 0.18583068783068812
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.5,
+            "contribution": -0.0743915343915346
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -0.8,
+            "contribution": -0.030095238095237814
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.3,
+            "contribution": 0.431135802469137
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 14.7,
+            "contribution": 1.202439153439154
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.1,
+            "contribution": 0.29144179894179895
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -6.2,
+            "contribution": -0.37688712522045886
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.8,
+            "contribution": -0.14122222222222308
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.4,
+            "contribution": 0.619875661375661
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -1.9,
+            "contribution": -0.03014814814814799
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -5.0,
+            "contribution": -0.08805114638447971
+          }
+        ]
+      },
+      {
+        "region": "대구",
+        "growth_rate": -1.2,
+        "index_2024": 113,
+        "index_2025": 111.7,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -15.4,
+            "contribution": -0.9629982300884953
+          },
+          {
+            "name": "교육",
+            "growth_rate": -4.2,
+            "contribution": -0.3596389380530981
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -6.8,
+            "contribution": -0.28999292035398244
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -14.4,
+            "contribution": -0.1312654867256637
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.7,
+            "contribution": -0.13688407079646073
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -1.8,
+            "contribution": -0.08378495575221265
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -3.6,
+            "contribution": -0.19290796460177062
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -6.8,
+            "contribution": -0.28999292035398244
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.6,
+            "contribution": 0.2602159292035406
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.4,
+            "contribution": -0.9629982300884953
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -0.5,
+            "contribution": -0.02847079646017672
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 2.2,
+            "contribution": 0.10906194690265512
+          },
+          {
+            "name": "교육",
+            "growth_rate": -4.2,
+            "contribution": -0.3596389380530981
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.8,
+            "contribution": 0.8904380530973443
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -4.0,
+            "contribution": -0.06283274336283197
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -9.1,
+            "contribution": -0.24369911504424768
+          }
+        ]
+      },
+      {
+        "region": "인천",
+        "growth_rate": 3.5,
+        "index_2024": 126.7,
+        "index_2025": 131.1,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 50.4,
+            "contribution": 2.3645264404104185
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.0,
+            "contribution": 0.9289613259668504
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.1,
+            "contribution": 0.45213575374901444
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -5.0,
+            "contribution": -0.06146250986582475
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.1,
+            "contribution": 0.45213575374901444
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.7,
+            "contribution": 0.1337348066298348
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -2.6,
+            "contribution": -0.11266298342541424
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -5.5,
+            "contribution": -0.12001894238358335
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 3.1,
+            "contribution": 0.2518508287292818
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -8.3,
+            "contribution": -0.656093133385951
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 5.6,
+            "contribution": 0.3228208366219417
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 2.0,
+            "contribution": 0.09059668508287327
+          },
+          {
+            "name": "교육",
+            "growth_rate": -2.8,
+            "contribution": -0.1893701657458562
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 7.0,
+            "contribution": 0.9289613259668504
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 50.4,
+            "contribution": 2.3645264404104185
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 5.7,
+            "contribution": 0.12525966850828749
+          }
+        ]
+      },
+      {
+        "region": "광주",
+        "growth_rate": 0.2,
+        "index_2024": 115.4,
+        "index_2025": 115.6,
+        "top_industries": [
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 8.2,
+            "contribution": 0.4287348353552863
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 2.5,
+            "contribution": 0.39318370883882037
+          },
+          {
+            "name": "교육",
+            "growth_rate": 3.3,
+            "contribution": 0.3043778162911609
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -2.3,
+            "contribution": -0.017080589254766007
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.1,
+            "contribution": 0.20304332755632626
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -0.7,
+            "contribution": -0.0316091854419412
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.7,
+            "contribution": -0.06776776429809328
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 1.0,
+            "contribution": 0.05531455805892519
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.7,
+            "contribution": 0.08798613518197543
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -1.5,
+            "contribution": -0.1973535528596197
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -7.2,
+            "contribution": -0.3750606585788562
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 8.2,
+            "contribution": 0.4287348353552863
+          },
+          {
+            "name": "교육",
+            "growth_rate": 3.3,
+            "contribution": 0.3043778162911609
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 2.5,
+            "contribution": 0.39318370883882037
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -17.4,
+            "contribution": -0.5563266897746966
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.0,
+            "contribution": -0.05757365684575397
+          }
+        ]
+      },
+      {
+        "region": "대전",
+        "growth_rate": 0.3,
+        "index_2024": 117.1,
+        "index_2025": 117.4,
+        "top_industries": [
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.4,
+            "contribution": 0.6830128095644754
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.9,
+            "contribution": 0.47685994876174337
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 2.8,
+            "contribution": 0.3922254483347559
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -3.6,
+            "contribution": -0.044772843723313444
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 2.9,
+            "contribution": 0.47685994876174337
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.9,
+            "contribution": 0.05252946199829156
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 2.3,
+            "contribution": 0.10114432109308323
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 4.3,
+            "contribution": 0.23960290350128083
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.5,
+            "contribution": 0.1770947907771133
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -14.4,
+            "contribution": -1.2634047822374033
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 2.8,
+            "contribution": 0.3922254483347559
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -6.9,
+            "contribution": -0.467933390264731
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.3,
+            "contribution": 0.023600341588385775
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.4,
+            "contribution": 0.6830128095644754
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -4.6,
+            "contribution": -0.10807856532877892
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.6,
+            "contribution": -0.06855678906917166
+          }
+        ]
+      },
+      {
+        "region": "울산",
+        "growth_rate": -0.5,
+        "index_2024": 116.3,
+        "index_2025": 115.7,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -29.0,
+            "contribution": -1.0751865864144454
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.0,
+            "contribution": -0.9612674118658638
+          },
+          {
+            "name": "수도·하수",
+            "growth_rate": -13.0,
+            "contribution": -0.2683989681857267
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -13.0,
+            "contribution": -0.2683989681857267
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 3.0,
+            "contribution": 0.5354858125537404
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.3,
+            "contribution": 0.029950128976783542
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -2.6,
+            "contribution": -0.1554170249355116
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -0.6,
+            "contribution": -0.012521066208082425
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.5,
+            "contribution": 0.24298710232158158
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -15.0,
+            "contribution": -0.9612674118658638
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 0.6,
+            "contribution": 0.04390799656061927
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 1.0,
+            "contribution": 0.0684711951848669
+          },
+          {
+            "name": "교육",
+            "growth_rate": 4.4,
+            "contribution": 0.5013723129836639
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.9,
+            "contribution": 0.6940490111779871
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -29.0,
+            "contribution": -1.0751865864144454
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -8.6,
+            "contribution": -0.23509028374892518
+          }
+        ]
+      },
+      {
+        "region": "세종",
+        "growth_rate": 3.3,
+        "index_2024": 113.5,
+        "index_2025": 117.3,
+        "top_industries": [
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 23.0,
+            "contribution": 2.4936035242290746
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 26.5,
+            "contribution": 1.856992070484581
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 7.0,
+            "contribution": 0.31472511013215887
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -8.5,
+            "contribution": -0.12837885462555068
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -3.3,
+            "contribution": -0.426352422907489
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 6.9,
+            "contribution": 0.3126942731277537
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 3.9,
+            "contribution": 0.19768281938325993
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 2.2,
+            "contribution": 0.0714079295154186
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.2,
+            "contribution": 0.01387665198238004
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 26.5,
+            "contribution": 1.856992070484581
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 23.0,
+            "contribution": 2.4936035242290746
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 7.0,
+            "contribution": 0.31472511013215887
+          },
+          {
+            "name": "교육",
+            "growth_rate": 1.6,
+            "contribution": 0.22302555066079258
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": -0.5,
+            "contribution": -0.07135154185022127
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.5,
+            "contribution": -1.4992651982378853
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 1.0,
+            "contribution": 0.027958590308370293
+          }
+        ]
+      },
+      {
+        "region": "경기",
+        "growth_rate": 5.4,
+        "index_2024": 117,
+        "index_2025": 123.3,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 107.0,
+            "contribution": 3.3882632478632475
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 9.7,
+            "contribution": 0.9154863247863253
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.0,
+            "contribution": 0.6991376068376063
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -2.2,
+            "contribution": -0.024500000000000098
+          },
+          {
+            "name": "도소매",
+            "growth_rate": 1.5,
+            "contribution": 0.3091410256410256
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.1,
+            "contribution": 0.07823247863247895
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -4.2,
+            "contribution": -0.2017333333333331
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 9.7,
+            "contribution": 0.9154863247863253
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.4,
+            "contribution": 0.10822564102564065
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -5.4,
+            "contribution": -0.46164615384615426
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 6.0,
+            "contribution": 0.6991376068376063
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 0.1,
+            "contribution": 0.004670085470085868
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.9,
+            "contribution": -0.13056410256410256
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 6.0,
+            "contribution": 0.6889333333333344
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 107.0,
+            "contribution": 3.3882632478632475
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -0.1,
+            "contribution": -0.0021170940170941975
+          }
+        ]
+      },
+      {
+        "region": "강원",
+        "growth_rate": -1.6,
+        "index_2024": 113.8,
+        "index_2025": 112,
+        "top_industries": [
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -25.7,
+            "contribution": -1.8471880492091384
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -6.9,
+            "contribution": -0.37525483304042184
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -5.2,
+            "contribution": -0.22775219683655512
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -3.2,
+            "contribution": -0.06771177504393679
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.9,
+            "contribution": -0.1319077328646757
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.0,
+            "contribution": 0.05736818980667809
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.2,
+            "contribution": -0.015975395430580193
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.2,
+            "contribution": 0.11051230228470992
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.7,
+            "contribution": 0.24420035149384883
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 1.2,
+            "contribution": 0.052710017574692264
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -6.9,
+            "contribution": -0.37525483304042184
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -5.2,
+            "contribution": -0.22775219683655512
+          },
+          {
+            "name": "교육",
+            "growth_rate": 2.4,
+            "contribution": 0.26397891036906757
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.0,
+            "contribution": 0.46116695957820664
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -25.7,
+            "contribution": -1.8471880492091384
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -3.9,
+            "contribution": -0.11683919156414747
+          }
+        ]
+      },
+      {
+        "region": "충북",
+        "growth_rate": 0.9,
+        "index_2024": 113.3,
+        "index_2025": 114.3,
+        "top_industries": [
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.0,
+            "contribution": 0.7238305383936461
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 15.2,
+            "contribution": 0.6227263901147393
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 9.5,
+            "contribution": 0.5837458075904673
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": 14.1,
+            "contribution": 0.3777934686672551
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.4,
+            "contribution": -0.06477316857899475
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -1.4,
+            "contribution": -0.10657722859664664
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.2,
+            "contribution": -0.010063548102383198
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 5.0,
+            "contribution": 0.14412444836716712
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 2.5,
+            "contribution": 0.28088261253309793
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -19.1,
+            "contribution": -1.4125481023830533
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 9.5,
+            "contribution": 0.5837458075904673
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -0.7,
+            "contribution": -0.04851897616946115
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.6,
+            "contribution": 0.06190114739629244
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 5.0,
+            "contribution": 0.7238305383936461
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 15.2,
+            "contribution": 0.6227263901147393
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -8.4,
+            "contribution": -0.26701323918799635
+          }
+        ]
+      },
+      {
+        "region": "충남",
+        "growth_rate": 0,
+        "index_2024": 113.2,
+        "index_2025": 113.2,
+        "top_industries": [
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 16.3,
+            "contribution": 0.9747190812720843
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.3,
+            "contribution": 0.6599363957597165
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 4.4,
+            "contribution": 0.2916890459363956
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -7.0,
+            "contribution": -0.16171908127208473
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -1.6,
+            "contribution": -0.26657862190812764
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": -3.6,
+            "contribution": -0.3044204946996471
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.5,
+            "contribution": -0.09737809187279137
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 2.3,
+            "contribution": 0.06046819787985866
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.1,
+            "contribution": 0.13968109540636012
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -14.4,
+            "contribution": -0.7818047703180213
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 16.3,
+            "contribution": 0.9747190812720843
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 4.4,
+            "contribution": 0.2916890459363956
+          },
+          {
+            "name": "교육",
+            "growth_rate": -2.5,
+            "contribution": -0.304197879858658
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 4.3,
+            "contribution": 0.6599363957597165
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -14.0,
+            "contribution": -0.3708127208480565
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": 5.9,
+            "contribution": 0.16480388692579523
+          }
+        ]
+      },
+      {
+        "region": "전북",
+        "growth_rate": -1.2,
+        "index_2024": 114.6,
+        "index_2025": 113.2,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -20.2,
+            "contribution": -1.0718080279232107
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.3,
+            "contribution": -0.3562879581151834
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.3,
+            "contribution": -0.19275392670157235
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -4.1,
+            "contribution": -0.08417277486910985
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -0.5,
+            "contribution": -0.07512216404886563
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 3.6,
+            "contribution": 0.22901396160558465
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": 0.7,
+            "contribution": 0.033165794066317505
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.8,
+            "contribution": 0.09493368237347287
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.2,
+            "contribution": 0.026535776614309142
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -20.2,
+            "contribution": -1.0718080279232107
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 1.9,
+            "contribution": 0.11767888307155339
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.3,
+            "contribution": -0.3562879581151834
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.3,
+            "contribution": -0.19275392670157235
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 1.5,
+            "contribution": 0.24626265270506148
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -3.5,
+            "contribution": -0.11641884816753947
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -0.6,
+            "contribution": -0.023001745200698
+          }
+        ]
+      },
+      {
+        "region": "전남",
+        "growth_rate": -0.6,
+        "index_2024": 110.4,
+        "index_2025": 109.7,
+        "top_industries": [
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -7.7,
+            "contribution": -0.5555244565217385
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.1,
+            "contribution": -0.48302717391304334
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -6.1,
+            "contribution": -0.33858695652173904
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -0.7,
+            "contribution": -0.016409420289854804
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -1.9,
+            "contribution": -0.31635688405797197
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.2,
+            "contribution": 0.015083333333333547
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -6.1,
+            "contribution": -0.33858695652173904
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 3.9,
+            "contribution": 0.11714130434782581
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": -1.6,
+            "contribution": -0.23638134057971089
+          },
+          {
+            "name": "부동산",
+            "growth_rate": 14.4,
+            "contribution": 0.7769492753623193
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -2.6,
+            "contribution": -0.1340217391304348
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -7.7,
+            "contribution": -0.5555244565217385
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.8,
+            "contribution": 0.07899999999999971
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.3,
+            "contribution": 0.5413596014492758
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -15.1,
+            "contribution": -0.48302717391304334
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -5.0,
+            "contribution": -0.139608695652174
+          }
+        ]
+      },
+      {
+        "region": "경북",
+        "growth_rate": -1.3,
+        "index_2024": 115.9,
+        "index_2025": 114.4,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -18.9,
+            "contribution": -1.1869335634167377
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -13.6,
+            "contribution": -0.48150129421915466
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.1,
+            "contribution": -0.3396617773943058
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": 4.0,
+            "contribution": 0.11701639344262331
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.1,
+            "contribution": -0.3396617773943058
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.4,
+            "contribution": 0.03821570319240869
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -0.9,
+            "contribution": -0.0553891285591024
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 4.5,
+            "contribution": 0.11748921484037965
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 0.5,
+            "contribution": 0.06869715271785956
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -18.9,
+            "contribution": -1.1869335634167377
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": 7.8,
+            "contribution": 0.509043140638481
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": 4.7,
+            "contribution": 0.21739775668679914
+          },
+          {
+            "name": "교육",
+            "growth_rate": 0.4,
+            "contribution": 0.043744607420190436
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": -1.5,
+            "contribution": -0.22226143226919795
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -13.6,
+            "contribution": -0.48150129421915466
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.7,
+            "contribution": -0.07926488352027602
+          }
+        ]
+      },
+      {
+        "region": "경남",
+        "growth_rate": -2.8,
+        "index_2024": 113.5,
+        "index_2025": 110.3,
+        "top_industries": [
+          {
+            "name": "부동산",
+            "growth_rate": -27.6,
+            "contribution": -2.60204845814978
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -7.5,
+            "contribution": -0.23344493392070453
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -4.1,
+            "contribution": -0.1853039647577095
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -4.5,
+            "contribution": -0.08784493392070496
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -1.0,
+            "contribution": -0.17404405286343613
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 0.1,
+            "contribution": 0.006525110132158221
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -1.2,
+            "contribution": -0.06863083700440488
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": 5.3,
+            "contribution": 0.13524581497797367
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": 1.1,
+            "contribution": 0.133194713656388
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -27.6,
+            "contribution": -2.60204845814978
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -2.6,
+            "contribution": -0.15333392070484556
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -4.1,
+            "contribution": -0.1853039647577095
+          },
+          {
+            "name": "교육",
+            "growth_rate": -1.5,
+            "contribution": -0.14804405286343614
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 3.9,
+            "contribution": 0.6336079295154186
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": -7.5,
+            "contribution": -0.23344493392070453
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -2.2,
+            "contribution": -0.06373215859030852
+          }
+        ]
+      },
+      {
+        "region": "제주",
+        "growth_rate": -9.2,
+        "index_2024": 126.6,
+        "index_2025": 115,
+        "top_industries": [
+          {
+            "name": "정보통신",
+            "growth_rate": -37.4,
+            "contribution": -5.756431279620855
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -26.9,
+            "contribution": -1.3754691943127961
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.6,
+            "contribution": -0.6801895734597156
+          }
+        ],
+        "all_industries": [
+          {
+            "name": "수도·하수",
+            "growth_rate": -10.9,
+            "contribution": -0.12968088467614525
+          },
+          {
+            "name": "도소매",
+            "growth_rate": -2.3,
+            "contribution": -0.31510900473933534
+          },
+          {
+            "name": "운수·창고",
+            "growth_rate": 1.3,
+            "contribution": 0.09324170616113656
+          },
+          {
+            "name": "숙박·음식점",
+            "growth_rate": -3.0,
+            "contribution": -0.3008807266982625
+          },
+          {
+            "name": "정보통신",
+            "growth_rate": -37.4,
+            "contribution": -5.756431279620855
+          },
+          {
+            "name": "금융·보험",
+            "growth_rate": -2.4,
+            "contribution": -0.29726145339652504
+          },
+          {
+            "name": "부동산",
+            "growth_rate": -26.9,
+            "contribution": -1.3754691943127961
+          },
+          {
+            "name": "전문·과학·기술",
+            "growth_rate": -5.9,
+            "contribution": -0.22222195892575047
+          },
+          {
+            "name": "사업시설관리·사업지원·임대",
+            "growth_rate": -9.6,
+            "contribution": -0.6801895734597156
+          },
+          {
+            "name": "교육",
+            "growth_rate": -3.3,
+            "contribution": -0.2404881516587676
+          },
+          {
+            "name": "보건·복지",
+            "growth_rate": 0.9,
+            "contribution": 0.08582938388625592
+          },
+          {
+            "name": "예술·스포츠·여가",
+            "growth_rate": 3.3,
+            "contribution": 0.15150552922590796
+          },
+          {
+            "name": "협회·수리·개인서비스",
+            "growth_rate": -4.2,
+            "contribution": -0.11090047393364928
+          }
+        ]
+      }
+    ]
+  },
+  "top3_increase_regions": [
+    {
+      "region": "경기",
+      "growth_rate": 5.4,
+      "industries": [
+        {
+          "name": "예술·스포츠·여가",
+          "growth_rate": 107.0,
+          "contribution": 3.3882632478632475
+        },
+        {
+          "name": "정보통신",
+          "growth_rate": 9.7,
+          "contribution": 0.9154863247863253
+        },
+        {
+          "name": "전문·과학·기술",
+          "growth_rate": 6.0,
+          "contribution": 0.6991376068376063
+        }
+      ]
+    },
+    {
+      "region": "인천",
+      "growth_rate": 3.5,
+      "industries": [
+        {
+          "name": "예술·스포츠·여가",
+          "growth_rate": 50.4,
+          "contribution": 2.3645264404104185
+        },
+        {
+          "name": "보건·복지",
+          "growth_rate": 7.0,
+          "contribution": 0.9289613259668504
+        },
+        {
+          "name": "도소매",
+          "growth_rate": 2.1,
+          "contribution": 0.45213575374901444
+        }
+      ]
+    },
+    {
+      "region": "세종",
+      "growth_rate": 3.3,
+      "industries": [
+        {
+          "name": "전문·과학·기술",
+          "growth_rate": 23.0,
+          "contribution": 2.4936035242290746
+        },
+        {
+          "name": "부동산",
+          "growth_rate": 26.5,
+          "contribution": 1.856992070484581
+        },
+        {
+          "name": "사업시설관리·사업지원·임대",
+          "growth_rate": 7.0,
+          "contribution": 0.31472511013215887
+        }
+      ]
+    }
+  ],
+  "top3_decrease_regions": [
+    {
+      "region": "제주",
+      "growth_rate": -9.2,
+      "industries": [
+        {
+          "name": "정보통신",
+          "growth_rate": -37.4,
+          "contribution": -5.756431279620855
+        },
+        {
+          "name": "부동산",
+          "growth_rate": -26.9,
+          "contribution": -1.3754691943127961
+        },
+        {
+          "name": "사업시설관리·사업지원·임대",
+          "growth_rate": -9.6,
+          "contribution": -0.6801895734597156
+        }
+      ]
+    },
+    {
+      "region": "경남",
+      "growth_rate": -2.8,
+      "industries": [
+        {
+          "name": "부동산",
+          "growth_rate": -27.6,
+          "contribution": -2.60204845814978
+        },
+        {
+          "name": "예술·스포츠·여가",
+          "growth_rate": -7.5,
+          "contribution": -0.23344493392070453
+        },
+        {
+          "name": "사업시설관리·사업지원·임대",
+          "growth_rate": -4.1,
+          "contribution": -0.1853039647577095
+        }
+      ]
+    },
+    {
+      "region": "강원",
+      "growth_rate": -1.6,
+      "industries": [
+        {
+          "name": "예술·스포츠·여가",
+          "growth_rate": -25.7,
+          "contribution": -1.8471880492091384
+        },
+        {
+          "name": "전문·과학·기술",
+          "growth_rate": -6.9,
+          "contribution": -0.37525483304042184
+        },
+        {
+          "name": "사업시설관리·사업지원·임대",
+          "growth_rate": -5.2,
+          "contribution": -0.22775219683655512
+        }
+      ]
+    }
+  ],
+  "decrease_industries_text": "전문·과학·기술, 예술·스포츠·여가, 부동산, 정보통신",
+  "increase_industries_text": "부동산, 정보통신, 예술·스포츠·여가, 보건·복지",
+  "summary_table": {
+    "base_year": 2020,
+    "columns": {
+      "growth_rate_columns": [
+        "2023.2/4",
+        "2024.2/4",
+        "2025.1/4",
+        "2025.2/4p"
+      ],
+      "index_columns": [
+        "2024.2/4",
+        "2025.2/4p"
+      ]
+    },
+    "regions": [
+      {
+        "group": null,
+        "rowspan": null,
+        "region": "전 국",
+        "growth_rates": [
+          2.8,
+          1.6,
+          0.4,
+          1.4
+        ],
+        "indices": [
+          117.6,
+          119.2
+        ]
+      },
+      {
+        "region": "서 울",
+        "growth_rates": [
+          6.6,
+          1.6,
+          1.1,
+          2.3
+        ],
+        "indices": [
+          123.5,
+          126.3
+        ],
+        "group": "경인",
+        "rowspan": 3
+      },
+      {
+        "region": "인 천",
+        "growth_rates": [
+          7.4,
+          4.3,
+          0.9,
+          3.5
+        ],
+        "indices": [
+          126.7,
+          131.1
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "경 기",
+        "growth_rates": [
+          0.5,
+          1.0,
+          -0.1,
+          5.4
+        ],
+        "indices": [
+          117,
+          123.3
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "대 전",
+        "growth_rates": [
+          3.1,
+          2.0,
+          -1.8,
+          0.3
+        ],
+        "indices": [
+          117.1,
+          117.4
+        ],
+        "group": "충청",
+        "rowspan": 4
+      },
+      {
+        "region": "세 종",
+        "growth_rates": [
+          0.4,
+          -3.6,
+          4.3,
+          3.3
+        ],
+        "indices": [
+          113.5,
+          117.3
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "충 북",
+        "growth_rates": [
+          0.6,
+          0.1,
+          -0.5,
+          0.9
+        ],
+        "indices": [
+          113.3,
+          114.3
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "충 남",
+        "growth_rates": [
+          0.9,
+          -1.0,
+          -1.3,
+          0
+        ],
+        "indices": [
+          113.2,
+          113.2
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "광 주",
+        "growth_rates": [
+          2.2,
+          1.5,
+          -1.8,
+          0.2
+        ],
+        "indices": [
+          115.4,
+          115.6
+        ],
+        "group": "호남",
+        "rowspan": 4
+      },
+      {
+        "region": "전 북",
+        "growth_rates": [
+          2.0,
+          0.4,
+          -1.5,
+          -1.2
+        ],
+        "indices": [
+          114.6,
+          113.2
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "전 남",
+        "growth_rates": [
+          1.4,
+          -1.2,
+          -1.5,
+          -0.6
+        ],
+        "indices": [
+          110.4,
+          109.7
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "제 주",
+        "growth_rates": [
+          -1.1,
+          10.5,
+          -0.4,
+          -9.2
+        ],
+        "indices": [
+          126.6,
+          115
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "대 구",
+        "growth_rates": [
+          0.3,
+          1.3,
+          -2.8,
+          -1.2
+        ],
+        "indices": [
+          113,
+          111.7
+        ],
+        "group": "동북",
+        "rowspan": 3
+      },
+      {
+        "region": "경 북",
+        "growth_rates": [
+          3.2,
+          -0.3,
+          -2.8,
+          -1.3
+        ],
+        "indices": [
+          115.9,
+          114.4
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "강 원",
+        "growth_rates": [
+          0.4,
+          0.3,
+          -0.5,
+          -1.6
+        ],
+        "indices": [
+          113.8,
+          112
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "부 산",
+        "growth_rates": [
+          0.7,
+          0.5,
+          -0.7,
+          2.1
+        ],
+        "indices": [
+          113.4,
+          115.8
+        ],
+        "group": "동남",
+        "rowspan": 3
+      },
+      {
+        "region": "울 산",
+        "growth_rates": [
+          1.9,
+          2.3,
+          -0.8,
+          -0.5
+        ],
+        "indices": [
+          116.3,
+          115.7
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "경 남",
+        "growth_rates": [
+          -0.3,
+          -1.6,
+          -3.0,
+          -2.8
+        ],
+        "indices": [
+          113.5,
+          110.3
+        ],
+        "group": null,
+        "rowspan": null
+      }
+    ]
+  }
+}

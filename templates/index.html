@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보고서 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #ed8936;
+            --accent-hover: #dd6b20;
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #475569;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            padding: 2rem 3rem;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Navigation */
+        .nav-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            min-height: calc(100vh - 180px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .report-list {
+            list-style: none;
+        }
+
+        .report-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .report-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .report-link:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .report-link.active {
+            background: var(--primary);
+            border-color: var(--accent);
+        }
+
+        .report-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .report-info {
+            flex: 1;
+        }
+
+        .report-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .report-sheet {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .welcome-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-desc {
+            color: var(--text-secondary);
+            max-width: 500px;
+            line-height: 1.8;
+        }
+
+        /* Report Viewer */
+        .report-viewer {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            height: calc(100vh - 250px);
+        }
+
+        .viewer-header {
+            background: var(--bg-card);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .viewer-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .viewer-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .viewer-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .viewer-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .viewer-iframe {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+            background: white;
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .loading::after {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+        }
+
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .category-production { background: #3b82f6; }
+        .category-employment { background: #10b981; }
+        .category-price { background: #f59e0b; }
+        .category-trade { background: #8b5cf6; }
+        .category-construction { background: #ef4444; }
+        .category-population { background: #ec4899; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>📊 지역경제동향 보고서 시스템</h1>
+        <p>분석표_25년 2분기_캡스톤 데이터 기반 자동 보고서 생성</p>
+        <div class="nav-container">
+            <button class="nav-btn active" onclick="showDashboard()">대시보드</button>
+            <button class="nav-btn" onclick="showAllReports()">전체 보고서</button>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <aside class="sidebar">
+            <div class="sidebar-title">📋 보고서 목록</div>
+            <ul class="report-list" id="reportList">
+                <!-- Reports will be loaded here -->
+            </ul>
+        </aside>
+
+        <main class="content-area" id="contentArea">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">📈</div>
+                <h2 class="welcome-title">보고서를 선택하세요</h2>
+                <p class="welcome-desc">
+                    왼쪽 사이드바에서 보고서를 선택하면 여기에 표시됩니다.
+                    각 보고서는 Excel 데이터를 기반으로 자동 생성되며,
+                    Jinja2 템플릿을 사용하여 렌더링됩니다.
+                </p>
+                
+                <div class="stats-container" style="margin-top: 2rem; width: 100%; max-width: 800px;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalReports">0</div>
+                        <div class="stat-label">총 보고서</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSheets">0</div>
+                        <div class="stat-label">데이터 시트</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">2025</div>
+                        <div class="stat-label">2분기</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-viewer" id="reportViewer" style="display: none;">
+                <div class="viewer-header">
+                    <span class="viewer-title" id="viewerTitle">보고서</span>
+                    <div class="viewer-actions">
+                        <button class="viewer-btn" onclick="openInNewTab()">🔗 새 탭에서 열기</button>
+                        <button class="viewer-btn" onclick="closeViewer()">✕ 닫기</button>
+                    </div>
+                </div>
+                <iframe class="viewer-iframe" id="reportIframe"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Report definitions
+        const reports = [
+            {
+                id: 'manufacturing',
+                name: '광공업생산',
+                sheet: 'A 분석',
+                file: '광공업생산_output.html',
+                icon: '🏭',
+                category: 'production'
+            },
+            {
+                id: 'service',
+                name: '서비스업생산',
+                sheet: 'B 분석',
+                file: '서비스업생산_output.html',
+                icon: '🏢',
+                category: 'production'
+            },
+            {
+                id: 'consumption',
+                name: '소비동향',
+                sheet: 'C 분석',
+                file: '소비동향_output.html',
+                icon: '🛒',
+                category: 'production'
+            },
+            {
+                id: 'employment',
+                name: '고용률',
+                sheet: 'D(고용률)분석',
+                file: '고용률_output.html',
+                icon: '👔',
+                category: 'employment'
+            },
+            {
+                id: 'unemployment',
+                name: '실업률',
+                sheet: 'D(실업)분석',
+                file: '실업률_output.html',
+                icon: '📉',
+                category: 'employment'
+            },
+            {
+                id: 'price',
+                name: '물가동향',
+                sheet: 'E(품목성질물가)분석',
+                file: '물가동향_output.html',
+                icon: '💰',
+                category: 'price'
+            },
+            {
+                id: 'export',
+                name: '수출',
+                sheet: 'G 분석',
+                file: '수출_output.html',
+                icon: '📦',
+                category: 'trade'
+            },
+            {
+                id: 'import',
+                name: '수입',
+                sheet: 'H 분석',
+                file: '수입_output.html',
+                icon: '🚢',
+                category: 'trade'
+            },
+            {
+                id: 'population',
+                name: '국내인구이동',
+                sheet: 'I(순인구이동)집계',
+                file: '국내인구이동_output.html',
+                icon: '👥',
+                category: 'population'
+            }
+        ];
+
+        let currentReport = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderReportList();
+            updateStats();
+        });
+
+        function renderReportList() {
+            const listEl = document.getElementById('reportList');
+            listEl.innerHTML = reports.map(report => `
+                <li class="report-item">
+                    <div class="report-link" onclick="loadReport('${report.id}')" id="report-${report.id}">
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                            <div class="report-sheet">${report.sheet}</div>
+                            <span class="category-badge category-${report.category}">${getCategoryName(report.category)}</span>
+                        </div>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                production: '생산',
+                employment: '고용',
+                price: '물가',
+                trade: '무역',
+                construction: '건설',
+                population: '인구'
+            };
+            return names[category] || category;
+        }
+
+        function updateStats() {
+            document.getElementById('totalReports').textContent = reports.length;
+            document.getElementById('totalSheets').textContent = new Set(reports.map(r => r.sheet)).size;
+        }
+
+        function loadReport(reportId) {
+            const report = reports.find(r => r.id === reportId);
+            if (!report) return;
+
+            currentReport = report;
+
+            // Update active state
+            document.querySelectorAll('.report-link').forEach(el => el.classList.remove('active'));
+            document.getElementById(`report-${reportId}`).classList.add('active');
+
+            // Show viewer
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('reportViewer').style.display = 'block';
+            document.getElementById('viewerTitle').textContent = `${report.icon} ${report.name}`;
+            document.getElementById('reportIframe').src = report.file;
+        }
+
+        function closeViewer() {
+            document.getElementById('welcomeScreen').style.display = 'flex';
+            document.getElementById('reportViewer').style.display = 'none';
+            document.querySelectorAll('.report-link').forEach(el => el.classList.remove('active'));
+            currentReport = null;
+        }
+
+        function openInNewTab() {
+            if (currentReport) {
+                window.open(currentReport.file, '_blank');
+            }
+        }
+
+        function showDashboard() {
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            closeViewer();
+        }
+
+        function showAllReports() {
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            // Could show a different view here
+        }
+    </script>
+</body>
+</html>
+

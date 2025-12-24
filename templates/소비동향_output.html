@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅰ. 부문별 지역경제동향 - 소비동향</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #000;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        /* 섹션 제목 */
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 20px 0 15px 0;
+        }
+        
+        /* 회색 요약 박스 */
+        .summary-box {
+            background-color: #e8e8e8;
+            border: 1px solid #ccc;
+            padding: 12px 15px;
+            margin: 15px 0;
+            font-size: 10.5pt;
+            line-height: 1.8;
+        }
+        
+        .summary-box .diamond {
+            color: #000;
+            font-weight: bold;
+        }
+        
+        /* 본문 컨텐츠 */
+        .content-section {
+            margin: 15px 0;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px 0;
+        }
+        
+        .checkbox {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            margin-right: 10px;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        
+        .bullet-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .bullet {
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        /* 강조 스타일 */
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .underline {
+            text-decoration: underline;
+        }
+        
+        .increase {
+            font-weight: bold;
+        }
+        
+        .decrease {
+            font-weight: bold;
+        }
+        
+        /* 주요 증감 지역 및 업태 섹션 */
+        .region-business-section {
+            border: 1px solid #000;
+            margin: 20px 0;
+            padding: 0;
+        }
+        
+        .region-business-section .section-title {
+            text-align: center;
+            font-weight: bold;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #000;
+        }
+        
+        .region-business-content {
+            padding: 10px 15px;
+        }
+        
+        .region-business-item {
+            margin: 5px 0;
+            font-size: 10pt;
+        }
+        
+        .divider-line {
+            border-top: 1px solid #000;
+            margin: 8px 0;
+        }
+        
+        /* 표 스타일 */
+        .data-table-container {
+            margin: 20px 0;
+        }
+        
+        .data-table-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background-color: #d9e8d9;
+            font-weight: bold;
+        }
+        
+        .data-table .header-row th {
+            background-color: #b8d4b8;
+        }
+        
+        .data-table .region-group {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .data-table .region-name {
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .data-table .number {
+            text-align: right;
+            padding-right: 8px;
+        }
+        
+        .data-table .highlight-column {
+            background-color: #e8f4e8;
+        }
+        
+        /* 출처 */
+        .source {
+            font-size: 9pt;
+            margin-top: 10px;
+            color: #333;
+        }
+        
+        /* 페이지 번호 */
+        .page-number {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+    <!-- 2. 소비 동향 -->
+    <h2>2. 소비 동향</h2>
+    
+    <!-- 회색 요약 박스 -->
+    <div class="summary-box">
+        <span class="diamond">◆</span>소매판매는 
+        
+        <span class="highlight underline">제주</span>(<span class="highlight">면세점</span>), 
+        
+        <span class="highlight underline">서울</span>(<span class="highlight">면세점</span>), 
+        
+        <span class="highlight underline">경북</span>(<span class="highlight">대형마트</span>)
+        
+        등 <span class="highlight">6개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
+    </div>
+    
+    <!-- 전국 데이터 섹션 -->
+    <div class="content-section">
+        <div class="checkbox-item">
+            <div class="checkbox"></div>
+            <div>
+                전국 소매판매(101.8)는 면세점, 대형마트, 슈퍼마켓·잡화점 등의 판매가 줄어 전년동분기대비 <span class="decrease">-0.2% 감소</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 시도 데이터 섹션 -->
+    <div class="content-section">
+        <div class="bullet-item">
+            <span class="bullet">○</span>
+            <div>
+                
+                <span class="highlight underline">울산</span>(5.4%), 
+                
+                <span class="highlight underline">인천</span>(4.9%), 
+                
+                <span class="highlight underline">세종</span>(3.5%)
+                은 승용차·연료소매점, 대형마트, 면세점 등의 판매가 늘어 <span class="increase">증가</span>하였으나, 
+                
+                <span class="highlight underline">제주</span>(-2.3%), 
+                
+                <span class="highlight underline">서울</span>(-1.8%), 
+                
+                <span class="highlight underline">경북</span>(-1.8%)
+                은 대형마트, 면세점, 슈퍼마켓·잡화점·편의점 등의 판매가 줄어 <span class="decrease">감소</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 주요 증감 지역 및 업태 -->
+    <div class="region-business-section">
+        <div class="section-title">&lt; 주요 증감지역 및 업태 &gt;</div>
+        <div class="region-business-content">
+            <!-- 전국 -->
+            <div class="region-business-item">
+                · 전 국( -0.2%): 
+                
+                면세점(-12.2%), 
+                
+                대형마트(-3.7%), 
+                
+                슈퍼마켓·잡화점(-3.6%)
+                
+            </div>
+            
+            <div class="divider-line"></div>
+            
+            <!-- 증가 지역 Top 3 -->
+            
+            <div class="region-business-item">
+                · 울산( 5.4%): 
+                
+                승용차·연료소매점(13.5%), 
+                
+                슈퍼마켓·잡화점·편의점(13.2%)
+                
+            </div>
+            
+            <div class="region-business-item">
+                · 인천( 4.9%): 
+                
+                승용차·연료소매점(18.1%), 
+                
+                면세점(15.5%), 
+                
+                대형마트(3.9%)
+                
+            </div>
+            
+            <div class="region-business-item">
+                · 세종( 3.5%): 
+                
+                승용차·연료소매점(17.6%), 
+                
+                대형마트(3.4%)
+                
+            </div>
+            
+            
+            <div class="divider-line"></div>
+            
+            <!-- 감소 지역 Top 3 -->
+            
+            <div class="region-business-item">
+                · 제주(-2.3%): 
+                
+                면세점(-14.9%), 
+                
+                대형마트(-8.2%), 
+                
+                슈퍼마켓·잡화점·편의점(-4.0%)
+                
+            </div>
+            
+            <div class="region-business-item">
+                · 서울(-1.8%): 
+                
+                면세점(-16.0%), 
+                
+                슈퍼마켓·잡화점·편의점(-4.3%), 
+                
+                대형마트(-2.0%)
+                
+            </div>
+            
+            <div class="region-business-item">
+                · 경북(-1.8%): 
+                
+                대형마트(-10.9%), 
+                
+                슈퍼마켓·잡화점·편의점(-4.6%), 
+                
+                전문소매점(-3.8%)
+                
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- 소매판매액지수 및 증감률 표 -->
+    <div class="data-table-container">
+        <div class="data-table-title">《 소매판매액지수 및 증감률 》</div>
+        <table class="data-table">
+            <thead>
+                <tr class="header-row">
+                    <th colspan="2" rowspan="2"></th>
+                    <th colspan="4">전년동분기대비 증감률(%)</th>
+                    <th colspan="2">소매판매액지수(2020=100)</th>
+                </tr>
+                <tr>
+                    <th>2023.2/4</th>
+                    <th>2024.2/4</th>
+                    <th>2025.1/4</th>
+                    <th class="highlight-column">2025.2/4p</th>
+                    <th>2024.2/4</th>
+                    <th class="highlight-column">2025.2/4p</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    
+                    <td class="region-name">전 국</td>
+                    
+                    <td class="number">-0.4</td>
+                    
+                    <td class="number">-3.1</td>
+                    
+                    <td class="number">-0.3</td>
+                    
+                    <td class="number highlight-column">-0.2</td>
+                    
+                    
+                    <td class="number">101.3</td>
+                    
+                    <td class="number highlight-column">101.8</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-group" rowspan="3">경인</td>
+                    
+                    <td class="region-name">서 울</td>
+                    
+                    <td class="number">-2.4</td>
+                    
+                    <td class="number">-7.6</td>
+                    
+                    <td class="number">-3.4</td>
+                    
+                    <td class="number highlight-column">-1.8</td>
+                    
+                    
+                    <td class="number">95.9</td>
+                    
+                    <td class="number highlight-column">94.5</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">인 천</td>
+                    
+                    <td class="number">-0.2</td>
+                    
+                    <td class="number">-6.2</td>
+                    
+                    <td class="number">2.8</td>
+                    
+                    <td class="number highlight-column">4.9</td>
+                    
+                    
+                    <td class="number">99.7</td>
+                    
+                    <td class="number highlight-column">102.3</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">경 기</td>
+                    
+                    <td class="number">-1.9</td>
+                    
+                    <td class="number">-5.7</td>
+                    
+                    <td class="number">0.2</td>
+                    
+                    <td class="number highlight-column">0.3</td>
+                    
+                    
+                    <td class="number">96.0</td>
+                    
+                    <td class="number highlight-column">96.5</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-group" rowspan="4">충청</td>
+                    
+                    <td class="region-name">대 전</td>
+                    
+                    <td class="number">4.8</td>
+                    
+                    <td class="number">-5.6</td>
+                    
+                    <td class="number">-2.8</td>
+                    
+                    <td class="number highlight-column">1.2</td>
+                    
+                    
+                    <td class="number">104.5</td>
+                    
+                    <td class="number highlight-column">107.3</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">세 종</td>
+                    
+                    <td class="number">-0.7</td>
+                    
+                    <td class="number">-2.6</td>
+                    
+                    <td class="number">2.3</td>
+                    
+                    <td class="number highlight-column">3.5</td>
+                    
+                    
+                    <td class="number">104.7</td>
+                    
+                    <td class="number highlight-column">106.7</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">충 북</td>
+                    
+                    <td class="number">2.3</td>
+                    
+                    <td class="number">0.6</td>
+                    
+                    <td class="number">0.7</td>
+                    
+                    <td class="number highlight-column">1.4</td>
+                    
+                    
+                    <td class="number">104.2</td>
+                    
+                    <td class="number highlight-column">105.2</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">충 남</td>
+                    
+                    <td class="number">-0.4</td>
+                    
+                    <td class="number">0.6</td>
+                    
+                    <td class="number">1.1</td>
+                    
+                    <td class="number highlight-column">-0.5</td>
+                    
+                    
+                    <td class="number">101.1</td>
+                    
+                    <td class="number highlight-column">100.9</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-group" rowspan="4">호남</td>
+                    
+                    <td class="region-name">광 주</td>
+                    
+                    <td class="number">-4.0</td>
+                    
+                    <td class="number">-2.2</td>
+                    
+                    <td class="number">1.6</td>
+                    
+                    <td class="number highlight-column">2.1</td>
+                    
+                    
+                    <td class="number">97.3</td>
+                    
+                    <td class="number highlight-column">98.8</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">전 북</td>
+                    
+                    <td class="number">2.6</td>
+                    
+                    <td class="number">-2.9</td>
+                    
+                    <td class="number">0.8</td>
+                    
+                    <td class="number highlight-column">0.1</td>
+                    
+                    
+                    <td class="number">99.0</td>
+                    
+                    <td class="number highlight-column">100.4</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">전 남</td>
+                    
+                    <td class="number">-3.4</td>
+                    
+                    <td class="number">-5.5</td>
+                    
+                    <td class="number">0.3</td>
+                    
+                    <td class="number highlight-column">0.4</td>
+                    
+                    
+                    <td class="number">97.2</td>
+                    
+                    <td class="number highlight-column">95.5</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">제 주</td>
+                    
+                    <td class="number">-5.6</td>
+                    
+                    <td class="number">-3.1</td>
+                    
+                    <td class="number">-6.6</td>
+                    
+                    <td class="number highlight-column">-2.3</td>
+                    
+                    
+                    <td class="number">98.2</td>
+                    
+                    <td class="number highlight-column">99.9</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-group" rowspan="3">동북</td>
+                    
+                    <td class="region-name">대 구</td>
+                    
+                    <td class="number">-4.9</td>
+                    
+                    <td class="number">-2.2</td>
+                    
+                    <td class="number">-1.8</td>
+                    
+                    <td class="number highlight-column">-1.4</td>
+                    
+                    
+                    <td class="number">93.2</td>
+                    
+                    <td class="number highlight-column">96.3</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">경 북</td>
+                    
+                    <td class="number">5.3</td>
+                    
+                    <td class="number">-1.7</td>
+                    
+                    <td class="number">-0.5</td>
+                    
+                    <td class="number highlight-column">-1.8</td>
+                    
+                    
+                    <td class="number">103.3</td>
+                    
+                    <td class="number highlight-column">102.8</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">강 원</td>
+                    
+                    <td class="number">6.9</td>
+                    
+                    <td class="number">-5.4</td>
+                    
+                    <td class="number">0.2</td>
+                    
+                    <td class="number highlight-column">-0.9</td>
+                    
+                    
+                    <td class="number">107.8</td>
+                    
+                    <td class="number highlight-column">102.5</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-group" rowspan="3">동남</td>
+                    
+                    <td class="region-name">부 산</td>
+                    
+                    <td class="number">3.3</td>
+                    
+                    <td class="number">-2.8</td>
+                    
+                    <td class="number">4.6</td>
+                    
+                    <td class="number highlight-column">1.0</td>
+                    
+                    
+                    <td class="number">109.5</td>
+                    
+                    <td class="number highlight-column">109.1</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">울 산</td>
+                    
+                    <td class="number">3.7</td>
+                    
+                    <td class="number">-7.6</td>
+                    
+                    <td class="number">3.9</td>
+                    
+                    <td class="number highlight-column">5.4</td>
+                    
+                    
+                    <td class="number">95.7</td>
+                    
+                    <td class="number highlight-column">98.8</td>
+                    
+                </tr>
+                
+                <tr>
+                    
+                    <td class="region-name">경 남</td>
+                    
+                    <td class="number">1.8</td>
+                    
+                    <td class="number">-5.6</td>
+                    
+                    <td class="number">4.7</td>
+                    
+                    <td class="number highlight-column">1.4</td>
+                    
+                    
+                    <td class="number">100.2</td>
+                    
+                    <td class="number highlight-column">98.9</td>
+                    
+                </tr>
+                
+            </tbody>
+        </table>
+        <div class="source">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
+    </div>
+    
+    <!-- 페이지 번호 -->
+    <div class="page-number">- 8 -</div>
+</body>
+</html>

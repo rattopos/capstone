@@ -1,0 +1,193 @@
+{
+  "title": "실업률 분석 보고서 스키마",
+  "description": "D(실업)분석 시트 데이터를 기반으로 실업률 보고서를 생성하기 위한 스키마",
+  "version": "1.0",
+  
+  "data_sources": {
+    "analysis_sheet": "D(실업)분석",
+    "summary_sheet": "D(실업)집계"
+  },
+  
+  "column_mapping": {
+    "summary_sheet": {
+      "sido": 0,
+      "age_group": 1,
+      "rate_2023_24": 11,
+      "rate_2024_24": 15,
+      "rate_2025_14": 18,
+      "rate_2025_24": 19
+    },
+    "analysis_sheet": {
+      "sido": 0,
+      "age_group": 1,
+      "change_2023_24": 6,
+      "change_2024_24": 10,
+      "change_2025_14": 13,
+      "change_2025_24": 14,
+      "contribution_rate": 15,
+      "contribution": 17,
+      "rank": 18
+    }
+  },
+  
+  "age_group_mapping": {
+    "15 - 29세": "15~29세",
+    "30 - 59세": "30~59세",
+    "60세이상": "60세이상"
+  },
+  
+  "age_group_display_mapping": {
+    "15 - 29세": "20-29세",
+    "30 - 59세": "30-59세",
+    "60세이상": "60세이상"
+  },
+  
+  "sido_order": [
+    "전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+  ],
+  
+  "region_groups": {
+    "경인": ["서울", "인천", "경기"],
+    "충청": ["대전", "세종", "충북", "충남"],
+    "호남": ["광주", "전북", "전남", "제주"],
+    "동북": ["대구", "경북", "강원"],
+    "동남": ["부산", "울산", "경남"]
+  },
+  
+  "report_structure": {
+    "section_number": "나",
+    "section_title": "실업률",
+    "page_number": "- 14 -",
+    
+    "summary_box": {
+      "template": "◆실업률은 {decrease_regions} 등 {decrease_count}개 시도에서 전년동분기대비 {direction}",
+      "direction_decrease": "하락",
+      "direction_increase": "상승"
+    },
+    
+    "nationwide_summary": {
+      "template": "전국 실업률은 {rate}%로, {age_groups}의 실업률이 내려 전년동분기대비 {change}%p {direction}",
+      "direction_positive": "상승",
+      "direction_negative": "하락"
+    },
+    
+    "regional_summary": {
+      "increase_template": "{regions} 등의 실업률은 {increase_direction}하였으나,",
+      "decrease_template": "{regions} 등의 실업률은 {decrease_direction}",
+      "increase_direction": "상승",
+      "decrease_direction": "하락"
+    }
+  },
+  
+  "table_structure": {
+    "title": "《실업률<sup>1)</sup> 및 증감》",
+    "headers": {
+      "change_section": "전년동분기대비 증감(%p)",
+      "rate_section": "실업률(%)",
+      "age_column": "15-29세"
+    },
+    "periods": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.2/4"],
+    "rate_periods": ["2024.2/4", "2025.2/4"]
+  },
+  
+  "footnotes": {
+    "definition": "1) 실업률(%) = (실업자수 ÷ 경제활동인구) × 100",
+    "source": "자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사"
+  },
+  
+  "output_schema": {
+    "report_info": {
+      "section_number": "string",
+      "section_title": "string",
+      "page_number": "string"
+    },
+    "nationwide_data": {
+      "rate": "number",
+      "change": "number",
+      "age_groups": [
+        {
+          "name": "string",
+          "change": "number"
+        }
+      ]
+    },
+    "regional_data": {
+      "increase_regions": [
+        {
+          "name": "string",
+          "change": "number",
+          "age_groups": [
+            {
+              "name": "string",
+              "change": "number"
+            }
+          ]
+        }
+      ],
+      "decrease_regions": [
+        {
+          "name": "string",
+          "change": "number",
+          "age_groups": [
+            {
+              "name": "string",
+              "change": "number"
+            }
+          ]
+        }
+      ]
+    },
+    "summary_box": {
+      "headline": "string",
+      "nationwide_summary": "string",
+      "regional_summary": "string"
+    },
+    "top3_increase_regions": [
+      {
+        "name": "string",
+        "change": "number",
+        "age_groups": [
+          {
+            "name": "string",
+            "change": "number"
+          }
+        ]
+      }
+    ],
+    "top3_decrease_regions": [
+      {
+        "name": "string",
+        "change": "number",
+        "age_groups": [
+          {
+            "name": "string",
+            "change": "number"
+          }
+        ]
+      }
+    ],
+    "summary_table": {
+      "headers": ["string"],
+      "rows": [
+        {
+          "region_group": "string",
+          "sido": "string",
+          "changes": ["number"],
+          "rates": ["number"],
+          "youth_rate": "number"
+        }
+      ]
+    }
+  },
+  
+  "generation_rules": {
+    "top_regions_count": 3,
+    "top_age_groups_count": 2,
+    "increase_threshold": 0,
+    "decrease_threshold": 0,
+    "nationwide_age_groups_count": 2,
+    "decimal_places": 1
+  }
+}
+
