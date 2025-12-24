@@ -1,0 +1,33 @@
+# 분석표 엑셀 파일 (비공개 자료)
+분석표*.xlsx
+분석표*.xls
+~$*.xlsx
+~$*.xls
+
+# 업로드 폴더
+uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+VENV/
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 임시 파일
+*.tmp
+*.temp
+*.log
+
