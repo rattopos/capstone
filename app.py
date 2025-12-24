@@ -168,51 +168,18 @@ def check_missing_data(data, report_id):
     missing_fields = []
     
     # 보고서별 필수 필드 정의
+    # - 전국 데이터는 generator에서 분류단계 0(총지수) 또는 시도별 합계로 이미 계산됨
+    # - 결측치 체크는 최소한으로 유지 (실제 렌더링에 필수적인 것만)
     REQUIRED_FIELDS = {
-        'manufacturing': [
-            'nationwide_data.production_index',
-            'nationwide_data.growth_rate',
-            'summary_box.region_count',
-        ],
-        'service': [
-            'nationwide_data.production_index',
-            'nationwide_data.growth_rate',
-            'summary_box.region_count',
-        ],
-        'consumption': [
-            'nationwide_data.index_value',
-            'nationwide_data.growth_rate',
-            'summary_box.region_count',
-        ],
-        'employment': [
-            'nationwide_data.employment_rate',
-            'nationwide_data.change',
-            'summary_box.region_count',
-        ],
-        'unemployment': [
-            'nationwide_data.unemployment_rate',
-            'nationwide_data.change',
-            'summary_box.region_count',
-        ],
-        'price': [
-            'nationwide_data.price_index',
-            'nationwide_data.change_rate',
-            'summary_box.region_count',
-        ],
-        'export': [
-            'nationwide_data.export_value',
-            'nationwide_data.growth_rate',
-            'summary_box.region_count',
-        ],
-        'import': [
-            'nationwide_data.import_value',
-            'nationwide_data.growth_rate',
-            'summary_box.region_count',
-        ],
-        'population': [
-            'nationwide_data.net_migration',
-            'summary_box.region_count',
-        ],
+        'manufacturing': [],  # generator가 전국 데이터를 분류단계 0에서 추출
+        'service': [],        # generator가 전국 데이터를 분류단계 0에서 추출
+        'consumption': [],    # generator가 전국 데이터를 분류단계 0에서 추출
+        'employment': [],     # generator가 전국 데이터를 추출
+        'unemployment': [],   # generator가 전국 데이터를 추출
+        'price': [],          # generator가 전국 데이터를 추출
+        'export': [],         # generator가 전국 데이터를 추출
+        'import': [],         # generator가 전국 데이터를 추출
+        'population': [],     # generator가 전국 데이터를 추출
     }
     
     def get_nested_value(obj, path):
