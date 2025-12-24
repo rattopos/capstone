@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보고서 생성 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-card: #1e1e2a;
+            --bg-card-hover: #252535;
+            --accent-primary: #6366f1;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.3);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.3);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2e2e3e;
+            --border-hover: #3e3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, var(--accent-glow) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .select-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-tertiary);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .select-group label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .select-group select {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .select-group select:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .select-group select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Main Layout */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .upload-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: var(--border-hover);
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-tertiary);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-zone.uploaded {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .upload-filename {
+            color: var(--success);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        /* Report List */
+        .report-list-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .report-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .report-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .report-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateX(4px);
+        }
+
+        .report-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-color: var(--accent-primary);
+        }
+
+        .report-item.reviewed {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: var(--success);
+        }
+
+        .report-item.has-missing {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+        }
+
+        .report-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .report-info {
+            flex: 1;
+        }
+
+        .report-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.125rem;
+        }
+
+        .report-sheet {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .report-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+        }
+
+        .report-status.pending {
+            color: var(--text-muted);
+        }
+
+        .report-status.reviewed {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .report-status.has-missing {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Control Bar */
+        .control-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px var(--success-glow);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--success-glow);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Preview Area */
+        .preview-area {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            background: white;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+        }
+
+        .preview-placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .preview-placeholder h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-placeholder p {
+            font-size: 0.9rem;
+            max-width: 400px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .missing-field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .missing-field-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .missing-field-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .missing-field-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .missing-field-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Progress */
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 300px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-color: var(--warning);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 300px 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-height: 300px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <div class="logo-text">
+                    <h1>지역경제동향 보고서 시스템</h1>
+                    <p>Regional Economic Report Generator</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="select-group">
+                    <label for="yearSelect">연도</label>
+                    <select id="yearSelect" disabled>
+                        <option value="2024">2024</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+                <div class="select-group">
+                    <label for="quarterSelect">분기</label>
+                    <select id="quarterSelect" disabled>
+                        <option value="1">1분기</option>
+                        <option value="2" selected>2분기</option>
+                        <option value="3">3분기</option>
+                        <option value="4">4분기</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="section-title">📁 분석표 업로드</div>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📄</div>
+                    <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
+                    <p class="upload-hint">*.xlsx, *.xls 파일 지원</p>
+                    <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
+                </div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Report List -->
+            <div class="report-list-section">
+                <div class="section-title">📋 보고서 목록</div>
+                <div class="report-list" id="reportList">
+                    <!-- Reports will be rendered here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Control Bar -->
+            <div class="control-bar">
+                <div class="nav-controls">
+                    <button class="nav-btn" id="prevBtn" disabled title="이전">◀</button>
+                    <span class="page-indicator" id="pageIndicator">0 / 0</span>
+                    <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
+                </div>
+                <div class="action-btns">
+                    <button class="btn btn-secondary" id="previewBtn" disabled>
+                        👁️ 미리보기
+                    </button>
+                    <button class="btn btn-success" id="generateBtn" disabled>
+                        ✨ 전체 생성
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Area -->
+            <div class="preview-area">
+                <div class="preview-header">
+                    <div class="preview-title" id="previewTitle">
+                        <span>📄</span>
+                        <span>미리보기</span>
+                    </div>
+                    <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
+                        ✓ 검토 완료
+                    </button>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <div class="preview-placeholder-icon">📊</div>
+                        <h3>보고서를 선택하세요</h3>
+                        <p>엑셀 파일을 업로드하고 왼쪽 목록에서 보고서를 선택하면 미리보기가 표시됩니다.</p>
+                    </div>
+                    <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Missing Data Modal -->
+    <div class="modal-overlay" id="missingDataModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>⚠️</span>
+                    <span>결측치 입력</span>
+                </h2>
+                <button class="modal-close" id="modalClose">×</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                아래 필드에 누락된 데이터를 입력해주세요.
+            </p>
+            <div class="missing-field-list" id="missingFieldList">
+                <!-- Missing fields will be rendered here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="skipMissingBtn">건너뛰기</button>
+                <button class="btn btn-primary" id="saveMissingBtn">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p class="loading-text" id="loadingText">처리 중...</p>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // State
+        const state = {
+            fileUploaded: false,
+            currentReportIndex: -1,
+            reports: [],
+            reviewedReports: new Set(),
+            customData: {},
+            missingFieldsByReport: {}
+        };
+
+        // DOM Elements
+        const elements = {
+            uploadZone: document.getElementById('uploadZone'),
+            fileInput: document.getElementById('fileInput'),
+            uploadFilename: document.getElementById('uploadFilename'),
+            progressBar: document.getElementById('progressBar'),
+            progressFill: document.getElementById('progressFill'),
+            reportList: document.getElementById('reportList'),
+            yearSelect: document.getElementById('yearSelect'),
+            quarterSelect: document.getElementById('quarterSelect'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            pageIndicator: document.getElementById('pageIndicator'),
+            previewBtn: document.getElementById('previewBtn'),
+            generateBtn: document.getElementById('generateBtn'),
+            previewTitle: document.getElementById('previewTitle'),
+            previewPlaceholder: document.getElementById('previewPlaceholder'),
+            previewIframe: document.getElementById('previewIframe'),
+            markReviewedBtn: document.getElementById('markReviewedBtn'),
+            missingDataModal: document.getElementById('missingDataModal'),
+            missingFieldList: document.getElementById('missingFieldList'),
+            modalClose: document.getElementById('modalClose'),
+            skipMissingBtn: document.getElementById('skipMissingBtn'),
+            saveMissingBtn: document.getElementById('saveMissingBtn'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingText: document.getElementById('loadingText'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        function initApp() {
+            setupEventListeners();
+            loadReportList();
+        }
+
+        function setupEventListeners() {
+            // File upload
+            elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
+            elements.fileInput.addEventListener('change', handleFileSelect);
+            elements.uploadZone.addEventListener('dragover', handleDragOver);
+            elements.uploadZone.addEventListener('dragleave', handleDragLeave);
+            elements.uploadZone.addEventListener('drop', handleDrop);
+
+            // Navigation
+            elements.prevBtn.addEventListener('click', () => navigateReport(-1));
+            elements.nextBtn.addEventListener('click', () => navigateReport(1));
+
+            // Actions
+            elements.previewBtn.addEventListener('click', generateCurrentPreview);
+            elements.generateBtn.addEventListener('click', generateAllReports);
+            elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
+
+            // Modal
+            elements.modalClose.addEventListener('click', closeModal);
+            elements.skipMissingBtn.addEventListener('click', skipMissingData);
+            elements.saveMissingBtn.addEventListener('click', saveMissingData);
+        }
+
+        function loadReportList() {
+            fetch('/api/report-order')
+                .then(res => res.json())
+                .then(data => {
+                    state.reports = data.reports;
+                    renderReportList();
+                })
+                .catch(err => {
+                    console.error('보고서 목록 로드 오류:', err);
+                    showToast('보고서 목록을 불러오는데 실패했습니다.', 'error');
+                });
+        }
+
+        function renderReportList() {
+            elements.reportList.innerHTML = state.reports.map((report, idx) => {
+                const isActive = idx === state.currentReportIndex;
+                const isReviewed = state.reviewedReports.has(report.id);
+                const hasMissing = state.missingFieldsByReport[report.id]?.length > 0;
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                } else if (hasMissing) {
+                    statusClass = 'has-missing';
+                    statusIcon = '!';
+                }
+
+                return `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''} ${hasMissing ? 'has-missing' : ''}"
+                         onclick="selectReport(${idx})"
+                         data-report-id="${report.id}">
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                            <div class="report-sheet">${report.sheet}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                    </div>
+                `;
+            }).join('');
+
+            updatePageIndicator();
+        }
+
+        function selectReport(index) {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            state.currentReportIndex = index;
+            renderReportList();
+            updateNavigationButtons();
+            generateCurrentPreview();
+        }
+
+        function navigateReport(direction) {
+            const newIndex = state.currentReportIndex + direction;
+            if (newIndex >= 0 && newIndex < state.reports.length) {
+                selectReport(newIndex);
+            }
+        }
+
+        function updateNavigationButtons() {
+            elements.prevBtn.disabled = state.currentReportIndex <= 0;
+            elements.nextBtn.disabled = state.currentReportIndex >= state.reports.length - 1;
+        }
+
+        function updatePageIndicator() {
+            const current = state.currentReportIndex + 1;
+            const total = state.reports.length;
+            elements.pageIndicator.textContent = `${current > 0 ? current : 0} / ${total}`;
+        }
+
+        // File Upload Handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                showToast('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.', 'error');
+                return;
+            }
+
+            showLoading('파일 업로드 중...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    state.fileUploaded = true;
+                    
+                    // Update UI
+                    elements.uploadZone.classList.add('uploaded');
+                    elements.uploadFilename.textContent = `✓ ${data.filename}`;
+                    elements.uploadFilename.style.display = 'block';
+                    elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
+                    elements.uploadZone.querySelector('.upload-text').textContent = '파일 업로드 완료!';
+
+                    // Update year/quarter selectors
+                    elements.yearSelect.value = data.year;
+                    elements.quarterSelect.value = data.quarter;
+                    elements.yearSelect.disabled = false;
+                    elements.quarterSelect.disabled = false;
+
+                    // Enable buttons
+                    elements.previewBtn.disabled = false;
+
+                    showToast('파일이 성공적으로 업로드되었습니다.', 'success');
+
+                    // Auto-select first report
+                    if (state.reports.length > 0) {
+                        selectReport(0);
+                    }
+                } else {
+                    showToast(data.error || '업로드 실패', 'error');
+                }
+            } catch (err) {
+                console.error('업로드 오류:', err);
+                showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Preview Generation
+        async function generateCurrentPreview() {
+            if (state.currentReportIndex < 0 || !state.fileUploaded) return;
+
+            const report = state.reports[state.currentReportIndex];
+            showLoading(`${report.name} 미리보기 생성 중...`);
+
+            try {
+                const response = await fetch('/api/generate-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        report_id: report.id,
+                        year: parseInt(elements.yearSelect.value),
+                        quarter: parseInt(elements.quarterSelect.value),
+                        custom_data: state.customData[report.id] || {}
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update preview
+                    elements.previewPlaceholder.style.display = 'none';
+                    elements.previewIframe.style.display = 'block';
+                    elements.previewIframe.srcdoc = data.html;
+                    elements.previewTitle.innerHTML = `<span>${report.icon}</span><span>${report.name}</span>`;
+                    elements.markReviewedBtn.style.display = 'block';
+
+                    // Check for missing data
+                    if (data.missing_fields && data.missing_fields.length > 0) {
+                        state.missingFieldsByReport[report.id] = data.missing_fields;
+                        renderReportList();
+                        showMissingDataModal(data.missing_fields);
+                    } else {
+                        state.missingFieldsByReport[report.id] = [];
+                        renderReportList();
+                    }
+                } else {
+                    showToast(data.error || '미리보기 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('미리보기 생성 오류:', err);
+                showToast('미리보기 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Mark as Reviewed
+        function markCurrentAsReviewed() {
+            if (state.currentReportIndex < 0) return;
+
+            const report = state.reports[state.currentReportIndex];
+            state.reviewedReports.add(report.id);
+            renderReportList();
+
+            // Check if all reports are reviewed
+            if (state.reviewedReports.size === state.reports.length) {
+                elements.generateBtn.disabled = false;
+                showToast('모든 보고서 검토가 완료되었습니다! 전체 생성이 가능합니다.', 'success');
+            }
+
+            // Auto-navigate to next
+            if (state.currentReportIndex < state.reports.length - 1) {
+                navigateReport(1);
+            } else {
+                showToast(`${report.name} 검토 완료!`, 'success');
+            }
+        }
+
+        // Generate All Reports
+        async function generateAllReports() {
+            showLoading('전체 보고서 생성 중...');
+
+            try {
+                const response = await fetch('/api/generate-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: parseInt(elements.yearSelect.value),
+                        quarter: parseInt(elements.quarterSelect.value),
+                        all_custom_data: state.customData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success || data.generated.length > 0) {
+                    showToast(`${data.generated.length}개 보고서가 성공적으로 생성되었습니다!`, 'success');
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        data.errors.forEach(err => {
+                            showToast(`${err.report_id}: ${err.error}`, 'warning');
+                        });
+                    }
+                } else {
+                    showToast('보고서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('전체 생성 오류:', err);
+                showToast('전체 보고서 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Missing Data Modal
+        function showMissingDataModal(fields) {
+            elements.missingFieldList.innerHTML = fields.map(field => `
+                <div class="missing-field-item">
+                    <label class="missing-field-label">${field}</label>
+                    <input type="text" class="missing-field-input" data-field="${field}" 
+                           placeholder="값을 입력하세요">
+                </div>
+            `).join('');
+
+            elements.missingDataModal.classList.add('active');
+        }
+
+        function closeModal() {
+            elements.missingDataModal.classList.remove('active');
+        }
+
+        function skipMissingData() {
+            closeModal();
+        }
+
+        function saveMissingData() {
+            if (state.currentReportIndex < 0) return;
+
+            const report = state.reports[state.currentReportIndex];
+            const inputs = elements.missingFieldList.querySelectorAll('.missing-field-input');
+            
+            if (!state.customData[report.id]) {
+                state.customData[report.id] = {};
+            }
+
+            inputs.forEach(input => {
+                const field = input.dataset.field;
+                const value = input.value.trim();
+                if (value) {
+                    state.customData[report.id][field] = value;
+                }
+            });
+
+            closeModal();
+            generateCurrentPreview();
+        }
+
+        // Loading
+        function showLoading(text = '처리 중...') {
+            elements.loadingText.textContent = text;
+            elements.loadingOverlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.classList.remove('active');
+        }
+
+        // Toast
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <span style="font-size: 1.2rem;">${icons[type] || icons.info}</span>
+                <span>${message}</span>
+            `;
+
+            elements.toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
+
