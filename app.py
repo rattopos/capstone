@@ -257,6 +257,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         generator_name = report_config['generator']
         template_name = report_config['template']
         report_name = report_config['name']
+        report_id = report_config['id']
         
         print(f"\n[DEBUG] ========== {report_name} 보고서 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
@@ -282,43 +283,29 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 break
         
         data = None
+        uses_data_wrapper = False  # 템플릿이 data.xxx 형태로 접근하는지 여부
+        
+        # 템플릿이 data.xxx 형태로 접근하는 보고서들
+        DATA_WRAPPER_REPORTS = ['unemployment', 'price', 'export', 'import', 'population']
+        
+        # ========== 데이터 추출 방식 결정 ==========
         
         # 방법 1: generate_report_data 함수 사용 (물가동향, 실업률, 수출, 수입, 국내인구이동)
         if hasattr(module, 'generate_report_data'):
             print(f"[DEBUG] generate_report_data 함수 사용")
             data = module.generate_report_data(excel_path)
+            uses_data_wrapper = report_id in DATA_WRAPPER_REPORTS
             print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
+            print(f"[DEBUG] data wrapper 사용: {uses_data_wrapper}")
         
-        # 방법 2: generate_report 함수 + load_data 사용 (고용률, 서비스업생산, 소비동향)
+        # 방법 2: generate_report 함수 직접 호출 (서비스업생산, 소비동향, 고용률)
+        # - generate_report 함수가 완전한 데이터를 반환함
         elif hasattr(module, 'generate_report'):
-            print(f"[DEBUG] generate_report 함수 사용")
+            print(f"[DEBUG] generate_report 함수 직접 호출")
             template_path = TEMPLATES_DIR / template_name
             output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
-            
-            # 데이터 추출
-            if hasattr(module, 'load_data'):
-                print(f"[DEBUG] load_data + 개별 함수로 데이터 추출")
-                df_analysis, df_index = module.load_data(excel_path)
-                data = {}
-                
-                if hasattr(module, 'get_nationwide_data'):
-                    data['nationwide_data'] = module.get_nationwide_data(df_analysis, df_index)
-                if hasattr(module, 'get_regional_data'):
-                    data['regional_data'] = module.get_regional_data(df_analysis, df_index)
-                if hasattr(module, 'get_summary_box_data'):
-                    data['summary_box'] = module.get_summary_box_data(data.get('regional_data', {}))
-                if hasattr(module, 'get_table_data'):
-                    data['summary_table'] = {
-                        'columns': {
-                            'change_columns': [f'{year-2}.{quarter}/4', f'{year-1}.{quarter}/4', f'{year}.{quarter-1}/4' if quarter > 1 else f'{year-1}.4/4', f'{year}.{quarter}/4'],
-                            'rate_columns': [f'{year-1}.{quarter}/4', f'{year}.{quarter}/4', '20-29세']
-                        },
-                        'regions': module.get_table_data(df_analysis, df_index)
-                    }
-                print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
-            else:
-                print(f"[DEBUG] generate_report 직접 호출")
-                data = module.generate_report(excel_path, template_path, output_path)
+            data = module.generate_report(excel_path, template_path, output_path)
+            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 3: Generator 클래스 사용 (광공업생산)
         elif generator_class:
@@ -333,37 +320,63 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             print(f"[ERROR] 사용 가능한 함수: {available_funcs}")
             return None, error_msg, []
         
-        # Top3 regions 후처리 - 양쪽 키 이름 모두 제공 (템플릿 호환성)
+        # ========== Top3 regions 후처리 ==========
+        # 양쪽 키 이름 모두 제공 (템플릿 호환성: change/growth_rate, age_groups/industries)
         if data and 'regional_data' in data:
-            top3_increase = []
-            for r in data['regional_data'].get('increase_regions', [])[:3]:
-                rate_value = r.get('change', r.get('growth_rate', 0))
-                items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                top3_increase.append({
-                    'region': r.get('region', ''),
-                    'change': rate_value,
-                    'growth_rate': rate_value,  # 템플릿 호환
-                    'age_groups': items,
-                    'industries': items  # 템플릿 호환
-                })
+            # 이미 top3가 있으면 호환성 키만 추가
+            if 'top3_increase_regions' not in data:
+                top3_increase = []
+                for r in data['regional_data'].get('increase_regions', [])[:3]:
+                    rate_value = r.get('change', r.get('growth_rate', 0))
+                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
+                    top3_increase.append({
+                        'region': r.get('region', ''),
+                        'change': rate_value,
+                        'growth_rate': rate_value,
+                        'age_groups': items,
+                        'industries': items
+                    })
+                data['top3_increase_regions'] = top3_increase
+            else:
+                # 기존 데이터에 호환성 키 추가
+                for r in data['top3_increase_regions']:
+                    if 'growth_rate' not in r:
+                        r['growth_rate'] = r.get('change', 0)
+                    if 'change' not in r:
+                        r['change'] = r.get('growth_rate', 0)
+                    if 'industries' not in r:
+                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
+                    if 'age_groups' not in r:
+                        r['age_groups'] = r.get('industries', [])
             
-            top3_decrease = []
-            for r in data['regional_data'].get('decrease_regions', [])[:3]:
-                rate_value = r.get('change', r.get('growth_rate', 0))
-                items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                top3_decrease.append({
-                    'region': r.get('region', ''),
-                    'change': rate_value,
-                    'growth_rate': rate_value,  # 템플릿 호환
-                    'age_groups': items,
-                    'industries': items  # 템플릿 호환
-                })
+            if 'top3_decrease_regions' not in data:
+                top3_decrease = []
+                for r in data['regional_data'].get('decrease_regions', [])[:3]:
+                    rate_value = r.get('change', r.get('growth_rate', 0))
+                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
+                    top3_decrease.append({
+                        'region': r.get('region', ''),
+                        'change': rate_value,
+                        'growth_rate': rate_value,
+                        'age_groups': items,
+                        'industries': items
+                    })
+                data['top3_decrease_regions'] = top3_decrease
+            else:
+                # 기존 데이터에 호환성 키 추가
+                for r in data['top3_decrease_regions']:
+                    if 'growth_rate' not in r:
+                        r['growth_rate'] = r.get('change', 0)
+                    if 'change' not in r:
+                        r['change'] = r.get('growth_rate', 0)
+                    if 'industries' not in r:
+                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
+                    if 'age_groups' not in r:
+                        r['age_groups'] = r.get('industries', [])
             
-            data['top3_increase_regions'] = top3_increase
-            data['top3_decrease_regions'] = top3_decrease
             print(f"[DEBUG] Top3 regions 후처리 완료")
         
-        # 커스텀 데이터 병합 (사용자가 입력한 결측치)
+        # ========== 커스텀 데이터 병합 (사용자가 입력한 결측치) ==========
         if custom_data:
             for key, value in custom_data.items():
                 keys = key.split('.')
@@ -373,6 +386,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                         name, idx = k.replace(']', '').split('[')
                         obj = obj[name][int(idx)]
                     else:
+                        if k not in obj:
+                            obj[k] = {}
                         obj = obj[k]
                 final_key = keys[-1]
                 if '[' in final_key:
@@ -382,21 +397,31 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     obj[final_key] = value
         
         # 결측치 확인
-        missing = check_missing_data(data, report_config['id'])
+        missing = check_missing_data(data, report_id)
         
-        # 템플릿 렌더링
+        # ========== 템플릿 렌더링 ==========
         template_path = TEMPLATES_DIR / template_name
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
         
-        html_content = template.render(**data)
+        # 템플릿 데이터 접근 방식에 따라 다르게 전달
+        if uses_data_wrapper:
+            # 템플릿이 {{ data.xxx }} 형태로 접근
+            print(f"[DEBUG] 템플릿 렌더링: data=data 방식")
+            html_content = template.render(data=data)
+        else:
+            # 템플릿이 {{ xxx }} 형태로 직접 접근
+            print(f"[DEBUG] 템플릿 렌더링: **data 방식")
+            html_content = template.render(**data)
         
+        print(f"[DEBUG] 보고서 생성 성공!")
         return html_content, None, missing
         
     except Exception as e:
         import traceback
-        error_msg = f"보고서 생성 오류: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
+        error_msg = f"보고서 생성 오류: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
         return None, error_msg, []
 
 
