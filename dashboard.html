@@ -1255,10 +1255,29 @@
         }
 
         // Missing Data Modal
+        const FIELD_LABELS = {
+            'nationwide_data.production_index': '전국 생산지수',
+            'nationwide_data.growth_rate': '전국 증감률 (%)',
+            'nationwide_data.index_value': '전국 지수',
+            'nationwide_data.employment_rate': '전국 고용률 (%)',
+            'nationwide_data.unemployment_rate': '전국 실업률 (%)',
+            'nationwide_data.change': '전국 증감 (%p)',
+            'nationwide_data.price_index': '전국 소비자물가지수',
+            'nationwide_data.change_rate': '전국 등락률 (%)',
+            'nationwide_data.export_value': '전국 수출액 (백만달러)',
+            'nationwide_data.import_value': '전국 수입액 (백만달러)',
+            'nationwide_data.net_migration': '전국 순이동자수 (명)',
+            'summary_box.region_count': '증가 지역 수',
+        };
+
+        function getFieldLabel(field) {
+            return FIELD_LABELS[field] || field;
+        }
+
         function showMissingDataModal(fields) {
             elements.missingFieldList.innerHTML = fields.map(field => `
                 <div class="missing-field-item">
-                    <label class="missing-field-label">${field}</label>
+                    <label class="missing-field-label">${getFieldLabel(field)}</label>
                     <input type="text" class="missing-field-input" data-field="${field}" 
                            placeholder="값을 입력하세요">
                 </div>

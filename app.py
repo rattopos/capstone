@@ -164,28 +164,90 @@ def extract_year_quarter_from_excel(filepath):
 
 
 def check_missing_data(data, report_id):
-    """데이터에서 결측치 확인"""
+    """보고서 생성에 필수적인 결측치만 확인"""
     missing_fields = []
     
-    def check_value(value, path):
-        if value is None or value == '' or (isinstance(value, float) and pd.isna(value)):
-            missing_fields.append(path)
+    # 보고서별 필수 필드 정의
+    REQUIRED_FIELDS = {
+        'manufacturing': [
+            'nationwide_data.production_index',
+            'nationwide_data.growth_rate',
+            'summary_box.region_count',
+        ],
+        'service': [
+            'nationwide_data.production_index',
+            'nationwide_data.growth_rate',
+            'summary_box.region_count',
+        ],
+        'consumption': [
+            'nationwide_data.index_value',
+            'nationwide_data.growth_rate',
+            'summary_box.region_count',
+        ],
+        'employment': [
+            'nationwide_data.employment_rate',
+            'nationwide_data.change',
+            'summary_box.region_count',
+        ],
+        'unemployment': [
+            'nationwide_data.unemployment_rate',
+            'nationwide_data.change',
+            'summary_box.region_count',
+        ],
+        'price': [
+            'nationwide_data.price_index',
+            'nationwide_data.change_rate',
+            'summary_box.region_count',
+        ],
+        'export': [
+            'nationwide_data.export_value',
+            'nationwide_data.growth_rate',
+            'summary_box.region_count',
+        ],
+        'import': [
+            'nationwide_data.import_value',
+            'nationwide_data.growth_rate',
+            'summary_box.region_count',
+        ],
+        'population': [
+            'nationwide_data.net_migration',
+            'summary_box.region_count',
+        ],
+    }
+    
+    def get_nested_value(obj, path):
+        """중첩된 경로에서 값 가져오기"""
+        keys = path.replace('[', '.').replace(']', '').split('.')
+        current = obj
+        for key in keys:
+            if current is None:
+                return None
+            if isinstance(current, dict):
+                current = current.get(key)
+            elif isinstance(current, list) and key.isdigit():
+                idx = int(key)
+                current = current[idx] if idx < len(current) else None
+            else:
+                return None
+        return current
+    
+    def is_missing(value):
+        """값이 결측치인지 확인"""
+        if value is None:
+            return True
+        if value == '':
+            return True
+        if isinstance(value, float) and pd.isna(value):
             return True
         return False
     
-    def traverse(obj, path=''):
-        if isinstance(obj, dict):
-            for key, value in obj.items():
-                new_path = f"{path}.{key}" if path else key
-                traverse(value, new_path)
-        elif isinstance(obj, list):
-            for idx, item in enumerate(obj):
-                new_path = f"{path}[{idx}]"
-                traverse(item, new_path)
-        else:
-            check_value(obj, path)
+    # 해당 보고서의 필수 필드만 확인
+    required = REQUIRED_FIELDS.get(report_id, [])
+    for field_path in required:
+        value = get_nested_value(data, field_path)
+        if is_missing(value):
+            missing_fields.append(field_path)
     
-    traverse(data)
     return missing_fields
 
 
