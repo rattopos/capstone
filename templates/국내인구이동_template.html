@@ -218,12 +218,11 @@
                     {% for row in summary_table.rows %}
                     <tr>
                         {% if row.region_group %}
-                        <td class="region-group">{{ row.region_group }}</td>
+                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}">{{ row.region_group }}</td>
                         <td>{{ row.sido }}</td>
                         {% elif '전' in row.sido and '국' in row.sido %}
                         <td colspan="2">{{ row.sido }}</td>
                         {% else %}
-                        <td></td>
                         <td>{{ row.sido }}</td>
                         {% endif %}
                         {% for value in row.net_migrations %}

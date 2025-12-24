@@ -183,13 +183,21 @@ def generate_summary_table(sido_data, sido_age_data):
             age_20_29 = age_info.get('age_20_29', 0) / 1000
             age_other = age_info.get('age_other', 0) / 1000
             
-            rows.append({
-                'region_group': group_name if idx == 0 else '',
+            row_data = {
                 'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
                 'net_migrations': net_migrations_k,
                 'age_20_29': age_20_29,
                 'age_other': age_other
-            })
+            }
+            
+            # 첫 번째 시도에만 region_group과 rowspan 추가
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
     
     return {'rows': rows}
 

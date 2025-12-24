@@ -303,8 +303,8 @@ def generate_summary_table(analysis_df, summary_df, sido_data):
             break
     
     rows.append({
-        'region_group': '전 국',
-        'sido': '',
+        'region_group': None,  # 전국은 region_group 없음
+        'sido': '전 국',  # sido에 '전 국' 표시 (colspan 처리용)
         'changes': [-13.2, -1.4, -1.4, nationwide_change],
         'amounts': [nationwide_amount_2024, nationwide_amount_2025]
     })
@@ -336,12 +336,20 @@ def generate_summary_table(analysis_df, summary_df, sido_data):
                 sido_info.get('change', None)
             ]
             
-            rows.append({
-                'region_group': group_name if idx == 0 else '',
+            row_data = {
                 'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
                 'changes': changes,
                 'amounts': [amount_2024, amount_2025]
-            })
+            }
+            
+            # 첫 번째 시도에만 region_group과 rowspan 추가
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
     
     return {'rows': rows}
 

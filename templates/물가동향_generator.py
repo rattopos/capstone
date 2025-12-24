@@ -269,10 +269,10 @@ def generate_summary_table(summary_df, sido_data):
     # 실제 증감률 데이터 사용
     rows = []
     
-    # 전국
+    # 전국 (colspan=2로 처리됨)
     rows.append({
-        'region_group': '전 국',
-        'sido': '',
+        'region_group': None,  # 전국은 region_group 없음
+        'sido': '전 국',  # sido에 '전 국' 표시 (colspan 처리용)
         'changes': [3.3, 2.7, 2.1, sido_data.get('전국', {}).get('change', 2.1)],
         'indices': [114.0, sido_data.get('전국', {}).get('index_2025', 116.3)]
     })
@@ -324,8 +324,7 @@ def generate_summary_table(summary_df, sido_data):
                         change_2025_14 = (row[20] - row[16]) / row[16] * 100 if row[16] != 0 else 0
                     break
             
-            rows.append({
-                'region_group': group_name if idx == 0 else '',
+            row_data = {
                 'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
                 'changes': [
                     changes_info.get('change_2023_24', change_2023_24),
@@ -337,7 +336,16 @@ def generate_summary_table(summary_df, sido_data):
                     sido_info.get('index_2024', None),
                     sido_info.get('index_2025', None)
                 ]
-            })
+            }
+            
+            # 첫 번째 시도에만 region_group과 rowspan 추가
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
     
     return {'rows': rows}
 

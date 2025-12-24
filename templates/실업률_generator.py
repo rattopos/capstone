@@ -171,14 +171,14 @@ def generate_summary_table(summary_df, rate_data):
     """요약 테이블 데이터를 생성합니다."""
     rows = []
     
-    # 전국 행
+    # 전국 행 (colspan=2로 처리됨)
     nationwide = rate_data.get('전국', {})
     total = nationwide.get('계', {})
     youth = nationwide.get('15 - 29세', {})
     
     rows.append({
-        'region_group': '전 국',
-        'sido': '',
+        'region_group': None,  # 전국은 region_group 없음
+        'sido': '전 국',  # sido에 '전 국' 표시 (colspan 처리용)
         'changes': [
             summary_df.iloc[80, 11] - summary_df.iloc[80, 7],   # 2023.2/4 증감 
             summary_df.iloc[80, 15] - summary_df.iloc[80, 11],  # 2024.2/4 증감
@@ -220,8 +220,7 @@ def generate_summary_table(summary_df, rate_data):
                 total.get('change', None)
             ]
             
-            rows.append({
-                'region_group': group_name if idx == 0 else '',
+            row_data = {
                 'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
                 'changes': changes,
                 'rates': [
@@ -229,7 +228,16 @@ def generate_summary_table(summary_df, rate_data):
                     total.get('rate_2025_24', None)
                 ],
                 'youth_rate': youth.get('rate_2025_24', None)
-            })
+            }
+            
+            # 첫 번째 시도에만 region_group과 rowspan 추가
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
     
     return {'rows': rows}
 
