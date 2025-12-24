@@ -283,10 +283,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 break
         
         data = None
-        uses_data_wrapper = False  # 템플릿이 data.xxx 형태로 접근하는지 여부
-        
-        # 템플릿이 data.xxx 형태로 접근하는 보고서들
-        DATA_WRAPPER_REPORTS = ['unemployment', 'price', 'export', 'import', 'population']
         
         # ========== 데이터 추출 방식 결정 ==========
         
@@ -294,9 +290,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if hasattr(module, 'generate_report_data'):
             print(f"[DEBUG] generate_report_data 함수 사용")
             data = module.generate_report_data(excel_path)
-            uses_data_wrapper = report_id in DATA_WRAPPER_REPORTS
             print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
-            print(f"[DEBUG] data wrapper 사용: {uses_data_wrapper}")
         
         # 방법 2: generate_report 함수 직접 호출 (서비스업생산, 소비동향, 고용률)
         # - generate_report 함수가 완전한 데이터를 반환함
@@ -404,15 +398,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
         
-        # 템플릿 데이터 접근 방식에 따라 다르게 전달
-        if uses_data_wrapper:
-            # 템플릿이 {{ data.xxx }} 형태로 접근
-            print(f"[DEBUG] 템플릿 렌더링: data=data 방식")
-            html_content = template.render(data=data)
-        else:
-            # 템플릿이 {{ xxx }} 형태로 직접 접근
-            print(f"[DEBUG] 템플릿 렌더링: **data 방식")
-            html_content = template.render(**data)
+        # 모든 템플릿은 {{ xxx }} 형태로 직접 접근 (통일된 방식)
+        html_content = template.render(**data)
         
         print(f"[DEBUG] 보고서 생성 성공!")
         return html_content, None, missing

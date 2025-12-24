@@ -167,13 +167,13 @@
 </head>
 <body>
     <div class="report-container">
-        <h3>{{ data.report_info.section_number }}. {{ data.report_info.section_title }}</h3>
+        <h3>{{ report_info.section_number }}. {{ report_info.section_title }}</h3>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ {{ data.summary_box.headline }}</div>
-            <div class="nationwide">{{ data.summary_box.nationwide_summary }}</div>
-            <div class="regional">{{ data.summary_box.regional_summary }}</div>
+            <div class="headline">◆ {{ summary_box.headline }}</div>
+            <div class="nationwide">{{ summary_box.nationwide_summary }}</div>
+            <div class="regional">{{ summary_box.regional_summary }}</div>
         </div>
         
         <!-- 주요 등락지역 및 연령별 실업률 상세 -->
@@ -181,17 +181,17 @@
             <div class="title">&lt; 주요 등락지역 및 연령별 실업률 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">전 국({{ "%.1f"|format(data.nationwide_data.change) }}%p): {% for age in data.nationwide_data.age_groups %}{{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %}</div>
+            <div class="item">전 국({{ "%.1f"|format(nationwide_change) }}%p): {% for age in nationwide_age_groups %}{{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %}</div>
             
             <div class="separator"></div>
             
             <!-- 증가 지역 Top 3 -->
-            {% for region in data.top3_increase_regions %}
+            {% for region in top3_increase_regions %}
             <div class="item">{{ region.name }}({{ "%5.1f"|format(region.change) }}%p): {% for age in region.age_groups %}{{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %}</div>
             {% endfor %}
             
             <!-- 감소 지역 Top 3 -->
-            {% for region in data.top3_decrease_regions %}
+            {% for region in top3_decrease_regions %}
             <div class="item">{{ region.name }}({{ "%.1f"|format(region.change) }}%p): {% for age in region.age_groups %}{{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %}</div>
             {% endfor %}
         </div>
@@ -217,7 +217,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in data.summary_table.rows %}
+                    {% for row in summary_table.rows %}
                     <tr>
                         {% if row.region_group %}
                         <td class="region-group">{{ row.region_group }}</td>
@@ -241,7 +241,7 @@
             <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사</div>
         </div>
         
-        <div class="page-number">{{ data.report_info.page_number }}</div>
+        <div class="page-number">{{ report_info.page_number }}</div>
     </div>
 </body>
 </html>

@@ -170,31 +170,31 @@
 </head>
 <body>
     <div class="report-container">
-        <h2>{{ data.report_info.main_section_number }}. {{ data.report_info.main_section_title }}</h2>
+        <h2>{{ report_info.main_section_number }}. {{ report_info.main_section_title }}</h2>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">{{ data.summary_box.headline }}</div>
-            <div class="sub-section">{{ data.summary_box.inflow_summary }}</div>
+            <div class="headline">{{ summary_box.headline }}</div>
+            <div class="sub-section">{{ summary_box.inflow_summary }}</div>
         </div>
         
         <!-- 유입 지역 상세 -->
         <div class="detail-box">
             <div class="title">&lt; 주요 유입지역 및 연령별 유입인구 &gt;</div>
-            {% for region in data.top3_inflow_regions %}
+            {% for region in top3_inflow_regions %}
             <div class="item">{{ region.name }}({{ "{:,.0f}".format(region.net_migration) }}명): {% for age in region.ages %}{{ age.name }}({{ "{:,.0f}".format(age.value) }}명){% if not loop.last %}, {% endif %}{% endfor %}</div>
             {% endfor %}
         </div>
         
         <!-- 유출 섹션 -->
         <div class="section-box">
-            <div class="section-title">{{ data.summary_box.outflow_summary }}</div>
+            <div class="section-title">{{ summary_box.outflow_summary }}</div>
         </div>
         
         <!-- 유출 지역 상세 -->
         <div class="detail-box">
             <div class="title">&lt; 주요 유출지역 및 연령별 유출인구 &gt;</div>
-            {% for region in data.top3_outflow_regions %}
+            {% for region in top3_outflow_regions %}
             <div class="item">{{ region.name }}({{ "{:,.0f}".format(region.net_migration) }}명): {% for age in region.ages %}{{ age.name }}({{ "{:,.0f}".format(age.value) }}명){% if not loop.last %}, {% endif %}{% endfor %}</div>
             {% endfor %}
         </div>
@@ -220,7 +220,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in data.summary_table.rows %}
+                    {% for row in summary_table.rows %}
                     <tr>
                         {% if row.region_group %}
                         <td class="region-group">{{ row.region_group }}</td>
@@ -243,7 +243,7 @@
             <div class="footnote">자료: 국가데이터셔 국가통계포털(KOSIS), 국내인구이동통계</div>
         </div>
         
-        <div class="page-number">{{ data.report_info.page_number }}</div>
+        <div class="page-number">{{ report_info.page_number }}</div>
     </div>
 </body>
 </html>
