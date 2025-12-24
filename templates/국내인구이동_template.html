@@ -219,10 +219,13 @@
                     <tr>
                         {% if row.region_group %}
                         <td class="region-group">{{ row.region_group }}</td>
+                        <td>{{ row.sido }}</td>
+                        {% elif '전' in row.sido and '국' in row.sido %}
+                        <td colspan="2">{{ row.sido }}</td>
                         {% else %}
                         <td></td>
-                        {% endif %}
                         <td>{{ row.sido }}</td>
+                        {% endif %}
                         {% for value in row.net_migrations %}
                         <td>{{ "%.1f"|format(value) if value is not none else "" }}</td>
                         {% endfor %}

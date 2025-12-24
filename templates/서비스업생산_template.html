@@ -237,8 +237,12 @@
                     <tr>
                         {% if row.group %}
                         <td class="region-group" rowspan="{{ row.rowspan | default(1) }}">{{ row.group }}</td>
-                        {% endif %}
                         <td>{{ row.region }}</td>
+                        {% elif '전' in row.region and '국' in row.region %}
+                        <td colspan="2">{{ row.region }}</td>
+                        {% else %}
+                        <td>{{ row.region }}</td>
+                        {% endif %}
                         {% for rate in row.growth_rates %}
                         <td>{{ "%.1f"|format(rate) }}</td>
                         {% endfor %}

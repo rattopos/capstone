@@ -5,87 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ⅰ. 부문별 지역경제동향 - 고용률</title>
     <style>
-        @page {
-            size: A4;
-            margin: 20mm;
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-            font-size: 11pt;
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
             line-height: 1.6;
             color: #000;
-            margin: 0;
-            padding: 20px;
+            background: #fff;
+            padding: 20px 40px;
         }
         
-        /* 섹션 제목 */
+        .report-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
         h2 {
             font-size: 14pt;
             font-weight: bold;
-            margin: 20px 0 15px 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
         }
         
         h3 {
             font-size: 12pt;
             font-weight: bold;
-            margin: 15px 0 10px 0;
+            margin-bottom: 15px;
         }
         
-        /* 회색 요약 박스 */
         .summary-box {
-            background-color: #e8e8e8;
-            border: 1px solid #ccc;
-            padding: 12px 15px;
-            margin: 15px 0;
-            font-size: 10.5pt;
-            line-height: 1.8;
+            border: 1px dotted #666;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
         }
         
-        .summary-box .diamond {
-            color: #000;
+        .summary-box .headline {
             font-weight: bold;
+            margin-bottom: 8px;
         }
         
-        /* 본문 컨텐츠 */
-        .content-section {
-            margin: 15px 0;
-        }
-        
-        .checkbox-item {
-            display: flex;
-            align-items: flex-start;
-            margin: 10px 0;
-        }
-        
-        .checkbox {
-            width: 14px;
-            height: 14px;
-            border: 1px solid #000;
-            margin-right: 10px;
-            margin-top: 3px;
-            flex-shrink: 0;
-        }
-        
-        .bullet-item {
-            display: flex;
-            align-items: flex-start;
-            margin: 8px 0;
+        .summary-box .nationwide {
+            margin-bottom: 5px;
             padding-left: 20px;
+            position: relative;
         }
         
-        .bullet {
-            margin-right: 8px;
-            flex-shrink: 0;
+        .summary-box .nationwide::before {
+            content: "□";
+            position: absolute;
+            left: 0;
         }
         
-        /* 강조 스타일 */
+        .summary-box .regional {
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .summary-box .regional::before {
+            content: "○";
+            position: absolute;
+            left: 0;
+        }
+        
         .highlight {
             font-weight: bold;
-        }
-        
-        .underline {
-            text-decoration: underline;
         }
         
         .increase {
@@ -96,54 +88,37 @@
             font-weight: bold;
         }
         
-        /* 주요 등락 지역 및 연령별 고용률 섹션 */
-        .region-age-section {
-            border: 1px solid #000;
-            margin: 20px 0;
-            padding: 0;
+        .detail-box {
+            border: 1px dotted #666;
+            padding: 15px;
+            margin-bottom: 20px;
         }
         
-        .region-age-section .section-title {
+        .detail-box .title {
             text-align: center;
-            font-weight: bold;
-            padding: 8px;
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #000;
-        }
-        
-        .region-age-content {
-            padding: 10px 15px;
-        }
-        
-        .region-age-item {
-            margin: 5px 0;
-            font-size: 10pt;
-        }
-        
-        .divider-line {
-            border-top: 1px solid #000;
-            margin: 8px 0;
-        }
-        
-        /* 표 스타일 */
-        .data-table-container {
-            margin: 20px 0;
-        }
-        
-        .data-table-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 12pt;
             margin-bottom: 10px;
+            font-weight: 500;
         }
         
-        .data-table-title sup {
-            font-size: 8pt;
+        .detail-box .item {
+            margin-bottom: 3px;
+            padding-left: 10px;
+        }
+        
+        .detail-box .item::before {
+            content: "·";
+            margin-right: 5px;
+        }
+        
+        .detail-box .separator {
+            border-top: 1px dotted #999;
+            margin: 8px 0;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 10px;
             font-size: 9pt;
         }
         
@@ -155,118 +130,82 @@
         }
         
         .data-table th {
-            background-color: #d9e8d9;
-            font-weight: bold;
-        }
-        
-        .data-table .header-row th {
-            background-color: #b8d4b8;
+            background-color: #e8f5e9;
+            font-weight: 500;
         }
         
         .data-table .region-group {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-align: left;
-            padding-left: 10px;
+            background-color: #f5f5f5;
+            font-weight: 500;
         }
         
-        .data-table .region-name {
-            text-align: left;
-            padding-left: 20px;
+        .data-table .rate-section {
+            background-color: #fff3e0;
         }
         
-        .data-table .number {
-            text-align: right;
-            padding-right: 8px;
-        }
-        
-        .data-table .highlight-column {
-            background-color: #e8f4e8;
-        }
-        
-        /* 출처 및 주석 */
-        .note {
-            font-size: 9pt;
-            margin-top: 10px;
-            color: #333;
-        }
-        
-        .source {
-            font-size: 9pt;
-            margin-top: 5px;
-            color: #333;
-        }
-        
-        /* 페이지 번호 */
-        .page-number {
+        .table-title {
             text-align: center;
-            margin-top: 30px;
-            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 11pt;
+        }
+        
+        .footnote {
+            font-size: 8pt;
+            color: #333;
+            margin-top: 5px;
+        }
+        
+        
+        .table-container {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- 6. 고용 동향 -->
-    <h2>6. 고용 동향</h2>
-    
-    <!-- 가. 고용률 -->
-    <h3>가. 고용률</h3>
-    
-    <!-- 회색 요약 박스 -->
-    <div class="summary-box">
-        <span class="diamond">◆</span>고용률은 
+    <div class="report-container">
+        <h2>6. 고용 동향</h2>
+        <h3>가. 고용률</h3>
         
-        <span class="highlight underline">대전</span>, 
-        
-        <span class="highlight underline">부산</span>, 
-        
-        <span class="highlight underline">강원</span>
-        
-        등 <span class="highlight">11개</span> 시도에서 전년동분기대비 <span class="increase">상승</span>
-    </div>
-    
-    <!-- 전국 데이터 섹션 -->
-    <div class="content-section">
-        <div class="checkbox-item">
-            <div class="checkbox"></div>
-            <div>
-                전국 고용률은 <span class="highlight">63.5%</span>로, 30~39세, 40~49세, 70세이상의 고용률이 올라 전년동분기대비 <span class="increase">0.2%p 상승</span>
+        <!-- 요약 박스 -->
+        <div class="summary-box">
+            <div class="headline">◆ 고용률은 
+                
+                <span class="highlight">대전</span>, 
+                
+                <span class="highlight">부산</span>, 
+                
+                <span class="highlight">강원</span>
+                
+                등 <span class="highlight">11개</span> 시도에서 전년동분기대비 <span class="increase">상승</span>
             </div>
-        </div>
-    </div>
-    
-    <!-- 시도 데이터 섹션 -->
-    <div class="content-section">
-        <div class="bullet-item">
-            <span class="bullet">○</span>
-            <div>
+            <div class="nationwide">전국 고용률은 <span class="highlight">63.5%</span>로, 30~39세, 40~49세, 70세이상의 고용률이 올라 전년동분기대비 <span class="increase">0.2%p 상승</span></div>
+            <div class="regional">
                 
-                <span class="highlight underline">전북</span>(-1.0%p), 
+                <span class="highlight">전북</span>(-1.0%p), 
                 
-                <span class="highlight underline">광주</span>(-0.4%p), 
+                <span class="highlight">광주</span>(-0.4%p), 
                 
-                <span class="highlight underline">서울</span>(-0.2%p)
+                <span class="highlight">서울</span>(-0.2%p)
                 
                 등의 고용률은 <span class="decrease">하락</span>하였으나, 
                 
-                <span class="highlight underline">대전</span>(1.2%p), 
+                <span class="highlight">대전</span>(1.2%p), 
                 
-                <span class="highlight underline">부산</span>(1.0%p), 
+                <span class="highlight">부산</span>(1.0%p), 
                 
-                <span class="highlight underline">강원</span>(1.0%p)
+                <span class="highlight">강원</span>(1.0%p)
                 
                 등의 고용률은 <span class="increase">상승</span>
             </div>
         </div>
-    </div>
-    
-    <!-- 주요 등락지역 및 연령별 고용률 -->
-    <div class="region-age-section">
-        <div class="section-title">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
-        <div class="region-age-content">
+        
+        <!-- 주요 등락지역 및 연령별 고용률 -->
+        <div class="detail-box">
+            <div class="title">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
+            
             <!-- 전국 -->
-            <div class="region-age-item">
-                · 전 국( 0.2%p): 
+            <div class="item">전 국( 0.2%p): 
                 
                 30~39세(0.9%p), 
                 
@@ -276,12 +215,11 @@
                 
             </div>
             
-            <div class="divider-line"></div>
+            <div class="separator"></div>
             
             <!-- 증가 지역 Top 3 -->
             
-            <div class="region-age-item">
-                · 대전( 1.2%p): 
+            <div class="item">대전( 1.2%p): 
                 
                 70세이상(2.8%p), 
                 
@@ -291,8 +229,7 @@
                 
             </div>
             
-            <div class="region-age-item">
-                · 부산( 1.0%p): 
+            <div class="item">부산( 1.0%p): 
                 
                 50~59세(3.6%p), 
                 
@@ -302,8 +239,7 @@
                 
             </div>
             
-            <div class="region-age-item">
-                · 강원( 1.0%p): 
+            <div class="item">강원( 1.0%p): 
                 
                 70세이상(2.9%p), 
                 
@@ -314,12 +250,11 @@
             </div>
             
             
-            <div class="divider-line"></div>
+            <div class="separator"></div>
             
             <!-- 감소 지역 Top 3 -->
             
-            <div class="region-age-item">
-                · 전북(-1.0%p): 
+            <div class="item">전북(-1.0%p): 
                 
                 70세이상(-2.5%p), 
                 
@@ -329,8 +264,7 @@
                 
             </div>
             
-            <div class="region-age-item">
-                · 광주(-0.4%p): 
+            <div class="item">광주(-0.4%p): 
                 
                 50~59세(-4.2%p), 
                 
@@ -340,8 +274,7 @@
                 
             </div>
             
-            <div class="region-age-item">
-                · 서울(-0.2%p): 
+            <div class="item">서울(-0.2%p): 
                 
                 30~39세(-1.8%p), 
                 
@@ -352,425 +285,421 @@
             </div>
             
         </div>
-    </div>
-    
-    <!-- 고용률 및 증감 표 -->
-    <div class="data-table-container">
-        <div class="data-table-title">《고용률<sup>1)</sup> 및 증감 》</div>
-        <table class="data-table">
-            <thead>
-                <tr class="header-row">
-                    <th colspan="2" rowspan="2"></th>
-                    <th colspan="4">전년동분기대비 증감(%p)</th>
-                    <th colspan="3">고용률(%)</th>
-                </tr>
-                <tr>
-                    <th>2023.2/4</th>
-                    <th>2024.2/4</th>
-                    <th>2025.1/4</th>
-                    <th class="highlight-column">2025.2/4</th>
-                    <th>2024.2/4</th>
-                    <th class="highlight-column">2025.2/4</th>
-                    <th>20-29세</th>
-                </tr>
-            </thead>
-            <tbody>
-                
-                <tr>
-                    
-                    <td class="region-name">전 국</td>
-                    
-                    <td class="number">0.5</td>
-                    
-                    <td class="number">0.1</td>
-                    
-                    <td class="number">0.2</td>
-                    
-                    <td class="number highlight-column">0.2</td>
-                    
-                    
-                    <td class="number">63.3</td>
-                    
-                    <td class="number highlight-column">63.5</td>
-                    
-                    <td class="number">45.7</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-group" rowspan="3">경인</td>
-                    
-                    <td class="region-name">서 울</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number">0.7</td>
-                    
-                    <td class="number">-1.1</td>
-                    
-                    <td class="number highlight-column">-0.2</td>
-                    
-                    
-                    <td class="number">62.0</td>
-                    
-                    <td class="number highlight-column">61.8</td>
-                    
-                    <td class="number">50.2</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">인 천</td>
-                    
-                    <td class="number">0.7</td>
-                    
-                    <td class="number">-0.1</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number highlight-column">0.4</td>
-                    
-                    
-                    <td class="number">63.4</td>
-                    
-                    <td class="number highlight-column">63.8</td>
-                    
-                    <td class="number">45.1</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">경 기</td>
-                    
-                    <td class="number">-0.4</td>
-                    
-                    <td class="number">0.2</td>
-                    
-                    <td class="number">0.4</td>
-                    
-                    <td class="number highlight-column">0.1</td>
-                    
-                    
-                    <td class="number">64.6</td>
-                    
-                    <td class="number highlight-column">64.7</td>
-                    
-                    <td class="number">48.0</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-group" rowspan="4">충청</td>
-                    
-                    <td class="region-name">대 전</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number">-0.6</td>
-                    
-                    <td class="number">0.5</td>
-                    
-                    <td class="number highlight-column">1.2</td>
-                    
-                    
-                    <td class="number">61.3</td>
-                    
-                    <td class="number highlight-column">62.5</td>
-                    
-                    <td class="number">46.0</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">세 종</td>
-                    
-                    <td class="number">0.9</td>
-                    
-                    <td class="number">-0.1</td>
-                    
-                    <td class="number">0.7</td>
-                    
-                    <td class="number highlight-column">0.0</td>
-                    
-                    
-                    <td class="number">65.6</td>
-                    
-                    <td class="number highlight-column">65.6</td>
-                    
-                    <td class="number">34.5</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">충 북</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number">0.8</td>
-                    
-                    <td class="number">1.2</td>
-                    
-                    <td class="number highlight-column">0.8</td>
-                    
-                    
-                    <td class="number">67.3</td>
-                    
-                    <td class="number highlight-column">68.1</td>
-                    
-                    <td class="number">47.5</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">충 남</td>
-                    
-                    <td class="number">1.4</td>
-                    
-                    <td class="number">-0.3</td>
-                    
-                    <td class="number">1.9</td>
-                    
-                    <td class="number highlight-column">0.7</td>
-                    
-                    
-                    <td class="number">66.2</td>
-                    
-                    <td class="number highlight-column">66.9</td>
-                    
-                    <td class="number">47.6</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-group" rowspan="4">호남</td>
-                    
-                    <td class="region-name">광 주</td>
-                    
-                    <td class="number">1.6</td>
-                    
-                    <td class="number">1.2</td>
-                    
-                    <td class="number">-1.2</td>
-                    
-                    <td class="number highlight-column">-0.4</td>
-                    
-                    
-                    <td class="number">61.4</td>
-                    
-                    <td class="number highlight-column">61.0</td>
-                    
-                    <td class="number">37.1</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">전 북</td>
-                    
-                    <td class="number">0.4</td>
-                    
-                    <td class="number">1.1</td>
-                    
-                    <td class="number">-0.8</td>
-                    
-                    <td class="number highlight-column">-1.0</td>
-                    
-                    
-                    <td class="number">64.8</td>
-                    
-                    <td class="number highlight-column">63.8</td>
-                    
-                    <td class="number">37.0</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">전 남</td>
-                    
-                    <td class="number">1.2</td>
-                    
-                    <td class="number">-1.5</td>
-                    
-                    <td class="number">-0.5</td>
-                    
-                    <td class="number highlight-column">-0.2</td>
-                    
-                    
-                    <td class="number">66.8</td>
-                    
-                    <td class="number highlight-column">66.6</td>
-                    
-                    <td class="number">45.2</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">제 주</td>
-                    
-                    <td class="number">0.0</td>
-                    
-                    <td class="number">0.5</td>
-                    
-                    <td class="number">-0.3</td>
-                    
-                    <td class="number highlight-column">0.5</td>
-                    
-                    
-                    <td class="number">69.7</td>
-                    
-                    <td class="number highlight-column">70.2</td>
-                    
-                    <td class="number">42.6</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-group" rowspan="3">동북</td>
-                    
-                    <td class="region-name">대 구</td>
-                    
-                    <td class="number">1.7</td>
-                    
-                    <td class="number">-2.5</td>
-                    
-                    <td class="number">-0.5</td>
-                    
-                    <td class="number highlight-column">0.0</td>
-                    
-                    
-                    <td class="number">58.5</td>
-                    
-                    <td class="number highlight-column">58.5</td>
-                    
-                    <td class="number">40.7</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">경 북</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number">0.3</td>
-                    
-                    <td class="number">0.4</td>
-                    
-                    <td class="number highlight-column">0.5</td>
-                    
-                    
-                    <td class="number">65.0</td>
-                    
-                    <td class="number highlight-column">65.5</td>
-                    
-                    <td class="number">41.7</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">강 원</td>
-                    
-                    <td class="number">2.2</td>
-                    
-                    <td class="number">0.0</td>
-                    
-                    <td class="number">1.3</td>
-                    
-                    <td class="number highlight-column">1.0</td>
-                    
-                    
-                    <td class="number">65.7</td>
-                    
-                    <td class="number highlight-column">66.7</td>
-                    
-                    <td class="number">46.6</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-group" rowspan="3">동남</td>
-                    
-                    <td class="region-name">부 산</td>
-                    
-                    <td class="number">0.7</td>
-                    
-                    <td class="number">0.0</td>
-                    
-                    <td class="number">0.1</td>
-                    
-                    <td class="number highlight-column">1.0</td>
-                    
-                    
-                    <td class="number">57.9</td>
-                    
-                    <td class="number highlight-column">58.9</td>
-                    
-                    <td class="number">44.0</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">울 산</td>
-                    
-                    <td class="number">0.6</td>
-                    
-                    <td class="number">0.3</td>
-                    
-                    <td class="number">0.8</td>
-                    
-                    <td class="number highlight-column">0.2</td>
-                    
-                    
-                    <td class="number">60.4</td>
-                    
-                    <td class="number highlight-column">60.6</td>
-                    
-                    <td class="number">43.7</td>
-                    
-                </tr>
-                
-                <tr>
-                    
-                    <td class="region-name">경 남</td>
-                    
-                    <td class="number">1.2</td>
-                    
-                    <td class="number">-0.1</td>
-                    
-                    <td class="number">0.9</td>
-                    
-                    <td class="number highlight-column">0.3</td>
-                    
-                    
-                    <td class="number">63.0</td>
-                    
-                    <td class="number highlight-column">63.3</td>
-                    
-                    <td class="number">37.0</td>
-                    
-                </tr>
-                
-            </tbody>
-        </table>
-        <div class="note">1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100</div>
-        <div class="source">자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사</div>
-    </div>
-    
-    <!-- 페이지 번호 -->
-    <div class="page-number">- 13 -</div>
-</body>
-</html>
+        
+        <!-- 데이터 테이블 -->
+        <div class="table-container">
+            <div class="table-title">《 고용률<sup>1)</sup> 및 증감 》</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" colspan="2"></th>
+                        <th colspan="4">전년동분기대비 증감(%p)</th>
+                        <th colspan="3" class="rate-section">고용률(%)</th>
+                    </tr>
+                    <tr>
+                        <th>2023.2/4</th>
+                        <th>2024.2/4</th>
+                        <th>2025.1/4</th>
+                        <th>2025.2/4</th>
+                        <th class="rate-section">2024.2/4</th>
+                        <th class="rate-section">2025.2/4</th>
+                        <th class="rate-section">20-29세</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        
+                        <td>전 국</td>
+                        
+                        <td>0.5</td>
+                        
+                        <td>0.1</td>
+                        
+                        <td>0.2</td>
+                        
+                        <td>0.2</td>
+                        
+                        
+                        <td class="rate-section">63.3</td>
+                        
+                        <td class="rate-section">63.5</td>
+                        
+                        <td class="rate-section">45.7</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="3">경인</td>
+                        
+                        <td>서 울</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>0.7</td>
+                        
+                        <td>-1.1</td>
+                        
+                        <td>-0.2</td>
+                        
+                        
+                        <td class="rate-section">62.0</td>
+                        
+                        <td class="rate-section">61.8</td>
+                        
+                        <td class="rate-section">50.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>인 천</td>
+                        
+                        <td>0.7</td>
+                        
+                        <td>-0.1</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>0.4</td>
+                        
+                        
+                        <td class="rate-section">63.4</td>
+                        
+                        <td class="rate-section">63.8</td>
+                        
+                        <td class="rate-section">45.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>경 기</td>
+                        
+                        <td>-0.4</td>
+                        
+                        <td>0.2</td>
+                        
+                        <td>0.4</td>
+                        
+                        <td>0.1</td>
+                        
+                        
+                        <td class="rate-section">64.6</td>
+                        
+                        <td class="rate-section">64.7</td>
+                        
+                        <td class="rate-section">48.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="4">충청</td>
+                        
+                        <td>대 전</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>-0.6</td>
+                        
+                        <td>0.5</td>
+                        
+                        <td>1.2</td>
+                        
+                        
+                        <td class="rate-section">61.3</td>
+                        
+                        <td class="rate-section">62.5</td>
+                        
+                        <td class="rate-section">46.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>세 종</td>
+                        
+                        <td>0.9</td>
+                        
+                        <td>-0.1</td>
+                        
+                        <td>0.7</td>
+                        
+                        <td>0.0</td>
+                        
+                        
+                        <td class="rate-section">65.6</td>
+                        
+                        <td class="rate-section">65.6</td>
+                        
+                        <td class="rate-section">34.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>충 북</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>0.8</td>
+                        
+                        <td>1.2</td>
+                        
+                        <td>0.8</td>
+                        
+                        
+                        <td class="rate-section">67.3</td>
+                        
+                        <td class="rate-section">68.1</td>
+                        
+                        <td class="rate-section">47.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>충 남</td>
+                        
+                        <td>1.4</td>
+                        
+                        <td>-0.3</td>
+                        
+                        <td>1.9</td>
+                        
+                        <td>0.7</td>
+                        
+                        
+                        <td class="rate-section">66.2</td>
+                        
+                        <td class="rate-section">66.9</td>
+                        
+                        <td class="rate-section">47.6</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="4">호남</td>
+                        
+                        <td>광 주</td>
+                        
+                        <td>1.6</td>
+                        
+                        <td>1.2</td>
+                        
+                        <td>-1.2</td>
+                        
+                        <td>-0.4</td>
+                        
+                        
+                        <td class="rate-section">61.4</td>
+                        
+                        <td class="rate-section">61.0</td>
+                        
+                        <td class="rate-section">37.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>전 북</td>
+                        
+                        <td>0.4</td>
+                        
+                        <td>1.1</td>
+                        
+                        <td>-0.8</td>
+                        
+                        <td>-1.0</td>
+                        
+                        
+                        <td class="rate-section">64.8</td>
+                        
+                        <td class="rate-section">63.8</td>
+                        
+                        <td class="rate-section">37.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>전 남</td>
+                        
+                        <td>1.2</td>
+                        
+                        <td>-1.5</td>
+                        
+                        <td>-0.5</td>
+                        
+                        <td>-0.2</td>
+                        
+                        
+                        <td class="rate-section">66.8</td>
+                        
+                        <td class="rate-section">66.6</td>
+                        
+                        <td class="rate-section">45.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>제 주</td>
+                        
+                        <td>0.0</td>
+                        
+                        <td>0.5</td>
+                        
+                        <td>-0.3</td>
+                        
+                        <td>0.5</td>
+                        
+                        
+                        <td class="rate-section">69.7</td>
+                        
+                        <td class="rate-section">70.2</td>
+                        
+                        <td class="rate-section">42.6</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="3">동북</td>
+                        
+                        <td>대 구</td>
+                        
+                        <td>1.7</td>
+                        
+                        <td>-2.5</td>
+                        
+                        <td>-0.5</td>
+                        
+                        <td>0.0</td>
+                        
+                        
+                        <td class="rate-section">58.5</td>
+                        
+                        <td class="rate-section">58.5</td>
+                        
+                        <td class="rate-section">40.7</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>경 북</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>0.3</td>
+                        
+                        <td>0.4</td>
+                        
+                        <td>0.5</td>
+                        
+                        
+                        <td class="rate-section">65.0</td>
+                        
+                        <td class="rate-section">65.5</td>
+                        
+                        <td class="rate-section">41.7</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>강 원</td>
+                        
+                        <td>2.2</td>
+                        
+                        <td>0.0</td>
+                        
+                        <td>1.3</td>
+                        
+                        <td>1.0</td>
+                        
+                        
+                        <td class="rate-section">65.7</td>
+                        
+                        <td class="rate-section">66.7</td>
+                        
+                        <td class="rate-section">46.6</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="3">동남</td>
+                        
+                        <td>부 산</td>
+                        
+                        <td>0.7</td>
+                        
+                        <td>0.0</td>
+                        
+                        <td>0.1</td>
+                        
+                        <td>1.0</td>
+                        
+                        
+                        <td class="rate-section">57.9</td>
+                        
+                        <td class="rate-section">58.9</td>
+                        
+                        <td class="rate-section">44.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>울 산</td>
+                        
+                        <td>0.6</td>
+                        
+                        <td>0.3</td>
+                        
+                        <td>0.8</td>
+                        
+                        <td>0.2</td>
+                        
+                        
+                        <td class="rate-section">60.4</td>
+                        
+                        <td class="rate-section">60.6</td>
+                        
+                        <td class="rate-section">43.7</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td>경 남</td>
+                        
+                        <td>1.2</td>
+                        
+                        <td>-0.1</td>
+                        
+                        <td>0.9</td>
+                        
+                        <td>0.3</td>
+                        
+                        
+                        <td class="rate-section">63.0</td>
+                        
+                        <td class="rate-section">63.3</td>
+                        
+                        <td class="rate-section">37.0</td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+            <div class="footnote">1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100</div>
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사</div>
+        </div>
+        

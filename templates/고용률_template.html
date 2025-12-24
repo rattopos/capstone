@@ -247,8 +247,12 @@
                     <tr>
                         {% if row.group %}
                         <td class="region-group" rowspan="{{ row.rowspan | default(1) }}">{{ row.group }}</td>
-                        {% endif %}
                         <td>{{ row.region }}</td>
+                        {% elif '전' in row.region and '국' in row.region %}
+                        <td colspan="2">{{ row.region }}</td>
+                        {% else %}
+                        <td>{{ row.region }}</td>
+                        {% endif %}
                         {% for change in row.changes %}
                         <td>{{ "%.1f"|format(change) }}</td>
                         {% endfor %}
