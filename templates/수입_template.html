@@ -177,7 +177,7 @@
             <div class="title">&lt; 주요 증감지역 및 품목 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">전국({{ "%5.1f"|format(nationwide_change) }}%): {% for prod in nationwide_products %}{{ prod.name }}({{ "%.1f"|format(prod.change) }}%){% if not loop.last %}, {% endif %}{% endfor %}</div>
+            <div class="item">전국({{ "%5.1f"|format(nationwide_data.change) }}%): {% for prod in nationwide_data.products %}{{ prod.name }}({{ "%.1f"|format(prod.change) }}%){% if not loop.last %}, {% endif %}{% endfor %}</div>
             
             <div class="separator"></div>
             
