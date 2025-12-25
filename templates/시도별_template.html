@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            padding: 20px 40px;
+        }
+        
+        .report-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* 상단 헤더 */
+        .main-header {
+            border: 2px solid #666;
+            border-left: 8px solid #4a6fa5;
+            border-right: 8px solid #4a6fa5;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(to right, rgba(74, 111, 165, 0.1), transparent, rgba(74, 111, 165, 0.1));
+            position: relative;
+        }
+        
+        .main-header::before,
+        .main-header::after {
+            content: "◇◇◇";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4a6fa5;
+            font-size: 8pt;
+        }
+        
+        .main-header::before {
+            left: 15px;
+        }
+        
+        .main-header::after {
+            right: 15px;
+        }
+        
+        .main-header h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        
+        /* 지역 제목 */
+        .region-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        /* 섹션 제목 */
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title::before {
+            content: "□";
+            margin-right: 8px;
+        }
+        
+        /* 본문 항목 */
+        .item {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            text-align: justify;
+        }
+        
+        .item::before {
+            content: "○";
+            position: absolute;
+            left: 0;
+        }
+        
+        .item-label {
+            font-weight: bold;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase {
+            font-weight: bold;
+        }
+        
+        .decrease {
+            font-weight: bold;
+        }
+        
+        /* 플레이스홀더 (사용자 입력 가능) */
+        .placeholder {
+            background-color: #fff3cd;
+            border: 1px dashed #ffc107;
+            padding: 0 4px;
+            border-radius: 3px;
+            color: #856404;
+            cursor: text;
+            min-width: 50px;
+            display: inline-block;
+        }
+        
+        .placeholder:hover {
+            background-color: #ffeeba;
+        }
+        
+        .placeholder:focus {
+            outline: 2px solid #ffc107;
+            background-color: #fff;
+        }
+        
+        /* 차트 컨테이너 */
+        .charts-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            gap: 20px;
+        }
+        
+        .chart-container {
+            flex: 1;
+            max-width: 48%;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-size: 9pt;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 180px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #fafafa;
+        }
+        
+        /* 차트 설정 패널 */
+        .chart-settings {
+            display: none;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            z-index: 100;
+            font-size: 8pt;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .chart-settings.visible {
+            display: block;
+        }
+        
+        .chart-settings label {
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .chart-settings input {
+            width: 60px;
+            margin-left: 5px;
+        }
+        
+        .chart-settings button {
+            margin-top: 5px;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        
+        .settings-toggle {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 8pt;
+            border-radius: 3px;
+            z-index: 50;
+        }
+        
+        .settings-toggle:hover {
+            background: #e0e0e0;
+        }
+        
+        /* 요약 테이블 */
+        .summary-table-container {
+            margin-top: 20px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-bottom: 8px;
+        }
+        
+        .table-subtitle {
+            text-align: right;
+            font-size: 8pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+        }
+        
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #666;
+            padding: 4px 6px;
+            text-align: center;
+        }
+        
+        .summary-table th {
+            background-color: #e8e8e8;
+            font-weight: 500;
+        }
+        
+        .summary-table thead tr:first-child th {
+            border-bottom: 1px dotted #999;
+        }
+        
+        .summary-table tbody tr:nth-child(odd) {
+            background-color: #fafafa;
+        }
+        
+        .summary-table .period-col {
+            background-color: #f5f5f5;
+            font-weight: 500;
+        }
+        
+        /* 인쇄 최적화 */
+        @media print {
+            body {
+                padding: 10px 20px;
+            }
+            
+            .settings-toggle,
+            .chart-settings {
+                display: none !important;
+            }
+            
+            .chart-wrapper {
+                border: none;
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- 메인 헤더 (첫 페이지에만 표시) -->
+        {% if report_info.region_index == 1 %}
+        <div class="main-header">
+            <h1>Ⅱ. 시도별 경제동향</h1>
+        </div>
+        {% endif %}
+        
+        <!-- 지역 제목 -->
+        <div class="region-title">{{ report_info.region_index }}. {{ report_info.region }}</div>
+        
+        <!-- ===== 생산 섹션 ===== -->
+        <div class="section-title">생산</div>
+        
+        <div class="item">
+            <span class="item-label">(광공업 생산)</span>
+            {% if production.manufacturing.direction == '감소' %}
+            {{ production.manufacturing.increase_industries | map(attribute='name') | join(', ') }}({% for i in production.manufacturing.increase_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 늘었으나, {{ production.manufacturing.decrease_industries | map(attribute='name') | join(', ') }}({% for i in production.manufacturing.decrease_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(production.manufacturing.total_growth_rate | abs) }}% 감소</span>
+            {% else %}
+            {{ production.manufacturing.decrease_industries | map(attribute='name') | join(', ') }}({% for i in production.manufacturing.decrease_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 줄었으나, {{ production.manufacturing.increase_industries | map(attribute='name') | join(', ') }}({% for i in production.manufacturing.increase_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(production.manufacturing.total_growth_rate) }}% 증가</span>
+            {% endif %}
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(서비스업 생산)</span>
+            {% if production.service.direction == '증가' %}
+            {{ production.service.decrease_industries | map(attribute='name') | join(', ') }}({% for i in production.service.decrease_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄었으나, {{ production.service.increase_industries | map(attribute='name') | join(', ') }}({% for i in production.service.increase_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(production.service.total_growth_rate) }}% 증가</span>
+            {% else %}
+            {{ production.service.increase_industries | map(attribute='name') | join(', ') }}({% for i in production.service.increase_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘었으나, {{ production.service.decrease_industries | map(attribute='name') | join(', ') }}({% for i in production.service.decrease_industries %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(production.service.total_growth_rate | abs) }}% 감소</span>
+            {% endif %}
+        </div>
+        
+        <!-- 생산 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 광공업생산 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('manufacturing')">⚙</button>
+                    <div id="manufacturing-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="manufacturing-ymin" value="{{ charts.manufacturing.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="manufacturing-ymax" value="{{ charts.manufacturing.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="manufacturing-ystep" value="{{ charts.manufacturing.yAxisStep }}"></label>
+                        <button onclick="updateChart('manufacturing')">적용</button>
+                    </div>
+                    <canvas id="chart-manufacturing"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 서비스업생산 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('service')">⚙</button>
+                    <div id="service-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="service-ymin" value="{{ charts.service.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="service-ymax" value="{{ charts.service.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="service-ystep" value="{{ charts.service.yAxisStep }}"></label>
+                        <button onclick="updateChart('service')">적용</button>
+                    </div>
+                    <canvas id="chart-service"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 소비.건설 섹션 ===== -->
+        <div class="section-title">소비.건설</div>
+        
+        <div class="item">
+            <span class="item-label">(소매판매)</span>
+            {% if consumption_construction.retail.direction == '감소' %}
+            {{ consumption_construction.retail.increase_categories[0].name }}({{ "%.1f"|format(consumption_construction.retail.increase_categories[0].growth_rate) }}%)이 늘었으나, {{ consumption_construction.retail.decrease_categories | map(attribute='name') | join(', ') }}({% for i in consumption_construction.retail.decrease_categories %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})등이 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(consumption_construction.retail.total_growth_rate | abs) }}% 감소</span>
+            {% else %}
+            {{ consumption_construction.retail.decrease_categories | map(attribute='name') | join(', ') }}({% for i in consumption_construction.retail.decrease_categories %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})등이 줄었으나, {{ consumption_construction.retail.increase_categories[0].name }}({{ "%.1f"|format(consumption_construction.retail.increase_categories[0].growth_rate) }}%)이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(consumption_construction.retail.total_growth_rate) }}% 증가</span>
+            {% endif %}
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(건설수주)</span>
+            {% set has_real_increase = consumption_construction.construction.increase_categories | rejectattr('placeholder') | list | length > 0 %}
+            {% set has_real_decrease = consumption_construction.construction.decrease_categories | rejectattr('placeholder') | list | length > 0 %}
+            {% if consumption_construction.construction.direction == '증가' %}
+                {% if has_real_decrease %}
+                    {% for cat in consumption_construction.construction.decrease_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.decrease_categories[0].growth_rate) }}%)이 줄었으나,
+                {% endif %}
+                {% if has_real_increase %}
+                    {% for cat in consumption_construction.construction.increase_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.increase_categories[0].growth_rate) }}%){% if has_real_decrease %}이 늘어{% else %}이 증가하여{% endif %}
+                {% else %}
+                    <span class="placeholder" contenteditable="true">[증가품목]</span>(<span class="placeholder" contenteditable="true">[증감률]</span>%)이 증가하여
+                {% endif %}
+                전년동분기대비 <span class="increase">{{ "%.1f"|format(consumption_construction.construction.total_growth_rate) }}% 증가</span>
+            {% else %}
+                {% if has_real_increase %}
+                    {% for cat in consumption_construction.construction.increase_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.increase_categories[0].growth_rate) }}%)이 늘었으나,
+                {% endif %}
+                {% if has_real_decrease %}
+                    {% for cat in consumption_construction.construction.decrease_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.decrease_categories[0].growth_rate) }}%){% if has_real_increase %}이 줄어{% else %}이 감소하여{% endif %}
+                {% else %}
+                    <span class="placeholder" contenteditable="true">[감소품목]</span>(<span class="placeholder" contenteditable="true">[증감률]</span>%)이 감소하여
+                {% endif %}
+                전년동분기대비 <span class="decrease">{{ "%.1f"|format(consumption_construction.construction.total_growth_rate | abs) }}% 감소</span>
+            {% endif %}
+        </div>
+        
+        <!-- 소비.건설 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 소매판매 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('retail')">⚙</button>
+                    <div id="retail-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="retail-ymin" value="{{ charts.retail.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="retail-ymax" value="{{ charts.retail.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="retail-ystep" value="{{ charts.retail.yAxisStep }}"></label>
+                        <button onclick="updateChart('retail')">적용</button>
+                    </div>
+                    <canvas id="chart-retail"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 건설수주 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('construction')">⚙</button>
+                    <div id="construction-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="construction-ymin" value="{{ charts.construction.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="construction-ymax" value="{{ charts.construction.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="construction-ystep" value="{{ charts.construction.yAxisStep }}"></label>
+                        <button onclick="updateChart('construction')">적용</button>
+                    </div>
+                    <canvas id="chart-construction"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 수출입.물가 섹션 ===== -->
+        <div class="section-title">수출입·물가</div>
+        
+        <div class="item">
+            <span class="item-label">(수출)</span>
+            {% macro render_items(items) %}{% for i in items %}{% if i.placeholder %}<span class="placeholder" contenteditable="true">{{ i.name }}</span>{% else %}{{ i.name }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endmacro %}
+            {% macro render_rates(items) %}{% for i in items %}{% if i.placeholder %}<span class="placeholder" contenteditable="true">[증감률]</span>{% else %}{{ "%.1f"|format(i.growth_rate) }}%{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endmacro %}
+            {% if export_import_price.export.direction == '증가' %}
+            {{ render_items(export_import_price.export.decrease_items) }}({{ render_rates(export_import_price.export.decrease_items) }}) 등이 줄었으나, {{ render_items(export_import_price.export.increase_items) }}({{ render_rates(export_import_price.export.increase_items) }}) 등이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(export_import_price.export.total_growth_rate) }}% 증가</span>
+            {% else %}
+            {{ render_items(export_import_price.export.increase_items) }}({{ render_rates(export_import_price.export.increase_items) }}) 등이 늘었으나, {{ render_items(export_import_price.export.decrease_items) }}({{ render_rates(export_import_price.export.decrease_items) }}) 등이 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(export_import_price.export.total_growth_rate | abs) }}% 감소</span>
+            {% endif %}
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(수입)</span>
+            {% if export_import_price.import.direction == '감소' %}
+            {{ render_items(export_import_price.import.increase_items) }}({{ render_rates(export_import_price.import.increase_items) }}) 등이 늘었으나, {{ render_items(export_import_price.import.decrease_items) }}({{ render_rates(export_import_price.import.decrease_items) }}) 등이 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(export_import_price.import.total_growth_rate | abs) }}% 감소</span>
+            {% else %}
+            {{ render_items(export_import_price.import.decrease_items) }}({{ render_rates(export_import_price.import.decrease_items) }}) 등이 줄었으나, {{ render_items(export_import_price.import.increase_items) }}({{ render_rates(export_import_price.import.increase_items) }}) 등이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(export_import_price.import.total_growth_rate) }}% 증가</span>
+            {% endif %}
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(소비자물가)</span>
+            {{ export_import_price.consumer_price.decrease_items | map(attribute='name') | join(', ') }}({% for i in export_import_price.consumer_price.decrease_items %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})가 하락하였으나, {{ export_import_price.consumer_price.increase_items | map(attribute='name') | join(', ') }}({% for i in export_import_price.consumer_price.increase_items %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 올라 전년동분기대비 <span class="{% if export_import_price.consumer_price.direction == '상승' %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(export_import_price.consumer_price.total_growth_rate) }}% {{ export_import_price.consumer_price.direction }}</span>
+        </div>
+        
+        <!-- 수출입.물가 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 수출입 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('exportImport')">⚙</button>
+                    <div id="exportImport-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="exportImport-ymin" value="{{ charts.export_import.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="exportImport-ymax" value="{{ charts.export_import.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="exportImport-ystep" value="{{ charts.export_import.yAxisStep }}"></label>
+                        <button onclick="updateChart('exportImport')">적용</button>
+                    </div>
+                    <canvas id="chart-exportImport"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 소비자물가 전년동분기대비 등락률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('consumerPrice')">⚙</button>
+                    <div id="consumerPrice-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="consumerPrice-ymin" value="{{ charts.consumer_price.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="consumerPrice-ymax" value="{{ charts.consumer_price.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="consumerPrice-ystep" value="{{ charts.consumer_price.yAxisStep }}"></label>
+                        <button onclick="updateChart('consumerPrice')">적용</button>
+                    </div>
+                    <canvas id="chart-consumerPrice"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 고용·인구이동 섹션 ===== -->
+        <div class="section-title">고용·인구이동</div>
+        
+        <div class="item">
+            <span class="item-label">(고용률)</span>
+            {% for g in employment_migration.employment_rate.increase_age_groups %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %}에서 상승하였으나, {% for g in employment_migration.employment_rate.decrease_age_groups %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 내려 전년동분기대비 <span class="{% if employment_migration.employment_rate.direction == '상승' %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment_migration.employment_rate.total_change | abs) }}%p {{ employment_migration.employment_rate.direction }}</span>
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(인구이동)</span>
+            인구는 {% for g in employment_migration.population_migration.inflow_age_groups %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유입되었으나, {% for g in employment_migration.population_migration.outflow_age_groups %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유출되어 <span class="{% if employment_migration.population_migration.direction == '순유입' %}increase{% else %}decrease{% endif %}">{{ "{:,}".format(employment_migration.population_migration.net_migration | abs) }}명 {{ employment_migration.population_migration.direction }}</span>
+        </div>
+        
+        <!-- 고용·인구이동 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 고용률 전년동분기대비 증감(%p) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('employmentRate')">⚙</button>
+                    <div id="employmentRate-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="employmentRate-ymin" value="{{ charts.employment_rate.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="employmentRate-ymax" value="{{ charts.employment_rate.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="employmentRate-ystep" value="{{ charts.employment_rate.yAxisStep }}"></label>
+                        <button onclick="updateChart('employmentRate')">적용</button>
+                    </div>
+                    <canvas id="chart-employmentRate"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 인구순이동(천명) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('migration')">⚙</button>
+                    <div id="migration-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="migration-ymin" value="{{ charts.population_migration.yAxisMin }}"></label>
+                        <label>Y축 최대: <input type="number" id="migration-ymax" value="{{ charts.population_migration.yAxisMax }}"></label>
+                        <label>Y축 간격: <input type="number" id="migration-ystep" value="{{ charts.population_migration.yAxisStep }}"></label>
+                        <button onclick="updateChart('migration')">적용</button>
+                    </div>
+                    <canvas id="chart-migration"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 주요지표 요약 테이블 ===== -->
+        <div class="summary-table-container">
+            <div class="table-title">{{ summary_table.title }}</div>
+            <div class="table-subtitle">[전년동분기대비, %]</div>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2"></th>
+                        <th rowspan="2">광공업<br>생산</th>
+                        <th rowspan="2">서비스업<br>생산</th>
+                        <th rowspan="2">소매<br>판매</th>
+                        <th rowspan="2">건설<br>수주</th>
+                        <th rowspan="2">수출</th>
+                        <th rowspan="2">수입</th>
+                        <th rowspan="2">소비자<br>물가</th>
+                        <th rowspan="2">고용률<br>(%p)</th>
+                        <th colspan="2">인구순이동<br>(천명)</th>
+                    </tr>
+                    <tr>
+                        <th>전체</th>
+                        <th>20-29</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in summary_table.rows %}
+                    <tr>
+                        <td class="period-col">{{ row.period }}</td>
+                        <td>{{ "%.1f"|format(row.manufacturing) }}</td>
+                        <td>{{ "%.1f"|format(row.service) }}</td>
+                        <td>{{ "%.1f"|format(row.retail) }}</td>
+                        <td>{{ "%.1f"|format(row.construction) }}</td>
+                        <td>{{ "%.1f"|format(row.export) }}</td>
+                        <td>{{ "%.1f"|format(row.import) }}</td>
+                        <td>{{ "%.1f"|format(row.consumer_price) }}</td>
+                        <td>{{ "%.1f"|format(row.employment_rate) }}</td>
+                        <td>{{ "%.1f"|format(row.migration_total) }}</td>
+                        <td>{{ "%.1f"|format(row.migration_20_29) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // 차트 인스턴스 저장
+        const chartInstances = {};
+        
+        // 차트 데이터 (Jinja2로 주입)
+        const chartData = {
+            manufacturing: {{ charts.manufacturing | tojson }},
+            service: {{ charts.service | tojson }},
+            retail: {{ charts.retail | tojson }},
+            construction: {{ charts.construction | tojson }},
+            exportImport: {{ charts.export_import | tojson }},
+            consumerPrice: {{ charts.consumer_price | tojson }},
+            employmentRate: {{ charts.employment_rate | tojson }},
+            migration: {{ charts.population_migration | tojson }}
+        };
+        
+        // 공통 차트 옵션 생성 함수
+        function createChartOptions(chartKey, data) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 30,
+                            padding: 8,
+                            font: { size: 9 },
+                            usePointStyle: false
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            // 마지막 데이터 포인트에만 표시
+                            return context.dataIndex === context.dataset.data.length - 1;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        font: { size: 8, weight: 'bold' },
+                        formatter: function(value) {
+                            return value.toFixed(1);
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 8 } }
+                    },
+                    y: {
+                        min: data.yAxisMin,
+                        max: data.yAxisMax,
+                        ticks: {
+                            stepSize: data.yAxisStep,
+                            font: { size: 8 }
+                        },
+                        grid: { color: '#e0e0e0' }
+                    }
+                }
+            };
+        }
+        
+        // 차트 생성 함수
+        function createChart(chartKey, canvasId, data) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const labels = data.series[0].data.map(d => d.period);
+            
+            const datasets = data.series.map((series, index) => ({
+                label: series.name,
+                data: series.data.map(d => d.value),
+                borderColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
+                tension: 0,
+                borderDash: series.dashStyle === 'dash' ? [5, 5] : series.dashStyle === 'dot' ? [2, 2] : []
+            }));
+            
+            chartInstances[chartKey] = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: createChartOptions(chartKey, data),
+                plugins: [ChartDataLabels]
+            });
+        }
+        
+        // 차트 업데이트 함수
+        function updateChart(chartKey) {
+            const yMin = parseFloat(document.getElementById(`${chartKey}-ymin`).value);
+            const yMax = parseFloat(document.getElementById(`${chartKey}-ymax`).value);
+            const yStep = parseFloat(document.getElementById(`${chartKey}-ystep`).value);
+            
+            if (chartInstances[chartKey]) {
+                chartInstances[chartKey].options.scales.y.min = yMin;
+                chartInstances[chartKey].options.scales.y.max = yMax;
+                chartInstances[chartKey].options.scales.y.ticks.stepSize = yStep;
+                chartInstances[chartKey].update();
+            }
+            
+            toggleSettings(chartKey);
+        }
+        
+        // 설정 패널 토글
+        function toggleSettings(chartKey) {
+            const panel = document.getElementById(`${chartKey}-settings`);
+            panel.classList.toggle('visible');
+        }
+        
+        // 페이지 로드 시 차트 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            createChart('manufacturing', 'chart-manufacturing', chartData.manufacturing);
+            createChart('service', 'chart-service', chartData.service);
+            createChart('retail', 'chart-retail', chartData.retail);
+            createChart('construction', 'chart-construction', chartData.construction);
+            createChart('exportImport', 'chart-exportImport', chartData.exportImport);
+            createChart('consumerPrice', 'chart-consumerPrice', chartData.consumerPrice);
+            createChart('employmentRate', 'chart-employmentRate', chartData.employmentRate);
+            createChart('migration', 'chart-migration', chartData.migration);
+        });
+    </script>
+</body>
+</html>
+

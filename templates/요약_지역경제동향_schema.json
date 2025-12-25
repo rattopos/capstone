@@ -1,0 +1,355 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "요약-지역경제동향 스키마",
+  "description": "지역경제동향 요약 - 종합 요약 및 주요 지표 테이블 생성을 위한 데이터 스키마",
+  
+  "type": "object",
+  "required": ["report_info", "summary", "table_data", "page_number"],
+  
+  "properties": {
+    "report_info": {
+      "type": "object",
+      "description": "보고서 기본 정보",
+      "required": ["year", "quarter"],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "description": "보고서 기준 연도",
+          "example": 2025
+        },
+        "quarter": {
+          "type": "integer",
+          "description": "보고서 기준 분기",
+          "enum": [1, 2, 3, 4],
+          "example": 2
+        }
+      }
+    },
+    
+    "summary": {
+      "type": "object",
+      "description": "부문별 요약 데이터",
+      "required": ["production", "consumption", "exports", "price", "employment"],
+      "properties": {
+        "production": {
+          "type": "object",
+          "description": "생산 부문 요약",
+          "required": ["mining", "service"],
+          "properties": {
+            "mining": {
+              "$ref": "#/definitions/sector_summary"
+            },
+            "service": {
+              "$ref": "#/definitions/sector_summary"
+            }
+          }
+        },
+        "consumption": {
+          "$ref": "#/definitions/sector_summary"
+        },
+        "exports": {
+          "$ref": "#/definitions/sector_summary"
+        },
+        "price": {
+          "type": "object",
+          "description": "물가 부문 요약 (모두 상승이므로 above_regions만)",
+          "required": ["nationwide", "above_regions"],
+          "properties": {
+            "nationwide": {
+              "type": "number",
+              "description": "전국 등락률 (%)"
+            },
+            "above_regions": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/region_data"}
+            }
+          }
+        },
+        "employment": {
+          "$ref": "#/definitions/sector_summary_pp"
+        }
+      }
+    },
+    
+    "table_data": {
+      "type": "object",
+      "description": "주요 지표 테이블 데이터",
+      "required": ["nationwide", "region_groups"],
+      "properties": {
+        "nationwide": {
+          "type": "object",
+          "description": "전국 데이터",
+          "required": ["mining_production", "service_production", "retail_sales", "exports", "price", "employment"],
+          "properties": {
+            "mining_production": {"type": "number", "description": "광공업생산 증감률 (%)"},
+            "service_production": {"type": "number", "description": "서비스업생산 증감률 (%)"},
+            "retail_sales": {"type": "number", "description": "소매판매 증감률 (%)"},
+            "exports": {"type": "number", "description": "수출 증감률 (%)"},
+            "price": {"type": "number", "description": "소비자물가 등락률 (%)"},
+            "employment": {"type": "number", "description": "고용률 증감 (%p)"}
+          }
+        },
+        "region_groups": {
+          "type": "array",
+          "description": "지역 그룹별 데이터",
+          "items": {
+            "type": "object",
+            "required": ["name", "regions"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "지역 그룹명",
+                "example": "경인"
+              },
+              "regions": {
+                "type": "array",
+                "description": "그룹 내 지역 데이터",
+                "items": {
+                  "$ref": "#/definitions/region_table_data"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "page_number": {
+      "type": "integer",
+      "description": "페이지 번호",
+      "example": 1
+    }
+  },
+  
+  "definitions": {
+    "region_data": {
+      "type": "object",
+      "required": ["name", "value"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "지역명"
+        },
+        "value": {
+          "type": "number",
+          "description": "증감률/등락률 (%)"
+        }
+      }
+    },
+    "sector_summary": {
+      "type": "object",
+      "description": "부문별 요약 (% 단위)",
+      "required": ["nationwide", "increase_regions", "decrease_regions", "increase_count", "decrease_count"],
+      "properties": {
+        "nationwide": {"type": "number", "description": "전국 증감률 (%)"},
+        "increase_regions": {"type": "array", "items": {"$ref": "#/definitions/region_data"}},
+        "decrease_regions": {"type": "array", "items": {"$ref": "#/definitions/region_data"}},
+        "increase_count": {"type": "integer"},
+        "decrease_count": {"type": "integer"}
+      }
+    },
+    "sector_summary_pp": {
+      "type": "object",
+      "description": "부문별 요약 (%p 단위, 고용률용)",
+      "required": ["nationwide", "increase_regions", "decrease_regions", "increase_count", "decrease_count"],
+      "properties": {
+        "nationwide": {"type": "number", "description": "전국 증감 (%p)"},
+        "increase_regions": {"type": "array", "items": {"$ref": "#/definitions/region_data"}},
+        "decrease_regions": {"type": "array", "items": {"$ref": "#/definitions/region_data"}},
+        "increase_count": {"type": "integer"},
+        "decrease_count": {"type": "integer"}
+      }
+    },
+    "region_table_data": {
+      "type": "object",
+      "description": "테이블용 지역 데이터",
+      "required": ["name", "mining_production", "service_production", "retail_sales", "exports", "price", "employment"],
+      "properties": {
+        "name": {"type": "string", "description": "지역명"},
+        "mining_production": {"type": "number", "description": "광공업생산 증감률 (%)"},
+        "service_production": {"type": "number", "description": "서비스업생산 증감률 (%)"},
+        "retail_sales": {"type": "number", "description": "소매판매 증감률 (%)"},
+        "exports": {"type": "number", "description": "수출 증감률 (%)"},
+        "price": {"type": "number", "description": "소비자물가 등락률 (%)"},
+        "employment": {"type": "number", "description": "고용률 증감 (%p)"}
+      }
+    }
+  },
+  
+  "data_sources": {
+    "description": "데이터 소스 매핑 - 각 부문별 데이터 파일에서 취합",
+    "production": {
+      "mining": "광공업생산_data.json",
+      "service": "서비스업생산_data.json"
+    },
+    "consumption": "소비동향_data.json",
+    "exports": "수출_data.json",
+    "price": "물가동향_data.json",
+    "employment": "고용률_data.json"
+  },
+  
+  "region_group_order": {
+    "description": "테이블 지역 그룹 순서",
+    "groups": [
+      {
+        "name": "경인",
+        "regions": ["서 울", "인 천", "경 기"]
+      },
+      {
+        "name": "충청",
+        "regions": ["대 전", "세 종", "충 북", "충 남"]
+      },
+      {
+        "name": "호남",
+        "regions": ["광 주", "전 북", "전 남", "제 주"]
+      },
+      {
+        "name": "동북",
+        "regions": ["대 구", "경 북", "강 원"]
+      },
+      {
+        "name": "동남",
+        "regions": ["부 산", "울 산", "경 남"]
+      }
+    ]
+  },
+  
+  "example": {
+    "report_info": {
+      "year": 2025,
+      "quarter": 2
+    },
+    "summary": {
+      "production": {
+        "mining": {
+          "nationwide": 2.1,
+          "increase_regions": [
+            {"name": "충북", "value": 14.1},
+            {"name": "경기", "value": 12.3}
+          ],
+          "decrease_regions": [
+            {"name": "서울", "value": -10.1},
+            {"name": "충남", "value": -6.4}
+          ],
+          "increase_count": 6,
+          "decrease_count": 11
+        },
+        "service": {
+          "nationwide": 1.4,
+          "increase_regions": [
+            {"name": "경기", "value": 5.4},
+            {"name": "인천", "value": 3.5}
+          ],
+          "decrease_regions": [
+            {"name": "제주", "value": -9.2},
+            {"name": "경남", "value": -2.8}
+          ],
+          "increase_count": 8,
+          "decrease_count": 8
+        }
+      },
+      "consumption": {
+        "nationwide": -0.2,
+        "increase_regions": [
+          {"name": "울산", "value": 5.4},
+          {"name": "인천", "value": 4.9}
+        ],
+        "decrease_regions": [
+          {"name": "제주", "value": -2.3},
+          {"name": "경북", "value": -1.8}
+        ],
+        "increase_count": 11,
+        "decrease_count": 6
+      },
+      "exports": {
+        "nationwide": 2.1,
+        "increase_regions": [
+          {"name": "제주", "value": 37.8},
+          {"name": "충북", "value": 34.9}
+        ],
+        "decrease_regions": [
+          {"name": "세종", "value": -37.2},
+          {"name": "전남", "value": -13.7}
+        ],
+        "increase_count": 10,
+        "decrease_count": 7
+      },
+      "price": {
+        "nationwide": 2.1,
+        "above_regions": [
+          {"name": "부산", "value": 2.2},
+          {"name": "경기", "value": 2.1}
+        ]
+      },
+      "employment": {
+        "nationwide": 0.2,
+        "increase_regions": [
+          {"name": "대전", "value": 1.2},
+          {"name": "부산", "value": 1.0}
+        ],
+        "decrease_regions": [
+          {"name": "전북", "value": -1.0},
+          {"name": "광주", "value": -0.4}
+        ],
+        "increase_count": 11,
+        "decrease_count": 4
+      }
+    },
+    "table_data": {
+      "nationwide": {
+        "mining_production": 2.1,
+        "service_production": 1.4,
+        "retail_sales": -0.2,
+        "exports": 2.1,
+        "price": 2.1,
+        "employment": 0.2
+      },
+      "region_groups": [
+        {
+          "name": "경인",
+          "regions": [
+            {"name": "서 울", "mining_production": -10.1, "service_production": 2.3, "retail_sales": -1.8, "exports": 1.6, "price": 2.0, "employment": -0.2},
+            {"name": "인 천", "mining_production": -3.7, "service_production": 3.5, "retail_sales": 4.9, "exports": 6.2, "price": 2.0, "employment": 0.4},
+            {"name": "경 기", "mining_production": 12.3, "service_production": 5.4, "retail_sales": 0.3, "exports": 3.4, "price": 2.1, "employment": 0.1}
+          ]
+        },
+        {
+          "name": "충청",
+          "regions": [
+            {"name": "대 전", "mining_production": -0.6, "service_production": 0.3, "retail_sales": 1.2, "exports": 4.8, "price": 1.9, "employment": 1.2},
+            {"name": "세 종", "mining_production": -3.4, "service_production": 3.3, "retail_sales": 3.5, "exports": -37.2, "price": 2.1, "employment": 0.0},
+            {"name": "충 북", "mining_production": 14.1, "service_production": 0.9, "retail_sales": 1.4, "exports": 34.9, "price": 2.0, "employment": 0.8},
+            {"name": "충 남", "mining_production": -6.4, "service_production": 0.0, "retail_sales": -0.5, "exports": -1.0, "price": 2.1, "employment": 0.7}
+          ]
+        },
+        {
+          "name": "호남",
+          "regions": [
+            {"name": "광 주", "mining_production": 11.3, "service_production": 0.2, "retail_sales": 2.1, "exports": 10.4, "price": 1.7, "employment": -0.4},
+            {"name": "전 북", "mining_production": -1.3, "service_production": -1.2, "retail_sales": 0.1, "exports": -0.4, "price": 2.1, "employment": -1.0},
+            {"name": "전 남", "mining_production": -1.7, "service_production": -0.6, "retail_sales": 0.4, "exports": -13.7, "price": 2.1, "employment": -0.2},
+            {"name": "제 주", "mining_production": -2.2, "service_production": -9.2, "retail_sales": -2.3, "exports": 37.8, "price": 1.5, "employment": 0.5}
+          ]
+        },
+        {
+          "name": "동북",
+          "regions": [
+            {"name": "대 구", "mining_production": -2.2, "service_production": -1.2, "retail_sales": -1.4, "exports": 4.7, "price": 2.1, "employment": 0.0},
+            {"name": "경 북", "mining_production": 4.1, "service_production": -1.3, "retail_sales": -1.8, "exports": -3.7, "price": 1.9, "employment": 0.5},
+            {"name": "강 원", "mining_production": 0.3, "service_production": -1.6, "retail_sales": -0.9, "exports": 3.9, "price": 2.1, "employment": 1.0}
+          ]
+        },
+        {
+          "name": "동남",
+          "regions": [
+            {"name": "부 산", "mining_production": -4.0, "service_production": 2.1, "retail_sales": 1.0, "exports": -6.0, "price": 2.2, "employment": 1.0},
+            {"name": "울 산", "mining_production": 2.5, "service_production": -0.5, "retail_sales": 5.4, "exports": -3.1, "price": 1.9, "employment": 0.2},
+            {"name": "경 남", "mining_production": -1.1, "service_production": -2.8, "retail_sales": 1.4, "exports": 12.9, "price": 2.1, "employment": 0.3}
+          ]
+        }
+      ]
+    },
+    "page_number": 1
+  }
+}
+

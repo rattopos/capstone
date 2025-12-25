@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>목차</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 11pt;
+            line-height: 1.8;
+            color: #000;
+            background: #fff;
+        }
+        
+        .toc-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 50px 60px;
+        }
+        
+        .toc-title {
+            text-align: center;
+            font-size: 20pt;
+            font-weight: 700;
+            margin-bottom: 40px;
+            border: 2px solid #000;
+            display: inline-block;
+            padding: 8px 40px;
+            margin-left: 50%;
+            transform: translateX(-50%);
+            letter-spacing: 20px;
+        }
+        
+        .toc-section {
+            margin-bottom: 15px;
+        }
+        
+        .toc-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 3px 0;
+        }
+        
+        .toc-main .title {
+            font-size: 12pt;
+            font-weight: 700;
+        }
+        
+        .toc-main .page {
+            font-weight: 700;
+        }
+        
+        .toc-main.summary .title {
+            text-decoration: underline;
+        }
+        
+        .toc-sub {
+            margin-left: 30px;
+        }
+        
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 2px 0;
+        }
+        
+        .toc-item .title {
+            font-size: 11pt;
+        }
+        
+        .toc-item .dots {
+            flex-grow: 1;
+            border-bottom: 1px dotted #666;
+            margin: 0 10px;
+            height: 1em;
+        }
+        
+        .toc-item .page {
+            min-width: 30px;
+            text-align: right;
+        }
+        
+        .toc-chapter {
+            font-size: 12pt;
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .toc-chapter .title {
+            color: #1e88e5;
+        }
+        
+        .toc-subsection {
+            margin-left: 50px;
+        }
+        
+        .toc-reference {
+            color: #1e88e5;
+            font-weight: 500;
+        }
+        
+        .toc-appendix {
+            margin-top: 20px;
+            padding-top: 10px;
+        }
+        
+        .toc-appendix .title {
+            font-size: 12pt;
+            font-weight: 700;
+        }
+        
+        .appendix-diamond {
+            margin-right: 5px;
+        }
+        
+        @media print {
+            .toc-container {
+                width: 210mm;
+                height: 297mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toc-container">
+        <h1 class="toc-title">목 차</h1>
+        
+        <!-- 요약 -->
+        <div class="toc-section">
+            <div class="toc-main summary">
+                <span class="title">□ 요약</span>
+                <span class="dots"></span>
+                <span class="page">{{ sections.summary.page }}</span>
+            </div>
+        </div>
+        
+        <!-- 본문 -->
+        <div class="toc-section">
+            <div class="toc-main">
+                <span class="title">□ 본문</span>
+            </div>
+            
+            <!-- I. 부문별 지역경제동향 -->
+            <div class="toc-sub">
+                <div class="toc-chapter">
+                    <div class="toc-item">
+                        <span class="title">Ⅰ. 부문별 지역경제동향</span>
+                        <span class="dots"></span>
+                        <span class="page">{{ sections.sector.page }}</span>
+                    </div>
+                </div>
+                
+                <div class="toc-subsection">
+                    {% for item in sections.sector.items %}
+                    <div class="toc-item">
+                        <span class="title">{{ item.number }}. {{ item.name }}</span>
+                        <span class="dots"></span>
+                        <span class="page">{{ item.page }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- II. 시도별 경제동향 -->
+            <div class="toc-sub">
+                <div class="toc-chapter">
+                    <div class="toc-item">
+                        <span class="title">Ⅱ. 시도별 경제동향</span>
+                        <span class="dots"></span>
+                        <span class="page">{{ sections.region.page }}</span>
+                    </div>
+                </div>
+                
+                <div class="toc-subsection">
+                    {% for item in sections.region.items %}
+                    <div class="toc-item">
+                        <span class="title">{{ item.number }}. {{ item.name }}</span>
+                        <span class="dots"></span>
+                        <span class="page">{{ item.page }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 참고 -->
+                {% if sections.reference %}
+                <div class="toc-item" style="margin-top: 10px;">
+                    <span class="title toc-reference">&lt;참고&gt; {{ sections.reference.name }}</span>
+                    <span class="dots"></span>
+                    <span class="page">{{ sections.reference.page }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 통계표 -->
+        <div class="toc-section toc-appendix">
+            <div class="toc-main">
+                <span class="title">□ 통계표</span>
+                <span class="dots"></span>
+                <span class="page">{{ sections.statistics.page }}</span>
+            </div>
+        </div>
+        
+        <!-- 부록 -->
+        <div class="toc-section">
+            <div class="toc-item" style="margin-left: 20px;">
+                <span class="title"><span class="appendix-diamond">◇</span>부록</span>
+                <span class="dots"></span>
+                <span class="page">{{ sections.appendix.page }}</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,193 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "목차 스키마",
+  "description": "지역경제동향 보고서 목차 생성을 위한 데이터 스키마",
+  
+  "type": "object",
+  "required": ["sections"],
+  
+  "properties": {
+    "sections": {
+      "type": "object",
+      "description": "목차 섹션별 정보",
+      "required": ["summary", "sector", "region", "statistics", "appendix"],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "description": "요약 섹션",
+          "required": ["page"],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "시작 페이지 번호",
+              "example": 1
+            }
+          }
+        },
+        
+        "sector": {
+          "type": "object",
+          "description": "부문별 지역경제동향 섹션",
+          "required": ["page", "items"],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "섹션 시작 페이지",
+              "example": 6
+            },
+            "items": {
+              "type": "array",
+              "description": "부문별 항목 목록",
+              "items": {
+                "type": "object",
+                "required": ["number", "name", "page"],
+                "properties": {
+                  "number": {
+                    "type": "integer",
+                    "description": "항목 번호"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "항목 이름"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "페이지 번호"
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "region": {
+          "type": "object",
+          "description": "시도별 경제동향 섹션",
+          "required": ["page", "items"],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "섹션 시작 페이지",
+              "example": 16
+            },
+            "items": {
+              "type": "array",
+              "description": "시도별 항목 목록",
+              "items": {
+                "type": "object",
+                "required": ["number", "name", "page"],
+                "properties": {
+                  "number": {
+                    "type": "integer",
+                    "description": "항목 번호"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "시도 이름"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "페이지 번호"
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "reference": {
+          "type": "object",
+          "description": "참고 섹션 (선택)",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "참고 항목 이름",
+              "example": "분기GRDP"
+            },
+            "page": {
+              "type": "integer",
+              "description": "페이지 번호"
+            }
+          }
+        },
+        
+        "statistics": {
+          "type": "object",
+          "description": "통계표 섹션",
+          "required": ["page"],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "시작 페이지 번호"
+            }
+          }
+        },
+        
+        "appendix": {
+          "type": "object",
+          "description": "부록 섹션",
+          "required": ["page"],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "시작 페이지 번호"
+            }
+          }
+        }
+      }
+    }
+  },
+  
+  "example": {
+    "sections": {
+      "summary": {
+        "page": 1
+      },
+      "sector": {
+        "page": 6,
+        "items": [
+          {"number": 1, "name": "생산", "page": 6},
+          {"number": 2, "name": "소비", "page": 8},
+          {"number": 3, "name": "건설", "page": 9},
+          {"number": 4, "name": "수출입", "page": 10},
+          {"number": 5, "name": "물가", "page": 12},
+          {"number": 6, "name": "고용", "page": 13},
+          {"number": 7, "name": "국내 인구이동", "page": 15}
+        ]
+      },
+      "region": {
+        "page": 16,
+        "items": [
+          {"number": 1, "name": "서 울", "page": 16},
+          {"number": 2, "name": "부 산", "page": 18},
+          {"number": 3, "name": "대 구", "page": 0},
+          {"number": 4, "name": "인 천", "page": 0},
+          {"number": 5, "name": "광 주", "page": 0},
+          {"number": 6, "name": "대 전", "page": 0},
+          {"number": 7, "name": "울 산", "page": 0},
+          {"number": 8, "name": "세 종", "page": 0},
+          {"number": 9, "name": "경 기", "page": 0},
+          {"number": 10, "name": "강 원", "page": 0},
+          {"number": 11, "name": "충 북", "page": 0},
+          {"number": 12, "name": "충 남", "page": 0},
+          {"number": 13, "name": "전 북", "page": 0},
+          {"number": 14, "name": "전 남", "page": 0},
+          {"number": 15, "name": "경 북", "page": 0},
+          {"number": 16, "name": "경 남", "page": 0},
+          {"number": 17, "name": "제 주", "page": 0}
+        ]
+      },
+      "reference": {
+        "name": "분기GRDP",
+        "page": 0
+      },
+      "statistics": {
+        "page": 0
+      },
+      "appendix": {
+        "page": 0
+      }
+    }
+  }
+}
+

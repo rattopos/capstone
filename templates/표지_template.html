@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향 - 표지</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+        }
+        
+        .cover-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 40px 50px;
+            position: relative;
+        }
+        
+        /* 상단 헤더 */
+        .header {
+            border: 1px solid #000;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #e53935 50%, #1e88e5 50%);
+            border-radius: 50%;
+        }
+        
+        .logo-text {
+            font-size: 14pt;
+            font-weight: 500;
+            color: #1e88e5;
+        }
+        
+        .doc-type {
+            font-size: 12pt;
+            font-weight: 500;
+        }
+        
+        .anniversary-logo {
+            font-size: 11pt;
+            color: #1e88e5;
+        }
+        
+        .header-dates {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            font-size: 10pt;
+        }
+        
+        .date-item {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .date-label {
+            font-weight: 500;
+        }
+        
+        /* 메인 타이틀 */
+        .main-title-box {
+            border: 1px solid #000;
+            padding: 60px 40px;
+            text-align: center;
+            margin-bottom: auto;
+        }
+        
+        .main-title {
+            font-size: 28pt;
+            font-weight: 700;
+            color: #1e88e5;
+            line-height: 1.4;
+        }
+        
+        .main-title .year-quarter {
+            display: block;
+        }
+        
+        .main-title .report-name {
+            display: block;
+        }
+        
+        /* 하단 정보 */
+        .footer {
+            position: absolute;
+            bottom: 60px;
+            left: 50px;
+            right: 50px;
+        }
+        
+        .contact-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        
+        .contact-table td {
+            padding: 5px 10px;
+            border: 1px solid #000;
+        }
+        
+        .contact-table .label {
+            background-color: #f5f5f5;
+            font-weight: 500;
+            width: 80px;
+        }
+        
+        .contact-table .department {
+            width: 180px;
+        }
+        
+        .contact-table .role-label {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .contact-table .role-value {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .contact-table .contact-info {
+            width: auto;
+        }
+        
+        .footer-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .footer-logo {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .policy-briefing {
+            color: #e53935;
+            font-weight: 500;
+        }
+        
+        .open-gov {
+            padding: 3px 8px;
+            border: 1px solid #666;
+            font-size: 9pt;
+        }
+        
+        @media print {
+            .cover-container {
+                width: 210mm;
+                height: 297mm;
+                padding: 40px 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cover-container">
+        <!-- 상단 헤더 -->
+        <div class="header">
+            <div class="header-top">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">통계청</span>
+                </div>
+                <span class="doc-type">보도자료</span>
+                <div class="anniversary-logo">
+                    <span>광복 80</span>
+                </div>
+            </div>
+            <div class="header-dates">
+                <div class="date-item">
+                    <span class="date-label">보도시점</span>
+                    <span>{{ release_info.release_datetime }}</span>
+                </div>
+                <div class="date-item">
+                    <span class="date-label">배포</span>
+                    <span>{{ release_info.distribution_datetime }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 메인 타이틀 -->
+        <div class="main-title-box">
+            <h1 class="main-title">
+                <span class="year-quarter">{{ report_info.year }}년 {{ report_info.quarter }}/4분기</span>
+                <span class="report-name">지역경제동향</span>
+            </h1>
+        </div>
+        
+        <!-- 하단 정보 -->
+        <div class="footer">
+            <table class="contact-table">
+                <tr>
+                    <td class="label" rowspan="2">담당 부서</td>
+                    <td class="department" rowspan="2">{{ contact_info.department }}<br>{{ contact_info.division }}</td>
+                    <td class="role-label">책임자</td>
+                    <td class="role-value">{{ contact_info.manager_title }}</td>
+                    <td class="contact-info">{{ contact_info.manager_name }} ({{ contact_info.manager_phone }})</td>
+                </tr>
+                <tr>
+                    <td class="role-label">담당자</td>
+                    <td class="role-value">{{ contact_info.staff_title }}</td>
+                    <td class="contact-info">{{ contact_info.staff_name }} ({{ contact_info.staff_phone }})</td>
+                </tr>
+            </table>
+            
+            <div class="footer-logos">
+                <span class="footer-logo policy-briefing">대한민국 정책브리핑</span>
+                <span class="footer-logo open-gov">OPEN 공공누리 공공저작물 자유이용허락</span>
+                <span class="footer-logo">🏛️</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

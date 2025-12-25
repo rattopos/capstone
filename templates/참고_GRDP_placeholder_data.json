@@ -1,0 +1,218 @@
+{
+  "report_info": {
+    "year": 2025,
+    "quarter": 2,
+    "page_number": 20
+  },
+  "national_summary": {
+    "growth_rate": 0.0,
+    "direction": "증가",
+    "contributions": {
+      "service": 0.0,
+      "manufacturing": 0.0,
+      "other": 0.0,
+      "construction": 0.0
+    },
+    "placeholder": true
+  },
+  "top_region": {
+    "name": "[지역명]",
+    "growth_rate": 0.0,
+    "contributions": {
+      "manufacturing": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "construction": 0.0
+    },
+    "placeholder": true
+  },
+  "regional_data": [
+    {
+      "region_group": null,
+      "region": "전국",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "경인",
+      "region": "서울",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "경인",
+      "region": "인천",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "경인",
+      "region": "경기",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "충청",
+      "region": "대전",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "충청",
+      "region": "세종",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "충청",
+      "region": "충북",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "충청",
+      "region": "충남",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "호남",
+      "region": "광주",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "호남",
+      "region": "전북",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "호남",
+      "region": "전남",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "호남",
+      "region": "제주",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동북",
+      "region": "대구",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동북",
+      "region": "경북",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동북",
+      "region": "강원",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동남",
+      "region": "부산",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동남",
+      "region": "울산",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    },
+    {
+      "region_group": "동남",
+      "region": "경남",
+      "growth_rate": 0.0,
+      "manufacturing": 0.0,
+      "construction": 0.0,
+      "service": 0.0,
+      "other": 0.0,
+      "placeholder": true
+    }
+  ],
+  "chart_config": {
+    "y_axis": {
+      "min": -6,
+      "max": 8,
+      "step": 2
+    }
+  }
+}

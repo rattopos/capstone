@@ -255,6 +255,38 @@
             overflow-y: auto;
         }
 
+        /* Tab Buttons */
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
         .report-list {
             display: flex;
             flex-direction: column;
@@ -811,6 +843,9 @@
                         <option value="4">4분기</option>
                     </select>
                 </div>
+                <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
+                    ⚙️ 담당자 설정
+                </button>
             </div>
         </div>
     </header>
@@ -837,8 +872,41 @@
             <!-- Report List -->
             <div class="report-list-section">
                 <div class="section-title">📋 보고서 목록</div>
-                <div class="report-list" id="reportList">
+                
+                <!-- Tab Buttons -->
+                <div class="tab-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <button class="tab-btn active" id="tabSummary" onclick="switchTab('summary')">
+                        📋 요약
+                    </button>
+                    <button class="tab-btn" id="tabSectoral" onclick="switchTab('sectoral')">
+                        📊 부문별
+                    </button>
+                    <button class="tab-btn" id="tabRegional" onclick="switchTab('regional')">
+                        🗺️ 시도별
+                    </button>
+                    <button class="tab-btn" id="tabStatistics" onclick="switchTab('statistics')">
+                        📈 통계표
+                    </button>
+                </div>
+                
+                <!-- Summary Reports (표지, 목차, 인포그래픽, 요약 등) -->
+                <div class="report-list" id="summaryReportList">
+                    <!-- Summary reports will be rendered here -->
+                </div>
+                
+                <!-- Sectoral Reports -->
+                <div class="report-list" id="reportList" style="display: none;">
                     <!-- Reports will be rendered here -->
+                </div>
+                
+                <!-- Regional Reports -->
+                <div class="report-list" id="regionalReportList" style="display: none;">
+                    <!-- Regional reports will be rendered here -->
+                </div>
+                
+                <!-- Statistics Table -->
+                <div class="report-list" id="statisticsReportList" style="display: none;">
+                    <!-- Statistics report will be rendered here -->
                 </div>
             </div>
         </aside>
@@ -882,6 +950,113 @@
         </main>
     </div>
 
+    <!-- Contact Info Modal (담당부서/담당자 정보 입력) -->
+    <div class="modal-overlay" id="contactInfoModal">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>📝</span>
+                    <span>담당부서 및 담당자 정보</span>
+                </h2>
+                <button class="modal-close" onclick="closeContactModal()">×</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                보고서 표지에 표시될 담당부서 및 담당자 정보를 입력해주세요.
+            </p>
+            
+            <!-- 보도자료 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📅</span> 보도자료 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">보도시점</label>
+                        <input type="text" class="missing-field-input" id="releaseDateTime" 
+                               placeholder="예: 2025. 8. 12.(화) 12:00" value="2025. 8. 12.(화) 12:00">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">배포일시</label>
+                        <input type="text" class="missing-field-input" id="distributionDateTime" 
+                               placeholder="예: 2025. 8. 12.(화) 08:30" value="2025. 8. 12.(화) 08:30">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 담당부서 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🏛️</span> 담당부서
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">부서명</label>
+                        <input type="text" class="missing-field-input" id="department" 
+                               placeholder="예: 통계청 경제통계국" value="통계청 경제통계국">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">과명</label>
+                        <input type="text" class="missing-field-input" id="division" 
+                               placeholder="예: 소득통계과" value="소득통계과">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 책임자 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>👔</span> 책임자 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">직책</label>
+                        <input type="text" class="missing-field-input" id="managerTitle" 
+                               placeholder="예: 과 장" value="과 장">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">이름</label>
+                        <input type="text" class="missing-field-input" id="managerName" 
+                               placeholder="예: 홍길동" value="정선경">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="managerPhone" 
+                               placeholder="예: 042-481-2206" value="042-481-2206">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 담당자 정보 -->
+            <div style="margin-bottom: 1rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>👤</span> 담당자 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">직책</label>
+                        <input type="text" class="missing-field-input" id="staffTitle" 
+                               placeholder="예: 사무관" value="사무관">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">이름</label>
+                        <input type="text" class="missing-field-input" id="staffName" 
+                               placeholder="예: 김철수" value="윤민희">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="staffPhone" 
+                               placeholder="예: 042-481-2226" value="042-481-2226">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeContactModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveContactInfo()">💾 저장</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Missing Data Modal -->
     <div class="modal-overlay" id="missingDataModal">
         <div class="modal">
@@ -920,9 +1095,47 @@
             fileUploaded: false,
             currentReportIndex: -1,
             reports: [],
+            summaryReports: [],  // 요약 보고서 (표지, 목차, 인포그래픽 등)
+            sectoralReports: [], // 부문별 보고서
+            regionalReports: [],
+            statisticsReports: [
+                { id: 'stat_toc', name: '통계표-목차', icon: '', description: '통계표 목차' },
+                { id: 'stat_mining', name: '통계표-광공업생산지수', icon: '', description: '광공업생산지수 데이터' },
+                { id: 'stat_service', name: '통계표-서비스업생산지수', icon: '', description: '서비스업생산지수 데이터' },
+                { id: 'stat_retail', name: '통계표-소매판매액지수', icon: '', description: '소매판매액지수 데이터' },
+                { id: 'stat_construction', name: '통계표-건설수주액', icon: '', description: '건설수주액 데이터' },
+                { id: 'stat_employment', name: '통계표-고용률', icon: '', description: '고용률 데이터' },
+                { id: 'stat_unemployment', name: '통계표-실업률', icon: '', description: '실업률 데이터' },
+                { id: 'stat_population', name: '통계표-국내인구이동', icon: '', description: '국내인구이동 데이터' },
+                { id: 'stat_export', name: '통계표-수출액', icon: '', description: '수출액 데이터' },
+                { id: 'stat_import', name: '통계표-수입액', icon: '', description: '수입액 데이터' },
+                { id: 'stat_price', name: '통계표-소비자물가지수', icon: '', description: '소비자물가지수 데이터' },
+                { id: 'stat_grdp', name: '통계표-참고-GRDP', icon: '', description: 'GRDP 참고 데이터' },
+                { id: 'stat_appendix', name: '부록-주요용어정의', icon: '', description: '주요 용어 정의' }
+            ],
             reviewedReports: new Set(),
+            reviewedSummaryReports: new Set(),
+            reviewedRegionalReports: new Set(),
+            reviewedStatisticsReports: new Set(),
             customData: {},
-            missingFieldsByReport: {}
+            missingFieldsByReport: {},
+            currentTab: 'summary',  // 'summary', 'sectoral', 'regional', or 'statistics'
+            currentSummaryIndex: -1,
+            currentRegionalIndex: -1,
+            currentStatisticsIndex: -1,
+            // 담당부서/담당자 정보
+            contactInfo: {
+                release_datetime: '2025. 8. 12.(화) 12:00',
+                distribution_datetime: '2025. 8. 12.(화) 08:30',
+                department: '통계청 경제통계국',
+                division: '소득통계과',
+                manager_title: '과 장',
+                manager_name: '정선경',
+                manager_phone: '042-481-2206',
+                staff_title: '사무관',
+                staff_name: '윤민희',
+                staff_phone: '042-481-2226'
+            }
         };
 
         // DOM Elements
@@ -932,7 +1145,14 @@
             uploadFilename: document.getElementById('uploadFilename'),
             progressBar: document.getElementById('progressBar'),
             progressFill: document.getElementById('progressFill'),
+            summaryReportList: document.getElementById('summaryReportList'),
             reportList: document.getElementById('reportList'),
+            regionalReportList: document.getElementById('regionalReportList'),
+            tabSummary: document.getElementById('tabSummary'),
+            tabSectoral: document.getElementById('tabSectoral'),
+            tabRegional: document.getElementById('tabRegional'),
+            tabStatistics: document.getElementById('tabStatistics'),
+            statisticsReportList: document.getElementById('statisticsReportList'),
             yearSelect: document.getElementById('yearSelect'),
             quarterSelect: document.getElementById('quarterSelect'),
             prevBtn: document.getElementById('prevBtn'),
@@ -948,10 +1168,56 @@
             modalClose: document.getElementById('modalClose'),
             skipMissingBtn: document.getElementById('skipMissingBtn'),
             saveMissingBtn: document.getElementById('saveMissingBtn'),
+            contactInfoModal: document.getElementById('contactInfoModal'),
             loadingOverlay: document.getElementById('loadingOverlay'),
             loadingText: document.getElementById('loadingText'),
             toastContainer: document.getElementById('toastContainer')
         };
+
+        // ===== 담당자 정보 모달 함수 =====
+        function openContactModal() {
+            // 저장된 값을 폼에 로드
+            document.getElementById('releaseDateTime').value = state.contactInfo.release_datetime;
+            document.getElementById('distributionDateTime').value = state.contactInfo.distribution_datetime;
+            document.getElementById('department').value = state.contactInfo.department;
+            document.getElementById('division').value = state.contactInfo.division;
+            document.getElementById('managerTitle').value = state.contactInfo.manager_title;
+            document.getElementById('managerName').value = state.contactInfo.manager_name;
+            document.getElementById('managerPhone').value = state.contactInfo.manager_phone;
+            document.getElementById('staffTitle').value = state.contactInfo.staff_title;
+            document.getElementById('staffName').value = state.contactInfo.staff_name;
+            document.getElementById('staffPhone').value = state.contactInfo.staff_phone;
+            
+            elements.contactInfoModal.classList.add('active');
+        }
+
+        function closeContactModal() {
+            elements.contactInfoModal.classList.remove('active');
+        }
+
+        function saveContactInfo() {
+            // 폼 값 저장
+            state.contactInfo = {
+                release_datetime: document.getElementById('releaseDateTime').value,
+                distribution_datetime: document.getElementById('distributionDateTime').value,
+                department: document.getElementById('department').value,
+                division: document.getElementById('division').value,
+                manager_title: document.getElementById('managerTitle').value,
+                manager_name: document.getElementById('managerName').value,
+                manager_phone: document.getElementById('managerPhone').value,
+                staff_title: document.getElementById('staffTitle').value,
+                staff_name: document.getElementById('staffName').value,
+                staff_phone: document.getElementById('staffPhone').value
+            };
+            
+            closeContactModal();
+            showToast('담당자 정보가 저장되었습니다.', 'success');
+            
+            // 현재 요약 보고서가 표시 중이면 새로고침
+            if (state.currentTab === 'summary' && state.currentSummaryIndex >= 0) {
+                generateSummaryPreview();
+            }
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', initApp);
@@ -987,8 +1253,15 @@
             fetch('/api/report-order')
                 .then(res => res.json())
                 .then(data => {
+                    // 요약과 부문별 분리
                     state.reports = data.reports;
+                    state.summaryReports = data.reports.filter(r => r.category === 'summary');
+                    state.sectoralReports = data.reports.filter(r => r.category !== 'summary');
+                    state.regionalReports = data.regional_reports || [];
+                    
+                    renderSummaryReportList();
                     renderReportList();
+                    renderRegionalReportList();
                 })
                 .catch(err => {
                     console.error('보고서 목록 로드 오류:', err);
@@ -996,9 +1269,308 @@
                 });
         }
 
+        // Tab switching
+        function switchTab(tab) {
+            state.currentTab = tab;
+            
+            // Update tab button styles
+            elements.tabSummary.classList.toggle('active', tab === 'summary');
+            elements.tabSectoral.classList.toggle('active', tab === 'sectoral');
+            elements.tabRegional.classList.toggle('active', tab === 'regional');
+            elements.tabStatistics.classList.toggle('active', tab === 'statistics');
+            
+            // Show/hide report lists
+            elements.summaryReportList.style.display = tab === 'summary' ? 'flex' : 'none';
+            elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
+            elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
+            elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
+            
+            // Render statistics list if tab switched
+            if (tab === 'statistics') {
+                renderStatisticsReportList();
+            }
+            
+            // Update navigation
+            updatePageIndicator();
+            updateNavigationButtons();
+        }
+
+        // Render summary report list (표지, 목차, 인포그래픽, 요약 등)
+        function renderSummaryReportList() {
+            elements.summaryReportList.innerHTML = state.summaryReports.map((report, idx) => {
+                const isActive = state.currentTab === 'summary' && idx === state.currentSummaryIndex;
+                const isReviewed = state.reviewedSummaryReports.has(report.id);
+                const hasMissing = state.missingFieldsByReport[report.id]?.length > 0;
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                } else if (hasMissing) {
+                    statusClass = 'has-missing';
+                    statusIcon = '!';
+                }
+
+                return `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''} ${hasMissing ? 'has-missing' : ''}"
+                         onclick="selectSummaryReport(${idx})"
+                         data-report-id="${report.id}">
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                            <div class="report-sheet">${report.sheet || '요약 페이지'}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select summary report
+        function selectSummaryReport(index) {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            state.currentSummaryIndex = index;
+            state.currentReportIndex = -1;
+            state.currentRegionalIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            generateSummaryPreview();
+        }
+
+        // Generate summary preview
+        async function generateSummaryPreview() {
+            if (state.currentSummaryIndex < 0 || !state.fileUploaded) return;
+
+            const report = state.summaryReports[state.currentSummaryIndex];
+            showLoading(`${report.name} 생성 중...`);
+
+            try {
+                const response = await fetch('/api/generate-summary-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        report_id: report.id,
+                        year: parseInt(elements.yearSelect.value),
+                        quarter: parseInt(elements.quarterSelect.value),
+                        custom_data: state.customData[report.id] || {},
+                        contact_info: state.contactInfo  // 담당자 정보 전송
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update preview
+                    elements.previewPlaceholder.style.display = 'none';
+                    elements.previewIframe.style.display = 'block';
+                    elements.previewIframe.srcdoc = data.html;
+                    elements.previewTitle.innerHTML = `<span>${report.icon}</span><span>${report.name}</span>`;
+                    elements.markReviewedBtn.style.display = 'block';
+
+                    // Check for missing data
+                    if (data.missing_fields && data.missing_fields.length > 0) {
+                        state.missingFieldsByReport[report.id] = data.missing_fields;
+                        renderSummaryReportList();
+                        showMissingDataModal(data.missing_fields);
+                    } else {
+                        state.missingFieldsByReport[report.id] = [];
+                        renderSummaryReportList();
+                    }
+                } else {
+                    showToast(data.error || '요약 보고서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('요약 보고서 생성 오류:', err);
+                showToast('요약 보고서 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Render regional report list
+        function renderRegionalReportList() {
+            elements.regionalReportList.innerHTML = state.regionalReports.map((region, idx) => {
+                const isActive = state.currentTab === 'regional' && idx === state.currentRegionalIndex;
+                const isReviewed = state.reviewedRegionalReports.has(region.id);
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                }
+
+                return `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''}"
+                         onclick="selectRegionalReport(${idx})"
+                         data-region-id="${region.id}">
+                        <div class="report-icon">${region.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${region.index}. ${region.name}</div>
+                            <div class="report-sheet">${region.full_name}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render statistics report list
+        function renderStatisticsReportList() {
+            elements.statisticsReportList.innerHTML = state.statisticsReports.map((stat, idx) => {
+                const isActive = state.currentTab === 'statistics' && idx === state.currentStatisticsIndex;
+                const isReviewed = state.reviewedStatisticsReports.has(stat.id);
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                }
+
+                return `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''}"
+                         onclick="selectStatisticsReport(${idx})"
+                         data-report-id="${stat.id}">
+                        <div class="report-icon">${stat.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${stat.name}</div>
+                            <div class="report-sheet">${stat.description}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select statistics report
+        function selectStatisticsReport(index) {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            state.currentStatisticsIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentReportIndex = -1;
+            state.currentRegionalIndex = -1;
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            generateStatisticsPreview();
+        }
+
+        // Generate statistics preview
+        async function generateStatisticsPreview() {
+            if (state.currentStatisticsIndex < 0 || !state.fileUploaded) return;
+
+            const stat = state.statisticsReports[state.currentStatisticsIndex];
+            showLoading(`${stat.name} 생성 중...`);
+
+            try {
+                const response = await fetch('/api/generate-statistics-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        stat_id: stat.id,
+                        year: parseInt(elements.yearSelect.value),
+                        quarter: parseInt(elements.quarterSelect.value)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update preview
+                    elements.previewPlaceholder.style.display = 'none';
+                    elements.previewIframe.style.display = 'block';
+                    elements.previewIframe.srcdoc = data.html;
+                    elements.previewTitle.innerHTML = `<span>${stat.icon}</span><span>${stat.name}</span>`;
+                    elements.markReviewedBtn.style.display = 'block';
+                } else {
+                    showToast(data.error || '통계표 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('통계표 생성 오류:', err);
+                showToast('통계표 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Select regional report
+        function selectRegionalReport(index) {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            state.currentRegionalIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentReportIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            generateRegionalPreview();
+        }
+
+        // Generate regional preview
+        async function generateRegionalPreview() {
+            if (state.currentRegionalIndex < 0 || !state.fileUploaded) return;
+
+            const region = state.regionalReports[state.currentRegionalIndex];
+            showLoading(`${region.name} 시도별 보고서 생성 중...`);
+
+            try {
+                const response = await fetch('/api/generate-regional-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        region_id: region.id
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update preview
+                    elements.previewPlaceholder.style.display = 'none';
+                    elements.previewIframe.style.display = 'block';
+                    elements.previewIframe.srcdoc = data.html;
+                    elements.previewTitle.innerHTML = `<span>${region.icon}</span><span>${region.name} - 시도별 경제동향</span>`;
+                    elements.markReviewedBtn.style.display = 'block';
+                } else {
+                    showToast(data.error || '시도별 보고서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('시도별 보고서 생성 오류:', err);
+                showToast('시도별 보고서 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
         function renderReportList() {
-            elements.reportList.innerHTML = state.reports.map((report, idx) => {
-                const isActive = idx === state.currentReportIndex;
+            // 부문별 보고서만 렌더링 (category !== 'summary')
+            elements.reportList.innerHTML = state.sectoralReports.map((report, idx) => {
+                const isActive = state.currentTab === 'sectoral' && idx === state.currentReportIndex;
                 const isReviewed = state.reviewedReports.has(report.id);
                 const hasMissing = state.missingFieldsByReport[report.id]?.length > 0;
                 
@@ -1036,27 +1608,76 @@
             }
 
             state.currentReportIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentRegionalIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            renderSummaryReportList();
             renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
             updateNavigationButtons();
             generateCurrentPreview();
         }
 
         function navigateReport(direction) {
-            const newIndex = state.currentReportIndex + direction;
-            if (newIndex >= 0 && newIndex < state.reports.length) {
-                selectReport(newIndex);
+            if (state.currentTab === 'summary') {
+                const newIndex = state.currentSummaryIndex + direction;
+                if (newIndex >= 0 && newIndex < state.summaryReports.length) {
+                    selectSummaryReport(newIndex);
+                }
+            } else if (state.currentTab === 'sectoral') {
+                const newIndex = state.currentReportIndex + direction;
+                if (newIndex >= 0 && newIndex < state.sectoralReports.length) {
+                    selectReport(newIndex);
+                }
+            } else if (state.currentTab === 'regional') {
+                const newIndex = state.currentRegionalIndex + direction;
+                if (newIndex >= 0 && newIndex < state.regionalReports.length) {
+                    selectRegionalReport(newIndex);
+                }
+            } else if (state.currentTab === 'statistics') {
+                const newIndex = state.currentStatisticsIndex + direction;
+                if (newIndex >= 0 && newIndex < state.statisticsReports.length) {
+                    selectStatisticsReport(newIndex);
+                }
             }
         }
 
         function updateNavigationButtons() {
-            elements.prevBtn.disabled = state.currentReportIndex <= 0;
-            elements.nextBtn.disabled = state.currentReportIndex >= state.reports.length - 1;
+            if (state.currentTab === 'summary') {
+                elements.prevBtn.disabled = state.currentSummaryIndex <= 0;
+                elements.nextBtn.disabled = state.currentSummaryIndex >= state.summaryReports.length - 1;
+            } else if (state.currentTab === 'sectoral') {
+                elements.prevBtn.disabled = state.currentReportIndex <= 0;
+                elements.nextBtn.disabled = state.currentReportIndex >= state.sectoralReports.length - 1;
+            } else if (state.currentTab === 'regional') {
+                elements.prevBtn.disabled = state.currentRegionalIndex <= 0;
+                elements.nextBtn.disabled = state.currentRegionalIndex >= state.regionalReports.length - 1;
+            } else if (state.currentTab === 'statistics') {
+                elements.prevBtn.disabled = state.currentStatisticsIndex <= 0;
+                elements.nextBtn.disabled = state.currentStatisticsIndex >= state.statisticsReports.length - 1;
+            }
         }
 
         function updatePageIndicator() {
-            const current = state.currentReportIndex + 1;
-            const total = state.reports.length;
-            elements.pageIndicator.textContent = `${current > 0 ? current : 0} / ${total}`;
+            if (state.currentTab === 'summary') {
+                const current = state.currentSummaryIndex + 1;
+                const total = state.summaryReports.length;
+                elements.pageIndicator.textContent = `요약 ${current > 0 ? current : 0} / ${total}`;
+            } else if (state.currentTab === 'sectoral') {
+                const current = state.currentReportIndex + 1;
+                const total = state.sectoralReports.length;
+                elements.pageIndicator.textContent = `부문별 ${current > 0 ? current : 0} / ${total}`;
+            } else if (state.currentTab === 'regional') {
+                const current = state.currentRegionalIndex + 1;
+                const total = state.regionalReports.length;
+                elements.pageIndicator.textContent = `시도별 ${current > 0 ? current : 0} / ${total}`;
+            } else if (state.currentTab === 'statistics') {
+                const current = state.currentStatisticsIndex + 1;
+                const total = state.statisticsReports.length;
+                elements.pageIndicator.textContent = `통계표 ${current > 0 ? current : 0} / ${total}`;
+            }
         }
 
         // File Upload Handlers
@@ -1124,8 +1745,11 @@
 
                     showToast('파일이 성공적으로 업로드되었습니다.', 'success');
 
-                    // Auto-select first report
-                    if (state.reports.length > 0) {
+                    // Auto-select first summary report (요약 탭이 기본)
+                    if (state.summaryReports.length > 0) {
+                        selectSummaryReport(0);
+                    } else if (state.sectoralReports.length > 0) {
+                        switchTab('sectoral');
                         selectReport(0);
                     }
                 } else {
@@ -1143,7 +1767,7 @@
         async function generateCurrentPreview() {
             if (state.currentReportIndex < 0 || !state.fileUploaded) return;
 
-            const report = state.reports[state.currentReportIndex];
+            const report = state.sectoralReports[state.currentReportIndex];
             showLoading(`${report.name} 미리보기 생성 중...`);
 
             try {
@@ -1190,23 +1814,79 @@
 
         // Mark as Reviewed
         function markCurrentAsReviewed() {
-            if (state.currentReportIndex < 0) return;
+            if (state.currentTab === 'summary') {
+                if (state.currentSummaryIndex < 0) return;
 
-            const report = state.reports[state.currentReportIndex];
-            state.reviewedReports.add(report.id);
-            renderReportList();
+                const report = state.summaryReports[state.currentSummaryIndex];
+                state.reviewedSummaryReports.add(report.id);
+                renderSummaryReportList();
 
-            // Check if all reports are reviewed
-            if (state.reviewedReports.size === state.reports.length) {
-                elements.generateBtn.disabled = false;
-                showToast('모든 보고서 검토가 완료되었습니다! 전체 생성이 가능합니다.', 'success');
-            }
+                // Check if all summary reports are reviewed
+                if (state.reviewedSummaryReports.size === state.summaryReports.length) {
+                    showToast('모든 요약 보고서 검토가 완료되었습니다!', 'success');
+                }
 
-            // Auto-navigate to next
-            if (state.currentReportIndex < state.reports.length - 1) {
-                navigateReport(1);
-            } else {
-                showToast(`${report.name} 검토 완료!`, 'success');
+                // Auto-navigate to next
+                if (state.currentSummaryIndex < state.summaryReports.length - 1) {
+                    navigateReport(1);
+                } else {
+                    showToast(`${report.name} 검토 완료!`, 'success');
+                }
+            } else if (state.currentTab === 'sectoral') {
+                if (state.currentReportIndex < 0) return;
+
+                const report = state.sectoralReports[state.currentReportIndex];
+                state.reviewedReports.add(report.id);
+                renderReportList();
+
+                // Check if all sectoral reports are reviewed
+                if (state.reviewedReports.size === state.sectoralReports.length) {
+                    elements.generateBtn.disabled = false;
+                    showToast('모든 부문별 보고서 검토가 완료되었습니다!', 'success');
+                }
+
+                // Auto-navigate to next
+                if (state.currentReportIndex < state.sectoralReports.length - 1) {
+                    navigateReport(1);
+                } else {
+                    showToast(`${report.name} 검토 완료!`, 'success');
+                }
+            } else if (state.currentTab === 'regional') {
+                if (state.currentRegionalIndex < 0) return;
+
+                const region = state.regionalReports[state.currentRegionalIndex];
+                state.reviewedRegionalReports.add(region.id);
+                renderRegionalReportList();
+
+                // Check if all regional reports are reviewed
+                if (state.reviewedRegionalReports.size === state.regionalReports.length) {
+                    showToast('모든 시도별 보고서 검토가 완료되었습니다!', 'success');
+                }
+
+                // Auto-navigate to next
+                if (state.currentRegionalIndex < state.regionalReports.length - 1) {
+                    navigateReport(1);
+                } else {
+                    showToast(`${region.name} 검토 완료!`, 'success');
+                }
+            } else if (state.currentTab === 'statistics') {
+                if (state.currentStatisticsIndex < 0) return;
+
+                const stat = state.statisticsReports[state.currentStatisticsIndex];
+                state.reviewedStatisticsReports.add(stat.id);
+                renderStatisticsReportList();
+
+                // Check if all statistics reports are reviewed
+                if (state.reviewedStatisticsReports.size === state.statisticsReports.length) {
+                    showToast('모든 통계표 검토가 완료되었습니다!', 'success');
+                }
+
+                // Auto-navigate to next
+                if (state.currentStatisticsIndex < state.statisticsReports.length - 1) {
+                    navigateReport(1);
+                } else {
+                    showToast(`${stat.name} 검토 완료!`, 'success');
+                }
             }
         }
 

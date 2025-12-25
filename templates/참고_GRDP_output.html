@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>참고 - GRDP</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm 20mm;
+            background: white;
+        }
+        
+        /* 헤더 */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1a5c9e;
+        }
+        
+        .header-badge {
+            background: linear-gradient(135deg, #1a5c9e 0%, #2d7bc9 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14pt;
+            font-weight: 700;
+        }
+        
+        .header-title {
+            font-size: 16pt;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        
+        /* 요약 섹션 */
+        .summary-section {
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #1a5c9e;
+        }
+        
+        .summary-item {
+            margin-bottom: 12px;
+            line-height: 1.8;
+        }
+        
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-item .marker {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #333;
+            text-align: center;
+            line-height: 14px;
+            margin-right: 8px;
+            font-size: 12pt;
+        }
+        
+        .summary-item .marker.square {
+            border-radius: 2px;
+        }
+        
+        .summary-item .marker.circle {
+            border-radius: 50%;
+            border-color: #666;
+        }
+        
+        .highlight {
+            font-weight: 600;
+            color: #1a5c9e;
+        }
+        
+        .increase {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+        
+        .decrease {
+            color: #1976d2;
+            font-weight: 600;
+        }
+        
+        /* 플레이스홀더 (편집 가능) */
+        .placeholder {
+            background-color: #fff3cd;
+            border: 1px dashed #ffc107;
+            border-radius: 3px;
+            padding: 1px 4px;
+            min-width: 40px;
+            display: inline-block;
+            text-align: center;
+            cursor: text;
+        }
+        
+        .placeholder:hover {
+            background-color: #ffe69c;
+        }
+        
+        .placeholder:focus {
+            outline: 2px solid #ffc107;
+            background-color: #fff;
+        }
+        
+        /* 차트 섹션 */
+        .chart-section {
+            margin-bottom: 25px;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            margin-bottom: 10px;
+        }
+        
+        .chart-note {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 차트 범례 */
+        .chart-legend {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 9pt;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .legend-color.manufacturing { background: #4472c4; }
+        .legend-color.construction { background: #ed7d31; }
+        .legend-color.service { background: #a5a5a5; }
+        .legend-color.other { background: #ffc000; }
+        .legend-color.growth {
+            width: 10px;
+            height: 10px;
+            background: #c55a11;
+            border-radius: 50%;
+        }
+        
+        /* 테이블 섹션 */
+        .table-section {
+            margin-top: 25px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: center;
+        }
+        
+        .data-table thead th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .data-table thead th.group-header {
+            background: #e8e8e8;
+        }
+        
+        .data-table tbody td {
+            background: white;
+        }
+        
+        .data-table tbody td.region-group {
+            background: #f9f9f9;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        
+        .data-table tbody td.region-name {
+            font-weight: 500;
+        }
+        
+        .data-table tbody tr:nth-child(even) td:not(.region-group) {
+            background: #fafafa;
+        }
+        
+        .data-table tbody td.national {
+            background: #f0f4f8;
+            font-weight: 600;
+        }
+        
+        /* 차트 컨트롤 */
+        .chart-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 9pt;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .control-group input {
+            width: 60px;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 9pt;
+        }
+        
+        .control-group button {
+            padding: 4px 10px;
+            background: #1a5c9e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 9pt;
+        }
+        
+        .control-group button:hover {
+            background: #14487a;
+        }
+        
+        /* 페이지 번호 */
+        .page-number {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                padding: 10mm 15mm;
+            }
+            
+            .chart-controls {
+                display: none;
+            }
+            
+            .placeholder {
+                background-color: transparent;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- 헤더 -->
+        <div class="header">
+            <span class="header-badge">참고</span>
+            <span class="header-title">2025년 2/4분기 실질 지역내총생산(GRDP)</span>
+        </div>
+        
+        <!-- 요약 섹션 -->
+        <div class="summary-section">
+            <div class="summary-item">
+                <span class="marker square">□</span>
+                전국 GRDP는 전년동분기대비 
+                
+                <span class="highlight">0.4%</span>
+                
+                증가하였으며, 산업별 기여도는 
+                서비스업(0.7%p), 
+                광·제조업(0.5%p), 
+                기타(-0.2%p), 
+                건설업(-0.6%p) 순임
+            </div>
+            <div class="summary-item">
+                <span class="marker circle">○</span>
+                17개 시도 중 
+                
+                <span class="highlight">충북</span>의 
+                성장률(<span class="highlight">5.8%</span>)이
+                
+                가장 높고, 산업별 기여도는 
+                광·제조업(5.1%p), 
+                서비스업(0.8%p), 
+                기타(0.5%p), 
+                건설업(-0.6%p) 순임
+            </div>
+        </div>
+        
+        <!-- 차트 섹션 -->
+        <div class="chart-section">
+            <div class="chart-title">&lt; 시도별 전년동기비 성장률 및 기여도 &gt;</div>
+            
+            <!-- 범례 -->
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color manufacturing"></div>
+                    <span>광업, 제조업</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color construction"></div>
+                    <span>건설업</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color service"></div>
+                    <span>서비스업</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color other"></div>
+                    <span>기타</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color growth"></div>
+                    <span>성장률</span>
+                </div>
+            </div>
+            
+            <!-- 차트 컨트롤 -->
+            <div class="chart-controls">
+                <div class="control-group">
+                    <label>Y축 최소:</label>
+                    <input type="number" id="yAxisMin" value="-6" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Y축 최대:</label>
+                    <input type="number" id="yAxisMax" value="8" step="1">
+                </div>
+                <div class="control-group">
+                    <label>간격:</label>
+                    <input type="number" id="yAxisStep" value="2" step="0.5">
+                </div>
+                <div class="control-group">
+                    <button onclick="updateChart()">적용</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="grdpChart"></canvas>
+            </div>
+            
+            <div class="chart-note">
+                * 기타: 농림어업, 전기·가스업, 순생산물세
+            </div>
+        </div>
+        
+        <!-- 테이블 섹션 -->
+        <div class="table-section">
+            <div class="table-title">&lt; 시도별 전년동기비 성장률 및 기여도 &gt;</div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" colspan="2"></th>
+                        <th rowspan="2">성장률(%)</th>
+                        <th colspan="4" class="group-header">기여도(%p)</th>
+                    </tr>
+                    <tr>
+                        <th>광업, 제조업</th>
+                        <th>건설업</th>
+                        <th>서비스업</th>
+                        <th>기타</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        
+                        <!-- 전국 -->
+                        <td class="national" colspan="2">전 국</td>
+                        
+                        
+                        
+                        <td>0.4</td>
+                        <td>0.5</td>
+                        <td>-0.6</td>
+                        <td>0.7</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 권역 그룹 시작 -->
+                        
+                        <td class="region-group" rowspan="3">경인</td>
+                        <td class="region-name">서울</td>
+                        
+                        
+                        
+                        <td>1.2</td>
+                        <td>-0.1</td>
+                        <td>-0.1</td>
+                        <td>1.5</td>
+                        <td>-0.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">인천</td>
+                        
+                        
+                        
+                        <td>-1.6</td>
+                        <td>-1.2</td>
+                        <td>-0.4</td>
+                        <td>0.5</td>
+                        <td>-0.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">경기</td>
+                        
+                        
+                        
+                        <td>2.7</td>
+                        <td>2.5</td>
+                        <td>-0.8</td>
+                        <td>1.0</td>
+                        <td>0.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 권역 그룹 시작 -->
+                        
+                        <td class="region-group" rowspan="4">충청</td>
+                        <td class="region-name">대전</td>
+                        
+                        
+                        
+                        <td>-0.6</td>
+                        <td>-0.4</td>
+                        <td>-0.5</td>
+                        <td>0.5</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">세종</td>
+                        
+                        
+                        
+                        <td>-0.3</td>
+                        <td>0.0</td>
+                        <td>-1.3</td>
+                        <td>1.2</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">충북</td>
+                        
+                        
+                        
+                        <td>5.8</td>
+                        <td>5.1</td>
+                        <td>-0.6</td>
+                        <td>0.8</td>
+                        <td>0.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">충남</td>
+                        
+                        
+                        
+                        <td>-3.9</td>
+                        <td>-2.3</td>
+                        <td>-0.4</td>
+                        <td>0.3</td>
+                        <td>-1.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 권역 그룹 시작 -->
+                        
+                        <td class="region-group" rowspan="4">호남</td>
+                        <td class="region-name">광주</td>
+                        
+                        
+                        
+                        <td>-0.9</td>
+                        <td>0.0</td>
+                        <td>-0.7</td>
+                        <td>0.0</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">전북</td>
+                        
+                        
+                        
+                        <td>-0.9</td>
+                        <td>0.5</td>
+                        <td>-0.8</td>
+                        <td>-0.4</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">전남</td>
+                        
+                        
+                        
+                        <td>-3.2</td>
+                        <td>-1.2</td>
+                        <td>-1.2</td>
+                        <td>0.1</td>
+                        <td>-1.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">제주</td>
+                        
+                        
+                        
+                        <td>-3.7</td>
+                        <td>-0.1</td>
+                        <td>-1.1</td>
+                        <td>-2.9</td>
+                        <td>0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 권역 그룹 시작 -->
+                        
+                        <td class="region-group" rowspan="3">동북</td>
+                        <td class="region-name">대구</td>
+                        
+                        
+                        
+                        <td>-3.2</td>
+                        <td>-1.0</td>
+                        <td>-1.2</td>
+                        <td>-0.7</td>
+                        <td>-0.3</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">경북</td>
+                        
+                        
+                        
+                        <td>1.9</td>
+                        <td>2.7</td>
+                        <td>-1.1</td>
+                        <td>0.1</td>
+                        <td>0.3</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">강원</td>
+                        
+                        
+                        
+                        <td>-0.5</td>
+                        <td>0.0</td>
+                        <td>-1.0</td>
+                        <td>0.2</td>
+                        <td>0.3</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 권역 그룹 시작 -->
+                        
+                        <td class="region-group" rowspan="3">동남</td>
+                        <td class="region-name">부산</td>
+                        
+                        
+                        
+                        <td>0.7</td>
+                        <td>-0.8</td>
+                        <td>-0.2</td>
+                        <td>1.9</td>
+                        <td>-0.3</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">울산</td>
+                        
+                        
+                        
+                        <td>-1.0</td>
+                        <td>-0.6</td>
+                        <td>-0.3</td>
+                        <td>0.3</td>
+                        <td>-0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name">경남</td>
+                        
+                        
+                        
+                        <td>-2.2</td>
+                        <td>-0.4</td>
+                        <td>-0.7</td>
+                        <td>-0.5</td>
+                        <td>-0.7</td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 페이지 번호 -->
+        
+        <div class="page-number">- 20 -</div>
+        
+    </div>
+    
+    <script>
+        // 차트 데이터
+        const chartData = {
+            labels: [
+                
+                '전국',
+                
+                '서울',
+                
+                '인천',
+                
+                '경기',
+                
+                '대전',
+                
+                '세종',
+                
+                '충북',
+                
+                '충남',
+                
+                '광주',
+                
+                '전북',
+                
+                '전남',
+                
+                '제주',
+                
+                '대구',
+                
+                '경북',
+                
+                '강원',
+                
+                '부산',
+                
+                '울산',
+                
+                '경남'
+                
+            ],
+            groupLabels: ['전국', '경인', '충청', '호남', '동북', '동남'],
+            regionGroups: {
+                '전국': ['전국'],
+                '경인': ['서울', '인천', '경기'],
+                '충청': ['대전', '세종', '충북', '충남'],
+                '호남': ['광주', '전북', '전남', '제주'],
+                '동북': ['대구', '경북', '강원'],
+                '동남': ['부산', '울산', '경남']
+            },
+            manufacturing: [0.5,-0.1,-1.2,2.5,-0.4,0.0,5.1,-2.3,0.0,0.5,-1.2,-0.1,-1.0,2.7,0.0,-0.8,-0.6,-0.4],
+            construction: [-0.6,-0.1,-0.4,-0.8,-0.5,-1.3,-0.6,-0.4,-0.7,-0.8,-1.2,-1.1,-1.2,-1.1,-1.0,-0.2,-0.3,-0.7],
+            service: [0.7,1.5,0.5,1.0,0.5,1.2,0.8,0.3,0.0,-0.4,0.1,-2.9,-0.7,0.1,0.2,1.9,0.3,-0.5],
+            other: [-0.2,-0.1,-0.5,0.0,-0.2,-0.2,0.5,-1.5,-0.2,-0.2,-1.0,0.4,-0.3,0.3,0.3,-0.3,-0.4,-0.7],
+            growthRate: [0.4,1.2,-1.6,2.7,-0.6,-0.3,5.8,-3.9,-0.9,-0.9,-3.2,-3.7,-3.2,1.9,-0.5,0.7,-1.0,-2.2]
+        };
+        
+        let chart;
+        
+        function createChart() {
+            const ctx = document.getElementById('grdpChart').getContext('2d');
+            
+            const yMin = parseFloat(document.getElementById('yAxisMin').value);
+            const yMax = parseFloat(document.getElementById('yAxisMax').value);
+            const yStep = parseFloat(document.getElementById('yAxisStep').value);
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: '광업, 제조업',
+                            data: chartData.manufacturing,
+                            backgroundColor: '#4472c4',
+                            stack: 'stack1',
+                            order: 2
+                        },
+                        {
+                            label: '건설업',
+                            data: chartData.construction,
+                            backgroundColor: '#ed7d31',
+                            stack: 'stack1',
+                            order: 2
+                        },
+                        {
+                            label: '서비스업',
+                            data: chartData.service,
+                            backgroundColor: '#a5a5a5',
+                            stack: 'stack1',
+                            order: 2
+                        },
+                        {
+                            label: '기타',
+                            data: chartData.other,
+                            backgroundColor: '#ffc000',
+                            stack: 'stack1',
+                            order: 2
+                        },
+                        {
+                            label: '성장률',
+                            data: chartData.growthRate,
+                            type: 'line',
+                            borderColor: '#c55a11',
+                            backgroundColor: '#c55a11',
+                            pointBackgroundColor: '#c55a11',
+                            pointBorderColor: '#c55a11',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderWidth: 0,
+                            fill: false,
+                            showLine: false,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + (context.dataset.label === '성장률' ? '%' : '%p');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 9
+                                }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            min: yMin,
+                            max: yMax,
+                            ticks: {
+                                stepSize: yStep,
+                                font: {
+                                    size: 9
+                                },
+                                callback: function(value) {
+                                    return value;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '(%p)',
+                                font: {
+                                    size: 9
+                                }
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    // 성장률 값 레이블 표시
+                    afterDatasetsDraw: function(chart) {
+                        const ctx = chart.ctx;
+                        const dataset = chart.data.datasets[4]; // 성장률 데이터셋
+                        const meta = chart.getDatasetMeta(4);
+                        
+                        ctx.font = '9px "Noto Sans KR"';
+                        ctx.fillStyle = '#333';
+                        ctx.textAlign = 'center';
+                        
+                        meta.data.forEach((point, index) => {
+                            const value = dataset.data[index];
+                            ctx.fillText(value.toFixed(1), point.x, point.y - 10);
+                        });
+                    }
+                }]
+            });
+        }
+        
+        function updateChart() {
+            if (chart) {
+                chart.destroy();
+            }
+            createChart();
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            createChart();
+        });
+    </script>
+</body>
+</html>

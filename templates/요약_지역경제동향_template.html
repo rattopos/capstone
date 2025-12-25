@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향[요약]</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+        }
+        
+        .summary-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        /* 페이지 제목 */
+        .page-title {
+            text-align: center;
+            font-size: 18pt;
+            font-weight: 700;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px double #1565c0;
+        }
+        
+        .page-title .highlight {
+            color: #1565c0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        
+        /* 요약 섹션 */
+        .summary-section {
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.7;
+        }
+        
+        .summary-item::before {
+            content: "□";
+            position: absolute;
+            left: 0;
+            font-size: 11pt;
+        }
+        
+        .summary-item .category {
+            font-weight: 500;
+        }
+        
+        .summary-item .sub-item {
+            display: block;
+            padding-left: 20px;
+            position: relative;
+            margin-top: 3px;
+        }
+        
+        .summary-item .sub-item::before {
+            content: "○";
+            position: absolute;
+            left: 0;
+        }
+        
+        .highlight {
+            font-weight: 700;
+        }
+        
+        .increase {
+            font-weight: 700;
+        }
+        
+        .decrease {
+            font-weight: 700;
+        }
+        
+        .nationwide-ref {
+            color: #666;
+            font-size: 9pt;
+        }
+        
+        /* 표 섹션 */
+        .table-section {
+            margin-top: 25px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .table-subtitle {
+            text-align: right;
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+            padding: 5px 6px;
+            text-align: center;
+        }
+        
+        .data-table thead th {
+            background-color: #e3f2fd;
+            font-weight: 600;
+        }
+        
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: 500;
+            width: 40px;
+        }
+        
+        .data-table .region-name {
+            width: 50px;
+            font-weight: 500;
+        }
+        
+        .data-table .nationwide-row {
+            background-color: #fff3e0;
+            font-weight: 600;
+        }
+        
+        .data-table .value-cell {
+            width: 70px;
+        }
+        
+        .positive {
+            color: #c62828;
+        }
+        
+        .negative {
+            color: #1565c0;
+        }
+        
+        /* 페이지 번호 */
+        .page-number {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 15px;
+        }
+        
+        @media print {
+            .summary-container {
+                width: 210mm;
+                height: 297mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="summary-container">
+        <!-- 페이지 제목 -->
+        <h1 class="page-title">
+            {{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향<span class="highlight">[요약]</span>
+        </h1>
+        
+        <!-- 요약 섹션 -->
+        <div class="summary-section">
+            <!-- 생산 -->
+            <div class="summary-item">
+                <span class="category">생산</span>(광공업)은 
+                {% for region in summary.production.mining.increase_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.production.mining.increase_count }}개 시도에서 전년동분기대비 <span class="increase">증가</span>,
+                {% for region in summary.production.mining.decrease_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.production.mining.decrease_count }}개 시도는 <span class="decrease">감소</span><span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.production.mining.nationwide) }}%]</span>
+                <span class="sub-item">
+                    서비스업은 
+                    {% for region in summary.production.service.increase_regions[:2] %}
+                    <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ summary.production.service.increase_count }}개 시도에서 전년동분기대비 <span class="increase">증가</span>,
+                    {% for region in summary.production.service.decrease_regions[:2] %}
+                    <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ summary.production.service.decrease_count }}개 시도는 <span class="decrease">감소</span><span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.production.service.nationwide) }}%]</span>
+                </span>
+            </div>
+            
+            <!-- 소비 -->
+            <div class="summary-item">
+                <span class="category">소비</span>(소매판매)는 
+                {% for region in summary.consumption.increase_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.consumption.increase_count }}개 시도에서 전년동분기대비 <span class="increase">증가</span>,
+                {% for region in summary.consumption.decrease_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.consumption.decrease_count }}개 시도는 <span class="decrease">감소</span><span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.consumption.nationwide) }}%]</span>
+            </div>
+            
+            <!-- 수출 -->
+            <div class="summary-item">
+                <span class="category">수출</span>(통관기준)은 
+                {% for region in summary.exports.increase_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.exports.increase_count }}개 시도에서 전년동분기대비 <span class="increase">증가</span>,
+                {% for region in summary.exports.decrease_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.exports.decrease_count }}개 시도는 <span class="decrease">감소</span><span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.exports.nationwide) }}%]</span>
+            </div>
+            
+            <!-- 물가 -->
+            <div class="summary-item">
+                <span class="category">물가</span>(소비자물가)는 
+                {% for region in summary.price.above_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 모든 시도에서 전년동분기대비 <span class="increase">상승</span>
+                <span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.price.nationwide) }}%]</span>
+            </div>
+            
+            <!-- 고용 -->
+            <div class="summary-item">
+                <span class="category">고용</span>(고용률)은 
+                {% for region in summary.employment.increase_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ summary.employment.increase_count }}개 시도에서 전년동분기대비 <span class="increase">상승</span>,
+                {% for region in summary.employment.decrease_regions[:2] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
+                {% endfor %}등 {{ summary.employment.decrease_count }}개 시도는 <span class="decrease">하락</span><span class="nationwide-ref">[전국: {{ "%.1f"|format(summary.employment.nationwide) }}%p]</span>
+            </div>
+        </div>
+        
+        <!-- 주요 지표 표 -->
+        <div class="table-section">
+            <div class="table-title">&lt;{{ report_info.year }}년 {{ report_info.quarter }}/4분기 주요 지역경제 지표&gt;</div>
+            <div class="table-subtitle">(전년동분기비, %)</div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th colspan="2"></th>
+                        <th class="value-cell">광공업생산</th>
+                        <th class="value-cell">서비스업생산</th>
+                        <th class="value-cell">소매판매</th>
+                        <th class="value-cell">수출</th>
+                        <th class="value-cell">소비자물가</th>
+                        <th class="value-cell">고용률(%p)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 전국 -->
+                    <tr class="nationwide-row">
+                        <td colspan="2">전 국</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.mining_production) }}</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.service_production) }}</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.retail_sales) }}</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.exports) }}</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.price) }}</td>
+                        <td>{{ "%.1f"|format(table_data.nationwide.employment) }}</td>
+                    </tr>
+                    
+                    <!-- 시도별 데이터 -->
+                    {% for group in table_data.region_groups %}
+                    {% for region in group.regions %}
+                    <tr>
+                        {% if loop.first %}
+                        <td class="region-group" rowspan="{{ group.regions|length }}">{{ group.name }}</td>
+                        {% endif %}
+                        <td class="region-name">{{ region.name }}</td>
+                        <td class="{% if region.mining_production >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.mining_production) }}</td>
+                        <td class="{% if region.service_production >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.service_production) }}</td>
+                        <td class="{% if region.retail_sales >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.retail_sales) }}</td>
+                        <td class="{% if region.exports >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.exports) }}</td>
+                        <td>{{ "%.1f"|format(region.price) }}</td>
+                        <td class="{% if region.employment >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.employment) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-number">- {{ page_number }} -</div>
+    </div>
+</body>
+</html>
+

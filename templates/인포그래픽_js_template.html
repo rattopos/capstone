@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향 인포그래픽</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            background: linear-gradient(135deg, #e8f4fc 0%, #d4e8f5 50%, #c5dff0 100%);
+            min-height: 100vh;
+        }
+        
+        .infographic-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 헤더 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #e53935 50%, #1e88e5 50%);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .logo-text {
+            font-size: 16pt;
+            font-weight: 700;
+            color: #1e88e5;
+        }
+        
+        .logo-sub {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .main-title {
+            text-align: right;
+        }
+        
+        .main-title .year-quarter {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #1565c0;
+        }
+        
+        .main-title .report-name {
+            font-size: 32pt;
+            font-weight: 900;
+            color: #0d47a1;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 그리드 레이아웃 */
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 지표 카드 */
+        .indicator-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .indicator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .indicator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color-start), var(--card-color-end));
+        }
+        
+        .indicator-card[data-indicator="mining"] { --card-color-start: #ff6b6b; --card-color-end: #ee5a5a; }
+        .indicator-card[data-indicator="service"] { --card-color-start: #4ecdc4; --card-color-end: #3db9b1; }
+        .indicator-card[data-indicator="retail"] { --card-color-start: #45b7d1; --card-color-end: #35a5bf; }
+        .indicator-card[data-indicator="export"] { --card-color-start: #96ceb4; --card-color-end: #7fb99f; }
+        .indicator-card[data-indicator="employment"] { --card-color-start: #dda0dd; --card-color-end: #cc8fcc; }
+        .indicator-card[data-indicator="price"] { --card-color-start: #ffeaa7; --card-color-end: #fdcb6e; }
+        
+        .indicator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .indicator-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .indicator-icon {
+            font-size: 24px;
+        }
+        
+        .indicator-name {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .indicator-unit {
+            font-size: 9pt;
+            color: #888;
+            background: #f5f5f5;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        
+        /* 전국 데이터 표시 */
+        .nationwide-display {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+        }
+        
+        .nationwide-label {
+            font-size: 10pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .nationwide-value {
+            font-size: 28pt;
+            font-weight: 900;
+        }
+        
+        .nationwide-value.increase {
+            color: #e53935;
+        }
+        
+        .nationwide-value.decrease {
+            color: #1e88e5;
+        }
+        
+        .nationwide-value .arrow {
+            font-size: 20pt;
+        }
+        
+        /* 차트 컨테이너 */
+        .chart-container {
+            height: 180px;
+            margin: 15px 0;
+        }
+        
+        /* 지역 랭킹 */
+        .regions-ranking {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .ranking-column {
+            flex: 1;
+        }
+        
+        .ranking-header {
+            font-size: 10pt;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .ranking-header.top {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+        }
+        
+        .ranking-header.bottom {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            color: #1565c0;
+        }
+        
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            transition: background 0.2s ease;
+        }
+        
+        .ranking-item:hover {
+            background: #e9ecef;
+        }
+        
+        .ranking-position {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10pt;
+            font-weight: 700;
+            color: white;
+            margin-right: 8px;
+        }
+        
+        .top .ranking-position {
+            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+        }
+        
+        .bottom .ranking-position {
+            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+        }
+        
+        .ranking-region {
+            font-size: 11pt;
+            font-weight: 500;
+            flex: 1;
+        }
+        
+        .ranking-value {
+            font-size: 12pt;
+            font-weight: 700;
+        }
+        
+        .ranking-value.increase {
+            color: #e53935;
+        }
+        
+        .ranking-value.decrease {
+            color: #1e88e5;
+        }
+        
+        /* 범례 */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10pt;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        .legend-color.increase {
+            background: linear-gradient(90deg, #ef9a9a, #e53935);
+        }
+        
+        .legend-color.decrease {
+            background: linear-gradient(90deg, #90caf9, #1e88e5);
+        }
+        
+        /* 애니메이션 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .indicator-card {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        
+        .indicator-card:nth-child(1) { animation-delay: 0.1s; }
+        .indicator-card:nth-child(2) { animation-delay: 0.2s; }
+        .indicator-card:nth-child(3) { animation-delay: 0.3s; }
+        .indicator-card:nth-child(4) { animation-delay: 0.4s; }
+        .indicator-card:nth-child(5) { animation-delay: 0.5s; }
+        .indicator-card:nth-child(6) { animation-delay: 0.6s; }
+        
+        /* 툴팁 */
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 10pt;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .indicator-card:hover {
+                transform: none;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="infographic-container">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <div>
+                    <div class="logo-text">통계청</div>
+                    <div class="logo-sub">Statistics Korea</div>
+                </div>
+            </div>
+            <div class="main-title">
+                <div class="year-quarter" id="yearQuarter"></div>
+                <div class="report-name">지역경제동향</div>
+            </div>
+        </div>
+        
+        <!-- 지표 그리드 -->
+        <div class="indicators-grid" id="indicatorsGrid">
+            <!-- JavaScript로 동적 생성 -->
+        </div>
+        
+        <!-- 범례 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color increase"></div>
+                <span>증가/상승</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color decrease"></div>
+                <span>감소/하락</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 툴팁 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // ===== 데이터 정의 (Jinja2로 서버에서 주입) =====
+        const reportData = {
+            year: {{ report_info.year }},
+            quarter: {{ report_info.quarter }},
+            indicators: {{ indicators | tojson }}
+        };
+        
+        // ===== 유틸리티 함수 =====
+        function formatValue(value, isPercentagePoint = false) {
+            const num = parseFloat(value);
+            const sign = num >= 0 ? '+' : '';
+            const unit = isPercentagePoint ? '%p' : '%';
+            return `${sign}${num.toFixed(1)}${unit}`;
+        }
+        
+        function getArrow(value) {
+            return parseFloat(value) >= 0 ? '▲' : '▼';
+        }
+        
+        function getValueClass(value) {
+            return parseFloat(value) >= 0 ? 'increase' : 'decrease';
+        }
+        
+        // ===== 카드 생성 함수 =====
+        function createIndicatorCard(indicator, index) {
+            const indicatorTypes = {
+                '광공업생산': 'mining',
+                '서비스업생산': 'service',
+                '소매판매': 'retail',
+                '수출': 'export',
+                '고용률': 'employment',
+                '소비자물가': 'price'
+            };
+            
+            const indicatorType = indicatorTypes[indicator.name] || 'default';
+            const isPercentagePoint = indicator.name === '고용률';
+            const nationwideValue = parseFloat(indicator.nationwide_value);
+            
+            const card = document.createElement('div');
+            card.className = 'indicator-card';
+            card.dataset.indicator = indicatorType;
+            card.style.opacity = '0';
+            
+            card.innerHTML = `
+                <div class="indicator-header">
+                    <div class="indicator-title">
+                        <span class="indicator-icon">${indicator.icon}</span>
+                        <span class="indicator-name">${indicator.name}</span>
+                    </div>
+                    <span class="indicator-unit">${indicator.unit}</span>
+                </div>
+                
+                <div class="nationwide-display">
+                    <div class="nationwide-label">전국</div>
+                    <div class="nationwide-value ${getValueClass(nationwideValue)}">
+                        <span class="arrow">${getArrow(nationwideValue)}</span>
+                        ${indicator.nationwide_value}
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="chart-${index}"></canvas>
+                </div>
+                
+                <div class="regions-ranking">
+                    <div class="ranking-column top">
+                        <div class="ranking-header top">상위 지역</div>
+                        ${indicator.top_regions.map((region, i) => `
+                            <div class="ranking-item">
+                                <span class="ranking-position">${i + 1}</span>
+                                <span class="ranking-region">${region.name}</span>
+                                <span class="ranking-value increase">${region.value}${getArrow(1)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="ranking-column bottom">
+                        <div class="ranking-header bottom">하위 지역</div>
+                        ${indicator.bottom_regions.map((region, i) => `
+                            <div class="ranking-item">
+                                <span class="ranking-position">${i + 1}</span>
+                                <span class="ranking-region">${region.name}</span>
+                                <span class="ranking-value decrease">${region.value}${getArrow(-1)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // ===== 차트 생성 함수 =====
+        function createChart(canvasId, indicator) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            const topData = indicator.top_regions.map(r => ({
+                label: r.name,
+                value: parseFloat(r.value)
+            }));
+            
+            const bottomData = indicator.bottom_regions.map(r => ({
+                label: r.name,
+                value: -Math.abs(parseFloat(r.value))
+            }));
+            
+            const allData = [...topData, ...bottomData];
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: allData.map(d => d.label),
+                    datasets: [{
+                        data: allData.map(d => d.value),
+                        backgroundColor: allData.map(d => 
+                            d.value >= 0 
+                                ? 'rgba(229, 57, 53, 0.7)' 
+                                : 'rgba(30, 136, 229, 0.7)'
+                        ),
+                        borderColor: allData.map(d => 
+                            d.value >= 0 
+                                ? 'rgba(229, 57, 53, 1)' 
+                                : 'rgba(30, 136, 229, 1)'
+                        ),
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    return `${Math.abs(value).toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return Math.abs(value) + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+        
+        // ===== 초기화 =====
+        function init() {
+            // 연도/분기 표시
+            document.getElementById('yearQuarter').textContent = 
+                `${reportData.year}년 ${reportData.quarter}/4분기`;
+            
+            // 카드 생성
+            const grid = document.getElementById('indicatorsGrid');
+            reportData.indicators.forEach((indicator, index) => {
+                const card = createIndicatorCard(indicator, index);
+                grid.appendChild(card);
+                
+                // 애니메이션 적용
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.animation = `fadeInUp 0.5s ease forwards`;
+                }, index * 100);
+                
+                // 차트 생성 (카드가 DOM에 추가된 후)
+                setTimeout(() => {
+                    createChart(`chart-${index}`, indicator);
+                }, index * 100 + 50);
+            });
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

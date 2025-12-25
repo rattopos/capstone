@@ -1,0 +1,250 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "인포그래픽 스키마",
+  "description": "지역경제동향 인포그래픽 생성을 위한 데이터 스키마",
+  
+  "type": "object",
+  "required": ["report_info", "indicators"],
+  
+  "properties": {
+    "report_info": {
+      "type": "object",
+      "description": "보고서 기본 정보",
+      "required": ["year", "quarter"],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "description": "보고서 기준 연도",
+          "example": 2025
+        },
+        "quarter": {
+          "type": "integer",
+          "description": "보고서 기준 분기",
+          "enum": [1, 2, 3, 4],
+          "example": 2
+        }
+      }
+    },
+    
+    "indicators": {
+      "type": "array",
+      "description": "6개 주요 경제 지표",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["name", "icon", "unit", "top_regions", "bottom_regions", "nationwide_value", "nationwide_change"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "지표명",
+            "enum": ["광공업생산", "서비스업생산", "소매판매", "수출", "고용률", "소비자물가"]
+          },
+          "icon": {
+            "type": "string",
+            "description": "지표 아이콘 (이모지 또는 텍스트)",
+            "example": "🏭"
+          },
+          "unit": {
+            "type": "string",
+            "description": "단위 표시",
+            "example": "(전년동분기대비, %)"
+          },
+          "top_regions": {
+            "type": "array",
+            "description": "상위 3개 지역 (증가율 높은 순)",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/definitions/region_data"
+            }
+          },
+          "bottom_regions": {
+            "type": "array",
+            "description": "하위 3개 지역 (감소율 높은 순 또는 증가율 낮은 순)",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/definitions/region_data"
+            }
+          },
+          "nationwide_value": {
+            "type": "string",
+            "description": "전국 수치 (단위 포함)",
+            "example": "2.1%"
+          },
+          "nationwide_change": {
+            "type": "number",
+            "description": "전국 변화율 (증감 방향 결정용)",
+            "example": 2.1
+          }
+        }
+      }
+    }
+  },
+  
+  "definitions": {
+    "region_data": {
+      "type": "object",
+      "required": ["name", "value"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "지역명",
+          "example": "충북"
+        },
+        "value": {
+          "type": "string",
+          "description": "수치 (단위 포함)",
+          "example": "14.1"
+        }
+      }
+    }
+  },
+  
+  "indicator_data_mapping": {
+    "description": "지표별 데이터 소스 매핑",
+    "광공업생산": {
+      "source_file": "광공업생산_data.json",
+      "value_field": "regional_data.growth_rate",
+      "unit": "%"
+    },
+    "서비스업생산": {
+      "source_file": "서비스업생산_data.json",
+      "value_field": "regional_data.growth_rate",
+      "unit": "%"
+    },
+    "소매판매": {
+      "source_file": "소비동향_data.json",
+      "value_field": "regional_data.growth_rate",
+      "unit": "%"
+    },
+    "수출": {
+      "source_file": "수출_data.json",
+      "value_field": "regional_data.growth_rate",
+      "unit": "%"
+    },
+    "고용률": {
+      "source_file": "고용률_data.json",
+      "value_field": "regional_data.change",
+      "unit": "%p"
+    },
+    "소비자물가": {
+      "source_file": "물가동향_data.json",
+      "value_field": "regional_data.change",
+      "unit": "%"
+    }
+  },
+  
+  "example": {
+    "report_info": {
+      "year": 2025,
+      "quarter": 2
+    },
+    "indicators": [
+      {
+        "name": "광공업생산",
+        "icon": "🏭",
+        "unit": "(전년동분기대비, %)",
+        "top_regions": [
+          {"name": "충북", "value": "14.1"},
+          {"name": "경기", "value": "12.3"},
+          {"name": "광주", "value": "11.3"}
+        ],
+        "bottom_regions": [
+          {"name": "서울", "value": "10.1"},
+          {"name": "충남", "value": "6.4"},
+          {"name": "부산", "value": "4.0"}
+        ],
+        "nationwide_value": "2.1%",
+        "nationwide_change": 2.1
+      },
+      {
+        "name": "서비스업생산",
+        "icon": "🏢",
+        "unit": "(전년동분기대비, %)",
+        "top_regions": [
+          {"name": "경기", "value": "5.4"},
+          {"name": "인천", "value": "3.5"},
+          {"name": "세종", "value": "3.3"}
+        ],
+        "bottom_regions": [
+          {"name": "제주", "value": "9.2"},
+          {"name": "경남", "value": "2.8"},
+          {"name": "강원", "value": "1.6"}
+        ],
+        "nationwide_value": "1.4%",
+        "nationwide_change": 1.4
+      },
+      {
+        "name": "소매판매",
+        "icon": "🛒",
+        "unit": "(전년동분기대비, %)",
+        "top_regions": [
+          {"name": "울산", "value": "5.4"},
+          {"name": "인천", "value": "4.9"},
+          {"name": "세종", "value": "3.5"}
+        ],
+        "bottom_regions": [
+          {"name": "제주", "value": "2.3"},
+          {"name": "경북", "value": "1.8"},
+          {"name": "서울", "value": "1.8"}
+        ],
+        "nationwide_value": "0.2%",
+        "nationwide_change": -0.2
+      },
+      {
+        "name": "수출",
+        "icon": "📦",
+        "unit": "(전년동분기대비, %)",
+        "top_regions": [
+          {"name": "제주", "value": "37.8"},
+          {"name": "충북", "value": "34.9"},
+          {"name": "경남", "value": "12.9"}
+        ],
+        "bottom_regions": [
+          {"name": "세종", "value": "37.2"},
+          {"name": "전남", "value": "13.7"},
+          {"name": "부산", "value": "6.0"}
+        ],
+        "nationwide_value": "2.1%",
+        "nationwide_change": 2.1
+      },
+      {
+        "name": "고용률",
+        "icon": "👔",
+        "unit": "(전년동분기대비, %p)",
+        "top_regions": [
+          {"name": "대전", "value": "1.2"},
+          {"name": "부산", "value": "1.0"},
+          {"name": "강원", "value": "1.0"}
+        ],
+        "bottom_regions": [
+          {"name": "전북", "value": "1.0"},
+          {"name": "광주", "value": "0.4"},
+          {"name": "서울", "value": "0.2"}
+        ],
+        "nationwide_value": "0.2%p",
+        "nationwide_change": 0.2
+      },
+      {
+        "name": "소비자물가",
+        "icon": "💰",
+        "unit": "(전년동분기대비, %)",
+        "top_regions": [
+          {"name": "부산", "value": "2.2"},
+          {"name": "경기", "value": "2.1"},
+          {"name": "대구", "value": "2.1"}
+        ],
+        "bottom_regions": [
+          {"name": "제주", "value": "1.5"},
+          {"name": "광주", "value": "1.7"},
+          {"name": "울산", "value": "1.9"}
+        ],
+        "nationwide_value": "2.1%",
+        "nationwide_change": 2.1
+      }
+    ]
+  }
+}
+

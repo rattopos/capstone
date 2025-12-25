@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계표 목차 - {{ year }}년 {{ quarter }}분기</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 15mm 20mm 15mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: #fff;
+            position: relative;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        
+        .header-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #4a6fa5 0%, #6b8cce 100%);
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+        
+        .header-title {
+            background: linear-gradient(90deg, #5a7cb8 0%, #8aa3d4 100%);
+            color: white;
+            font-size: 22pt;
+            font-weight: bold;
+            letter-spacing: 20px;
+            padding: 12px 60px;
+            border-radius: 3px;
+        }
+        
+        .toc-list {
+            list-style: none;
+            padding: 30px 40px;
+        }
+        
+        .toc-list li {
+            font-size: 13pt;
+            padding: 18px 0;
+            display: flex;
+            align-items: baseline;
+        }
+        
+        .toc-number {
+            min-width: 35px;
+        }
+        
+        .toc-title {
+            flex: 1;
+        }
+        
+        .toc-dots {
+            flex: 3;
+            border-bottom: 1px dotted #999;
+            margin: 0 10px 5px 10px;
+        }
+        
+        .toc-reference {
+            margin-top: 20px;
+            padding-left: 0;
+        }
+        
+        .toc-reference li {
+            color: #333;
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: 10mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10pt;
+        }
+        
+        @media print {
+            body {
+                background: none;
+            }
+            .page {
+                margin: 0;
+                padding: 15mm;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page toc-page">
+        <div class="header">
+            <div class="header-icon"></div>
+            <div class="header-title">통 계 표</div>
+        </div>
+        
+        <ol class="toc-list">
+            {% for item in toc_items %}
+            <li>
+                <span class="toc-number">{{ item.number }}.</span>
+                <span class="toc-title">{{ item.name }}</span>
+                <span class="toc-dots"></span>
+            </li>
+            {% endfor %}
+        </ol>
+        
+        <ul class="toc-list toc-reference">
+            <li>
+                <span class="toc-number">&lt;참고&gt;</span>
+                <span class="toc-title">분기 실질 지역내총생산(GRDP)</span>
+                <span class="toc-dots"></span>
+            </li>
+        </ul>
+        
+        <div class="page-number">- {{ page_number }} -</div>
+    </div>
+</body>
+</html>
+

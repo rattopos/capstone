@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - {{ year }}년 {{ quarter }}분기</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 15mm 20mm 15mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: #fff;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .page:last-child {
+            page-break-after: auto;
+        }
+        
+        .page-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .unit-label {
+            float: right;
+            font-size: 10pt;
+            font-weight: normal;
+            color: #333;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-bottom: 20px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #999;
+            padding: 4px 3px;
+            text-align: right;
+            vertical-align: middle;
+        }
+        
+        .data-table th {
+            background: #e8e8e8;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .data-table thead th {
+            background: #d0d0d0;
+        }
+        
+        .data-table .row-header {
+            text-align: center;
+            background: #f5f5f5;
+            font-weight: normal;
+            width: 65px;
+        }
+        
+        .data-table .year-row {
+            background: #f9f9f9;
+        }
+        
+        .data-table .quarter-row {
+            background: #fff;
+        }
+        
+        .data-table .year-cell {
+            font-weight: bold;
+        }
+        
+        .data-table .quarter-cell {
+            font-weight: normal;
+            font-size: 8pt;
+        }
+        
+        .data-table .separator-row td {
+            border-top: 2px dotted #666;
+            height: 3px;
+            padding: 0;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f0f7ff;
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: 10mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10pt;
+        }
+        
+        @media print {
+            body {
+                background: none;
+            }
+            .page {
+                margin: 0;
+                padding: 15mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 페이지 1: 전국 ~ 세종 -->
+    <div class="page table-page">
+        <div class="page-title">
+            {{ index }}. {{ title }}
+            <span class="unit-label">{{ unit }}</span>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for region in page1_regions %}
+                    <th>{{ region }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 연도별 데이터 -->
+                {% for year_key in yearly_years %}
+                <tr class="year-row">
+                    <td class="row-header year-cell">{{ year_key }}</td>
+                    {% for region in page1_regions %}
+                    <td>{{ data.yearly[year_key][region] | default('-', true) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                
+                <!-- 구분선 -->
+                <tr class="separator-row">
+                    <td colspan="{{ page1_regions | length + 1 }}"></td>
+                </tr>
+                
+                <!-- 분기별 데이터 -->
+                {% for quarter_key in quarterly_keys %}
+                <tr class="quarter-row">
+                    <td class="row-header quarter-cell">{{ quarter_key }}</td>
+                    {% for region in page1_regions %}
+                    <td>{{ data.quarterly[quarter_key][region] | default('-', true) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="page-number">- {{ page_number_1 }} -</div>
+    </div>
+    
+    <!-- 페이지 2: 경기 ~ 제주 -->
+    <div class="page table-page">
+        <div class="page-title">
+            {{ index }}. {{ title }}
+            <span class="unit-label">{{ unit }}</span>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for region in page2_regions %}
+                    <th>{{ region }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 연도별 데이터 -->
+                {% for year_key in yearly_years %}
+                <tr class="year-row">
+                    <td class="row-header year-cell">{{ year_key }}</td>
+                    {% for region in page2_regions %}
+                    <td>{{ data.yearly[year_key][region] | default('-', true) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                
+                <!-- 구분선 -->
+                <tr class="separator-row">
+                    <td colspan="{{ page2_regions | length + 1 }}"></td>
+                </tr>
+                
+                <!-- 분기별 데이터 -->
+                {% for quarter_key in quarterly_keys %}
+                <tr class="quarter-row">
+                    <td class="row-header quarter-cell">{{ quarter_key }}</td>
+                    {% for region in page2_regions %}
+                    <td>{{ data.quarterly[quarter_key][region] | default('-', true) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="page-number">- {{ page_number_2 }} -</div>
+    </div>
+</body>
+</html>
+

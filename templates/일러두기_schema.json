@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "일러두기 스키마",
+  "description": "지역경제동향 보고서 일러두기 생성을 위한 데이터 스키마",
+  
+  "type": "object",
+  "required": ["intro", "content", "contacts", "references"],
+  
+  "properties": {
+    "intro": {
+      "type": "object",
+      "description": "서문 박스 내용",
+      "required": ["background", "purpose"],
+      "properties": {
+        "background": {
+          "type": "string",
+          "description": "배경 설명",
+          "example": "지역발전에 대한 관심이 높아지면서 지역별 경제지표 및 그 동향분석에 대한 수요가 증가하고 있습니다."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "목적 설명",
+          "example": "이에 통계청은 지역경제에 대한 이해를 돕고 지역정책 수립 및 추진 지원을 위해 2010년부터 지역별 주요 경제지표를 수록한 『지역경제동향』을 매분기별로 작성하여 제공하고 있습니다."
+        }
+      }
+    },
+    
+    "content": {
+      "type": "object",
+      "description": "보도자료 내용 설명",
+      "required": ["description", "indicator_note", "indicators"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "보도자료 구성 설명",
+          "example": "이 보도자료는 생산, 소비, 투자(건설수주), 수출입(관세청의 통관자료), 물가, 고용 및 국내 인구이동을 지역별로 종합·분석한 것입니다."
+        },
+        "indicator_note": {
+          "type": "string",
+          "description": "지표 작성 기준 설명",
+          "example": "생산, 소비, 투자, 수출입 관련 지표는 아래의 기준으로 작성"
+        },
+        "indicators": {
+          "type": "array",
+          "description": "지표 유형별 항목",
+          "items": {
+            "type": "object",
+            "required": ["type", "items"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "지표 유형",
+                "example": "불변지수(원지수)"
+              },
+              "items": {
+                "type": "array",
+                "description": "해당 유형의 지표 항목들",
+                "items": {"type": "string"}
+              },
+              "note": {
+                "type": "string",
+                "description": "추가 설명 (선택)"
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "contacts": {
+      "type": "array",
+      "description": "통계부문별 담당자 연락처",
+      "items": {
+        "type": "object",
+        "required": ["category", "statistics_name", "department", "phone"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "부문",
+            "example": "생 산"
+          },
+          "statistics_name": {
+            "type": "string",
+            "description": "통계명",
+            "example": "광업제조업동향조사"
+          },
+          "department": {
+            "type": "string",
+            "description": "담당부서",
+            "example": "산업동향과"
+          },
+          "phone": {
+            "type": "string",
+            "description": "전화번호",
+            "example": "042)481-2161"
+          }
+        }
+      }
+    },
+    
+    "references": {
+      "type": "array",
+      "description": "참고사항 목록",
+      "items": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "참고사항 내용"
+          }
+        }
+      }
+    },
+    
+    "notes": {
+      "type": "array",
+      "description": "추가 주석 목록",
+      "items": {"type": "string"}
+    }
+  },
+  
+  "example": {
+    "intro": {
+      "background": "지역발전에 대한 관심이 높아지면서 지역별 경제지표 및 그 동향분석에 대한 수요가 증가하고 있습니다.",
+      "purpose": "이에 통계청은 지역경제에 대한 이해를 돕고 지역정책 수립 및 추진 지원을 위해 2010년부터 지역별 주요 경제지표를 수록한 『지역경제동향』을 매분기별로 작성하여 제공하고 있습니다."
+    },
+    "content": {
+      "description": "이 보도자료는 생산, 소비, 투자(건설수주), 수출입(관세청의 통관자료), 물가, 고용 및 국내 인구이동을 지역별로 종합·분석한 것입니다.",
+      "indicator_note": "생산, 소비, 투자, 수출입 관련 지표는 아래의 기준으로 작성",
+      "indicators": [
+        {
+          "type": "불변지수(원지수)",
+          "items": ["광공업생산", "서비스업생산", "소매판매"],
+          "note": "지역 소매판매의 포괄범위는 백화점, 대형마트, 면세점, 슈퍼·잡화점·편의점, 승용차·연료소매점, 전문소매점이며, 무점포소매는 제외"
+        },
+        {
+          "type": "경상금액",
+          "items": ["건설수주", "수출·수입"]
+        }
+      ]
+    },
+    "contacts": [
+      {"category": "생 산", "statistics_name": "광업제조업동향조사", "department": "산업동향과", "phone": "042)481-2161"},
+      {"category": "생 산", "statistics_name": "서비스업동향조사", "department": "서비스업동향과", "phone": "042)481-2190"},
+      {"category": "소 비", "statistics_name": "서비스업동향조사", "department": "서비스업동향과", "phone": "042)481-2197"},
+      {"category": "건 설", "statistics_name": "건설경기동향조사", "department": "산업동향과", "phone": "042)481-2158"},
+      {"category": "수출입", "statistics_name": "무역통계", "department": "관세청 정보데이터기획담당관", "phone": "042)481-7845"},
+      {"category": "물 가", "statistics_name": "소비자물가조사", "department": "물가동향과", "phone": "042)481-2531"},
+      {"category": "고 용", "statistics_name": "경제활동인구조사", "department": "고용통계과", "phone": "042)481-2265"},
+      {"category": "인구이동", "statistics_name": "국내인구이동통계", "department": "인구추계팀", "phone": "042)481-2514"}
+    ],
+    "references": [
+      {"content": "참고의 분기 실질 지역내총생산(GRDP)은 본문자료와 1분기 시차가 존재하므로 자료 이용 시 유의할 필요가 있습니다."},
+      {"content": "본문에 수록된 자료는 국가데이터처 홈페이지(http://mods.go.kr) 및 국가통계포털(http://kosis.kr)을 통해 이용할 수 있습니다."}
+    ],
+    "notes": [
+      "통계표의 'p'는 잠정값, '-'는 해당 수치가 없음을 의미합니다."
+    ]
+  }
+}
+

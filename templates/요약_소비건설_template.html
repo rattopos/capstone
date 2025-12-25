@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요약 - 소비/건설</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+        }
+        
+        .summary-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        /* 섹션 헤더 */
+        .section-header {
+            background: linear-gradient(90deg, #4a4a4a 0%, #6a6a6a 100%);
+            color: #fff;
+            font-size: 14pt;
+            font-weight: 700;
+            padding: 8px 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .section-header::after {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #ffc107;
+            margin-top: 3px;
+        }
+        
+        /* 요약 박스 */
+        .summary-box {
+            margin-bottom: 25px;
+        }
+        
+        .summary-main {
+            font-size: 11pt;
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .summary-main::before {
+            content: "□";
+            position: absolute;
+            left: 0;
+            font-size: 12pt;
+        }
+        
+        .summary-sub {
+            font-size: 10pt;
+            margin-left: 25px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .summary-sub::before {
+            content: "○";
+            position: absolute;
+            left: 0;
+        }
+        
+        .highlight {
+            font-weight: 700;
+        }
+        
+        .increase {
+            font-weight: 700;
+            color: #c62828;
+        }
+        
+        .decrease {
+            font-weight: 700;
+            color: #1565c0;
+        }
+        
+        /* 차트 컨테이너 */
+        .chart-container {
+            margin: 20px 0;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-size: 10pt;
+            margin-bottom: 10px;
+        }
+        
+        .chart-wrapper {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            height: 200px;
+            padding: 10px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .chart-bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 35px;
+        }
+        
+        .chart-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 160px;
+            justify-content: flex-end;
+            position: relative;
+        }
+        
+        .chart-bar {
+            width: 25px;
+            background: #90caf9;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .chart-value-index {
+            font-size: 7pt;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .chart-value-rate {
+            position: absolute;
+            font-size: 7pt;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .chart-value-rate.positive {
+            color: #e65100;
+            top: -15px;
+        }
+        
+        .chart-value-rate.negative {
+            color: #1565c0;
+        }
+        
+        .chart-label {
+            font-size: 7pt;
+            text-align: center;
+            margin-top: 5px;
+            writing-mode: horizontal-tb;
+        }
+        
+        .chart-region-group {
+            font-size: 7pt;
+            color: #666;
+            text-align: center;
+            border-top: 1px solid #ccc;
+            padding-top: 2px;
+        }
+        
+        /* Y축 */
+        .chart-y-axis {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 160px;
+            padding-right: 5px;
+            font-size: 7pt;
+            color: #666;
+        }
+        
+        .chart-y-axis-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 160px;
+            padding-left: 5px;
+            font-size: 7pt;
+            color: #e65100;
+        }
+        
+        /* 구분선 */
+        .section-divider {
+            border: none;
+            border-top: 1px solid #ccc;
+            margin: 30px 0;
+        }
+        
+        /* 주석 */
+        .footnote {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 페이지 번호 */
+        .page-number {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 20px;
+        }
+        
+        @media print {
+            .summary-container {
+                width: 210mm;
+                height: 297mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="summary-container">
+        <!-- 소비 섹션 헤더 -->
+        <div class="section-header">소비</div>
+        
+        <!-- 소매판매 -->
+        <div class="summary-box">
+            <div class="summary-main">
+                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는 전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change) }}% {% if retail_sales.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+            </div>
+            <div class="summary-sub">
+                {% for region in retail_sales.increase_regions[:3] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ retail_sales.increase_count }}개 시도는 소매판매가 <span class="increase">증가</span>하였으나,
+                {% for region in retail_sales.decrease_regions[:3] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ retail_sales.decrease_count }}개 시도는 <span class="decrease">감소</span>
+            </div>
+        </div>
+        
+        <!-- 소매판매 차트 -->
+        <div class="chart-container">
+            <div class="chart-title">&lt;소매판매액지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
+            <div class="chart-wrapper">
+                <div class="chart-y-axis">
+                    <span>120</span>
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                </div>
+                {% for region in retail_sales.chart_data %}
+                <div class="chart-bar-group">
+                    <div class="chart-bar-container">
+                        <span class="chart-value-index">{{ "%.1f"|format(region.index) }}</span>
+                        <div class="chart-bar" style="height: {{ (region.index / 120 * 100)|int }}%;"></div>
+                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
+                            {{ "%.1f"|format(region.change) }}
+                        </span>
+                    </div>
+                    <div class="chart-label">{{ region.name }}</div>
+                    {% if region.group %}
+                    <div class="chart-region-group">{{ region.group }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="chart-y-axis-right">
+                    <span>15</span>
+                    <span>10</span>
+                    <span>5</span>
+                    <span>0</span>
+                    <span>-5</span>
+                    <span>-10</span>
+                </div>
+            </div>
+            <div class="footnote">* 전국은 무점포소매 포함, 시도는 무점포소매 제외</div>
+        </div>
+        
+        <hr class="section-divider">
+        
+        <!-- 건설 섹션 헤더 -->
+        <div class="section-header">건설</div>
+        
+        <!-- 건설수주 -->
+        <div class="summary-box">
+            <div class="summary-main">
+                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 건설수주</span>({{ construction.nationwide.amount }}조원)는 전년동분기대비 <span class="{% if construction.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(construction.nationwide.change) }}% {% if construction.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+            </div>
+            <div class="summary-sub">
+                {% for region in construction.increase_regions[:3] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ construction.increase_count }}개 시도는 건설수주가 <span class="increase">증가</span>하였으나,
+                {% for region in construction.decrease_regions[:3] %}
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ construction.decrease_count }}개 시도는 <span class="decrease">감소</span>
+            </div>
+        </div>
+        
+        <!-- 건설수주 차트 -->
+        <div class="chart-container">
+            <div class="chart-title">&lt;건설수주액(백억원) 및 전년동분기대비 증감률(%)&gt;</div>
+            <div class="chart-wrapper">
+                <div class="chart-y-axis">
+                    <span>3,000</span>
+                    <span>1,500</span>
+                    <span>0</span>
+                </div>
+                {% for region in construction.chart_data %}
+                <div class="chart-bar-group">
+                    <div class="chart-bar-container">
+                        <span class="chart-value-index">{{ region.amount }}</span>
+                        <div class="chart-bar" style="height: {{ (region.amount_normalized / 100 * 100)|int }}%;"></div>
+                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
+                            {{ "%.1f"|format(region.change) }}
+                        </span>
+                    </div>
+                    <div class="chart-label">{{ region.name }}</div>
+                    {% if region.group %}
+                    <div class="chart-region-group">{{ region.group }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="chart-y-axis-right">
+                    <span>400</span>
+                    <span>200</span>
+                    <span>0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="page-number">- {{ page_number }} -</div>
+    </div>
+</body>
+</html>
+
