@@ -202,23 +202,34 @@
             height: auto;
         }
         
-        /* SVG 지도 색상 */
+        /* SVG 지도 색상 - 기본 회색 */
         .korea-map .region {
             stroke: #fff;
             stroke-width: 0.5;
+            fill: #d0d0d0; /* 기본 회색 */
             transition: fill 0.3s;
         }
         
+        /* 나중에 JavaScript로 색상 적용 */
         .korea-map .region.increase {
-            fill: #ef9a9a;
+            fill: #ef9a9a; /* 연한 빨강 */
         }
         
         .korea-map .region.decrease {
-            fill: #90caf9;
+            fill: #90caf9; /* 연한 파랑 */
         }
         
         .korea-map .region.neutral {
-            fill: #e0e0e0;
+            fill: #e0e0e0; /* 회색 */
+        }
+        
+        /* 소비자물가 특수 색상 */
+        .korea-map .region.above-avg {
+            fill: #9c27b0; /* 보라색 */
+        }
+        
+        .korea-map .region.below-avg {
+            fill: #ce93d8; /* 연한 보라색 */
         }
         
         /* 전국 수치 */
@@ -283,12 +294,12 @@
             background: #e0e0e0;
         }
         
-        /* 물가/고용률 특수 범례 */
-        .legend-special {
-            font-size: 7pt;
-            color: #888;
-            text-align: right;
-            margin-top: 2px;
+        .legend-box.above-avg {
+            background: #9c27b0;
+        }
+        
+        .legend-box.below-avg {
+            background: #ce93d8;
         }
         
         @media print {
@@ -354,7 +365,7 @@
                     <!-- 지도 -->
                     <div class="map-container">
                         <svg class="korea-map" viewBox="0 0 200 280" data-indicator-idx="{{ loop.index0 }}">
-                            <!-- 한국 지도 SVG -->
+                            <!-- 한국 지도 SVG - 정확한 경로 -->
                             <!-- 강원 -->
                             <path class="region" data-region="강원" d="M130,45 L170,35 L180,55 L175,80 L160,95 L140,85 L125,70 L130,45Z"/>
                             <!-- 경기 -->
@@ -412,9 +423,9 @@
                     <div class="legend-item"><div class="legend-box decrease"></div><span>하락</span></div>
                     <div class="legend-item"><div class="legend-box neutral"></div><span>보합</span></div>
                     {% elif indicator.name == '소비자물가' %}
-                    <div class="legend-item"><div class="legend-box increase"></div><span>전국 초과</span></div>
-                    <div class="legend-item"><div class="legend-box decrease"></div><span>평균 하회</span></div>
-                    <div class="legend-item"><div class="legend-box neutral"></div><span>평균 미만</span></div>
+                    <div class="legend-item"><div class="legend-box neutral"></div><span>전국 평균</span></div>
+                    <div class="legend-item"><div class="legend-box above-avg"></div><span>평균 초과</span></div>
+                    <div class="legend-item"><div class="legend-box below-avg"></div><span>평균 미만</span></div>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -431,29 +442,70 @@
         const allRegions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
                           '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
         
-        // 지도 색상 설정
+        // 지도 색상 설정 함수
         function colorMaps() {
             document.querySelectorAll('.korea-map').forEach((map, mapIdx) => {
                 const indicator = indicatorsData[mapIdx];
                 if (!indicator) return;
                 
-                // 상위 지역 (빨간색)
+                const indicatorName = indicator.name;
                 const topRegions = indicator.top_regions.map(r => r.name);
-                // 하위 지역 (파란색)
                 const bottomRegions = indicator.bottom_regions.map(r => r.name);
+                
+                // 소비자물가는 전국 평균과 비교
+                let nationwideValue = indicator.nationwide_change;
+                
+                // all_regions 데이터가 있으면 사용, 없으면 top/bottom으로 추론
+                let regionValues = {};
+                if (indicator.all_regions && indicator.all_regions.length > 0) {
+                    indicator.all_regions.forEach(r => {
+                        regionValues[r.name] = r.value;
+                    });
+                } else {
+                    // top/bottom으로 추론
+                    topRegions.forEach(name => {
+                        const topRegion = indicator.top_regions.find(r => r.name === name);
+                        if (topRegion) {
+                            regionValues[name] = parseFloat(topRegion.value);
+                        }
+                    });
+                    bottomRegions.forEach(name => {
+                        const bottomRegion = indicator.bottom_regions.find(r => r.name === name);
+                        if (bottomRegion) {
+                            regionValues[name] = -parseFloat(bottomRegion.value);
+                        }
+                    });
+                }
                 
                 map.querySelectorAll('.region').forEach(region => {
                     const regionName = region.dataset.region;
                     
-                    if (topRegions.includes(regionName)) {
-                        region.classList.add('increase');
-                        region.classList.remove('decrease', 'neutral');
-                    } else if (bottomRegions.includes(regionName)) {
-                        region.classList.add('decrease');
-                        region.classList.remove('increase', 'neutral');
+                    // 모든 클래스 제거
+                    region.classList.remove('increase', 'decrease', 'neutral', 'above-avg', 'below-avg');
+                    
+                    // 소비자물가는 전국 평균과 비교
+                    if (indicatorName === '소비자물가') {
+                        const regionValue = regionValues[regionName];
+                        if (regionValue !== undefined) {
+                            if (regionValue > nationwideValue) {
+                                region.classList.add('above-avg');
+                            } else if (regionValue < nationwideValue) {
+                                region.classList.add('below-avg');
+                            } else {
+                                region.classList.add('neutral');
+                            }
+                        } else {
+                            region.classList.add('neutral');
+                        }
                     } else {
-                        region.classList.add('neutral');
-                        region.classList.remove('increase', 'decrease');
+                        // 일반 지표: 상위는 빨강, 하위는 파랑, 나머지는 회색
+                        if (topRegions.includes(regionName)) {
+                            region.classList.add('increase');
+                        } else if (bottomRegions.includes(regionName)) {
+                            region.classList.add('decrease');
+                        } else {
+                            region.classList.add('neutral');
+                        }
                     }
                 });
             });
@@ -461,6 +513,13 @@
         
         // 초기화
         document.addEventListener('DOMContentLoaded', colorMaps);
+        
+        // 데이터가 나중에 로드되는 경우를 대비
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', colorMaps);
+        } else {
+            colorMaps();
+        }
     </script>
 </body>
 </html>

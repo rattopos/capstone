@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>통계표 - 참고 GRDP - {{ year }}년 {{ quarter }}분기</title>
+    
+    {# 결측치 플레이스홀더 매크로 #}
+    {% macro placeholder(value) %}
+        {%- if value is none or value == '' or value == '-' or value == 'N/A' or value == '없음' -%}
+            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+        {%- else -%}
+            {{ value }}
+        {%- endif -%}
+    {% endmacro %}
+    
     <style>
         @page {
             size: A4;
@@ -115,8 +125,32 @@
         }
         
         .na-cell {
-            color: #999;
-            font-style: italic;
+            background-color: #fff9c4 !important;
+        }
+        
+        /* 편집 가능한 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 1px 4px;
+            border-radius: 2px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            font-weight: 500;
+            cursor: text;
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+            font-size: 7pt;
+        }
+        
+        .editable-placeholder:hover {
+            background-color: #ffee58;
+        }
+        
+        .editable-placeholder:focus {
+            outline: none;
+            background-color: #fff;
+            border: 2px solid #fbc02d;
         }
         
         .page-number {
@@ -163,7 +197,7 @@
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page1_regions %}
                     {% set val = data.yearly[year_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
+                    <td class="{% if val == 'N/A' or val == '-' or val is none %}na-cell{% endif %}">{{ placeholder(val) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -179,7 +213,7 @@
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page1_regions %}
                     {% set val = data.quarterly[quarter_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
+                    <td class="{% if val == 'N/A' or val == '-' or val is none %}na-cell{% endif %}">{{ placeholder(val) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -212,7 +246,7 @@
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page2_regions %}
                     {% set val = data.yearly[year_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
+                    <td class="{% if val == 'N/A' or val == '-' or val is none %}na-cell{% endif %}">{{ placeholder(val) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -228,7 +262,7 @@
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page2_regions %}
                     {% set val = data.quarterly[quarter_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
+                    <td class="{% if val == 'N/A' or val == '-' or val is none %}na-cell{% endif %}">{{ placeholder(val) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

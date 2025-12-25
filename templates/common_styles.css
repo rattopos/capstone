@@ -1,0 +1,63 @@
+/* 
+ * 공통 스타일 - 결측치/플레이스홀더 표시
+ * 편집이 필요한 부분을 노란색 형광펜으로 하이라이트
+ */
+
+/* 편집 가능한 플레이스홀더 */
+.editable-placeholder {
+    background-color: #fff59d;  /* 밝은 노란색 형광펜 */
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px dashed #fbc02d;
+    color: #5d4037;
+    font-weight: 500;
+    cursor: text;
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.editable-placeholder:hover {
+    background-color: #ffee58;
+    border-color: #f9a825;
+}
+
+.editable-placeholder:focus {
+    outline: none;
+    background-color: #ffffff;
+    border: 2px solid #fbc02d;
+    box-shadow: 0 0 5px rgba(251, 192, 45, 0.5);
+}
+
+/* 결측치 셀 (테이블용) */
+.missing-cell,
+.na-cell {
+    background-color: #fff9c4 !important;
+    color: #795548;
+    font-style: italic;
+}
+
+/* 편집된 값 표시 */
+.edited-value {
+    background-color: #e8f5e9;
+    border: 1px solid #81c784;
+}
+
+/* 인쇄 시 스타일 조정 */
+@media print {
+    .editable-placeholder {
+        background-color: #fff9c4;
+        border: 1px solid #ccc;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .missing-cell,
+    .na-cell {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+

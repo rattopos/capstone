@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - {{ year }}년 {{ quarter }}분기</title>
+    
+    {# 결측치 플레이스홀더 매크로 #}
+    {% macro val(value) %}
+        {%- if value is none or value == '' or value == '-' or value == 'N/A' or value == '없음' -%}
+            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+        {%- else -%}
+            {{ value }}
+        {%- endif -%}
+    {% endmacro %}
+    
     <style>
         @page {
             size: A4;
@@ -121,6 +131,31 @@
             font-size: 10pt;
         }
         
+        /* 편집 가능한 플레이스홀더 (결측치) */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 1px 4px;
+            border-radius: 2px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            font-weight: 500;
+            cursor: text;
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+            font-size: 7pt;
+        }
+        
+        .editable-placeholder:hover {
+            background-color: #ffee58;
+        }
+        
+        .editable-placeholder:focus {
+            outline: none;
+            background-color: #fff;
+            border: 2px solid #fbc02d;
+        }
+        
         @media print {
             body {
                 background: none;
@@ -128,6 +163,11 @@
             .page {
                 margin: 0;
                 padding: 15mm;
+            }
+            .editable-placeholder {
+                background-color: #fff9c4;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -155,7 +195,7 @@
                 <tr class="year-row">
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ data.yearly[year_key][region] }}</td>
+                    <td>{{ val(data.yearly[year_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -170,7 +210,7 @@
                 <tr class="quarter-row">
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ data.quarterly[quarter_key][region] }}</td>
+                    <td>{{ val(data.quarterly[quarter_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -202,7 +242,7 @@
                 <tr class="year-row">
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ data.yearly[year_key][region] }}</td>
+                    <td>{{ val(data.yearly[year_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -217,7 +257,7 @@
                 <tr class="quarter-row">
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ data.quarterly[quarter_key][region] }}</td>
+                    <td>{{ val(data.quarterly[quarter_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

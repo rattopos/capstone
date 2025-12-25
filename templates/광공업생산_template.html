@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ⅰ. 부문별 지역경제동향 - 광공업생산</title>
+    
+    {# 결측치 플레이스홀더 매크로 #}
+    {% macro val(value, format="%.1f", suffix="") %}
+        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
+        {%- else -%}
+            {{ format|format(value) }}{{ suffix }}
+        {%- endif -%}
+    {% endmacro %}
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         
@@ -160,6 +170,41 @@
         .table-container {
             margin-top: 20px;
         }
+        
+        /* 편집 가능한 플레이스홀더 (결측치) */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            font-weight: 500;
+            cursor: text;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .editable-placeholder:hover {
+            background-color: #ffee58;
+        }
+        
+        .editable-placeholder:focus {
+            outline: none;
+            background-color: #fff;
+            border: 2px solid #fbc02d;
+        }
+        
+        .missing-cell {
+            background-color: #fff9c4 !important;
+        }
+        
+        @media print {
+            .editable-placeholder {
+                background-color: #fff9c4;
+                -webkit-print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
@@ -251,10 +296,14 @@
                         <td>{{ row.region }}</td>
                         {% endif %}
                         {% for rate in row.growth_rates %}
-                        <td>{{ "%.1f"|format(rate) }}</td>
+                        <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}">
+                            {{ val(rate) }}
+                        </td>
                         {% endfor %}
                         {% for idx in row.indices %}
-                        <td class="index-section">{{ "%.1f"|format(idx) }}</td>
+                        <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}">
+                            {{ val(idx) }}
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
