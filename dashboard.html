@@ -1343,6 +1343,28 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 분석표 다운로드 버튼 -->
+                    <button id="downloadAnalysisBtn" onclick="downloadAnalysisFile()" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        width: 100%;
+                        margin-top: 1rem;
+                        padding: 0.75rem 1rem;
+                        background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-secondary));
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    ">
+                        <span>📥</span>
+                        <span>분석표 다운로드</span>
+                    </button>
                 </div>
             </div>
 
@@ -1661,6 +1683,7 @@
             allGenerated: false,
             currentReportIndex: -1,
             fileType: null,  // 'raw' (기초자료 수집표) or 'analysis' (분석표)
+            analysisFilename: null,  // 생성된 분석표 파일명
             reports: [],
             summaryReports: [],
             sectoralReports: [],
@@ -2605,19 +2628,9 @@
                     // 모달 닫기 (2초 후)
                     hideUploadModal(2000);
                     
-                    // 분석표 다운로드 확인 (모달 닫힌 후)
+                    // 분석표 다운로드 버튼에 파일명 저장
                     if (data.conversion_info) {
-                        setTimeout(() => {
-                            if (confirm(`분석표가 생성되었습니다.\n\n파일명: ${data.conversion_info.analysis_file}\n\n분석표를 다운로드하시겠습니까?`)) {
-                                const downloadLink = document.createElement('a');
-                                downloadLink.href = '/api/download-analysis';
-                                downloadLink.download = data.conversion_info.analysis_file;
-                                document.body.appendChild(downloadLink);
-                                downloadLink.click();
-                                document.body.removeChild(downloadLink);
-                                showToast('분석표 다운로드가 시작됩니다.', 'success');
-                            }
-                        }, 2500);
+                        state.analysisFilename = data.conversion_info.analysis_file;
                     }
                 } else {
                     // 오류 발생
@@ -3108,6 +3121,22 @@
         }
 
         // ===== Toast =====
+        // 분석표 다운로드 함수
+        function downloadAnalysisFile() {
+            if (!state.analysisFilename) {
+                showToast('다운로드할 분석표가 없습니다.', 'warning');
+                return;
+            }
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = '/api/download-analysis';
+            downloadLink.download = state.analysisFilename;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            showToast('분석표 다운로드가 시작됩니다.', 'success');
+        }
+        
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
