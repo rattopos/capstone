@@ -327,6 +327,11 @@
             border-color: var(--warning);
         }
 
+        .report-item.generated {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-secondary);
+        }
+
         .report-icon {
             width: 36px;
             height: 36px;
@@ -369,10 +374,26 @@
             color: var(--text-muted);
         }
 
+        .report-status.generated {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
         .report-status.reviewed {
             background: var(--success);
             border-color: var(--success);
             color: white;
+        }
+
+        .report-status.edited {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: white;
+        }
+
+        .report-item.edited {
+            border-left: 3px solid #f59e0b;
         }
 
         .report-status.has-missing {
@@ -485,6 +506,57 @@
             box-shadow: 0 4px 15px var(--success-glow);
         }
 
+        .btn-edit {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-edit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-cancel:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            color: var(--error);
+        }
+
+        .btn-hwpx {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-hwpx:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
+        }
+
         .btn-success:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 25px var(--success-glow);
@@ -564,6 +636,79 @@
             max-width: 400px;
             text-align: center;
             line-height: 1.6;
+        }
+
+        /* Preview Actions */
+        .preview-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Edit Mode Styles */
+        .edit-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+
+        .edit-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-bottom: 2px solid #f59e0b;
+        }
+
+        .edit-mode-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #92400e;
+            font-size: 0.9rem;
+        }
+
+        .edit-hint {
+            font-size: 0.8rem;
+            color: #b45309;
+        }
+
+        .edit-content {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+            background: white;
+        }
+
+        .edit-content [contenteditable="true"] {
+            outline: none;
+            min-height: 1em;
+            transition: background-color 0.2s;
+        }
+
+        .edit-content [contenteditable="true"]:hover {
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .edit-content [contenteditable="true"]:focus {
+            background-color: rgba(245, 158, 11, 0.2);
+            box-shadow: inset 0 0 0 2px #f59e0b;
+        }
+
+        /* 편집 불가 요소 표시 */
+        .edit-content .no-edit {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .edit-content img,
+        .edit-content svg,
+        .edit-content canvas {
+            pointer-events: none;
         }
 
         /* Modal */
@@ -747,14 +892,14 @@
             }
         }
 
-        /* Loading */
+        /* Loading - 큰 진행률 표시 */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 10, 15, 0.9);
+            background: rgba(10, 10, 15, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -770,23 +915,160 @@
             visibility: visible;
         }
 
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .loading-content {
+            width: 90%;
+            max-width: 600px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+        }
+
+        .loading-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .loading-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .loading-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .loading-progress-container {
             margin-bottom: 1.5rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .loading-progress-bar {
+            height: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 1rem;
         }
 
-        .loading-text {
-            font-size: 1rem;
+        .loading-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, #8b5cf6 50%, var(--success) 100%);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .loading-stats {
+            display: flex;
+            justify-content: space-between;
             color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .loading-current-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-current-icon {
+            font-size: 1.5rem;
+        }
+
+        .loading-current-text {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .loading-time-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .loading-time-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .loading-time-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .loading-time-label {
+            font-size: 0.75rem;
+        }
+
+        /* 생성 완료 상태 */
+        .generation-status {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .generation-status.active {
+            display: block;
+        }
+
+        .generation-status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .generation-status-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .generation-status-count {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .generation-mini-progress {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .generation-mini-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 2px;
         }
 
         /* Responsive */
@@ -856,16 +1138,40 @@
         <aside class="sidebar">
             <!-- Upload Section -->
             <div class="upload-section">
-                <div class="section-title">📁 분석표 업로드</div>
+                <div class="section-title">📁 데이터 업로드</div>
                 <div class="upload-zone" id="uploadZone">
                     <div class="upload-icon">📄</div>
                     <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
-                    <p class="upload-hint">*.xlsx, *.xls 파일 지원</p>
+                    <p class="upload-hint">기초자료 수집표 또는 분석표 (*.xlsx, *.xls)</p>
                     <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
                 </div>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
                 <div class="progress-bar" id="progressBar" style="display: none;">
                     <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+                
+                <!-- Conversion Info (기초자료 수집표 업로드 시 표시) -->
+                <div class="conversion-info" id="conversionInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 10px; border: 1px solid var(--border);">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--success); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✨</span>
+                        <span>기초자료 → 분석표 변환 완료</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;" id="conversionDetails"></div>
+                    
+                    <!-- GRDP 추출 결과 -->
+                    <div class="grdp-info" id="grdpInfo" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-secondary); margin-bottom: 0.5rem;">📊 GRDP 추출 완료</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.75rem;">
+                            <div>
+                                <span style="color: var(--text-muted);">전국 성장률:</span>
+                                <span id="grdpNational" style="color: var(--text-primary); font-weight: 600;"></span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-muted);">1위 지역:</span>
+                                <span id="grdpTopRegion" style="color: var(--text-primary); font-weight: 600;"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -913,6 +1219,20 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Generation Status -->
+            <div class="generation-status" id="generationStatus">
+                <div class="generation-status-header">
+                    <span class="generation-status-title">
+                        <span>✅</span>
+                        <span>전체 보고서 생성 완료</span>
+                    </span>
+                    <span class="generation-status-count" id="generationStatusCount">50/50</span>
+                </div>
+                <div class="generation-mini-progress">
+                    <div class="generation-mini-fill" id="generationMiniFill" style="width: 100%;"></div>
+                </div>
+            </div>
+
             <!-- Control Bar -->
             <div class="control-bar">
                 <div class="nav-controls">
@@ -921,8 +1241,14 @@
                     <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
                 </div>
                 <div class="action-btns">
-                    <button class="btn btn-success" id="generateBtn" disabled>
-                        ✨ 전체 생성
+                    <button class="btn btn-primary" id="generateAllBtn" disabled>
+                        🚀 전체 보고서 생성
+                    </button>
+                    <button class="btn btn-success" id="exportBtn" style="display: none;">
+                        📰 HTML 보도자료
+                    </button>
+                    <button class="btn btn-hwpx" id="exportHwpxBtn" style="display: none;">
+                        📄 HWPX 내보내기
                     </button>
                 </div>
             </div>
@@ -934,17 +1260,36 @@
                         <span>📄</span>
                         <span>미리보기</span>
                     </div>
-                    <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
-                        ✓ 검토 완료
-                    </button>
+                    <div class="preview-actions">
+                        <button class="btn btn-edit" id="editBtn" style="display: none;" title="편집 모드">
+                            ✏️ 편집
+                        </button>
+                        <button class="btn btn-save" id="saveEditBtn" style="display: none;" title="변경사항 저장">
+                            💾 저장
+                        </button>
+                        <button class="btn btn-cancel" id="cancelEditBtn" style="display: none;" title="편집 취소">
+                            ✕ 취소
+                        </button>
+                        <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
+                            ✓ 검토 완료
+                        </button>
+                    </div>
                 </div>
                 <div class="preview-content" id="previewContent">
                     <div class="preview-placeholder" id="previewPlaceholder">
                         <div class="preview-placeholder-icon">📊</div>
                         <h3>보고서를 선택하세요</h3>
-                        <p>엑셀 파일을 업로드하고 왼쪽 목록에서 보고서를 선택하면 미리보기가 표시됩니다.</p>
+                        <p>엑셀 파일 업로드 후 "전체 보고서 생성" 버튼을 클릭하면 모든 보고서가 생성됩니다.</p>
                     </div>
                     <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
+                    <!-- 편집 모드용 에디터 -->
+                    <div class="edit-container" id="editContainer" style="display: none;">
+                        <div class="edit-toolbar">
+                            <span class="edit-mode-badge">📝 편집 모드</span>
+                            <span class="edit-hint">텍스트를 클릭하여 직접 수정하세요. 레이아웃은 유지됩니다.</span>
+                        </div>
+                        <div class="edit-content" id="editContent"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -1057,33 +1402,39 @@
         </div>
     </div>
 
-    <!-- Missing Data Modal -->
-    <div class="modal-overlay" id="missingDataModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">
-                    <span>⚠️</span>
-                    <span>결측치 입력</span>
-                </h2>
-                <button class="modal-close" id="modalClose">×</button>
+    <!-- Loading Overlay with Progress -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-icon" id="loadingIcon">📊</div>
+            <h2 class="loading-title" id="loadingTitle">보고서 생성 중</h2>
+            <p class="loading-subtitle" id="loadingSubtitle">모든 보고서를 미리 생성하고 있습니다. 잠시만 기다려주세요.</p>
+            
+            <div class="loading-progress-container">
+                <div class="loading-progress-bar">
+                    <div class="loading-progress-fill" id="loadingProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="loading-stats">
+                    <span id="loadingProgressText">0 / 50</span>
+                    <span id="loadingProgressPercent">0%</span>
+                </div>
             </div>
-            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                아래 필드에 누락된 데이터를 입력해주세요.
-            </p>
-            <div class="missing-field-list" id="missingFieldList">
-                <!-- Missing fields will be rendered here -->
+            
+            <div class="loading-current-item" id="loadingCurrentItem">
+                <span class="loading-current-icon" id="loadingCurrentIcon">📄</span>
+                <span class="loading-current-text" id="loadingCurrentText">준비 중...</span>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="skipMissingBtn">건너뛰기</button>
-                <button class="btn btn-primary" id="saveMissingBtn">저장</button>
+            
+            <div class="loading-time-container">
+                <div class="loading-time-item">
+                    <span class="loading-time-value" id="elapsedTime">00:00</span>
+                    <span class="loading-time-label">경과 시간</span>
+                </div>
+                <div class="loading-time-item">
+                    <span class="loading-time-value" id="remainingTime">--:--</span>
+                    <span class="loading-time-label">예상 남은 시간</span>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <p class="loading-text" id="loadingText">처리 중...</p>
     </div>
 
     <!-- Toast Container -->
@@ -1093,37 +1444,65 @@
         // State
         const state = {
             fileUploaded: false,
+            allGenerated: false,
             currentReportIndex: -1,
+            fileType: null,  // 'raw' (기초자료 수집표) or 'analysis' (분석표)
             reports: [],
-            summaryReports: [],  // 요약 보고서 (표지, 목차, 인포그래픽 등)
-            sectoralReports: [], // 부문별 보고서
+            summaryReports: [],
+            sectoralReports: [],
             regionalReports: [],
             statisticsReports: [
-                { id: 'stat_toc', name: '통계표-목차', icon: '', description: '통계표 목차' },
-                { id: 'stat_mining', name: '통계표-광공업생산지수', icon: '', description: '광공업생산지수 데이터' },
-                { id: 'stat_service', name: '통계표-서비스업생산지수', icon: '', description: '서비스업생산지수 데이터' },
-                { id: 'stat_retail', name: '통계표-소매판매액지수', icon: '', description: '소매판매액지수 데이터' },
-                { id: 'stat_construction', name: '통계표-건설수주액', icon: '', description: '건설수주액 데이터' },
-                { id: 'stat_employment', name: '통계표-고용률', icon: '', description: '고용률 데이터' },
-                { id: 'stat_unemployment', name: '통계표-실업률', icon: '', description: '실업률 데이터' },
-                { id: 'stat_population', name: '통계표-국내인구이동', icon: '', description: '국내인구이동 데이터' },
-                { id: 'stat_export', name: '통계표-수출액', icon: '', description: '수출액 데이터' },
-                { id: 'stat_import', name: '통계표-수입액', icon: '', description: '수입액 데이터' },
-                { id: 'stat_price', name: '통계표-소비자물가지수', icon: '', description: '소비자물가지수 데이터' },
-                { id: 'stat_grdp', name: '통계표-참고-GRDP', icon: '', description: 'GRDP 참고 데이터' },
-                { id: 'stat_appendix', name: '부록-주요용어정의', icon: '', description: '주요 용어 정의' }
+                { id: 'stat_toc', name: '통계표-목차', icon: '📋', description: '통계표 목차' },
+                { id: 'stat_mining', name: '통계표-광공업생산지수', icon: '🏭', description: '광공업생산지수' },
+                { id: 'stat_service', name: '통계표-서비스업생산지수', icon: '🏢', description: '서비스업생산지수' },
+                { id: 'stat_retail', name: '통계표-소매판매액지수', icon: '🛒', description: '소매판매액지수' },
+                { id: 'stat_construction', name: '통계표-건설수주액', icon: '🏗️', description: '건설수주액' },
+                { id: 'stat_employment', name: '통계표-고용률', icon: '👔', description: '고용률' },
+                { id: 'stat_unemployment', name: '통계표-실업률', icon: '📉', description: '실업률' },
+                { id: 'stat_population', name: '통계표-국내인구이동', icon: '👥', description: '국내인구이동' },
+                { id: 'stat_export', name: '통계표-수출액', icon: '📦', description: '수출액' },
+                { id: 'stat_import', name: '통계표-수입액', icon: '🚢', description: '수입액' },
+                { id: 'stat_price', name: '통계표-소비자물가지수', icon: '💰', description: '소비자물가지수' },
+                { id: 'stat_grdp', name: '통계표-참고-GRDP', icon: '📊', description: 'GRDP 참고' },
+                { id: 'stat_appendix', name: '부록-주요용어정의', icon: '📖', description: '주요 용어 정의' }
             ],
-            reviewedReports: new Set(),
-            reviewedSummaryReports: new Set(),
-            reviewedRegionalReports: new Set(),
-            reviewedStatisticsReports: new Set(),
-            customData: {},
-            missingFieldsByReport: {},
-            currentTab: 'summary',  // 'summary', 'sectoral', 'regional', or 'statistics'
+            // 캐시된 HTML
+            cachedHtml: {
+                summary: {},
+                sectoral: {},
+                regional: {},
+                statistics: {}
+            },
+            generatedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            reviewedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            editedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            htmlCache: {},  // 최종 문서 생성용 캐시
+            currentTab: 'summary',
             currentSummaryIndex: -1,
             currentRegionalIndex: -1,
             currentStatisticsIndex: -1,
-            // 담당부서/담당자 정보
+            // 생성 통계
+            generationStats: {
+                total: 0,
+                completed: 0,
+                startTime: null
+            },
+            // 담당자 정보
             contactInfo: {
                 release_datetime: '2025. 8. 12.(화) 12:00',
                 distribution_datetime: '2025. 8. 12.(화) 08:30',
@@ -1143,81 +1522,53 @@
             uploadZone: document.getElementById('uploadZone'),
             fileInput: document.getElementById('fileInput'),
             uploadFilename: document.getElementById('uploadFilename'),
-            progressBar: document.getElementById('progressBar'),
-            progressFill: document.getElementById('progressFill'),
             summaryReportList: document.getElementById('summaryReportList'),
             reportList: document.getElementById('reportList'),
             regionalReportList: document.getElementById('regionalReportList'),
+            statisticsReportList: document.getElementById('statisticsReportList'),
             tabSummary: document.getElementById('tabSummary'),
             tabSectoral: document.getElementById('tabSectoral'),
             tabRegional: document.getElementById('tabRegional'),
             tabStatistics: document.getElementById('tabStatistics'),
-            statisticsReportList: document.getElementById('statisticsReportList'),
             yearSelect: document.getElementById('yearSelect'),
             quarterSelect: document.getElementById('quarterSelect'),
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
             pageIndicator: document.getElementById('pageIndicator'),
-            generateBtn: document.getElementById('generateBtn'),
+            generateAllBtn: document.getElementById('generateAllBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            exportHwpxBtn: document.getElementById('exportHwpxBtn'),
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
             previewIframe: document.getElementById('previewIframe'),
+            editContainer: document.getElementById('editContainer'),
+            editContent: document.getElementById('editContent'),
+            editBtn: document.getElementById('editBtn'),
+            saveEditBtn: document.getElementById('saveEditBtn'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
             markReviewedBtn: document.getElementById('markReviewedBtn'),
-            missingDataModal: document.getElementById('missingDataModal'),
-            missingFieldList: document.getElementById('missingFieldList'),
-            modalClose: document.getElementById('modalClose'),
-            skipMissingBtn: document.getElementById('skipMissingBtn'),
-            saveMissingBtn: document.getElementById('saveMissingBtn'),
             contactInfoModal: document.getElementById('contactInfoModal'),
             loadingOverlay: document.getElementById('loadingOverlay'),
-            loadingText: document.getElementById('loadingText'),
+            loadingTitle: document.getElementById('loadingTitle'),
+            loadingSubtitle: document.getElementById('loadingSubtitle'),
+            loadingIcon: document.getElementById('loadingIcon'),
+            loadingProgressFill: document.getElementById('loadingProgressFill'),
+            loadingProgressText: document.getElementById('loadingProgressText'),
+            loadingProgressPercent: document.getElementById('loadingProgressPercent'),
+            loadingCurrentIcon: document.getElementById('loadingCurrentIcon'),
+            loadingCurrentText: document.getElementById('loadingCurrentText'),
+            elapsedTime: document.getElementById('elapsedTime'),
+            remainingTime: document.getElementById('remainingTime'),
+            generationStatus: document.getElementById('generationStatus'),
+            generationStatusCount: document.getElementById('generationStatusCount'),
+            generationMiniFill: document.getElementById('generationMiniFill'),
             toastContainer: document.getElementById('toastContainer')
         };
 
-        // ===== 담당자 정보 모달 함수 =====
-        function openContactModal() {
-            // 저장된 값을 폼에 로드
-            document.getElementById('releaseDateTime').value = state.contactInfo.release_datetime;
-            document.getElementById('distributionDateTime').value = state.contactInfo.distribution_datetime;
-            document.getElementById('department').value = state.contactInfo.department;
-            document.getElementById('division').value = state.contactInfo.division;
-            document.getElementById('managerTitle').value = state.contactInfo.manager_title;
-            document.getElementById('managerName').value = state.contactInfo.manager_name;
-            document.getElementById('managerPhone').value = state.contactInfo.manager_phone;
-            document.getElementById('staffTitle').value = state.contactInfo.staff_title;
-            document.getElementById('staffName').value = state.contactInfo.staff_name;
-            document.getElementById('staffPhone').value = state.contactInfo.staff_phone;
-            
-            elements.contactInfoModal.classList.add('active');
-        }
-
-        function closeContactModal() {
-            elements.contactInfoModal.classList.remove('active');
-        }
-
-        function saveContactInfo() {
-            // 폼 값 저장
-            state.contactInfo = {
-                release_datetime: document.getElementById('releaseDateTime').value,
-                distribution_datetime: document.getElementById('distributionDateTime').value,
-                department: document.getElementById('department').value,
-                division: document.getElementById('division').value,
-                manager_title: document.getElementById('managerTitle').value,
-                manager_name: document.getElementById('managerName').value,
-                manager_phone: document.getElementById('managerPhone').value,
-                staff_title: document.getElementById('staffTitle').value,
-                staff_name: document.getElementById('staffName').value,
-                staff_phone: document.getElementById('staffPhone').value
-            };
-            
-            closeContactModal();
-            showToast('담당자 정보가 저장되었습니다.', 'success');
-            
-            // 현재 요약 보고서가 표시 중이면 새로고침
-            if (state.currentTab === 'summary' && state.currentSummaryIndex >= 0) {
-                generateSummaryPreview();
-            }
-        }
+        let timerInterval = null;
+        let isEditMode = false;
+        let originalHtmlBeforeEdit = null;
+        let currentEditingReport = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', initApp);
@@ -1240,28 +1591,39 @@
             elements.nextBtn.addEventListener('click', () => navigateReport(1));
 
             // Actions
-            elements.generateBtn.addEventListener('click', generateAllReports);
+            elements.generateAllBtn.addEventListener('click', generateAllReports);
             elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
-
-            // Modal
-            elements.modalClose.addEventListener('click', closeModal);
-            elements.skipMissingBtn.addEventListener('click', skipMissingData);
-            elements.saveMissingBtn.addEventListener('click', saveMissingData);
+            elements.exportBtn.addEventListener('click', exportFinalDocument);
+            
+            // Edit actions
+            elements.editBtn.addEventListener('click', enterEditMode);
+            elements.saveEditBtn.addEventListener('click', saveEditedContent);
+            elements.cancelEditBtn.addEventListener('click', cancelEditMode);
+            
+            // HWPX Export
+            elements.exportHwpxBtn.addEventListener('click', exportHwpxDocument);
         }
 
         function loadReportList() {
             fetch('/api/report-order')
                 .then(res => res.json())
                 .then(data => {
-                    // 요약과 부문별 분리
                     state.reports = data.reports;
                     state.summaryReports = data.reports.filter(r => r.category === 'summary');
                     state.sectoralReports = data.reports.filter(r => r.category !== 'summary');
                     state.regionalReports = data.regional_reports || [];
                     
+                    // 총 보고서 수 계산
+                    state.generationStats.total = 
+                        state.summaryReports.length + 
+                        state.sectoralReports.length + 
+                        state.regionalReports.length + 
+                        state.statisticsReports.length;
+                    
                     renderSummaryReportList();
                     renderReportList();
                     renderRegionalReportList();
+                    renderStatisticsReportList();
                 })
                 .catch(err => {
                     console.error('보고서 목록 로드 오류:', err);
@@ -1269,51 +1631,367 @@
                 });
         }
 
+        // ===== 담당자 정보 모달 함수 =====
+        function openContactModal() {
+            document.getElementById('releaseDateTime').value = state.contactInfo.release_datetime;
+            document.getElementById('distributionDateTime').value = state.contactInfo.distribution_datetime;
+            document.getElementById('department').value = state.contactInfo.department;
+            document.getElementById('division').value = state.contactInfo.division;
+            document.getElementById('managerTitle').value = state.contactInfo.manager_title;
+            document.getElementById('managerName').value = state.contactInfo.manager_name;
+            document.getElementById('managerPhone').value = state.contactInfo.manager_phone;
+            document.getElementById('staffTitle').value = state.contactInfo.staff_title;
+            document.getElementById('staffName').value = state.contactInfo.staff_name;
+            document.getElementById('staffPhone').value = state.contactInfo.staff_phone;
+            
+            elements.contactInfoModal.classList.add('active');
+        }
+
+        function closeContactModal() {
+            elements.contactInfoModal.classList.remove('active');
+        }
+
+        function saveContactInfo() {
+            state.contactInfo = {
+                release_datetime: document.getElementById('releaseDateTime').value,
+                distribution_datetime: document.getElementById('distributionDateTime').value,
+                department: document.getElementById('department').value,
+                division: document.getElementById('division').value,
+                manager_title: document.getElementById('managerTitle').value,
+                manager_name: document.getElementById('managerName').value,
+                manager_phone: document.getElementById('managerPhone').value,
+                staff_title: document.getElementById('staffTitle').value,
+                staff_name: document.getElementById('staffName').value,
+                staff_phone: document.getElementById('staffPhone').value
+            };
+            
+            closeContactModal();
+            showToast('담당자 정보가 저장되었습니다.', 'success');
+        }
+
         // Tab switching
         function switchTab(tab) {
             state.currentTab = tab;
             
-            // Update tab button styles
             elements.tabSummary.classList.toggle('active', tab === 'summary');
             elements.tabSectoral.classList.toggle('active', tab === 'sectoral');
             elements.tabRegional.classList.toggle('active', tab === 'regional');
             elements.tabStatistics.classList.toggle('active', tab === 'statistics');
             
-            // Show/hide report lists
             elements.summaryReportList.style.display = tab === 'summary' ? 'flex' : 'none';
             elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
             elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
             elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
             
-            // Render statistics list if tab switched
-            if (tab === 'statistics') {
-                renderStatisticsReportList();
-            }
-            
-            // Update navigation
             updatePageIndicator();
             updateNavigationButtons();
         }
 
-        // Render summary report list (표지, 목차, 인포그래픽, 요약 등)
+        // ===== 전체 보고서 생성 =====
+        async function generateAllReports() {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            // 초기화
+            state.generationStats.completed = 0;
+            state.generationStats.startTime = Date.now();
+            
+            showLoadingProgress();
+            startTimer();
+
+            const allItems = [
+                ...state.summaryReports.map(r => ({ type: 'summary', report: r })),
+                ...state.sectoralReports.map(r => ({ type: 'sectoral', report: r })),
+                ...state.regionalReports.map(r => ({ type: 'regional', report: r })),
+                ...state.statisticsReports.map(r => ({ type: 'statistics', report: r }))
+            ];
+
+            for (let i = 0; i < allItems.length; i++) {
+                const item = allItems[i];
+                const progress = ((i + 1) / allItems.length) * 100;
+                
+                // 현재 항목 표시
+                updateLoadingProgress(i + 1, allItems.length, item.report.icon || '📄', item.report.name);
+                
+                try {
+                    await generateSingleReport(item.type, item.report);
+                    state.generationStats.completed++;
+                } catch (err) {
+                    console.error(`${item.report.name} 생성 오류:`, err);
+                }
+            }
+
+            stopTimer();
+            hideLoading();
+            
+            // 생성 완료 상태 표시
+            state.allGenerated = true;
+            showGenerationStatus();
+            
+            // 내보내기 버튼 표시
+            elements.exportBtn.style.display = 'inline-flex';
+            elements.exportHwpxBtn.style.display = 'inline-flex';
+            
+            // 모든 목록 다시 렌더링
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            
+            // 첫 번째 보고서 선택
+            if (state.summaryReports.length > 0) {
+                selectSummaryReport(0);
+            }
+            
+            showToast(`✅ 전체 ${state.generationStats.completed}개 보고서 생성 완료!`, 'success');
+        }
+
+        async function generateSingleReport(type, report) {
+            const year = parseInt(elements.yearSelect.value);
+            const quarter = parseInt(elements.quarterSelect.value);
+            
+            let endpoint, body;
+            
+            switch (type) {
+                case 'summary':
+                    endpoint = '/api/generate-summary-preview';
+                    body = {
+                        report_id: report.id,
+                        year, quarter,
+                        contact_info: state.contactInfo
+                    };
+                    break;
+                case 'sectoral':
+                    endpoint = '/api/generate-preview';
+                    body = { report_id: report.id, year, quarter };
+                    break;
+                case 'regional':
+                    endpoint = '/api/generate-regional-preview';
+                    body = { region_id: report.id };
+                    break;
+                case 'statistics':
+                    endpoint = '/api/generate-statistics-preview';
+                    body = { stat_id: report.id, year, quarter };
+                    break;
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // HTML 캐싱
+                state.cachedHtml[type][report.id] = data.html;
+                state.htmlCache[`${type}_${report.id}`] = data.html;  // 최종 문서용 캐시
+                state.generatedReports[type].add(report.id);
+            }
+            
+            return data;
+        }
+
+        // ===== 로딩 진행률 표시 =====
+        function showLoadingProgress() {
+            elements.loadingOverlay.classList.add('active');
+        }
+
+        function updateLoadingProgress(current, total, icon, name) {
+            const percent = Math.round((current / total) * 100);
+            
+            elements.loadingProgressFill.style.width = `${percent}%`;
+            elements.loadingProgressText.textContent = `${current} / ${total}`;
+            elements.loadingProgressPercent.textContent = `${percent}%`;
+            elements.loadingCurrentIcon.textContent = icon;
+            elements.loadingCurrentText.textContent = name;
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - state.generationStats.startTime;
+                const elapsedSec = Math.floor(elapsed / 1000);
+                const elapsedMin = Math.floor(elapsedSec / 60);
+                const elapsedSecRemainder = elapsedSec % 60;
+                
+                elements.elapsedTime.textContent = 
+                    `${String(elapsedMin).padStart(2, '0')}:${String(elapsedSecRemainder).padStart(2, '0')}`;
+                
+                // 예상 남은 시간 계산
+                if (state.generationStats.completed > 0) {
+                    const avgTimePerItem = elapsed / state.generationStats.completed;
+                    const remaining = state.generationStats.total - state.generationStats.completed;
+                    const remainingMs = avgTimePerItem * remaining;
+                    const remainingSec = Math.floor(remainingMs / 1000);
+                    const remainingMin = Math.floor(remainingSec / 60);
+                    const remainingSecRemainder = remainingSec % 60;
+                    
+                    elements.remainingTime.textContent = 
+                        `${String(remainingMin).padStart(2, '0')}:${String(remainingSecRemainder).padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.classList.remove('active');
+        }
+
+        function showGenerationStatus() {
+            const total = state.generationStats.total;
+            const completed = state.generationStats.completed;
+            
+            elements.generationStatus.classList.add('active');
+            elements.generationStatusCount.textContent = `${completed}/${total}`;
+            elements.generationMiniFill.style.width = `${(completed / total) * 100}%`;
+        }
+
+        // ===== 보고서 선택 (캐시에서 표시) =====
+        function selectSummaryReport(index) {
+            if (!state.allGenerated) {
+                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                return;
+            }
+
+            state.currentSummaryIndex = index;
+            state.currentReportIndex = -1;
+            state.currentRegionalIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            const report = state.summaryReports[index];
+            displayCachedReport('summary', report);
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            updatePageIndicator();
+        }
+
+        function selectReport(index) {
+            if (!state.allGenerated) {
+                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                return;
+            }
+
+            state.currentReportIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentRegionalIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            const report = state.sectoralReports[index];
+            displayCachedReport('sectoral', report);
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            updatePageIndicator();
+        }
+
+        function selectRegionalReport(index) {
+            if (!state.allGenerated) {
+                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                return;
+            }
+
+            state.currentRegionalIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentReportIndex = -1;
+            state.currentStatisticsIndex = -1;
+            
+            const report = state.regionalReports[index];
+            displayCachedReport('regional', report);
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            updatePageIndicator();
+        }
+
+        function selectStatisticsReport(index) {
+            if (!state.allGenerated) {
+                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                return;
+            }
+
+            state.currentStatisticsIndex = index;
+            state.currentSummaryIndex = -1;
+            state.currentReportIndex = -1;
+            state.currentRegionalIndex = -1;
+            
+            const report = state.statisticsReports[index];
+            displayCachedReport('statistics', report);
+            
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+            updateNavigationButtons();
+            updatePageIndicator();
+        }
+
+        function displayCachedReport(type, report) {
+            const html = state.cachedHtml[type][report.id];
+            
+            if (html) {
+                // 편집 모드 종료
+                if (isEditMode) {
+                    exitEditMode();
+                }
+                
+                elements.previewPlaceholder.style.display = 'none';
+                elements.editContainer.style.display = 'none';
+                elements.previewIframe.style.display = 'block';
+                elements.previewIframe.srcdoc = html;
+                elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}</span>`;
+                
+                // 편집/검토 버튼 표시
+                elements.editBtn.style.display = 'inline-flex';
+                elements.saveEditBtn.style.display = 'none';
+                elements.cancelEditBtn.style.display = 'none';
+                elements.markReviewedBtn.style.display = 'block';
+            } else {
+                showToast('보고서를 찾을 수 없습니다.', 'error');
+            }
+        }
+
+        // ===== 렌더링 함수들 =====
         function renderSummaryReportList() {
             elements.summaryReportList.innerHTML = state.summaryReports.map((report, idx) => {
                 const isActive = state.currentTab === 'summary' && idx === state.currentSummaryIndex;
-                const isReviewed = state.reviewedSummaryReports.has(report.id);
-                const hasMissing = state.missingFieldsByReport[report.id]?.length > 0;
+                const isGenerated = state.generatedReports.summary.has(report.id);
+                const isReviewed = state.reviewedReports.summary.has(report.id);
+                const isEdited = state.editedReports.summary.has(report.id);
                 
                 let statusClass = 'pending';
                 let statusIcon = '○';
                 if (isReviewed) {
                     statusClass = 'reviewed';
                     statusIcon = '✓';
-                } else if (hasMissing) {
-                    statusClass = 'has-missing';
-                    statusIcon = '!';
+                } else if (isEdited) {
+                    statusClass = 'edited';
+                    statusIcon = '✏️';
+                } else if (isGenerated) {
+                    statusClass = 'generated';
+                    statusIcon = '●';
                 }
 
                 return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''} ${hasMissing ? 'has-missing' : ''}"
+                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
                          onclick="selectSummaryReport(${idx})"
                          data-report-id="${report.id}">
                         <div class="report-icon">${report.icon}</div>
@@ -1327,91 +2005,63 @@
             }).join('');
         }
 
-        // Select summary report
-        function selectSummaryReport(index) {
-            if (!state.fileUploaded) {
-                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
-                return;
-            }
-
-            state.currentSummaryIndex = index;
-            state.currentReportIndex = -1;
-            state.currentRegionalIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            generateSummaryPreview();
-        }
-
-        // Generate summary preview
-        async function generateSummaryPreview() {
-            if (state.currentSummaryIndex < 0 || !state.fileUploaded) return;
-
-            const report = state.summaryReports[state.currentSummaryIndex];
-            showLoading(`${report.name} 생성 중...`);
-
-            try {
-                const response = await fetch('/api/generate-summary-preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        report_id: report.id,
-                        year: parseInt(elements.yearSelect.value),
-                        quarter: parseInt(elements.quarterSelect.value),
-                        custom_data: state.customData[report.id] || {},
-                        contact_info: state.contactInfo  // 담당자 정보 전송
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Update preview
-                    elements.previewPlaceholder.style.display = 'none';
-                    elements.previewIframe.style.display = 'block';
-                    elements.previewIframe.srcdoc = data.html;
-                    elements.previewTitle.innerHTML = `<span>${report.icon}</span><span>${report.name}</span>`;
-                    elements.markReviewedBtn.style.display = 'block';
-
-                    // Check for missing data
-                    if (data.missing_fields && data.missing_fields.length > 0) {
-                        state.missingFieldsByReport[report.id] = data.missing_fields;
-                        renderSummaryReportList();
-                        showMissingDataModal(data.missing_fields);
-                    } else {
-                        state.missingFieldsByReport[report.id] = [];
-                        renderSummaryReportList();
-                    }
-                } else {
-                    showToast(data.error || '요약 보고서 생성 실패', 'error');
-                }
-            } catch (err) {
-                console.error('요약 보고서 생성 오류:', err);
-                showToast('요약 보고서 생성 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Render regional report list
-        function renderRegionalReportList() {
-            elements.regionalReportList.innerHTML = state.regionalReports.map((region, idx) => {
-                const isActive = state.currentTab === 'regional' && idx === state.currentRegionalIndex;
-                const isReviewed = state.reviewedRegionalReports.has(region.id);
+        function renderReportList() {
+            elements.reportList.innerHTML = state.sectoralReports.map((report, idx) => {
+                const isActive = state.currentTab === 'sectoral' && idx === state.currentReportIndex;
+                const isGenerated = state.generatedReports.sectoral.has(report.id);
+                const isReviewed = state.reviewedReports.sectoral.has(report.id);
+                const isEdited = state.editedReports.sectoral.has(report.id);
                 
                 let statusClass = 'pending';
                 let statusIcon = '○';
                 if (isReviewed) {
                     statusClass = 'reviewed';
                     statusIcon = '✓';
+                } else if (isEdited) {
+                    statusClass = 'edited';
+                    statusIcon = '✏️';
+                } else if (isGenerated) {
+                    statusClass = 'generated';
+                    statusIcon = '●';
                 }
 
                 return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''}"
+                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
+                         onclick="selectReport(${idx})"
+                         data-report-id="${report.id}">
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                            <div class="report-sheet">${report.sheet}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRegionalReportList() {
+            elements.regionalReportList.innerHTML = state.regionalReports.map((region, idx) => {
+                const isActive = state.currentTab === 'regional' && idx === state.currentRegionalIndex;
+                const isGenerated = state.generatedReports.regional.has(region.id);
+                const isReviewed = state.reviewedReports.regional.has(region.id);
+                const isEdited = state.editedReports.regional.has(region.id);
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                } else if (isEdited) {
+                    statusClass = 'edited';
+                    statusIcon = '✏️';
+                } else if (isGenerated) {
+                    statusClass = 'generated';
+                    statusIcon = '●';
+                }
+
+                return `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
                          onclick="selectRegionalReport(${idx})"
                          data-region-id="${region.id}">
                         <div class="report-icon">${region.icon}</div>
@@ -1425,21 +2075,28 @@
             }).join('');
         }
 
-        // Render statistics report list
         function renderStatisticsReportList() {
             elements.statisticsReportList.innerHTML = state.statisticsReports.map((stat, idx) => {
                 const isActive = state.currentTab === 'statistics' && idx === state.currentStatisticsIndex;
-                const isReviewed = state.reviewedStatisticsReports.has(stat.id);
+                const isGenerated = state.generatedReports.statistics.has(stat.id);
+                const isReviewed = state.reviewedReports.statistics.has(stat.id);
+                const isEdited = state.editedReports.statistics.has(stat.id);
                 
                 let statusClass = 'pending';
                 let statusIcon = '○';
                 if (isReviewed) {
                     statusClass = 'reviewed';
                     statusIcon = '✓';
+                } else if (isEdited) {
+                    statusClass = 'edited';
+                    statusIcon = '✏️';
+                } else if (isGenerated) {
+                    statusClass = 'generated';
+                    statusIcon = '●';
                 }
 
                 return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''}"
+                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
                          onclick="selectStatisticsReport(${idx})"
                          data-report-id="${stat.id}">
                         <div class="report-icon">${stat.icon}</div>
@@ -1453,173 +2110,7 @@
             }).join('');
         }
 
-        // Select statistics report
-        function selectStatisticsReport(index) {
-            if (!state.fileUploaded) {
-                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
-                return;
-            }
-
-            state.currentStatisticsIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentReportIndex = -1;
-            state.currentRegionalIndex = -1;
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            generateStatisticsPreview();
-        }
-
-        // Generate statistics preview
-        async function generateStatisticsPreview() {
-            if (state.currentStatisticsIndex < 0 || !state.fileUploaded) return;
-
-            const stat = state.statisticsReports[state.currentStatisticsIndex];
-            showLoading(`${stat.name} 생성 중...`);
-
-            try {
-                const response = await fetch('/api/generate-statistics-preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        stat_id: stat.id,
-                        year: parseInt(elements.yearSelect.value),
-                        quarter: parseInt(elements.quarterSelect.value)
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Update preview
-                    elements.previewPlaceholder.style.display = 'none';
-                    elements.previewIframe.style.display = 'block';
-                    elements.previewIframe.srcdoc = data.html;
-                    elements.previewTitle.innerHTML = `<span>${stat.icon}</span><span>${stat.name}</span>`;
-                    elements.markReviewedBtn.style.display = 'block';
-                } else {
-                    showToast(data.error || '통계표 생성 실패', 'error');
-                }
-            } catch (err) {
-                console.error('통계표 생성 오류:', err);
-                showToast('통계표 생성 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Select regional report
-        function selectRegionalReport(index) {
-            if (!state.fileUploaded) {
-                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
-                return;
-            }
-
-            state.currentRegionalIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentReportIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            generateRegionalPreview();
-        }
-
-        // Generate regional preview
-        async function generateRegionalPreview() {
-            if (state.currentRegionalIndex < 0 || !state.fileUploaded) return;
-
-            const region = state.regionalReports[state.currentRegionalIndex];
-            showLoading(`${region.name} 시도별 보고서 생성 중...`);
-
-            try {
-                const response = await fetch('/api/generate-regional-preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        region_id: region.id
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Update preview
-                    elements.previewPlaceholder.style.display = 'none';
-                    elements.previewIframe.style.display = 'block';
-                    elements.previewIframe.srcdoc = data.html;
-                    elements.previewTitle.innerHTML = `<span>${region.icon}</span><span>${region.name} - 시도별 경제동향</span>`;
-                    elements.markReviewedBtn.style.display = 'block';
-                } else {
-                    showToast(data.error || '시도별 보고서 생성 실패', 'error');
-                }
-            } catch (err) {
-                console.error('시도별 보고서 생성 오류:', err);
-                showToast('시도별 보고서 생성 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function renderReportList() {
-            // 부문별 보고서만 렌더링 (category !== 'summary')
-            elements.reportList.innerHTML = state.sectoralReports.map((report, idx) => {
-                const isActive = state.currentTab === 'sectoral' && idx === state.currentReportIndex;
-                const isReviewed = state.reviewedReports.has(report.id);
-                const hasMissing = state.missingFieldsByReport[report.id]?.length > 0;
-                
-                let statusClass = 'pending';
-                let statusIcon = '○';
-                if (isReviewed) {
-                    statusClass = 'reviewed';
-                    statusIcon = '✓';
-                } else if (hasMissing) {
-                    statusClass = 'has-missing';
-                    statusIcon = '!';
-                }
-
-                return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isReviewed ? 'reviewed' : ''} ${hasMissing ? 'has-missing' : ''}"
-                         onclick="selectReport(${idx})"
-                         data-report-id="${report.id}">
-                        <div class="report-icon">${report.icon}</div>
-                        <div class="report-info">
-                            <div class="report-name">${report.name}</div>
-                            <div class="report-sheet">${report.sheet}</div>
-                        </div>
-                        <div class="report-status ${statusClass}">${statusIcon}</div>
-                    </div>
-                `;
-            }).join('');
-
-            updatePageIndicator();
-        }
-
-        function selectReport(index) {
-            if (!state.fileUploaded) {
-                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
-                return;
-            }
-
-            state.currentReportIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentRegionalIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            generateCurrentPreview();
-        }
-
+        // ===== 네비게이션 =====
         function navigateReport(direction) {
             if (state.currentTab === 'summary') {
                 const newIndex = state.currentSummaryIndex + direction;
@@ -1680,7 +2171,39 @@
             }
         }
 
-        // File Upload Handlers
+        // ===== 검토 완료 =====
+        function markCurrentAsReviewed() {
+            let report, type;
+            
+            if (state.currentTab === 'summary' && state.currentSummaryIndex >= 0) {
+                report = state.summaryReports[state.currentSummaryIndex];
+                type = 'summary';
+                state.reviewedReports.summary.add(report.id);
+                renderSummaryReportList();
+            } else if (state.currentTab === 'sectoral' && state.currentReportIndex >= 0) {
+                report = state.sectoralReports[state.currentReportIndex];
+                type = 'sectoral';
+                state.reviewedReports.sectoral.add(report.id);
+                renderReportList();
+            } else if (state.currentTab === 'regional' && state.currentRegionalIndex >= 0) {
+                report = state.regionalReports[state.currentRegionalIndex];
+                type = 'regional';
+                state.reviewedReports.regional.add(report.id);
+                renderRegionalReportList();
+            } else if (state.currentTab === 'statistics' && state.currentStatisticsIndex >= 0) {
+                report = state.statisticsReports[state.currentStatisticsIndex];
+                type = 'statistics';
+                state.reviewedReports.statistics.add(report.id);
+                renderStatisticsReportList();
+            }
+            
+            if (report) {
+                showToast(`✓ ${report.name} 검토 완료`, 'success');
+                navigateReport(1); // 다음으로 자동 이동
+            }
+        }
+
+        // ===== 파일 업로드 =====
         function handleDragOver(e) {
             e.preventDefault();
             elements.uploadZone.classList.add('dragover');
@@ -1696,16 +2219,12 @@
             elements.uploadZone.classList.remove('dragover');
             
             const file = e.dataTransfer.files[0];
-            if (file) {
-                uploadFile(file);
-            }
+            if (file) uploadFile(file);
         }
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
-            if (file) {
-                uploadFile(file);
-            }
+            if (file) uploadFile(file);
         }
 
         async function uploadFile(file) {
@@ -1713,8 +2232,6 @@
                 showToast('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.', 'error');
                 return;
             }
-
-            showLoading('파일 업로드 중...');
 
             const formData = new FormData();
             formData.append('file', file);
@@ -1729,28 +2246,46 @@
 
                 if (data.success) {
                     state.fileUploaded = true;
+                    state.fileType = data.file_type;
                     
-                    // Update UI
                     elements.uploadZone.classList.add('uploaded');
                     elements.uploadFilename.textContent = `✓ ${data.filename}`;
                     elements.uploadFilename.style.display = 'block';
                     elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
-                    elements.uploadZone.querySelector('.upload-text').textContent = '파일 업로드 완료!';
+                    
+                    // 파일 유형에 따른 메시지
+                    if (data.file_type === 'raw') {
+                        elements.uploadZone.querySelector('.upload-text').textContent = '기초자료 → 분석표 변환 완료!';
+                    } else {
+                        elements.uploadZone.querySelector('.upload-text').textContent = '분석표 업로드 완료!';
+                    }
 
-                    // Update year/quarter selectors
                     elements.yearSelect.value = data.year;
                     elements.quarterSelect.value = data.quarter;
                     elements.yearSelect.disabled = false;
                     elements.quarterSelect.disabled = false;
-
-                    showToast('파일이 성공적으로 업로드되었습니다.', 'success');
-
-                    // Auto-select first summary report (요약 탭이 기본)
-                    if (state.summaryReports.length > 0) {
-                        selectSummaryReport(0);
-                    } else if (state.sectoralReports.length > 0) {
-                        switchTab('sectoral');
-                        selectReport(0);
+                    elements.generateAllBtn.disabled = false;
+                    
+                    // 변환 정보 표시 (기초자료 수집표인 경우)
+                    const conversionInfo = document.getElementById('conversionInfo');
+                    const conversionDetails = document.getElementById('conversionDetails');
+                    const grdpInfo = document.getElementById('grdpInfo');
+                    
+                    if (data.conversion_info) {
+                        conversionInfo.style.display = 'block';
+                        conversionDetails.textContent = `원본: ${data.conversion_info.original_file} → ${data.conversion_info.analysis_file}`;
+                        
+                        // GRDP 추출 결과 표시
+                        if (data.conversion_info.grdp_extracted) {
+                            grdpInfo.style.display = 'block';
+                            document.getElementById('grdpNational').textContent = `${data.conversion_info.national_growth_rate}%`;
+                            document.getElementById('grdpTopRegion').textContent = `${data.conversion_info.top_region} (${data.conversion_info.top_region_growth}%)`;
+                        }
+                        
+                        showToast(`기초자료 변환 완료! 전국 GRDP 성장률: ${data.conversion_info.national_growth_rate}%`, 'success');
+                    } else {
+                        conversionInfo.style.display = 'none';
+                        showToast('파일이 업로드되었습니다. "전체 보고서 생성" 버튼을 클릭하세요.', 'success');
                     }
                 } else {
                     showToast(data.error || '업로드 실패', 'error');
@@ -1758,247 +2293,484 @@
             } catch (err) {
                 console.error('업로드 오류:', err);
                 showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
             }
         }
 
-        // Preview Generation
-        async function generateCurrentPreview() {
-            if (state.currentReportIndex < 0 || !state.fileUploaded) return;
-
-            const report = state.sectoralReports[state.currentReportIndex];
-            showLoading(`${report.name} 미리보기 생성 중...`);
-
-            try {
-                const response = await fetch('/api/generate-preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        report_id: report.id,
-                        year: parseInt(elements.yearSelect.value),
-                        quarter: parseInt(elements.quarterSelect.value),
-                        custom_data: state.customData[report.id] || {}
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Update preview
-                    elements.previewPlaceholder.style.display = 'none';
-                    elements.previewIframe.style.display = 'block';
-                    elements.previewIframe.srcdoc = data.html;
-                    elements.previewTitle.innerHTML = `<span>${report.icon}</span><span>${report.name}</span>`;
-                    elements.markReviewedBtn.style.display = 'block';
-
-                    // Check for missing data
-                    if (data.missing_fields && data.missing_fields.length > 0) {
-                        state.missingFieldsByReport[report.id] = data.missing_fields;
-                        renderReportList();
-                        showMissingDataModal(data.missing_fields);
-                    } else {
-                        state.missingFieldsByReport[report.id] = [];
-                        renderReportList();
-                    }
-                } else {
-                    showToast(data.error || '미리보기 생성 실패', 'error');
-                }
-            } catch (err) {
-                console.error('미리보기 생성 오류:', err);
-                showToast('미리보기 생성 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
+        // ===== 편집 모드 함수들 =====
+        function getCurrentReportInfo() {
+            // 현재 선택된 보고서 정보 반환
+            if (state.currentSummaryIndex >= 0) {
+                return { type: 'summary', report: state.summaryReports[state.currentSummaryIndex] };
+            } else if (state.currentReportIndex >= 0) {
+                return { type: 'sectoral', report: state.sectoralReports[state.currentReportIndex] };
+            } else if (state.currentRegionalIndex >= 0) {
+                return { type: 'regional', report: state.regionalReports[state.currentRegionalIndex] };
+            } else if (state.currentStatisticsIndex >= 0) {
+                return { type: 'statistics', report: state.statisticsReports[state.currentStatisticsIndex] };
             }
+            return null;
         }
 
-        // Mark as Reviewed
-        function markCurrentAsReviewed() {
-            if (state.currentTab === 'summary') {
-                if (state.currentSummaryIndex < 0) return;
-
-                const report = state.summaryReports[state.currentSummaryIndex];
-                state.reviewedSummaryReports.add(report.id);
-                renderSummaryReportList();
-
-                // Check if all summary reports are reviewed
-                if (state.reviewedSummaryReports.size === state.summaryReports.length) {
-                    showToast('모든 요약 보고서 검토가 완료되었습니다!', 'success');
-                }
-
-                // Auto-navigate to next
-                if (state.currentSummaryIndex < state.summaryReports.length - 1) {
-                    navigateReport(1);
-                } else {
-                    showToast(`${report.name} 검토 완료!`, 'success');
-                }
-            } else if (state.currentTab === 'sectoral') {
-                if (state.currentReportIndex < 0) return;
-
-                const report = state.sectoralReports[state.currentReportIndex];
-                state.reviewedReports.add(report.id);
-                renderReportList();
-
-                // Check if all sectoral reports are reviewed
-                if (state.reviewedReports.size === state.sectoralReports.length) {
-                    elements.generateBtn.disabled = false;
-                    showToast('모든 부문별 보고서 검토가 완료되었습니다!', 'success');
-                }
-
-                // Auto-navigate to next
-                if (state.currentReportIndex < state.sectoralReports.length - 1) {
-                    navigateReport(1);
-                } else {
-                    showToast(`${report.name} 검토 완료!`, 'success');
-                }
-            } else if (state.currentTab === 'regional') {
-                if (state.currentRegionalIndex < 0) return;
-
-                const region = state.regionalReports[state.currentRegionalIndex];
-                state.reviewedRegionalReports.add(region.id);
-                renderRegionalReportList();
-
-                // Check if all regional reports are reviewed
-                if (state.reviewedRegionalReports.size === state.regionalReports.length) {
-                    showToast('모든 시도별 보고서 검토가 완료되었습니다!', 'success');
-                }
-
-                // Auto-navigate to next
-                if (state.currentRegionalIndex < state.regionalReports.length - 1) {
-                    navigateReport(1);
-                } else {
-                    showToast(`${region.name} 검토 완료!`, 'success');
-                }
-            } else if (state.currentTab === 'statistics') {
-                if (state.currentStatisticsIndex < 0) return;
-
-                const stat = state.statisticsReports[state.currentStatisticsIndex];
-                state.reviewedStatisticsReports.add(stat.id);
-                renderStatisticsReportList();
-
-                // Check if all statistics reports are reviewed
-                if (state.reviewedStatisticsReports.size === state.statisticsReports.length) {
-                    showToast('모든 통계표 검토가 완료되었습니다!', 'success');
-                }
-
-                // Auto-navigate to next
-                if (state.currentStatisticsIndex < state.statisticsReports.length - 1) {
-                    navigateReport(1);
-                } else {
-                    showToast(`${stat.name} 검토 완료!`, 'success');
-                }
+        function enterEditMode() {
+            const reportInfo = getCurrentReportInfo();
+            if (!reportInfo) {
+                showToast('편집할 보고서를 먼저 선택하세요.', 'warning');
+                return;
             }
-        }
 
-        // Generate All Reports
-        async function generateAllReports() {
-            showLoading('전체 보고서 생성 중...');
-
-            try {
-                const response = await fetch('/api/generate-all', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        year: parseInt(elements.yearSelect.value),
-                        quarter: parseInt(elements.quarterSelect.value),
-                        all_custom_data: state.customData
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success || data.generated.length > 0) {
-                    showToast(`${data.generated.length}개 보고서가 성공적으로 생성되었습니다!`, 'success');
-                    
-                    if (data.errors && data.errors.length > 0) {
-                        data.errors.forEach(err => {
-                            showToast(`${err.report_id}: ${err.error}`, 'warning');
-                        });
-                    }
-                } else {
-                    showToast('보고서 생성 실패', 'error');
-                }
-            } catch (err) {
-                console.error('전체 생성 오류:', err);
-                showToast('전체 보고서 생성 중 오류가 발생했습니다.', 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Missing Data Modal
-        const FIELD_LABELS = {
-            'nationwide_data.production_index': '전국 생산지수',
-            'nationwide_data.growth_rate': '전국 증감률 (%)',
-            'nationwide_data.index_value': '전국 지수',
-            'nationwide_data.employment_rate': '전국 고용률 (%)',
-            'nationwide_data.unemployment_rate': '전국 실업률 (%)',
-            'nationwide_data.change': '전국 증감 (%p)',
-            'nationwide_data.price_index': '전국 소비자물가지수',
-            'nationwide_data.change_rate': '전국 등락률 (%)',
-            'nationwide_data.export_value': '전국 수출액 (백만달러)',
-            'nationwide_data.import_value': '전국 수입액 (백만달러)',
-            'nationwide_data.net_migration': '전국 순이동자수 (명)',
-            'summary_box.region_count': '증가 지역 수',
-        };
-
-        function getFieldLabel(field) {
-            return FIELD_LABELS[field] || field;
-        }
-
-        function showMissingDataModal(fields) {
-            elements.missingFieldList.innerHTML = fields.map(field => `
-                <div class="missing-field-item">
-                    <label class="missing-field-label">${getFieldLabel(field)}</label>
-                    <input type="text" class="missing-field-input" data-field="${field}" 
-                           placeholder="값을 입력하세요">
-                </div>
-            `).join('');
-
-            elements.missingDataModal.classList.add('active');
-        }
-
-        function closeModal() {
-            elements.missingDataModal.classList.remove('active');
-        }
-
-        function skipMissingData() {
-            closeModal();
-        }
-
-        function saveMissingData() {
-            if (state.currentReportIndex < 0) return;
-
-            const report = state.reports[state.currentReportIndex];
-            const inputs = elements.missingFieldList.querySelectorAll('.missing-field-input');
+            isEditMode = true;
+            currentEditingReport = reportInfo;
             
-            if (!state.customData[report.id]) {
-                state.customData[report.id] = {};
-            }
+            // 현재 iframe의 HTML 가져오기
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
+            const bodyContent = iframeDoc.body.innerHTML;
+            const headContent = iframeDoc.head.innerHTML;
+            
+            // 원본 저장
+            originalHtmlBeforeEdit = state.cachedHtml[reportInfo.type][reportInfo.report.id];
+            
+            // 편집 가능하게 만들기
+            const editableHtml = makeEditable(bodyContent);
+            
+            // 스타일 포함한 전체 HTML 구성
+            elements.editContent.innerHTML = `
+                <style>${extractStyles(headContent)}</style>
+                ${editableHtml}
+            `;
+            
+            // UI 전환
+            elements.previewIframe.style.display = 'none';
+            elements.editContainer.style.display = 'flex';
+            
+            // 버튼 상태 변경
+            elements.editBtn.style.display = 'none';
+            elements.saveEditBtn.style.display = 'inline-flex';
+            elements.cancelEditBtn.style.display = 'inline-flex';
+            elements.markReviewedBtn.style.display = 'none';
+            
+            showToast('편집 모드가 활성화되었습니다. 텍스트를 클릭하여 수정하세요.', 'info');
+        }
 
-            inputs.forEach(input => {
-                const field = input.dataset.field;
-                const value = input.value.trim();
-                if (value) {
-                    state.customData[report.id][field] = value;
+        function extractStyles(headHtml) {
+            // head에서 style 태그 추출
+            const styleMatch = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+            if (styleMatch) {
+                return styleMatch.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n');
+            }
+            return '';
+        }
+
+        function makeEditable(html) {
+            // DOM 파싱
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+            const container = doc.body.firstChild;
+            
+            // 텍스트 노드를 포함한 모든 요소에 contenteditable 추가
+            const editableSelectors = [
+                'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'td', 'th', 'li', 'div.value', 'div.text', 'div.title',
+                '.summary-text', '.description', '.content', '.data-value',
+                '.region-name', '.change-value', '.percent'
+            ];
+            
+            // 모든 텍스트 포함 요소 처리
+            container.querySelectorAll('*').forEach(el => {
+                // 이미지, SVG, 테이블 구조 등은 제외
+                const tagName = el.tagName.toLowerCase();
+                if (['img', 'svg', 'path', 'table', 'tr', 'thead', 'tbody', 'script', 'style', 'br', 'hr'].includes(tagName)) {
+                    return;
+                }
+                
+                // 직접 텍스트를 포함하는 경우만 편집 가능
+                const hasDirectText = Array.from(el.childNodes).some(node => 
+                    node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
+                );
+                
+                if (hasDirectText || editableSelectors.some(sel => el.matches(sel))) {
+                    el.setAttribute('contenteditable', 'true');
                 }
             });
-
-            closeModal();
-            generateCurrentPreview();
+            
+            return container.innerHTML;
         }
 
-        // Loading
-        function showLoading(text = '처리 중...') {
-            elements.loadingText.textContent = text;
-            elements.loadingOverlay.classList.add('active');
+        function saveEditedContent() {
+            if (!currentEditingReport) {
+                showToast('저장할 보고서가 없습니다.', 'error');
+                return;
+            }
+
+            // 편집된 내용 추출 (contenteditable 속성 제거)
+            const editedContent = elements.editContent.cloneNode(true);
+            editedContent.querySelectorAll('[contenteditable]').forEach(el => {
+                el.removeAttribute('contenteditable');
+            });
+            
+            // style 태그 분리
+            const styleTag = editedContent.querySelector('style');
+            const styleContent = styleTag ? styleTag.outerHTML : '';
+            if (styleTag) styleTag.remove();
+            
+            // 새 HTML 생성
+            const newHtml = `
+                <!DOCTYPE html>
+                <html lang="ko">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    ${styleContent}
+                </head>
+                <body>
+                    ${editedContent.innerHTML}
+                </body>
+                </html>
+            `;
+            
+            // 캐시 업데이트
+            const { type, report } = currentEditingReport;
+            state.cachedHtml[type][report.id] = newHtml;
+            
+            // htmlCache도 업데이트 (최종 문서 생성용)
+            const cacheKey = `${type}_${report.id}`;
+            state.htmlCache[cacheKey] = newHtml;
+            
+            // 편집 모드 종료
+            exitEditMode();
+            
+            // iframe에 변경된 내용 표시
+            elements.previewIframe.srcdoc = newHtml;
+            
+            // 수정됨 표시
+            markReportAsEdited(type, report.id);
+            
+            showToast('✅ 변경사항이 저장되었습니다.', 'success');
         }
 
-        function hideLoading() {
-            elements.loadingOverlay.classList.remove('active');
+        function cancelEditMode() {
+            if (originalHtmlBeforeEdit && currentEditingReport) {
+                // 원본 복원
+                const { type, report } = currentEditingReport;
+                state.cachedHtml[type][report.id] = originalHtmlBeforeEdit;
+            }
+            
+            exitEditMode();
+            
+            // iframe 다시 표시
+            if (currentEditingReport) {
+                elements.previewIframe.srcdoc = originalHtmlBeforeEdit;
+            }
+            
+            showToast('편집이 취소되었습니다.', 'info');
         }
 
-        // Toast
+        function exitEditMode() {
+            isEditMode = false;
+            originalHtmlBeforeEdit = null;
+            currentEditingReport = null;
+            
+            // UI 복원
+            elements.editContainer.style.display = 'none';
+            elements.previewIframe.style.display = 'block';
+            
+            // 버튼 상태 복원
+            elements.editBtn.style.display = 'inline-flex';
+            elements.saveEditBtn.style.display = 'none';
+            elements.cancelEditBtn.style.display = 'none';
+            elements.markReviewedBtn.style.display = 'block';
+        }
+
+        function markReportAsEdited(type, reportId) {
+            // 편집된 보고서 표시 (옵션: 리스트에 표시 추가)
+            if (!state.editedReports) {
+                state.editedReports = { summary: new Set(), sectoral: new Set(), regional: new Set(), statistics: new Set() };
+            }
+            state.editedReports[type].add(reportId);
+            
+            // 목록 새로고침
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+        }
+
+        // ===== 최종 문서 내보내기 =====
+        async function exportFinalDocument() {
+            if (!state.allGenerated) {
+                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                return;
+            }
+            
+            // 로딩 표시
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingTitle = document.getElementById('loadingTitle');
+            const loadingProgress = document.getElementById('loadingProgress');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const loadingCurrent = document.getElementById('loadingCurrent');
+            
+            loadingOverlay.style.display = 'flex';
+            loadingTitle.textContent = '📄 최종 문서 생성 중...';
+            loadingCurrent.textContent = '페이지 수집 중';
+            loadingProgress.style.width = '0%';
+            loadingPercent.textContent = '0%';
+            
+            try {
+                // 모든 캐시된 HTML 수집 (순서대로)
+                const pages = [];
+                
+                // 1. 요약 보고서
+                for (const report of state.summaryReports) {
+                    const key = `summary_${report.id}`;
+                    if (state.htmlCache[key]) {
+                        pages.push({
+                            html: state.htmlCache[key],
+                            title: report.name,
+                            category: 'summary'
+                        });
+                    }
+                }
+                
+                // 2. 부문별 보고서
+                for (const report of state.sectoralReports) {
+                    const key = `sectoral_${report.id}`;
+                    if (state.htmlCache[key]) {
+                        pages.push({
+                            html: state.htmlCache[key],
+                            title: report.name,
+                            category: 'sectoral'
+                        });
+                    }
+                }
+                
+                // 3. 시도별 보고서
+                for (const region of state.regionalReports) {
+                    const key = `regional_${region.id}`;
+                    if (state.htmlCache[key]) {
+                        pages.push({
+                            html: state.htmlCache[key],
+                            title: region.name,
+                            category: 'regional'
+                        });
+                    }
+                }
+                
+                // 4. 통계표
+                for (const stat of state.statisticsReports) {
+                    const key = `statistics_${stat.id}`;
+                    if (state.htmlCache[key]) {
+                        pages.push({
+                            html: state.htmlCache[key],
+                            title: stat.name,
+                            category: 'statistics'
+                        });
+                    }
+                }
+                
+                loadingCurrent.textContent = `${pages.length}개 페이지 수집 완료`;
+                loadingProgress.style.width = '50%';
+                loadingPercent.textContent = '50%';
+                
+                // API 호출
+                const response = await fetch('/api/export-final', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pages: pages,
+                        year: state.year,
+                        quarter: state.quarter
+                    })
+                });
+                
+                const result = await response.json();
+                
+                loadingProgress.style.width = '100%';
+                loadingPercent.textContent = '100%';
+                
+                if (result.success) {
+                    loadingCurrent.textContent = '문서 생성 완료!';
+                    
+                    // 다운로드 또는 새 탭에서 열기
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        // 파일 다운로드
+                        const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = result.filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        showToast(`✅ ${result.total_pages}페이지 문서가 생성되었습니다.`, 'success');
+                    }, 500);
+                } else {
+                    loadingOverlay.style.display = 'none';
+                    showToast(result.error || '문서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('내보내기 오류:', err);
+                loadingOverlay.style.display = 'none';
+                showToast('문서 생성 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // ===== HWPX 문서 내보내기 =====
+        async function exportHwpxDocument() {
+            if (!state.allGenerated) {
+                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                return;
+            }
+            
+            // 로딩 표시
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingTitle = document.getElementById('loadingTitle');
+            const loadingProgress = document.getElementById('loadingProgressFill');
+            const loadingPercent = document.getElementById('loadingProgressPercent');
+            const loadingCurrent = document.getElementById('loadingCurrentText');
+            
+            loadingOverlay.style.display = 'flex';
+            loadingTitle.textContent = '📄 HWPX 문서 생성 중...';
+            loadingCurrent.textContent = '차트 이미지 변환 중';
+            loadingProgress.style.width = '0%';
+            loadingPercent.textContent = '0%';
+            
+            try {
+                // 모든 캐시된 HTML 수집 (순서대로)
+                const pages = [];
+                
+                // 차트/인포그래픽 이미지 변환을 위한 처리
+                loadingCurrent.textContent = '차트를 이미지로 변환 중...';
+                loadingProgress.style.width = '10%';
+                loadingPercent.textContent = '10%';
+                
+                // 1. 요약 보고서
+                for (const report of state.summaryReports) {
+                    const key = `summary_${report.id}`;
+                    if (state.htmlCache[key]) {
+                        // 인포그래픽의 경우 SVG를 이미지로 변환
+                        let html = state.htmlCache[key];
+                        
+                        if (report.id === 'infographic') {
+                            html = await convertChartsToImages(html, report.id);
+                        }
+                        
+                        pages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'summary'
+                        });
+                    }
+                }
+                
+                loadingProgress.style.width = '25%';
+                loadingPercent.textContent = '25%';
+                
+                // 2. 부문별 보고서
+                for (const report of state.sectoralReports) {
+                    const key = `sectoral_${report.id}`;
+                    if (state.htmlCache[key]) {
+                        let html = state.htmlCache[key];
+                        // 차트가 있는 경우 이미지로 변환
+                        html = await convertChartsToImages(html, report.id);
+                        pages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'sectoral'
+                        });
+                    }
+                }
+                
+                loadingProgress.style.width = '50%';
+                loadingPercent.textContent = '50%';
+                
+                // 3. 시도별 보고서
+                for (const region of state.regionalReports) {
+                    const key = `regional_${region.id}`;
+                    if (state.htmlCache[key]) {
+                        let html = state.htmlCache[key];
+                        html = await convertChartsToImages(html, region.id);
+                        pages.push({
+                            html: html,
+                            title: region.name,
+                            category: 'regional'
+                        });
+                    }
+                }
+                
+                loadingProgress.style.width = '75%';
+                loadingPercent.textContent = '75%';
+                
+                // 4. 통계표
+                for (const stat of state.statisticsReports) {
+                    const key = `statistics_${stat.id}`;
+                    if (state.htmlCache[key]) {
+                        pages.push({
+                            html: state.htmlCache[key],
+                            title: stat.name,
+                            category: 'statistics'
+                        });
+                    }
+                }
+                
+                loadingCurrent.textContent = `${pages.length}개 페이지 HWPX 변환 중`;
+                loadingProgress.style.width = '90%';
+                loadingPercent.textContent = '90%';
+                
+                // HWPX API 호출
+                const response = await fetch('/api/export-hwpx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pages: pages,
+                        year: state.year,
+                        quarter: state.quarter
+                    })
+                });
+                
+                const result = await response.json();
+                
+                loadingProgress.style.width = '100%';
+                loadingPercent.textContent = '100%';
+                
+                if (result.success) {
+                    loadingCurrent.textContent = 'HWPX 문서 생성 완료!';
+                    
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        // 파일 다운로드
+                        const a = document.createElement('a');
+                        a.href = result.download_url;
+                        a.download = result.filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        
+                        showToast(`✅ HWPX 문서가 생성되었습니다. (${result.total_pages}페이지, 이미지 ${result.images_count}개)`, 'success');
+                    }, 500);
+                } else {
+                    loadingOverlay.style.display = 'none';
+                    showToast(result.error || 'HWPX 문서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('HWPX 내보내기 오류:', err);
+                loadingOverlay.style.display = 'none';
+                showToast('HWPX 문서 생성 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 차트/SVG를 이미지로 변환
+        async function convertChartsToImages(html, reportId) {
+            // iframe에서 렌더링하여 이미지로 변환
+            // 이 부분은 서버에서 처리하거나, 클라이언트에서 html2canvas 등을 사용
+            // 현재는 SVG를 그대로 유지하고, 서버측 hwpx_generator에서 처리
+            return html;
+        }
+
+        // ===== Toast =====
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -2026,4 +2798,3 @@
     </script>
 </body>
 </html>
-

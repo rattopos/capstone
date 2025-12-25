@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향 인포그래픽</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
         
         * {
             margin: 0;
@@ -16,18 +15,17 @@
         
         body {
             font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
-            font-size: 10pt;
-            line-height: 1.4;
-            color: #333;
-            background: linear-gradient(135deg, #e8f4fc 0%, #d4e8f5 50%, #c5dff0 100%);
+            background: linear-gradient(180deg, #e8f4fc 0%, #d4e8f5 50%, #c5dff0 100%);
             min-height: 100vh;
+            padding: 20px;
         }
         
         .infographic-container {
-            width: 100%;
-            max-width: 1200px;
+            width: 210mm;
+            min-height: 297mm;
             margin: 0 auto;
-            padding: 20px;
+            background: linear-gradient(180deg, #e8f4fc 0%, #d4e8f5 100%);
+            padding: 15px 20px;
         }
         
         /* 헤더 */
@@ -35,35 +33,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 10px;
         }
         
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         
         .logo-icon {
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #e53935 50%, #1e88e5 50%);
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
         .logo-text {
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: 700;
             color: #1e88e5;
         }
         
         .logo-sub {
-            font-size: 10pt;
+            font-size: 8pt;
             color: #666;
         }
         
@@ -72,164 +68,94 @@
         }
         
         .main-title .year-quarter {
-            font-size: 18pt;
+            font-size: 16pt;
             font-weight: 700;
             color: #1565c0;
         }
         
         .main-title .report-name {
-            font-size: 32pt;
+            font-size: 28pt;
             font-weight: 900;
             color: #0d47a1;
-            letter-spacing: 3px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 5px;
         }
         
-        /* 그리드 레이아웃 */
+        /* 그리드 레이아웃 - 2열 3행 */
         .indicators-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-        
-        @media (max-width: 900px) {
-            .indicators-grid {
-                grid-template-columns: 1fr;
-            }
+            gap: 12px;
         }
         
         /* 지표 카드 */
         .indicator-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            padding: 12px 15px;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-            overflow: hidden;
         }
-        
-        .indicator-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        }
-        
-        .indicator-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--card-color-start), var(--card-color-end));
-        }
-        
-        .indicator-card[data-indicator="mining"] { --card-color-start: #ff6b6b; --card-color-end: #ee5a5a; }
-        .indicator-card[data-indicator="service"] { --card-color-start: #4ecdc4; --card-color-end: #3db9b1; }
-        .indicator-card[data-indicator="retail"] { --card-color-start: #45b7d1; --card-color-end: #35a5bf; }
-        .indicator-card[data-indicator="export"] { --card-color-start: #96ceb4; --card-color-end: #7fb99f; }
-        .indicator-card[data-indicator="employment"] { --card-color-start: #dda0dd; --card-color-end: #cc8fcc; }
-        .indicator-card[data-indicator="price"] { --card-color-start: #ffeaa7; --card-color-end: #fdcb6e; }
         
         .indicator-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .indicator-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #ccc;
         }
         
         .indicator-icon {
-            font-size: 24px;
+            font-size: 18px;
         }
         
         .indicator-name {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: 700;
             color: #333;
         }
         
         .indicator-unit {
             font-size: 9pt;
-            color: #888;
-            background: #f5f5f5;
-            padding: 4px 10px;
-            border-radius: 12px;
-        }
-        
-        /* 전국 데이터 표시 */
-        .nationwide-display {
-            text-align: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 10px;
-        }
-        
-        .nationwide-label {
-            font-size: 10pt;
             color: #666;
-            margin-bottom: 5px;
+            margin-left: auto;
         }
         
-        .nationwide-value {
-            font-size: 28pt;
-            font-weight: 900;
-        }
-        
-        .nationwide-value.increase {
-            color: #e53935;
-        }
-        
-        .nationwide-value.decrease {
-            color: #1e88e5;
-        }
-        
-        .nationwide-value .arrow {
-            font-size: 20pt;
-        }
-        
-        /* 차트 컨테이너 */
-        .chart-container {
-            height: 180px;
-            margin: 15px 0;
-        }
-        
-        /* 지역 랭킹 */
-        .regions-ranking {
+        /* 카드 본문 레이아웃 */
+        .card-body {
             display: flex;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 10px;
         }
         
-        .ranking-column {
-            flex: 1;
+        /* 좌측 랭킹 */
+        .rankings {
+            flex: 0 0 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
         
-        .ranking-header {
-            font-size: 10pt;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 20px;
-            text-align: center;
-            margin-bottom: 10px;
+        .ranking-section {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px 8px;
         }
         
-        .ranking-header.top {
-            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        .ranking-title {
+            font-size: 8pt;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        
+        .ranking-title.top {
+            background: #ffcdd2;
             color: #c62828;
         }
         
-        .ranking-header.bottom {
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        .ranking-title.bottom {
+            background: #bbdefb;
             color: #1565c0;
         }
         
@@ -237,46 +163,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            background: #f8f9fa;
-            transition: background 0.2s ease;
-        }
-        
-        .ranking-item:hover {
-            background: #e9ecef;
-        }
-        
-        .ranking-position {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 2px 0;
             font-size: 10pt;
-            font-weight: 700;
-            color: white;
-            margin-right: 8px;
-        }
-        
-        .top .ranking-position {
-            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
-        }
-        
-        .bottom .ranking-position {
-            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
         }
         
         .ranking-region {
-            font-size: 11pt;
             font-weight: 500;
-            flex: 1;
         }
         
         .ranking-value {
-            font-size: 12pt;
             font-weight: 700;
         }
         
@@ -288,81 +183,120 @@
             color: #1e88e5;
         }
         
-        /* 범례 */
-        .legend {
+        .arrow {
+            font-size: 8pt;
+        }
+        
+        /* 우측 지도 영역 */
+        .map-container {
+            flex: 1;
+            position: relative;
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .korea-map {
+            width: 100%;
+            max-width: 140px;
+            height: auto;
+        }
+        
+        /* SVG 지도 색상 */
+        .korea-map .region {
+            stroke: #fff;
+            stroke-width: 0.5;
+            transition: fill 0.3s;
+        }
+        
+        .korea-map .region.increase {
+            fill: #ef9a9a;
+        }
+        
+        .korea-map .region.decrease {
+            fill: #90caf9;
+        }
+        
+        .korea-map .region.neutral {
+            fill: #e0e0e0;
+        }
+        
+        /* 전국 수치 */
+        .nationwide-box {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            text-align: right;
+            padding: 4px;
+        }
+        
+        .nationwide-label {
+            font-size: 8pt;
+            color: #666;
+        }
+        
+        .nationwide-value {
+            font-size: 14pt;
+            font-weight: 700;
+        }
+        
+        .nationwide-value.increase {
+            color: #e53935;
+        }
+        
+        .nationwide-value.decrease {
+            color: #1e88e5;
+        }
+        
+        /* 범례 */
+        .legend-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 6px;
+            padding-right: 10px;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 10pt;
+            gap: 4px;
+            font-size: 8pt;
+            color: #666;
         }
         
-        .legend-color {
-            width: 20px;
-            height: 12px;
-            border-radius: 3px;
+        .legend-box {
+            width: 14px;
+            height: 10px;
+            border-radius: 2px;
         }
         
-        .legend-color.increase {
-            background: linear-gradient(90deg, #ef9a9a, #e53935);
+        .legend-box.increase {
+            background: #ef9a9a;
         }
         
-        .legend-color.decrease {
-            background: linear-gradient(90deg, #90caf9, #1e88e5);
+        .legend-box.decrease {
+            background: #90caf9;
         }
         
-        /* 애니메이션 */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .legend-box.neutral {
+            background: #e0e0e0;
         }
         
-        .indicator-card {
-            animation: fadeInUp 0.5s ease forwards;
-        }
-        
-        .indicator-card:nth-child(1) { animation-delay: 0.1s; }
-        .indicator-card:nth-child(2) { animation-delay: 0.2s; }
-        .indicator-card:nth-child(3) { animation-delay: 0.3s; }
-        .indicator-card:nth-child(4) { animation-delay: 0.4s; }
-        .indicator-card:nth-child(5) { animation-delay: 0.5s; }
-        .indicator-card:nth-child(6) { animation-delay: 0.6s; }
-        
-        /* 툴팁 */
-        .tooltip {
-            position: absolute;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 10pt;
-            pointer-events: none;
-            z-index: 1000;
-            display: none;
+        /* 물가/고용률 특수 범례 */
+        .legend-special {
+            font-size: 7pt;
+            color: #888;
+            text-align: right;
+            margin-top: 2px;
         }
         
         @media print {
             body {
-                background: white;
+                padding: 0;
             }
-            .indicator-card:hover {
-                transform: none;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            .infographic-container {
+                box-shadow: none;
             }
         }
     </style>
@@ -379,231 +313,154 @@
                 </div>
             </div>
             <div class="main-title">
-                <div class="year-quarter" id="yearQuarter"></div>
+                <div class="year-quarter">{{ report_info.year }}년 {{ report_info.quarter }}/4분기</div>
                 <div class="report-name">지역경제동향</div>
             </div>
         </div>
         
         <!-- 지표 그리드 -->
-        <div class="indicators-grid" id="indicatorsGrid">
-            <!-- JavaScript로 동적 생성 -->
-        </div>
-        
-        <!-- 범례 -->
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color increase"></div>
-                <span>증가/상승</span>
+        <div class="indicators-grid">
+            {% for indicator in indicators %}
+            <div class="indicator-card" data-indicator="{{ indicator.name }}">
+                <div class="indicator-header">
+                    <span class="indicator-icon">{{ indicator.icon }}</span>
+                    <span class="indicator-name">{{ indicator.name }}</span>
+                    <span class="indicator-unit">{{ indicator.unit }}</span>
+                </div>
+                
+                <div class="card-body">
+                    <!-- 랭킹 -->
+                    <div class="rankings">
+                        <div class="ranking-section">
+                            <span class="ranking-title top">상위</span>
+                            {% for region in indicator.top_regions %}
+                            <div class="ranking-item">
+                                <span class="ranking-region">{{ region.name }}</span>
+                                <span class="ranking-value increase">{{ region.value }}<span class="arrow">▲</span></span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="ranking-section">
+                            <span class="ranking-title bottom">하위</span>
+                            {% for region in indicator.bottom_regions %}
+                            <div class="ranking-item">
+                                <span class="ranking-region">{{ region.name }}</span>
+                                <span class="ranking-value decrease">{{ region.value }}<span class="arrow">▼</span></span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- 지도 -->
+                    <div class="map-container">
+                        <svg class="korea-map" viewBox="0 0 200 280" data-indicator-idx="{{ loop.index0 }}">
+                            <!-- 한국 지도 SVG -->
+                            <!-- 강원 -->
+                            <path class="region" data-region="강원" d="M130,45 L170,35 L180,55 L175,80 L160,95 L140,85 L125,70 L130,45Z"/>
+                            <!-- 경기 -->
+                            <path class="region" data-region="경기" d="M90,50 L130,45 L125,70 L140,85 L130,100 L115,110 L95,105 L80,85 L90,50Z"/>
+                            <!-- 서울 -->
+                            <path class="region" data-region="서울" d="M100,65 L115,60 L120,75 L110,82 L98,78 L100,65Z"/>
+                            <!-- 인천 -->
+                            <path class="region" data-region="인천" d="M75,60 L90,55 L95,75 L85,80 L70,75 L75,60Z"/>
+                            <!-- 충북 -->
+                            <path class="region" data-region="충북" d="M115,110 L130,100 L160,95 L155,120 L145,140 L120,145 L110,130 L115,110Z"/>
+                            <!-- 충남 -->
+                            <path class="region" data-region="충남" d="M60,100 L95,105 L115,110 L110,130 L100,150 L75,155 L55,135 L60,100Z"/>
+                            <!-- 세종 -->
+                            <path class="region" data-region="세종" d="M100,120 L110,118 L112,128 L105,135 L98,130 L100,120Z"/>
+                            <!-- 대전 -->
+                            <path class="region" data-region="대전" d="M95,135 L108,133 L110,145 L100,150 L92,145 L95,135Z"/>
+                            <!-- 경북 -->
+                            <path class="region" data-region="경북" d="M145,140 L155,120 L175,80 L190,95 L195,130 L185,160 L160,175 L140,165 L145,140Z"/>
+                            <!-- 대구 -->
+                            <path class="region" data-region="대구" d="M155,155 L170,150 L175,165 L165,175 L152,170 L155,155Z"/>
+                            <!-- 전북 -->
+                            <path class="region" data-region="전북" d="M55,155 L100,150 L120,145 L115,170 L100,185 L70,190 L50,175 L55,155Z"/>
+                            <!-- 전남 -->
+                            <path class="region" data-region="전남" d="M35,190 L70,190 L100,185 L95,210 L80,240 L50,250 L30,230 L35,190Z"/>
+                            <!-- 광주 -->
+                            <path class="region" data-region="광주" d="M65,195 L80,193 L82,208 L72,215 L62,210 L65,195Z"/>
+                            <!-- 경남 -->
+                            <path class="region" data-region="경남" d="M100,185 L140,165 L160,175 L170,200 L155,230 L120,240 L95,220 L100,185Z"/>
+                            <!-- 울산 -->
+                            <path class="region" data-region="울산" d="M170,175 L185,170 L190,190 L180,200 L168,195 L170,175Z"/>
+                            <!-- 부산 -->
+                            <path class="region" data-region="부산" d="M155,215 L175,210 L180,230 L165,240 L150,235 L155,215Z"/>
+                            <!-- 제주 -->
+                            <path class="region" data-region="제주" d="M45,265 L90,260 L95,275 L50,280 L45,265Z"/>
+                        </svg>
+                        
+                        <div class="nationwide-box">
+                            <div class="nationwide-label">전국</div>
+                            <div class="nationwide-value {% if indicator.nationwide_change >= 0 %}increase{% else %}decrease{% endif %}">
+                                {{ indicator.nationwide_value }}{% if indicator.nationwide_change >= 0 %}▲{% else %}▼{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 범례 (수출, 고용률, 소비자물가에만 표시) -->
+                {% if indicator.name in ['수출', '고용률', '소비자물가'] %}
+                <div class="legend-container">
+                    {% if indicator.name == '수출' %}
+                    <div class="legend-item"><div class="legend-box increase"></div><span>증가</span></div>
+                    <div class="legend-item"><div class="legend-box decrease"></div><span>감소</span></div>
+                    <div class="legend-item"><div class="legend-box neutral"></div><span>보합</span></div>
+                    {% elif indicator.name == '고용률' %}
+                    <div class="legend-item"><div class="legend-box increase"></div><span>상승</span></div>
+                    <div class="legend-item"><div class="legend-box decrease"></div><span>하락</span></div>
+                    <div class="legend-item"><div class="legend-box neutral"></div><span>보합</span></div>
+                    {% elif indicator.name == '소비자물가' %}
+                    <div class="legend-item"><div class="legend-box increase"></div><span>전국 초과</span></div>
+                    <div class="legend-item"><div class="legend-box decrease"></div><span>평균 하회</span></div>
+                    <div class="legend-item"><div class="legend-box neutral"></div><span>평균 미만</span></div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
-            <div class="legend-item">
-                <div class="legend-color decrease"></div>
-                <span>감소/하락</span>
-            </div>
+            {% endfor %}
         </div>
     </div>
     
-    <!-- 툴팁 -->
-    <div class="tooltip" id="tooltip"></div>
-
     <script>
-        // ===== 데이터 정의 (Jinja2로 서버에서 주입) =====
-        const reportData = {
-            year: {{ report_info.year }},
-            quarter: {{ report_info.quarter }},
-            indicators: {{ indicators | tojson }}
-        };
+        // 지역별 데이터 (Jinja2로 주입)
+        const indicatorsData = {{ indicators | tojson }};
         
-        // ===== 유틸리티 함수 =====
-        function formatValue(value, isPercentagePoint = false) {
-            const num = parseFloat(value);
-            const sign = num >= 0 ? '+' : '';
-            const unit = isPercentagePoint ? '%p' : '%';
-            return `${sign}${num.toFixed(1)}${unit}`;
-        }
+        // 모든 지역 목록
+        const allRegions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
+                          '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
         
-        function getArrow(value) {
-            return parseFloat(value) >= 0 ? '▲' : '▼';
-        }
-        
-        function getValueClass(value) {
-            return parseFloat(value) >= 0 ? 'increase' : 'decrease';
-        }
-        
-        // ===== 카드 생성 함수 =====
-        function createIndicatorCard(indicator, index) {
-            const indicatorTypes = {
-                '광공업생산': 'mining',
-                '서비스업생산': 'service',
-                '소매판매': 'retail',
-                '수출': 'export',
-                '고용률': 'employment',
-                '소비자물가': 'price'
-            };
-            
-            const indicatorType = indicatorTypes[indicator.name] || 'default';
-            const isPercentagePoint = indicator.name === '고용률';
-            const nationwideValue = parseFloat(indicator.nationwide_value);
-            
-            const card = document.createElement('div');
-            card.className = 'indicator-card';
-            card.dataset.indicator = indicatorType;
-            card.style.opacity = '0';
-            
-            card.innerHTML = `
-                <div class="indicator-header">
-                    <div class="indicator-title">
-                        <span class="indicator-icon">${indicator.icon}</span>
-                        <span class="indicator-name">${indicator.name}</span>
-                    </div>
-                    <span class="indicator-unit">${indicator.unit}</span>
-                </div>
+        // 지도 색상 설정
+        function colorMaps() {
+            document.querySelectorAll('.korea-map').forEach((map, mapIdx) => {
+                const indicator = indicatorsData[mapIdx];
+                if (!indicator) return;
                 
-                <div class="nationwide-display">
-                    <div class="nationwide-label">전국</div>
-                    <div class="nationwide-value ${getValueClass(nationwideValue)}">
-                        <span class="arrow">${getArrow(nationwideValue)}</span>
-                        ${indicator.nationwide_value}
-                    </div>
-                </div>
+                // 상위 지역 (빨간색)
+                const topRegions = indicator.top_regions.map(r => r.name);
+                // 하위 지역 (파란색)
+                const bottomRegions = indicator.bottom_regions.map(r => r.name);
                 
-                <div class="chart-container">
-                    <canvas id="chart-${index}"></canvas>
-                </div>
-                
-                <div class="regions-ranking">
-                    <div class="ranking-column top">
-                        <div class="ranking-header top">상위 지역</div>
-                        ${indicator.top_regions.map((region, i) => `
-                            <div class="ranking-item">
-                                <span class="ranking-position">${i + 1}</span>
-                                <span class="ranking-region">${region.name}</span>
-                                <span class="ranking-value increase">${region.value}${getArrow(1)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="ranking-column bottom">
-                        <div class="ranking-header bottom">하위 지역</div>
-                        ${indicator.bottom_regions.map((region, i) => `
-                            <div class="ranking-item">
-                                <span class="ranking-position">${i + 1}</span>
-                                <span class="ranking-region">${region.name}</span>
-                                <span class="ranking-value decrease">${region.value}${getArrow(-1)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            
-            return card;
-        }
-        
-        // ===== 차트 생성 함수 =====
-        function createChart(canvasId, indicator) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-            
-            const topData = indicator.top_regions.map(r => ({
-                label: r.name,
-                value: parseFloat(r.value)
-            }));
-            
-            const bottomData = indicator.bottom_regions.map(r => ({
-                label: r.name,
-                value: -Math.abs(parseFloat(r.value))
-            }));
-            
-            const allData = [...topData, ...bottomData];
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: allData.map(d => d.label),
-                    datasets: [{
-                        data: allData.map(d => d.value),
-                        backgroundColor: allData.map(d => 
-                            d.value >= 0 
-                                ? 'rgba(229, 57, 53, 0.7)' 
-                                : 'rgba(30, 136, 229, 0.7)'
-                        ),
-                        borderColor: allData.map(d => 
-                            d.value >= 0 
-                                ? 'rgba(229, 57, 53, 1)' 
-                                : 'rgba(30, 136, 229, 1)'
-                        ),
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    return `${Math.abs(value).toFixed(1)}%`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return Math.abs(value) + '%';
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
+                map.querySelectorAll('.region').forEach(region => {
+                    const regionName = region.dataset.region;
+                    
+                    if (topRegions.includes(regionName)) {
+                        region.classList.add('increase');
+                        region.classList.remove('decrease', 'neutral');
+                    } else if (bottomRegions.includes(regionName)) {
+                        region.classList.add('decrease');
+                        region.classList.remove('increase', 'neutral');
+                    } else {
+                        region.classList.add('neutral');
+                        region.classList.remove('increase', 'decrease');
                     }
-                }
+                });
             });
         }
         
-        // ===== 초기화 =====
-        function init() {
-            // 연도/분기 표시
-            document.getElementById('yearQuarter').textContent = 
-                `${reportData.year}년 ${reportData.quarter}/4분기`;
-            
-            // 카드 생성
-            const grid = document.getElementById('indicatorsGrid');
-            reportData.indicators.forEach((indicator, index) => {
-                const card = createIndicatorCard(indicator, index);
-                grid.appendChild(card);
-                
-                // 애니메이션 적용
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.animation = `fadeInUp 0.5s ease forwards`;
-                }, index * 100);
-                
-                // 차트 생성 (카드가 DOM에 추가된 후)
-                setTimeout(() => {
-                    createChart(`chart-${index}`, indicator);
-                }, index * 100 + 50);
-            });
-        }
-        
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', init);
+        // 초기화
+        document.addEventListener('DOMContentLoaded', colorMaps);
     </script>
 </body>
 </html>
-

@@ -284,9 +284,16 @@
                 {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 소비자물가</span>({{ "%.1f"|format(price.nationwide.index) }})는 전년동분기대비 <span class="{% if price.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(price.nationwide.change) }}% {% if price.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
             </div>
             <div class="summary-sub">
+                {% if price.below_regions %}
                 {% for region in price.below_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ price.below_count }}개 시도는 소비자물가 상승률이 전국보다 <span class="decrease">낮았으나</span>, <span class="highlight">{{ price.above_regions[0].name }}</span>({{ "%.1f"|format(price.above_regions[0].value) }}%)은 <span class="increase">높음</span>
+                {% endfor %} 등 {{ price.below_count }}개 시도는 소비자물가 상승률이 전국보다 <span class="decrease">낮았으나</span>,
+                {% endif %}
+                {% if price.above_regions and price.above_regions|length > 0 %}
+                <span class="highlight">{{ price.above_regions[0].name }}</span>({{ "%.1f"|format(price.above_regions[0].value) }}%){% if price.above_count > 1 %} 등 {{ price.above_count }}개 시도{% endif %}는 <span class="increase">높음</span>
+                {% else %}
+                모든 시도가 전국 평균 이하
+                {% endif %}
             </div>
         </div>
         

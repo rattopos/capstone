@@ -32,6 +32,10 @@ REGION_MAPPING = {
     '제주특별자치도': '제주', '제주도': '제주', '제주': '제주'
 }
 
+# 17개 시도 목록
+REGIONS_17 = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+              '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+
 
 class 인포그래픽Generator:
     """인포그래픽 데이터 생성기"""
@@ -48,43 +52,83 @@ class 인포그래픽Generator:
         
     def normalize_region(self, region_name):
         """지역명 정규화"""
-        return REGION_MAPPING.get(region_name, region_name)
+        if pd.isna(region_name):
+            return None
+        region_str = str(region_name).strip()
+        return REGION_MAPPING.get(region_str, region_str)
+    
+    def find_column(self, df, patterns):
+        """패턴에 맞는 컬럼 찾기"""
+        for col in df.columns:
+            # 줄바꿈 제거 후 비교
+            col_str = str(col).replace('\n', '')
+            for pattern in patterns:
+                if pattern in col_str:
+                    return col
+        return None
+    
+    def get_column_by_name(self, df, name_part):
+        """컬럼명의 일부로 컬럼 찾기 (줄바꿈 처리)"""
+        for col in df.columns:
+            col_str = str(col).replace('\n', '')
+            if name_part in col_str:
+                return col
+        return None
+    
+    def get_region_column(self, df):
+        """지역이름 컬럼 찾기 (지역이름 or 지역\n이름)"""
+        for col in df.columns:
+            col_str = str(col).replace('\n', '')
+            if col_str == '지역이름':
+                return col
+        return None
+    
+    def get_level_column(self, df):
+        """분류단계 컬럼 찾기"""
+        for col in df.columns:
+            col_str = str(col).replace('\n', '')
+            if col_str == '분류단계':
+                return col
+        return None
     
     def extract_mining_production(self):
         """광공업생산 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='A 분석')
+            df = pd.read_excel(self.xl, sheet_name='A 분석', header=2)
             
-            # 시도별 데이터 추출 (분류단계가 0이고 산업코드가 C인 행)
+            # 지역이름 컬럼 찾기 (지역\n이름 형태)
+            region_col = self.get_region_column(df)
+            if region_col is None:
+                region_col = df.columns[3]  # '지역\n이름'이 보통 4번째
+            
+            level_col = self.get_level_column(df)
+            if level_col is None:
+                level_col = df.columns[4]  # '분류\n단계'가 보통 5번째
+            
+            # 2025 2/4 증감률 컬럼 찾기
+            change_col = '2025 2/4' if '2025 2/4' in df.columns else None
+            
+            if not change_col:
+                return self._get_default_indicator('광공업생산', '🏭')
+            
             regions_data = []
-            nationwide_value = None
+            nationwide_value = 2.1  # 기본값 (전국 데이터가 없을 수 있음)
             
             for idx, row in df.iterrows():
-                region = str(row.get('지역이름', row.iloc[3] if len(row) > 3 else ''))
-                level = row.get('분류단계', row.iloc[4] if len(row) > 4 else None)
+                region = self.normalize_region(row.get(region_col))
+                level = row.get(level_col)
                 
                 if pd.isna(level) or level != 0:
                     continue
-                    
-                # 증감률 컬럼 찾기 (마지막 분기)
-                change_col = None
-                for col in df.columns:
-                    if '증감' in str(col) or '2025.2/4' in str(col):
-                        change_col = col
-                        break
                 
-                if change_col:
-                    change_value = row.get(change_col, row.iloc[22] if len(row) > 22 else 0)
-                else:
-                    change_value = row.iloc[22] if len(row) > 22 else 0
+                change_value = row.get(change_col)
                 
-                if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if region_short == '전국' or region == '전국':
+                if pd.notna(change_value) and region:
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -99,37 +143,49 @@ class 인포그래픽Generator:
                 'unit': '(전년동분기대비, %)',
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{abs(r['value']):.1f}"} for r in bottom3],
-                'nationwide_value': f"{nationwide_value:.1f}%" if nationwide_value else "2.1%",
-                'nationwide_change': nationwide_value if nationwide_value else 2.1
+                'nationwide_value': f"{nationwide_value:.1f}%",
+                'nationwide_change': nationwide_value,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"광공업생산 데이터 추출 오류: {e}")
+            import traceback
+            traceback.print_exc()
             return self._get_default_indicator('광공업생산', '🏭')
     
     def extract_service_production(self):
         """서비스업생산 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='B 분석')
+            df = pd.read_excel(self.xl, sheet_name='B 분석', header=2)
+            
+            # 지역이름 컬럼 찾기
+            region_col = self.get_column_by_name(df, '이름')
+            level_col = self.get_column_by_name(df, '단계')
+            
+            # 2025 2/4 컬럼
+            change_col = '2025 2/4' if '2025 2/4' in df.columns else None
+            
+            if not change_col or not region_col:
+                return self._get_default_indicator('서비스업생산', '🏢')
             
             regions_data = []
-            nationwide_value = None
+            nationwide_value = 1.4  # 기본값
             
             for idx, row in df.iterrows():
-                region = str(row.get('지역이름', row.iloc[3] if len(row) > 3 else ''))
-                level = row.get('분류단계', row.iloc[4] if len(row) > 4 else None)
+                region = self.normalize_region(row.get(region_col))
+                level = row.get(level_col)
                 
                 if pd.isna(level) or level != 0:
                     continue
                 
-                change_value = row.iloc[22] if len(row) > 22 else 0
+                change_value = row.get(change_col)
                 
-                if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if region_short == '전국' or region == '전국':
+                if pd.notna(change_value) and region:
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -143,37 +199,58 @@ class 인포그래픽Generator:
                 'unit': '(전년동분기대비, %)',
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{abs(r['value']):.1f}"} for r in bottom3],
-                'nationwide_value': f"{nationwide_value:.1f}%" if nationwide_value else "1.4%",
-                'nationwide_change': nationwide_value if nationwide_value else 1.4
+                'nationwide_value': f"{nationwide_value:.1f}%",
+                'nationwide_change': nationwide_value,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"서비스업생산 데이터 추출 오류: {e}")
+            import traceback
+            traceback.print_exc()
             return self._get_default_indicator('서비스업생산', '🏢')
     
     def extract_retail_sales(self):
         """소매판매 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='C 분석')
+            df = pd.read_excel(self.xl, sheet_name='C 분석', header=2)
+            
+            # 컬럼 찾기
+            region_col = None
+            level_col = None
+            for col in df.columns:
+                if '이름' in str(col):
+                    region_col = col
+                if '단계' in str(col):
+                    level_col = col
+            
+            # 2025 2/4 컬럼
+            change_col = None
+            for col in df.columns:
+                if '2025' in str(col) and '2/4' in str(col):
+                    change_col = col
+                    break
+            
+            if not change_col:
+                return self._get_default_indicator('소매판매', '🛒')
             
             regions_data = []
             nationwide_value = None
             
             for idx, row in df.iterrows():
-                region = str(row.get('지역이름', row.iloc[3] if len(row) > 3 else ''))
-                level = row.get('분류단계', row.iloc[4] if len(row) > 4 else None)
+                region = self.normalize_region(row.get(region_col))
+                level = row.get(level_col)
                 
                 if pd.isna(level) or level != 0:
                     continue
                 
-                change_value = row.iloc[22] if len(row) > 22 else 0
+                change_value = row.get(change_col)
                 
                 if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if region_short == '전국' or region == '전국':
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -188,7 +265,8 @@ class 인포그래픽Generator:
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{abs(r['value']):.1f}"} for r in bottom3],
                 'nationwide_value': f"{nationwide_value:.1f}%" if nationwide_value else "-0.2%",
-                'nationwide_change': nationwide_value if nationwide_value else -0.2
+                'nationwide_change': nationwide_value if nationwide_value else -0.2,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"소매판매 데이터 추출 오류: {e}")
@@ -197,24 +275,38 @@ class 인포그래픽Generator:
     def extract_exports(self):
         """수출 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='G 분석')
+            df = pd.read_excel(self.xl, sheet_name='G 분석', header=2)
+            
+            # 컬럼 찾기
+            region_col = None
+            for col in df.columns:
+                if '이름' in str(col):
+                    region_col = col
+                    break
+            
+            # 2025 2/4 컬럼
+            change_col = None
+            for col in df.columns:
+                if '2025' in str(col) and '2/4' in str(col):
+                    change_col = col
+                    break
+            
+            if not change_col or not region_col:
+                return self._get_default_indicator('수출', '📦')
             
             regions_data = []
             nationwide_value = None
             
             for idx, row in df.iterrows():
-                region = str(row.iloc[3] if len(row) > 3 else '')
+                region = self.normalize_region(row.get(region_col))
+                change_value = row.get(change_col)
                 
-                # 증감률 컬럼
-                change_value = row.iloc[16] if len(row) > 16 else 0
-                
-                if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if '전국' in region or region_short == '전국':
+                if pd.notna(change_value) and region:
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -229,7 +321,8 @@ class 인포그래픽Generator:
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{abs(r['value']):.1f}"} for r in bottom3],
                 'nationwide_value': f"{nationwide_value:.1f}%" if nationwide_value else "2.1%",
-                'nationwide_change': nationwide_value if nationwide_value else 2.1
+                'nationwide_change': nationwide_value if nationwide_value else 2.1,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"수출 데이터 추출 오류: {e}")
@@ -238,24 +331,36 @@ class 인포그래픽Generator:
     def extract_employment(self):
         """고용률 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='D(고용률)분석')
+            df = pd.read_excel(self.xl, sheet_name='D(고용률)분석', header=2)
+            
+            # 컬럼 찾기
+            region_col = self.get_column_by_name(df, '이름')
+            level_col = self.get_column_by_name(df, '단계')
+            
+            # 2025 2/4 컬럼
+            change_col = '2025 2/4' if '2025 2/4' in df.columns else None
+            
+            if not change_col or not region_col:
+                return self._get_default_indicator('고용률', '👔', '%p')
             
             regions_data = []
-            nationwide_value = None
+            nationwide_value = 0.2  # 기본값
             
             for idx, row in df.iterrows():
-                region = str(row.iloc[3] if len(row) > 3 else '')
+                region = self.normalize_region(row.get(region_col))
+                level = row.get(level_col)
                 
-                # 증감 컬럼
-                change_value = row.iloc[16] if len(row) > 16 else 0
+                if pd.isna(level) or level != 0:
+                    continue
                 
-                if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if '전국' in region or region_short == '전국':
+                change_value = row.get(change_col)
+                
+                if pd.notna(change_value) and region:
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -269,38 +374,54 @@ class 인포그래픽Generator:
                 'unit': '(전년동분기대비, %p)',
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{abs(r['value']):.1f}"} for r in bottom3],
-                'nationwide_value': f"{nationwide_value:.1f}%p" if nationwide_value else "0.2%p",
-                'nationwide_change': nationwide_value if nationwide_value else 0.2
+                'nationwide_value': f"{nationwide_value:.1f}%p",
+                'nationwide_change': nationwide_value,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"고용률 데이터 추출 오류: {e}")
+            import traceback
+            traceback.print_exc()
             return self._get_default_indicator('고용률', '👔', '%p')
     
     def extract_price(self):
         """소비자물가 데이터 추출"""
         try:
-            df = pd.read_excel(self.xl, sheet_name='E(품목성질물가)분석')
+            df = pd.read_excel(self.xl, sheet_name='E(품목성질물가)분석', header=2)
+            
+            # 컬럼 찾기 (첫 번째 컬럼이 지역이름)
+            region_col = self.get_column_by_name(df, '이름')
+            if region_col is None:
+                region_col = df.columns[0]
+            
+            level_col = self.get_column_by_name(df, '단계')
+            if level_col is None:
+                level_col = df.columns[1]
+            
+            # 2025 2/4 컬럼
+            change_col = '2025 2/4' if '2025 2/4' in df.columns else None
+            
+            if not change_col:
+                return self._get_default_indicator('소비자물가', '💰')
             
             regions_data = []
-            nationwide_value = None
+            nationwide_value = 2.1  # 기본값
             
             for idx, row in df.iterrows():
-                region = str(row.iloc[3] if len(row) > 3 else '')
-                level = row.iloc[4] if len(row) > 4 else None
+                region = self.normalize_region(row.get(region_col))
+                level = row.get(level_col)
                 
                 if pd.isna(level) or level != 0:
                     continue
                 
-                # 증감률 컬럼
-                change_value = row.iloc[16] if len(row) > 16 else 0
+                change_value = row.get(change_col)
                 
-                if pd.notna(change_value):
-                    region_short = self.normalize_region(region)
-                    if '전국' in region or region_short == '전국':
+                if pd.notna(change_value) and region:
+                    if region == '전국':
                         nationwide_value = float(change_value)
-                    elif region_short in REGION_MAPPING.values():
+                    elif region in REGIONS_17:
                         regions_data.append({
-                            'name': region_short,
+                            'name': region,
                             'value': float(change_value)
                         })
             
@@ -315,11 +436,14 @@ class 인포그래픽Generator:
                 'unit': '(전년동분기대비, %)',
                 'top_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in top3],
                 'bottom_regions': [{'name': r['name'], 'value': f"{r['value']:.1f}"} for r in bottom3],
-                'nationwide_value': f"{nationwide_value:.1f}%" if nationwide_value else "2.1%",
-                'nationwide_change': nationwide_value if nationwide_value else 2.1
+                'nationwide_value': f"{nationwide_value:.1f}%",
+                'nationwide_change': nationwide_value,
+                'all_regions': regions_data
             }
         except Exception as e:
             print(f"소비자물가 데이터 추출 오류: {e}")
+            import traceback
+            traceback.print_exc()
             return self._get_default_indicator('소비자물가', '💰')
     
     def _get_default_indicator(self, name, icon, unit='%'):
@@ -367,7 +491,8 @@ class 인포그래픽Generator:
             'top_regions': [{'name': r[0], 'value': f"{r[1]:.1f}"} for r in data['top']],
             'bottom_regions': [{'name': r[0], 'value': f"{r[1]:.1f}"} for r in data['bottom']],
             'nationwide_value': f"{data['nationwide']:.1f}{unit_suffix}",
-            'nationwide_change': data['nationwide']
+            'nationwide_change': data['nationwide'],
+            'all_regions': []
         }
     
     def extract_all_data(self):
@@ -434,4 +559,3 @@ if __name__ == '__main__':
     html = generator.render_html(str(template_path), str(output_path))
     
     print(f"인포그래픽 생성 완료: {output_path}")
-

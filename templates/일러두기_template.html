@@ -212,7 +212,7 @@
             
             {% for indicator in content.indicators %}
             <div class="sub-dash">
-                {{ indicator.type }}: {{ indicator.items | join(', ') }}{% if indicator.note %}<sup>*</sup>{% endif %}
+                {{ indicator.type }}: {% for item in indicator.stat_items %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}{% if indicator.note %}<sup>*</sup>{% endif %}
             </div>
             {% if indicator.note %}
             <div class="note">{{ indicator.note }}</div>

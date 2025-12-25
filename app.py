@@ -15,6 +15,9 @@ from werkzeug.utils import secure_filename
 import pandas as pd
 from jinja2 import Template
 
+# 데이터 변환 모듈 임포트
+from data_converter import DataConverter, convert_raw_to_analysis
+
 # 프로젝트 루트 설정
 BASE_DIR = Path(__file__).parent
 TEMPLATES_DIR = BASE_DIR / 'templates'
@@ -645,19 +648,44 @@ def generate_grdp_reference_html(excel_path):
         year = session.get('year', 2025)
         quarter = session.get('quarter', 2)
         
-        # 참고_GRDP Generator 로드 시도
-        grdp_generator_path = TEMPLATES_DIR / '참고_GRDP_generator.py'
         grdp_data = None
         
-        if grdp_generator_path.exists():
-            spec = importlib.util.spec_from_file_location('참고_GRDP_generator', str(grdp_generator_path))
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            if hasattr(module, 'generate_report_data'):
-                grdp_data = module.generate_report_data(excel_path)
+        # 1. 세션에서 추출된 GRDP 데이터 확인 (기초자료에서 추출된 경우)
+        if 'grdp_data' in session and session['grdp_data']:
+            grdp_data = session['grdp_data']
+            print(f"[GRDP] 세션에서 GRDP 데이터 로드 (전국 {grdp_data['national_summary']['growth_rate']}%)")
         
-        # Generator가 없거나 실패하면 기본 데이터 사용
+        # 2. 추출된 JSON 파일 확인
+        if grdp_data is None:
+            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+            if grdp_json_path.exists():
+                with open(grdp_json_path, 'r', encoding='utf-8') as f:
+                    grdp_data = json.load(f)
+                print(f"[GRDP] JSON 파일에서 GRDP 데이터 로드")
+        
+        # 3. 기초자료 수집표에서 직접 추출 시도
+        if grdp_data is None and session.get('raw_excel_path'):
+            raw_path = session.get('raw_excel_path')
+            try:
+                converter = DataConverter(raw_path)
+                grdp_data = converter.extract_grdp_data()
+                session['grdp_data'] = grdp_data
+                print(f"[GRDP] 기초자료에서 GRDP 데이터 추출")
+            except Exception as e:
+                print(f"[GRDP] 기초자료 추출 실패: {e}")
+        
+        # 4. 참고_GRDP Generator 로드 시도 (기존 방식)
+        if grdp_data is None:
+            grdp_generator_path = TEMPLATES_DIR / '참고_GRDP_generator.py'
+            if grdp_generator_path.exists():
+                spec = importlib.util.spec_from_file_location('참고_GRDP_generator', str(grdp_generator_path))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                if hasattr(module, 'generate_report_data'):
+                    grdp_data = module.generate_report_data(excel_path, year, quarter, use_sample=True)
+        
+        # 5. Generator가 없거나 실패하면 기본 데이터 사용
         if grdp_data is None:
             grdp_data = _get_default_grdp_data(year, quarter)
         
@@ -1057,9 +1085,40 @@ def index():
     return render_template('dashboard.html', reports=REPORT_ORDER, regional_reports=REGIONAL_REPORTS)
 
 
+def detect_file_type(filepath: str) -> str:
+    """엑셀 파일 유형 자동 감지 (기초자료 수집표 vs 분석표)"""
+    try:
+        xl = pd.ExcelFile(filepath)
+        sheet_names = xl.sheet_names
+        
+        # 기초자료 수집표 특징: '광공업생산', '서비스업생산', '분기 GRDP' 등의 시트
+        raw_indicators = ['광공업생산', '서비스업생산', '고용률', '분기 GRDP']
+        raw_count = sum(1 for s in raw_indicators if s in sheet_names)
+        
+        # 분석표 특징: 'A 분석', 'B 분석' 등의 시트
+        analysis_indicators = ['A 분석', 'B 분석', 'C 분석', 'D(고용률)분석']
+        analysis_count = sum(1 for s in analysis_indicators if s in sheet_names)
+        
+        if raw_count >= 2:
+            return 'raw'  # 기초자료 수집표
+        elif analysis_count >= 2:
+            return 'analysis'  # 분석표
+        else:
+            # 파일명으로 추정
+            filename = Path(filepath).stem.lower()
+            if '기초' in filename or '수집' in filename:
+                return 'raw'
+            elif '분석' in filename:
+                return 'analysis'
+            return 'analysis'  # 기본값
+    except Exception as e:
+        print(f"[경고] 파일 유형 감지 실패: {e}")
+        return 'analysis'
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload_excel():
-    """엑셀 파일 업로드"""
+    """엑셀 파일 업로드 (기초자료 수집표 또는 분석표)"""
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '파일이 없습니다'})
     
@@ -1074,21 +1133,75 @@ def upload_excel():
     filepath = Path(app.config['UPLOAD_FOLDER']) / filename
     file.save(str(filepath))
     
-    # 연도/분기 추출
-    year, quarter = extract_year_quarter_from_excel(str(filepath))
+    # 파일 유형 자동 감지
+    file_type = detect_file_type(str(filepath))
     
-    # 세션에 파일 경로 저장
-    session['excel_path'] = str(filepath)
+    # 파일 유형에 따른 처리
+    analysis_path = str(filepath)
+    grdp_data = None
+    conversion_info = None
+    
+    if file_type == 'raw':
+        # 기초자료 수집표인 경우: 분석표로 변환 + GRDP 추출
+        print(f"[업로드] 기초자료 수집표 감지 → 분석표 변환 시작")
+        try:
+            converter = DataConverter(str(filepath))
+            
+            # 분석표 생성
+            analysis_filename = f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx"
+            analysis_path = str(UPLOAD_FOLDER / analysis_filename)
+            converter.convert_all(analysis_path)
+            
+            # GRDP 데이터 추출
+            grdp_data = converter.extract_grdp_data()
+            
+            # GRDP JSON 저장
+            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+            with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+            
+            conversion_info = {
+                'original_file': filename,
+                'analysis_file': analysis_filename,
+                'grdp_extracted': True,
+                'national_growth_rate': grdp_data['national_summary']['growth_rate'],
+                'top_region': grdp_data['top_region']['name'],
+                'top_region_growth': grdp_data['top_region']['growth_rate']
+            }
+            
+            print(f"[업로드] 변환 완료: {analysis_filename}")
+            print(f"[업로드] GRDP 추출 - 전국: {grdp_data['national_summary']['growth_rate']}%, 1위: {grdp_data['top_region']['name']}")
+            
+        except Exception as e:
+            import traceback
+            print(f"[오류] 기초자료 변환 실패: {e}")
+            traceback.print_exc()
+            # 변환 실패 시 원본 파일 사용
+            analysis_path = str(filepath)
+    
+    # 연도/분기 추출
+    year, quarter = extract_year_quarter_from_excel(analysis_path)
+    
+    # 세션에 저장
+    session['excel_path'] = analysis_path
+    session['raw_excel_path'] = str(filepath) if file_type == 'raw' else None
     session['year'] = year
     session['quarter'] = quarter
+    session['file_type'] = file_type
+    
+    # GRDP 데이터 세션 저장
+    if grdp_data:
+        session['grdp_data'] = grdp_data
     
     return jsonify({
         'success': True,
         'filename': filename,
+        'file_type': file_type,
         'year': year,
         'quarter': quarter,
         'reports': REPORT_ORDER,
-        'regional_reports': REGIONAL_REPORTS
+        'regional_reports': REGIONAL_REPORTS,
+        'conversion_info': conversion_info
     })
 
 
@@ -1175,7 +1288,7 @@ def generate_summary_preview():
                 'summary': {'page': 1},
                 'sector': {
                     'page': 5,
-                    'items': [
+                    'entries': [
                         {'number': 1, 'name': '광공업생산', 'page': 5},
                         {'number': 2, 'name': '서비스업생산', 'page': 7},
                         {'number': 3, 'name': '소비동향', 'page': 9},
@@ -1190,7 +1303,7 @@ def generate_summary_preview():
                 },
                 'region': {
                     'page': 25,
-                    'items': [
+                    'entries': [
                         {'number': 1, 'name': '서울특별시', 'page': 25},
                         {'number': 2, 'name': '부산광역시', 'page': 27},
                         {'number': 3, 'name': '대구광역시', 'page': 29},
@@ -1225,13 +1338,13 @@ def generate_summary_preview():
                 'description': f'본 보도자료는 {year}년 {quarter}/4분기 시·도별 지역경제동향을 수록하였습니다.',
                 'indicator_note': '수록 지표는 총 7개 부문으로 다음과 같습니다.',
                 'indicators': [
-                    {'type': '생산', 'items': ['광공업생산지수', '서비스업생산지수']},
-                    {'type': '소비', 'items': ['소매판매액지수']},
-                    {'type': '건설', 'items': ['건설수주액']},
-                    {'type': '수출입', 'items': ['수출액', '수입액']},
-                    {'type': '물가', 'items': ['소비자물가지수']},
-                    {'type': '고용', 'items': ['고용률', '실업률']},
-                    {'type': '인구', 'items': ['국내인구이동']}
+                    {'type': '생산', 'stat_items': ['광공업생산지수', '서비스업생산지수']},
+                    {'type': '소비', 'stat_items': ['소매판매액지수']},
+                    {'type': '건설', 'stat_items': ['건설수주액']},
+                    {'type': '수출입', 'stat_items': ['수출액', '수입액']},
+                    {'type': '물가', 'stat_items': ['소비자물가지수']},
+                    {'type': '고용', 'stat_items': ['고용률', '실업률']},
+                    {'type': '인구', 'stat_items': ['국내인구이동']}
                 ]
             }
             report_data['contacts'] = [
@@ -1909,6 +2022,278 @@ def get_session_info():
         'quarter': session.get('quarter'),
         'has_file': bool(session.get('excel_path'))
     })
+
+
+@app.route('/preview/infographic')
+def preview_infographic():
+    """인포그래픽 미리보기 (직접 접근용)"""
+    from flask import send_file
+    output_path = TEMPLATES_DIR / '인포그래픽_output.html'
+    if output_path.exists():
+        return send_file(output_path)
+    return "인포그래픽이 아직 생성되지 않았습니다.", 404
+
+
+@app.route('/api/export-final', methods=['POST'])
+def export_final_document():
+    """모든 보고서를 하나의 HTML 문서로 합치기"""
+    try:
+        data = request.get_json()
+        pages = data.get('pages', [])  # [{html: '...', title: '...'}, ...]
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 최종 HTML 문서 생성
+        final_html = f'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{year}년 {quarter}/4분기 지역경제동향</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            background: white;
+        }}
+        
+        /* 페이지 컨테이너 */
+        .page {{
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm 25mm 20mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }}
+        
+        .page:last-child {{
+            page-break-after: auto;
+        }}
+        
+        /* 페이지 내용 */
+        .page-content {{
+            width: 100%;
+            min-height: calc(297mm - 40mm);
+        }}
+        
+        .page-content > * {{
+            max-width: 100%;
+        }}
+        
+        /* 페이지 번호 */
+        .page-number {{
+            position: absolute;
+            bottom: 10mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10pt;
+            color: #666;
+        }}
+        
+        /* iframe 내용 스타일 오버라이드 */
+        .page-content iframe {{
+            border: none;
+            width: 100%;
+            min-height: 250mm;
+        }}
+        
+        /* 인쇄용 스타일 */
+        @media print {{
+            body {{
+                background: white;
+            }}
+            
+            .page {{
+                width: 210mm;
+                min-height: 297mm;
+                padding: 15mm 20mm 25mm 20mm;
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }}
+            
+            .page:last-child {{
+                page-break-after: auto;
+            }}
+            
+            .page-number {{
+                position: absolute;
+                bottom: 10mm;
+            }}
+        }}
+        
+        @page {{
+            size: A4;
+            margin: 0;
+        }}
+    </style>
+</head>
+<body>
+'''
+        
+        # 각 페이지 추가
+        for idx, page in enumerate(pages, 1):
+            page_html = page.get('html', '')
+            page_title = page.get('title', f'페이지 {idx}')
+            
+            # HTML에서 body 내용만 추출
+            body_content = page_html
+            if '<body' in page_html:
+                start = page_html.find('<body')
+                start = page_html.find('>', start) + 1
+                end = page_html.find('</body>')
+                if end > start:
+                    body_content = page_html[start:end]
+            
+            # 스타일 추출 (head에서)
+            style_content = ''
+            if '<style' in page_html:
+                style_start = page_html.find('<style')
+                style_end = page_html.find('</style>') + 8
+                if style_end > style_start:
+                    style_content = page_html[style_start:style_end]
+            
+            final_html += f'''
+    <div class="page" data-page="{idx}">
+        {style_content}
+        <div class="page-content">
+            {body_content}
+        </div>
+        <div class="page-number">{idx}</div>
+    </div>
+'''
+        
+        final_html += '''
+</body>
+</html>
+'''
+        
+        # 파일로 저장
+        output_filename = f'지역경제동향_{year}년_{quarter}분기.html'
+        output_path = UPLOAD_FOLDER / output_filename
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
+        return jsonify({
+            'success': True,
+            'html': final_html,
+            'filename': output_filename,
+            'download_url': f'/uploads/{output_filename}',
+            'total_pages': len(pages)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/uploads/<filename>')
+def download_file(filename):
+    """업로드된 파일 다운로드"""
+    from flask import send_from_directory
+    return send_from_directory(str(UPLOAD_FOLDER), filename, as_attachment=True)
+
+
+@app.route('/view/<filename>')
+def view_file(filename):
+    """파일 직접 보기 (다운로드 없이)"""
+    from flask import send_from_directory
+    return send_from_directory(str(UPLOAD_FOLDER), filename, as_attachment=False)
+
+
+@app.route('/api/export-hwpx', methods=['POST'])
+def export_hwpx_document():
+    """모든 보고서를 HWPX (한글) 파일로 내보내기"""
+    try:
+        from hwpx_generator import create_hwpx_from_html
+        
+        data = request.get_json()
+        pages = data.get('pages', [])
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # HWPX 파일명 생성
+        output_filename = f'지역경제동향_{year}년_{quarter}분기.hwpx'
+        output_path = str(UPLOAD_FOLDER / output_filename)
+        
+        # HWPX 생성
+        result = create_hwpx_from_html(pages, year, quarter, output_path)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'filename': output_filename,
+                'download_url': f'/uploads/{output_filename}',
+                'view_url': f'/view/{output_filename}',
+                'total_pages': result.get('pages_count', len(pages)),
+                'images_count': result.get('images_count', 0)
+            })
+        else:
+            return jsonify({'success': False, 'error': result.get('error', '알 수 없는 오류')})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/render-chart-image', methods=['POST'])
+def render_chart_image():
+    """차트/인포그래픽을 이미지로 렌더링 (클라이언트측에서 canvas.toDataURL 호출용)"""
+    try:
+        data = request.get_json()
+        image_data = data.get('image_data', '')  # base64 data URL
+        filename = data.get('filename', 'chart.png')
+        
+        if not image_data:
+            return jsonify({'success': False, 'error': '이미지 데이터가 없습니다.'})
+        
+        # data:image/png;base64,... 형식 처리
+        import re
+        import base64
+        
+        match = re.match(r'data:([^;]+);base64,(.+)', image_data)
+        if match:
+            mimetype = match.group(1)
+            img_data = base64.b64decode(match.group(2))
+            
+            # 파일 저장
+            img_path = UPLOAD_FOLDER / filename
+            with open(img_path, 'wb') as f:
+                f.write(img_data)
+            
+            return jsonify({
+                'success': True,
+                'filename': filename,
+                'path': str(img_path),
+                'url': f'/uploads/{filename}'
+            })
+        else:
+            return jsonify({'success': False, 'error': '잘못된 이미지 데이터 형식입니다.'})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
 
 
 if __name__ == '__main__':

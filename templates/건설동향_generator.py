@@ -60,11 +60,23 @@ def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
     
-    # F'분석 시트 로드
-    df_analysis = pd.read_excel(xl, sheet_name="F'분석", header=None)
+    # F'분석 시트 로드 (여러 가능한 이름 시도)
+    possible_analysis_sheets = ["F'분석", "F'분석", "F 분석", "F분석"]
+    df_analysis = None
+    
+    for sheet_name in possible_analysis_sheets:
+        if sheet_name in xl.sheet_names:
+            try:
+                df_analysis = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+                break
+            except:
+                continue
+    
+    if df_analysis is None:
+        raise ValueError(f"건설동향 분석 시트를 찾을 수 없습니다. 시트 목록: {xl.sheet_names}")
     
     # F'집계 시트 찾기 (여러 이름 시도)
-    possible_index_sheets = ["F'집계", "F'분석", "F 집계", "F집계"]
+    possible_index_sheets = ["F'(건설)집계", "F'집계", "F'분석", "F 집계", "F집계"]
     df_index = None
     
     for sheet_name in possible_index_sheets:
@@ -378,14 +390,18 @@ def generate_report_data(excel_path):
     increase_types = set()
     for r in regional_data['increase_regions'][:3]:
         for t in r['top_types'][:2]:
-            increase_types.add(t['name'])
-    increase_types_text = ', '.join(list(increase_types)[:3])
+            type_name = t.get('name', '')
+            if isinstance(type_name, str) and type_name:
+                increase_types.add(type_name)
+    increase_types_text = ', '.join([str(t) for t in list(increase_types)[:3]]) if increase_types else ''
     
     decrease_types = set()
     for r in regional_data['decrease_regions'][:3]:
         for t in r['top_types'][:2]:
-            decrease_types.add(t['name'])
-    decrease_types_text = ', '.join(list(decrease_types)[:3])
+            type_name = t.get('name', '')
+            if isinstance(type_name, str) and type_name:
+                decrease_types.add(type_name)
+    decrease_types_text = ', '.join([str(t) for t in list(decrease_types)[:3]]) if decrease_types else ''
     
     # 템플릿 데이터
     return {

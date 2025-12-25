@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+a#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 참고 GRDP (지역내총생산) 보고서 생성기
@@ -223,7 +223,30 @@ class 참고_GRDP_Generator:
 
 
 def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
-    """보고서 데이터 생성 함수 (app.py에서 호출)"""
+    """보고서 데이터 생성 함수 (app.py에서 호출)
+    
+    우선순위:
+    1. 추출된 GRDP JSON 파일이 있으면 사용
+    2. use_sample=True면 샘플 데이터 사용
+    3. 그 외 플레이스홀더 데이터 사용
+    """
+    import json
+    
+    # 1. 추출된 GRDP JSON 파일 확인
+    grdp_json_path = Path(__file__).parent / 'grdp_extracted.json'
+    if grdp_json_path.exists():
+        try:
+            with open(grdp_json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            # 연도/분기 업데이트
+            data['report_info']['year'] = year
+            data['report_info']['quarter'] = quarter
+            print(f"[GRDP Generator] JSON에서 GRDP 데이터 로드 (전국 {data['national_summary']['growth_rate']}%)")
+            return data
+        except Exception as e:
+            print(f"[GRDP Generator] JSON 로드 실패: {e}")
+    
+    # 2. Generator 사용
     generator = 참고_GRDP_Generator(excel_path)
     
     if use_sample:

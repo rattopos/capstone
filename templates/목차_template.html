@@ -164,7 +164,7 @@
                 </div>
                 
                 <div class="toc-subsection">
-                    {% for item in sections.sector.items %}
+                    {% for item in sections.sector.entries %}
                     <div class="toc-item">
                         <span class="title">{{ item.number }}. {{ item.name }}</span>
                         <span class="dots"></span>
@@ -185,7 +185,7 @@
                 </div>
                 
                 <div class="toc-subsection">
-                    {% for item in sections.region.items %}
+                    {% for item in sections.region.entries %}
                     <div class="toc-item">
                         <span class="title">{{ item.number }}. {{ item.name }}</span>
                         <span class="dots"></span>
