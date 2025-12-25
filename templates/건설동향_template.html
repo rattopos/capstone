@@ -174,24 +174,26 @@
                 등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
                 {% endif %}
             </div>
-            <div class="nationwide">전국 건설수주({{ "%.1f"|format(nationwide_data.construction_index) }}억원)는 
+            <div class="nationwide">전국 건설수주({% if nationwide_data.construction_index is not none %}{{ "%.1f"|format(nationwide_data.construction_index) }}{% else %}0.0{% endif %}억원)는 
                 {% for t in nationwide_data.main_types %}{{ t.name }}{% if not loop.last %}, {% endif %}{% endfor %} 등의 수주가 
-                {% if nationwide_data.growth_rate >= 0 %}
+                {% if nationwide_data.growth_rate is not none and nationwide_data.growth_rate >= 0 %}
                 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span>
-                {% else %}
+                {% elif nationwide_data.growth_rate is not none and nationwide_data.growth_rate < 0 %}
                 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 감소</span>
+                {% else %}
+                줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(0.0) }}% 감소</span>
                 {% endif %}
             </div>
             <div class="regional">
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ increase_types_text }} 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
+                <span class="highlight">{{ region.region }}</span>({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {% if increase_types_text %}{{ increase_types_text }}{% else %}nan{% endif %} 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
                 {% endif %}
                 {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ decrease_types_text }} 등의 수주가 줄어 <span class="decrease">감소</span>
+                <span class="highlight">{{ region.region }}</span>({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {% if decrease_types_text %}{{ decrease_types_text }}{% else %}nan{% endif %} 등의 수주가 줄어 <span class="decrease">감소</span>
                 {% endif %}
             </div>
         </div>
@@ -201,9 +203,9 @@
             <div class="title">&lt; 주요 증감지역 및 공종 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">전 국( {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
+            <div class="item">전 국( {% if nationwide_data.growth_rate is not none %}{{ "%.1f"|format(nationwide_data.growth_rate) }}{% else %}nan{% endif %}%): 
                 {% for t in nationwide_data.main_types[:3] %}
-                {{ t.name }}({{ "%.1f"|format(t.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             
@@ -211,9 +213,9 @@
             
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">{{ region.region }}( {% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%): 
                 {% for t in region.types %}
-                {{ t.name }}({{ "%.1f"|format(t.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -222,9 +224,9 @@
             
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">{{ region.region }}({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%): 
                 {% for t in region.types %}
-                {{ t.name }}({{ "%.1f"|format(t.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -261,10 +263,10 @@
                         <td>{{ row.region }}</td>
                         {% endif %}
                         {% for rate in row.growth_rates %}
-                        <td>{{ "%.1f"|format(rate) }}</td>
+                        <td>{% if rate is not none %}{{ "%.1f"|format(rate) }}{% else %}<span class="editable-placeholder" contenteditable="true">[  ]</span>{% endif %}</td>
                         {% endfor %}
                         {% for idx in row.indices %}
-                        <td class="index-section">{{ "%.1f"|format(idx) }}</td>
+                        <td class="index-section">{% if idx is not none %}{{ "%.1f"|format(idx) }}{% else %}<span class="editable-placeholder" contenteditable="true">[  ]</span>{% endif %}</td>
                         {% endfor %}
                     </tr>
                     {% endfor %}

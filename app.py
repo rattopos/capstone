@@ -486,7 +486,7 @@ def check_missing_data(data, report_id):
     return missing_fields
 
 
-def generate_report_html(excel_path, report_config, year, quarter, custom_data=None):
+def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
     """보고서 HTML 생성"""
     try:
         generator_name = report_config['generator']
@@ -497,6 +497,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"\n[DEBUG] ========== {report_name} 보고서 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
+        if raw_excel_path:
+            print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
         
         # Generator 모듈 로드
         module = load_generator_module(generator_name)
@@ -521,10 +523,30 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # ========== 데이터 추출 방식 결정 ==========
         
-        # 방법 1: generate_report_data 함수 사용 (물가동향, 실업률, 수출, 수입, 국내인구이동)
+        # 방법 1: generate_report_data 함수 사용 (물가동향, 실업률, 수출, 수입, 국내인구이동, 건설동향)
         if hasattr(module, 'generate_report_data'):
             print(f"[DEBUG] generate_report_data 함수 사용")
-            data = module.generate_report_data(excel_path)
+            # 기초자료 지원 여부 확인 (함수 시그니처 체크는 어려우므로 try-except로 처리)
+            try:
+                # 기초자료 경로가 있고 함수가 raw_excel_path 파라미터를 받을 수 있는지 확인
+                if raw_excel_path:
+                    # 함수 시그니처 확인 불가능하므로 일단 전달 시도
+                    import inspect
+                    sig = inspect.signature(module.generate_report_data)
+                    params = sig.parameters
+                    if 'raw_excel_path' in params or 'use_raw_data' in params:
+                        data = module.generate_report_data(excel_path, raw_excel_path=raw_excel_path, 
+                                                         year=year, quarter=quarter)
+                    else:
+                        data = module.generate_report_data(excel_path)
+                else:
+                    data = module.generate_report_data(excel_path)
+            except TypeError:
+                # 파라미터가 맞지 않으면 기본 방식 사용
+                data = module.generate_report_data(excel_path)
+            except Exception as e:
+                print(f"[WARNING] 기초자료 추출 실패, 분석표 사용: {e}")
+                data = module.generate_report_data(excel_path)
             print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 2: generate_report 함수 직접 호출 (서비스업생산, 소비동향, 고용률)
@@ -633,6 +655,10 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
         
+        # 커스텀 필터 등록
+        template.environment.filters['format_value'] = format_value
+        template.environment.filters['is_missing'] = is_missing
+        
         # 모든 템플릿은 {{ xxx }} 형태로 직접 접근 (통일된 방식)
         html_content = template.render(**data)
         
@@ -681,7 +707,15 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
 
 
 def generate_grdp_reference_html(excel_path):
-    """참고_GRDP 보고서 HTML 생성"""
+    """참고_GRDP 보고서 HTML 생성
+    
+    데이터 소스 우선순위:
+    1. 세션에 저장된 GRDP 데이터 (기초자료에서 추출된 경우)
+    2. grdp_extracted.json 파일
+    3. 기초자료 수집표에서 직접 추출
+    4. 참고_GRDP Generator (플레이스홀더)
+    5. KOSIS API (비활성화 상태)
+    """
     try:
         year = session.get('year', 2025)
         quarter = session.get('quarter', 2)
@@ -723,7 +757,29 @@ def generate_grdp_reference_html(excel_path):
                 if hasattr(module, 'generate_report_data'):
                     grdp_data = module.generate_report_data(excel_path, year, quarter, use_sample=True)
         
-        # 5. Generator가 없거나 실패하면 기본 데이터 사용
+        # 5. KOSIS API에서 데이터 가져오기 시도 (현재 비활성화)
+        # TODO: 향후 활성화 시 아래 주석을 해제하고 kosis_grdp_fetcher 모듈의 ENABLE_KOSIS_GRDP_FETCH를 True로 설정하세요
+        # if grdp_data is None:
+        #     try:
+        #         from kosis_grdp_fetcher import fetch_grdp_from_kosis
+        #         print(f"[GRDP] KOSIS API에서 GRDP 데이터 수집 시도")
+        #         kosis_data = fetch_grdp_from_kosis(
+        #             start_year=2016,
+        #             start_quarter=1,
+        #             end_year=year,
+        #             end_quarter=quarter
+        #         )
+        #         if kosis_data:
+        #             grdp_data = kosis_data
+        #             # 세션에 저장 (다음 요청 시 재사용)
+        #             session['grdp_data'] = grdp_data
+        #             print(f"[GRDP] KOSIS API에서 GRDP 데이터 수집 성공")
+        #     except ImportError:
+        #         print(f"[GRDP] kosis_grdp_fetcher 모듈을 찾을 수 없습니다")
+        #     except Exception as e:
+        #         print(f"[GRDP] KOSIS API 데이터 수집 실패: {e}")
+        
+        # 6. Generator가 없거나 실패하면 기본 데이터 사용
         if grdp_data is None:
             grdp_data = _get_default_grdp_data(year, quarter)
         
@@ -907,7 +963,7 @@ def _generate_default_grdp_html(grdp_data):
     return html
 
 
-def generate_statistics_report_html(excel_path, year, quarter):
+def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=None):
     """통계표 보고서 HTML 생성"""
     try:
         # 통계표 Generator 모듈 로드
@@ -919,8 +975,13 @@ def generate_statistics_report_html(excel_path, year, quarter):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         
-        # Generator 클래스 사용
-        generator = module.통계표Generator(excel_path)
+        # Generator 클래스 사용 (기초자료 경로 전달)
+        generator = module.통계표Generator(
+            excel_path,
+            raw_excel_path=raw_excel_path,
+            current_year=year,
+            current_quarter=quarter
+        )
         template_path = TEMPLATES_DIR / '통계표_template.html'
         
         # HTML 생성
@@ -936,7 +997,7 @@ def generate_statistics_report_html(excel_path, year, quarter):
         return None, error_msg
 
 
-def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
+def generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path=None):
     """개별 통계표 HTML 생성"""
     try:
         stat_id = stat_config['id']
@@ -949,7 +1010,12 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
             spec = importlib.util.spec_from_file_location('통계표_generator', str(generator_path))
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            generator = module.통계표Generator(excel_path)
+            generator = module.통계표Generator(
+                excel_path,
+                raw_excel_path=raw_excel_path,
+                current_year=year,
+                current_quarter=quarter
+            )
         else:
             generator = None
         
@@ -1288,9 +1354,12 @@ def generate_preview():
     if not report_config:
         return jsonify({'success': False, 'error': f'보고서를 찾을 수 없습니다: {report_id}'})
     
+    # 기초자료 경로 가져오기
+    raw_excel_path = session.get('raw_excel_path')
+    
     # HTML 생성
     html_content, error, missing_fields = generate_report_html(
-        excel_path, report_config, year, quarter, custom_data
+        excel_path, report_config, year, quarter, custom_data, raw_excel_path
     )
     
     if error:
@@ -1979,7 +2048,9 @@ def generate_statistics_preview():
         return jsonify({'success': False, 'error': f'통계표를 찾을 수 없습니다: {stat_id}'})
     
     # HTML 생성
-    html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter)
+    # 기초자료 경로 가져오기
+    raw_excel_path = session.get('raw_excel_path')
+    html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path)
     
     if error:
         return jsonify({'success': False, 'error': error})
@@ -2004,7 +2075,9 @@ def generate_statistics_full_preview():
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
     
     # HTML 생성
-    html_content, error = generate_statistics_report_html(excel_path, year, quarter)
+    # 기초자료 경로 가져오기
+    raw_excel_path = session.get('raw_excel_path')
+    html_content, error = generate_statistics_report_html(excel_path, year, quarter, raw_excel_path)
     
     if error:
         return jsonify({'success': False, 'error': error})
@@ -2033,8 +2106,11 @@ def generate_all_reports():
     
     for report_config in REPORT_ORDER:
         custom_data = all_custom_data.get(report_config['id'], {})
+        # 기초자료 경로 가져오기
+        raw_excel_path = session.get('raw_excel_path')
+        
         html_content, error, _ = generate_report_html(
-            excel_path, report_config, year, quarter, custom_data
+            excel_path, report_config, year, quarter, custom_data, raw_excel_path
         )
         
         if error:
