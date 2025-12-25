@@ -216,6 +216,39 @@ class 통계표Generator:
         except (ValueError, TypeError):
             return str(value)
     
+    def _create_empty_table_data(self) -> Dict[str, Any]:
+        """모든 연도/분기/지역에 기본값 '-'가 채워진 데이터 구조 생성"""
+        yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        quarterly_keys = [
+            "2016.4/4",
+            "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
+            "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
+            "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
+            "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
+            "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
+            "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
+            "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
+            "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
+            "2025.1/4", "2025.2/4p"
+        ]
+        
+        # 모든 연도에 대해 모든 지역의 기본값 '-' 설정
+        yearly = {}
+        for year in yearly_years:
+            yearly[year] = {region: "-" for region in self.ALL_REGIONS}
+        
+        # 모든 분기에 대해 모든 지역의 기본값 '-' 설정
+        quarterly = {}
+        for quarter in quarterly_keys:
+            quarterly[quarter] = {region: "-" for region in self.ALL_REGIONS}
+        
+        return {
+            "yearly": yearly,
+            "quarterly": quarterly,
+            "yearly_years": yearly_years,
+            "quarterly_keys": quarterly_keys
+        }
+    
     def extract_table_data(self, table_name: str) -> Dict[str, Any]:
         """특정 통계표의 데이터 추출"""
         config = self.TABLE_CONFIG.get(table_name)
@@ -226,23 +259,16 @@ class 통계표Generator:
         df = self._load_sheet(config["분석_시트"])
         if df is None:
             print(f"시트를 찾을 수 없음: {config['분석_시트']}")
-            return None
+            # 시트가 없어도 기본 구조 반환 (모든 값 '-')
+            return self._create_empty_table_data()
         
-        # 데이터 구조 초기화
-        data = {
-            "yearly": {},
-            "quarterly": {},
-            "yearly_years": [],
-            "quarterly_keys": []
-        }
+        # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
+        data = self._create_empty_table_data()
         
         # 분석표에 있는 연도별 데이터 추출
-        available_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
         analysis_years = list(config["연도_컬럼"].keys())
         
-        for year in available_years:
-            data["yearly"][year] = {}
-            
+        for year in data["yearly_years"]:
             for region in self.ALL_REGIONS:
                 # 분석표에 있는 데이터
                 if year in analysis_years:
@@ -251,15 +277,17 @@ class 통계표Generator:
                         col_idx = config["연도_컬럼"].get(year)
                         if col_idx is not None and col_idx < len(row):
                             value = row.iloc[col_idx]
-                            data["yearly"][year][region] = round(float(value), 1) if pd.notna(value) else None
+                            if pd.notna(value):
+                                try:
+                                    data["yearly"][year][region] = round(float(value), 1)
+                                except (ValueError, TypeError):
+                                    pass  # 기본값 '-' 유지
                 
                 # 과거 데이터 (historical_data에서)
                 elif year in self.historical_data.get(table_name, {}).get("yearly", {}):
                     hist_value = self.historical_data[table_name]["yearly"][year].get(region)
-                    data["yearly"][year][region] = hist_value
-            
-            if data["yearly"][year]:
-                data["yearly_years"].append(year)
+                    if hist_value is not None:
+                        data["yearly"][year][region] = hist_value
         
         # 분기별 데이터 추출
         quarterly_mapping = {
@@ -301,8 +329,6 @@ class 통계표Generator:
         }
         
         for quarter_key, col_key in quarterly_mapping.items():
-            data["quarterly"][quarter_key] = {}
-            
             for region in self.ALL_REGIONS:
                 if col_key:
                     # 분석표에 있는 데이터
@@ -311,7 +337,11 @@ class 통계표Generator:
                         col_idx = config["분기_컬럼"].get(col_key)
                         if col_idx is not None and col_idx < len(row):
                             value = row.iloc[col_idx]
-                            data["quarterly"][quarter_key][region] = round(float(value), 1) if pd.notna(value) else None
+                            if pd.notna(value):
+                                try:
+                                    data["quarterly"][quarter_key][region] = round(float(value), 1)
+                                except (ValueError, TypeError):
+                                    pass  # 기본값 '-' 유지
                 else:
                     # 과거 데이터 (historical_data에서)
                     hist_data = self.historical_data.get(table_name, {}).get("quarterly", {})

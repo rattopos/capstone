@@ -155,7 +155,7 @@
                 <tr class="year-row">
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ data.yearly[year_key][region] | default('-', true) }}</td>
+                    <td>{{ data.yearly[year_key][region] }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -170,7 +170,7 @@
                 <tr class="quarter-row">
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ data.quarterly[quarter_key][region] | default('-', true) }}</td>
+                    <td>{{ data.quarterly[quarter_key][region] }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -202,7 +202,7 @@
                 <tr class="year-row">
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ data.yearly[year_key][region] | default('-', true) }}</td>
+                    <td>{{ data.yearly[year_key][region] }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -217,7 +217,7 @@
                 <tr class="quarter-row">
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ data.quarterly[quarter_key][region] | default('-', true) }}</td>
+                    <td>{{ data.quarterly[quarter_key][region] }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

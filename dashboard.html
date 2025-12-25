@@ -150,6 +150,38 @@
             box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
+        /* Period Display (자동감지) */
+        .period-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .period-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .period-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            padding: 0.3rem 0.8rem;
+            background: var(--accent-glow);
+            border-radius: 8px;
+        }
+
+        .period-value.waiting {
+            color: var(--text-secondary);
+            background: transparent;
+            font-weight: 400;
+        }
+
         /* Main Layout */
         .main-container {
             position: relative;
@@ -892,6 +924,156 @@
             }
         }
 
+        /* Upload Modal */
+        .upload-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1003;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .upload-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .upload-modal-content {
+            width: 90%;
+            max-width: 450px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .upload-modal-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .upload-step.active {
+            border-color: var(--accent-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+        }
+
+        .upload-step.completed {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
+        }
+
+        .upload-step.skipped {
+            opacity: 0.5;
+        }
+
+        .upload-step .step-icon {
+            font-size: 1.2rem;
+            width: 28px;
+            text-align: center;
+        }
+
+        .upload-step .step-text {
+            flex: 1;
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .upload-step .step-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .upload-progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .upload-result {
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border: 1px solid var(--success);
+        }
+
+        .upload-result .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+
+        .upload-result .result-item:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .upload-result .result-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .upload-result .result-value {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
         /* Loading - 큰 진행률 표시 */
         .loading-overlay {
             position: fixed;
@@ -1108,22 +1290,11 @@
                 </div>
             </div>
             <div class="header-controls">
-                <div class="select-group">
-                    <label for="yearSelect">연도</label>
-                    <select id="yearSelect" disabled>
-                        <option value="2024">2024</option>
-                        <option value="2025" selected>2025</option>
-                        <option value="2026">2026</option>
-                    </select>
-                </div>
-                <div class="select-group">
-                    <label for="quarterSelect">분기</label>
-                    <select id="quarterSelect" disabled>
-                        <option value="1">1분기</option>
-                        <option value="2" selected>2분기</option>
-                        <option value="3">3분기</option>
-                        <option value="4">4분기</option>
-                    </select>
+                <div class="period-display" id="periodDisplay">
+                    <span class="period-label">📅 기준기간</span>
+                    <span class="period-value waiting" id="periodValue">파일 업로드 대기중...</span>
+                    <input type="hidden" id="yearSelect" value="2025">
+                    <input type="hidden" id="quarterSelect" value="2">
                 </div>
                 <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
                     ⚙️ 담당자 설정
@@ -1224,7 +1395,7 @@
                 <div class="generation-status-header">
                     <span class="generation-status-title">
                         <span>✅</span>
-                        <span>전체 보고서 생성 완료</span>
+                        <span>미리보기 생성 완료</span>
                     </span>
                     <span class="generation-status-count" id="generationStatusCount">50/50</span>
                 </div>
@@ -1242,7 +1413,7 @@
                 </div>
                 <div class="action-btns">
                     <button class="btn btn-primary" id="generateAllBtn" disabled>
-                        🚀 전체 보고서 생성
+                        🔍 미리보기
                     </button>
                     <button class="btn btn-success" id="exportBtn" style="display: none;">
                         📰 HTML 보도자료
@@ -1279,7 +1450,7 @@
                     <div class="preview-placeholder" id="previewPlaceholder">
                         <div class="preview-placeholder-icon">📊</div>
                         <h3>보고서를 선택하세요</h3>
-                        <p>엑셀 파일 업로드 후 "전체 보고서 생성" 버튼을 클릭하면 모든 보고서가 생성됩니다.</p>
+                        <p>엑셀 파일 업로드 후 "미리보기" 버튼을 클릭하면 모든 보고서가 생성됩니다.</p>
                     </div>
                     <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
                     <!-- 편집 모드용 에디터 -->
@@ -1337,7 +1508,7 @@
                     <div class="missing-field-item">
                         <label class="missing-field-label">부서명</label>
                         <input type="text" class="missing-field-input" id="department" 
-                               placeholder="예: 통계청 경제통계국" value="통계청 경제통계국">
+                               placeholder="예: 국가데이터처 경제통계국" value="국가데이터처 경제통계국">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">과명</label>
@@ -1402,6 +1573,53 @@
         </div>
     </div>
 
+    <!-- Upload Progress Modal -->
+    <div class="upload-modal-overlay" id="uploadModal">
+        <div class="upload-modal-content">
+            <div class="upload-modal-icon" id="uploadModalIcon">📤</div>
+            <h2 class="upload-modal-title" id="uploadModalTitle">파일 업로드 중</h2>
+            <p class="upload-modal-subtitle" id="uploadModalSubtitle">파일을 분석하고 있습니다...</p>
+            
+            <div class="upload-steps">
+                <div class="upload-step" id="uploadStep1">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">파일 업로드</span>
+                    <span class="step-status"></span>
+                </div>
+                <div class="upload-step" id="uploadStep2">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">파일 유형 분석</span>
+                    <span class="step-status"></span>
+                </div>
+                <div class="upload-step" id="uploadStep3">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">분석표 변환</span>
+                    <span class="step-status"></span>
+                </div>
+                <div class="upload-step" id="uploadStep4">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">GRDP 데이터 추출</span>
+                    <span class="step-status"></span>
+                </div>
+            </div>
+            
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+            </div>
+            
+            <div class="upload-result" id="uploadResult" style="display: none;">
+                <div class="result-item">
+                    <span class="result-label">기준기간:</span>
+                    <span class="result-value" id="resultPeriod"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">전국 GRDP:</span>
+                    <span class="result-value" id="resultGrdp"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay with Progress -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
@@ -1428,10 +1646,6 @@
                 <div class="loading-time-item">
                     <span class="loading-time-value" id="elapsedTime">00:00</span>
                     <span class="loading-time-label">경과 시간</span>
-                </div>
-                <div class="loading-time-item">
-                    <span class="loading-time-value" id="remainingTime">--:--</span>
-                    <span class="loading-time-label">예상 남은 시간</span>
                 </div>
             </div>
         </div>
@@ -1506,7 +1720,7 @@
             contactInfo: {
                 release_datetime: '2025. 8. 12.(화) 12:00',
                 distribution_datetime: '2025. 8. 12.(화) 08:30',
-                department: '통계청 경제통계국',
+                department: '국가데이터처 경제통계국',
                 division: '소득통계과',
                 manager_title: '과 장',
                 manager_name: '정선경',
@@ -1558,7 +1772,6 @@
             loadingCurrentIcon: document.getElementById('loadingCurrentIcon'),
             loadingCurrentText: document.getElementById('loadingCurrentText'),
             elapsedTime: document.getElementById('elapsedTime'),
-            remainingTime: document.getElementById('remainingTime'),
             generationStatus: document.getElementById('generationStatus'),
             generationStatusCount: document.getElementById('generationStatusCount'),
             generationMiniFill: document.getElementById('generationMiniFill'),
@@ -1687,7 +1900,7 @@
             updateNavigationButtons();
         }
 
-        // ===== 전체 보고서 생성 =====
+        // ===== 미리보기 생성 =====
         async function generateAllReports() {
             if (!state.fileUploaded) {
                 showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
@@ -1819,19 +2032,6 @@
                 
                 elements.elapsedTime.textContent = 
                     `${String(elapsedMin).padStart(2, '0')}:${String(elapsedSecRemainder).padStart(2, '0')}`;
-                
-                // 예상 남은 시간 계산
-                if (state.generationStats.completed > 0) {
-                    const avgTimePerItem = elapsed / state.generationStats.completed;
-                    const remaining = state.generationStats.total - state.generationStats.completed;
-                    const remainingMs = avgTimePerItem * remaining;
-                    const remainingSec = Math.floor(remainingMs / 1000);
-                    const remainingMin = Math.floor(remainingSec / 60);
-                    const remainingSecRemainder = remainingSec % 60;
-                    
-                    elements.remainingTime.textContent = 
-                        `${String(remainingMin).padStart(2, '0')}:${String(remainingSecRemainder).padStart(2, '0')}`;
-                }
             }, 1000);
         }
 
@@ -1858,7 +2058,7 @@
         // ===== 보고서 선택 (캐시에서 표시) =====
         function selectSummaryReport(index) {
             if (!state.allGenerated) {
-                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
                 return;
             }
 
@@ -1880,7 +2080,7 @@
 
         function selectReport(index) {
             if (!state.allGenerated) {
-                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
                 return;
             }
 
@@ -1902,7 +2102,7 @@
 
         function selectRegionalReport(index) {
             if (!state.allGenerated) {
-                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
                 return;
             }
 
@@ -1924,7 +2124,7 @@
 
         function selectStatisticsReport(index) {
             if (!state.allGenerated) {
-                showToast('먼저 "전체 보고서 생성" 버튼을 클릭하세요.', 'warning');
+                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
                 return;
             }
 
@@ -2227,16 +2427,87 @@
             if (file) uploadFile(file);
         }
 
+        // 업로드 모달 관련 함수
+        function showUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.add('active');
+            
+            // 초기화
+            document.getElementById('uploadModalIcon').textContent = '📤';
+            document.getElementById('uploadModalTitle').textContent = '파일 업로드 중';
+            document.getElementById('uploadModalSubtitle').textContent = '파일을 분석하고 있습니다...';
+            document.getElementById('uploadProgressFill').style.width = '0%';
+            document.getElementById('uploadResult').style.display = 'none';
+            
+            // 모든 스텝 초기화
+            ['uploadStep1', 'uploadStep2', 'uploadStep3', 'uploadStep4'].forEach(id => {
+                const step = document.getElementById(id);
+                step.className = 'upload-step';
+                step.querySelector('.step-icon').textContent = '⏳';
+                step.querySelector('.step-status').textContent = '';
+            });
+        }
+        
+        function updateUploadStep(stepNum, status, statusText = '') {
+            const step = document.getElementById(`uploadStep${stepNum}`);
+            const icon = step.querySelector('.step-icon');
+            const statusEl = step.querySelector('.step-status');
+            
+            step.className = 'upload-step';
+            
+            if (status === 'active') {
+                step.classList.add('active');
+                icon.textContent = '🔄';
+                statusEl.textContent = '진행 중...';
+            } else if (status === 'completed') {
+                step.classList.add('completed');
+                icon.textContent = '✅';
+                statusEl.textContent = statusText || '완료';
+            } else if (status === 'skipped') {
+                step.classList.add('skipped');
+                icon.textContent = '⏭️';
+                statusEl.textContent = '건너뜀';
+            } else if (status === 'error') {
+                step.classList.add('error');
+                icon.textContent = '❌';
+                statusEl.textContent = statusText || '실패';
+            }
+            
+            // 진행률 업데이트
+            const progress = (stepNum / 4) * 100;
+            document.getElementById('uploadProgressFill').style.width = `${progress}%`;
+        }
+        
+        function hideUploadModal(delay = 0) {
+            setTimeout(() => {
+                document.getElementById('uploadModal').classList.remove('active');
+            }, delay);
+        }
+
         async function uploadFile(file) {
             if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
                 showToast('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.', 'error');
                 return;
             }
 
+            // 업로드 모달 표시
+            showUploadModal();
+            
+            // Step 1: 파일 업로드
+            updateUploadStep(1, 'active');
+            
             const formData = new FormData();
             formData.append('file', file);
 
             try {
+                // Step 1 완료
+                await new Promise(r => setTimeout(r, 300));
+                updateUploadStep(1, 'completed', file.name);
+                
+                // Step 2: 파일 유형 분석
+                updateUploadStep(2, 'active');
+                document.getElementById('uploadModalSubtitle').textContent = '파일 유형을 분석하고 있습니다...';
+                
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData
@@ -2245,6 +2516,51 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // Step 2 완료
+                    const fileTypeText = data.file_type === 'raw' ? '기초자료 수집표' : '분석표';
+                    updateUploadStep(2, 'completed', fileTypeText);
+                    
+                    // Step 3: 분석표 변환
+                    if (data.file_type === 'raw' && data.conversion_info) {
+                        updateUploadStep(3, 'active');
+                        document.getElementById('uploadModalSubtitle').textContent = '분석표로 변환하고 있습니다...';
+                        await new Promise(r => setTimeout(r, 500));
+                        updateUploadStep(3, 'completed', data.conversion_info.analysis_file);
+                        
+                        // Step 4: GRDP 추출
+                        if (data.conversion_info.grdp_extracted) {
+                            updateUploadStep(4, 'active');
+                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추출하고 있습니다...';
+                            await new Promise(r => setTimeout(r, 500));
+                            updateUploadStep(4, 'completed', `전국 ${data.conversion_info.national_growth_rate}%`);
+                        } else {
+                            updateUploadStep(4, 'skipped');
+                        }
+                    } else {
+                        // 분석표인 경우 Step 3, 4 건너뜀
+                        updateUploadStep(3, 'skipped');
+                        updateUploadStep(4, 'skipped');
+                    }
+                    
+                    // 완료 상태 표시
+                    document.getElementById('uploadModalIcon').textContent = '✅';
+                    document.getElementById('uploadModalTitle').textContent = '업로드 완료!';
+                    document.getElementById('uploadModalSubtitle').textContent = '파일 처리가 완료되었습니다.';
+                    document.getElementById('uploadProgressFill').style.width = '100%';
+                    
+                    // 결과 표시
+                    const resultDiv = document.getElementById('uploadResult');
+                    resultDiv.style.display = 'block';
+                    document.getElementById('resultPeriod').textContent = `${data.year}년 ${data.quarter}분기`;
+                    
+                    if (data.conversion_info && data.conversion_info.grdp_extracted) {
+                        document.getElementById('resultGrdp').textContent = 
+                            `${data.conversion_info.national_growth_rate}% (1위: ${data.conversion_info.top_region})`;
+                    } else {
+                        document.getElementById('resultGrdp').textContent = '-';
+                    }
+                    
+                    // 기존 UI 업데이트
                     state.fileUploaded = true;
                     state.fileType = data.file_type;
                     
@@ -2253,7 +2569,6 @@
                     elements.uploadFilename.style.display = 'block';
                     elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
                     
-                    // 파일 유형에 따른 메시지
                     if (data.file_type === 'raw') {
                         elements.uploadZone.querySelector('.upload-text').textContent = '기초자료 → 분석표 변환 완료!';
                     } else {
@@ -2262,11 +2577,14 @@
 
                     elements.yearSelect.value = data.year;
                     elements.quarterSelect.value = data.quarter;
-                    elements.yearSelect.disabled = false;
-                    elements.quarterSelect.disabled = false;
+                    
+                    const periodValue = document.getElementById('periodValue');
+                    periodValue.textContent = `${data.year}년 ${data.quarter}분기`;
+                    periodValue.classList.remove('waiting');
+                    
                     elements.generateAllBtn.disabled = false;
                     
-                    // 변환 정보 표시 (기초자료 수집표인 경우)
+                    // 변환 정보 표시
                     const conversionInfo = document.getElementById('conversionInfo');
                     const conversionDetails = document.getElementById('conversionDetails');
                     const grdpInfo = document.getElementById('grdpInfo');
@@ -2275,19 +2593,38 @@
                         conversionInfo.style.display = 'block';
                         conversionDetails.textContent = `원본: ${data.conversion_info.original_file} → ${data.conversion_info.analysis_file}`;
                         
-                        // GRDP 추출 결과 표시
                         if (data.conversion_info.grdp_extracted) {
                             grdpInfo.style.display = 'block';
                             document.getElementById('grdpNational').textContent = `${data.conversion_info.national_growth_rate}%`;
                             document.getElementById('grdpTopRegion').textContent = `${data.conversion_info.top_region} (${data.conversion_info.top_region_growth}%)`;
                         }
-                        
-                        showToast(`기초자료 변환 완료! 전국 GRDP 성장률: ${data.conversion_info.national_growth_rate}%`, 'success');
                     } else {
                         conversionInfo.style.display = 'none';
-                        showToast('파일이 업로드되었습니다. "전체 보고서 생성" 버튼을 클릭하세요.', 'success');
+                    }
+                    
+                    // 모달 닫기 (2초 후)
+                    hideUploadModal(2000);
+                    
+                    // 분석표 다운로드 확인 (모달 닫힌 후)
+                    if (data.conversion_info) {
+                        setTimeout(() => {
+                            if (confirm(`분석표가 생성되었습니다.\n\n파일명: ${data.conversion_info.analysis_file}\n\n분석표를 다운로드하시겠습니까?`)) {
+                                const downloadLink = document.createElement('a');
+                                downloadLink.href = '/api/download-analysis';
+                                downloadLink.download = data.conversion_info.analysis_file;
+                                document.body.appendChild(downloadLink);
+                                downloadLink.click();
+                                document.body.removeChild(downloadLink);
+                                showToast('분석표 다운로드가 시작됩니다.', 'success');
+                            }
+                        }, 2500);
                     }
                 } else {
+                    // 오류 발생
+                    document.getElementById('uploadModalIcon').textContent = '❌';
+                    document.getElementById('uploadModalTitle').textContent = '업로드 실패';
+                    document.getElementById('uploadModalSubtitle').textContent = data.error || '파일 처리 중 오류가 발생했습니다.';
+                    hideUploadModal(3000);
                     showToast(data.error || '업로드 실패', 'error');
                 }
             } catch (err) {

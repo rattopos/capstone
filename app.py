@@ -1147,10 +1147,11 @@ def upload_excel():
         try:
             converter = DataConverter(str(filepath))
             
-            # 분석표 생성
-            analysis_filename = f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx"
-            analysis_path = str(UPLOAD_FOLDER / analysis_filename)
-            converter.convert_all(analysis_path)
+            # 분석표 생성 (수식 보존 - 템플릿 복사 후 집계 시트 데이터 교체)
+            analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+            analysis_path = converter.convert_all(analysis_output)
+            
+            download_filename = Path(analysis_path).name
             
             # GRDP 데이터 추출
             grdp_data = converter.extract_grdp_data()
@@ -1160,16 +1161,20 @@ def upload_excel():
             with open(grdp_json_path, 'w', encoding='utf-8') as f:
                 json.dump(grdp_data, f, ensure_ascii=False, indent=2)
             
+            # 다운로드용 파일 경로 세션에 저장 (수식 보존 버전)
+            session['download_analysis_path'] = analysis_path
+            
             conversion_info = {
                 'original_file': filename,
-                'analysis_file': analysis_filename,
+                'analysis_file': download_filename,
                 'grdp_extracted': True,
                 'national_growth_rate': grdp_data['national_summary']['growth_rate'],
                 'top_region': grdp_data['top_region']['name'],
                 'top_region_growth': grdp_data['top_region']['growth_rate']
             }
             
-            print(f"[업로드] 변환 완료: {analysis_filename}")
+            print(f"[업로드] 변환 완료:")
+            print(f"  - 분석표 (수식 보존): {download_filename}")
             print(f"[업로드] GRDP 추출 - 전국: {grdp_data['national_summary']['growth_rate']}%, 1위: {grdp_data['top_region']['name']}")
             
         except Exception as e:
@@ -1203,6 +1208,28 @@ def upload_excel():
         'regional_reports': REGIONAL_REPORTS,
         'conversion_info': conversion_info
     })
+
+
+@app.route('/api/download-analysis', methods=['GET'])
+def download_analysis():
+    """생성된 분석표 다운로드 (수식 유지 버전)"""
+    from flask import send_file
+    
+    # 수식 유지 버전 다운로드 (다운로드 전용 경로 사용)
+    excel_path = session.get('download_analysis_path') or session.get('excel_path')
+    
+    if not excel_path or not Path(excel_path).exists():
+        return jsonify({'success': False, 'error': '분석표 파일을 찾을 수 없습니다.'}), 404
+    
+    # 파일명 추출
+    filename = Path(excel_path).name
+    
+    return send_file(
+        excel_path,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 
 @app.route('/api/generate-preview', methods=['POST'])

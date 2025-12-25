@@ -52,7 +52,7 @@
         "department": {
           "type": "string",
           "description": "담당 부서명",
-          "example": "통계청 경제통계국"
+          "example": "국가데이터처 경제통계국"
         },
         "division": {
           "type": "string",
@@ -103,7 +103,7 @@
       "distribution_datetime": "2025. 8. 12.(화) 08:30"
     },
     "contact_info": {
-      "department": "통계청 경제통계국",
+      "department": "국가데이터처 경제통계국",
       "division": "소득통계과",
       "manager_title": "과 장",
       "manager_name": "정선경",

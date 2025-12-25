@@ -163,7 +163,7 @@
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page1_regions %}
                     {% set val = data.yearly[year_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val | default('-', true) }}</td>
+                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -179,7 +179,7 @@
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page1_regions %}
                     {% set val = data.quarterly[quarter_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val | default('-', true) }}</td>
+                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -212,7 +212,7 @@
                     <td class="row-header year-cell">{{ year_key }}</td>
                     {% for region in page2_regions %}
                     {% set val = data.yearly[year_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val | default('-', true) }}</td>
+                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -228,7 +228,7 @@
                     <td class="row-header quarter-cell">{{ quarter_key }}</td>
                     {% for region in page2_regions %}
                     {% set val = data.quarterly[quarter_key][region] %}
-                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val | default('-', true) }}</td>
+                    <td class="{% if val == 'N/A' %}na-cell{% endif %}">{{ val }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

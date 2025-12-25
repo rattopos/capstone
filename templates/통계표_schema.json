@@ -213,7 +213,7 @@
     "title": "<참고> 분기 지역내총생산(GRDP)",
     "단위": "[전년동기비, %]",
     "note": "GRDP는 분석표 내 별도 시트 또는 외부 데이터로 관리",
-    "data_source": "통계청 지역계정"
+    "data_source": "국가데이터처 지역계정"
   },
 
   "appendix_mapping": {

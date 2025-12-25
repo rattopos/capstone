@@ -2,87 +2,138 @@
 # -*- coding: utf-8 -*-
 """
 기초자료 수집표 → 분석표 변환 모듈
-기초자료에서 데이터를 추출하여 분석표 형식으로 변환합니다.
-또한 GRDP 데이터도 추출하여 참고_GRDP 보고서용 데이터를 생성합니다.
+
+기존 분석표를 템플릿으로 사용하고, 기초자료의 데이터를 집계 시트에 복사합니다.
+분석 시트의 엑셀 수식은 그대로 유지되어 자동으로 계산됩니다.
 """
 
+import openpyxl
+from openpyxl.utils import get_column_letter
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import json
+import shutil
 
 
 class DataConverter:
-    """기초자료 수집표 → 분석표 변환기"""
+    """기초자료 수집표 → 분석표 변환기 (수식 보존 방식)"""
     
-    # 기초자료 시트 → 분석표 시트 매핑
+    # 기초자료 시트 → 분석표 집계 시트 매핑
     SHEET_MAPPING = {
-        '광공업생산': 'A 분석',
-        '서비스업생산': 'B 분석',
-        '소비(소매, 추가)': 'C 분석',
-        '고용률': 'D(고용률)분석',
-        '실업자 수': 'D(실업)분석',
-        '품목성질별 물가': 'E(품목성질물가)분석',
-        '건설 (공표자료)': "F'분석",
-        '수출': 'G 분석',
-        '수입': 'H 분석',
+        '광공업생산': 'A(광공업생산)집계',
+        '서비스업생산': 'B(서비스업생산)집계',
+        '소비(소매, 추가)': 'C(소비)집계',
+        '고용률': 'D(고용률)집계',
+        '실업자 수': 'D(실업)집계',
+        '지출목적별 물가': 'E(지출목적물가)집계',
+        '품목성질별 물가': 'E(품목성질물가)집계',
+        '건설 (공표자료)': "F'(건설)집계",
+        '수출': 'G(수출)집계',
+        '수입': 'H(수입)집계',
         '시도 간 이동': 'I(순인구이동)집계',
     }
     
-    # 지역 코드 → 이름 매핑
-    REGION_CODES = {
-        '00': '전국',
-        '11': '서울',
-        '21': '부산',
-        '22': '대구',
-        '23': '인천',
-        '24': '광주',
-        '25': '대전',
-        '26': '울산',
-        '29': '세종',
-        '31': '경기',
-        '32': '강원',
-        '33': '충북',
-        '34': '충남',
-        '35': '전북',
-        '36': '전남',
-        '37': '경북',
-        '38': '경남',
-        '39': '제주',
-    }
-    
+    # 지역 순서
     REGIONS_ORDER = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                      '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
     
-    def __init__(self, raw_excel_path: str):
+    def __init__(self, raw_excel_path: str, template_path: str = None):
         """
         Args:
             raw_excel_path: 기초자료 수집표 엑셀 파일 경로
+            template_path: 분석표 템플릿 경로 (None이면 기본 템플릿 사용)
         """
         self.raw_excel_path = Path(raw_excel_path)
-        self.xl = pd.ExcelFile(raw_excel_path)
+        
+        # 템플릿 경로 설정
+        if template_path:
+            self.template_path = Path(template_path)
+        else:
+            # 기본 템플릿 (프로젝트 내 분석표)
+            self.template_path = Path(__file__).parent / '분석표_25년 2분기_캡스톤.xlsx'
+            if not self.template_path.exists():
+                # 대안 경로
+                self.template_path = self.raw_excel_path.parent / '분석표_25년 2분기_캡스톤.xlsx'
+        
         self.year = None
         self.quarter = None
         self._detect_year_quarter()
     
     def _detect_year_quarter(self):
-        """파일명 또는 데이터에서 연도/분기 추출"""
+        """기초자료에서 연도/분기 자동 추출"""
+        import re
+        
+        # 1. 먼저 기초자료 헤더에서 추출 시도
+        try:
+            xl = pd.ExcelFile(self.raw_excel_path)
+            
+            # 광공업생산 시트 또는 첫 번째 데이터 시트에서 헤더 확인
+            for sheet_name in ['광공업생산', '서비스업생산', '소비(소매, 추가)']:
+                if sheet_name in xl.sheet_names:
+                    df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=4)
+                    
+                    # 헤더 행(3행)에서 가장 최신 분기 찾기
+                    latest_year = 0
+                    latest_quarter = 0
+                    
+                    for col_idx in range(len(df.columns)):
+                        header_val = str(df.iloc[2, col_idx]) if not pd.isna(df.iloc[2, col_idx]) else ''
+                        
+                        # "2025  2/4p" 또는 "2025 2/4" 패턴 찾기
+                        match = re.search(r'(\d{4})\s*(\d)/4', header_val)
+                        if match:
+                            year = int(match.group(1))
+                            quarter = int(match.group(2))
+                            
+                            # 가장 최신 연도/분기 저장
+                            if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                latest_year = year
+                                latest_quarter = quarter
+                    
+                    if latest_year > 0 and latest_quarter > 0:
+                        self.year = latest_year
+                        self.quarter = latest_quarter
+                        print(f"[자동감지] 기초자료에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
+                        return
+                    break
+        except Exception as e:
+            print(f"[경고] 기초자료에서 연도/분기 추출 실패: {e}")
+        
+        # 2. 파일명에서 추출 시도
         filename = self.raw_excel_path.stem
         
-        # 파일명에서 추출 시도
-        if '2025년' in filename and '2분기' in filename:
-            self.year, self.quarter = 2025, 2
-        elif '25년' in filename and '2분기' in filename:
-            self.year, self.quarter = 2025, 2
-        elif '2025년' in filename and '1분기' in filename:
-            self.year, self.quarter = 2025, 1
-        else:
-            # 기본값
-            self.year, self.quarter = 2025, 2
+        # 다양한 패턴 매칭
+        patterns = [
+            r'(\d{4})년\s*(\d)분기',  # 2025년 2분기
+            r'(\d{2})년\s*(\d)분기',   # 25년 2분기
+            r'(\d{4})_(\d)',           # 2025_2
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, filename)
+            if match:
+                year_str = match.group(1)
+                quarter = int(match.group(2))
+                
+                # 2자리 연도 처리
+                if len(year_str) == 2:
+                    year = 2000 + int(year_str)
+                else:
+                    year = int(year_str)
+                
+                self.year = year
+                self.quarter = quarter
+                print(f"[자동감지] 파일명에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
+                return
+        
+        # 3. 기본값
+        self.year, self.quarter = 2025, 2
+        print(f"[기본값] 연도/분기: {self.year}년 {self.quarter}분기")
     
     def convert_all(self, output_path: str = None) -> str:
-        """모든 시트를 분석표 형식으로 변환
+        """분석표 생성 (템플릿 복사 + 집계 시트 데이터 교체)
         
         Args:
             output_path: 출력 파일 경로 (None이면 자동 생성)
@@ -93,464 +144,165 @@ class DataConverter:
         if output_path is None:
             output_path = str(self.raw_excel_path.parent / f"분석표_{self.year}년_{self.quarter}분기_자동생성.xlsx")
         
-        # 각 시트 변환
-        converted_sheets = {}
+        # 1. 템플릿 파일 복사
+        if not self.template_path.exists():
+            raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {self.template_path}")
         
-        for raw_sheet, analysis_sheet in self.SHEET_MAPPING.items():
-            try:
-                print(f"[변환] {raw_sheet} → {analysis_sheet}")
-                df = self._convert_sheet(raw_sheet)
-                if df is not None and len(df) > 0:
-                    converted_sheets[analysis_sheet] = df
-                    print(f"  → {len(df)}행 변환 완료")
-            except Exception as e:
-                import traceback
-                print(f"[오류] {raw_sheet} 변환 실패: {e}")
-                traceback.print_exc()
+        print(f"[변환] 템플릿 복사: {self.template_path.name}")
+        shutil.copy(self.template_path, output_path)
         
-        # 엑셀 파일로 저장
-        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-            for sheet_name, df in converted_sheets.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+        # 2. 복사된 파일 열기 (수식 보존)
+        wb = openpyxl.load_workbook(output_path)
+        
+        # 3. 이용관련 시트에서 연도/분기 설정 (핵심!)
+        if '이용관련' in wb.sheetnames:
+            ws_config = wb['이용관련']
+            ws_config.cell(row=17, column=11).value = self.year    # K17: 연도
+            ws_config.cell(row=17, column=13).value = self.quarter # M17: 분기
+            print(f"[변환] 이용관련 시트 설정: {self.year}년 {self.quarter}분기")
+        else:
+            print("[경고] '이용관련' 시트를 찾을 수 없습니다.")
+        
+        # 4. 기초자료 열기
+        raw_xl = pd.ExcelFile(self.raw_excel_path)
+        
+        # 5. 각 집계 시트에 데이터 복사
+        for raw_sheet, target_sheet in self.SHEET_MAPPING.items():
+            if raw_sheet in raw_xl.sheet_names and target_sheet in wb.sheetnames:
+                print(f"[변환] {raw_sheet} → {target_sheet}")
+                self._copy_sheet_data(raw_xl, raw_sheet, wb[target_sheet])
+            else:
+                if raw_sheet not in raw_xl.sheet_names:
+                    print(f"  [경고] 기초자료에 '{raw_sheet}' 시트 없음")
+                if target_sheet not in wb.sheetnames:
+                    print(f"  [경고] 템플릿에 '{target_sheet}' 시트 없음")
+        
+        # 5. 저장
+        wb.save(output_path)
+        wb.close()
         
         print(f"[완료] 분석표 생성: {output_path}")
         return output_path
     
-    def _convert_sheet(self, sheet_name: str) -> Optional[pd.DataFrame]:
-        """개별 시트 변환"""
-        if sheet_name not in self.xl.sheet_names:
-            print(f"  [경고] 시트 '{sheet_name}'를 찾을 수 없습니다.")
-            return None
+    def _copy_sheet_data(self, raw_xl: pd.ExcelFile, raw_sheet: str, target_ws):
+        """기초자료 시트의 데이터를 분석표 집계 시트에 복사"""
+        from openpyxl.cell.cell import MergedCell
         
-        df = pd.read_excel(self.xl, sheet_name=sheet_name, header=None)
+        # 기초자료 읽기 (헤더 없이)
+        raw_df = pd.read_excel(raw_xl, sheet_name=raw_sheet, header=None)
         
-        # 시트별 변환 로직
-        if sheet_name == '광공업생산':
-            return self._convert_index_data(df, '광공업')
-        elif sheet_name == '서비스업생산':
-            return self._convert_index_data(df, '서비스업')
-        elif sheet_name == '소비(소매, 추가)':
-            return self._convert_consumption(df)
-        elif sheet_name == '고용률':
-            return self._convert_employment(df, is_rate=True)
-        elif sheet_name == '실업자 수':
-            return self._convert_employment(df, is_rate=False)
-        elif sheet_name == '품목성질별 물가':
-            return self._convert_price(df)
-        elif sheet_name == '건설 (공표자료)':
-            return self._convert_construction(df)
-        elif sheet_name == '수출':
-            return self._convert_trade(df, '수출')
-        elif sheet_name == '수입':
-            return self._convert_trade(df, '수입')
-        elif sheet_name == '시도 간 이동':
-            return self._convert_migration(df)
+        copied_count = 0
+        skipped_count = 0
         
-        return None
+        # 데이터 복사 (행/열 순회)
+        for row_idx in range(len(raw_df)):
+            for col_idx in range(len(raw_df.columns)):
+                value = raw_df.iloc[row_idx, col_idx]
+                
+                # NaN 처리
+                if pd.isna(value):
+                    continue
+                
+                # openpyxl은 1-based 인덱스
+                cell = target_ws.cell(row=row_idx + 1, column=col_idx + 1)
+                
+                # 병합된 셀은 건너뛰기
+                if isinstance(cell, MergedCell):
+                    skipped_count += 1
+                    continue
+                
+                # 값 복사
+                try:
+                    cell.value = value
+                    copied_count += 1
+                except Exception:
+                    skipped_count += 1
+        
+        print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀)")
     
-    def _safe_float(self, val):
-        """안전하게 float으로 변환"""
-        if pd.isna(val):
-            return np.nan
+    def _calculate_analysis_values(self, wb):
+        """분석 시트의 수식을 계산하여 값으로 저장 (캐시용)
+        
+        엑셀에서 열지 않아도 Python에서 값을 읽을 수 있도록
+        분석 시트의 수식 셀에 계산된 값을 추가로 저장
+        """
+        # 분석 시트 목록
+        analysis_sheets = [
+            ('A 분석', 'A(광공업생산)집계'),
+            ('B 분석', 'B(서비스업생산)집계'),
+            ('C 분석', 'C(소비)집계'),
+            ("D(고용률)분석", 'D(고용률)집계'),
+            ("D(실업)분석", 'D(실업)집계'),
+            ('E(지출목적물가) 분석', 'E(지출목적물가)집계'),
+            ('E(품목성질물가)분석', 'E(품목성질물가)집계'),
+            ("F'분석", "F'(건설)집계"),
+            ('G 분석', 'G(수출)집계'),
+            ('H 분석', 'H(수입)집계'),
+            ('I(순인구이동)분석', 'I(순인구이동)집계'),
+        ]
+        
+        for analysis_sheet, source_sheet in analysis_sheets:
+            if analysis_sheet not in wb.sheetnames:
+                continue
+            if source_sheet not in wb.sheetnames:
+                continue
+                
+            ws = wb[analysis_sheet]
+            source_ws = wb[source_sheet]
+            
+            # 수식이 있는 셀을 찾아서 계산
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                        # 수식 파싱 및 계산
+                        calculated = self._evaluate_formula(cell.value, wb)
+                        if calculated is not None:
+                            # 수식을 유지하면서 캐시된 값도 저장
+                            # openpyxl에서는 이게 안되므로 수식을 계산된 값으로 대체
+                            pass  # 수식을 유지하는 것이 사용자 요청
+    
+    def _evaluate_formula(self, formula: str, wb) -> Optional[float]:
+        """엑셀 수식 평가 (간단한 수식만 지원)"""
+        import re
+        
+        # IFERROR 처리
+        if formula.startswith('=IFERROR('):
+            # 내부 수식 추출
+            inner = formula[9:-1]  # =IFERROR( 와 ) 제거
+            # 마지막 ,"없음") 부분 제거
+            if ',"없음"' in inner:
+                inner = inner.replace(',"없음"', '').replace(',"없음")', ')')
+            return self._evaluate_formula('=' + inner.split(',')[0], wb)
+        
+        # 셀 참조 패턴: 'Sheet'!Cell 또는 Sheet!Cell
+        cell_pattern = r"'?([^'!]+)'?!([A-Z]+)(\d+)"
+        
         try:
-            return float(val)
-        except (ValueError, TypeError):
-            return np.nan
-    
-    def _calculate_yoy_growth(self, current, prev_year):
-        """전년동기비 증감률 계산"""
-        current = self._safe_float(current)
-        prev_year = self._safe_float(prev_year)
-        
-        if pd.isna(current) or pd.isna(prev_year) or prev_year == 0:
-            return np.nan
-        
-        return ((current - prev_year) / abs(prev_year)) * 100
-    
-    def _calculate_yoy_diff(self, current, prev_year):
-        """전년동기비 차이 계산 (고용률, 실업률 등)"""
-        current = self._safe_float(current)
-        prev_year = self._safe_float(prev_year)
-        
-        if pd.isna(current) or pd.isna(prev_year):
-            return np.nan
-        
-        return current - prev_year
-    
-    def _find_quarter_columns(self, df, header_row=2):
-        """분기별 컬럼 인덱스 찾기"""
-        quarter_cols = {}
-        
-        for col_idx in range(len(df.columns)):
-            cell = str(df.iloc[header_row, col_idx]).strip()
+            matches = re.findall(cell_pattern, formula)
+            if not matches:
+                return None
             
-            # 연도 컬럼 (예: 2021, 2022, 2023, 2024)
-            if cell.isdigit() and 2010 <= int(cell) <= 2030:
-                quarter_cols[f'Y{cell}'] = col_idx
-            # 분기 컬럼 (예: 2024  2/4, 2025  1/4p)
-            elif '/4' in cell:
-                # 정규화
-                key = cell.replace(' ', '').replace('p', '').strip()
-                quarter_cols[key] = col_idx
-        
-        return quarter_cols
-    
-    def _convert_index_data(self, df, data_type='광공업'):
-        """지수 데이터 변환 (광공업, 서비스업)"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        # 현재 분기와 전년동분기 컬럼 찾기
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            # 마지막 컬럼 사용
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        print(f"  [컬럼] 당분기: {current_key}(col {current_col}), 전년동기: {prev_year_key}(col {prev_year_col})")
-        
-        result_data = []
-        
-        for i in range(3, len(df)):
-            region_code = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            region_name = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            level = str(df.iloc[i, 2]).strip() if not pd.isna(df.iloc[i, 2]) else ''
-            weight = self._safe_float(df.iloc[i, 3])
-            industry_code = str(df.iloc[i, 4]).strip() if not pd.isna(df.iloc[i, 4]) else ''
-            industry_name = str(df.iloc[i, 5]).strip() if not pd.isna(df.iloc[i, 5]) else ''
+            values = {}
+            for sheet_name, col, row in matches:
+                if sheet_name in wb.sheetnames:
+                    ws = wb[sheet_name]
+                    cell = ws[f"{col}{row}"]
+                    val = cell.value
+                    if val is None or (isinstance(val, str) and not val.replace('.','').replace('-','').isdigit()):
+                        return None
+                    values[f"'{sheet_name}'!{col}{row}"] = float(val) if val else 0
             
-            if not region_name or not level:
-                continue
+            # 간단한 증감률 계산: (A-B)/B*100
+            if len(matches) == 2 and '-' in formula and '/' in formula and '*100' in formula:
+                keys = list(values.keys())
+                if len(keys) == 2:
+                    a, b = values[keys[0]], values[keys[1]]
+                    if b != 0:
+                        return round((a - b) / b * 100, 2)
             
-            # 연도별 데이터 및 증감률
-            yearly_data = {}
-            for year in range(2021, 2025):
-                y_key = f'Y{year}'
-                if y_key in quarter_cols:
-                    current_y = self._safe_float(df.iloc[i, quarter_cols[y_key]])
-                    prev_y_key = f'Y{year-1}'
-                    if prev_y_key in quarter_cols:
-                        prev_y = self._safe_float(df.iloc[i, quarter_cols[prev_y_key]])
-                        yearly_data[str(year)] = self._calculate_yoy_growth(current_y, prev_y)
-                    else:
-                        yearly_data[str(year)] = np.nan
-            
-            # 분기별 증감률 계산
-            quarterly_data = {}
-            quarters_needed = [
-                (f'{self.year-2}4/4', f'{self.year-3}4/4'),
-                (f'{self.year-1}1/4', f'{self.year-2}1/4'),
-                (f'{self.year-1}2/4', f'{self.year-2}2/4'),
-                (f'{self.year-1}3/4', f'{self.year-2}3/4'),
-                (f'{self.year-1}4/4', f'{self.year-2}4/4'),
-                (f'{self.year}1/4', f'{self.year-1}1/4'),
-                (f'{self.year}2/4', f'{self.year-1}2/4'),
-            ]
-            
-            for current_q, prev_q in quarters_needed:
-                if current_q in quarter_cols and prev_q in quarter_cols:
-                    current_val = self._safe_float(df.iloc[i, quarter_cols[current_q]])
-                    prev_val = self._safe_float(df.iloc[i, quarter_cols[prev_q]])
-                    quarterly_data[current_q] = self._calculate_yoy_growth(current_val, prev_val)
-            
-            # 당분기 증감률
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col]) if prev_year_col else np.nan
-            yoy_growth = self._calculate_yoy_growth(current_val, prev_val)
-            
-            # 기여도 계산
-            contribution = yoy_growth * weight / 10000 if not pd.isna(yoy_growth) and not pd.isna(weight) else np.nan
-            
-            row_data = {
-                '참고용': f'{region_name}{industry_code}',
-                '조회용': f'{region_code}{industry_code}',
-                '지역코드': region_code,
-                '지역이름': region_name,
-                '분류단계': level,
-                '중분류순위': '',
-                '산업코드': industry_code,
-                '산업이름': industry_name,
-                '가중치': weight,
-            }
-            
-            # 연도별 증감률 추가
-            for year in range(2021, 2025):
-                row_data[str(year)] = yearly_data.get(str(year), np.nan)
-            
-            # 분기별 증감률 추가
-            for q_key in quarterly_data.keys():
-                col_name = f'{q_key[:4]} {q_key[4:]}'
-                row_data[col_name] = quarterly_data[q_key]
-            
-            # 당분기
-            row_data[f'{self.year} {self.quarter}/4'] = yoy_growth
-            row_data['증감'] = yoy_growth
-            row_data['증감X가중치'] = contribution * 10000 if not pd.isna(contribution) else np.nan
-            row_data['대분류'] = ''
-            
-            result_data.append(row_data)
-        
-        return pd.DataFrame(result_data)
-    
-    def _convert_consumption(self, df):
-        """소비동향 변환"""
-        return self._convert_index_data(df, '소비')
-    
-    def _convert_employment(self, df, is_rate=True):
-        """고용/실업 데이터 변환"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        # 현재 분기와 전년동분기 컬럼 찾기
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        result_data = []
-        
-        for i in range(3, len(df)):
-            region_code = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            region_name = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            level = str(df.iloc[i, 2]).strip() if not pd.isna(df.iloc[i, 2]) else ''
-            category = str(df.iloc[i, 3]).strip() if not pd.isna(df.iloc[i, 3]) else ''
-            
-            if not region_name or not level:
-                continue
-            
-            # 당분기 값과 전년동기비 차이
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col])
-            yoy_diff = self._calculate_yoy_diff(current_val, prev_val)
-            
-            row_data = {
-                '지역코드': region_code,
-                '지역이름': region_name,
-                '분류단계': level,
-                '구분': category,
-            }
-            
-            # 분기별 데이터 추가
-            for q_key, col_idx in quarter_cols.items():
-                if '/4' in q_key:
-                    val = self._safe_float(df.iloc[i, col_idx])
-                    row_data[q_key] = val
-            
-            row_data['당분기'] = current_val
-            row_data['전년동기비'] = yoy_diff
-            
-            result_data.append(row_data)
-        
-        return pd.DataFrame(result_data)
-    
-    def _convert_price(self, df):
-        """물가동향 변환"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        result_data = []
-        
-        for i in range(3, len(df)):
-            region_name = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            level = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            weight = self._safe_float(df.iloc[i, 2])
-            category = str(df.iloc[i, 3]).strip() if not pd.isna(df.iloc[i, 3]) else ''
-            
-            if not region_name or not level:
-                continue
-            
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col])
-            yoy_diff = self._calculate_yoy_diff(current_val, prev_val)
-            
-            row_data = {
-                '지역': region_name,
-                '분류단계': level,
-                '가중치': weight,
-                '분류명': category,
-                '당분기지수': current_val,
-                '전년동기비': yoy_diff,
-            }
-            
-            result_data.append(row_data)
-        
-        return pd.DataFrame(result_data)
-    
-    def _convert_construction(self, df):
-        """건설동향 변환"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        result_data = []
-        
-        for i in range(3, len(df)):
-            region_code = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            region_name = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            level = str(df.iloc[i, 2]).strip() if not pd.isna(df.iloc[i, 2]) else ''
-            category_code = str(df.iloc[i, 3]).strip() if not pd.isna(df.iloc[i, 3]) else ''
-            category_name = str(df.iloc[i, 4]).strip() if not pd.isna(df.iloc[i, 4]) else ''
-            
-            if not region_name or not level:
-                continue
-            
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col])
-            yoy_growth = self._calculate_yoy_growth(current_val, prev_val)
-            
-            row_data = {
-                '지역코드': region_code,
-                '지역이름': region_name,
-                '분류단계': level,
-                '분류코드': category_code,
-                '공정이름': category_name,
-                '당분기금액': current_val,
-                '전년동기금액': prev_val,
-                '전년동기비': yoy_growth,
-            }
-            
-            result_data.append(row_data)
-        
-        return pd.DataFrame(result_data)
-    
-    def _convert_trade(self, df, trade_type='수출'):
-        """수출입 데이터 변환"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        result_data = []
-        
-        for i in range(3, len(df)):
-            region_code = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            region_name = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            level = str(df.iloc[i, 2]).strip() if not pd.isna(df.iloc[i, 2]) else ''
-            
-            if not region_name or not level:
-                continue
-            
-            # 수출/수입은 컬럼 구조가 다름
-            try:
-                item_code = str(df.iloc[i, 4]).strip() if not pd.isna(df.iloc[i, 4]) else ''
-                item_name = str(df.iloc[i, 5]).strip() if not pd.isna(df.iloc[i, 5]) else ''
-            except:
-                item_code = ''
-                item_name = ''
-            
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col])
-            yoy_growth = self._calculate_yoy_growth(current_val, prev_val)
-            
-            row_data = {
-                '지역코드': region_code,
-                '지역이름': region_name,
-                '분류단계': level,
-                '상품코드': item_code,
-                '상품이름': item_name,
-                '당분기금액': current_val,
-                '전년동기금액': prev_val,
-                '전년동기비': yoy_growth,
-            }
-            
-            result_data.append(row_data)
-        
-        return pd.DataFrame(result_data)
-    
-    def _convert_migration(self, df):
-        """인구이동 변환"""
-        header_row = 2
-        quarter_cols = self._find_quarter_columns(df, header_row)
-        
-        current_key = f'{self.year}{self.quarter}/4'
-        prev_year_key = f'{self.year - 1}{self.quarter}/4'
-        
-        current_col = quarter_cols.get(current_key)
-        prev_year_col = quarter_cols.get(prev_year_key)
-        
-        if current_col is None:
-            current_col = len(df.columns) - 1
-            prev_year_col = current_col - 4
-        
-        result_data = []
-        region_data = {}  # 지역별 유입/유출 데이터 저장
-        
-        for i in range(3, len(df)):
-            region_code = str(df.iloc[i, 0]).strip() if not pd.isna(df.iloc[i, 0]) else ''
-            region_name = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
-            category = str(df.iloc[i, 2]).strip() if not pd.isna(df.iloc[i, 2]) else ''
-            
-            if not region_name or not category:
-                continue
-            
-            current_val = self._safe_float(df.iloc[i, current_col])
-            prev_val = self._safe_float(df.iloc[i, prev_year_col])
-            
-            if region_name not in region_data:
-                region_data[region_name] = {'code': region_code, 'inflow': 0, 'outflow': 0, 'prev_inflow': 0, 'prev_outflow': 0}
-            
-            if '유입' in category:
-                region_data[region_name]['inflow'] = current_val
-                region_data[region_name]['prev_inflow'] = prev_val
-            elif '유출' in category:
-                region_data[region_name]['outflow'] = current_val
-                region_data[region_name]['prev_outflow'] = prev_val
-        
-        # 순이동 계산
-        for region_name, data in region_data.items():
-            net_current = data['inflow'] - data['outflow'] if not pd.isna(data['inflow']) and not pd.isna(data['outflow']) else np.nan
-            net_prev = data['prev_inflow'] - data['prev_outflow'] if not pd.isna(data['prev_inflow']) and not pd.isna(data['prev_outflow']) else np.nan
-            net_diff = net_current - net_prev if not pd.isna(net_current) and not pd.isna(net_prev) else np.nan
-            
-            result_data.append({
-                '지역코드': data['code'],
-                '지역이름': region_name,
-                '분류단계': '0',
-                '유입인구': data['inflow'],
-                '유출인구': data['outflow'],
-                '순이동': net_current,
-                '전년동기순이동': net_prev,
-                '전년동기비': net_diff,
-            })
-        
-        return pd.DataFrame(result_data)
+            return None
+        except Exception:
+            return None
     
     def extract_grdp_data(self) -> Dict:
         """GRDP 데이터 추출
@@ -558,11 +310,13 @@ class DataConverter:
         Returns:
             GRDP 보고서용 데이터 딕셔너리
         """
-        if '분기 GRDP' not in self.xl.sheet_names:
+        raw_xl = pd.ExcelFile(self.raw_excel_path)
+        
+        if '분기 GRDP' not in raw_xl.sheet_names:
             print("[경고] '분기 GRDP' 시트를 찾을 수 없습니다.")
             return self._get_placeholder_grdp()
         
-        df = pd.read_excel(self.xl, sheet_name='분기 GRDP', header=None)
+        df = pd.read_excel(raw_xl, sheet_name='분기 GRDP', header=None)
         
         # 헤더 행 (3행)
         header_row = 2
@@ -598,9 +352,8 @@ class DataConverter:
             '부산': '동남', '울산': '동남', '경남': '동남',
         }
         
-        # 지역별 데이터 수집 (분류단계별로 저장)
-        # 각 지역의 분류단계 1 항목들을 저장 (item 이름 기준)
-        region_values = {}  # {지역: {'total': {...}, 'industries': [{item, current, prev}]}}
+        # 지역별 데이터 수집
+        region_values = {}
         
         for i in range(3, len(df)):
             region = str(df.iloc[i, 1]).strip() if not pd.isna(df.iloc[i, 1]) else ''
@@ -610,8 +363,8 @@ class DataConverter:
             if not region or region not in self.REGIONS_ORDER:
                 continue
             
-            current_val = df.iloc[i, current_quarter_col] if not pd.isna(df.iloc[i, current_quarter_col]) else 0.0
-            prev_year_val = df.iloc[i, prev_year_quarter_col] if not pd.isna(df.iloc[i, prev_year_quarter_col]) else 0.0
+            current_val = self._safe_float(df.iloc[i, current_quarter_col])
+            prev_year_val = self._safe_float(df.iloc[i, prev_year_quarter_col])
             
             if region not in region_values:
                 region_values[region] = {'total': None, 'industries': []}
@@ -619,14 +372,14 @@ class DataConverter:
             if level == '0':
                 region_values[region]['total'] = {
                     'item': item,
-                    'current': float(current_val),
-                    'prev_year': float(prev_year_val),
+                    'current': current_val,
+                    'prev_year': prev_year_val,
                 }
             elif level == '1':
                 region_values[region]['industries'].append({
                     'item': item,
-                    'current': float(current_val),
-                    'prev_year': float(prev_year_val),
+                    'current': current_val,
+                    'prev_year': prev_year_val,
                 })
         
         # 성장률 및 기여도 계산
@@ -635,11 +388,10 @@ class DataConverter:
                 continue
             
             values = region_values[region]
-            
-            # 총 GRDP (분류단계 0)
             total = values.get('total', {'current': 0, 'prev_year': 0})
             if total is None:
                 total = {'current': 0, 'prev_year': 0}
+            
             total_current = total['current']
             total_prev = total['prev_year']
             
@@ -649,7 +401,7 @@ class DataConverter:
             else:
                 growth_rate = 0.0
             
-            # 산업별 기여도 계산 (분류단계 1)
+            # 산업별 기여도 계산
             manufacturing_contrib = 0.0
             construction_contrib = 0.0
             service_contrib = 0.0
@@ -670,7 +422,7 @@ class DataConverter:
                 elif '기타' in item_name or '순생산' in item_name:
                     other_contrib = contrib
             
-            region_data = {
+            region_entry = {
                 'region': region,
                 'region_group': region_groups.get(region, ''),
                 'growth_rate': growth_rate,
@@ -682,16 +434,16 @@ class DataConverter:
             }
             
             if region == '전국':
-                national_data = region_data.copy()
+                national_data = region_entry.copy()
             
-            regional_data.append(region_data)
+            regional_data.append(region_entry)
         
         # 성장률 1위 지역 찾기
         non_national = [r for r in regional_data if r['region'] != '전국']
         if non_national:
             top_region = max(non_national, key=lambda x: x['growth_rate'])
         else:
-            top_region = {'name': '-', 'growth_rate': 0.0, 'manufacturing': 0.0, 
+            top_region = {'region': '-', 'growth_rate': 0.0, 'manufacturing': 0.0, 
                          'construction': 0.0, 'service': 0.0, 'other': 0.0}
         
         return {
@@ -731,6 +483,15 @@ class DataConverter:
                 }
             }
         }
+    
+    def _safe_float(self, val) -> float:
+        """안전하게 float으로 변환"""
+        if pd.isna(val):
+            return 0.0
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return 0.0
     
     def _calculate_contribution(self, current: float, prev: float, total_prev: float) -> float:
         """산업별 기여도 계산"""
@@ -807,17 +568,41 @@ class DataConverter:
         return data
 
 
-def convert_raw_to_analysis(raw_excel_path: str, output_path: str = None) -> Tuple[str, Dict]:
+def detect_file_type(excel_path: str) -> str:
+    """엑셀 파일 유형 감지 (기초자료 vs 분석표)"""
+    try:
+        xl = pd.ExcelFile(excel_path)
+        sheet_names = xl.sheet_names
+        
+        # '분석' 키워드가 포함된 시트가 있으면 분석표
+        analysis_sheets = [s for s in sheet_names if '분석' in s]
+        if analysis_sheets:
+            return 'analysis'
+        
+        # 기초자료 특유의 시트가 있으면 기초자료
+        raw_indicators = ['광공업생산', '서비스업생산', '분기 GRDP', '완료체크']
+        if any(ind in sheet_names for ind in raw_indicators):
+            return 'raw'
+        
+        return 'unknown'
+    except Exception as e:
+        print(f"파일 유형 감지 실패: {e}")
+        return 'unknown'
+
+
+def convert_raw_to_analysis(raw_excel_path: str, output_path: str = None, 
+                           template_path: str = None) -> Tuple[str, Dict]:
     """기초자료 수집표 → 분석표 변환 및 GRDP 추출
     
     Args:
         raw_excel_path: 기초자료 수집표 경로
         output_path: 분석표 출력 경로 (None이면 자동 생성)
+        template_path: 분석표 템플릿 경로 (None이면 기본 템플릿 사용)
         
     Returns:
         (분석표 경로, GRDP 데이터)
     """
-    converter = DataConverter(raw_excel_path)
+    converter = DataConverter(raw_excel_path, template_path)
     analysis_path = converter.convert_all(output_path)
     grdp_data = converter.extract_grdp_data()
     
@@ -830,12 +615,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='기초자료 수집표 → 분석표 변환')
     parser.add_argument('input', type=str, help='기초자료 수집표 엑셀 파일')
     parser.add_argument('--output', type=str, default=None, help='출력 분석표 경로')
+    parser.add_argument('--template', type=str, default=None, help='분석표 템플릿 경로')
     parser.add_argument('--grdp-json', type=str, default='grdp_data.json', help='GRDP JSON 출력 경로')
     
     args = parser.parse_args()
     
     # 변환 실행
-    analysis_path, grdp_data = convert_raw_to_analysis(args.input, args.output)
+    analysis_path, grdp_data = convert_raw_to_analysis(
+        args.input, args.output, args.template
+    )
     
     # GRDP JSON 저장
     with open(args.grdp_json, 'w', encoding='utf-8') as f:
