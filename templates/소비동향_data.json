@@ -4,7 +4,7 @@
     "region_count": 0
   },
   "nationwide_data": {
-    "sales_index": 87.3,
+    "sales_index": 101.8,
     "growth_rate": NaN,
     "main_businesses": []
   },
@@ -43,8 +43,8 @@
           NaN
         ],
         "indices": [
-          89.3,
-          87.3
+          101.3,
+          101.8
         ]
       }
     ]

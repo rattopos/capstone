@@ -4,7 +4,7 @@
     "region_count": 0
   },
   "nationwide_data": {
-    "employment_rate": 59.2,
+    "employment_rate": 63.3,
     "change": NaN,
     "main_age_groups": [],
     "top_age_groups": []
@@ -42,9 +42,9 @@
           NaN
         ],
         "rates": [
-          57.9,
-          59.2,
-          56.7
+          63.2,
+          63.3,
+          61.3
         ]
       }
     ]
