@@ -4,22 +4,9 @@
     "region_count": 0
   },
   "nationwide_data": {
-    "sales_index": 104.7,
-    "growth_rate": -0.3,
-    "main_businesses": [
-      {
-        "name": "45.6",
-        "growth_rate": -19.1
-      },
-      {
-        "name": "57.7",
-        "growth_rate": -3.3
-      },
-      {
-        "name": "101.9",
-        "growth_rate": -2.9
-      }
-    ]
+    "sales_index": 87.3,
+    "growth_rate": NaN,
+    "main_businesses": []
   },
   "regional_data": {
     "increase_regions": [],
@@ -50,14 +37,14 @@
         "rowspan": null,
         "region": "전 국",
         "growth_rates": [
-          -2.1,
-          -1.6,
-          -2.0,
-          -0.3
+          NaN,
+          NaN,
+          NaN,
+          NaN
         ],
         "indices": [
-          99.7,
-          104.7
+          89.3,
+          87.3
         ]
       }
     ]

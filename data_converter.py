@@ -39,6 +39,26 @@ class DataConverter:
     REGIONS_ORDER = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                      '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
     
+    # 연도 데이터 개수와 분기 데이터 개수
+    NUM_YEARS = 5      # 당해 제외 최근 5개년
+    NUM_QUARTERS = 13  # 최근 13개 분기
+    
+    # 집계 시트별 열 구조 정의: (메타열수, 연도시작열, 분기시작열)
+    # 1-based index
+    SHEET_STRUCTURE = {
+        'A(광공업생산)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
+        'B(서비스업생산)집계': {'meta_cols': 8, 'year_start': 9, 'quarter_start': 14},
+        'C(소비)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        'D(고용률)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        'D(실업)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        'E(지출목적물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        'E(품목성질물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        "F'(건설)집계": {'meta_cols': 5, 'year_start': 6, 'quarter_start': 11},
+        'G(수출)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
+        'H(수입)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
+        'I(순인구이동)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+    }
+    
     def __init__(self, raw_excel_path: str, template_path: str = None):
         """
         Args:
@@ -132,6 +152,68 @@ class DataConverter:
         self.year, self.quarter = 2025, 2
         print(f"[기본값] 연도/분기: {self.year}년 {self.quarter}분기")
     
+    def _get_target_years(self) -> List[int]:
+        """당해 제외 최근 5개년 리스트 반환
+        
+        예: 2025년 2분기 기준 → [2020, 2021, 2022, 2023, 2024]
+        """
+        return list(range(self.year - self.NUM_YEARS, self.year))
+    
+    def _get_target_quarters(self) -> List[str]:
+        """최근 13개 분기 리스트 반환 (YYYY Q/4 형식)
+        
+        예: 2025년 2분기 기준 → ['2022 2/4', '2022 3/4', ..., '2025 2/4']
+        """
+        quarters = []
+        
+        # 현재 분기부터 거슬러 13개 (현재 분기 포함)
+        for i in range(self.NUM_QUARTERS - 1, -1, -1):
+            # i분기 전
+            total_quarters = (self.year * 4 + self.quarter) - i
+            q_year = (total_quarters - 1) // 4
+            q_num = ((total_quarters - 1) % 4) + 1
+            quarters.append(f"{q_year} {q_num}/4")
+        
+        return quarters
+    
+    def _parse_raw_header(self, raw_df: pd.DataFrame, header_row: int = 2) -> Dict:
+        """기초자료 헤더에서 연도/분기별 열 인덱스 매핑 생성
+        
+        Returns:
+            {
+                'years': {2020: col_idx, 2021: col_idx, ...},
+                'quarters': {'2022 2/4': col_idx, '2022 3/4': col_idx, ...}
+            }
+        """
+        import re
+        
+        year_cols = {}
+        quarter_cols = {}
+        
+        for col_idx in range(len(raw_df.columns)):
+            val = raw_df.iloc[header_row, col_idx]
+            if pd.isna(val):
+                continue
+            
+            val_str = str(val).strip()
+            
+            # 연도 패턴: 2020, 2021, ... (정수 또는 "2020.0")
+            if isinstance(val, (int, float)) and 2000 <= int(val) <= 2100:
+                year_cols[int(val)] = col_idx
+            elif re.match(r'^(\d{4})\.?0?$', val_str):
+                year = int(re.match(r'^(\d{4})\.?0?$', val_str).group(1))
+                year_cols[year] = col_idx
+            
+            # 분기 패턴: "2022  2/4", "2022 2/4p" 등
+            quarter_match = re.search(r'(\d{4})\s*(\d)/4', val_str)
+            if quarter_match:
+                q_year = int(quarter_match.group(1))
+                q_num = int(quarter_match.group(2))
+                quarter_key = f"{q_year} {q_num}/4"
+                quarter_cols[quarter_key] = col_idx
+        
+        return {'years': year_cols, 'quarters': quarter_cols}
+    
     def convert_all(self, output_path: str = None) -> str:
         """분석표 생성 (템플릿 복사 + 집계 시트 데이터 교체)
         
@@ -185,26 +267,72 @@ class DataConverter:
         return output_path
     
     def _copy_sheet_data(self, raw_xl: pd.ExcelFile, raw_sheet: str, target_ws):
-        """기초자료 시트의 데이터를 분석표 집계 시트에 복사"""
+        """기초자료 시트의 데이터를 분석표 집계 시트에 복사
+        
+        연도/분기 범위에 맞는 열만 선택적으로 복사:
+        - 연도: 당해 제외 최근 5개년
+        - 분기: 최근 13개 분기
+        """
         from openpyxl.cell.cell import MergedCell
         
         # 기초자료 읽기 (헤더 없이)
         raw_df = pd.read_excel(raw_xl, sheet_name=raw_sheet, header=None)
         
+        # 기초자료 헤더 파싱
+        header_mapping = self._parse_raw_header(raw_df, header_row=2)
+        
+        # 목표 연도/분기 범위
+        target_years = self._get_target_years()
+        target_quarters = self._get_target_quarters()
+        
+        # 집계 시트 구조 가져오기
+        target_sheet_name = target_ws.title
+        sheet_structure = self.SHEET_STRUCTURE.get(target_sheet_name, {})
+        
+        meta_cols = sheet_structure.get('meta_cols', 7)
+        target_year_start_col = sheet_structure.get('year_start', 8)
+        target_quarter_start_col = sheet_structure.get('quarter_start', 13)
+        
+        # 열 매핑 생성: 기초자료 열 → 집계 시트 열
+        col_mapping = {}
+        
+        # 메타데이터 열 매핑 (1:1)
+        meta_end_raw = min(header_mapping['years'].values()) if header_mapping['years'] else meta_cols
+        for col in range(min(meta_cols, meta_end_raw)):
+            col_mapping[col] = col + 1  # 1-based index
+        
+        # 연도 열 매핑
+        for i, year in enumerate(target_years):
+            if year in header_mapping['years']:
+                raw_col = header_mapping['years'][year]
+                col_mapping[raw_col] = target_year_start_col + i
+        
+        # 분기 열 매핑
+        for i, q_key in enumerate(target_quarters):
+            if q_key in header_mapping['quarters']:
+                raw_col = header_mapping['quarters'][q_key]
+                col_mapping[raw_col] = target_quarter_start_col + i
+        
+        print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.NUM_YEARS - 1})")
+        print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.NUM_QUARTERS - 1})")
+        
         copied_count = 0
         skipped_count = 0
         
-        # 데이터 복사 (행/열 순회)
+        # 데이터 복사 (행 순회)
         for row_idx in range(len(raw_df)):
-            for col_idx in range(len(raw_df.columns)):
-                value = raw_df.iloc[row_idx, col_idx]
+            for raw_col, target_col in col_mapping.items():
+                if raw_col >= len(raw_df.columns):
+                    continue
+                
+                value = raw_df.iloc[row_idx, raw_col]
                 
                 # NaN 처리
                 if pd.isna(value):
                     continue
                 
                 # openpyxl은 1-based 인덱스
-                cell = target_ws.cell(row=row_idx + 1, column=col_idx + 1)
+                cell = target_ws.cell(row=row_idx + 1, column=target_col)
                 
                 # 병합된 셀은 건너뛰기
                 if isinstance(cell, MergedCell):

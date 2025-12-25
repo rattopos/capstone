@@ -4,52 +4,10 @@
     "region_count": 0
   },
   "nationwide_data": {
-    "employment_rate": 61.6,
-    "change": 61.2,
-    "main_age_groups": [
-      {
-        "name": 78.7,
-        "display_name": 78.7,
-        "change": 79.6
-      },
-      {
-        "name": 74,
-        "display_name": 74,
-        "change": 74.7
-      },
-      {
-        "name": 73.5,
-        "display_name": 73.5,
-        "change": 74.6
-      },
-      {
-        "name": 57.3,
-        "display_name": 57.3,
-        "change": 58.9
-      }
-    ],
-    "top_age_groups": [
-      {
-        "name": 78.7,
-        "display_name": 78.7,
-        "change": 79.6
-      },
-      {
-        "name": 74,
-        "display_name": 74,
-        "change": 74.7
-      },
-      {
-        "name": 73.5,
-        "display_name": 73.5,
-        "change": 74.6
-      },
-      {
-        "name": 57.3,
-        "display_name": 57.3,
-        "change": 58.9
-      }
-    ]
+    "employment_rate": 59.2,
+    "change": NaN,
+    "main_age_groups": [],
+    "top_age_groups": []
   },
   "regional_data": {
     "increase_regions": [],
@@ -78,15 +36,15 @@
         "rowspan": null,
         "region": "전 국",
         "changes": [
-          61.2,
-          61.1,
-          60.9,
-          61.2
+          NaN,
+          NaN,
+          NaN,
+          NaN
         ],
         "rates": [
-          61.2,
-          61.6,
-          60.9
+          57.9,
+          59.2,
+          56.7
         ]
       }
     ]
