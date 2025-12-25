@@ -555,12 +555,29 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             print(f"[DEBUG] generate_report 함수 직접 호출")
             template_path = TEMPLATES_DIR / template_name
             output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
-            data = module.generate_report(excel_path, template_path, output_path)
+            # 기초자료 경로가 있으면 전달 시도 (함수 시그니처 확인)
+            try:
+                import inspect
+                sig = inspect.signature(module.generate_report)
+                params = sig.parameters
+                if 'raw_excel_path' in params:
+                    data = module.generate_report(excel_path, template_path, output_path, 
+                                                 raw_excel_path=raw_excel_path, year=year, quarter=quarter)
+                else:
+                    data = module.generate_report(excel_path, template_path, output_path)
+            except (TypeError, AttributeError):
+                # 파라미터가 맞지 않으면 기본 방식 사용
+                data = module.generate_report(excel_path, template_path, output_path)
             print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 3: Generator 클래스 사용 (광공업생산)
         elif generator_class:
             print(f"[DEBUG] Generator 클래스 사용: {generator_class.__name__}")
+            # Generator 클래스는 현재 기초자료 지원하지 않음 (향후 확장 가능)
+            # TODO: Generator 클래스에 raw_excel_path 파라미터 지원 추가 시 아래 주석 해제
+            # if raw_excel_path:
+            #     generator = generator_class(excel_path, raw_excel_path=raw_excel_path, year=year, quarter=quarter)
+            # else:
             generator = generator_class(excel_path)
             data = generator.extract_all_data()
             print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")

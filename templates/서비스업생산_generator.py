@@ -274,8 +274,23 @@ def get_summary_box_data(regional_data):
     }
 
 
-def generate_report(excel_path, template_path, output_path):
-    """보고서 생성"""
+def generate_report(excel_path, template_path, output_path, raw_excel_path=None, year=None, quarter=None):
+    """보고서 생성
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        template_path: 템플릿 파일 경로
+        output_path: 출력 파일 경로
+        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항, 향후 기초자료 직접 추출 지원 예정)
+        year: 현재 연도 (선택사항)
+        quarter: 현재 분기 (선택사항)
+    """
+    # TODO: 향후 기초자료 직접 추출 지원
+    # if raw_excel_path and year and quarter:
+    #     from raw_data_extractor import RawDataExtractor
+    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
+    #     # 기초자료에서 서비스업생산 데이터 직접 추출
+    #     # return extract_from_raw_data(extractor, ...)
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
     

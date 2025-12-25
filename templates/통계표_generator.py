@@ -548,20 +548,19 @@ class 통계표Generator:
         }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
-        """GRDP 데이터 플레이스홀더 생성 (N/A)"""
-        yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
-        quarterly_keys = [
-            "2016.4/4",
-            "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
-            "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
-            "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
-            "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
-            "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
-            "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
-            "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
-            "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
-            "2025.1/4"
-        ]
+        """GRDP 데이터 플레이스홀더 생성 (N/A) - 2016년부터"""
+        yearly_years = ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        
+        # 2016년 1분기부터 현재 분기까지 생성
+        quarterly_keys = []
+        for year in range(2016, self.current_year + 1):
+            start_q = 1 if year > 2016 else 1
+            end_q = self.current_quarter if year == self.current_year else 4
+            for quarter in range(start_q, end_q + 1):
+                if year == self.current_year and quarter == self.current_quarter:
+                    quarterly_keys.append(f"{year}.{quarter}/4p")
+                else:
+                    quarterly_keys.append(f"{year}.{quarter}/4")
         
         # 모든 값을 N/A로 설정
         yearly = {}

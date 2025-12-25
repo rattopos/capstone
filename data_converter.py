@@ -179,6 +179,9 @@ class DataConverter:
     def _parse_raw_header(self, raw_df: pd.DataFrame, header_row: int = 2) -> Dict:
         """기초자료 헤더에서 연도/분기별 열 인덱스 매핑 생성
         
+        RawDataExtractor의 parse_sheet_structure를 재사용하거나 동일한 로직 사용.
+        향후 RawDataExtractor를 직접 사용하도록 리팩토링 가능.
+        
         Returns:
             {
                 'years': {2020: col_idx, 2021: col_idx, ...},
@@ -204,8 +207,8 @@ class DataConverter:
                 year = int(re.match(r'^(\d{4})\.?0?$', val_str).group(1))
                 year_cols[year] = col_idx
             
-            # 분기 패턴: "2022  2/4", "2022 2/4p" 등
-            quarter_match = re.search(r'(\d{4})\s*(\d)/4', val_str)
+            # 분기 패턴: "2022  2/4", "2022 2/4p", "2022.2/4" 등
+            quarter_match = re.search(r'(\d{4})[.\s]*(\d)/4', val_str)
             if quarter_match:
                 q_year = int(quarter_match.group(1))
                 q_num = int(quarter_match.group(2))

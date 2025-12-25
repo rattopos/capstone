@@ -491,8 +491,26 @@ def get_summary_box_data(regional_data):
     }
 
 
-def generate_report_data(excel_path):
-    """보고서 데이터 생성 (app.py에서 호출)"""
+def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
+    """보고서 데이터 생성 (app.py에서 호출)
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항, 향후 기초자료 직접 추출 지원 예정)
+        year: 현재 연도 (선택사항)
+        quarter: 현재 분기 (선택사항)
+    
+    Returns:
+        보고서 데이터 딕셔너리
+    """
+    # TODO: 향후 기초자료 직접 추출 지원
+    # if raw_excel_path and year and quarter:
+    #     from raw_data_extractor import RawDataExtractor
+    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
+    #     # 기초자료에서 건설동향 데이터 직접 추출
+    #     # return extract_from_raw_data(extractor, ...)
+    
+    # 현재는 분석표 기반 (기존 로직)
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
     

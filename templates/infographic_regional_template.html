@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 인포그래픽</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-blue: #2E7DBC;
+            --light-blue: #E8F4FC;
+            --pink: #E91E63;
+            --orange: #FF9800;
+            --red: #F44336;
+            --blue: #2196F3;
+            --gray: #9E9E9E;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, #E8F4FC 0%, #B3E5FC 50%, #81D4FA 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .logo-subtext {
+            font-size: 11px;
+            color: var(--primary-blue);
+            opacity: 0.8;
+        }
+        
+        .title-section {
+            text-align: right;
+        }
+        
+        .period {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .main-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--primary-blue);
+            letter-spacing: -1px;
+        }
+        
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+        
+        .card-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .card-subtitle {
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        /* Card themes */
+        .card.mining .card-header { background: linear-gradient(135deg, #E91E63, #F06292); }
+        .card.service .card-header { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+        .card.retail .card-header { background: linear-gradient(135deg, #E91E63, #F06292); }
+        .card.export .card-header { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+        .card.employment .card-header { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+        .card.cpi .card-header { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+        
+        /* Card Content */
+        .card-content {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* Map Section */
+        .map-section {
+            flex: 1;
+            position: relative;
+            min-height: 160px;
+        }
+        
+        .map-canvas {
+            width: 100%;
+            height: 160px;
+            object-fit: contain;
+        }
+        
+        /* Ranking Section */
+        .ranking-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .ranking-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .ranking-column {
+            flex: 1;
+        }
+        
+        .ranking-label {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        
+        .ranking-label.top {
+            background: #FFCDD2;
+            color: #C62828;
+        }
+        
+        .ranking-label.bottom {
+            background: #BBDEFB;
+            color: #1565C0;
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        
+        .region-name {
+            font-weight: 500;
+            min-width: 30px;
+        }
+        
+        .region-value {
+            font-weight: 700;
+        }
+        
+        .arrow {
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .arrow.up { color: #F44336; }
+        .arrow.down { color: #2196F3; }
+        .arrow.same { color: #9E9E9E; }
+        
+        /* National Average */
+        .national-avg {
+            text-align: right;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #E0E0E0;
+        }
+        
+        .national-label {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .national-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .legend-color.increase { background: #FFCDD2; }
+        .legend-color.decrease { background: #BBDEFB; }
+        .legend-color.same { background: #E0E0E0; }
+        .legend-color.above-avg { background: #FFCDD2; }
+        .legend-color.below-avg { background: #BBDEFB; }
+        .legend-color.national-avg { background: #FFF9C4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 50 50">
+                    <circle cx="25" cy="25" r="23" fill="none" stroke="#2E7DBC" stroke-width="3"/>
+                    <path d="M15 25 Q25 15 35 25 Q25 35 15 25" fill="#2E7DBC"/>
+                </svg>
+                <div>
+                    <div class="logo-text" id="organization-name">국가데이터처</div>
+                    <div class="logo-subtext">Ministry of Data and Statistics</div>
+                </div>
+            </div>
+            <div class="title-section">
+                <div class="period" id="report-period">2025년 2/4분기</div>
+                <div class="main-title">지역경제동향</div>
+            </div>
+        </div>
+        
+        <!-- Cards Grid -->
+        <div class="cards-grid">
+            <!-- 광공업생산 -->
+            <div class="card mining" id="card-mining">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">광공업생산</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-mining"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color increase"></div>증가</div>
+                    <div class="legend-item"><div class="legend-color decrease"></div>감소</div>
+                </div>
+            </div>
+            
+            <!-- 서비스업생산 -->
+            <div class="card service" id="card-service">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">서비스업생산</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-service"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color increase"></div>증가</div>
+                    <div class="legend-item"><div class="legend-color decrease"></div>감소</div>
+                </div>
+            </div>
+            
+            <!-- 소매판매 -->
+            <div class="card retail" id="card-retail">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">소매판매</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-retail"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color increase"></div>증가</div>
+                    <div class="legend-item"><div class="legend-color decrease"></div>감소</div>
+                    <div class="legend-item"><div class="legend-color same"></div>보합</div>
+                </div>
+            </div>
+            
+            <!-- 수출 -->
+            <div class="card export" id="card-export">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">수 출</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-export"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color increase"></div>증가</div>
+                    <div class="legend-item"><div class="legend-color decrease"></div>감소</div>
+                    <div class="legend-item"><div class="legend-color same"></div>보합</div>
+                </div>
+            </div>
+            
+            <!-- 고용률 -->
+            <div class="card employment" id="card-employment">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">고 용 률</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %p)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-employment"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color increase"></div>상승</div>
+                    <div class="legend-item"><div class="legend-color decrease"></div>하락</div>
+                    <div class="legend-item"><div class="legend-color same"></div>보합</div>
+                </div>
+            </div>
+            
+            <!-- 소비자물가 -->
+            <div class="card cpi" id="card-cpi">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="white">
+                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                        </svg>
+                        <div>
+                            <div class="card-title">소비자물가</div>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">(전년동분기대비, %)</div>
+                </div>
+                <div class="card-content">
+                    <div class="map-section">
+                        <canvas class="map-canvas" id="map-cpi"></canvas>
+                    </div>
+                    <div class="ranking-section">
+                        <div class="ranking-group">
+                            <div class="ranking-column">
+                                <div class="ranking-label top">상위</div>
+                                <div class="ranking-list top-list"></div>
+                            </div>
+                            <div class="ranking-column">
+                                <div class="ranking-label bottom">하위</div>
+                                <div class="ranking-list bottom-list"></div>
+                            </div>
+                        </div>
+                        <div class="national-avg">
+                            <span class="national-label">전국</span>
+                            <span class="national-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color national-avg"></div>전국 평균</div>
+                    <div class="legend-item"><div class="legend-color above-avg"></div>평균 초과</div>
+                    <div class="legend-item"><div class="legend-color below-avg"></div>평균 미만</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // 지도 이미지 경로 설정
+        // ========================================
+        const MAP_IMAGE_PATH = '/correct_answer/인포그래픽_map.png';
+        
+        // ========================================
+        // 각 지역의 시드 포인트 좌표 (이미지 비율 기준, 0~1)
+        // 지도 이미지 내에서 각 지역을 클릭할 시작점
+        // ========================================
+        // 이미지 크기: 약 595x842 (원본 PNG 기준)
+        // 시드 포인트 좌표 (0~1 비율, 이미지 내 지도 영역 기준)
+        const regionSeedPoints = {
+            // 특별시/광역시 (작은 영역이므로 정확한 위치 필요)
+            '서울': { x: 0.38, y: 0.145 },
+            '인천': { x: 0.30, y: 0.155 },
+            '대전': { x: 0.44, y: 0.365 },
+            '대구': { x: 0.60, y: 0.44 },
+            '광주': { x: 0.34, y: 0.545 },
+            '울산': { x: 0.70, y: 0.465 },
+            '부산': { x: 0.66, y: 0.54 },
+            '세종': { x: 0.42, y: 0.335 },
+            
+            // 도 (넓은 영역)
+            '경기': { x: 0.37, y: 0.185 },
+            '강원': { x: 0.58, y: 0.145 },
+            '충북': { x: 0.52, y: 0.30 },
+            '충남': { x: 0.32, y: 0.335 },
+            '전북': { x: 0.36, y: 0.445 },
+            '전남': { x: 0.34, y: 0.62 },
+            '경북': { x: 0.62, y: 0.32 },
+            '경남': { x: 0.56, y: 0.52 },
+            '제주': { x: 0.37, y: 0.78 }
+        };
+
+        // ========================================
+        // 데이터 구조
+        // ========================================
+        const infographicData = {
+            period: '2025년 2/4분기',
+            organization: '국가데이터처',
+            
+            indicators: {
+                mining: {
+                    title: '광공업생산',
+                    unit: '%',
+                    national: { value: 2.1, direction: 'up' },
+                    regions: {
+                        '서울': { value: -10.1, direction: 'down' },
+                        '부산': { value: -4.0, direction: 'down' },
+                        '대구': { value: 3.5, direction: 'up' },
+                        '인천': { value: 5.2, direction: 'up' },
+                        '광주': { value: 11.3, direction: 'up' },
+                        '대전': { value: 2.1, direction: 'up' },
+                        '울산': { value: 4.5, direction: 'up' },
+                        '세종': { value: 1.2, direction: 'up' },
+                        '경기': { value: 12.3, direction: 'up' },
+                        '강원': { value: 2.8, direction: 'up' },
+                        '충북': { value: 14.1, direction: 'up' },
+                        '충남': { value: -6.4, direction: 'down' },
+                        '전북': { value: 3.2, direction: 'up' },
+                        '전남': { value: 5.8, direction: 'up' },
+                        '경북': { value: 4.1, direction: 'up' },
+                        '경남': { value: 2.9, direction: 'up' },
+                        '제주': { value: 1.5, direction: 'up' }
+                    },
+                    top: [
+                        { region: '충북', value: 14.1, direction: 'up' },
+                        { region: '경기', value: 12.3, direction: 'up' },
+                        { region: '광주', value: 11.3, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '서울', value: 10.1, direction: 'down' },
+                        { region: '충남', value: 6.4, direction: 'down' },
+                        { region: '부산', value: 4.0, direction: 'down' }
+                    ]
+                },
+                
+                service: {
+                    title: '서비스업생산',
+                    unit: '%',
+                    national: { value: 1.4, direction: 'up' },
+                    regions: {
+                        '서울': { value: 1.5, direction: 'up' },
+                        '부산': { value: 1.2, direction: 'up' },
+                        '대구': { value: 2.1, direction: 'up' },
+                        '인천': { value: 3.5, direction: 'up' },
+                        '광주': { value: 2.8, direction: 'up' },
+                        '대전': { value: 1.8, direction: 'up' },
+                        '울산': { value: 0.9, direction: 'up' },
+                        '세종': { value: 3.3, direction: 'up' },
+                        '경기': { value: 5.4, direction: 'up' },
+                        '강원': { value: -1.6, direction: 'down' },
+                        '충북': { value: 1.4, direction: 'up' },
+                        '충남': { value: 1.1, direction: 'up' },
+                        '전북': { value: 0.8, direction: 'up' },
+                        '전남': { value: 1.3, direction: 'up' },
+                        '경북': { value: 0.7, direction: 'up' },
+                        '경남': { value: -2.8, direction: 'down' },
+                        '제주': { value: -9.2, direction: 'down' }
+                    },
+                    top: [
+                        { region: '경기', value: 5.4, direction: 'up' },
+                        { region: '인천', value: 3.5, direction: 'up' },
+                        { region: '세종', value: 3.3, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '제주', value: 9.2, direction: 'down' },
+                        { region: '경남', value: 2.8, direction: 'down' },
+                        { region: '강원', value: 1.6, direction: 'down' }
+                    ]
+                },
+                
+                retail: {
+                    title: '소매판매',
+                    unit: '%',
+                    national: { value: -0.2, direction: 'down' },
+                    regions: {
+                        '서울': { value: -1.8, direction: 'down' },
+                        '부산': { value: 0.5, direction: 'up' },
+                        '대구': { value: 1.2, direction: 'up' },
+                        '인천': { value: 4.9, direction: 'up' },
+                        '광주': { value: 2.1, direction: 'up' },
+                        '대전': { value: 0.8, direction: 'up' },
+                        '울산': { value: 5.4, direction: 'up' },
+                        '세종': { value: 3.5, direction: 'up' },
+                        '경기': { value: 1.5, direction: 'up' },
+                        '강원': { value: 0.3, direction: 'up' },
+                        '충북': { value: -0.5, direction: 'down' },
+                        '충남': { value: 0.2, direction: 'up' },
+                        '전북': { value: -1.2, direction: 'down' },
+                        '전남': { value: 0.8, direction: 'up' },
+                        '경북': { value: -1.8, direction: 'down' },
+                        '경남': { value: 0.4, direction: 'up' },
+                        '제주': { value: -2.3, direction: 'down' }
+                    },
+                    top: [
+                        { region: '울산', value: 5.4, direction: 'up' },
+                        { region: '인천', value: 4.9, direction: 'up' },
+                        { region: '세종', value: 3.5, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '제주', value: 2.3, direction: 'down' },
+                        { region: '경북', value: 1.8, direction: 'down' },
+                        { region: '서울', value: 1.8, direction: 'down' }
+                    ]
+                },
+                
+                export: {
+                    title: '수출',
+                    unit: '%',
+                    national: { value: 2.1, direction: 'up' },
+                    regions: {
+                        '서울': { value: 8.5, direction: 'up' },
+                        '부산': { value: -6.0, direction: 'down' },
+                        '대구': { value: 5.2, direction: 'up' },
+                        '인천': { value: 12.5, direction: 'up' },
+                        '광주': { value: 8.8, direction: 'up' },
+                        '대전': { value: 3.2, direction: 'up' },
+                        '울산': { value: -8.5, direction: 'down' },
+                        '세종': { value: -37.2, direction: 'down' },
+                        '경기': { value: 15.8, direction: 'up' },
+                        '강원': { value: 5.5, direction: 'up' },
+                        '충북': { value: 34.9, direction: 'up' },
+                        '충남': { value: -5.2, direction: 'down' },
+                        '전북': { value: 18.2, direction: 'up' },
+                        '전남': { value: -13.7, direction: 'down' },
+                        '경북': { value: 10.5, direction: 'up' },
+                        '경남': { value: 12.9, direction: 'up' },
+                        '제주': { value: 37.8, direction: 'up' }
+                    },
+                    top: [
+                        { region: '제주', value: 37.8, direction: 'up' },
+                        { region: '충북', value: 34.9, direction: 'up' },
+                        { region: '경남', value: 12.9, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '세종', value: 37.2, direction: 'down' },
+                        { region: '전남', value: 13.7, direction: 'down' },
+                        { region: '부산', value: 6.0, direction: 'down' }
+                    ]
+                },
+                
+                employment: {
+                    title: '고용률',
+                    unit: '%p',
+                    national: { value: 0.2, direction: 'up' },
+                    regions: {
+                        '서울': { value: -0.2, direction: 'down' },
+                        '부산': { value: 1.0, direction: 'up' },
+                        '대구': { value: 0.5, direction: 'up' },
+                        '인천': { value: 0.3, direction: 'up' },
+                        '광주': { value: -0.4, direction: 'down' },
+                        '대전': { value: 1.2, direction: 'up' },
+                        '울산': { value: 0.2, direction: 'up' },
+                        '세종': { value: 0.1, direction: 'up' },
+                        '경기': { value: 0.4, direction: 'up' },
+                        '강원': { value: 1.0, direction: 'up' },
+                        '충북': { value: 0.6, direction: 'up' },
+                        '충남': { value: 0.3, direction: 'up' },
+                        '전북': { value: -1.0, direction: 'down' },
+                        '전남': { value: 0.5, direction: 'up' },
+                        '경북': { value: 0.2, direction: 'up' },
+                        '경남': { value: 0.1, direction: 'up' },
+                        '제주': { value: -0.3, direction: 'down' }
+                    },
+                    top: [
+                        { region: '대전', value: 1.2, direction: 'up' },
+                        { region: '부산', value: 1.0, direction: 'up' },
+                        { region: '강원', value: 1.0, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '전북', value: 1.0, direction: 'down' },
+                        { region: '광주', value: 0.4, direction: 'down' },
+                        { region: '서울', value: 0.2, direction: 'down' }
+                    ]
+                },
+                
+                cpi: {
+                    title: '소비자물가',
+                    unit: '%',
+                    national: { value: 2.1, direction: 'up' },
+                    regions: {
+                        '서울': { value: 2.0, direction: 'up' },
+                        '부산': { value: 2.2, direction: 'up' },
+                        '대구': { value: 2.1, direction: 'up' },
+                        '인천': { value: 2.0, direction: 'up' },
+                        '광주': { value: 1.7, direction: 'up' },
+                        '대전': { value: 1.9, direction: 'up' },
+                        '울산': { value: 1.9, direction: 'up' },
+                        '세종': { value: 1.8, direction: 'up' },
+                        '경기': { value: 2.1, direction: 'up' },
+                        '강원': { value: 2.0, direction: 'up' },
+                        '충북': { value: 1.8, direction: 'up' },
+                        '충남': { value: 1.9, direction: 'up' },
+                        '전북': { value: 2.0, direction: 'up' },
+                        '전남': { value: 2.0, direction: 'up' },
+                        '경북': { value: 1.9, direction: 'up' },
+                        '경남': { value: 2.0, direction: 'up' },
+                        '제주': { value: 1.5, direction: 'up' }
+                    },
+                    top: [
+                        { region: '부산', value: 2.2, direction: 'up' },
+                        { region: '경기', value: 2.1, direction: 'up' },
+                        { region: '대구', value: 2.1, direction: 'up' }
+                    ],
+                    bottom: [
+                        { region: '제주', value: 1.5, direction: 'up' },
+                        { region: '광주', value: 1.7, direction: 'up' },
+                        { region: '울산', value: 1.9, direction: 'up' }
+                    ]
+                }
+            }
+        };
+
+        // ========================================
+        // 색상 계산 함수
+        // ========================================
+        function getColorForValue(value, type = 'default', nationalAvg = 0) {
+            if (type === 'cpi') {
+                if (value > nationalAvg + 0.05) return { r: 255, g: 205, b: 210, a: 180 }; // 빨간계열
+                if (value < nationalAvg - 0.05) return { r: 187, g: 222, b: 251, a: 180 }; // 파란계열
+                return { r: 255, g: 249, b: 196, a: 180 }; // 노란계열
+            }
+            
+            // 일반적인 증감 표시 (빨간-파란 그라데이션)
+            if (value > 15) return { r: 198, g: 40, b: 40, a: 200 };
+            if (value > 10) return { r: 229, g: 57, b: 53, a: 190 };
+            if (value > 5) return { r: 239, g: 83, b: 80, a: 180 };
+            if (value > 0) return { r: 255, g: 205, b: 210, a: 170 };
+            if (value === 0) return { r: 224, g: 224, b: 224, a: 150 };
+            if (value > -5) return { r: 187, g: 222, b: 251, a: 170 };
+            if (value > -10) return { r: 100, g: 181, b: 246, a: 180 };
+            if (value > -15) return { r: 30, g: 136, b: 229, a: 190 };
+            return { r: 21, g: 101, b: 192, a: 200 };
+        }
+
+        // ========================================
+        // Flood Fill 알고리즘
+        // ========================================
+        function floodFill(ctx, startX, startY, fillColor, width, height) {
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            const startPos = (startY * width + startX) * 4;
+            const startR = data[startPos];
+            const startG = data[startPos + 1];
+            const startB = data[startPos + 2];
+            
+            // 시작점이 이미 흰색이거나 투명하면 스킵
+            if (startR > 250 && startG > 250 && startB > 250) return;
+            if (data[startPos + 3] < 10) return;
+            
+            // 회색 범위 체크 (지도의 회색 영역) - 조건 완화
+            const isGray = (r, g, b, a) => {
+                if (a < 50) return false; // 투명
+                if (r > 245 && g > 245 && b > 245) return false; // 흰색 경계선
+                const diff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+                // 회색 범위를 더 넓게: 밝은 회색(190~220)부터 중간 회색까지
+                return diff < 40 && r > 170 && r < 235 && g > 170 && g < 235 && b > 170 && b < 235;
+            };
+            
+            if (!isGray(startR, startG, startB, data[startPos + 3])) return;
+            
+            const stack = [[startX, startY]];
+            const visited = new Set();
+            
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+                
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                
+                const pos = (y * width + x) * 4;
+                const r = data[pos];
+                const g = data[pos + 1];
+                const b = data[pos + 2];
+                const a = data[pos + 3];
+                
+                if (!isGray(r, g, b, a)) continue;
+                
+                visited.add(key);
+                
+                // 색상 블렌딩
+                const alpha = fillColor.a / 255;
+                data[pos] = Math.round(r * (1 - alpha) + fillColor.r * alpha);
+                data[pos + 1] = Math.round(g * (1 - alpha) + fillColor.g * alpha);
+                data[pos + 2] = Math.round(b * (1 - alpha) + fillColor.b * alpha);
+                
+                // 4방향 탐색
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // ========================================
+        // 지도 렌더링 함수
+        // ========================================
+        let mapImage = null;
+        
+        function loadMapImage() {
+            return new Promise((resolve, reject) => {
+                if (mapImage) {
+                    resolve(mapImage);
+                    return;
+                }
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    mapImage = img;
+                    resolve(img);
+                };
+                img.onerror = reject;
+                img.src = MAP_IMAGE_PATH;
+            });
+        }
+
+        async function renderMap(canvasId, indicatorKey) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const indicator = infographicData.indicators[indicatorKey];
+            
+            try {
+                const img = await loadMapImage();
+                
+                // Canvas 크기 설정 (고해상도)
+                const displayWidth = canvas.offsetWidth || 160;
+                const displayHeight = canvas.offsetHeight || 160;
+                const scale = 2; // 해상도 스케일
+                
+                canvas.width = displayWidth * scale;
+                canvas.height = displayHeight * scale;
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                
+                // 이미지 비율 유지하면서 그리기
+                const imgRatio = img.width / img.height;
+                const canvasRatio = canvas.width / canvas.height;
+                
+                let drawWidth, drawHeight, offsetX, offsetY;
+                
+                if (imgRatio > canvasRatio) {
+                    drawWidth = canvas.width;
+                    drawHeight = canvas.width / imgRatio;
+                    offsetX = 0;
+                    offsetY = (canvas.height - drawHeight) / 2;
+                } else {
+                    drawHeight = canvas.height;
+                    drawWidth = canvas.height * imgRatio;
+                    offsetX = (canvas.width - drawWidth) / 2;
+                    offsetY = 0;
+                }
+                
+                // 배경 지우기
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 지도 이미지 그리기
+                ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                
+                // 각 지역에 색상 적용
+                for (const [region, seedPoint] of Object.entries(regionSeedPoints)) {
+                    if (indicator.regions[region]) {
+                        const value = indicator.regions[region].value;
+                        const colorType = indicatorKey === 'cpi' ? 'cpi' : 'default';
+                        const nationalAvg = indicatorKey === 'cpi' ? indicator.national.value : 0;
+                        const color = getColorForValue(value, colorType, nationalAvg);
+                        
+                        // 시드 포인트를 캔버스 좌표로 변환
+                        const seedX = Math.round(offsetX + seedPoint.x * drawWidth);
+                        const seedY = Math.round(offsetY + seedPoint.y * drawHeight);
+                        
+                        floodFill(ctx, seedX, seedY, color, canvas.width, canvas.height);
+                    }
+                }
+            } catch (error) {
+                console.error('Map rendering error:', error);
+                // 에러 시 회색 배경
+                ctx.fillStyle = '#E0E0E0';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#666';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('지도 로딩 실패', canvas.width/2, canvas.height/2);
+            }
+        }
+
+        // ========================================
+        // 순위 렌더링 함수
+        // ========================================
+        function renderRanking(cardId, indicatorKey) {
+            const card = document.getElementById(cardId);
+            const indicator = infographicData.indicators[indicatorKey];
+            
+            // 상위 순위
+            const topList = card.querySelector('.top-list');
+            topList.innerHTML = '';
+            indicator.top.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'ranking-item';
+                const arrow = item.direction === 'up' ? '▲' : (item.direction === 'down' ? '▼' : '-');
+                const arrowClass = item.direction === 'up' ? 'up' : (item.direction === 'down' ? 'down' : 'same');
+                div.innerHTML = `
+                    <span class="region-name">${item.region}</span>
+                    <span class="region-value">${Math.abs(item.value)}</span>
+                    <span class="arrow ${arrowClass}">${arrow}</span>
+                `;
+                topList.appendChild(div);
+            });
+            
+            // 하위 순위
+            const bottomList = card.querySelector('.bottom-list');
+            bottomList.innerHTML = '';
+            indicator.bottom.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'ranking-item';
+                const arrow = item.direction === 'up' ? '▲' : (item.direction === 'down' ? '▼' : '-');
+                const arrowClass = item.direction === 'up' ? 'up' : (item.direction === 'down' ? 'down' : 'same');
+                div.innerHTML = `
+                    <span class="region-name">${item.region}</span>
+                    <span class="region-value">${Math.abs(item.value)}</span>
+                    <span class="arrow ${arrowClass}">${arrow}</span>
+                `;
+                bottomList.appendChild(div);
+            });
+            
+            // 전국 평균
+            const nationalValue = card.querySelector('.national-value');
+            const arrow = indicator.national.direction === 'up' ? '▲' : (indicator.national.direction === 'down' ? '▼' : '-');
+            const arrowClass = indicator.national.direction === 'up' ? 'up' : (indicator.national.direction === 'down' ? 'down' : 'same');
+            nationalValue.innerHTML = `${indicator.national.value}${indicator.unit}<span class="arrow ${arrowClass}">${arrow}</span>`;
+        }
+
+        // ========================================
+        // 전체 렌더링 함수
+        // ========================================
+        async function renderInfographic() {
+            // 헤더 정보
+            document.getElementById('report-period').textContent = infographicData.period;
+            document.getElementById('organization-name').textContent = infographicData.organization;
+            
+            // 각 카드 렌더링
+            const cards = [
+                { cardId: 'card-mining', mapId: 'map-mining', key: 'mining' },
+                { cardId: 'card-service', mapId: 'map-service', key: 'service' },
+                { cardId: 'card-retail', mapId: 'map-retail', key: 'retail' },
+                { cardId: 'card-export', mapId: 'map-export', key: 'export' },
+                { cardId: 'card-employment', mapId: 'map-employment', key: 'employment' },
+                { cardId: 'card-cpi', mapId: 'map-cpi', key: 'cpi' }
+            ];
+            
+            for (const { cardId, mapId, key } of cards) {
+                await renderMap(mapId, key);
+                renderRanking(cardId, key);
+            }
+        }
+
+        // ========================================
+        // 데이터 업데이트 헬퍼 함수
+        // ========================================
+        function updateRegionData(indicatorKey, regionName, value, direction) {
+            if (infographicData.indicators[indicatorKey]) {
+                infographicData.indicators[indicatorKey].regions[regionName] = { value, direction };
+            }
+        }
+        
+        function updateNationalData(indicatorKey, value, direction) {
+            if (infographicData.indicators[indicatorKey]) {
+                infographicData.indicators[indicatorKey].national = { value, direction };
+            }
+        }
+        
+        function updateRanking(indicatorKey, topList, bottomList) {
+            if (infographicData.indicators[indicatorKey]) {
+                infographicData.indicators[indicatorKey].top = topList;
+                infographicData.indicators[indicatorKey].bottom = bottomList;
+            }
+        }
+        
+        function updatePeriod(period) {
+            infographicData.period = period;
+        }
+
+        // ========================================
+        // 초기화
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            renderInfographic();
+        });
+
+        // ========================================
+        // 외부 API
+        // ========================================
+        window.InfographicAPI = {
+            data: infographicData,
+            seedPoints: regionSeedPoints,
+            render: renderInfographic,
+            updateRegion: updateRegionData,
+            updateNational: updateNationalData,
+            updateRanking: updateRanking,
+            updatePeriod: updatePeriod,
+            getColorForValue: getColorForValue
+        };
+    </script>
+</body>
+</html>
