@@ -853,9 +853,6 @@
                     <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
                 </div>
                 <div class="action-btns">
-                    <button class="btn btn-secondary" id="previewBtn" disabled>
-                        👁️ 미리보기
-                    </button>
                     <button class="btn btn-success" id="generateBtn" disabled>
                         ✨ 전체 생성
                     </button>
@@ -941,7 +938,6 @@
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
             pageIndicator: document.getElementById('pageIndicator'),
-            previewBtn: document.getElementById('previewBtn'),
             generateBtn: document.getElementById('generateBtn'),
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
@@ -978,7 +974,6 @@
             elements.nextBtn.addEventListener('click', () => navigateReport(1));
 
             // Actions
-            elements.previewBtn.addEventListener('click', generateCurrentPreview);
             elements.generateBtn.addEventListener('click', generateAllReports);
             elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
 
@@ -1126,9 +1121,6 @@
                     elements.quarterSelect.value = data.quarter;
                     elements.yearSelect.disabled = false;
                     elements.quarterSelect.disabled = false;
-
-                    // Enable buttons
-                    elements.previewBtn.disabled = false;
 
                     showToast('파일이 성공적으로 업로드되었습니다.', 'success');
 
