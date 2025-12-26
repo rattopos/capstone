@@ -78,7 +78,7 @@ SUMMARY_REPORTS = [
         'name': '표지',
         'sheet': None,
         'generator': None,
-        'template': '표지_template.html',
+        'template': 'cover_template.html',
         'icon': '📑',
         'category': 'summary'
     },
@@ -87,7 +87,7 @@ SUMMARY_REPORTS = [
         'name': '일러두기',
         'sheet': None,
         'generator': None,
-        'template': '일러두기_template.html',
+        'template': 'guide_template.html',
         'icon': '📖',
         'category': 'summary'
     },
@@ -96,7 +96,7 @@ SUMMARY_REPORTS = [
         'name': '목차',
         'sheet': None,
         'generator': None,
-        'template': '목차_template.html',
+        'template': 'toc_template.html',
         'icon': '📋',
         'category': 'summary'
     },
@@ -104,8 +104,8 @@ SUMMARY_REPORTS = [
         'id': 'infographic',
         'name': '인포그래픽',
         'sheet': 'multiple',
-        'generator': '인포그래픽_generator.py',
-        'template': '인포그래픽_js_template.html',
+        'generator': 'infographic_generator.py',
+        'template': 'infographic_js_template.html',
         'icon': '📊',
         'category': 'summary'
     },
@@ -113,8 +113,8 @@ SUMMARY_REPORTS = [
         'id': 'summary_overview',
         'name': '요약-지역경제동향',
         'sheet': 'multiple',
-        'generator': '요약_지역경제동향_generator.py',
-        'template': '요약_지역경제동향_template.html',
+        'generator': 'summary_regional_economy_generator.py',
+        'template': 'summary_regional_economy_template.html',
         'icon': '📈',
         'category': 'summary'
     },
@@ -122,8 +122,8 @@ SUMMARY_REPORTS = [
         'id': 'summary_production',
         'name': '요약-생산',
         'sheet': 'multiple',
-        'generator': '요약_생산_generator.py',
-        'template': '요약_생산_template.html',
+        'generator': 'summary_production_generator.py',
+        'template': 'summary_production_template.html',
         'icon': '🏭',
         'category': 'summary'
     },
@@ -131,8 +131,8 @@ SUMMARY_REPORTS = [
         'id': 'summary_consumption',
         'name': '요약-소비건설',
         'sheet': 'multiple',
-        'generator': '요약_소비건설_generator.py',
-        'template': '요약_소비건설_template.html',
+        'generator': 'summary_consumption_construction_generator.py',
+        'template': 'summary_consumption_construction_template.html',
         'icon': '🛒',
         'category': 'summary'
     },
@@ -140,8 +140,8 @@ SUMMARY_REPORTS = [
         'id': 'summary_trade_price',
         'name': '요약-수출물가',
         'sheet': 'multiple',
-        'generator': '요약_수출물가_generator.py',
-        'template': '요약_수출물가_template.html',
+        'generator': 'summary_export_price_generator.py',
+        'template': 'summary_export_price_template.html',
         'icon': '📦',
         'category': 'summary'
     },
@@ -149,8 +149,8 @@ SUMMARY_REPORTS = [
         'id': 'summary_employment',
         'name': '요약-고용인구',
         'sheet': 'multiple',
-        'generator': '요약_고용인구_generator.py',
-        'template': '요약_고용인구_template.html',
+        'generator': 'summary_employment_generator.py',
+        'template': 'summary_employment_template.html',
         'icon': '👔',
         'category': 'summary'
     },
@@ -162,8 +162,8 @@ SECTOR_REPORTS = [
         'id': 'manufacturing',
         'name': '광공업생산',
         'sheet': 'A 분석',
-        'generator': '광공업생산_generator.py',
-        'template': '광공업생산_template.html',
+        'generator': 'mining_manufacturing_generator.py',
+        'template': 'mining_manufacturing_template.html',
         'icon': '🏭',
         'category': 'production'
     },
@@ -171,8 +171,8 @@ SECTOR_REPORTS = [
         'id': 'service',
         'name': '서비스업생산',
         'sheet': 'B 분석',
-        'generator': '서비스업생산_generator.py',
-        'template': '서비스업생산_template.html',
+        'generator': 'service_industry_generator.py',
+        'template': 'service_industry_template.html',
         'icon': '🏢',
         'category': 'production'
     },
@@ -180,8 +180,8 @@ SECTOR_REPORTS = [
         'id': 'consumption',
         'name': '소비동향',
         'sheet': 'C 분석',
-        'generator': '소비동향_generator.py',
-        'template': '소비동향_template.html',
+        'generator': 'consumption_generator.py',
+        'template': 'consumption_template.html',
         'icon': '🛒',
         'category': 'consumption'
     },
@@ -189,8 +189,8 @@ SECTOR_REPORTS = [
         'id': 'construction',
         'name': '건설동향',
         'sheet': "F'분석",
-        'generator': '건설동향_generator.py',
-        'template': '건설동향_template.html',
+        'generator': 'construction_generator.py',
+        'template': 'construction_template.html',
         'icon': '🏗️',
         'category': 'construction'
     },
@@ -198,8 +198,8 @@ SECTOR_REPORTS = [
         'id': 'export',
         'name': '수출',
         'sheet': 'G 분석',
-        'generator': '수출_generator.py',
-        'template': '수출_template.html',
+        'generator': 'export_generator.py',
+        'template': 'export_template.html',
         'icon': '📦',
         'category': 'trade'
     },
@@ -207,8 +207,8 @@ SECTOR_REPORTS = [
         'id': 'import',
         'name': '수입',
         'sheet': 'H 분석',
-        'generator': '수입_generator.py',
-        'template': '수입_template.html',
+        'generator': 'import_generator.py',
+        'template': 'import_template.html',
         'icon': '🚢',
         'category': 'trade'
     },
@@ -216,8 +216,8 @@ SECTOR_REPORTS = [
         'id': 'price',
         'name': '물가동향',
         'sheet': 'E(품목성질물가)분석',
-        'generator': '물가동향_generator.py',
-        'template': '물가동향_template.html',
+        'generator': 'price_trend_generator.py',
+        'template': 'price_trend_template.html',
         'icon': '💰',
         'category': 'price'
     },
@@ -225,8 +225,8 @@ SECTOR_REPORTS = [
         'id': 'employment',
         'name': '고용률',
         'sheet': 'D(고용률)분석',
-        'generator': '고용률_generator.py',
-        'template': '고용률_template.html',
+        'generator': 'employment_rate_generator.py',
+        'template': 'employment_rate_template.html',
         'icon': '👔',
         'category': 'employment'
     },
@@ -234,8 +234,8 @@ SECTOR_REPORTS = [
         'id': 'unemployment',
         'name': '실업률',
         'sheet': 'D(실업)분석',
-        'generator': '실업률_generator.py',
-        'template': '실업률_template.html',
+        'generator': 'unemployment_generator.py',
+        'template': 'unemployment_template.html',
         'icon': '📉',
         'category': 'employment'
     },
@@ -243,8 +243,8 @@ SECTOR_REPORTS = [
         'id': 'population',
         'name': '국내인구이동',
         'sheet': 'I(순인구이동)집계',
-        'generator': '국내인구이동_generator.py',
-        'template': '국내인구이동_template.html',
+        'generator': 'domestic_migration_generator.py',
+        'template': 'domestic_migration_template.html',
         'icon': '👥',
         'category': 'population'
     }
@@ -259,7 +259,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_toc',
         'name': '통계표-목차',
         'table_name': None,
-        'template': '통계표_목차_template.html',
+        'template': 'statistics_table_toc_template.html',
         'icon': '📋',
         'category': 'statistics'
     },
@@ -267,7 +267,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_mining',
         'name': '통계표-광공업생산지수',
         'table_name': '광공업생산지수',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '🏭',
         'category': 'statistics'
     },
@@ -275,7 +275,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_service',
         'name': '통계표-서비스업생산지수',
         'table_name': '서비스업생산지수',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '🏢',
         'category': 'statistics'
     },
@@ -283,7 +283,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_retail',
         'name': '통계표-소매판매액지수',
         'table_name': '소매판매액지수',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '🛒',
         'category': 'statistics'
     },
@@ -291,7 +291,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_construction',
         'name': '통계표-건설수주액',
         'table_name': '건설수주액',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '🏗️',
         'category': 'statistics'
     },
@@ -299,7 +299,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_employment',
         'name': '통계표-고용률',
         'table_name': '고용률',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '👔',
         'category': 'statistics'
     },
@@ -307,7 +307,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_unemployment',
         'name': '통계표-실업률',
         'table_name': '실업률',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '📉',
         'category': 'statistics'
     },
@@ -315,7 +315,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_population',
         'name': '통계표-국내인구이동',
         'table_name': '국내인구이동',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '👥',
         'category': 'statistics'
     },
@@ -323,7 +323,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_export',
         'name': '통계표-수출액',
         'table_name': '수출액',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '📦',
         'category': 'statistics'
     },
@@ -331,7 +331,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_import',
         'name': '통계표-수입액',
         'table_name': '수입액',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '🚢',
         'category': 'statistics'
     },
@@ -339,7 +339,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_price',
         'name': '통계표-소비자물가지수',
         'table_name': '소비자물가지수',
-        'template': '통계표_지표_template.html',
+        'template': 'statistics_table_index_template.html',
         'icon': '💰',
         'category': 'statistics'
     },
@@ -347,7 +347,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_grdp',
         'name': '통계표-참고-GRDP',
         'table_name': 'GRDP',
-        'template': '통계표_GRDP_template.html',
+        'template': 'statistics_table_grdp_template.html',
         'icon': '📊',
         'category': 'statistics'
     },
@@ -355,7 +355,7 @@ STATISTICS_REPORTS = [
         'id': 'stat_appendix',
         'name': '부록-주요용어정의',
         'table_name': None,
-        'template': '통계표_부록_template.html',
+        'template': 'statistics_table_appendix_template.html',
         'icon': '📖',
         'category': 'statistics'
     },
@@ -698,17 +698,17 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
             return generate_grdp_reference_html(excel_path)
         
         # 시도별 Generator 모듈 로드
-        generator_path = TEMPLATES_DIR / '시도별_generator.py'
+        generator_path = TEMPLATES_DIR / 'regional_generator.py'
         if not generator_path.exists():
             return None, f"시도별 Generator를 찾을 수 없습니다"
         
-        spec = importlib.util.spec_from_file_location('시도별_generator', str(generator_path))
+        spec = importlib.util.spec_from_file_location('regional_generator', str(generator_path))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         
         # Generator 클래스 사용
-        generator = module.시도별Generator(excel_path)
-        template_path = TEMPLATES_DIR / '시도별_template.html'
+        generator = module.RegionalGenerator(excel_path)
+        template_path = TEMPLATES_DIR / 'regional_template.html'
         
         # HTML 생성
         html_content = generator.render_html(region_name, str(template_path))
@@ -765,9 +765,9 @@ def generate_grdp_reference_html(excel_path):
         
         # 4. 참고_GRDP Generator 로드 시도 (기존 방식)
         if grdp_data is None:
-            grdp_generator_path = TEMPLATES_DIR / '참고_GRDP_generator.py'
+            grdp_generator_path = TEMPLATES_DIR / 'reference_grdp_generator.py'
             if grdp_generator_path.exists():
-                spec = importlib.util.spec_from_file_location('참고_GRDP_generator', str(grdp_generator_path))
+                spec = importlib.util.spec_from_file_location('reference_grdp_generator', str(grdp_generator_path))
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 
@@ -801,7 +801,7 @@ def generate_grdp_reference_html(excel_path):
             grdp_data = _get_default_grdp_data(year, quarter)
         
         # 참고_GRDP 템플릿 렌더링
-        template_path = TEMPLATES_DIR / '참고_GRDP_template.html'
+        template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
         if template_path.exists():
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = Template(f.read())
@@ -984,7 +984,7 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
     """통계표 보고서 HTML 생성"""
     try:
         # 통계표 Generator 모듈 로드
-        generator_path = TEMPLATES_DIR / '통계표_generator.py'
+        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
         if not generator_path.exists():
             return None, f"통계표 Generator를 찾을 수 없습니다"
         
@@ -999,7 +999,7 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
             current_year=year,
             current_quarter=quarter
         )
-        template_path = TEMPLATES_DIR / '통계표_template.html'
+        template_path = TEMPLATES_DIR / 'statistics_table_template.html'
         
         # HTML 생성
         html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
@@ -1022,12 +1022,12 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
         table_name = stat_config.get('table_name')
         
         # 통계표 Generator 모듈 로드
-        generator_path = TEMPLATES_DIR / '통계표_generator.py'
+        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
         if generator_path.exists():
-            spec = importlib.util.spec_from_file_location('통계표_generator', str(generator_path))
+            spec = importlib.util.spec_from_file_location('statistics_table_generator', str(generator_path))
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            generator = module.통계표Generator(
+            generator = module.StatisticsTableGenerator(
                 excel_path,
                 raw_excel_path=raw_excel_path,
                 current_year=year,
@@ -2021,7 +2021,7 @@ def generate_all_regional_reports():
     errors = []
     
     # 출력 디렉토리 생성
-    output_dir = TEMPLATES_DIR / '시도별_output'
+    output_dir = TEMPLATES_DIR / 'regional_output'
     output_dir.mkdir(exist_ok=True)
     
     for region_config in REGIONAL_REPORTS:
@@ -2186,7 +2186,7 @@ def get_session_info():
 def preview_infographic():
     """인포그래픽 미리보기 (직접 접근용)"""
     from flask import send_file
-    output_path = TEMPLATES_DIR / '인포그래픽_output.html'
+    output_path = TEMPLATES_DIR / 'infographic_output.html'
     if output_path.exists():
         return send_file(output_path)
     return "인포그래픽이 아직 생성되지 않았습니다.", 404

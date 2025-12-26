@@ -86,7 +86,7 @@ class DataCache:
                 print(f"Warning: Could not load sheet '{sheet}': {e}")
 
 
-class 시도별Generator:
+class RegionalGenerator:
     """시도별 경제동향 보고서 생성 클래스"""
     
     # 업종명 매핑 사전 (엑셀 데이터 → 보고서 표기명)
@@ -1133,7 +1133,7 @@ def main():
     
     args = parser.parse_args()
     
-    generator = 시도별Generator(args.excel)
+    generator = RegionalGenerator(args.excel)
     
     if args.all:
         output_dir = args.output or 'output'

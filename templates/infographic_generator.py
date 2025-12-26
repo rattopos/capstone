@@ -562,12 +562,12 @@ if __name__ == '__main__':
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python 인포그래픽_generator.py <excel_path> [template_path] [output_path]")
+        print("Usage: python infographic_generator.py <excel_path> [template_path] [output_path]")
         sys.exit(1)
     
     excel_path = sys.argv[1]
-    template_path = sys.argv[2] if len(sys.argv) > 2 else Path(__file__).parent / '인포그래픽_js_template.html'
-    output_path = sys.argv[3] if len(sys.argv) > 3 else Path(__file__).parent / '인포그래픽_output.html'
+    template_path = sys.argv[2] if len(sys.argv) > 2 else Path(__file__).parent / 'infographic_js_template.html'
+    output_path = sys.argv[3] if len(sys.argv) > 3 else Path(__file__).parent / 'infographic_output.html'
     
     generator = 인포그래픽Generator(excel_path)
     html = generator.render_html(str(template_path), str(output_path))

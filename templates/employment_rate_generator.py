@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-소비동향 보고서 생성기
-C 분석 시트에서 데이터를 추출하여 HTML 보고서를 생성합니다.
+고용률 보고서 생성기
+D(고용률)분석 시트에서 데이터를 추출하여 HTML 보고서를 생성합니다.
 """
 
 import pandas as pd
@@ -10,18 +10,14 @@ import json
 from jinja2 import Template
 from pathlib import Path
 
-# 업태명 매핑
-BUSINESS_MAPPING = {
-    '백화점': '백화점',
-    '대형마트': '대형마트',
-    '면세점': '면세점',
-    '슈퍼마켓 및 잡화점': '슈퍼마켓·잡화점',
-    '슈퍼마켓· 잡화점 및 편의점': '슈퍼마켓·잡화점·편의점',
-    '편의점': '편의점',
-    '승용차 및 연료 소매점': '승용차·연료소매점',
-    '승용차 및 연료소매점': '승용차·연료소매점',
-    '전문소매점': '전문소매점',
-    '무점포 소매': '무점포소매'
+# 연령대명 매핑 (이미지 표기에 맞춤)
+AGE_GROUP_MAPPING = {
+    '계': '계',
+    '15 - 29세': '20~29세',
+    '30 - 39세': '30~39세',
+    '40 - 49세': '40~49세',
+    '50 - 59세': '50~59세',
+    '60세이상': '70세이상'
 }
 
 # 지역명 매핑 (표 표시용)
@@ -65,8 +61,8 @@ VALID_REGIONS = [
 def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
-    df_analysis = pd.read_excel(xl, sheet_name='C 분석', header=None)
-    df_index = pd.read_excel(xl, sheet_name='C(소비)집계', header=None)
+    df_analysis = pd.read_excel(xl, sheet_name='D(고용률)분석', header=None)
+    df_index = pd.read_excel(xl, sheet_name='D(고용률)집계', header=None)
     return df_analysis, df_index
 
 
@@ -75,8 +71,8 @@ def get_region_indices(df_analysis):
     region_indices = {}
     for i in range(len(df_analysis)):
         row = df_analysis.iloc[i]
-        if row[7] == '총지수':
-            region = row[3]
+        if row[5] == '계':
+            region = row[2]
             if region in VALID_REGIONS or region == '전국':
                 region_indices[region] = i
     return region_indices
@@ -84,34 +80,38 @@ def get_region_indices(df_analysis):
 
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
-    # 분석 시트에서 전국 총지수 행
+    # 분석 시트에서 전국 계 행
     nationwide_row = df_analysis.iloc[3]
-    growth_rate = round(float(nationwide_row[20]), 1)
+    change = round(float(nationwide_row[18]), 1)
     
-    # 집계 시트에서 전국 지수
+    # 집계 시트에서 전국 고용률
     index_row = df_index.iloc[3]
-    sales_index = index_row[24]  # 2025.2/4p
+    employment_rate = index_row[21]  # 2025.2/4
     
-    # 전국 업태별 증감률
-    businesses = []
-    for i in range(4, 12):
+    # 전국 연령별 증감
+    age_groups = []
+    for i in range(4, 9):
         row = df_analysis.iloc[i]
-        business_name = row[7]
-        business_growth = float(row[20])
-        businesses.append({
-            'name': BUSINESS_MAPPING.get(business_name, business_name),
-            'growth_rate': round(business_growth, 1)
+        age_name = row[5]
+        age_change = round(float(row[18]), 1)
+        age_groups.append({
+            'name': age_name,
+            'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+            'change': age_change
         })
     
-    # 감소율이 큰 순으로 정렬 (음수 중 절대값이 큰 것)
-    negative_businesses = [b for b in businesses if b['growth_rate'] < 0]
-    negative_businesses.sort(key=lambda x: x['growth_rate'])
-    main_businesses = negative_businesses[:3]
+    # 양수 증감률 순으로 정렬
+    positive_ages = [a for a in age_groups if a['change'] > 0]
+    positive_ages.sort(key=lambda x: x['change'], reverse=True)
+    
+    # 상위 4개 (이미지에서는 4개 표시)
+    main_age_groups = positive_ages[:4]
     
     return {
-        'sales_index': sales_index,
-        'growth_rate': growth_rate,
-        'main_businesses': main_businesses
+        'employment_rate': employment_rate,
+        'change': change,
+        'main_age_groups': main_age_groups,
+        'top_age_groups': positive_ages[:4]
     }
 
 
@@ -124,82 +124,81 @@ def get_regional_data(df_analysis, df_index):
         if region == '전국':
             continue
             
-        # 총지수 행에서 증감률
+        # 계 행에서 증감
         total_row = df_analysis.iloc[start_idx]
         try:
-            growth_rate = round(float(total_row[20]), 1)
-            growth_2023_2 = round(float(total_row[12]), 1)
-            growth_2024_2 = round(float(total_row[16]), 1)
-            growth_2025_1 = round(float(total_row[19]), 1)
+            change = round(float(total_row[18]), 1)
+            change_2023_2 = round(float(total_row[10]), 1)
+            change_2024_2 = round(float(total_row[14]), 1)
+            change_2025_1 = round(float(total_row[17]), 1)
         except:
             continue
         
-        # 집계 시트에서 지수
-        idx_row = df_index[df_index[2] == region]
+        # 집계 시트에서 고용률
+        idx_row = df_index[(df_index[1] == region) & (df_index[3] == '계')]
         if not idx_row.empty:
-            index_2024 = idx_row.iloc[0][21]
-            index_2025 = idx_row.iloc[0][24]
+            rate_2024 = idx_row.iloc[0][17]
+            rate_2025 = idx_row.iloc[0][21]
+            # 20-29세 고용률
+            age_row = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
+            if not age_row.empty:
+                rate_20_29 = age_row.iloc[0][21]
+            else:
+                rate_20_29 = 0
         else:
-            index_2024 = 0
-            index_2025 = 0
+            rate_2024 = 0
+            rate_2025 = 0
+            rate_20_29 = 0
         
-        # 업태별 증감률
-        businesses = []
-        # 각 지역마다 업태 수가 다르므로 다음 총지수까지 찾기
-        next_region_idx = len(df_analysis)
-        for other_region, other_idx in region_indices.items():
-            if other_idx > start_idx and other_idx < next_region_idx:
-                next_region_idx = other_idx
-        
-        for i in range(start_idx + 1, min(start_idx + 10, next_region_idx)):
-            if i >= len(df_analysis):
-                break
+        # 연령별 증감
+        age_groups = []
+        for i in range(start_idx + 1, min(start_idx + 6, len(df_analysis))):
             row = df_analysis.iloc[i]
-            if row[4] != 1:  # 분류단계가 1이 아니면 스킵
-                continue
-            business_name = row[7]
+            if row[5] == '계':
+                break
+            age_name = row[5]
             try:
-                business_growth = float(row[20])
+                age_change = round(float(row[18]), 1)
             except:
                 continue
             
-            businesses.append({
-                'name': BUSINESS_MAPPING.get(business_name, business_name),
-                'growth_rate': round(business_growth, 1)
+            age_groups.append({
+                'name': age_name,
+                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                'change': age_change
             })
         
         # 증가 지역: 양수 증감률 순으로 정렬
         # 감소 지역: 음수 증감률 순으로 정렬 (절대값 큰 순)
-        if growth_rate >= 0:
-            positive_businesses = [b for b in businesses if b['growth_rate'] > 0]
-            positive_businesses.sort(key=lambda x: x['growth_rate'], reverse=True)
-            top_businesses = positive_businesses[:3]
+        if change >= 0:
+            sorted_ages = sorted([a for a in age_groups if a['change'] > 0], 
+                               key=lambda x: x['change'], reverse=True)
         else:
-            negative_businesses = [b for b in businesses if b['growth_rate'] < 0]
-            negative_businesses.sort(key=lambda x: x['growth_rate'])
-            top_businesses = negative_businesses[:3]
+            sorted_ages = sorted([a for a in age_groups if a['change'] < 0], 
+                               key=lambda x: x['change'])
         
         regions.append({
             'region': region,
-            'growth_rate': growth_rate,
-            'growth_2023_2': growth_2023_2,
-            'growth_2024_2': growth_2024_2,
-            'growth_2025_1': growth_2025_1,
-            'index_2024': index_2024,
-            'index_2025': index_2025,
-            'top_businesses': top_businesses,
-            'all_businesses': businesses
+            'change': change,
+            'change_2023_2': change_2023_2,
+            'change_2024_2': change_2024_2,
+            'change_2025_1': change_2025_1,
+            'rate_2024': rate_2024,
+            'rate_2025': rate_2025,
+            'rate_20_29': rate_20_29,
+            'top_age_groups': sorted_ages[:3],
+            'all_age_groups': age_groups
         })
     
     # 증가/감소 지역 분류
     increase_regions = sorted(
-        [r for r in regions if r['growth_rate'] > 0],
-        key=lambda x: x['growth_rate'],
+        [r for r in regions if r['change'] > 0],
+        key=lambda x: x['change'],
         reverse=True
     )
     decrease_regions = sorted(
-        [r for r in regions if r['growth_rate'] < 0],
-        key=lambda x: x['growth_rate']
+        [r for r in regions if r['change'] < 0],
+        key=lambda x: x['change']
     )
     
     return {
@@ -209,8 +208,8 @@ def get_regional_data(df_analysis, df_index):
     }
 
 
-def get_growth_rates_table(df_analysis, df_index):
-    """표에 들어갈 증감률 및 지수 데이터 생성"""
+def get_table_data(df_analysis, df_index):
+    """표에 들어갈 데이터 생성"""
     region_indices = get_region_indices(df_analysis)
     
     table_data = []
@@ -218,19 +217,23 @@ def get_growth_rates_table(df_analysis, df_index):
     # 전국
     nationwide_row = df_analysis.iloc[3]
     nationwide_idx = df_index.iloc[3]
+    # 15-29세 행
+    age_idx = df_index.iloc[4]
+    
     table_data.append({
         'group': None,
         'rowspan': None,
         'region': REGION_DISPLAY_MAPPING['전국'],
-        'growth_rates': [
-            round(float(nationwide_row[12]), 1),  # 2023 2/4
-            round(float(nationwide_row[16]), 1),  # 2024 2/4
-            round(float(nationwide_row[19]), 1),  # 2025 1/4
-            round(float(nationwide_row[20]), 1),  # 2025 2/4
+        'changes': [
+            round(float(nationwide_row[10]), 1),  # 2023 2/4
+            round(float(nationwide_row[14]), 1),  # 2024 2/4
+            round(float(nationwide_row[17]), 1),  # 2025 1/4
+            round(float(nationwide_row[18]), 1),  # 2025 2/4
         ],
-        'indices': [
-            nationwide_idx[21],  # 2024 2/4
-            nationwide_idx[24],  # 2025 2/4
+        'rates': [
+            nationwide_idx[17],  # 2024 2/4
+            nationwide_idx[21],  # 2025 2/4
+            age_idx[21],  # 20-29세 2025 2/4
         ]
     })
     
@@ -242,25 +245,28 @@ def get_growth_rates_table(df_analysis, df_index):
                 
             start_idx = region_indices[region]
             row = df_analysis.iloc[start_idx]
-            idx_row = df_index[df_index[2] == region]
+            idx_row = df_index[(df_index[1] == region) & (df_index[3] == '계')]
+            age_row = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
             
             if idx_row.empty:
                 continue
                 
             idx_row = idx_row.iloc[0]
+            age_rate = age_row.iloc[0][21] if not age_row.empty else 0
             
             try:
                 entry = {
                     'region': REGION_DISPLAY_MAPPING.get(region, region),
-                    'growth_rates': [
-                        round(float(row[12]), 1),  # 2023 2/4
-                        round(float(row[16]), 1),  # 2024 2/4
-                        round(float(row[19]), 1),  # 2025 1/4
-                        round(float(row[20]), 1),  # 2025 2/4
+                    'changes': [
+                        round(float(row[10]), 1),  # 2023 2/4
+                        round(float(row[14]), 1),  # 2024 2/4
+                        round(float(row[17]), 1),  # 2025 1/4
+                        round(float(row[18]), 1),  # 2025 2/4
                     ],
-                    'indices': [
-                        idx_row[21],  # 2024 2/4
-                        idx_row[24],  # 2025 2/4
+                    'rates': [
+                        idx_row[17],  # 2024 2/4
+                        idx_row[21],  # 2025 2/4
+                        age_rate,  # 20-29세
                     ]
                 }
             except:
@@ -280,21 +286,13 @@ def get_growth_rates_table(df_analysis, df_index):
 
 def get_summary_box_data(regional_data):
     """요약 박스 데이터 생성"""
-    # 감소 지역 상위 3개
-    top3_decrease = regional_data['decrease_regions'][:3]
-    
-    main_regions = []
-    for r in top3_decrease:
-        # 첫 번째 감소 업태
-        main_business = r['top_businesses'][0]['name'] if r['top_businesses'] else ''
-        main_regions.append({
-            'region': r['region'],
-            'main_business': main_business
-        })
+    # 증가 지역 상위 3개
+    top3 = regional_data['increase_regions'][:3]
+    main_regions = [r['region'] for r in top3]
     
     return {
-        'main_decrease_regions': main_regions,
-        'region_count': len(regional_data['decrease_regions'])
+        'main_increase_regions': main_regions,
+        'region_count': len(regional_data['increase_regions'])
     }
 
 
@@ -313,7 +311,7 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     # if raw_excel_path and year and quarter:
     #     from raw_data_extractor import RawDataExtractor
     #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
-    #     # 기초자료에서 소비동향 데이터 직접 추출
+    #     # 기초자료에서 고용률 데이터 직접 추출
     #     # return extract_from_raw_data(extractor, ...)
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
@@ -322,37 +320,24 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     nationwide_data = get_nationwide_data(df_analysis, df_index)
     regional_data = get_regional_data(df_analysis, df_index)
     summary_box = get_summary_box_data(regional_data)
-    table_data = get_growth_rates_table(df_analysis, df_index)
+    table_data = get_table_data(df_analysis, df_index)
     
     # Top 3 증가/감소 지역
     top3_increase = []
     for r in regional_data['increase_regions'][:3]:
         top3_increase.append({
             'region': r['region'],
-            'growth_rate': r['growth_rate'],
-            'businesses': r['top_businesses']
+            'change': r['change'],
+            'age_groups': r['top_age_groups']
         })
     
     top3_decrease = []
     for r in regional_data['decrease_regions'][:3]:
         top3_decrease.append({
             'region': r['region'],
-            'growth_rate': r['growth_rate'],
-            'businesses': r['top_businesses']
+            'change': r['change'],
+            'age_groups': r['top_age_groups']
         })
-    
-    # 증가/감소 업태 텍스트 생성
-    increase_businesses = set()
-    for r in regional_data['increase_regions'][:3]:
-        for bus in r['top_businesses'][:2]:
-            increase_businesses.add(bus['name'])
-    increase_businesses_text = ', '.join(list(increase_businesses)[:3])
-    
-    decrease_businesses = set()
-    for r in regional_data['decrease_regions'][:3]:
-        for bus in r['top_businesses'][:2]:
-            decrease_businesses.add(bus['name'])
-    decrease_businesses_text = ', '.join(list(decrease_businesses)[:4])
     
     # 템플릿 데이터
     template_data = {
@@ -361,20 +346,17 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
         'regional_data': regional_data,
         'top3_increase_regions': top3_increase,
         'top3_decrease_regions': top3_decrease,
-        'increase_businesses_text': increase_businesses_text,
-        'decrease_businesses_text': decrease_businesses_text,
         'summary_table': {
-            'base_year': 2020,
             'columns': {
-                'growth_rate_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4p'],
-                'index_columns': ['2024.2/4', '2025.2/4p']
+                'change_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4'],
+                'rate_columns': ['2024.2/4', '2025.2/4', '20-29세']
             },
             'regions': table_data
         }
     }
     
     # JSON 데이터 저장
-    data_path = Path(output_path).parent / '소비동향_data.json'
+    data_path = Path(output_path).parent / 'employment_rate_data.json'
     with open(data_path, 'w', encoding='utf-8') as f:
         json.dump(template_data, f, ensure_ascii=False, indent=2, default=str)
     
@@ -397,22 +379,22 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
 if __name__ == '__main__':
     base_path = Path(__file__).parent.parent
     excel_path = base_path / '분석표_25년 2분기_캡스톤.xlsx'
-    template_path = Path(__file__).parent / '소비동향_template.html'
-    output_path = Path(__file__).parent / '소비동향_output.html'
+    template_path = Path(__file__).parent / 'employment_rate_template.html'
+    output_path = Path(__file__).parent / 'employment_rate_output.html'
     
     data = generate_report(excel_path, template_path, output_path)
     
     # 검증용 출력
     print("\n=== 전국 데이터 ===")
-    print(f"판매지수: {data['nationwide_data']['sales_index']}")
-    print(f"증감률: {data['nationwide_data']['growth_rate']}%")
-    print(f"주요 업태: {data['nationwide_data']['main_businesses']}")
+    print(f"고용률: {data['nationwide_data']['employment_rate']}%")
+    print(f"증감: {data['nationwide_data']['change']}%p")
+    print(f"주요 연령: {data['nationwide_data']['main_age_groups']}")
     
     print("\n=== 증가 지역 Top 3 ===")
     for r in data['top3_increase_regions']:
-        print(f"{r['region']}({r['growth_rate']}%): {r['businesses']}")
+        print(f"{r['region']}({r['change']}%p): {r['age_groups']}")
     
     print("\n=== 감소 지역 Top 3 ===")
     for r in data['top3_decrease_regions']:
-        print(f"{r['region']}({r['growth_rate']}%): {r['businesses']}")
+        print(f"{r['region']}({r['change']}%p): {r['age_groups']}")
 

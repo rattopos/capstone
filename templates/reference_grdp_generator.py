@@ -259,11 +259,11 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(description='참고 GRDP 보고서 생성')
-    parser.add_argument('--template', type=str, default='templates/참고_GRDP_template.html',
+    parser.add_argument('--template', type=str, default='templates/reference_grdp_template.html',
                         help='템플릿 파일 경로')
-    parser.add_argument('--output', type=str, default='templates/참고_GRDP_output.html',
+    parser.add_argument('--output', type=str, default='templates/reference_grdp_output.html',
                         help='출력 HTML 파일 경로')
-    parser.add_argument('--json', type=str, default='templates/참고_GRDP_data.json',
+    parser.add_argument('--json', type=str, default='templates/reference_grdp_data.json',
                         help='출력 JSON 파일 경로')
     parser.add_argument('--year', type=int, default=2025, help='연도')
     parser.add_argument('--quarter', type=int, default=2, help='분기')

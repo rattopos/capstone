@@ -21,7 +21,7 @@ except ImportError:
     RawDataExtractor = None
 
 
-class 통계표Generator:
+class StatisticsTableGenerator:
     """통계표 생성 클래스"""
     
     # 통계표 항목 정의 (시트별 컬럼 매핑 포함)
@@ -605,7 +605,7 @@ class 통계표Generator:
         
         env.filters['round_value'] = round_value
         
-        template = env.get_template("통계표_template.html")
+        template = env.get_template("statistics_table_template.html")
         html_content = template.render(**data)
         
         # 파일 저장
@@ -676,7 +676,7 @@ def main():
     
     args = parser.parse_args()
     
-    generator = 통계표Generator(args.excel, args.historical)
+    generator = StatisticsTableGenerator(args.excel, args.historical)
     
     if args.create_historical_template:
         generator.create_historical_template(args.create_historical_template)

@@ -579,7 +579,7 @@ def generate_report(excel_path, template_path, output_path):
     template_data = generate_report_data(excel_path)
     
     # JSON 데이터 저장
-    data_path = Path(output_path).parent / '건설동향_data.json'
+    data_path = Path(output_path).parent / 'construction_data.json'
     with open(data_path, 'w', encoding='utf-8') as f:
         json.dump(template_data, f, ensure_ascii=False, indent=2, default=str)
     
@@ -602,8 +602,8 @@ def generate_report(excel_path, template_path, output_path):
 if __name__ == '__main__':
     base_path = Path(__file__).parent.parent
     excel_path = base_path / '분석표_25년 2분기_캡스톤.xlsx'
-    template_path = Path(__file__).parent / '건설동향_template.html'
-    output_path = Path(__file__).parent / '건설동향_output.html'
+    template_path = Path(__file__).parent / 'construction_template.html'
+    output_path = Path(__file__).parent / 'construction_output.html'
     
     data = generate_report(excel_path, template_path, output_path)
     

@@ -218,7 +218,7 @@
   "data_sources": {
     "description": "데이터 소스 매핑",
     "employment": {
-      "source": "고용률_data.json",
+      "source": "employment_rate_data.json",
       "fields": {
         "nationwide.rate": "nationwide_data.employment_rate",
         "nationwide.change": "nationwide_data.change",
@@ -227,7 +227,7 @@
       }
     },
     "population": {
-      "source": "국내인구이동_data.json",
+      "source": "domestic_migration_data.json",
       "fields": {
         "inflow_regions": "inflow_regions",
         "outflow_regions": "outflow_regions"

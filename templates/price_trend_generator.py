@@ -436,9 +436,9 @@ def main():
     # 경로 설정
     base_dir = os.path.dirname(os.path.abspath(__file__))
     excel_path = os.path.join(base_dir, '..', '분석표_25년 2분기_캡스톤.xlsx')
-    template_path = os.path.join(base_dir, '물가동향_template.html')
-    output_path = os.path.join(base_dir, '물가동향_output.html')
-    json_output_path = os.path.join(base_dir, '물가동향_data.json')
+    template_path = os.path.join(base_dir, 'price_trend_template.html')
+    output_path = os.path.join(base_dir, 'price_trend_output.html')
+    json_output_path = os.path.join(base_dir, 'price_trend_data.json')
     
     # 데이터 생성
     print("데이터 추출 중...")

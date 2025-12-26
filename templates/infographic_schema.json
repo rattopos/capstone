@@ -105,32 +105,32 @@
   "indicator_data_mapping": {
     "description": "지표별 데이터 소스 매핑",
     "광공업생산": {
-      "source_file": "광공업생산_data.json",
+      "source_file": "mining_manufacturing_data.json",
       "value_field": "regional_data.growth_rate",
       "unit": "%"
     },
     "서비스업생산": {
-      "source_file": "서비스업생산_data.json",
+      "source_file": "service_industry_data.json",
       "value_field": "regional_data.growth_rate",
       "unit": "%"
     },
     "소매판매": {
-      "source_file": "소비동향_data.json",
+      "source_file": "consumption_data.json",
       "value_field": "regional_data.growth_rate",
       "unit": "%"
     },
     "수출": {
-      "source_file": "수출_data.json",
+      "source_file": "export_data.json",
       "value_field": "regional_data.growth_rate",
       "unit": "%"
     },
     "고용률": {
-      "source_file": "고용률_data.json",
+      "source_file": "employment_rate_data.json",
       "value_field": "regional_data.change",
       "unit": "%p"
     },
     "소비자물가": {
-      "source_file": "물가동향_data.json",
+      "source_file": "price_trend_data.json",
       "value_field": "regional_data.change",
       "unit": "%"
     }

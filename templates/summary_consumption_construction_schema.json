@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "요약-수출물가 스키마",
-  "description": "지역경제동향 요약 - 수출/물가 부문 생성을 위한 데이터 스키마",
+  "title": "요약-소비건설 스키마",
+  "description": "지역경제동향 요약 - 소비/건설 부문 생성을 위한 데이터 스키마",
   
   "type": "object",
-  "required": ["report_info", "exports", "price", "page_number"],
+  "required": ["report_info", "retail_sales", "construction", "page_number"],
   
   "properties": {
     "report_info": {
@@ -26,25 +26,25 @@
       }
     },
     
-    "exports": {
+    "retail_sales": {
       "type": "object",
-      "description": "수출 데이터",
+      "description": "소매판매 데이터",
       "required": ["nationwide", "increase_regions", "decrease_regions", "increase_count", "decrease_count", "chart_data"],
       "properties": {
         "nationwide": {
           "type": "object",
           "description": "전국 데이터",
-          "required": ["amount", "change"],
+          "required": ["index", "change"],
           "properties": {
-            "amount": {
-              "type": "string",
-              "description": "수출액 (억달러)",
-              "example": "1,751.6"
+            "index": {
+              "type": "number",
+              "description": "소매판매액지수 (2020=100)",
+              "example": 101.8
             },
             "change": {
               "type": "number",
               "description": "전년동분기대비 증감률 (%)",
-              "example": 2.1
+              "example": -0.2
             }
           }
         },
@@ -65,74 +65,74 @@
         "increase_count": {
           "type": "integer",
           "description": "증가 지역 수",
-          "example": 10
+          "example": 11
         },
         "decrease_count": {
           "type": "integer",
           "description": "감소 지역 수",
-          "example": 7
+          "example": 6
         },
         "chart_data": {
           "type": "array",
           "description": "차트용 시도별 데이터 (순서대로)",
           "items": {
-            "$ref": "#/definitions/export_chart_data"
+            "$ref": "#/definitions/chart_region_data"
           }
         }
       }
     },
     
-    "price": {
+    "construction": {
       "type": "object",
-      "description": "소비자물가 데이터",
-      "required": ["nationwide", "above_regions", "below_regions", "above_count", "below_count", "chart_data"],
+      "description": "건설수주 데이터",
+      "required": ["nationwide", "increase_regions", "decrease_regions", "increase_count", "decrease_count", "chart_data"],
       "properties": {
         "nationwide": {
           "type": "object",
           "description": "전국 데이터",
-          "required": ["index", "change"],
+          "required": ["amount", "change"],
           "properties": {
-            "index": {
-              "type": "number",
-              "description": "소비자물가지수 (2020=100)",
-              "example": 116.3
+            "amount": {
+              "type": "string",
+              "description": "건설수주액 (조원)",
+              "example": "47.1"
             },
             "change": {
               "type": "number",
-              "description": "전년동분기대비 등락률 (%)",
-              "example": 2.1
+              "description": "전년동분기대비 증감률 (%)",
+              "example": -8.4
             }
           }
         },
-        "above_regions": {
+        "increase_regions": {
           "type": "array",
-          "description": "전국보다 높은 지역 (상승률 높은 순)",
+          "description": "증가 지역 (증가율 높은 순)",
           "items": {
             "$ref": "#/definitions/region_data"
           }
         },
-        "below_regions": {
+        "decrease_regions": {
           "type": "array",
-          "description": "전국보다 낮은 지역 (상승률 낮은 순)",
+          "description": "감소 지역 (감소율 높은 순, 절대값 기준)",
           "items": {
             "$ref": "#/definitions/region_data"
           }
         },
-        "above_count": {
+        "increase_count": {
           "type": "integer",
-          "description": "전국보다 높은 지역 수",
-          "example": 7
+          "description": "증가 지역 수",
+          "example": 5
         },
-        "below_count": {
+        "decrease_count": {
           "type": "integer",
-          "description": "전국보다 낮은 지역 수",
-          "example": 10
+          "description": "감소 지역 수",
+          "example": 12
         },
         "chart_data": {
           "type": "array",
           "description": "차트용 시도별 데이터 (순서대로)",
           "items": {
-            "$ref": "#/definitions/price_chart_data"
+            "$ref": "#/definitions/construction_chart_data"
           }
         }
       }
@@ -141,7 +141,7 @@
     "page_number": {
       "type": "integer",
       "description": "페이지 번호",
-      "example": 4
+      "example": 3
     }
   },
   
@@ -153,47 +153,16 @@
         "name": {
           "type": "string",
           "description": "지역명",
-          "example": "제주"
+          "example": "울산"
         },
         "value": {
           "type": "number",
-          "description": "증감률 또는 등락률 (%)",
-          "example": 37.8
+          "description": "증감률 (%)",
+          "example": 5.4
         }
       }
     },
-    "export_chart_data": {
-      "type": "object",
-      "required": ["name", "amount", "change"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "지역명 (약어)",
-          "example": "전국"
-        },
-        "amount": {
-          "type": "string",
-          "description": "수출액 (억달러)",
-          "example": "1,751.6"
-        },
-        "amount_normalized": {
-          "type": "number",
-          "description": "차트 높이 정규화 값 (0-100)",
-          "example": 100
-        },
-        "change": {
-          "type": "number",
-          "description": "전년동분기대비 증감률 (%)",
-          "example": 2.1
-        },
-        "group": {
-          "type": "string",
-          "description": "지역 그룹명 (선택, 첫 번째 지역에만 표시)",
-          "example": "경인"
-        }
-      }
-    },
-    "price_chart_data": {
+    "chart_region_data": {
       "type": "object",
       "required": ["name", "index", "change"],
       "properties": {
@@ -204,13 +173,44 @@
         },
         "index": {
           "type": "number",
-          "description": "소비자물가지수",
-          "example": 116.3
+          "description": "소매판매액지수",
+          "example": 101.8
         },
         "change": {
           "type": "number",
-          "description": "전년동분기대비 등락률 (%)",
-          "example": 2.1
+          "description": "전년동분기대비 증감률 (%)",
+          "example": -0.2
+        },
+        "group": {
+          "type": "string",
+          "description": "지역 그룹명 (선택, 첫 번째 지역에만 표시)",
+          "example": "경인"
+        }
+      }
+    },
+    "construction_chart_data": {
+      "type": "object",
+      "required": ["name", "amount", "change"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "지역명 (약어)",
+          "example": "전국"
+        },
+        "amount": {
+          "type": "string",
+          "description": "건설수주액 (백억원)",
+          "example": "4,713"
+        },
+        "amount_normalized": {
+          "type": "number",
+          "description": "차트 높이 정규화 값 (0-100)",
+          "example": 100
+        },
+        "change": {
+          "type": "number",
+          "description": "전년동분기대비 증감률 (%)",
+          "example": -8.4
         },
         "group": {
           "type": "string",
@@ -223,23 +223,18 @@
   
   "data_sources": {
     "description": "데이터 소스 매핑",
-    "exports": {
-      "source": "수출_data.json",
+    "retail_sales": {
+      "source": "consumption_data.json",
       "fields": {
-        "nationwide.amount": "nationwide_data.amount",
-        "nationwide.change": "nationwide_data.change",
+        "nationwide.index": "nationwide_data.sales_index",
+        "nationwide.change": "nationwide_data.growth_rate",
         "increase_regions": "regional_data.increase_regions",
         "decrease_regions": "regional_data.decrease_regions"
       }
     },
-    "price": {
-      "source": "물가동향_data.json",
-      "fields": {
-        "nationwide.index": "nationwide_data.index",
-        "nationwide.change": "nationwide_data.change",
-        "above_regions": "regional_data.above_regions",
-        "below_regions": "regional_data.below_regions"
-      }
+    "construction": {
+      "source": "construction_data.json",
+      "note": "건설동향 데이터 파일 필요"
     }
   },
   
@@ -248,51 +243,54 @@
       "year": 2025,
       "quarter": 2
     },
-    "exports": {
+    "retail_sales": {
       "nationwide": {
-        "amount": "1,751.6",
-        "change": 2.1
+        "index": 101.8,
+        "change": -0.2
       },
       "increase_regions": [
-        {"name": "제주", "value": 37.8},
-        {"name": "충북", "value": 34.9},
-        {"name": "경남", "value": 12.9}
+        {"name": "울산", "value": 5.4},
+        {"name": "인천", "value": 4.9},
+        {"name": "세종", "value": 3.5}
       ],
       "decrease_regions": [
-        {"name": "세종", "value": -37.2},
-        {"name": "전남", "value": -13.7},
-        {"name": "부산", "value": -6.0}
+        {"name": "제주", "value": -2.3},
+        {"name": "경북", "value": -1.8},
+        {"name": "서울", "value": -1.8}
       ],
-      "increase_count": 10,
-      "decrease_count": 7,
+      "increase_count": 11,
+      "decrease_count": 6,
       "chart_data": [
-        {"name": "전국", "amount": "1,751.6", "amount_normalized": 100, "change": 2.1},
-        {"name": "서울", "amount": "179.1", "amount_normalized": 10, "change": 1.6, "group": "경인"},
-        {"name": "인천", "amount": "155.6", "amount_normalized": 9, "change": 6.2}
+        {"name": "전국", "index": 101.8, "change": -0.2},
+        {"name": "서울", "index": 94.5, "change": -1.8, "group": "경인"},
+        {"name": "인천", "index": 102.3, "change": 4.9},
+        {"name": "경기", "index": 96.5, "change": 0.3}
       ]
     },
-    "price": {
+    "construction": {
       "nationwide": {
-        "index": 116.3,
-        "change": 2.1
+        "amount": "47.1",
+        "change": -8.4
       },
-      "above_regions": [
-        {"name": "부산", "value": 2.2}
+      "increase_regions": [
+        {"name": "대구", "value": 370.9},
+        {"name": "경남", "value": 91.9},
+        {"name": "부산", "value": 73.8}
       ],
-      "below_regions": [
-        {"name": "제주", "value": 1.5},
-        {"name": "광주", "value": 1.7},
-        {"name": "울산", "value": 1.9}
+      "decrease_regions": [
+        {"name": "제주", "value": -70.6},
+        {"name": "세종", "value": -67.5},
+        {"name": "광주", "value": -56.4}
       ],
-      "above_count": 7,
-      "below_count": 10,
+      "increase_count": 5,
+      "decrease_count": 12,
       "chart_data": [
-        {"name": "전국", "index": 116.3, "change": 2.1},
-        {"name": "서울", "index": 115.6, "change": 2.0, "group": "경인"},
-        {"name": "인천", "index": 116.9, "change": 2.0}
+        {"name": "전국", "amount": "4,713", "amount_normalized": 100, "change": -8.4},
+        {"name": "서울", "amount": "1,033", "amount_normalized": 22, "change": 29.2, "group": "경인"},
+        {"name": "인천", "amount": "207", "amount_normalized": 4, "change": -50.0}
       ]
     },
-    "page_number": 4
+    "page_number": 3
   }
 }
 

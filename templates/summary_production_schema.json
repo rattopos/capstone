@@ -193,7 +193,7 @@
   "data_sources": {
     "description": "데이터 소스 매핑",
     "mining_production": {
-      "source": "광공업생산_data.json",
+      "source": "mining_manufacturing_data.json",
       "fields": {
         "nationwide.index": "nationwide_data.production_index",
         "nationwide.change": "nationwide_data.growth_rate",
@@ -202,7 +202,7 @@
       }
     },
     "service_production": {
-      "source": "서비스업생산_data.json",
+      "source": "service_industry_data.json",
       "fields": {
         "nationwide.index": "nationwide_data.production_index",
         "nationwide.change": "nationwide_data.growth_rate",

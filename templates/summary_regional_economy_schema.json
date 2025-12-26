@@ -179,13 +179,13 @@
   "data_sources": {
     "description": "데이터 소스 매핑 - 각 부문별 데이터 파일에서 취합",
     "production": {
-      "mining": "광공업생산_data.json",
-      "service": "서비스업생산_data.json"
+      "mining": "mining_manufacturing_data.json",
+      "service": "service_industry_data.json"
     },
-    "consumption": "소비동향_data.json",
-    "exports": "수출_data.json",
-    "price": "물가동향_data.json",
-    "employment": "고용률_data.json"
+    "consumption": "consumption_data.json",
+    "exports": "export_data.json",
+    "price": "price_trend_data.json",
+    "employment": "employment_rate_data.json"
   },
   
   "region_group_order": {

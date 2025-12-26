@@ -1,0 +1,52 @@
+{
+  "summary_box": {
+    "main_decrease_regions": [],
+    "region_count": 0
+  },
+  "nationwide_data": {
+    "sales_index": 101.8,
+    "growth_rate": NaN,
+    "main_businesses": []
+  },
+  "regional_data": {
+    "increase_regions": [],
+    "decrease_regions": [],
+    "all_regions": []
+  },
+  "top3_increase_regions": [],
+  "top3_decrease_regions": [],
+  "increase_businesses_text": "",
+  "decrease_businesses_text": "",
+  "summary_table": {
+    "base_year": 2020,
+    "columns": {
+      "growth_rate_columns": [
+        "2023.2/4",
+        "2024.2/4",
+        "2025.1/4",
+        "2025.2/4p"
+      ],
+      "index_columns": [
+        "2024.2/4",
+        "2025.2/4p"
+      ]
+    },
+    "regions": [
+      {
+        "group": null,
+        "rowspan": null,
+        "region": "전 국",
+        "growth_rates": [
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "indices": [
+          101.3,
+          101.8
+        ]
+      }
+    ]
+  }
+}

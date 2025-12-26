@@ -1,0 +1,52 @@
+{
+  "summary_box": {
+    "main_increase_regions": [],
+    "region_count": 0
+  },
+  "nationwide_data": {
+    "employment_rate": 63.3,
+    "change": NaN,
+    "main_age_groups": [],
+    "top_age_groups": []
+  },
+  "regional_data": {
+    "increase_regions": [],
+    "decrease_regions": [],
+    "all_regions": []
+  },
+  "top3_increase_regions": [],
+  "top3_decrease_regions": [],
+  "summary_table": {
+    "columns": {
+      "change_columns": [
+        "2023.2/4",
+        "2024.2/4",
+        "2025.1/4",
+        "2025.2/4"
+      ],
+      "rate_columns": [
+        "2024.2/4",
+        "2025.2/4",
+        "20-29세"
+      ]
+    },
+    "regions": [
+      {
+        "group": null,
+        "rowspan": null,
+        "region": "전 국",
+        "changes": [
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "rates": [
+          63.2,
+          63.3,
+          61.3
+        ]
+      }
+    ]
+  }
+}

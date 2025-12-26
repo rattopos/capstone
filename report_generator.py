@@ -23,66 +23,66 @@ class ReportGenerator:
     REPORT_CONFIGS = {
         'manufacturing': {
             'name': '광공업생산',
-            'generator': '광공업생산_generator.py',
-            'template': '광공업생산_template.html',
+            'generator': 'mining_manufacturing_generator.py',
+            'template': 'mining_manufacturing_template.html',
             'sheet': 'A 분석',
-            'class_name': '광공업생산Generator'
+            'class_name': 'MiningManufacturingGenerator'
         },
         'service': {
             'name': '서비스업생산',
-            'generator': '서비스업생산_generator.py',
-            'template': '서비스업생산_template.html',
+            'generator': 'service_industry_generator.py',
+            'template': 'service_industry_template.html',
             'sheet': 'B 분석',
-            'class_name': '서비스업생산Generator'
+            'class_name': 'ServiceIndustryGenerator'
         },
         'consumption': {
             'name': '소비동향',
-            'generator': '소비동향_generator.py',
-            'template': '소비동향_template.html',
+            'generator': 'consumption_generator.py',
+            'template': 'consumption_template.html',
             'sheet': 'C 분석',
-            'class_name': '소비동향Generator'
+            'class_name': 'ConsumptionGenerator'
         },
         'employment': {
             'name': '고용률',
-            'generator': '고용률_generator.py',
-            'template': '고용률_template.html',
+            'generator': 'employment_rate_generator.py',
+            'template': 'employment_rate_template.html',
             'sheet': 'D(고용률)분석',
             'uses_functions': True
         },
         'unemployment': {
             'name': '실업률',
-            'generator': '실업률_generator.py',
-            'template': '실업률_template.html',
+            'generator': 'unemployment_generator.py',
+            'template': 'unemployment_template.html',
             'sheet': 'D(실업)분석',
             'uses_functions': True
         },
         'price': {
             'name': '물가동향',
-            'generator': '물가동향_generator.py',
-            'template': '물가동향_template.html',
+            'generator': 'price_trend_generator.py',
+            'template': 'price_trend_template.html',
             'sheet': 'E(품목성질물가)분석',
-            'class_name': '물가동향Generator'
+            'class_name': 'PriceTrendGenerator'
         },
         'export': {
             'name': '수출',
-            'generator': '수출_generator.py',
-            'template': '수출_template.html',
+            'generator': 'export_generator.py',
+            'template': 'export_template.html',
             'sheet': 'G 분석',
-            'class_name': '수출Generator'
+            'class_name': 'ExportGenerator'
         },
         'import': {
             'name': '수입',
-            'generator': '수입_generator.py',
-            'template': '수입_template.html',
+            'generator': 'import_generator.py',
+            'template': 'import_template.html',
             'sheet': 'H 분석',
-            'class_name': '수입Generator'
+            'class_name': 'ImportGenerator'
         },
         'population': {
             'name': '국내인구이동',
-            'generator': '국내인구이동_generator.py',
-            'template': '국내인구이동_template.html',
+            'generator': 'domestic_migration_generator.py',
+            'template': 'domestic_migration_template.html',
             'sheet': 'I(순인구이동)집계',
-            'class_name': '국내인구이동Generator'
+            'class_name': 'DomesticMigrationGenerator'
         }
     }
     
