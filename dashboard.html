@@ -1377,42 +1377,11 @@
 
             <!-- Report List -->
             <div class="report-list-section">
-                <div class="section-title">📋 보고서 목록</div>
+                <div class="section-title">📋 보고서 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
                 
-                <!-- Tab Buttons -->
-                <div class="tab-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <button class="tab-btn active" id="tabSummary" onclick="switchTab('summary')">
-                        📋 요약
-                    </button>
-                    <button class="tab-btn" id="tabSectoral" onclick="switchTab('sectoral')">
-                        📊 부문별
-                    </button>
-                    <button class="tab-btn" id="tabRegional" onclick="switchTab('regional')">
-                        🗺️ 시도별
-                    </button>
-                    <button class="tab-btn" id="tabStatistics" onclick="switchTab('statistics')">
-                        📈 통계표
-                    </button>
-                </div>
-                
-                <!-- Summary Reports (표지, 목차, 인포그래픽, 요약 등) -->
-                <div class="report-list" id="summaryReportList">
-                    <!-- Summary reports will be rendered here -->
-                </div>
-                
-                <!-- Sectoral Reports -->
-                <div class="report-list" id="reportList" style="display: none;">
-                    <!-- Reports will be rendered here -->
-                </div>
-                
-                <!-- Regional Reports -->
-                <div class="report-list" id="regionalReportList" style="display: none;">
-                    <!-- Regional reports will be rendered here -->
-                </div>
-                
-                <!-- Statistics Table -->
-                <div class="report-list" id="statisticsReportList" style="display: none;">
-                    <!-- Statistics report will be rendered here -->
+                <!-- 전체 보고서 통합 리스트 (순차적 페이지 넘김) -->
+                <div class="report-list" id="allReportsList" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                    <!-- All reports will be rendered here -->
                 </div>
             </div>
         </aside>
@@ -1801,6 +1770,8 @@
             fileUploaded: false,
             allGenerated: false,
             currentReportIndex: -1,
+            currentGlobalIndex: -1,  // 전체 보고서 통합 인덱스
+            allReports: [],  // 모든 보고서 통합 배열
             fileType: null,  // 'raw' (기초자료 수집표)
             analysisFilename: null,  // 생성된 분석표 파일명
             reports: [],
@@ -1880,14 +1851,17 @@
             uploadZone: document.getElementById('uploadZone'),
             fileInput: document.getElementById('fileInput'),
             uploadFilename: document.getElementById('uploadFilename'),
-            summaryReportList: document.getElementById('summaryReportList'),
-            reportList: document.getElementById('reportList'),
-            regionalReportList: document.getElementById('regionalReportList'),
-            statisticsReportList: document.getElementById('statisticsReportList'),
-            tabSummary: document.getElementById('tabSummary'),
-            tabSectoral: document.getElementById('tabSectoral'),
-            tabRegional: document.getElementById('tabRegional'),
-            tabStatistics: document.getElementById('tabStatistics'),
+            allReportsList: document.getElementById('allReportsList'),
+            reportCountBadge: document.getElementById('reportCountBadge'),
+            // 기존 호환성 유지 (더미)
+            summaryReportList: { innerHTML: '', style: { display: 'flex' } },
+            reportList: { innerHTML: '', style: { display: 'flex' } },
+            regionalReportList: { innerHTML: '', style: { display: 'flex' } },
+            statisticsReportList: { innerHTML: '', style: { display: 'flex' } },
+            tabSummary: null,
+            tabSectoral: null,
+            tabRegional: null,
+            tabStatistics: null,
             yearSelect: document.getElementById('yearSelect'),
             quarterSelect: document.getElementById('quarterSelect'),
             prevBtn: document.getElementById('prevBtn'),
@@ -1975,10 +1949,9 @@
                         state.regionalReports.length + 
                         state.statisticsReports.length;
                     
-                    renderSummaryReportList();
-                    renderReportList();
-                    renderRegionalReportList();
-                    renderStatisticsReportList();
+                    // 전체 보고서 배열 초기화 및 렌더링
+                    initializeAllReports();
+                    renderAllReportsList();
                 })
                 .catch(err => {
                     console.error('보고서 목록 로드 오류:', err);
@@ -2093,15 +2066,13 @@
             elements.exportBtn.style.display = 'inline-flex';
             elements.exportHwpBtn.style.display = 'inline-flex';
             
-            // 모든 목록 다시 렌더링
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
+            // 전체 보고서 배열 초기화 및 렌더링
+            initializeAllReports();
+            renderAllReportsList();
             
-            // 첫 번째 보고서 선택
-            if (state.summaryReports.length > 0) {
-                selectSummaryReport(0);
+            // 첫 번째 보고서 자동 선택
+            if (state.allReports.length > 0) {
+                selectGlobalReport(0);
             }
             
             showToast(`✅ 전체 ${state.generationStats.completed}개 보고서 생성 완료!`, 'success');
@@ -2203,91 +2174,35 @@
 
         // ===== 보고서 선택 (캐시에서 표시) =====
         function selectSummaryReport(index) {
-            if (!state.allGenerated) {
-                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
-                return;
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'summary' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
             }
-
-            state.currentSummaryIndex = index;
-            state.currentReportIndex = -1;
-            state.currentRegionalIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            const report = state.summaryReports[index];
-            displayCachedReport('summary', report);
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            updatePageIndicator();
         }
 
         function selectReport(index) {
-            if (!state.allGenerated) {
-                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
-                return;
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'sectoral' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
             }
-
-            state.currentReportIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentRegionalIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            const report = state.sectoralReports[index];
-            displayCachedReport('sectoral', report);
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            updatePageIndicator();
         }
 
         function selectRegionalReport(index) {
-            if (!state.allGenerated) {
-                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
-                return;
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'regional' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
             }
-
-            state.currentRegionalIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentReportIndex = -1;
-            state.currentStatisticsIndex = -1;
-            
-            const report = state.regionalReports[index];
-            displayCachedReport('regional', report);
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            updatePageIndicator();
         }
 
         function selectStatisticsReport(index) {
-            if (!state.allGenerated) {
-                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
-                return;
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'statistics' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
             }
-
-            state.currentStatisticsIndex = index;
-            state.currentSummaryIndex = -1;
-            state.currentReportIndex = -1;
-            state.currentRegionalIndex = -1;
-            
-            const report = state.statisticsReports[index];
-            displayCachedReport('statistics', report);
-            
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-            updateNavigationButtons();
-            updatePageIndicator();
         }
 
         function displayCachedReport(type, report) {
@@ -2316,12 +2231,38 @@
         }
 
         // ===== 렌더링 함수들 =====
-        function renderSummaryReportList() {
-            elements.summaryReportList.innerHTML = state.summaryReports.map((report, idx) => {
-                const isActive = state.currentTab === 'summary' && idx === state.currentSummaryIndex;
-                const isGenerated = state.generatedReports.summary.has(report.id);
-                const isReviewed = state.reviewedReports.summary.has(report.id);
-                const isEdited = state.editedReports.summary.has(report.id);
+        // 전체 보고서 통합 배열 초기화
+        function initializeAllReports() {
+            state.allReports = [
+                ...state.summaryReports.map((r, idx) => ({ ...r, type: 'summary', originalIndex: idx })),
+                ...state.sectoralReports.map((r, idx) => ({ ...r, type: 'sectoral', originalIndex: idx })),
+                ...state.regionalReports.map((r, idx) => ({ ...r, type: 'regional', originalIndex: idx, name: `${r.index}. ${r.name}`, sheet: r.full_name })),
+                ...state.statisticsReports.map((r, idx) => ({ ...r, type: 'statistics', originalIndex: idx, sheet: r.description }))
+            ];
+            if (elements.reportCountBadge) {
+                elements.reportCountBadge.textContent = `(총 ${state.allReports.length}개)`;
+            }
+        }
+
+        // 전체 보고서 통합 리스트 렌더링
+        function renderAllReportsList() {
+            if (!elements.allReportsList) return;
+            
+            let currentSection = '';
+            let html = '';
+            
+            state.allReports.forEach((report, globalIdx) => {
+                // 섹션 헤더 추가
+                const sectionNames = { summary: '📋 요약', sectoral: '📊 부문별', regional: '🗺️ 시도별', statistics: '📈 통계표' };
+                if (report.type !== currentSection) {
+                    currentSection = report.type;
+                    html += `<div style="font-size: 0.75rem; color: var(--accent-primary); padding: 0.5rem 0.75rem; margin-top: ${globalIdx > 0 ? '0.5rem' : '0'}; background: rgba(99, 102, 241, 0.1); border-radius: 4px;">${sectionNames[report.type]}</div>`;
+                }
+                
+                const isActive = globalIdx === state.currentGlobalIndex;
+                const isGenerated = state.generatedReports[report.type].has(report.id);
+                const isReviewed = state.reviewedReports[report.type].has(report.id);
+                const isEdited = state.editedReports[report.type].has(report.id);
                 
                 let statusClass = 'pending';
                 let statusIcon = '○';
@@ -2336,10 +2277,11 @@
                     statusIcon = '●';
                 }
 
-                return `
+                html += `
                     <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
-                         onclick="selectSummaryReport(${idx})"
-                         data-report-id="${report.id}">
+                         onclick="selectGlobalReport(${globalIdx})"
+                         data-report-id="${report.id}"
+                         data-global-index="${globalIdx}">
                         <div class="report-icon">${report.icon}</div>
                         <div class="report-info">
                             <div class="report-name">${report.name}</div>
@@ -2348,205 +2290,81 @@
                         <div class="report-status ${statusClass}">${statusIcon}</div>
                     </div>
                 `;
-            }).join('');
-        }
-
-        function renderReportList() {
-            elements.reportList.innerHTML = state.sectoralReports.map((report, idx) => {
-                const isActive = state.currentTab === 'sectoral' && idx === state.currentReportIndex;
-                const isGenerated = state.generatedReports.sectoral.has(report.id);
-                const isReviewed = state.reviewedReports.sectoral.has(report.id);
-                const isEdited = state.editedReports.sectoral.has(report.id);
-                
-                let statusClass = 'pending';
-                let statusIcon = '○';
-                if (isReviewed) {
-                    statusClass = 'reviewed';
-                    statusIcon = '✓';
-                } else if (isEdited) {
-                    statusClass = 'edited';
-                    statusIcon = '✏️';
-                } else if (isGenerated) {
-                    statusClass = 'generated';
-                    statusIcon = '●';
+            });
+            
+            elements.allReportsList.innerHTML = html;
+            
+            // 현재 선택된 항목으로 스크롤
+            if (state.currentGlobalIndex >= 0) {
+                const activeItem = elements.allReportsList.querySelector(`[data-global-index="${state.currentGlobalIndex}"]`);
+                if (activeItem) {
+                    activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-
-                return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
-                         onclick="selectReport(${idx})"
-                         data-report-id="${report.id}">
-                        <div class="report-icon">${report.icon}</div>
-                        <div class="report-info">
-                            <div class="report-name">${report.name}</div>
-                            <div class="report-sheet">${report.sheet}</div>
-                        </div>
-                        <div class="report-status ${statusClass}">${statusIcon}</div>
-                    </div>
-                `;
-            }).join('');
+            }
         }
 
-        function renderRegionalReportList() {
-            elements.regionalReportList.innerHTML = state.regionalReports.map((region, idx) => {
-                const isActive = state.currentTab === 'regional' && idx === state.currentRegionalIndex;
-                const isGenerated = state.generatedReports.regional.has(region.id);
-                const isReviewed = state.reviewedReports.regional.has(region.id);
-                const isEdited = state.editedReports.regional.has(region.id);
-                
-                let statusClass = 'pending';
-                let statusIcon = '○';
-                if (isReviewed) {
-                    statusClass = 'reviewed';
-                    statusIcon = '✓';
-                } else if (isEdited) {
-                    statusClass = 'edited';
-                    statusIcon = '✏️';
-                } else if (isGenerated) {
-                    statusClass = 'generated';
-                    statusIcon = '●';
-                }
-
-                return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
-                         onclick="selectRegionalReport(${idx})"
-                         data-region-id="${region.id}">
-                        <div class="report-icon">${region.icon}</div>
-                        <div class="report-info">
-                            <div class="report-name">${region.index}. ${region.name}</div>
-                            <div class="report-sheet">${region.full_name}</div>
-                        </div>
-                        <div class="report-status ${statusClass}">${statusIcon}</div>
-                    </div>
-                `;
-            }).join('');
+        // 전체 보고서 선택 함수
+        function selectGlobalReport(globalIndex) {
+            if (!state.allGenerated) {
+                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
+                return;
+            }
+            
+            if (globalIndex < 0 || globalIndex >= state.allReports.length) return;
+            
+            state.currentGlobalIndex = globalIndex;
+            const report = state.allReports[globalIndex];
+            
+            // 기존 인덱스도 동기화
+            state.currentSummaryIndex = report.type === 'summary' ? report.originalIndex : -1;
+            state.currentReportIndex = report.type === 'sectoral' ? report.originalIndex : -1;
+            state.currentRegionalIndex = report.type === 'regional' ? report.originalIndex : -1;
+            state.currentStatisticsIndex = report.type === 'statistics' ? report.originalIndex : -1;
+            state.currentTab = report.type;
+            
+            displayCachedReport(report.type, report);
+            renderAllReportsList();
+            updateNavigationButtons();
+            updatePageIndicator();
         }
 
-        function renderStatisticsReportList() {
-            elements.statisticsReportList.innerHTML = state.statisticsReports.map((stat, idx) => {
-                const isActive = state.currentTab === 'statistics' && idx === state.currentStatisticsIndex;
-                const isGenerated = state.generatedReports.statistics.has(stat.id);
-                const isReviewed = state.reviewedReports.statistics.has(stat.id);
-                const isEdited = state.editedReports.statistics.has(stat.id);
-                
-                let statusClass = 'pending';
-                let statusIcon = '○';
-                if (isReviewed) {
-                    statusClass = 'reviewed';
-                    statusIcon = '✓';
-                } else if (isEdited) {
-                    statusClass = 'edited';
-                    statusIcon = '✏️';
-                } else if (isGenerated) {
-                    statusClass = 'generated';
-                    statusIcon = '●';
-                }
-
-                return `
-                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
-                         onclick="selectStatisticsReport(${idx})"
-                         data-report-id="${stat.id}">
-                        <div class="report-icon">${stat.icon}</div>
-                        <div class="report-info">
-                            <div class="report-name">${stat.name}</div>
-                            <div class="report-sheet">${stat.description}</div>
-                        </div>
-                        <div class="report-status ${statusClass}">${statusIcon}</div>
-                    </div>
-                `;
-            }).join('');
-        }
+        // 기존 호환성을 위한 함수들 (내부적으로 globalIndex 사용)
+        function renderSummaryReportList() { renderAllReportsList(); }
+        function renderReportList() { renderAllReportsList(); }
+        function renderRegionalReportList() { renderAllReportsList(); }
+        function renderStatisticsReportList() { renderAllReportsList(); }
 
         // ===== 네비게이션 =====
         function navigateReport(direction) {
-            if (state.currentTab === 'summary') {
-                const newIndex = state.currentSummaryIndex + direction;
-                if (newIndex >= 0 && newIndex < state.summaryReports.length) {
-                    selectSummaryReport(newIndex);
-                }
-            } else if (state.currentTab === 'sectoral') {
-                const newIndex = state.currentReportIndex + direction;
-                if (newIndex >= 0 && newIndex < state.sectoralReports.length) {
-                    selectReport(newIndex);
-                }
-            } else if (state.currentTab === 'regional') {
-                const newIndex = state.currentRegionalIndex + direction;
-                if (newIndex >= 0 && newIndex < state.regionalReports.length) {
-                    selectRegionalReport(newIndex);
-                }
-            } else if (state.currentTab === 'statistics') {
-                const newIndex = state.currentStatisticsIndex + direction;
-                if (newIndex >= 0 && newIndex < state.statisticsReports.length) {
-                    selectStatisticsReport(newIndex);
-                }
+            const newIndex = state.currentGlobalIndex + direction;
+            if (newIndex >= 0 && newIndex < state.allReports.length) {
+                selectGlobalReport(newIndex);
             }
         }
 
         function updateNavigationButtons() {
-            if (state.currentTab === 'summary') {
-                elements.prevBtn.disabled = state.currentSummaryIndex <= 0;
-                elements.nextBtn.disabled = state.currentSummaryIndex >= state.summaryReports.length - 1;
-            } else if (state.currentTab === 'sectoral') {
-                elements.prevBtn.disabled = state.currentReportIndex <= 0;
-                elements.nextBtn.disabled = state.currentReportIndex >= state.sectoralReports.length - 1;
-            } else if (state.currentTab === 'regional') {
-                elements.prevBtn.disabled = state.currentRegionalIndex <= 0;
-                elements.nextBtn.disabled = state.currentRegionalIndex >= state.regionalReports.length - 1;
-            } else if (state.currentTab === 'statistics') {
-                elements.prevBtn.disabled = state.currentStatisticsIndex <= 0;
-                elements.nextBtn.disabled = state.currentStatisticsIndex >= state.statisticsReports.length - 1;
-            }
+            elements.prevBtn.disabled = state.currentGlobalIndex <= 0;
+            elements.nextBtn.disabled = state.currentGlobalIndex >= state.allReports.length - 1;
         }
 
         function updatePageIndicator() {
-            if (state.currentTab === 'summary') {
-                const current = state.currentSummaryIndex + 1;
-                const total = state.summaryReports.length;
-                elements.pageIndicator.textContent = `요약 ${current > 0 ? current : 0} / ${total}`;
-            } else if (state.currentTab === 'sectoral') {
-                const current = state.currentReportIndex + 1;
-                const total = state.sectoralReports.length;
-                elements.pageIndicator.textContent = `부문별 ${current > 0 ? current : 0} / ${total}`;
-            } else if (state.currentTab === 'regional') {
-                const current = state.currentRegionalIndex + 1;
-                const total = state.regionalReports.length;
-                elements.pageIndicator.textContent = `시도별 ${current > 0 ? current : 0} / ${total}`;
-            } else if (state.currentTab === 'statistics') {
-                const current = state.currentStatisticsIndex + 1;
-                const total = state.statisticsReports.length;
-                elements.pageIndicator.textContent = `통계표 ${current > 0 ? current : 0} / ${total}`;
-            }
+            const current = state.currentGlobalIndex + 1;
+            const total = state.allReports.length;
+            elements.pageIndicator.textContent = `${current > 0 ? current : 0} / ${total}`;
         }
 
         // ===== 검토 완료 =====
         function markCurrentAsReviewed() {
-            let report, type;
-            
-            if (state.currentTab === 'summary' && state.currentSummaryIndex >= 0) {
-                report = state.summaryReports[state.currentSummaryIndex];
-                type = 'summary';
-                state.reviewedReports.summary.add(report.id);
-                renderSummaryReportList();
-            } else if (state.currentTab === 'sectoral' && state.currentReportIndex >= 0) {
-                report = state.sectoralReports[state.currentReportIndex];
-                type = 'sectoral';
-                state.reviewedReports.sectoral.add(report.id);
-                renderReportList();
-            } else if (state.currentTab === 'regional' && state.currentRegionalIndex >= 0) {
-                report = state.regionalReports[state.currentRegionalIndex];
-                type = 'regional';
-                state.reviewedReports.regional.add(report.id);
-                renderRegionalReportList();
-            } else if (state.currentTab === 'statistics' && state.currentStatisticsIndex >= 0) {
-                report = state.statisticsReports[state.currentStatisticsIndex];
-                type = 'statistics';
-                state.reviewedReports.statistics.add(report.id);
-                renderStatisticsReportList();
+            if (state.currentGlobalIndex < 0 || state.currentGlobalIndex >= state.allReports.length) {
+                return;
             }
             
-            if (report) {
-                showToast(`✓ ${report.name} 검토 완료`, 'success');
-                navigateReport(1); // 다음으로 자동 이동
-            }
+            const report = state.allReports[state.currentGlobalIndex];
+            state.reviewedReports[report.type].add(report.id);
+            renderAllReportsList();
+            
+            showToast(`✓ ${report.name} 검토 완료`, 'success');
+            navigateReport(1); // 다음으로 자동 이동
         }
 
         // ===== 파일 업로드 =====

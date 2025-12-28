@@ -243,22 +243,8 @@ def get_consumption_construction_data(excel_path, year, quarter):
         xl = pd.ExcelFile(excel_path)
         retail = _extract_chart_data(xl, 'C 분석')
         
-        construction = {
-            'nationwide': {'amount': '0', 'change': 0.0},
-            'increase_regions': [],
-            'decrease_regions': [],
-            'increase_count': 0,
-            'decrease_count': 0,
-            'chart_data': []
-        }
-        try:
-            df = pd.read_excel(xl, sheet_name="F'분석", header=None)
-            for i, row in df.iterrows():
-                if str(row[2]).strip() == '전국' and str(row[3]) == '0':
-                    construction['nationwide']['change'] = round(float(row[19]), 1) if not pd.isna(row[19]) else 0.0
-                    break
-        except:
-            pass
+        # 건설 데이터 추출
+        construction = _extract_construction_chart_data(xl)
         
         return {
             'retail_sales': retail,
@@ -268,9 +254,91 @@ def get_consumption_construction_data(excel_path, year, quarter):
         print(f"소비건설 요약 데이터 오류: {e}")
         return {
             'retail_sales': _get_default_chart_data(),
-            'construction': {'nationwide': {'amount': '0', 'change': 0.0}, 'increase_regions': [], 
-                           'decrease_regions': [], 'increase_count': 0, 'decrease_count': 0, 'chart_data': []}
+            'construction': _get_default_construction_data()
         }
+
+
+def _extract_construction_chart_data(xl):
+    """건설수주액 차트 데이터 추출"""
+    try:
+        regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        nationwide = {'amount': 0, 'change': 0.0}
+        increase_regions = []
+        decrease_regions = []
+        chart_data = []
+        
+        # F'(건설)집계 시트에서 데이터 추출
+        if "F'(건설)집계" in xl.sheet_names:
+            df = pd.read_excel(xl, sheet_name="F'(건설)집계", header=None)
+            
+            for i, row in df.iterrows():
+                try:
+                    region = str(row[1]).strip() if pd.notna(row[1]) else ''
+                    code = str(row[2]).strip() if pd.notna(row[2]) else ''
+                    
+                    # 총계 행 (code == '0')
+                    if code == '0':
+                        # 현재 분기 값 (열 19)과 전년동분기 값 (열 15)
+                        curr_val = float(row[19]) if pd.notna(row[19]) else 0
+                        prev_val = float(row[15]) if pd.notna(row[15]) else 0
+                        
+                        # 증감률 계산
+                        if prev_val != 0:
+                            change = round((curr_val - prev_val) / prev_val * 100, 1)
+                        else:
+                            change = 0.0
+                        
+                        # 금액 (백억원 단위)
+                        amount = int(round(curr_val / 10, 0))
+                        amount_normalized = min(100, max(0, curr_val / 30))  # 최대 3000억원 기준
+                        
+                        if region == '전국':
+                            nationwide['amount'] = amount
+                            nationwide['change'] = change
+                        elif region in regions:
+                            data = {
+                                'name': region,
+                                'value': change,
+                                'amount': amount,
+                                'amount_normalized': amount_normalized,
+                                'change': change
+                            }
+                            
+                            if change >= 0:
+                                increase_regions.append(data)
+                            else:
+                                decrease_regions.append(data)
+                            chart_data.append(data)
+                except:
+                    continue
+        
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': nationwide,
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'chart_data': chart_data[:18]
+        }
+    except Exception as e:
+        print(f"건설 차트 데이터 추출 오류: {e}")
+        return _get_default_construction_data()
+
+
+def _get_default_construction_data():
+    """기본 건설 데이터"""
+    return {
+        'nationwide': {'amount': 0, 'change': 0.0},
+        'increase_regions': [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
+        'decrease_regions': [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
+        'increase_count': 0, 'decrease_count': 0,
+        'chart_data': []
+    }
 
 
 def get_trade_price_data(excel_path, year, quarter):
