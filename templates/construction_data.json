@@ -1,0 +1,1454 @@
+{
+  "summary_box": {
+    "main_increase_regions": [
+      {
+        "region": "대구",
+        "main_type": "건축",
+        "sub_type": "주택"
+      },
+      {
+        "region": "경남",
+        "main_type": "건축",
+        "sub_type": "항만·공항"
+      },
+      {
+        "region": "부산",
+        "main_type": "건축",
+        "sub_type": "도로·교량"
+      }
+    ],
+    "main_decrease_regions": [
+      {
+        "region": "제주",
+        "main_type": "건축",
+        "sub_type": "사무실·점포"
+      },
+      {
+        "region": "세종",
+        "main_type": "건축",
+        "sub_type": "주택"
+      },
+      {
+        "region": "광주",
+        "main_type": "건축",
+        "sub_type": "도로·교량"
+      }
+    ],
+    "increase_count": 5,
+    "decrease_count": 12
+  },
+  "nationwide_data": {
+    "construction_index": 47133.93,
+    "construction_index_trillion": 4.7,
+    "growth_rate": -8.4,
+    "main_types": [
+      {
+        "name": "",
+        "growth_rate": -44.2
+      }
+    ],
+    "civil_growth": -44.2,
+    "building_growth": 9.0,
+    "civil_subtypes": "철도·궤도, 기계설치",
+    "building_subtypes": "주택, 관공서 등",
+    "main_category": "건축",
+    "sub_types_text": "철도·궤도, 기계설치"
+  },
+  "regional_data": {
+    "increase_regions": [
+      {
+        "region": "대구",
+        "growth_rate": 370.9,
+        "growth_2023_2": -43.1,
+        "growth_2024_2": -59.4,
+        "growth_2025_1": 13.8,
+        "index_2024": 584.182,
+        "index_2025": 1497.573,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 411.5
+          },
+          {
+            "name": "",
+            "growth_rate": 356.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 356.7
+          },
+          {
+            "name": "",
+            "growth_rate": 411.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경남",
+        "growth_rate": 91.9,
+        "growth_2023_2": -53.7,
+        "growth_2024_2": -27.1,
+        "growth_2025_1": -68.9,
+        "index_2024": 1911.908,
+        "index_2025": 2464.279,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 99.3
+          },
+          {
+            "name": "",
+            "growth_rate": 81.4
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 81.4
+          },
+          {
+            "name": "",
+            "growth_rate": 99.3
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "부산",
+        "growth_rate": 73.8,
+        "growth_2023_2": -23.1,
+        "growth_2024_2": -32.8,
+        "growth_2025_1": 27.2,
+        "index_2024": 2336.203,
+        "index_2025": 3418.913,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 214.6
+          },
+          {
+            "name": "",
+            "growth_rate": 60.2
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 60.2
+          },
+          {
+            "name": "",
+            "growth_rate": 214.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "전북",
+        "growth_rate": 70.9,
+        "growth_2023_2": -6.1,
+        "growth_2024_2": -53.9,
+        "growth_2025_1": 61.9,
+        "index_2024": 570.086,
+        "index_2025": 954.353,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 376.8
+          },
+          {
+            "name": "",
+            "growth_rate": 6.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 6.3
+          },
+          {
+            "name": "",
+            "growth_rate": 376.8
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "서울",
+        "growth_rate": 29.2,
+        "growth_2023_2": -31.3,
+        "growth_2024_2": 59.8,
+        "growth_2025_1": 125.9,
+        "index_2024": 7377.423,
+        "index_2025": 10330.1,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 64.0
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 64.0
+          },
+          {
+            "name": "",
+            "growth_rate": -85.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      }
+    ],
+    "decrease_regions": [
+      {
+        "region": "제주",
+        "growth_rate": -70.6,
+        "growth_2023_2": -18.7,
+        "growth_2024_2": -25.8,
+        "growth_2025_1": -49.0,
+        "index_2024": 421.839,
+        "index_2025": 122.81,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -71.7
+          },
+          {
+            "name": "",
+            "growth_rate": -70.1
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -70.1
+          },
+          {
+            "name": "",
+            "growth_rate": -71.7
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "세종",
+        "growth_rate": -67.5,
+        "growth_2023_2": 4.4,
+        "growth_2024_2": -12.3,
+        "growth_2025_1": 362.3,
+        "index_2024": 505.635,
+        "index_2025": 126.357,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -80.5
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -80.5
+          },
+          {
+            "name": "",
+            "growth_rate": 158.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "광주",
+        "growth_rate": -56.4,
+        "growth_2023_2": 337.4,
+        "growth_2024_2": -80.0,
+        "growth_2025_1": -84.8,
+        "index_2024": 317.363,
+        "index_2025": 143.33,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -87.9
+          },
+          {
+            "name": "",
+            "growth_rate": -15.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -15.3
+          },
+          {
+            "name": "",
+            "growth_rate": -87.9
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "충남",
+        "growth_rate": -56.0,
+        "growth_2023_2": -19.3,
+        "growth_2024_2": -1.8,
+        "growth_2025_1": -55.7,
+        "index_2024": 2804.759,
+        "index_2025": 1356.417,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -81.6
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -81.6
+          },
+          {
+            "name": "",
+            "growth_rate": 43.9
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "강원",
+        "growth_rate": -52.5,
+        "growth_2023_2": 16.3,
+        "growth_2024_2": 43.2,
+        "growth_2025_1": -3.2,
+        "index_2024": 2058.231,
+        "index_2025": 1307.79,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -83.5
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 46.6
+          },
+          {
+            "name": "",
+            "growth_rate": -83.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "인천",
+        "growth_rate": -50.0,
+        "growth_2023_2": 20.2,
+        "growth_2024_2": 14.6,
+        "growth_2025_1": -27.5,
+        "index_2024": 2758.39,
+        "index_2025": 2068.62,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -86.5
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -28.7
+          },
+          {
+            "name": "",
+            "growth_rate": -86.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "대전",
+        "growth_rate": -49.2,
+        "growth_2023_2": -58.6,
+        "growth_2024_2": 102.8,
+        "growth_2025_1": -63.5,
+        "index_2024": 1129.508,
+        "index_2025": 1334.287,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -50.5
+          },
+          {
+            "name": "",
+            "growth_rate": -19.6
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -50.5
+          },
+          {
+            "name": "",
+            "growth_rate": -19.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "전남",
+        "growth_rate": -39.0,
+        "growth_2023_2": -46.6,
+        "growth_2024_2": 48.1,
+        "growth_2025_1": -64.0,
+        "index_2024": 533.413,
+        "index_2025": 1037.618,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -50.3
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -50.3
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "울산",
+        "growth_rate": -16.2,
+        "growth_2023_2": 87.4,
+        "growth_2024_2": -19.0,
+        "growth_2025_1": 3.8,
+        "index_2024": 1140.09,
+        "index_2025": 1426.813,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -20.0
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -20.0
+          },
+          {
+            "name": "",
+            "growth_rate": 7.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경기",
+        "growth_rate": -13.3,
+        "growth_2023_2": -44.9,
+        "growth_2024_2": 49.8,
+        "growth_2025_1": -21.2,
+        "index_2024": 13815.107,
+        "index_2025": 16403.047,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -62.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 16.4
+          },
+          {
+            "name": "",
+            "growth_rate": -62.3
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "충북",
+        "growth_rate": -4.2,
+        "growth_2023_2": -46.6,
+        "growth_2024_2": 151.3,
+        "growth_2025_1": 275.6,
+        "index_2024": 1369.679,
+        "index_2025": 1945.628,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -20.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -20.3
+          },
+          {
+            "name": "",
+            "growth_rate": 107.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경북",
+        "growth_rate": -2.6,
+        "growth_2023_2": -53.4,
+        "growth_2024_2": -24.2,
+        "growth_2025_1": -33.5,
+        "index_2024": 1716.772,
+        "index_2025": 1195.995,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -32.2
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 25.5
+          },
+          {
+            "name": "",
+            "growth_rate": -32.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      }
+    ],
+    "all_regions": [
+      {
+        "region": "서울",
+        "growth_rate": 29.2,
+        "growth_2023_2": -31.3,
+        "growth_2024_2": 59.8,
+        "growth_2025_1": 125.9,
+        "index_2024": 7377.423,
+        "index_2025": 10330.1,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 64.0
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 64.0
+          },
+          {
+            "name": "",
+            "growth_rate": -85.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "부산",
+        "growth_rate": 73.8,
+        "growth_2023_2": -23.1,
+        "growth_2024_2": -32.8,
+        "growth_2025_1": 27.2,
+        "index_2024": 2336.203,
+        "index_2025": 3418.913,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 214.6
+          },
+          {
+            "name": "",
+            "growth_rate": 60.2
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 60.2
+          },
+          {
+            "name": "",
+            "growth_rate": 214.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "대구",
+        "growth_rate": 370.9,
+        "growth_2023_2": -43.1,
+        "growth_2024_2": -59.4,
+        "growth_2025_1": 13.8,
+        "index_2024": 584.182,
+        "index_2025": 1497.573,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 411.5
+          },
+          {
+            "name": "",
+            "growth_rate": 356.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 356.7
+          },
+          {
+            "name": "",
+            "growth_rate": 411.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "인천",
+        "growth_rate": -50.0,
+        "growth_2023_2": 20.2,
+        "growth_2024_2": 14.6,
+        "growth_2025_1": -27.5,
+        "index_2024": 2758.39,
+        "index_2025": 2068.62,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -86.5
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -28.7
+          },
+          {
+            "name": "",
+            "growth_rate": -86.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "광주",
+        "growth_rate": -56.4,
+        "growth_2023_2": 337.4,
+        "growth_2024_2": -80.0,
+        "growth_2025_1": -84.8,
+        "index_2024": 317.363,
+        "index_2025": 143.33,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -87.9
+          },
+          {
+            "name": "",
+            "growth_rate": -15.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -15.3
+          },
+          {
+            "name": "",
+            "growth_rate": -87.9
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "대전",
+        "growth_rate": -49.2,
+        "growth_2023_2": -58.6,
+        "growth_2024_2": 102.8,
+        "growth_2025_1": -63.5,
+        "index_2024": 1129.508,
+        "index_2025": 1334.287,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -50.5
+          },
+          {
+            "name": "",
+            "growth_rate": -19.6
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -50.5
+          },
+          {
+            "name": "",
+            "growth_rate": -19.6
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "울산",
+        "growth_rate": -16.2,
+        "growth_2023_2": 87.4,
+        "growth_2024_2": -19.0,
+        "growth_2025_1": 3.8,
+        "index_2024": 1140.09,
+        "index_2025": 1426.813,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -20.0
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -20.0
+          },
+          {
+            "name": "",
+            "growth_rate": 7.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "세종",
+        "growth_rate": -67.5,
+        "growth_2023_2": 4.4,
+        "growth_2024_2": -12.3,
+        "growth_2025_1": 362.3,
+        "index_2024": 505.635,
+        "index_2025": 126.357,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -80.5
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -80.5
+          },
+          {
+            "name": "",
+            "growth_rate": 158.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경기",
+        "growth_rate": -13.3,
+        "growth_2023_2": -44.9,
+        "growth_2024_2": 49.8,
+        "growth_2025_1": -21.2,
+        "index_2024": 13815.107,
+        "index_2025": 16403.047,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -62.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 16.4
+          },
+          {
+            "name": "",
+            "growth_rate": -62.3
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "강원",
+        "growth_rate": -52.5,
+        "growth_2023_2": 16.3,
+        "growth_2024_2": 43.2,
+        "growth_2025_1": -3.2,
+        "index_2024": 2058.231,
+        "index_2025": 1307.79,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -83.5
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 46.6
+          },
+          {
+            "name": "",
+            "growth_rate": -83.5
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "충북",
+        "growth_rate": -4.2,
+        "growth_2023_2": -46.6,
+        "growth_2024_2": 151.3,
+        "growth_2025_1": 275.6,
+        "index_2024": 1369.679,
+        "index_2025": 1945.628,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -20.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -20.3
+          },
+          {
+            "name": "",
+            "growth_rate": 107.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "충남",
+        "growth_rate": -56.0,
+        "growth_2023_2": -19.3,
+        "growth_2024_2": -1.8,
+        "growth_2025_1": -55.7,
+        "index_2024": 2804.759,
+        "index_2025": 1356.417,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -81.6
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -81.6
+          },
+          {
+            "name": "",
+            "growth_rate": 43.9
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "전북",
+        "growth_rate": 70.9,
+        "growth_2023_2": -6.1,
+        "growth_2024_2": -53.9,
+        "growth_2025_1": 61.9,
+        "index_2024": 570.086,
+        "index_2025": 954.353,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 376.8
+          },
+          {
+            "name": "",
+            "growth_rate": 6.3
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 6.3
+          },
+          {
+            "name": "",
+            "growth_rate": 376.8
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "전남",
+        "growth_rate": -39.0,
+        "growth_2023_2": -46.6,
+        "growth_2024_2": 48.1,
+        "growth_2025_1": -64.0,
+        "index_2024": 533.413,
+        "index_2025": 1037.618,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -50.3
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -50.3
+          },
+          {
+            "name": "",
+            "growth_rate": -28.7
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경북",
+        "growth_rate": -2.6,
+        "growth_2023_2": -53.4,
+        "growth_2024_2": -24.2,
+        "growth_2025_1": -33.5,
+        "index_2024": 1716.772,
+        "index_2025": 1195.995,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -32.2
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 25.5
+          },
+          {
+            "name": "",
+            "growth_rate": -32.2
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "경남",
+        "growth_rate": 91.9,
+        "growth_2023_2": -53.7,
+        "growth_2024_2": -27.1,
+        "growth_2025_1": -68.9,
+        "index_2024": 1911.908,
+        "index_2025": 2464.279,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": 99.3
+          },
+          {
+            "name": "",
+            "growth_rate": 81.4
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": 81.4
+          },
+          {
+            "name": "",
+            "growth_rate": 99.3
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      },
+      {
+        "region": "제주",
+        "growth_rate": -70.6,
+        "growth_2023_2": -18.7,
+        "growth_2024_2": -25.8,
+        "growth_2025_1": -49.0,
+        "index_2024": 421.839,
+        "index_2025": 122.81,
+        "top_types": [
+          {
+            "name": "",
+            "growth_rate": -71.7
+          },
+          {
+            "name": "",
+            "growth_rate": -70.1
+          }
+        ],
+        "all_types": [
+          {
+            "name": "",
+            "growth_rate": -70.1
+          },
+          {
+            "name": "",
+            "growth_rate": -71.7
+          }
+        ],
+        "civil_growth": null,
+        "building_growth": null
+      }
+    ]
+  },
+  "top3_increase_regions": [
+    {
+      "region": "대구",
+      "growth_rate": 370.9,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": 411.5
+        },
+        {
+          "name": "",
+          "growth_rate": 356.7
+        }
+      ],
+      "civil_growth": 411.5,
+      "building_growth": 356.7,
+      "civil_subtypes": "철도·궤도, 도로·교량",
+      "building_subtypes": "주택, 관공서 등"
+    },
+    {
+      "region": "경남",
+      "growth_rate": 91.9,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": 99.3
+        },
+        {
+          "name": "",
+          "growth_rate": 81.4
+        }
+      ],
+      "civil_growth": 99.3,
+      "building_growth": 81.4,
+      "civil_subtypes": "항만·공항, 도로·교량",
+      "building_subtypes": "사무실·점포, 주택"
+    },
+    {
+      "region": "부산",
+      "growth_rate": 73.8,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": 214.6
+        },
+        {
+          "name": "",
+          "growth_rate": 60.2
+        }
+      ],
+      "civil_growth": 120.5,
+      "building_growth": 45.2,
+      "civil_subtypes": "철도·궤도, 기계설치",
+      "building_subtypes": "주택, 사무실·점포"
+    }
+  ],
+  "top3_decrease_regions": [
+    {
+      "region": "제주",
+      "growth_rate": -70.6,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": -71.7
+        },
+        {
+          "name": "",
+          "growth_rate": -70.1
+        }
+      ],
+      "civil_growth": -71.7,
+      "building_growth": -70.1,
+      "civil_subtypes": "토지조성, 치산·치수",
+      "building_subtypes": "사무실·점포, 관공서 등"
+    },
+    {
+      "region": "세종",
+      "growth_rate": -67.5,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": -80.5
+        }
+      ],
+      "civil_growth": 158.5,
+      "building_growth": -80.5,
+      "civil_subtypes": "도로·교량, 토지조성",
+      "building_subtypes": "주택, 사무실·점포"
+    },
+    {
+      "region": "광주",
+      "growth_rate": -56.4,
+      "types": [
+        {
+          "name": "",
+          "growth_rate": -87.9
+        },
+        {
+          "name": "",
+          "growth_rate": -15.3
+        }
+      ],
+      "civil_growth": -60.2,
+      "building_growth": -52.8,
+      "civil_subtypes": "기계설치, 항만·공항",
+      "building_subtypes": "사무실·점포, 주택"
+    }
+  ],
+  "increase_types_text": "",
+  "decrease_types_text": "",
+  "increase_sub_types_text": "주택, 항만·공항",
+  "decrease_sub_types_text": "사무실·점포, 주택, 도로·교량",
+  "summary_table": {
+    "base_year": 2020,
+    "columns": {
+      "growth_rate_columns": [
+        "2023.2/4",
+        "2024.2/4",
+        "2025.1/4",
+        "2025.2/4p"
+      ],
+      "index_columns": [
+        "2024.2/4",
+        "2025.2/4p"
+      ]
+    },
+    "regions": [
+      {
+        "group": null,
+        "rowspan": null,
+        "region": "전 국",
+        "growth_rates": [
+          -31.2,
+          20.7,
+          1.1,
+          -8.4
+        ],
+        "indices": [
+          41350.588,
+          47133.93
+        ]
+      },
+      {
+        "region": "서 울",
+        "growth_rates": [
+          -31.3,
+          59.8,
+          125.9,
+          29.2
+        ],
+        "indices": [
+          7377.423,
+          10330.1
+        ],
+        "group": "경인",
+        "rowspan": 3
+      },
+      {
+        "region": "인 천",
+        "growth_rates": [
+          20.2,
+          14.6,
+          -27.5,
+          -50.0
+        ],
+        "indices": [
+          2758.39,
+          2068.62
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "경 기",
+        "growth_rates": [
+          -44.9,
+          49.8,
+          -21.2,
+          -13.3
+        ],
+        "indices": [
+          13815.107,
+          16403.047
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "대 전",
+        "growth_rates": [
+          -58.6,
+          102.8,
+          -63.5,
+          -49.2
+        ],
+        "indices": [
+          1129.508,
+          1334.287
+        ],
+        "group": "충청",
+        "rowspan": 4
+      },
+      {
+        "region": "세 종",
+        "growth_rates": [
+          4.4,
+          -12.3,
+          362.3,
+          -67.5
+        ],
+        "indices": [
+          505.635,
+          126.357
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "충 북",
+        "growth_rates": [
+          -46.6,
+          151.3,
+          275.6,
+          -4.2
+        ],
+        "indices": [
+          1369.679,
+          1945.628
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "충 남",
+        "growth_rates": [
+          -19.3,
+          -1.8,
+          -55.7,
+          -56.0
+        ],
+        "indices": [
+          2804.759,
+          1356.417
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "광 주",
+        "growth_rates": [
+          337.4,
+          -80.0,
+          -84.8,
+          -56.4
+        ],
+        "indices": [
+          317.363,
+          143.33
+        ],
+        "group": "호남",
+        "rowspan": 4
+      },
+      {
+        "region": "전 북",
+        "growth_rates": [
+          -6.1,
+          -53.9,
+          61.9,
+          70.9
+        ],
+        "indices": [
+          570.086,
+          954.353
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "전 남",
+        "growth_rates": [
+          -46.6,
+          48.1,
+          -64.0,
+          -39.0
+        ],
+        "indices": [
+          533.413,
+          1037.618
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "제 주",
+        "growth_rates": [
+          -18.7,
+          -25.8,
+          -49.0,
+          -70.6
+        ],
+        "indices": [
+          421.839,
+          122.81
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "대 구",
+        "growth_rates": [
+          -43.1,
+          -59.4,
+          13.8,
+          370.9
+        ],
+        "indices": [
+          584.182,
+          1497.573
+        ],
+        "group": "동북",
+        "rowspan": 3
+      },
+      {
+        "region": "경 북",
+        "growth_rates": [
+          -53.4,
+          -24.2,
+          -33.5,
+          -2.6
+        ],
+        "indices": [
+          1716.772,
+          1195.995
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "강 원",
+        "growth_rates": [
+          16.3,
+          43.2,
+          -3.2,
+          -52.5
+        ],
+        "indices": [
+          2058.231,
+          1307.79
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "부 산",
+        "growth_rates": [
+          -23.1,
+          -32.8,
+          27.2,
+          73.8
+        ],
+        "indices": [
+          2336.203,
+          3418.913
+        ],
+        "group": "동남",
+        "rowspan": 3
+      },
+      {
+        "region": "울 산",
+        "growth_rates": [
+          87.4,
+          -19.0,
+          3.8,
+          -16.2
+        ],
+        "indices": [
+          1140.09,
+          1426.813
+        ],
+        "group": null,
+        "rowspan": null
+      },
+      {
+        "region": "경 남",
+        "growth_rates": [
+          -53.7,
+          -27.1,
+          -68.9,
+          91.9
+        ],
+        "indices": [
+          1911.908,
+          2464.279
+        ],
+        "group": null,
+        "rowspan": null
+      }
+    ]
+  }
+}

@@ -171,6 +171,20 @@ class StatisticsTableGenerator:
         "국내인구이동": "시도 간 이동"
     }
     
+    # 기초자료 시트별 컬럼 매핑 (분석표와 다른 구조 대응)
+    # 각 시트에서 지역이름과 분류단계의 컬럼 인덱스
+    RAW_COLUMN_MAPPING = {
+        "광공업생산": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "서비스업생산": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "소비(소매, 추가)": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "건설 (공표자료)": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "고용률": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "difference"},  # %p 단위
+        "실업자 수": {"지역_컬럼": 0, "분류단계_컬럼": 1, "분류값": "계", "계산방식": "growth_rate"},
+        "수출": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "수입": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
+        "시도 간 이동": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "순인구이동 수", "계산방식": "growth_rate"},
+    }
+    
     # 지역 목록 (페이지별)
     PAGE1_REGIONS = ["전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종"]
     PAGE2_REGIONS = ["경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
@@ -240,29 +254,54 @@ class StatisticsTableGenerator:
         if not self.raw_extractor:
             return None
         
-        # 분류 단계/구분 설정 확인
-        classification_column = config.get("분류단계_컬럼")
-        classification_value = str(config.get("총지수_식별", {}).get("값", ""))
-        region_column = config.get("지역_컬럼", 1)
+        # 기초자료 시트별 컬럼 매핑 사용 (분석표 설정이 아닌 기초자료 구조에 맞춤)
+        raw_col_config = self.RAW_COLUMN_MAPPING.get(raw_sheet_name, {})
         
-        # 연도 데이터 추출
-        yearly_data = self.raw_extractor.extract_yearly_data(
-            raw_sheet_name,
-            start_year=2016,
-            region_column=region_column,
-            classification_column=classification_column,
-            classification_value=classification_value if classification_value else None
-        )
+        region_column = raw_col_config.get("지역_컬럼", 1)
+        classification_column = raw_col_config.get("분류단계_컬럼", 2)
+        classification_value = raw_col_config.get("분류값", "0")
         
-        # 분기 데이터 추출
-        quarterly_data = self.raw_extractor.extract_all_quarters(
-            raw_sheet_name,
-            start_year=2016,
-            start_quarter=1,
-            region_column=region_column,
-            classification_column=classification_column,
-            classification_value=classification_value if classification_value else None
-        )
+        calculation_method = raw_col_config.get("계산방식", "growth_rate")
+        
+        print(f"[통계표] 기초자료 추출 - 시트: {raw_sheet_name}, 지역컬럼: {region_column}, 분류컬럼: {classification_column}, 분류값: {classification_value}, 계산방식: {calculation_method}")
+        
+        # 계산방식에 따라 다른 함수 호출
+        if calculation_method == "difference":
+            # 차이 계산 (%p 단위)
+            yearly_data = self.raw_extractor.extract_yearly_difference(
+                raw_sheet_name,
+                start_year=2016,
+                region_column=region_column,
+                classification_column=classification_column,
+                classification_value=classification_value if classification_value else None
+            )
+            quarterly_data = self.raw_extractor.extract_quarterly_difference(
+                raw_sheet_name,
+                start_year=2016,
+                start_quarter=1,
+                region_column=region_column,
+                classification_column=classification_column,
+                classification_value=classification_value if classification_value else None
+            )
+        else:
+            # 전년동기비 계산 (% 단위)
+            yearly_data = self.raw_extractor.extract_yearly_growth_rate(
+                raw_sheet_name,
+                start_year=2016,
+                region_column=region_column,
+                classification_column=classification_column,
+                classification_value=classification_value if classification_value else None
+            )
+            quarterly_data = self.raw_extractor.extract_quarterly_growth_rate(
+                raw_sheet_name,
+                start_year=2016,
+                start_quarter=1,
+                region_column=region_column,
+                classification_column=classification_column,
+                classification_value=classification_value if classification_value else None
+            )
+        
+        print(f"[통계표] 기초자료 추출 결과 - 연도: {len(yearly_data)}개, 분기: {len(quarterly_data)}개")
         
         # 데이터 형식 변환 (분기 키 형식 통일: "2016 1/4" -> "2016.1/4")
         quarterly_formatted = {}

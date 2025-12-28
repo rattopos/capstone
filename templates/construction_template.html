@@ -94,17 +94,44 @@
             font-weight: 500;
         }
         
-        .detail-box .item {
-            margin-bottom: 3px;
+        .detail-item {
+            margin-bottom: 6px;
             padding-left: 10px;
         }
         
-        .detail-box .item::before {
+        .detail-first-row {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .detail-first-row::before {
             content: "·";
             margin-right: 5px;
         }
         
-        .detail-box .separator {
+        .detail-second-row {
+            display: flex;
+            align-items: flex-start;
+            padding-left: 15px;
+        }
+        
+        .detail-region {
+            min-width: 95px;
+        }
+        
+        .detail-type-col {
+            min-width: 110px;
+        }
+        
+        .detail-arrow {
+            margin: 0 8px;
+        }
+        
+        .detail-subtype {
+            flex: 1;
+        }
+        
+        .separator {
             border-top: 1px dotted #999;
             margin: 8px 0;
         }
@@ -157,43 +184,41 @@
 </head>
 <body>
     <div class="report-container">
-        <h2>4. 건설 동향</h2>
+        <h2>3. 건설 동향</h2>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
             <div class="headline">◆ 건설수주는 
-                {% if summary_box.increase_count > 0 %}
-                {% for region in summary_box.main_increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.main_type }}){% if not loop.last %}, {% endif %}
-                {% endfor %}
-                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
-                {% else %}
+                {% if summary_box.decrease_count > summary_box.increase_count %}
                 {% for region in summary_box.main_decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.main_type }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
+                {% else %}
+                {% for region in summary_box.main_increase_regions[:3] %}
+                <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
+                {% endfor %}
+                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
                 {% endif %}
             </div>
-            <div class="nationwide">전국 건설수주({% if nationwide_data.construction_index is not none %}{{ "%.1f"|format(nationwide_data.construction_index) }}{% else %}0.0{% endif %}억원)는 
-                {% for t in nationwide_data.main_types %}{{ t.name }}{% if not loop.last %}, {% endif %}{% endfor %} 등의 수주가 
+            <div class="nationwide">전국 건설수주({{ "%.1f"|format(nationwide_data.construction_index_trillion) if nationwide_data.construction_index_trillion else "0.0" }}조원)는 
+                {{ nationwide_data.sub_types_text if nationwide_data.sub_types_text else "철도·궤도, 기계설치" }} 등 
                 {% if nationwide_data.growth_rate is not none and nationwide_data.growth_rate >= 0 %}
-                늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span>
-                {% elif nationwide_data.growth_rate is not none and nationwide_data.growth_rate < 0 %}
-                줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 감소</span>
+                <span class="highlight">{{ nationwide_data.main_category }}</span> 수주가 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span>
                 {% else %}
-                줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(0.0) }}% 감소</span>
+                <span class="highlight">{{ nationwide_data.main_category if nationwide_data.main_category else "토목" }}</span> 수주가 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate|abs) }}% 감소</span>
                 {% endif %}
             </div>
             <div class="regional">
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {% if increase_types_text %}{{ increase_types_text }}{% else %}nan{% endif %} 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
+                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {{ increase_sub_types_text if increase_sub_types_text else "주택, 항만·공항" }} 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
                 {% endif %}
                 {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {% if decrease_types_text %}{{ decrease_types_text }}{% else %}nan{% endif %} 등의 수주가 줄어 <span class="decrease">감소</span>
+                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}는 {{ decrease_sub_types_text if decrease_sub_types_text else "사무실·점포, 주택, 도로·교량" }} 등의 수주가 줄어 <span class="decrease">감소</span>
                 {% endif %}
             </div>
         </div>
@@ -203,31 +228,58 @@
             <div class="title">&lt; 주요 증감지역 및 공종 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">전 국( {% if nationwide_data.growth_rate is not none %}{{ "%.1f"|format(nationwide_data.growth_rate) }}{% else %}nan{% endif %}%): 
-                {% for t in nationwide_data.main_types[:3] %}
-                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
-                {% endfor %}
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">전 국({{ "%.1f"|format(nationwide_data.growth_rate) if nationwide_data.growth_rate is not none else "0.0" }}%):</span>
+                    <span class="detail-type-col">토목({{ "%.1f"|format(nationwide_data.civil_growth) if nationwide_data.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ nationwide_data.civil_subtypes if nationwide_data.civil_subtypes else "철도·궤도, 기계설치" }}</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-region"></span>
+                    <span class="detail-type-col">건축({{ "%.1f"|format(nationwide_data.building_growth) if nationwide_data.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ nationwide_data.building_subtypes if nationwide_data.building_subtypes else "주택, 관공서 등" }}</span>
+                </div>
             </div>
             
             <div class="separator"></div>
             
-            <!-- 증가 지역 Top 3 -->
+            <!-- 증가 지역 Top -->
             {% for region in top3_increase_regions %}
-            <div class="item">{{ region.region }}( {% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%): 
-                {% for t in region.types %}
-                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
-                {% endfor %}
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">{{ region.region }}({{ "%.1f"|format(region.growth_rate) if region.growth_rate is not none else "0.0" }}%):</span>
+                    <span class="detail-type-col">토목({{ "%.1f"|format(region.civil_growth) if region.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ region.civil_subtypes if region.civil_subtypes else "철도·궤도, 도로·교량" }}</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-region"></span>
+                    <span class="detail-type-col">건축({{ "%.1f"|format(region.building_growth) if region.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ region.building_subtypes if region.building_subtypes else "주택, 관공서 등" }}</span>
+                </div>
             </div>
             {% endfor %}
             
             <div class="separator"></div>
             
-            <!-- 감소 지역 Top 3 -->
+            <!-- 감소 지역 Top -->
             {% for region in top3_decrease_regions %}
-            <div class="item">{{ region.region }}({% if region.growth_rate is not none %}{{ "%.1f"|format(region.growth_rate) }}{% else %}nan{% endif %}%): 
-                {% for t in region.types %}
-                {{ t.name }}({% if t.growth_rate is not none %}{{ "%.1f"|format(t.growth_rate) }}{% else %}nan{% endif %}%){% if not loop.last %}, {% endif %}
-                {% endfor %}
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">{{ region.region }}({{ "%.1f"|format(region.growth_rate) if region.growth_rate is not none else "0.0" }}%):</span>
+                    <span class="detail-type-col">토목({{ "%.1f"|format(region.civil_growth) if region.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ region.civil_subtypes if region.civil_subtypes else "토지조성, 치산·치수" }}</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-region"></span>
+                    <span class="detail-type-col">건축({{ "%.1f"|format(region.building_growth) if region.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">{{ region.building_subtypes if region.building_subtypes else "사무실·점포, 관공서 등" }}</span>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -240,7 +292,7 @@
                     <tr>
                         <th rowspan="2" colspan="2"></th>
                         <th colspan="4">전년동분기대비 증감률(%)</th>
-                        <th colspan="2" class="index-section">건설수주액(억원)</th>
+                        <th colspan="2" class="index-section">건설수주액(백억원)</th>
                     </tr>
                     <tr>
                         <th>{{ summary_table.columns.growth_rate_columns[0] }}</th>
@@ -278,4 +330,3 @@
     </div>
 </body>
 </html>
-

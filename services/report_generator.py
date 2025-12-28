@@ -1,0 +1,631 @@
+# -*- coding: utf-8 -*-
+"""
+보고서 생성 서비스
+"""
+
+import importlib.util
+import json
+import inspect
+import pandas as pd
+from pathlib import Path
+from jinja2 import Template
+
+from config.settings import TEMPLATES_DIR, BASE_DIR, UPLOAD_FOLDER
+from utils.filters import is_missing, format_value
+from utils.excel_utils import load_generator_module
+from utils.data_utils import check_missing_data
+from .grdp_service import (
+    get_kosis_grdp_download_info,
+    parse_kosis_grdp_file,
+    get_default_grdp_data
+)
+
+
+def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
+    """보고서 HTML 생성"""
+    try:
+        generator_name = report_config['generator']
+        template_name = report_config['template']
+        report_name = report_config['name']
+        report_id = report_config['id']
+        
+        print(f"\n[DEBUG] ========== {report_name} 보고서 생성 시작 ==========")
+        print(f"[DEBUG] Generator: {generator_name}")
+        print(f"[DEBUG] Template: {template_name}")
+        if raw_excel_path:
+            print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
+        
+        # Generator 모듈 로드
+        module = load_generator_module(generator_name)
+        if not module:
+            print(f"[ERROR] Generator 모듈을 찾을 수 없습니다: {generator_name}")
+            return None, f"Generator 모듈을 찾을 수 없습니다: {generator_name}", []
+        
+        # 사용 가능한 함수 확인
+        available_funcs = [name for name in dir(module) if not name.startswith('_')]
+        print(f"[DEBUG] 모듈 내 함수/클래스: {[f for f in available_funcs if 'generate' in f.lower() or 'Generator' in f or f == 'load_data']}")
+        
+        # Generator 클래스 찾기
+        generator_class = None
+        for name in dir(module):
+            obj = getattr(module, name)
+            if isinstance(obj, type) and name.endswith('Generator'):
+                generator_class = obj
+                print(f"[DEBUG] Generator 클래스 발견: {name}")
+                break
+        
+        data = None
+        
+        # 방법 1: generate_report_data 함수 사용
+        if hasattr(module, 'generate_report_data'):
+            print(f"[DEBUG] generate_report_data 함수 사용")
+            try:
+                if raw_excel_path:
+                    sig = inspect.signature(module.generate_report_data)
+                    params = sig.parameters
+                    if 'raw_excel_path' in params or 'use_raw_data' in params:
+                        data = module.generate_report_data(excel_path, raw_excel_path=raw_excel_path, 
+                                                         year=year, quarter=quarter)
+                    else:
+                        data = module.generate_report_data(excel_path)
+                else:
+                    data = module.generate_report_data(excel_path)
+            except TypeError:
+                data = module.generate_report_data(excel_path)
+            except Exception as e:
+                print(f"[WARNING] 기초자료 추출 실패, 분석표 사용: {e}")
+                data = module.generate_report_data(excel_path)
+            print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
+        
+        # 방법 2: generate_report 함수 직접 호출
+        elif hasattr(module, 'generate_report'):
+            print(f"[DEBUG] generate_report 함수 직접 호출")
+            template_path = TEMPLATES_DIR / template_name
+            output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
+            try:
+                sig = inspect.signature(module.generate_report)
+                params = sig.parameters
+                if 'raw_excel_path' in params:
+                    data = module.generate_report(excel_path, template_path, output_path, 
+                                                 raw_excel_path=raw_excel_path, year=year, quarter=quarter)
+                else:
+                    data = module.generate_report(excel_path, template_path, output_path)
+            except (TypeError, AttributeError):
+                data = module.generate_report(excel_path, template_path, output_path)
+            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
+        
+        # 방법 3: Generator 클래스 사용
+        elif generator_class:
+            print(f"[DEBUG] Generator 클래스 사용: {generator_class.__name__}")
+            generator = generator_class(excel_path)
+            data = generator.extract_all_data()
+            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
+        
+        else:
+            error_msg = f"유효한 Generator를 찾을 수 없습니다: {generator_name}"
+            print(f"[ERROR] {error_msg}")
+            print(f"[ERROR] 사용 가능한 함수: {available_funcs}")
+            return None, error_msg, []
+        
+        # Top3 regions 후처리
+        if data and 'regional_data' in data:
+            if 'top3_increase_regions' not in data:
+                top3_increase = []
+                for r in data['regional_data'].get('increase_regions', [])[:3]:
+                    rate_value = r.get('change', r.get('growth_rate', 0))
+                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
+                    top3_increase.append({
+                        'region': r.get('region', ''),
+                        'change': rate_value,
+                        'growth_rate': rate_value,
+                        'age_groups': items,
+                        'industries': items
+                    })
+                data['top3_increase_regions'] = top3_increase
+            else:
+                for r in data['top3_increase_regions']:
+                    if 'growth_rate' not in r:
+                        r['growth_rate'] = r.get('change', 0)
+                    if 'change' not in r:
+                        r['change'] = r.get('growth_rate', 0)
+                    if 'industries' not in r:
+                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
+                    if 'age_groups' not in r:
+                        r['age_groups'] = r.get('industries', [])
+            
+            if 'top3_decrease_regions' not in data:
+                top3_decrease = []
+                for r in data['regional_data'].get('decrease_regions', [])[:3]:
+                    rate_value = r.get('change', r.get('growth_rate', 0))
+                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
+                    top3_decrease.append({
+                        'region': r.get('region', ''),
+                        'change': rate_value,
+                        'growth_rate': rate_value,
+                        'age_groups': items,
+                        'industries': items
+                    })
+                data['top3_decrease_regions'] = top3_decrease
+            else:
+                for r in data['top3_decrease_regions']:
+                    if 'growth_rate' not in r:
+                        r['growth_rate'] = r.get('change', 0)
+                    if 'change' not in r:
+                        r['change'] = r.get('growth_rate', 0)
+                    if 'industries' not in r:
+                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
+                    if 'age_groups' not in r:
+                        r['age_groups'] = r.get('industries', [])
+            
+            print(f"[DEBUG] Top3 regions 후처리 완료")
+        
+        # 커스텀 데이터 병합
+        if custom_data:
+            for key, value in custom_data.items():
+                keys = key.split('.')
+                obj = data
+                for k in keys[:-1]:
+                    if '[' in k:
+                        name, idx = k.replace(']', '').split('[')
+                        obj = obj[name][int(idx)]
+                    else:
+                        if k not in obj:
+                            obj[k] = {}
+                        obj = obj[k]
+                final_key = keys[-1]
+                if '[' in final_key:
+                    name, idx = final_key.replace(']', '').split('[')
+                    obj[name][int(idx)] = value
+                else:
+                    obj[final_key] = value
+        
+        # 결측치 확인
+        missing = check_missing_data(data, report_id)
+        
+        # 템플릿 렌더링
+        template_path = TEMPLATES_DIR / template_name
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template = Template(f.read())
+        
+        template.environment.filters['format_value'] = format_value
+        template.environment.filters['is_missing'] = is_missing
+        
+        html_content = template.render(**data)
+        
+        print(f"[DEBUG] 보고서 생성 성공!")
+        return html_content, None, missing
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"보고서 생성 오류: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return None, error_msg, []
+
+
+def generate_regional_report_html(excel_path, region_name, is_reference=False):
+    """시도별 보고서 HTML 생성"""
+    try:
+        if region_name == '참고_GRDP' or is_reference:
+            return generate_grdp_reference_html(excel_path)
+        
+        generator_path = TEMPLATES_DIR / 'regional_generator.py'
+        if not generator_path.exists():
+            return None, f"시도별 Generator를 찾을 수 없습니다"
+        
+        spec = importlib.util.spec_from_file_location('regional_generator', str(generator_path))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        generator = module.RegionalGenerator(excel_path)
+        template_path = TEMPLATES_DIR / 'regional_template.html'
+        
+        html_content = generator.render_html(region_name, str(template_path))
+        
+        return html_content, None
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"시도별 보고서 생성 오류: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return None, error_msg
+
+
+def generate_grdp_reference_html(excel_path, session_data=None):
+    """참고_GRDP 보고서 HTML 생성"""
+    try:
+        from flask import session
+        year = session.get('year', 2025) if session_data is None else session_data.get('year', 2025)
+        quarter = session.get('quarter', 2) if session_data is None else session_data.get('quarter', 2)
+        
+        grdp_data = None
+        
+        # 1. 세션에서 추출된 GRDP 데이터 확인
+        if session_data is None:
+            if 'grdp_data' in session and session['grdp_data']:
+                grdp_data = session['grdp_data']
+                print(f"[GRDP] 세션에서 GRDP 데이터 로드 (전국 {grdp_data['national_summary']['growth_rate']}%)")
+        else:
+            grdp_data = session_data.get('grdp_data')
+        
+        # 2. 추출된 JSON 파일 확인
+        if grdp_data is None:
+            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+            if grdp_json_path.exists():
+                with open(grdp_json_path, 'r', encoding='utf-8') as f:
+                    grdp_data = json.load(f)
+                print(f"[GRDP] JSON 파일에서 GRDP 데이터 로드")
+        
+        # 3. 기초자료 수집표에서 직접 추출 시도
+        if grdp_data is None and session_data is None:
+            raw_path = session.get('raw_excel_path')
+            if raw_path:
+                try:
+                    from data_converter import DataConverter
+                    converter = DataConverter(raw_path)
+                    grdp_data = converter.extract_grdp_data()
+                    session['grdp_data'] = grdp_data
+                    print(f"[GRDP] 기초자료에서 GRDP 데이터 추출")
+                except Exception as e:
+                    print(f"[GRDP] 기초자료 추출 실패: {e}")
+        
+        # 4. uploads 폴더에서 KOSIS GRDP 파일 확인
+        if grdp_data is None:
+            kosis_grdp_files = list(UPLOAD_FOLDER.glob('*grdp*.xlsx')) + list(UPLOAD_FOLDER.glob('*GRDP*.xlsx'))
+            kosis_grdp_files += list(UPLOAD_FOLDER.glob('*지역내총생산*.xlsx'))
+            
+            for grdp_file in kosis_grdp_files:
+                print(f"[GRDP] KOSIS GRDP 파일 발견: {grdp_file}")
+                kosis_grdp_data = parse_kosis_grdp_file(str(grdp_file), year, quarter)
+                if kosis_grdp_data:
+                    grdp_data = kosis_grdp_data
+                    if session_data is None:
+                        session['grdp_data'] = grdp_data
+                    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+                    with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                        json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+                    print(f"[GRDP] KOSIS GRDP 파일에서 데이터 파싱 성공")
+                    break
+        
+        # 5. 참고_GRDP Generator 로드 시도
+        if grdp_data is None:
+            grdp_generator_path = TEMPLATES_DIR / 'reference_grdp_generator.py'
+            if grdp_generator_path.exists():
+                spec = importlib.util.spec_from_file_location('reference_grdp_generator', str(grdp_generator_path))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                if hasattr(module, 'generate_report_data'):
+                    grdp_data = module.generate_report_data(excel_path, year, quarter, use_sample=True)
+        
+        # 6. 기본 데이터 사용
+        if grdp_data is None:
+            grdp_data = get_default_grdp_data(year, quarter)
+        
+        # 템플릿 렌더링
+        template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
+        if template_path.exists():
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = Template(f.read())
+            html_content = template.render(**grdp_data)
+        else:
+            html_content = _generate_default_grdp_html(grdp_data)
+        
+        return html_content, None
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"참고_GRDP 보고서 생성 오류: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return None, error_msg
+
+
+def _generate_default_grdp_html(grdp_data):
+    """기본 GRDP 참고자료 HTML 생성"""
+    html = """
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>참고 - 분기 지역내총생산(GRDP)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            padding: 20px 40px;
+        }
+        
+        .report-container { max-width: 800px; margin: 0 auto; }
+        
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .info-box {
+            border: 1px dotted #666;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .info-box p {
+            margin-bottom: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 20px;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background-color: #e3f2fd;
+            font-weight: 500;
+        }
+        
+        .footnote {
+            font-size: 8pt;
+            color: #333;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <h2>〔참고〕 분기 지역내총생산(GRDP)</h2>
+        
+        <div class="info-box">
+            <p><strong>■ 분기 지역내총생산(GRDP)이란?</strong></p>
+            <p>일정 기간 동안에 일정 지역 내에서 새로이 창출된 최종생산물을 시장가격으로 평가한 가치의 합입니다.</p>
+            <p>분기 GRDP는 시도별 경제성장 동향을 파악하는 주요 지표로 활용됩니다.</p>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>■ 참고사항</strong></p>
+            <p>· 현재 분기 GRDP 데이터는 별도 발표 자료를 참조하시기 바랍니다.</p>
+            <p>· 본 보고서에서는 분기 GRDP의 전년동기비 증감률을 시도별로 제공합니다.</p>
+        </div>
+        
+        <div class="footnote">
+            자료: 통계청, 지역소득(GRDP)
+        </div>
+    </div>
+</body>
+</html>
+"""
+    return html
+
+
+def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=None):
+    """통계표 보고서 HTML 생성"""
+    try:
+        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
+        if not generator_path.exists():
+            return None, f"통계표 Generator를 찾을 수 없습니다"
+        
+        spec = importlib.util.spec_from_file_location('통계표_generator', str(generator_path))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        generator = module.통계표Generator(
+            excel_path,
+            raw_excel_path=raw_excel_path,
+            current_year=year,
+            current_quarter=quarter
+        )
+        template_path = TEMPLATES_DIR / 'statistics_table_template.html'
+        
+        html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
+        
+        return html_content, None
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"통계표 보고서 생성 오류: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return None, error_msg
+
+
+def generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path=None):
+    """개별 통계표 HTML 생성"""
+    try:
+        stat_id = stat_config['id']
+        template_name = stat_config['template']
+        table_name = stat_config.get('table_name')
+        
+        # 통계표 Generator 모듈 로드
+        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
+        if generator_path.exists():
+            spec = importlib.util.spec_from_file_location('statistics_table_generator', str(generator_path))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            generator = module.StatisticsTableGenerator(
+                excel_path,
+                raw_excel_path=raw_excel_path,
+                current_year=year,
+                current_quarter=quarter
+            )
+        else:
+            generator = None
+        
+        PAGE1_REGIONS = ["전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종"]
+        PAGE2_REGIONS = ["경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+        
+        # 통계표 목차
+        if stat_id == 'stat_toc':
+            toc_items = [
+                {'number': 1, 'name': '광공업생산지수'},
+                {'number': 2, 'name': '서비스업생산지수'},
+                {'number': 3, 'name': '소매판매액지수'},
+                {'number': 4, 'name': '건설수주액'},
+                {'number': 5, 'name': '고용률'},
+                {'number': 6, 'name': '실업률'},
+                {'number': 7, 'name': '국내 인구이동'},
+                {'number': 8, 'name': '수출액'},
+                {'number': 9, 'name': '수입액'},
+                {'number': 10, 'name': '소비자물가지수'},
+            ]
+            template_data = {
+                'year': year,
+                'quarter': quarter,
+                'toc_items': toc_items,
+                'page_number': 21
+            }
+        
+        # 통계표 - 개별 지표
+        elif table_name and table_name != 'GRDP' and generator:
+            table_order = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
+                          '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수']
+            try:
+                table_index = table_order.index(table_name) + 1
+            except ValueError:
+                table_index = 1
+            
+            config = generator.TABLE_CONFIG.get(table_name)
+            if config:
+                data = generator.extract_table_data(table_name)
+                
+                yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+                quarterly_keys = [
+                    "2016.4/4",
+                    "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
+                    "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
+                    "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
+                    "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
+                    "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
+                    "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
+                    "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
+                    "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
+                    "2025.1/4", f"2025.{quarter}/4p"
+                ]
+                
+                page_base = 22 + (table_index - 1) * 2
+                
+                template_data = {
+                    'year': year,
+                    'quarter': quarter,
+                    'index': table_index,
+                    'title': table_name,
+                    'unit': config['단위'],
+                    'data': data if data else {'yearly': {}, 'quarterly': {}},
+                    'page1_regions': PAGE1_REGIONS,
+                    'page2_regions': PAGE2_REGIONS,
+                    'yearly_years': yearly_years,
+                    'quarterly_keys': quarterly_keys,
+                    'page_number_1': page_base,
+                    'page_number_2': page_base + 1
+                }
+            else:
+                return None, f"통계표 설정을 찾을 수 없습니다: {table_name}"
+        
+        # 통계표 - GRDP
+        elif stat_id == 'stat_grdp':
+            if generator:
+                grdp_data = generator._create_grdp_placeholder()
+            else:
+                grdp_data = {
+                    'data': {
+                        'yearly': {},
+                        'quarterly': {},
+                        'yearly_years': [],
+                        'quarterly_keys': []
+                    }
+                }
+            
+            yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+            quarterly_keys = [
+                "2016.4/4",
+                "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
+                "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
+                "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
+                "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
+                "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
+                "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
+                "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
+                "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
+                "2025.1/4"
+            ]
+            
+            template_data = {
+                'year': year,
+                'quarter': quarter,
+                'data': grdp_data.get('data', {'yearly': {}, 'quarterly': {}}),
+                'page1_regions': PAGE1_REGIONS,
+                'page2_regions': PAGE2_REGIONS,
+                'yearly_years': yearly_years,
+                'quarterly_keys': quarterly_keys,
+                'page_number_1': 42,
+                'page_number_2': 43
+            }
+        
+        # 부록 - 주요 용어 정의
+        elif stat_id == 'stat_appendix':
+            terms_page1 = [
+                {"term": "불변지수", "definition": "불변지수는 가격 변동분이 제외된 수량 변동분만 포함되어 있음을 의미하며, 성장 수준 분석(전년동분기비)에 활용됨"},
+                {"term": "광공업생산지수", "definition": "한국표준산업분류 상의 3개 대분류(B, C, D)를 대상으로 광업제조업동향조사의 월별 품목별 생산·출하(내수 및 수출)·재고 및 생산능력·가동률지수를 기초로 작성됨"},
+                {"term": "서비스업생산지수", "definition": "한국표준산업분류 상의 13개 대분류(E, G, H, I, J, K, L, M, N, P, Q, R, S)를 대상으로 서비스업동향조사의 월별 매출액을 기초로 작성됨"},
+                {"term": "소매판매액지수", "definition": "한국표준산업분류 상의 '자동차 판매업 중 승용차'와 '소매업'을 대상으로 서비스업동향조사의 월별 상품판매액을 기초로 작성됨"},
+                {"term": "건설수주", "definition": "종합건설업 등록업체 중 전전년 「건설업조사」 결과를 기준으로 기성액 순위 상위 기업체(대표도: 54%)의 국내공사에 대한 건설수주액임"},
+                {"term": "소비자물가지수", "definition": "가구에서 일상생활을 영위하기 위해 구입하는 상품과 서비스의 평균적인 가격변동을 측정한 지수임"},
+                {"term": "지역내총생산", "definition": "일정 기간 동안에 일정 지역 내에서 새로이 창출된 최종생산물을 시장가격으로 평가한 가치의 합임"},
+            ]
+            terms_page2 = [
+                {"term": "고용률", "definition": "만 15세 이상 인구 중 취업자가 차지하는 비율로, 노동시장의 고용흡수력을 나타내는 지표"},
+                {"term": "실업률", "definition": "경제활동인구 중 실업자가 차지하는 비율로, 노동시장의 수급상황을 파악하는 대표적 지표"},
+                {"term": "국내인구이동", "definition": "주민등록법에 의한 전입신고를 집계한 것으로, 시·도 간 순이동을 의미함"},
+                {"term": "수출액", "definition": "관세선을 통과하여 외국으로 반출하는 물품의 가액으로, FOB(본선인도가격) 기준으로 집계"},
+                {"term": "수입액", "definition": "관세선을 통과하여 국내로 반입하는 물품의 가액으로, CIF(운임·보험료포함가격) 기준으로 집계"},
+            ]
+            
+            template_data = {
+                'year': year,
+                'quarter': quarter,
+                'terms_page1': terms_page1,
+                'terms_page2': terms_page2,
+                'page_number_1': 44,
+                'page_number_2': 45
+            }
+        
+        else:
+            return None, f"알 수 없는 통계표 ID: {stat_id}"
+        
+        # 템플릿 렌더링
+        template_path = TEMPLATES_DIR / template_name
+        if not template_path.exists():
+            return None, f"템플릿을 찾을 수 없습니다: {template_name}"
+        
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template = Template(f.read())
+        
+        html_content = template.render(**template_data)
+        return html_content, None
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"개별 통계표 생성 오류 ({stat_config.get('name', 'unknown')}): {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return None, error_msg
+

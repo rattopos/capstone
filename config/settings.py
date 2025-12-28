@@ -1,0 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+애플리케이션 기본 설정
+"""
+
+from pathlib import Path
+
+# 프로젝트 루트 설정
+BASE_DIR = Path(__file__).parent.parent
+TEMPLATES_DIR = BASE_DIR / 'templates'
+UPLOAD_FOLDER = BASE_DIR / 'uploads'
+
+# 업로드 폴더 생성
+UPLOAD_FOLDER.mkdir(exist_ok=True)
+
+# Flask 설정
+SECRET_KEY = 'capstone_secret_key_2025'
+MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max
+

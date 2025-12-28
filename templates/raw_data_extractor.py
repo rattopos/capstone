@@ -357,6 +357,178 @@ class RawDataExtractor:
         """보고서 이름에 대응하는 기초자료 시트 이름 반환"""
         return self.RAW_SHEET_MAPPING.get(report_name)
     
+    def extract_yearly_difference(
+        self,
+        sheet_name: str,
+        start_year: int = 2016,
+        region_column: int = 1,
+        classification_column: Optional[int] = None,
+        classification_value: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """연도별 전년동기대비 차이(%p) 계산하여 추출
+        
+        고용률, 실업률 등 %p 단위 지표에 사용
+        
+        Args:
+            sheet_name: 시트 이름
+            start_year: 시작 연도
+            region_column: 지역명 컬럼 인덱스
+            classification_column: 분류단계 컬럼 인덱스
+            classification_value: 분류단계 값
+            
+        Returns:
+            {'2016': {'전국': 차이, ...}, ...}
+        """
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {}
+        
+        structure = self.parse_sheet_structure(sheet_name)
+        raw_data = {}
+        
+        for year in range(start_year - 1, self.current_year + 1):
+            col_idx = structure['years'].get(year)
+            if col_idx is None:
+                continue
+            
+            year_data = {}
+            for row_idx in range(len(df)):
+                try:
+                    region = str(df.iloc[row_idx, region_column]).strip()
+                    if region not in self.ALL_REGIONS:
+                        continue
+                    
+                    if region in year_data:
+                        continue
+                    
+                    if classification_column is not None and classification_value is not None:
+                        classification = str(df.iloc[row_idx, classification_column]).strip()
+                        if classification != classification_value:
+                            continue
+                    
+                    value = df.iloc[row_idx, col_idx]
+                    if pd.notna(value):
+                        year_data[region] = float(value)
+                except (IndexError, ValueError):
+                    continue
+            
+            if year_data:
+                raw_data[year] = year_data
+        
+        # 차이 계산 (현재값 - 전년값)
+        result = {}
+        for year in range(start_year, self.current_year + 1):
+            if year not in raw_data or (year - 1) not in raw_data:
+                continue
+            
+            diff_data = {}
+            for region in self.ALL_REGIONS:
+                current = raw_data[year].get(region)
+                previous = raw_data[year - 1].get(region)
+                
+                if current is not None and previous is not None:
+                    diff = current - previous
+                    diff_data[region] = round(diff, 1)
+            
+            if diff_data:
+                result[str(year)] = diff_data
+        
+        return result
+    
+    def extract_quarterly_difference(
+        self,
+        sheet_name: str,
+        start_year: int = 2016,
+        start_quarter: int = 1,
+        region_column: int = 1,
+        classification_column: Optional[int] = None,
+        classification_value: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """분기별 전년동분기대비 차이(%p) 계산하여 추출
+        
+        Args:
+            sheet_name: 시트 이름
+            start_year: 시작 연도
+            start_quarter: 시작 분기
+            region_column: 지역명 컬럼 인덱스
+            classification_column: 분류단계 컬럼 인덱스
+            classification_value: 분류단계 값
+            
+        Returns:
+            {'2016.1/4': {'전국': 차이, ...}, ...}
+        """
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {}
+        
+        structure = self.parse_sheet_structure(sheet_name)
+        raw_data = {}
+        
+        for year in range(start_year - 1, self.current_year + 1):
+            for quarter in range(1, 5):
+                if year == self.current_year and quarter > self.current_quarter:
+                    break
+                
+                quarter_key = f"{year} {quarter}/4"
+                col_idx = structure['quarters'].get(quarter_key)
+                if col_idx is None:
+                    continue
+                
+                quarter_data = {}
+                for row_idx in range(len(df)):
+                    try:
+                        region = str(df.iloc[row_idx, region_column]).strip()
+                        if region not in self.ALL_REGIONS:
+                            continue
+                        
+                        if region in quarter_data:
+                            continue
+                        
+                        if classification_column is not None and classification_value is not None:
+                            classification = str(df.iloc[row_idx, classification_column]).strip()
+                            if classification != classification_value:
+                                continue
+                        
+                        value = df.iloc[row_idx, col_idx]
+                        if pd.notna(value):
+                            quarter_data[region] = float(value)
+                    except (IndexError, ValueError):
+                        continue
+                
+                if quarter_data:
+                    raw_data[quarter_key] = quarter_data
+        
+        # 차이 계산
+        result = {}
+        for year in range(start_year, self.current_year + 1):
+            s_quarter = start_quarter if year == start_year else 1
+            e_quarter = self.current_quarter if year == self.current_year else 4
+            
+            for quarter in range(s_quarter, e_quarter + 1):
+                current_key = f"{year} {quarter}/4"
+                previous_key = f"{year - 1} {quarter}/4"
+                
+                if current_key not in raw_data or previous_key not in raw_data:
+                    continue
+                
+                diff_data = {}
+                for region in self.ALL_REGIONS:
+                    current = raw_data[current_key].get(region)
+                    previous = raw_data[previous_key].get(region)
+                    
+                    if current is not None and previous is not None:
+                        diff = current - previous
+                        diff_data[region] = round(diff, 1)
+                
+                if diff_data:
+                    if year == self.current_year and quarter == self.current_quarter:
+                        result_key = f"{year}.{quarter}/4p"
+                    else:
+                        result_key = f"{year}.{quarter}/4"
+                    result[result_key] = diff_data
+        
+        return result
+    
     def find_region_row(
         self,
         sheet_name: str,
@@ -401,4 +573,189 @@ class RawDataExtractor:
                 continue
         
         return None
+    
+    def extract_yearly_growth_rate(
+        self,
+        sheet_name: str,
+        start_year: int = 2016,
+        region_column: int = 1,
+        classification_column: Optional[int] = None,
+        classification_value: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """연도별 전년동기비(%) 계산하여 추출
+        
+        Args:
+            sheet_name: 시트 이름
+            start_year: 시작 연도 (기본값 2016)
+            region_column: 지역명이 있는 컬럼 인덱스
+            classification_column: 분류단계/구분 컬럼 인덱스
+            classification_value: 분류단계/구분 값
+            
+        Returns:
+            {
+                '2016': {'전국': 증감률, '서울': 증감률, ...},
+                '2017': {...},
+                ...
+            }
+        """
+        # 먼저 원지수 데이터 추출 (전년 데이터 포함을 위해 start_year-1부터)
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {}
+        
+        structure = self.parse_sheet_structure(sheet_name)
+        raw_data = {}  # {year: {region: value}}
+        
+        # 모든 연도의 원지수 추출 (각 지역별로 첫 번째로 발견된 행만 사용)
+        for year in range(start_year - 1, self.current_year + 1):
+            col_idx = structure['years'].get(year)
+            if col_idx is None:
+                continue
+            
+            year_data = {}
+            for row_idx in range(len(df)):
+                try:
+                    region = str(df.iloc[row_idx, region_column]).strip()
+                    if region not in self.ALL_REGIONS:
+                        continue
+                    
+                    # 이미 해당 지역 데이터가 있으면 스킵 (첫 번째 행만 사용)
+                    if region in year_data:
+                        continue
+                    
+                    if classification_column is not None and classification_value is not None:
+                        classification = str(df.iloc[row_idx, classification_column]).strip()
+                        if classification != classification_value:
+                            continue
+                    
+                    value = df.iloc[row_idx, col_idx]
+                    if pd.notna(value):
+                        year_data[region] = float(value)
+                except (IndexError, ValueError):
+                    continue
+            
+            if year_data:
+                raw_data[year] = year_data
+        
+        # 전년동기비 계산
+        result = {}
+        for year in range(start_year, self.current_year + 1):
+            if year not in raw_data or (year - 1) not in raw_data:
+                continue
+            
+            growth_data = {}
+            for region in self.ALL_REGIONS:
+                current = raw_data[year].get(region)
+                previous = raw_data[year - 1].get(region)
+                
+                if current is not None and previous is not None and previous != 0:
+                    growth_rate = ((current / previous) - 1) * 100
+                    growth_data[region] = round(growth_rate, 1)
+            
+            if growth_data:
+                result[str(year)] = growth_data
+        
+        return result
+    
+    def extract_quarterly_growth_rate(
+        self,
+        sheet_name: str,
+        start_year: int = 2016,
+        start_quarter: int = 1,
+        region_column: int = 1,
+        classification_column: Optional[int] = None,
+        classification_value: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """분기별 전년동분기비(%) 계산하여 추출
+        
+        Args:
+            sheet_name: 시트 이름
+            start_year: 시작 연도 (기본값 2016)
+            start_quarter: 시작 분기 (기본값 1)
+            region_column: 지역명이 있는 컬럼 인덱스
+            classification_column: 분류단계/구분 컬럼 인덱스
+            classification_value: 분류단계/구분 값
+            
+        Returns:
+            {
+                '2016.1/4': {'전국': 증감률, ...},
+                '2016.2/4': {...},
+                ...
+            }
+        """
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {}
+        
+        structure = self.parse_sheet_structure(sheet_name)
+        
+        # 모든 분기의 원지수 추출 (전년도 분기 포함)
+        raw_data = {}  # {'2015 1/4': {region: value}, ...}
+        
+        for year in range(start_year - 1, self.current_year + 1):
+            for quarter in range(1, 5):
+                if year == self.current_year and quarter > self.current_quarter:
+                    break
+                
+                quarter_key = f"{year} {quarter}/4"
+                col_idx = structure['quarters'].get(quarter_key)
+                if col_idx is None:
+                    continue
+                
+                quarter_data = {}
+                for row_idx in range(len(df)):
+                    try:
+                        region = str(df.iloc[row_idx, region_column]).strip()
+                        if region not in self.ALL_REGIONS:
+                            continue
+                        
+                        # 이미 해당 지역 데이터가 있으면 스킵 (첫 번째 행만 사용)
+                        if region in quarter_data:
+                            continue
+                        
+                        if classification_column is not None and classification_value is not None:
+                            classification = str(df.iloc[row_idx, classification_column]).strip()
+                            if classification != classification_value:
+                                continue
+                        
+                        value = df.iloc[row_idx, col_idx]
+                        if pd.notna(value):
+                            quarter_data[region] = float(value)
+                    except (IndexError, ValueError):
+                        continue
+                
+                if quarter_data:
+                    raw_data[quarter_key] = quarter_data
+        
+        # 전년동분기비 계산
+        result = {}
+        for year in range(start_year, self.current_year + 1):
+            s_quarter = start_quarter if year == start_year else 1
+            e_quarter = self.current_quarter if year == self.current_year else 4
+            
+            for quarter in range(s_quarter, e_quarter + 1):
+                current_key = f"{year} {quarter}/4"
+                previous_key = f"{year - 1} {quarter}/4"
+                
+                if current_key not in raw_data or previous_key not in raw_data:
+                    continue
+                
+                growth_data = {}
+                for region in self.ALL_REGIONS:
+                    current = raw_data[current_key].get(region)
+                    previous = raw_data[previous_key].get(region)
+                    
+                    if current is not None and previous is not None and previous != 0:
+                        growth_rate = ((current / previous) - 1) * 100
+                        growth_data[region] = round(growth_rate, 1)
+                
+                if growth_data:
+                    # 현재 분기는 잠정치(p) 표시
+                    if year == self.current_year and quarter == self.current_quarter:
+                        result_key = f"{year}.{quarter}/4p"
+                    else:
+                        result_key = f"{year}.{quarter}/4"
+                    result[result_key] = growth_data
+        
+        return result
 

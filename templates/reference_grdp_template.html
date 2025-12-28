@@ -434,17 +434,19 @@
                 <tbody>
                     {% for item in regional_data %}
                     <tr>
-                        {% if loop.index == 1 %}
-                        <!-- 전국 -->
+                        {% if loop.first %}
+                        <!-- 전국 (첫 번째 항목) -->
                         <td class="national" colspan="2">전 국</td>
-                        {% elif item.region_group and (loop.index == 2 or regional_data[loop.index-2].region_group != item.region_group) %}
-                        <!-- 권역 그룹 시작 -->
+                        {% elif item.region_group and (not loop.previtem.region_group or loop.previtem.region_group != item.region_group) %}
+                        <!-- 새 권역 그룹 시작 -->
                         {% set group_count = regional_data | selectattr('region_group', 'equalto', item.region_group) | list | length %}
                         <td class="region-group" rowspan="{{ group_count }}">{{ item.region_group }}</td>
                         <td class="region-name">{{ item.region }}</td>
                         {% elif item.region_group %}
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
                         <td class="region-name">{{ item.region }}</td>
                         {% else %}
+                        <!-- region_group이 없는 경우 -->
                         <td class="region-name" colspan="2">{{ item.region }}</td>
                         {% endif %}
                         

@@ -577,18 +577,6 @@
             color: var(--error);
         }
 
-        .btn-hwpx {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            border: none;
-            color: white;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-hwpx:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
-        }
-
         .btn-success:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 25px var(--success-glow);
@@ -1313,7 +1301,7 @@
                 <div class="upload-zone" id="uploadZone">
                     <div class="upload-icon">📄</div>
                     <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
-                    <p class="upload-hint">기초자료 수집표 또는 분석표 (*.xlsx, *.xls)</p>
+                    <p class="upload-hint">기초자료 수집표 (*.xlsx, *.xls)</p>
                     <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
                 </div>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
@@ -1341,6 +1329,25 @@
                                 <span style="color: var(--text-muted);">1위 지역:</span>
                                 <span id="grdpTopRegion" style="color: var(--text-primary); font-weight: 600;"></span>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GRDP 누락 안내 (간소화) -->
+                    <div class="grdp-missing" id="grdpMissing" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid #f59e0b;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 600; color: #f59e0b;">⚠️ GRDP 데이터 누락</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">참고_GRDP 보고서에 영향</div>
+                            </div>
+                            <button onclick="showGrdpModal()" style="
+                                padding: 0.4rem 0.75rem;
+                                background: #f59e0b;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                                font-size: 0.75rem;
+                                cursor: pointer;
+                            ">추가</button>
                         </div>
                     </div>
                     
@@ -1440,8 +1447,8 @@
                     <button class="btn btn-success" id="exportBtn" style="display: none;">
                         📰 HTML 보도자료
                     </button>
-                    <button class="btn btn-hwpx" id="exportHwpxBtn" style="display: none;">
-                        📄 HWPX 내보내기
+                    <button class="btn btn-hwp" id="exportHwpBtn" style="display: none; background: linear-gradient(135deg, #2196f3, #1976d2); border-color: #1565c0;">
+                        📋 한글 복붙용
                     </button>
                 </div>
             </div>
@@ -1565,7 +1572,7 @@
             </div>
             
             <!-- 담당자 정보 -->
-            <div style="margin-bottom: 1rem;">
+            <div style="margin-bottom: 1.5rem;">
                 <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                     <span>👤</span> 담당자 정보
                 </h3>
@@ -1584,6 +1591,25 @@
                         <label class="missing-field-label">전화번호</label>
                         <input type="text" class="missing-field-input" id="staffPhone" 
                                placeholder="예: 042-481-2226" value="042-481-2226">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 관세청 담당 정보 -->
+            <div style="margin-bottom: 1rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🚢</span> 관세청 담당 (수출입 통계)
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">담당부서</label>
+                        <input type="text" class="missing-field-input" id="customsDepartment" 
+                               placeholder="예: 관세청 정보데이터기획담당관" value="관세청 정보데이터기획담당관">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="customsPhone" 
+                               placeholder="예: 042-481-7845" value="042-481-7845">
                     </div>
                 </div>
             </div>
@@ -1673,6 +1699,99 @@
         </div>
     </div>
 
+    <!-- GRDP Upload Modal -->
+    <div class="upload-modal-overlay" id="grdpModal">
+        <div class="upload-modal-content" style="max-width: 450px;">
+            <div class="upload-modal-icon" style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <h2 class="upload-modal-title" style="color: #f59e0b;">GRDP 데이터 필요</h2>
+            <p class="upload-modal-subtitle" style="margin-bottom: 1.5rem;">
+                기초자료에 GRDP 데이터가 포함되어 있지 않습니다.<br>
+                GRDP 파일을 업로드해주세요.
+            </p>
+            
+            <!-- GRDP 파일 업로드 영역 -->
+            <div class="grdp-upload-area" style="
+                border: 2px dashed var(--border);
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+                cursor: pointer;
+                transition: all 0.3s;
+            " onclick="document.getElementById('grdpModalFileInput').click()">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">GRDP 엑셀 파일을 드래그하거나 클릭하세요</p>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">분기 지역내총생산 (*.xlsx)</p>
+                <input type="file" id="grdpModalFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleGrdpModalUpload(this)">
+            </div>
+            
+            <!-- 업로드 진행 상태 (초기에는 숨김) -->
+            <div id="grdpUploadProgress" style="display: none; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-secondary);">
+                    <span class="spinner" style="
+                        width: 16px;
+                        height: 16px;
+                        border: 2px solid var(--border);
+                        border-top-color: var(--accent-primary);
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    "></span>
+                    <span id="grdpUploadStatus">업로드 중...</span>
+                </div>
+            </div>
+            
+            <!-- 버튼 영역 -->
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <button onclick="openKosisGrdpPage()" style="
+                    flex: 1;
+                    padding: 0.75rem 1rem;
+                    background: transparent;
+                    color: var(--text-secondary);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                ">
+                    GRDP 파일이 없습니다
+                </button>
+                <button onclick="closeGrdpModal()" style="
+                    flex: 1;
+                    padding: 0.75rem 1rem;
+                    background: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                ">
+                    나중에 추가
+                </button>
+            </div>
+            
+            <!-- 안내 문구 -->
+            <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 1rem; text-align: center;">
+                * GRDP 없이도 다른 보고서는 정상적으로 생성됩니다
+            </p>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .grdp-upload-area:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .grdp-upload-area.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+    </style>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1682,7 +1801,7 @@
             fileUploaded: false,
             allGenerated: false,
             currentReportIndex: -1,
-            fileType: null,  // 'raw' (기초자료 수집표) or 'analysis' (분석표)
+            fileType: null,  // 'raw' (기초자료 수집표)
             analysisFilename: null,  // 생성된 분석표 파일명
             reports: [],
             summaryReports: [],
@@ -1750,7 +1869,9 @@
                 manager_phone: '042-481-2206',
                 staff_title: '사무관',
                 staff_name: '윤민희',
-                staff_phone: '042-481-2226'
+                staff_phone: '042-481-2226',
+                customs_department: '관세청 정보데이터기획담당관',
+                customs_phone: '042-481-7845'
             }
         };
 
@@ -1774,7 +1895,7 @@
             pageIndicator: document.getElementById('pageIndicator'),
             generateAllBtn: document.getElementById('generateAllBtn'),
             exportBtn: document.getElementById('exportBtn'),
-            exportHwpxBtn: document.getElementById('exportHwpxBtn'),
+            exportHwpBtn: document.getElementById('exportHwpBtn'),
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
             previewIframe: document.getElementById('previewIframe'),
@@ -1830,14 +1951,12 @@
             elements.generateAllBtn.addEventListener('click', generateAllReports);
             elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
             elements.exportBtn.addEventListener('click', exportFinalDocument);
+            elements.exportHwpBtn.addEventListener('click', exportHwpReadyDocument);
             
             // Edit actions
             elements.editBtn.addEventListener('click', enterEditMode);
             elements.saveEditBtn.addEventListener('click', saveEditedContent);
             elements.cancelEditBtn.addEventListener('click', cancelEditMode);
-            
-            // HWPX Export
-            elements.exportHwpxBtn.addEventListener('click', exportHwpxDocument);
         }
 
         function loadReportList() {
@@ -1879,6 +1998,8 @@
             document.getElementById('staffTitle').value = state.contactInfo.staff_title;
             document.getElementById('staffName').value = state.contactInfo.staff_name;
             document.getElementById('staffPhone').value = state.contactInfo.staff_phone;
+            document.getElementById('customsDepartment').value = state.contactInfo.customs_department || '관세청 정보데이터기획담당관';
+            document.getElementById('customsPhone').value = state.contactInfo.customs_phone || '042-481-7845';
             
             elements.contactInfoModal.classList.add('active');
         }
@@ -1898,7 +2019,9 @@
                 manager_phone: document.getElementById('managerPhone').value,
                 staff_title: document.getElementById('staffTitle').value,
                 staff_name: document.getElementById('staffName').value,
-                staff_phone: document.getElementById('staffPhone').value
+                staff_phone: document.getElementById('staffPhone').value,
+                customs_department: document.getElementById('customsDepartment').value,
+                customs_phone: document.getElementById('customsPhone').value
             };
             
             closeContactModal();
@@ -1968,7 +2091,7 @@
             
             // 내보내기 버튼 표시
             elements.exportBtn.style.display = 'inline-flex';
-            elements.exportHwpxBtn.style.display = 'inline-flex';
+            elements.exportHwpBtn.style.display = 'inline-flex';
             
             // 모든 목록 다시 렌더링
             renderSummaryReportList();
@@ -2540,7 +2663,7 @@
 
                 if (data.success) {
                     // Step 2 완료
-                    const fileTypeText = data.file_type === 'raw' ? '기초자료 수집표' : '분석표';
+                    const fileTypeText = '기초자료 수집표';
                     updateUploadStep(2, 'completed', fileTypeText);
                     
                     // Step 3: 분석표 변환
@@ -2612,21 +2735,34 @@
                     const conversionDetails = document.getElementById('conversionDetails');
                     const grdpInfo = document.getElementById('grdpInfo');
                     
+                    const grdpMissing = document.getElementById('grdpMissing');
+                    
                     if (data.conversion_info) {
                         conversionInfo.style.display = 'block';
                         conversionDetails.textContent = `원본: ${data.conversion_info.original_file} → ${data.conversion_info.analysis_file}`;
                         
                         if (data.conversion_info.grdp_extracted) {
                             grdpInfo.style.display = 'block';
+                            grdpMissing.style.display = 'none';
                             document.getElementById('grdpNational').textContent = `${data.conversion_info.national_growth_rate}%`;
                             document.getElementById('grdpTopRegion').textContent = `${data.conversion_info.top_region} (${data.conversion_info.top_region_growth}%)`;
+                            // 모달 닫기 (2초 후)
+                            hideUploadModal(2000);
+                        } else {
+                            // GRDP 추출 실패 시 모달 닫고 GRDP 모달 표시
+                            grdpInfo.style.display = 'none';
+                            grdpMissing.style.display = 'none';
+                            hideUploadModal(500);
+                            setTimeout(() => {
+                                showGrdpModal();
+                            }, 600);
                         }
                     } else {
                         conversionInfo.style.display = 'none';
-                    }
-                    
+                        grdpMissing.style.display = 'none';
                     // 모달 닫기 (2초 후)
                     hideUploadModal(2000);
+                    }
                     
                     // 분석표 다운로드 버튼에 파일명 저장
                     if (data.conversion_info) {
@@ -2967,8 +3103,8 @@
             }
         }
 
-        // ===== HWPX 문서 내보내기 =====
-        async function exportHwpxDocument() {
+        // ===== 한글 복붙용 문서 내보내기 =====
+        async function exportHwpReadyDocument() {
             if (!state.allGenerated) {
                 showToast('먼저 모든 보고서를 생성하세요.', 'warning');
                 return;
@@ -2977,13 +3113,13 @@
             // 로딩 표시
             const loadingOverlay = document.getElementById('loadingOverlay');
             const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgressFill');
-            const loadingPercent = document.getElementById('loadingProgressPercent');
-            const loadingCurrent = document.getElementById('loadingCurrentText');
+            const loadingProgress = document.getElementById('loadingProgress');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const loadingCurrent = document.getElementById('loadingCurrent');
             
             loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '📄 HWPX 문서 생성 중...';
-            loadingCurrent.textContent = '차트 이미지 변환 중';
+            loadingTitle.textContent = '📋 한글 복붙용 문서 생성 중...';
+            loadingCurrent.textContent = '페이지 변환 중';
             loadingProgress.style.width = '0%';
             loadingPercent.textContent = '0%';
             
@@ -2991,67 +3127,41 @@
                 // 모든 캐시된 HTML 수집 (순서대로)
                 const pages = [];
                 
-                // 차트/인포그래픽 이미지 변환을 위한 처리
-                loadingCurrent.textContent = '차트를 이미지로 변환 중...';
-                loadingProgress.style.width = '10%';
-                loadingPercent.textContent = '10%';
-                
                 // 1. 요약 보고서
                 for (const report of state.summaryReports) {
                     const key = `summary_${report.id}`;
                     if (state.htmlCache[key]) {
-                        // 인포그래픽의 경우 SVG를 이미지로 변환
-                        let html = state.htmlCache[key];
-                        
-                        if (report.id === 'infographic') {
-                            html = await convertChartsToImages(html, report.id);
-                        }
-                        
                         pages.push({
-                            html: html,
+                            html: state.htmlCache[key],
                             title: report.name,
                             category: 'summary'
                         });
                     }
                 }
                 
-                loadingProgress.style.width = '25%';
-                loadingPercent.textContent = '25%';
-                
                 // 2. 부문별 보고서
                 for (const report of state.sectoralReports) {
                     const key = `sectoral_${report.id}`;
                     if (state.htmlCache[key]) {
-                        let html = state.htmlCache[key];
-                        // 차트가 있는 경우 이미지로 변환
-                        html = await convertChartsToImages(html, report.id);
                         pages.push({
-                            html: html,
+                            html: state.htmlCache[key],
                             title: report.name,
                             category: 'sectoral'
                         });
                     }
                 }
                 
-                loadingProgress.style.width = '50%';
-                loadingPercent.textContent = '50%';
-                
                 // 3. 시도별 보고서
                 for (const region of state.regionalReports) {
                     const key = `regional_${region.id}`;
                     if (state.htmlCache[key]) {
-                        let html = state.htmlCache[key];
-                        html = await convertChartsToImages(html, region.id);
                         pages.push({
-                            html: html,
+                            html: state.htmlCache[key],
                             title: region.name,
                             category: 'regional'
                         });
                     }
                 }
-                
-                loadingProgress.style.width = '75%';
-                loadingPercent.textContent = '75%';
                 
                 // 4. 통계표
                 for (const stat of state.statisticsReports) {
@@ -3065,18 +3175,19 @@
                     }
                 }
                 
-                loadingCurrent.textContent = `${pages.length}개 페이지 HWPX 변환 중`;
-                loadingProgress.style.width = '90%';
-                loadingPercent.textContent = '90%';
+                loadingCurrent.textContent = `${pages.length}개 페이지 변환 중`;
+                loadingProgress.style.width = '30%';
+                loadingPercent.textContent = '30%';
                 
-                // HWPX API 호출
-                const response = await fetch('/api/export-hwpx', {
+                // API 호출 - 한글 복붙용
+                const response = await fetch('/api/export-hwp-ready', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         pages: pages,
                         year: state.year,
-                        quarter: state.quarter
+                        quarter: state.quarter,
+                        mode: 'single'
                     })
                 });
                 
@@ -3086,39 +3197,126 @@
                 loadingPercent.textContent = '100%';
                 
                 if (result.success) {
-                    loadingCurrent.textContent = 'HWPX 문서 생성 완료!';
+                    loadingCurrent.textContent = '한글 복붙용 문서 생성 완료!';
                     
                     setTimeout(() => {
                         loadingOverlay.style.display = 'none';
                         
-                        // 파일 다운로드
-                        const a = document.createElement('a');
-                        a.href = result.download_url;
-                        a.download = result.filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
+                        // 새 탭에서 열기 (복붙하기 편하게)
+                        window.open(result.view_url, '_blank');
                         
-                        showToast(`✅ HWPX 문서가 생성되었습니다. (${result.total_pages}페이지, 이미지 ${result.images_count}개)`, 'success');
+                        showToast(`✅ ${result.total_pages}페이지 한글 복붙용 문서가 생성되었습니다.\n새 탭에서 열립니다. 복사할 영역을 선택 후 Ctrl+C → 한글에서 Ctrl+V`, 'success');
                     }, 500);
                 } else {
                     loadingOverlay.style.display = 'none';
-                    showToast(result.error || 'HWPX 문서 생성 실패', 'error');
+                    showToast(result.error || '문서 생성 실패', 'error');
                 }
             } catch (err) {
-                console.error('HWPX 내보내기 오류:', err);
+                console.error('한글 복붙용 내보내기 오류:', err);
                 loadingOverlay.style.display = 'none';
-                showToast('HWPX 문서 생성 중 오류가 발생했습니다.', 'error');
+                showToast('문서 생성 중 오류가 발생했습니다.', 'error');
             }
         }
 
-        // 차트/SVG를 이미지로 변환
-        async function convertChartsToImages(html, reportId) {
-            // iframe에서 렌더링하여 이미지로 변환
-            // 이 부분은 서버에서 처리하거나, 클라이언트에서 html2canvas 등을 사용
-            // 현재는 SVG를 그대로 유지하고, 서버측 hwpx_generator에서 처리
-            return html;
+        // ===== GRDP 모달 함수 =====
+        function showGrdpModal() {
+            const modal = document.getElementById('grdpModal');
+            modal.classList.add('active');
+            
+            // 초기화
+            document.getElementById('grdpUploadProgress').style.display = 'none';
+            document.getElementById('grdpModalFileInput').value = '';
         }
+        
+        function closeGrdpModal() {
+            document.getElementById('grdpModal').classList.remove('active');
+        }
+        
+        function openKosisGrdpPage() {
+            // KOSIS 실험적통계 페이지 열기
+            window.open('https://kosis.kr/statisticsList/experimentStatistical.do#down23', '_blank');
+            showToast('KOSIS 페이지가 새 탭에서 열렸습니다. 다운로드 후 업로드해주세요.', 'info');
+        }
+        
+        async function handleGrdpModalUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // 진행 상태 표시
+            document.getElementById('grdpUploadProgress').style.display = 'block';
+            document.getElementById('grdpUploadStatus').textContent = '파일 분석 중...';
+            
+            try {
+                const response = await fetch('/api/upload-grdp', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('grdpUploadStatus').textContent = '✅ GRDP 추출 완료!';
+                    
+                    // GRDP 정보 업데이트
+                    document.getElementById('grdpMissing').style.display = 'none';
+                    document.getElementById('grdpInfo').style.display = 'block';
+                    document.getElementById('grdpNational').textContent = `${data.national_growth_rate}%`;
+                    document.getElementById('grdpTopRegion').textContent = data.top_region;
+                    
+                    showToast('GRDP 데이터가 성공적으로 추출되었습니다.', 'success');
+                    
+                    // 1.5초 후 모달 닫기
+                    setTimeout(() => {
+                        closeGrdpModal();
+                    }, 1500);
+                } else {
+                    document.getElementById('grdpUploadStatus').textContent = '❌ 추출 실패';
+                    showToast(data.error || 'GRDP 파일 파싱 실패', 'error');
+                }
+            } catch (error) {
+                document.getElementById('grdpUploadStatus').textContent = '❌ 오류 발생';
+                showToast('GRDP 업로드 중 오류가 발생했습니다.', 'error');
+                console.error('GRDP upload error:', error);
+            }
+            
+            // 파일 입력 초기화
+            input.value = '';
+        }
+        
+        // 사이드바 GRDP 업로드 (기존 호환)
+        async function uploadGrdpFile(input) {
+            await handleGrdpModalUpload(input);
+        }
+        
+        // GRDP 모달 드래그 앤 드롭 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const grdpUploadArea = document.querySelector('.grdp-upload-area');
+            if (grdpUploadArea) {
+                grdpUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    grdpUploadArea.classList.add('dragover');
+                });
+                
+                grdpUploadArea.addEventListener('dragleave', () => {
+                    grdpUploadArea.classList.remove('dragover');
+                });
+                
+                grdpUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    grdpUploadArea.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const input = document.getElementById('grdpModalFileInput');
+                        input.files = files;
+                        handleGrdpModalUpload(input);
+                    }
+                });
+            }
+        });
 
         // ===== Toast =====
         // 분석표 다운로드 함수
