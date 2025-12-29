@@ -303,6 +303,16 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         if grdp_data is None:
             grdp_data = get_default_grdp_data(year, quarter)
         
+        # 7. 권역 그룹 정렬 및 플래그 추가 (is_group_start, group_size)
+        if 'regional_data' in grdp_data:
+            grdp_data['regional_data'] = _add_grdp_group_flags(grdp_data['regional_data'])
+        
+        # 연도/분기 정보 업데이트
+        if 'report_info' not in grdp_data:
+            grdp_data['report_info'] = {}
+        grdp_data['report_info']['year'] = year
+        grdp_data['report_info']['quarter'] = quarter
+        
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
         if template_path.exists():
@@ -320,6 +330,78 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
+
+
+def _add_grdp_group_flags(regional_data):
+    """GRDP 데이터에 권역 그룹 플래그 추가 및 순서 정렬"""
+    # 권역별 지역 순서
+    REGION_ORDER = [
+        {"group": None, "region": "전국"},
+        {"group": "경인", "region": "서울"},
+        {"group": "경인", "region": "인천"},
+        {"group": "경인", "region": "경기"},
+        {"group": "충청", "region": "대전"},
+        {"group": "충청", "region": "세종"},
+        {"group": "충청", "region": "충북"},
+        {"group": "충청", "region": "충남"},
+        {"group": "호남", "region": "광주"},
+        {"group": "호남", "region": "전북"},
+        {"group": "호남", "region": "전남"},
+        {"group": "호남", "region": "제주"},
+        {"group": "동북", "region": "대구"},
+        {"group": "동북", "region": "경북"},
+        {"group": "동북", "region": "강원"},
+        {"group": "동남", "region": "부산"},
+        {"group": "동남", "region": "울산"},
+        {"group": "동남", "region": "경남"},
+    ]
+    
+    # region -> item 매핑
+    region_map = {item.get('region'): item for item in regional_data}
+    
+    # 권역별 지역 수 계산
+    group_counts = {}
+    for r in REGION_ORDER:
+        g = r["group"]
+        if g:
+            group_counts[g] = group_counts.get(g, 0) + 1
+    
+    # 정렬된 데이터 생성
+    sorted_data = []
+    prev_group = None
+    
+    for region_info in REGION_ORDER:
+        region = region_info["region"]
+        current_group = region_info["group"]
+        
+        # 기존 데이터에서 해당 지역 찾기
+        item = region_map.get(region)
+        if item is None:
+            # 없으면 플레이스홀더 생성
+            item = {
+                'region': region,
+                'growth_rate': 0.0,
+                'manufacturing': 0.0,
+                'construction': 0.0,
+                'service': 0.0,
+                'other': 0.0,
+                'placeholder': True
+            }
+        else:
+            item = item.copy()  # 원본 수정 방지
+        
+        # 권역 그룹 정보 추가
+        item['region_group'] = current_group
+        
+        # 그룹 시작 플래그
+        is_group_start = (current_group is not None) and (current_group != prev_group)
+        item['is_group_start'] = is_group_start
+        item['group_size'] = group_counts.get(current_group, 0) if is_group_start else 0
+        
+        sorted_data.append(item)
+        prev_group = current_group
+    
+    return sorted_data
 
 
 def _generate_default_grdp_html(grdp_data):
