@@ -65,7 +65,7 @@ def upload_excel():
         
         # 분석표 자동 생성 (가중치 없이 먼저 생성, 모달에서 가중치 입력 후 재생성)
         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_data=None)
+        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
         print(f"[업로드] 분석표 자동 생성: {Path(analysis_path).name}")
         
         grdp_data = converter.extract_grdp_data()
