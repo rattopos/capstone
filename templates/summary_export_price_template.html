@@ -143,12 +143,32 @@
     </div>
     
     <script>
-        function createComboChart(canvasId, chartData, maxY, minChange, maxChange, isAmount, amountDivisor) {
+        // Y축 범위 계산 함수
+        function calculateYAxisRange(data) {
+            const maxVal = Math.max(...data);
+            const minVal = Math.min(...data);
+            
+            if (minVal >= 0) {
+                const max = Math.ceil(maxVal / 5) * 5;
+                return { min: 0, max: max || 5 };
+            }
+            if (maxVal <= 0) {
+                const min = Math.floor(minVal / 5) * 5;
+                return { min: min || -5, max: 0 };
+            }
+            const absMax = Math.max(Math.abs(maxVal), Math.abs(minVal));
+            const range = Math.ceil(absMax / 5) * 5;
+            return { min: -range, max: range };
+        }
+        
+        function createComboChart(canvasId, chartData, maxY, isAmount, amountDivisor) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             
             const labels = chartData.map(d => d.name);
             const values = chartData.map(d => isAmount ? (d.amount / (amountDivisor || 1)) : d.index);
             const changeData = chartData.map(d => d.change);
+            
+            const changeRange = calculateYAxisRange(changeData);
             
             new Chart(ctx, {
                 type: 'bar',
@@ -221,8 +241,8 @@
                         y1: {
                             type: 'linear',
                             position: 'right',
-                            min: minChange,
-                            max: maxChange,
+                            min: changeRange.min,
+                            max: changeRange.max,
                             ticks: { font: { size: 9 }, color: '#e65100' },
                             grid: { display: false }
                         }
@@ -245,8 +265,8 @@
         ];
         
         document.addEventListener('DOMContentLoaded', function() {
-            createComboChart('exportChart', exportData, 2500, -30, 50, true, 1);
-            createComboChart('priceChart', priceData, 120, 0, 5, false);
+            createComboChart('exportChart', exportData, 2500, true, 1);
+            createComboChart('priceChart', priceData, 120, false);
         });
     </script>
 </body>
