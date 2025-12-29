@@ -21,6 +21,57 @@ from .grdp_service import (
 )
 
 
+def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
+    """스키마 기본값으로 보고서 생성 (일러두기 등 generator 없는 경우)"""
+    try:
+        # 스키마 파일에서 기본값 로드
+        schema_path = TEMPLATES_DIR / f"{report_id}_schema.json"
+        if not schema_path.exists():
+            return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+        
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            schema = json.load(f)
+        
+        # 기본값 추출 (example 필드)
+        data = schema.get('example', {})
+        
+        # 연도/분기 정보 추가
+        data['report_info'] = {'year': year, 'quarter': quarter}
+        
+        # 일러두기의 경우 담당자 정보에서 관세청 정보 업데이트
+        if report_id == 'guide' and custom_data:
+            contact_info = custom_data.get('contact_info', {})
+            customs_dept = contact_info.get('customs_department', '관세청 정보데이터기획담당관')
+            customs_phone = contact_info.get('customs_phone', '042-481-7845')
+            
+            # contacts 배열에서 수출입 항목 찾아서 업데이트
+            if 'contacts' in data:
+                for contact in data['contacts']:
+                    if contact.get('category') == '수출입':
+                        contact['department'] = customs_dept
+                        contact['phone'] = customs_phone
+                        break
+        
+        # 템플릿 렌더링
+        template_path = TEMPLATES_DIR / template_name
+        if not template_path.exists():
+            return None, f"템플릿 파일을 찾을 수 없습니다: {template_path}", []
+        
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+        
+        template = Template(template_content)
+        html_content = template.render(**data)
+        
+        print(f"[DEBUG] 스키마 기반 보고서 생성 완료: {report_id}")
+        return html_content, None, []
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return None, f"스키마 기반 보고서 생성 오류: {str(e)}", []
+
+
 def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
     """보고서 HTML 생성"""
     try:
@@ -34,6 +85,10 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"[DEBUG] Template: {template_name}")
         if raw_excel_path:
             print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
+        
+        # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
+        if generator_name is None:
+            return _generate_from_schema(template_name, report_id, year, quarter, custom_data)
         
         # Generator 모듈 로드
         module = load_generator_module(generator_name)
