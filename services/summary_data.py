@@ -34,35 +34,68 @@ def get_summary_overview_data(excel_path, year, quarter):
 
 
 def _extract_sector_summary(xl, sheet_name):
-    """시트에서 요약 데이터 추출"""
+    """시트에서 요약 데이터 추출 (집계 시트에서 전년동기비 계산)"""
     try:
         regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
-        # 물가 데이터는 집계 시트에서 증감률 계산
-        if sheet_name == 'E(품목성질물가)분석':
-            return _extract_price_summary_from_aggregate(xl, regions)
-        
-        # 고용률 데이터는 집계 시트에서 증감 계산
-        if sheet_name == 'D(고용률)분석':
-            return _extract_employment_summary_from_aggregate(xl, regions)
-        
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
-        
-        sheet_config = {
-            'A 분석': {'region_col': 3, 'division_col': 4, 'code_col': 6, 'total_code': 'BCD', 'value_col': 21},
-            'B 분석': {'region_col': 3, 'division_col': 4, 'code_col': 6, 'total_code': 'E~S', 'value_col': 20},
-            'C 분석': {'region_col': 3, 'division_col': 4, 'code_col': None, 'total_code': '0', 'value_col': 20},
-            'G 분석': {'region_col': 3, 'division_col': 4, 'code_col': None, 'total_code': '0', 'value_col': 22},
-            'D(고용률)분석': {'region_col': 2, 'division_col': 3, 'code_col': None, 'total_code': '0', 'value_col': 18},
+        # 분석 시트 -> 집계 시트 매핑 (전년동기비 계산 필요)
+        aggregate_config = {
+            'A 분석': {
+                'aggregate_sheet': 'A(광공업생산)집계',
+                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'curr_col': 26, 'prev_col': 22,  # 2025 2/4 (col26), 2024 2/4 (col22)
+            },
+            'B 분석': {
+                'aggregate_sheet': 'B(서비스업생산)집계',
+                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'curr_col': 25, 'prev_col': 21,  # 2025 2/4 (col25), 2024 2/4 (col21)
+            },
+            'C 분석': {
+                'aggregate_sheet': 'C(소비)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,  # 2025 2/4 (col24), 2024 2/4 (col20)
+            },
+            'G 분석': {
+                'aggregate_sheet': 'G(수출)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 26, 'prev_col': 22,  # 2025 2/4 (col26), 2024 2/4 (col22)
+            },
+            'E(품목성질물가)분석': {
+                'use_custom_extractor': True,
+                'extractor': '_extract_price_summary_from_aggregate'
+            },
+            'D(고용률)분석': {
+                'use_custom_extractor': True,
+                'extractor': '_extract_employment_summary_from_aggregate'
+            },
         }
         
-        config = sheet_config.get(sheet_name, {'region_col': 3, 'division_col': 4, 'code_col': None, 'total_code': '0', 'value_col': 20})
+        config = aggregate_config.get(sheet_name)
+        if not config:
+            return _get_default_sector_summary()
+        
+        # 커스텀 추출기 사용
+        if config.get('use_custom_extractor'):
+            if config['extractor'] == '_extract_price_summary_from_aggregate':
+                return _extract_price_summary_from_aggregate(xl, regions)
+            elif config['extractor'] == '_extract_employment_summary_from_aggregate':
+                return _extract_employment_summary_from_aggregate(xl, regions)
+        
+        # 집계 시트에서 전년동기비 계산
+        agg_sheet = config['aggregate_sheet']
+        if agg_sheet not in xl.sheet_names:
+            print(f"집계 시트 없음: {agg_sheet}")
+            return _get_default_sector_summary()
+        
+        df = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+        
         region_col = config['region_col']
-        division_col = config['division_col']
-        code_col = config['code_col']
+        code_col = config.get('code_col')
+        division_col = config.get('division_col')
         total_code = config['total_code']
-        value_col = config['value_col']
+        curr_col = config['curr_col']
+        prev_col = config['prev_col']
         
         increase_regions = []
         decrease_regions = []
@@ -72,29 +105,32 @@ def _extract_sector_summary(xl, sheet_name):
             try:
                 region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
                 
+                # 총지수 행 찾기
                 is_total_row = False
                 if code_col is not None:
                     code = str(row[code_col]).strip() if pd.notna(row[code_col]) else ''
                     is_total_row = (code == total_code)
-                else:
+                elif division_col is not None:
                     division = str(row[division_col]).strip() if pd.notna(row[division_col]) else ''
                     is_total_row = (division == total_code)
                 
                 if is_total_row:
-                    value = 0.0
-                    if value_col < len(row) and pd.notna(row[value_col]):
-                        try:
-                            value = float(row[value_col])
-                        except (ValueError, TypeError):
-                            value = 0.0
+                    # 전년동기비 계산
+                    curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
+                    prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                    
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        change = 0.0
                     
                     if region == '전국':
-                        nationwide = value
+                        nationwide = change
                     elif region in regions:
-                        if value >= 0:
-                            increase_regions.append({'name': region, 'value': value})
+                        if change >= 0:
+                            increase_regions.append({'name': region, 'value': change})
                         else:
-                            decrease_regions.append({'name': region, 'value': value})
+                            decrease_regions.append({'name': region, 'value': change})
             except Exception as e:
                 continue
         
