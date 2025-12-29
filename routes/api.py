@@ -436,7 +436,7 @@ def generate_all_regional_reports():
 
 @api_bp.route('/export-final', methods=['POST'])
 def export_final_document():
-    """모든 보고서를 하나의 HTML 문서로 합치기"""
+    """모든 보고서를 PDF 출력용 HTML 문서로 합치기"""
     try:
         data = request.get_json()
         pages = data.get('pages', [])
@@ -445,6 +445,9 @@ def export_final_document():
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 모든 페이지의 스타일 수집
+        all_styles = set()
         
         final_html = f'''<!DOCTYPE html>
 <html lang="ko">
@@ -461,81 +464,155 @@ def export_final_document():
             box-sizing: border-box;
         }}
         
+        html, body {{
+            width: 210mm;
+            background: white;
+        }}
+        
         body {{
             font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
-            background: white;
         }}
         
-        .page {{
+        /* PDF 출력용 페이지 스타일 */
+        .pdf-page {{
             width: 210mm;
             min-height: 297mm;
-            padding: 15mm 20mm 25mm 20mm;
-            margin: 0 auto;
+            max-height: 297mm;
+            padding: 12mm 15mm 15mm 15mm;
+            margin: 0 auto 5mm auto;
             background: white;
             position: relative;
+            overflow: hidden;
             page-break-after: always;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
         }}
         
-        .page:last-child {{
+        .pdf-page:last-child {{
             page-break-after: auto;
+            margin-bottom: 0;
         }}
         
-        .page-content {{
+        .pdf-page-content {{
             width: 100%;
-            min-height: calc(297mm - 40mm);
+            height: calc(297mm - 32mm);
+            overflow: hidden;
         }}
         
-        .page-content > * {{
+        .pdf-page-content > * {{
             max-width: 100%;
         }}
         
-        .page-number {{
+        /* 페이지 번호 */
+        .pdf-page-number {{
             position: absolute;
-            bottom: 10mm;
+            bottom: 8mm;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 10pt;
-            color: #666;
+            font-size: 9pt;
+            color: #333;
         }}
         
-        .page-content iframe {{
-            border: none;
-            width: 100%;
-            min-height: 250mm;
-        }}
-        
-        @media print {{
+        /* 화면 미리보기용 */
+        @media screen {{
             body {{
-                background: white;
+                background: #f0f0f0;
+                padding: 20px;
             }}
             
-            .page {{
+            .pdf-page {{
+                box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+                border: 1px solid #ddd;
+            }}
+        }}
+        
+        /* 인쇄/PDF 저장용 */
+        @media print {{
+            html, body {{
                 width: 210mm;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }}
+            
+            body {{
+                padding: 0;
+                margin: 0;
+            }}
+            
+            .pdf-page {{
+                width: 210mm;
+                height: 297mm;
                 min-height: 297mm;
-                padding: 15mm 20mm 25mm 20mm;
+                max-height: 297mm;
+                padding: 12mm 15mm 15mm 15mm;
                 margin: 0;
                 box-shadow: none;
+                border: none;
                 page-break-after: always;
+                page-break-inside: avoid;
             }}
             
-            .page:last-child {{
+            .pdf-page:last-child {{
                 page-break-after: auto;
             }}
             
-            .page-number {{
-                position: absolute;
-                bottom: 10mm;
+            /* 차트 색상 유지 */
+            canvas {{
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }}
         }}
         
         @page {{
-            size: A4;
+            size: A4 portrait;
             margin: 0;
         }}
+        
+        /* 표 스타일 공통 */
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+        }}
+        
+        th, td {{
+            border: 1px solid #333;
+            padding: 4px 6px;
+            font-size: 9pt;
+            text-align: center;
+        }}
+        
+        th {{
+            background: #f5f5f5;
+            font-weight: 600;
+        }}
+        
+        /* 차트 크기 조정 */
+        .chart-container, .chart-wrapper {{
+            max-width: 100%;
+        }}
+        
+        canvas {{
+            max-width: 100% !important;
+            height: auto !important;
+        }}
     </style>
-</head>
+'''
+        
+        # 각 페이지에서 스타일 추출하여 추가
+        for idx, page in enumerate(pages):
+            page_html = page.get('html', '')
+            if '<style' in page_html:
+                import re
+                style_matches = re.findall(r'<style[^>]*>(.*?)</style>', page_html, re.DOTALL)
+                for style in style_matches:
+                    # 중복 방지를 위해 hash 사용
+                    style_hash = hash(style.strip())
+                    if style_hash not in all_styles:
+                        all_styles.add(style_hash)
+                        final_html += f'    <style>/* Page {idx+1} styles */\n{style}\n    </style>\n'
+        
+        final_html += '''</head>
 <body>
 '''
         
@@ -543,37 +620,44 @@ def export_final_document():
             page_html = page.get('html', '')
             page_title = page.get('title', f'페이지 {idx}')
             
+            # body 내용 추출
             body_content = page_html
-            if '<body' in page_html:
-                start = page_html.find('<body')
-                start = page_html.find('>', start) + 1
-                end = page_html.find('</body>')
-                if end > start:
-                    body_content = page_html[start:end]
+            if '<body' in page_html.lower():
+                import re
+                body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
+                if body_match:
+                    body_content = body_match.group(1)
             
-            style_content = ''
-            if '<style' in page_html:
-                style_start = page_html.find('<style')
-                style_end = page_html.find('</style>') + 8
-                if style_end > style_start:
-                    style_content = page_html[style_start:style_end]
+            # 내용에서 style 태그 제거 (이미 head에 추가됨)
+            import re
+            body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
             
+            # 페이지 래퍼 추가
             final_html += f'''
-    <div class="page" data-page="{idx}">
-        {style_content}
-        <div class="page-content">
-            {body_content}
+    <!-- Page {idx}: {page_title} -->
+    <div class="pdf-page" data-page="{idx}" data-title="{page_title}">
+        <div class="pdf-page-content">
+{body_content}
         </div>
-        <div class="page-number">{idx}</div>
+        <div class="pdf-page-number">- {idx} -</div>
     </div>
 '''
         
         final_html += '''
+    <script>
+        // 인쇄 전 준비
+        window.onbeforeprint = function() {
+            document.body.style.background = 'white';
+        };
+        
+        // Ctrl+P로 PDF 저장 안내
+        console.log('PDF 저장: Ctrl+P (또는 Cmd+P) → "PDF로 저장" 선택');
+    </script>
 </body>
 </html>
 '''
         
-        output_filename = f'지역경제동향_{year}년_{quarter}분기.html'
+        output_filename = f'지역경제동향_{year}년_{quarter}분기_PDF용.html'
         output_path = UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
