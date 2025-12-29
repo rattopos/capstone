@@ -55,13 +55,36 @@ class DataCache:
         self.excel_path = excel_path
         self._sheets: Dict[str, pd.DataFrame] = {}
         self._nationwide_cache: Dict[str, Any] = {}
+        self._xl = pd.ExcelFile(excel_path)
+        
+        # 분석 시트 -> 기초자료 시트 fallback 매핑
+        self.SHEET_FALLBACK = {
+            'A 분석': '광공업생산',
+            'B 분석': '서비스업생산',
+            'C 분석': '소비(소매, 추가)',
+            'G 분석': '수출',
+            'H 분석': '수입',
+            'E(지출목적물가) 분석': '지출목적별 물가',
+            'D(고용률)분석': '고용률',
+        }
         
     def get_sheet(self, sheet_name: str) -> pd.DataFrame:
-        """시트 데이터를 캐시에서 가져오거나 로드"""
+        """시트 데이터를 캐시에서 가져오거나 로드 (분석 시트 없으면 기초자료로 fallback)"""
         if sheet_name not in self._sheets:
+            actual_sheet = sheet_name
+            
+            # 시트가 없으면 fallback 시트 시도
+            if sheet_name not in self._xl.sheet_names:
+                fallback = self.SHEET_FALLBACK.get(sheet_name)
+                if fallback and fallback in self._xl.sheet_names:
+                    actual_sheet = fallback
+                    print(f"[시트 대체] '{sheet_name}' → '{fallback}'")
+                else:
+                    raise ValueError(f"Sheet '{sheet_name}' not found")
+            
             self._sheets[sheet_name] = pd.read_excel(
                 self.excel_path, 
-                sheet_name=sheet_name, 
+                sheet_name=actual_sheet, 
                 header=None
             )
         return self._sheets[sheet_name]
@@ -69,21 +92,21 @@ class DataCache:
     def preload_all_sheets(self):
         """모든 필요한 시트를 미리 로드"""
         required_sheets = [
-            'A 분석', 'A(광공업생산)집계',
-            'B 분석', 'B(서비스업생산)집계',
-            'C 분석', 'C(소비)집계',
-            "F'분석", "F'(건설)집계",
-            'G 분석', 'G(수출)집계',
-            'H 분석', 'H(수입)집계',
-            'E(지출목적물가) 분석', 'E(지출목적물가)집계',
-            'D(고용률)분석', 'D(고용률)집계',
-            'I(순인구이동)집계',
+            'A 분석', 'A(광공업생산)집계', '광공업생산',
+            'B 분석', 'B(서비스업생산)집계', '서비스업생산',
+            'C 분석', 'C(소비)집계', '소비(소매, 추가)',
+            "F'분석", "F'(건설)집계", '건설 (공표자료)',
+            'G 분석', 'G(수출)집계', '수출',
+            'H 분석', 'H(수입)집계', '수입',
+            'E(지출목적물가) 분석', 'E(지출목적물가)집계', '지출목적별 물가',
+            'D(고용률)분석', 'D(고용률)집계', '고용률',
+            'I(순인구이동)집계', '시도 간 이동',
         ]
         for sheet in required_sheets:
             try:
                 self.get_sheet(sheet)
             except Exception as e:
-                print(f"Warning: Could not load sheet '{sheet}': {e}")
+                pass  # 없는 시트는 무시
 
 
 class RegionalGenerator:
@@ -194,6 +217,27 @@ class RegionalGenerator:
             '2024_1Q': 20, '2024_2Q': 21, '2024_3Q': 22, '2024_4Q': 23,
             '2025_1Q': 24, '2025_2Q': 25
         },
+        # 기초자료 시트 열 매핑 (분석 시트가 없을 때 fallback)
+        '수출': {
+            '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
+            '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
+            '2025_1Q': 67, '2025_2Q': 68, 'is_raw': True, 'region_col': 1, 'code_col': 5, 'total_code': '합계'
+        },
+        '수입': {
+            '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
+            '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
+            '2025_1Q': 67, '2025_2Q': 68, 'is_raw': True, 'region_col': 1, 'code_col': 5, 'total_code': '합계'
+        },
+        '지출목적별 물가': {
+            '2023_1Q': 49, '2023_2Q': 50, '2023_3Q': 51, '2023_4Q': 52,
+            '2024_1Q': 53, '2024_2Q': 54, '2024_3Q': 55, '2024_4Q': 56,
+            '2025_1Q': 57, '2025_2Q': 58, 'is_raw': True, 'region_col': 0, 'code_col': 3, 'total_code': '총지수'
+        },
+        '고용률': {
+            '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
+            '2024_1Q': 59, '2024_2Q': 62, '2024_3Q': 63, '2024_4Q': 64,
+            '2025_1Q': 65, '2025_2Q': 66, 'is_raw': True, 'region_col': 1, 'code_col': 3, 'total_code': '계'
+        },
     }
     
     def __init__(self, excel_path: str):
@@ -218,12 +262,36 @@ class RegionalGenerator:
         return cleaned
     
     def _get_quarter_value(self, row: pd.Series, sheet_name: str, quarter: str) -> float:
-        """분기별 값 추출"""
-        col = self.QUARTER_COLS.get(sheet_name, {}).get(quarter)
+        """분기별 값 추출 (분석 시트: 직접, 기초자료: 전년동기비 계산)"""
+        config = self.QUARTER_COLS.get(sheet_name, {})
+        col = config.get(quarter)
         if col is None:
             return 0.0
+        
         val = row.iloc[col] if col < len(row) else None
-        # '없음' 등의 문자열 처리
+        
+        # 기초자료 시트인 경우 전년동기비 계산
+        if config.get('is_raw'):
+            # 전년동기 열 찾기
+            prev_quarter_map = {
+                '2025_2Q': '2024_2Q', '2025_1Q': '2024_1Q',
+                '2024_4Q': '2023_4Q', '2024_3Q': '2023_3Q',
+                '2024_2Q': '2023_2Q', '2024_1Q': '2023_1Q',
+            }
+            prev_quarter = prev_quarter_map.get(quarter)
+            if prev_quarter:
+                prev_col = config.get(prev_quarter)
+                if prev_col and prev_col < len(row):
+                    curr_val = row.iloc[col] if pd.notna(row.iloc[col]) else 0
+                    prev_val = row.iloc[prev_col] if pd.notna(row.iloc[prev_col]) else 0
+                    if prev_val != 0:
+                        try:
+                            return round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
+                        except (ValueError, TypeError):
+                            return 0.0
+            return 0.0
+        
+        # 분석 시트: 값 직접 반환
         if pd.isna(val) or val == '없음' or val == '-':
             return 0.0
         try:
@@ -482,27 +550,49 @@ class RegionalGenerator:
         }
     
     def extract_export_data(self, region: str) -> Dict[str, Any]:
-        """수출 데이터 추출"""
+        """수출 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet('G 분석')
         
+        # 기초자료 시트 여부 확인
+        config = self.QUARTER_COLS.get('수출', {})
+        is_raw = config.get('is_raw', False)
+        
+        if is_raw:
+            # 기초자료 수출 시트 열 구조
+            region_col = config.get('region_col', 1)
+            code_col = config.get('code_col', 5)
+            total_code = config.get('total_code', '합계')
+            sheet_key = '수출'
+        else:
+            # 분석 시트 열 구조
+            region_col = 3
+            code_col = 4
+            total_code = '0'
+            sheet_key = 'G 분석'
+        
         # 총계 행
-        total_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
+        total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
             return {"total_growth_rate": 0, "direction": "증가",
                     "increase_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
                     "decrease_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
-        growth_rate = self._get_quarter_value(total_row, 'G 분석', '2025_2Q')
+        growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
         
         # 품목별 데이터 (기여도 기준) - 분류단계 2 (소분류)
-        items = df[(df[3] == region) & (df[4].astype(str) == '2') & (pd.notna(df[26]))]
+        if is_raw:
+            # 기초자료에서는 분류단계 컬럼(열2)이 '2'인 행
+            items = df[(df[region_col] == region) & (df[2].astype(str) == '2')]
+        else:
+            items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2') & (pd.notna(df[26]))]
         
         increase_items = []
         decrease_items = []
         
-        if len(items) > 0:
-            quarter_col = self.QUARTER_COLS['G 분석']['2025_2Q']
+        if len(items) > 0 and not is_raw:
+            # 분석 시트: 기여도 기반 정렬
+            quarter_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
             
             # 기여도 양수 (증가 기여)
             pos_items = items[items[26] > 0].sort_values(26, ascending=False)
@@ -543,6 +633,32 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
+        elif len(items) > 0 and is_raw:
+            # 기초자료: 전년동기비 직접 계산
+            prev_col = self.QUARTER_COLS.get(sheet_key, {}).get('2024_2Q')
+            curr_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
+            name_col = 5  # 기초자료 수출 시트의 상품이름 열
+            
+            for _, row in items.iterrows():
+                name = self._clean_name(row[name_col])
+                curr_val = row[curr_col] if pd.notna(row[curr_col]) else 0
+                prev_val = row[prev_col] if pd.notna(row[prev_col]) else 0
+                
+                if prev_val != 0:
+                    try:
+                        rate = round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
+                        if rate > 0:
+                            increase_items.append({"name": name, "growth_rate": rate, "placeholder": False})
+                        elif rate < 0:
+                            decrease_items.append({"name": name, "growth_rate": rate, "placeholder": False})
+                    except (ValueError, TypeError):
+                        pass
+            
+            # 정렬
+            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
+            decrease_items.sort(key=lambda x: x['growth_rate'])
+            increase_items = increase_items[:2]
+            decrease_items = decrease_items[:2]
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
@@ -558,27 +674,45 @@ class RegionalGenerator:
         }
     
     def extract_import_data(self, region: str) -> Dict[str, Any]:
-        """수입 데이터 추출"""
+        """수입 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet('H 분석')
         
+        # 기초자료 시트 여부 확인
+        config = self.QUARTER_COLS.get('수입', {})
+        is_raw = config.get('is_raw', False)
+        
+        if is_raw:
+            region_col = config.get('region_col', 1)
+            code_col = config.get('code_col', 5)
+            total_code = config.get('total_code', '합계')
+            sheet_key = '수입'
+        else:
+            region_col = 3
+            code_col = 4
+            total_code = '0'
+            sheet_key = 'H 분석'
+        
         # 총계 행
-        total_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
+        total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
             return {"total_growth_rate": 0, "direction": "감소",
                     "increase_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}],
                     "decrease_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
-        growth_rate = self._get_quarter_value(total_row, 'H 분석', '2025_2Q')
+        growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
         
         # 품목별 데이터 - 분류단계 2 (소분류)
-        items = df[(df[3] == region) & (df[4].astype(str) == '2') & (pd.notna(df[26]))]
+        if is_raw:
+            items = df[(df[region_col] == region) & (df[2].astype(str) == '2')]
+        else:
+            items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2') & (pd.notna(df[26]))]
         
         increase_items = []
         decrease_items = []
         
-        if len(items) > 0:
-            quarter_col = self.QUARTER_COLS['H 분석']['2025_2Q']
+        if len(items) > 0 and not is_raw:
+            quarter_col = self.QUARTER_COLS[sheet_key]['2025_2Q']
             
             pos_items = items[items[26] > 0].sort_values(26, ascending=False)
             for _, row in pos_items.head(2).iterrows():
@@ -617,6 +751,31 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
+        elif len(items) > 0 and is_raw:
+            # 기초자료: 전년동기비 직접 계산
+            prev_col = self.QUARTER_COLS.get(sheet_key, {}).get('2024_2Q')
+            curr_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
+            name_col = 5
+            
+            for _, row in items.iterrows():
+                name = self._clean_name(row[name_col])
+                curr_val = row[curr_col] if pd.notna(row[curr_col]) else 0
+                prev_val = row[prev_col] if pd.notna(row[prev_col]) else 0
+                
+                if prev_val != 0:
+                    try:
+                        rate = round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
+                        if rate > 0:
+                            increase_items.append({"name": name, "growth_rate": rate, "placeholder": False})
+                        elif rate < 0:
+                            decrease_items.append({"name": name, "growth_rate": rate, "placeholder": False})
+                    except (ValueError, TypeError):
+                        pass
+            
+            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
+            decrease_items.sort(key=lambda x: x['growth_rate'])
+            increase_items = increase_items[:2]
+            decrease_items = decrease_items[:2]
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
