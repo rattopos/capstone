@@ -169,6 +169,7 @@ def upload_excel():
     
     # 세션에 저장 (분석표는 다운로드 시 생성, 보고서는 기초자료에서 직접 추출)
     session['raw_excel_path'] = str(filepath)
+    session['excel_path'] = str(filepath)  # 보고서 생성용 (기초자료 직접 사용)
     session['year'] = year
     session['quarter'] = quarter
     session['file_type'] = 'raw'

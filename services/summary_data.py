@@ -34,61 +34,98 @@ def get_summary_overview_data(excel_path, year, quarter):
 
 
 def _extract_sector_summary(xl, sheet_name):
-    """시트에서 요약 데이터 추출 (집계 시트에서 전년동기비 계산)"""
+    """시트에서 요약 데이터 추출 (기초자료 또는 집계 시트에서 전년동기비 계산)"""
     try:
         regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
-        # 분석 시트 -> 집계 시트 매핑 (전년동기비 계산 필요)
+        # 기초자료 시트 설정 (우선 사용)
+        raw_config = {
+            'A 분석': {
+                'raw_sheet': '광공업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'curr_col': 64, 'prev_col': 60,  # 2025 2/4p, 2024 2/4
+            },
+            'B 분석': {
+                'raw_sheet': '서비스업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'curr_col': 64, 'prev_col': 60,
+            },
+            'C 분석': {
+                'raw_sheet': '소비(소매, 추가)',
+                'region_col': 1, 'code_col': 4, 'total_code': '총지수',
+                'curr_col': 63, 'prev_col': 59,
+            },
+            'G 분석': {
+                'raw_sheet': '수출',
+                'region_col': 1, 'code_col': 5, 'total_code': '합계',
+                'curr_col': 68, 'prev_col': 64,
+            },
+            'E(품목성질물가)분석': {
+                'raw_sheet': '품목성질별 물가',
+                'region_col': 0, 'code_col': 3, 'total_code': '총지수',
+                'curr_col': 56, 'prev_col': 52,
+            },
+            'D(고용률)분석': {
+                'raw_sheet': '고용률',
+                'region_col': 1, 'code_col': 3, 'total_code': '계',
+                'curr_col': 66, 'prev_col': 62,
+                'calc_type': 'difference'  # 고용률은 %p
+            },
+        }
+        
+        # 집계 시트 설정 (fallback)
         aggregate_config = {
             'A 분석': {
                 'aggregate_sheet': 'A(광공업생산)집계',
                 'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
-                'curr_col': 26, 'prev_col': 22,  # 2025 2/4 (col26), 2024 2/4 (col22)
+                'curr_col': 26, 'prev_col': 22,
             },
             'B 분석': {
                 'aggregate_sheet': 'B(서비스업생산)집계',
                 'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
-                'curr_col': 25, 'prev_col': 21,  # 2025 2/4 (col25), 2024 2/4 (col21)
+                'curr_col': 25, 'prev_col': 21,
             },
             'C 분석': {
                 'aggregate_sheet': 'C(소비)집계',
                 'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,  # 2025 2/4 (col24), 2024 2/4 (col20)
+                'curr_col': 24, 'prev_col': 20,
             },
             'G 분석': {
                 'aggregate_sheet': 'G(수출)집계',
                 'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 26, 'prev_col': 22,  # 2025 2/4 (col26), 2024 2/4 (col22)
+                'curr_col': 26, 'prev_col': 22,
             },
             'E(품목성질물가)분석': {
-                'use_custom_extractor': True,
-                'extractor': '_extract_price_summary_from_aggregate'
+                'aggregate_sheet': 'E(품목성질물가)집계',
+                'region_col': 0, 'division_col': 1, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,
             },
             'D(고용률)분석': {
-                'use_custom_extractor': True,
-                'extractor': '_extract_employment_summary_from_aggregate'
+                'aggregate_sheet': 'D(고용률)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,
+                'calc_type': 'difference'
             },
         }
         
-        config = aggregate_config.get(sheet_name)
-        if not config:
+        # 기초자료 시트 우선 시도
+        config = raw_config.get(sheet_name)
+        actual_sheet = None
+        
+        if config and config.get('raw_sheet') in xl.sheet_names:
+            actual_sheet = config['raw_sheet']
+        else:
+            # 집계 시트 fallback
+            config = aggregate_config.get(sheet_name)
+            if config and config.get('aggregate_sheet') in xl.sheet_names:
+                actual_sheet = config['aggregate_sheet']
+        
+        if not actual_sheet:
+            print(f"시트 없음: {sheet_name}")
             return _get_default_sector_summary()
         
-        # 커스텀 추출기 사용
-        if config.get('use_custom_extractor'):
-            if config['extractor'] == '_extract_price_summary_from_aggregate':
-                return _extract_price_summary_from_aggregate(xl, regions)
-            elif config['extractor'] == '_extract_employment_summary_from_aggregate':
-                return _extract_employment_summary_from_aggregate(xl, regions)
-        
-        # 집계 시트에서 전년동기비 계산
-        agg_sheet = config['aggregate_sheet']
-        if agg_sheet not in xl.sheet_names:
-            print(f"집계 시트 없음: {agg_sheet}")
-            return _get_default_sector_summary()
-        
-        df = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+        df = pd.read_excel(xl, sheet_name=actual_sheet, header=None)
         
         region_col = config['region_col']
         code_col = config.get('code_col')
@@ -96,6 +133,7 @@ def _extract_sector_summary(xl, sheet_name):
         total_code = config['total_code']
         curr_col = config['curr_col']
         prev_col = config['prev_col']
+        calc_type = config.get('calc_type', 'growth_rate')
         
         increase_regions = []
         decrease_regions = []
@@ -119,10 +157,14 @@ def _extract_sector_summary(xl, sheet_name):
                     curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
                     prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
                     
-                    if prev_val != 0:
-                        change = round((curr_val - prev_val) / prev_val * 100, 1)
-                    else:
-                        change = 0.0
+                    # 계산 방식에 따라 증감률 또는 차이 계산
+                    if calc_type == 'difference':
+                        change = round(curr_val - prev_val, 1)
+                    else:  # growth_rate
+                        if prev_val != 0:
+                            change = round((curr_val - prev_val) / prev_val * 100, 1)
+                        else:
+                            change = 0.0
                     
                     if region == '전국':
                         nationwide = change
@@ -304,19 +346,58 @@ def _get_default_sector_summary():
 
 
 def get_summary_table_data(excel_path):
-    """요약 테이블 데이터 (집계 시트에서 전년동기비 계산)"""
+    """요약 테이블 데이터 (기초자료 또는 집계 시트에서 전년동기비 계산)"""
     try:
         xl = pd.ExcelFile(excel_path)
         all_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
-        # 집계 시트 설정 (전년동기비 계산)
-        # curr_col: 2025 2/4, prev_col: 2024 2/4
-        sheet_configs = {
+        # 기초자료 시트 설정 (우선 사용)
+        raw_sheet_configs = {
+            'mining_production': {
+                'sheet': '광공업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'curr_col': 64, 'prev_col': 60,  # 2025 2/4p, 2024 2/4
+                'calc_type': 'growth_rate'
+            },
+            'service_production': {
+                'sheet': '서비스업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'curr_col': 64, 'prev_col': 60,
+                'calc_type': 'growth_rate'
+            },
+            'retail_sales': {
+                'sheet': '소비(소매, 추가)',
+                'region_col': 1, 'code_col': 4, 'total_code': '총지수',
+                'curr_col': 63, 'prev_col': 59,
+                'calc_type': 'growth_rate'
+            },
+            'exports': {
+                'sheet': '수출',
+                'region_col': 1, 'code_col': 5, 'total_code': '합계',
+                'curr_col': 68, 'prev_col': 64,
+                'calc_type': 'growth_rate'
+            },
+            'price': {
+                'sheet': '품목성질별 물가',
+                'region_col': 0, 'code_col': 3, 'total_code': '총지수',
+                'curr_col': 56, 'prev_col': 52,
+                'calc_type': 'growth_rate'
+            },
+            'employment': {
+                'sheet': '고용률',
+                'region_col': 1, 'code_col': 3, 'total_code': '계',
+                'curr_col': 66, 'prev_col': 62,
+                'calc_type': 'difference'  # 고용률은 %p
+            },
+        }
+        
+        # 집계 시트 설정 (fallback)
+        aggregate_sheet_configs = {
             'mining_production': {
                 'sheet': 'A(광공업생산)집계',
                 'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
-                'curr_col': 26, 'prev_col': 22,  # 2025 2/4, 2024 2/4
+                'curr_col': 26, 'prev_col': 22,
                 'calc_type': 'growth_rate'
             },
             'service_production': {
@@ -340,14 +421,14 @@ def get_summary_table_data(excel_path):
             'price': {
                 'sheet': 'E(품목성질물가)집계',
                 'region_col': 0, 'division_col': 1, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,  # 2025 2/4, 2024 2/4
+                'curr_col': 24, 'prev_col': 20,
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': 'D(고용률)집계',
                 'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,  # 2025 2/4, 2024 2/4
-                'calc_type': 'difference'  # 고용률은 %p
+                'curr_col': 24, 'prev_col': 20,
+                'calc_type': 'difference'
             },
         }
         
@@ -360,13 +441,23 @@ def get_summary_table_data(excel_path):
                           'retail_sales': 0.0, 'exports': 0.0, 'price': 0.0, 'employment': 0.0}
                       for r in all_regions}
         
-        for key, config in sheet_configs.items():
-            try:
-                sheet_name = config['sheet']
-                if sheet_name not in xl.sheet_names:
-                    print(f"시트 없음: {sheet_name}")
+        for key in raw_sheet_configs.keys():
+            # 기초자료 시트 우선 시도
+            config = raw_sheet_configs[key]
+            sheet_name = config['sheet']
+            
+            if sheet_name not in xl.sheet_names:
+                # 집계 시트 fallback
+                config = aggregate_sheet_configs.get(key)
+                if config:
+                    sheet_name = config['sheet']
+                    if sheet_name not in xl.sheet_names:
+                        print(f"시트 없음: {sheet_name}")
+                        continue
+                else:
                     continue
-                    
+            
+            try:
                 df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
                 region_col = config['region_col']
                 code_col = config.get('code_col')
@@ -409,7 +500,7 @@ def get_summary_table_data(excel_path):
                     except:
                         continue
             except Exception as e:
-                print(f"{config.get('sheet', key)} 테이블 데이터 추출 오류: {e}")
+                print(f"{sheet_name} 테이블 데이터 추출 오류: {e}")
                 continue
         
         region_groups = [
