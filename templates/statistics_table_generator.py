@@ -149,7 +149,8 @@ class StatisticsTableGenerator:
         "실업률": "실업자 수",
         "수출액": "수출",
         "수입액": "수입",
-        "국내인구이동": "시도 간 이동"
+        "국내인구이동": "시도 간 이동",
+        "소비자물가지수": "품목성질별 물가"
     }
     
     # 기초자료 시트별 컬럼 매핑 (분석표와 다른 구조 대응)
@@ -164,6 +165,7 @@ class StatisticsTableGenerator:
         "수출": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
         "수입": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
         "시도 간 이동": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "순인구이동 수", "계산방식": "growth_rate"},
+        "품목성질별 물가": {"지역_컬럼": 0, "분류단계_컬럼": 1, "분류값": "0", "계산방식": "growth_rate"},
     }
     
     # 지역 목록 (페이지별)
@@ -284,11 +286,21 @@ class StatisticsTableGenerator:
         
         print(f"[통계표] 기초자료 추출 결과 - 연도: {len(yearly_data)}개, 분기: {len(quarterly_data)}개")
         
-        # 데이터 형식 변환 (분기 키 형식 통일: "2016 1/4" -> "2016.1/4")
+        # 데이터 형식 변환 (분기 키 형식 통일: "2016 1/4" -> "2016.1/4" 또는 "2025.2/4p")
         quarterly_formatted = {}
         for quarter_key, data in quarterly_data.items():
             # "2016 1/4" -> "2016.1/4" 형식으로 변환
             formatted_key = quarter_key.replace(" ", ".")
+            
+            # 현재 분기인 경우 p 접미사 추가
+            import re
+            match = re.match(r'(\d{4})\.(\d)/4', formatted_key)
+            if match:
+                year = int(match.group(1))
+                q = int(match.group(2))
+                if year == self.current_year and q == self.current_quarter:
+                    formatted_key += "p"
+            
             quarterly_formatted[formatted_key] = data
         
         return {
