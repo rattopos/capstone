@@ -1421,9 +1421,6 @@
                     <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
                 </div>
                 <div class="action-btns">
-                    <button class="btn btn-primary" id="generateAllBtn" disabled>
-                        🔍 미리보기
-                    </button>
                     <button class="btn btn-success" id="exportBtn" style="display: none;">
                         📰 HTML 보도자료
                     </button>
@@ -1459,7 +1456,7 @@
                     <div class="preview-placeholder" id="previewPlaceholder">
                         <div class="preview-placeholder-icon">📊</div>
                         <h3>보고서를 선택하세요</h3>
-                        <p>엑셀 파일 업로드 후 "미리보기" 버튼을 클릭하면 모든 보고서가 생성됩니다.</p>
+                        <p>엑셀 파일을 업로드하면 자동으로 보고서가 생성됩니다.</p>
                     </div>
                     <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
                     <!-- 편집 모드용 에디터 -->
@@ -2022,7 +2019,6 @@
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
             pageIndicator: document.getElementById('pageIndicator'),
-            generateAllBtn: document.getElementById('generateAllBtn'),
             exportBtn: document.getElementById('exportBtn'),
             exportHwpBtn: document.getElementById('exportHwpBtn'),
             previewTitle: document.getElementById('previewTitle'),
@@ -2077,7 +2073,6 @@
             elements.nextBtn.addEventListener('click', () => navigateReport(1));
 
             // Actions
-            elements.generateAllBtn.addEventListener('click', generateAllReports);
             elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
             elements.exportBtn.addEventListener('click', exportFinalDocument);
             elements.exportHwpBtn.addEventListener('click', exportHwpReadyDocument);
@@ -2632,7 +2627,7 @@
         // 전체 보고서 선택 함수
         function selectGlobalReport(globalIndex) {
             if (!state.allGenerated) {
-                showToast('먼저 "미리보기" 버튼을 클릭하세요.', 'warning');
+                showToast('보고서 생성 중입니다. 잠시만 기다려주세요.', 'info');
                 return;
             }
             
@@ -2872,8 +2867,6 @@
                     periodValue.textContent = `${data.year}년 ${data.quarter}분기`;
                     periodValue.classList.remove('waiting');
                     
-                    elements.generateAllBtn.disabled = false;
-                    
                     // 변환 정보 표시
                     const conversionInfo = document.getElementById('conversionInfo');
                     const conversionDetails = document.getElementById('conversionDetails');
@@ -2890,10 +2883,14 @@
                             grdpMissing.style.display = 'none';
                             document.getElementById('grdpNational').textContent = `${data.conversion_info.national_growth_rate}%`;
                             document.getElementById('grdpTopRegion').textContent = `${data.conversion_info.top_region} (${data.conversion_info.top_region_growth}%)`;
-                            // 모달 닫기 (2초 후)
+                            // 모달 닫기 (2초 후) 후 자동 미리보기 생성
                             hideUploadModal(2000);
+                            setTimeout(() => {
+                                generateAllReports();
+                            }, 2100);
                         } else {
                             // GRDP 추출 실패 시 모달 닫고 GRDP 모달 표시
+                            // GRDP 모달 닫힌 후 자동 생성 (saveGrdpData에서 처리)
                             grdpInfo.style.display = 'none';
                             grdpMissing.style.display = 'none';
                             hideUploadModal(500);
@@ -2904,8 +2901,11 @@
                     } else {
                         conversionInfo.style.display = 'none';
                         grdpMissing.style.display = 'none';
-                    // 모달 닫기 (2초 후)
-                    hideUploadModal(2000);
+                        // 모달 닫기 (2초 후) 후 자동 미리보기 생성
+                        hideUploadModal(2000);
+                        setTimeout(() => {
+                            generateAllReports();
+                        }, 2100);
                     }
                     
                     // 분석표 다운로드 버튼에 파일명 저장
@@ -3374,6 +3374,12 @@
         
         function closeGrdpModal() {
             document.getElementById('grdpModal').classList.remove('active');
+            // GRDP 모달 닫힌 후 자동 미리보기 생성
+            if (!state.allGenerated) {
+                setTimeout(() => {
+                    generateAllReports();
+                }, 500);
+            }
         }
         
         function openKosisGrdpPage() {
