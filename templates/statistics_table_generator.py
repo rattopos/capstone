@@ -625,13 +625,15 @@ class StatisticsTableGenerator:
         }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
-        """GRDP 데이터 플레이스홀더 생성 (N/A) - 2016년부터"""
-        yearly_years = ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        """GRDP 데이터 생성 - grdp_extracted.json에서 데이터 로드 시도"""
+        import json
         
-        # 2016년 1분기부터 현재 분기까지 생성
+        yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        
+        # 2017년 3/4분기부터 현재 분기까지 생성 (정답 이미지 기준)
         quarterly_keys = []
-        for year in range(2016, self.current_year + 1):
-            start_q = 1 if year > 2016 else 1
+        for year in range(2017, self.current_year + 1):
+            start_q = 3 if year == 2017 else 1
             end_q = self.current_quarter if year == self.current_year else 4
             for quarter in range(start_q, end_q + 1):
                 if year == self.current_year and quarter == self.current_quarter:
@@ -639,19 +641,40 @@ class StatisticsTableGenerator:
                 else:
                     quarterly_keys.append(f"{year}.{quarter}/4")
         
-        # 모든 값을 N/A로 설정
+        # 기본값으로 플레이스홀더 (편집 가능) 생성
         yearly = {}
         for year in yearly_years:
-            yearly[year] = {region: "N/A" for region in self.ALL_REGIONS}
+            yearly[year] = {region: "-" for region in self.ALL_REGIONS}
         
         quarterly = {}
         for qk in quarterly_keys:
-            quarterly[qk] = {region: "N/A" for region in self.ALL_REGIONS}
+            quarterly[qk] = {region: "-" for region in self.ALL_REGIONS}
+        
+        # grdp_extracted.json에서 현재 분기 데이터 로드 시도
+        try:
+            grdp_json_path = Path(__file__).parent / 'grdp_extracted.json'
+            if grdp_json_path.exists():
+                with open(grdp_json_path, 'r', encoding='utf-8') as f:
+                    grdp_data = json.load(f)
+                
+                # 현재 분기 키
+                current_key = f"{self.current_year}.{self.current_quarter}/4p"
+                
+                if current_key in quarterly and 'regional_data' in grdp_data:
+                    for item in grdp_data['regional_data']:
+                        region = item.get('region', '')
+                        growth_rate = item.get('growth_rate', 0)
+                        if region in self.ALL_REGIONS and not item.get('placeholder', True):
+                            quarterly[current_key][region] = round(growth_rate, 1)
+                    
+                    print(f"[통계표] GRDP JSON에서 {current_key} 데이터 로드 완료")
+        except Exception as e:
+            print(f"[통계표] GRDP JSON 로드 실패: {e}")
         
         return {
             "title": "분기 지역내총생산(GRDP)",
             "unit": "[전년동기비, %]",
-            "page_number_1": 42,  # 10개 통계표 * 2페이지 + 목차 + 1
+            "page_number_1": 42,
             "page_number_2": 43,
             "data": {
                 "yearly": yearly,
