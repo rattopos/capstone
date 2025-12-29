@@ -728,10 +728,46 @@ def get_employment_population_data(excel_path, year, quarter):
 
 
 def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
-    """차트용 데이터 추출 (시트별 열 설정 적용)"""
+    """차트용 데이터 추출 (시트별 열 설정 적용, 분석 시트 없으면 기초자료에서 직접 계산)"""
     try:
         regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        # 기초자료 시트 설정 (분석 시트 없을 때 fallback)
+        raw_sheet_config = {
+            'A 분석': {
+                'raw_sheet': '광공업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'curr_col': 64, 'prev_col': 60,  # 2025 2/4p, 2024 2/4
+            },
+            'B 분석': {
+                'raw_sheet': '서비스업생산',
+                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'curr_col': 64, 'prev_col': 60,
+            },
+            'C 분석': {
+                'raw_sheet': '소비(소매, 추가)',
+                'region_col': 1, 'code_col': 4, 'total_code': '총지수',
+                'curr_col': 63, 'prev_col': 59,
+            },
+            'G 분석': {
+                'raw_sheet': '수출',
+                'region_col': 1, 'code_col': 5, 'total_code': '합계',
+                'curr_col': 68, 'prev_col': 64,
+                'is_amount': True
+            },
+            'E(품목성질물가)분석': {
+                'raw_sheet': '품목성질별 물가',
+                'region_col': 1, 'code_col': 5, 'total_code': '총지수',
+                'curr_col': 56, 'prev_col': 52,
+            },
+            'D(고용률)분석': {
+                'raw_sheet': '고용률',
+                'region_col': 1, 'code_col': 3, 'total_code': '계',
+                'curr_col': 66, 'prev_col': 62,
+                'calc_type': 'difference'  # 고용률은 %p
+            },
+        }
         
         # 시트별 설정 (분석 시트와 집계 시트 매핑)
         sheet_config = {
@@ -781,11 +817,22 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
         }
         
         config = sheet_config.get(sheet_name, {})
-        if not config:
+        raw_config = raw_sheet_config.get(sheet_name, {})
+        
+        if not config and not raw_config:
             return _get_default_chart_data()
         
-        # 분석 시트에서 증감률 추출
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        # 분석 시트 존재 여부 확인
+        use_raw = sheet_name not in xl.sheet_names
+        
+        if use_raw and raw_config.get('raw_sheet') in xl.sheet_names:
+            # 기초자료 시트에서 직접 전년동기비 계산
+            return _extract_chart_data_from_raw(xl, raw_config, regions, is_trade, is_employment)
+        elif not use_raw:
+            # 분석 시트 사용
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        else:
+            return _get_default_chart_data()
         
         nationwide = {'index': 100.0, 'change': 0.0, 'rate': 60.0, 'amount': 0}
         increase_regions = []
@@ -989,6 +1036,96 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
             return _get_default_trade_data()
         elif is_employment:
             return _get_default_employment_data()
+        return _get_default_chart_data()
+
+
+def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employment=False):
+    """기초자료 시트에서 직접 차트 데이터 추출 및 전년동기비 계산"""
+    try:
+        df = pd.read_excel(xl, sheet_name=config['raw_sheet'], header=None)
+        
+        region_col = config['region_col']
+        code_col = config.get('code_col')
+        total_code = config['total_code']
+        curr_col = config['curr_col']
+        prev_col = config['prev_col']
+        calc_type = config.get('calc_type', 'growth_rate')
+        is_amount = config.get('is_amount', False)
+        
+        nationwide = {'index': 100.0, 'change': 0.0, 'rate': 60.0, 'amount': 0}
+        increase_regions = []
+        decrease_regions = []
+        chart_data = []
+        
+        for i, row in df.iterrows():
+            try:
+                region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                code = str(row[code_col]).strip() if code_col and pd.notna(row[code_col]) else ''
+                
+                if code != total_code:
+                    continue
+                
+                # 현재 분기와 전년동기 값
+                curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
+                prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                
+                # 전년동기비 계산
+                if calc_type == 'difference':
+                    change = round(curr_val - prev_val, 1)
+                else:  # growth_rate
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        change = 0.0
+                
+                data = {
+                    'name': region,
+                    'value': change,
+                    'index': round(curr_val, 1),
+                    'change': change,
+                    'rate': round(curr_val, 1) if is_employment else round(curr_val, 1)
+                }
+                
+                if is_trade or is_amount:
+                    # 수출액은 백만달러 → 억달러로 변환
+                    amount = round(curr_val / 100, 1) if curr_val > 1000 else round(curr_val, 1)
+                    data['amount'] = amount
+                    data['amount_normalized'] = min(100, max(0, curr_val / 600))
+                
+                if region == '전국':
+                    nationwide['index'] = round(curr_val, 1)
+                    nationwide['change'] = change
+                    nationwide['rate'] = round(curr_val, 1)
+                    if is_trade or is_amount:
+                        nationwide['amount'] = data.get('amount', 0)
+                elif region in regions:
+                    if change >= 0:
+                        increase_regions.append(data)
+                    else:
+                        decrease_regions.append(data)
+                    chart_data.append(data)
+            except:
+                continue
+        
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': nationwide,
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_count': len(increase_regions),
+            'below_count': len(decrease_regions),
+            'chart_data': chart_data[:18]
+        }
+    except Exception as e:
+        print(f"기초자료 차트 데이터 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return _get_default_chart_data()
 
 

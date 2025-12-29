@@ -791,9 +791,71 @@ class RegionalGenerator:
         }
     
     def extract_consumer_price_data(self, region: str) -> Dict[str, Any]:
-        """소비자물가 데이터 추출"""
+        """소비자물가 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet('E(지출목적물가) 분석')
         
+        # 기초자료 시트 여부 확인 (fallback된 경우)
+        config = self.QUARTER_COLS.get('지출목적별 물가', {})
+        is_raw = config.get('is_raw', False)
+        
+        if is_raw:
+            # 기초자료 시트 열 구조
+            region_col = 1  # 지역이름
+            name_col = 5    # 분류이름
+            total_code = '총지수'
+            curr_col = 58   # 2025 2/4
+            prev_col = 54   # 2024 2/4
+            
+            # 총지수 행
+            total_row = df[(df[region_col] == region) & (df[name_col].astype(str) == total_code)]
+            if len(total_row) == 0:
+                return {"total_growth_rate": 0, "direction": "상승",
+                        "increase_items": [], "decrease_items": []}
+            
+            total_row = total_row.iloc[0]
+            curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
+            prev_val = float(total_row[prev_col]) if pd.notna(total_row[prev_col]) else 0
+            
+            if prev_val != 0:
+                growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
+            else:
+                growth_rate = 0.0
+            
+            # 품목별 데이터 (총지수가 아닌 모든 항목)
+            items = df[(df[region_col] == region) & (df[name_col].astype(str) != total_code) & (df[name_col].astype(str) != '생활물가')]
+            
+            increase_items = []
+            decrease_items = []
+            
+            for _, row in items.iterrows():
+                name = self._clean_name(row[name_col])
+                if not name or '생활물가' in name:
+                    continue
+                    
+                curr_v = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
+                prev_v = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                
+                if prev_v != 0:
+                    rate = round((curr_v - prev_v) / prev_v * 100, 1)
+                else:
+                    rate = 0.0
+                
+                if rate > 0:
+                    increase_items.append({"name": name, "growth_rate": rate})
+                elif rate < 0:
+                    decrease_items.append({"name": name, "growth_rate": rate})
+            
+            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
+            decrease_items.sort(key=lambda x: x['growth_rate'])
+            
+            return {
+                "total_growth_rate": growth_rate,
+                "direction": "상승" if growth_rate > 0 else "하락",
+                "increase_items": increase_items[:2],
+                "decrease_items": decrease_items[:2]
+            }
+        
+        # 분석 시트 사용
         # 총지수 행
         total_row = df[(df[3] == region) & (df[4].astype(str) == '0') & (df[8] == '총지수')]
         if len(total_row) == 0:
