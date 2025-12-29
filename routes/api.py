@@ -63,9 +63,9 @@ def upload_excel():
     try:
         converter = DataConverter(str(filepath))
         
-        # 분석표 자동 생성
+        # 분석표 자동 생성 (가중치 없이 먼저 생성, 모달에서 가중치 입력 후 재생성)
         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output)
+        analysis_path = converter.convert_all(analysis_output, weight_data=None)
         print(f"[업로드] 분석표 자동 생성: {Path(analysis_path).name}")
         
         grdp_data = converter.extract_grdp_data()
@@ -214,6 +214,36 @@ def download_analysis():
         download_name=filename,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+
+@api_bp.route('/generate-analysis-with-weights', methods=['POST'])
+def generate_analysis_with_weights():
+    """가중치 설정을 포함하여 분석표 생성"""
+    data = request.get_json()
+    weight_settings = data.get('weight_settings', {})  # {mining: {mode, values}, service: {mode, values}}
+    
+    raw_excel_path = session.get('raw_excel_path')
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '기초자료 파일을 찾을 수 없습니다.'}), 404
+    
+    try:
+        converter = DataConverter(str(raw_excel_path))
+        
+        # 분석표 생성 (가중치 설정 포함)
+        analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+        analysis_path = converter.convert_all(analysis_output, weight_settings=weight_settings)
+        
+        session['download_analysis_path'] = analysis_path
+        
+        return jsonify({
+            'success': True,
+            'filename': Path(analysis_path).name,
+            'message': '분석표가 성공적으로 생성되었습니다.'
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'분석표 생성 실패: {str(e)}'}), 500
 
 
 @api_bp.route('/report-order', methods=['GET'])
@@ -516,4 +546,103 @@ def render_chart_image():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
+
+
+@api_bp.route('/get-industry-weights', methods=['GET'])
+def get_industry_weights():
+    """기초자료에서 업종별 가중치 정보 추출"""
+    import pandas as pd
+    
+    sheet_type = request.args.get('sheet_type', '광공업생산')
+    raw_excel_path = session.get('raw_excel_path')
+    
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({
+            'success': False, 
+            'error': '기초자료 파일을 찾을 수 없습니다. 먼저 파일을 업로드하세요.'
+        })
+    
+    try:
+        xl = pd.ExcelFile(raw_excel_path)
+        
+        # 시트 매핑
+        sheet_mapping = {
+            '광공업생산': '광공업생산',
+            '서비스업생산': '서비스업생산'
+        }
+        
+        sheet_name = sheet_mapping.get(sheet_type)
+        if not sheet_name or sheet_name not in xl.sheet_names:
+            return jsonify({
+                'success': False,
+                'error': f'시트를 찾을 수 없습니다: {sheet_type}'
+            })
+        
+        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        
+        # 업종별 정보 추출 (열 구조에 따라 다름)
+        industries = []
+        
+        if sheet_type == '광공업생산':
+            # 광공업생산 시트: 열 4=업종명, 열 8=가중치 (또는 해당 열 확인 필요)
+            name_col = 4  # 업종명 열
+            weight_col = 8  # 가중치 열
+            
+            for i, row in df.iterrows():
+                if i < 3:  # 헤더 행 건너뛰기
+                    continue
+                    
+                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
+                    continue
+                    
+                weight = None
+                if weight_col < len(row) and pd.notna(row[weight_col]):
+                    try:
+                        weight = float(row[weight_col])
+                    except (ValueError, TypeError):
+                        pass
+                
+                industries.append({
+                    'row': i + 1,
+                    'name': name,
+                    'weight': weight
+                })
+                
+        elif sheet_type == '서비스업생산':
+            # 서비스업생산 시트: 열 4=업종명, 열 8=가중치
+            name_col = 4  # 업종명 열
+            weight_col = 8  # 가중치 열
+            
+            for i, row in df.iterrows():
+                if i < 3:  # 헤더 행 건너뛰기
+                    continue
+                    
+                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
+                    continue
+                    
+                weight = None
+                if weight_col < len(row) and pd.notna(row[weight_col]):
+                    try:
+                        weight = float(row[weight_col])
+                    except (ValueError, TypeError):
+                        pass
+                
+                industries.append({
+                    'row': i + 1,
+                    'name': name,
+                    'weight': weight
+                })
+        
+        return jsonify({
+            'success': True,
+            'sheet_type': sheet_type,
+            'industries': industries[:100]  # 최대 100개
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
 

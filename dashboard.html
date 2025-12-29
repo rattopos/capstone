@@ -1284,6 +1284,9 @@
                     <input type="hidden" id="yearSelect" value="2025">
                     <input type="hidden" id="quarterSelect" value="2">
                 </div>
+                <button class="btn btn-secondary" id="weightInfoBtn" onclick="openWeightSettingsModal()" title="가중치 설정">
+                    ⚖️ 가중치 설정
+                </button>
                 <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
                     ⚙️ 담당자 설정
                 </button>
@@ -1372,6 +1375,14 @@
                         <span>📥</span>
                         <span>분석표 다운로드</span>
                     </button>
+                    
+                    <!-- 가중치 정보 안내 -->
+                    <div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+                            <strong style="color: var(--text-secondary);">💡 가중치 처리 안내</strong><br>
+                            상단의 <strong>⚖️ 가중치 설정</strong> 버튼에서 미리 설정할 수 있습니다.
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1586,6 +1597,135 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeContactModal()">취소</button>
                 <button class="btn btn-primary" onclick="saveContactInfo()">💾 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weight Settings Modal (가중치 설정) -->
+    <div class="modal-overlay" id="weightSettingsModal">
+        <div class="modal" style="max-width: 900px; max-height: 85vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>⚖️</span>
+                    <span>가중치 설정</span>
+                </h2>
+                <button class="modal-close" onclick="closeWeightSettingsModal()">×</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                분석표 생성 시 사용할 가중치를 설정해주세요. 기초자료에서 자동 추출되지 않는 경우 수동으로 입력할 수 있습니다.
+            </p>
+            
+            <!-- 가중치 설정 안내 -->
+            <div style="padding: 1rem; background: var(--bg-tertiary); border-radius: 10px; margin-bottom: 1.5rem; border-left: 3px solid var(--accent-primary);">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                    <strong style="color: var(--text-primary);">💡 가중치 처리 방식</strong><br>
+                    • <strong>광공업생산</strong>, <strong>서비스업생산</strong>: 기초자료에서 자동 추출 또는 행별 수동 입력<br>
+                    • <strong>비공개 가중치 (0)</strong>: 기본값으로 대체됨 (아래에서 설정 가능)<br>
+                    • 기타 시트: 가중치 없음 (공란 처리)
+                </div>
+            </div>
+            
+            <!-- 비공개 가중치 기본값 설정 -->
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid var(--accent-secondary);">
+                <h3 style="font-size: 0.9rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔒</span> 비공개 가중치 기본값
+                </h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    기초자료에서 가중치가 0(비공개)인 경우 아래 기본값으로 대체됩니다.
+                </p>
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <div class="missing-field-item" style="max-width: 200px;">
+                        <label class="missing-field-label">광공업생산 기본값</label>
+                        <input type="number" class="missing-field-input" id="miningDefaultWeight" value="1" min="0" step="1" placeholder="1">
+                    </div>
+                    <div class="missing-field-item" style="max-width: 200px;">
+                        <label class="missing-field-label">서비스업생산 기본값</label>
+                        <input type="number" class="missing-field-input" id="serviceDefaultWeight" value="1" min="0" step="1" placeholder="1">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 광공업생산 가중치 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🏭</span> 광공업생산 가중치
+                </h3>
+                <div style="margin-bottom: 0.75rem;">
+                    <div class="missing-field-item" style="max-width: 300px;">
+                        <label class="missing-field-label">가중치 사용 방식</label>
+                        <select class="missing-field-input" id="miningWeightMode" onchange="toggleWeightInput('mining')">
+                            <option value="auto">기초자료에서 자동 추출</option>
+                            <option value="manual">수동 입력</option>
+                            <option value="empty">가중치 없음 (공란)</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 수동 입력 영역 (행별 입력) -->
+                <div id="miningWeightInputContainer" style="display: none; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label class="missing-field-label" style="margin-bottom: 0;">업종별 가중치 입력</label>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="loadMiningIndustries()">📥 기초자료에서 불러오기</button>
+                    </div>
+                    <div id="miningWeightRows" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
+                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
+                            <span>행 번호</span>
+                            <span>업종명</span>
+                            <span>가중치</span>
+                        </div>
+                        <!-- 행별 입력 (동적 생성) -->
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        * 기초자료에서 업종 정보를 불러오거나 직접 입력하세요. 빈 값은 공란으로 처리됩니다.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 서비스업생산 가중치 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🏢</span> 서비스업생산 가중치
+                </h3>
+                <div style="margin-bottom: 0.75rem;">
+                    <div class="missing-field-item" style="max-width: 300px;">
+                        <label class="missing-field-label">가중치 사용 방식</label>
+                        <select class="missing-field-input" id="serviceWeightMode" onchange="toggleWeightInput('service')">
+                            <option value="auto">기초자료에서 자동 추출</option>
+                            <option value="manual">수동 입력</option>
+                            <option value="empty">가중치 없음 (공란)</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 수동 입력 영역 (행별 입력) -->
+                <div id="serviceWeightInputContainer" style="display: none; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label class="missing-field-label" style="margin-bottom: 0;">업종별 가중치 입력</label>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="loadServiceIndustries()">📥 기초자료에서 불러오기</button>
+                    </div>
+                    <div id="serviceWeightRows" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
+                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
+                            <span>행 번호</span>
+                            <span>업종명</span>
+                            <span>가중치</span>
+                        </div>
+                        <!-- 행별 입력 (동적 생성) -->
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        * 기초자료에서 업종 정보를 불러오거나 직접 입력하세요. 빈 값은 공란으로 처리됩니다.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 기타 시트 안내 -->
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    <strong style="color: var(--text-secondary);">📋 기타 시트 (가중치 없음)</strong><br>
+                    소비, 고용률, 실업, 물가, 건설, 수출, 수입, 인구이동 등의 시트는 가중치 열이 없어 공란으로 처리됩니다.
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeWeightSettingsModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveWeightSettings()">💾 저장</button>
             </div>
         </div>
     </div>
@@ -1843,6 +1983,21 @@
                 staff_phone: '042-481-2226',
                 customs_department: '관세청 정보데이터기획담당관',
                 customs_phone: '042-481-7845'
+            },
+            // 가중치 설정
+            weightSettings: {
+                mining: {
+                    mode: 'auto',  // 'auto', 'manual', 'empty'
+                    values: [],    // 수동 입력 시 가중치 배열
+                    rows: [],      // 행별 데이터 [{row, name, weight}]
+                    default_value: 1  // 비공개 가중치(0) 대체 기본값
+                },
+                service: {
+                    mode: 'auto',
+                    values: [],
+                    rows: [],
+                    default_value: 1  // 비공개 가중치(0) 대체 기본값
+                }
             }
         };
 
@@ -1999,6 +2154,177 @@
             
             closeContactModal();
             showToast('담당자 정보가 저장되었습니다.', 'success');
+        }
+
+        // ===== 가중치 설정 모달 함수 =====
+        function openWeightSettingsModal() {
+            // 현재 설정값 로드
+            document.getElementById('miningWeightMode').value = state.weightSettings.mining.mode;
+            document.getElementById('serviceWeightMode').value = state.weightSettings.service.mode;
+            
+            // 기본값 로드
+            document.getElementById('miningDefaultWeight').value = state.weightSettings.mining.default_value || 1;
+            document.getElementById('serviceDefaultWeight').value = state.weightSettings.service.default_value || 1;
+            
+            // 행별 입력 영역 초기화 및 렌더링
+            renderWeightRows('mining');
+            renderWeightRows('service');
+            
+            // 수동 입력 필드 표시/숨김
+            toggleWeightInput('mining');
+            toggleWeightInput('service');
+            
+            document.getElementById('weightSettingsModal').classList.add('active');
+        }
+        
+        function closeWeightSettingsModal() {
+            document.getElementById('weightSettingsModal').classList.remove('active');
+        }
+        
+        function toggleWeightInput(type) {
+            const mode = document.getElementById(`${type}WeightMode`).value;
+            const container = document.getElementById(`${type}WeightInputContainer`);
+            
+            if (mode === 'manual') {
+                container.style.display = 'block';
+                // 아직 행이 없으면 기본 행 추가
+                const rowsContainer = document.getElementById(`${type}WeightRows`);
+                if (rowsContainer.querySelectorAll('.weight-row').length === 0) {
+                    addWeightRows(type, 10); // 기본 10행 추가
+                }
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        
+        function renderWeightRows(type) {
+            const container = document.getElementById(`${type}WeightRows`);
+            const rows = state.weightSettings[type].rows || [];
+            
+            // 헤더 유지, 기존 행 제거
+            const header = container.querySelector('div:first-child');
+            container.innerHTML = '';
+            container.appendChild(header);
+            
+            if (rows.length > 0) {
+                rows.forEach((row, index) => {
+                    addWeightRowElement(container, index + 1, row.name || '', row.weight || '');
+                });
+            }
+        }
+        
+        function addWeightRowElement(container, rowNum, industryName, weight) {
+            const row = document.createElement('div');
+            row.className = 'weight-row';
+            row.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); align-items: center;';
+            row.innerHTML = `
+                <span style="font-size: 0.8rem; color: var(--text-muted);">${rowNum}</span>
+                <input type="text" class="weight-industry-name" value="${industryName}" 
+                       style="padding: 0.3rem 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem;"
+                       placeholder="업종명">
+                <input type="number" step="0.1" class="weight-value" value="${weight}" 
+                       style="padding: 0.3rem 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem; text-align: right;"
+                       placeholder="가중치">
+            `;
+            container.appendChild(row);
+        }
+        
+        function addWeightRows(type, count = 5) {
+            const container = document.getElementById(`${type}WeightRows`);
+            const existingRows = container.querySelectorAll('.weight-row').length;
+            
+            for (let i = 0; i < count; i++) {
+                addWeightRowElement(container, existingRows + i + 1, '', '');
+            }
+        }
+        
+        async function loadMiningIndustries() {
+            await loadIndustriesFromExcel('mining', '광공업생산');
+        }
+        
+        async function loadServiceIndustries() {
+            await loadIndustriesFromExcel('service', '서비스업생산');
+        }
+        
+        async function loadIndustriesFromExcel(type, sheetType) {
+            try {
+                const response = await fetch(`/api/get-industry-weights?sheet_type=${sheetType}`);
+                const result = await response.json();
+                
+                if (result.success && result.industries) {
+                    const container = document.getElementById(`${type}WeightRows`);
+                    const header = container.querySelector('div:first-child');
+                    container.innerHTML = '';
+                    container.appendChild(header);
+                    
+                    result.industries.forEach((item, index) => {
+                        addWeightRowElement(container, index + 1, item.name || '', item.weight || '');
+                    });
+                    
+                    showToast(`${result.industries.length}개 업종 정보를 불러왔습니다.`, 'success');
+                } else {
+                    showToast(result.error || '업종 정보를 불러올 수 없습니다.', 'warning');
+                    // 기본 행 추가
+                    addWeightRows(type, 10);
+                }
+            } catch (err) {
+                console.error('업종 정보 로드 오류:', err);
+                showToast('업종 정보 로드 중 오류가 발생했습니다.', 'error');
+                addWeightRows(type, 10);
+            }
+        }
+        
+        function collectWeightRows(type) {
+            const container = document.getElementById(`${type}WeightRows`);
+            const rows = container.querySelectorAll('.weight-row');
+            const result = [];
+            
+            rows.forEach((row, index) => {
+                const nameInput = row.querySelector('.weight-industry-name');
+                const weightInput = row.querySelector('.weight-value');
+                
+                if (nameInput && weightInput) {
+                    const name = nameInput.value.trim();
+                    const weight = weightInput.value.trim();
+                    result.push({
+                        row: index + 1,
+                        name: name,
+                        weight: weight ? parseFloat(weight) : null
+                    });
+                }
+            });
+            
+            return result;
+        }
+        
+        function saveWeightSettings() {
+            // 광공업생산 설정
+            const miningMode = document.getElementById('miningWeightMode').value;
+            const miningRows = miningMode === 'manual' ? collectWeightRows('mining') : [];
+            const miningDefaultValue = parseFloat(document.getElementById('miningDefaultWeight').value) || 1;
+            
+            // 서비스업생산 설정
+            const serviceMode = document.getElementById('serviceWeightMode').value;
+            const serviceRows = serviceMode === 'manual' ? collectWeightRows('service') : [];
+            const serviceDefaultValue = parseFloat(document.getElementById('serviceDefaultWeight').value) || 1;
+            
+            state.weightSettings = {
+                mining: {
+                    mode: miningMode,
+                    rows: miningRows,
+                    values: miningRows.filter(r => r.weight !== null).map(r => r.weight),
+                    default_value: miningDefaultValue
+                },
+                service: {
+                    mode: serviceMode,
+                    rows: serviceRows,
+                    values: serviceRows.filter(r => r.weight !== null).map(r => r.weight),
+                    default_value: serviceDefaultValue
+                }
+            };
+            
+            closeWeightSettingsModal();
+            showToast('가중치 설정이 저장되었습니다.', 'success');
         }
 
         // Tab switching
@@ -2363,7 +2689,7 @@
             state.reviewedReports[report.type].add(report.id);
             renderAllReportsList();
             
-            showToast(`✓ ${report.name} 검토 완료`, 'success');
+            showToast(`${report.name} 검토 완료`, 'success');
             navigateReport(1); // 다음으로 자동 이동
         }
 
@@ -3138,19 +3464,46 @@
 
         // ===== Toast =====
         // 분석표 다운로드 함수
-        function downloadAnalysisFile() {
+        async function downloadAnalysisFile() {
             if (!state.analysisFilename) {
                 showToast('다운로드할 분석표가 없습니다.', 'warning');
                 return;
             }
             
-            const downloadLink = document.createElement('a');
-            downloadLink.href = '/api/download-analysis';
-            downloadLink.download = state.analysisFilename;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            showToast('분석표 다운로드가 시작됩니다.', 'success');
+            // 저장된 가중치 설정 사용
+            const weightSettings = state.weightSettings;
+            
+            try {
+                showToast('분석표 생성 중...', 'info');
+                
+                // 가중치 설정을 포함하여 분석표 재생성
+                const response = await fetch('/api/generate-analysis-with-weights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ weight_settings: weightSettings })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 다운로드 시작
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = '/api/download-analysis';
+                    downloadLink.download = result.filename || state.analysisFilename;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    showToast('분석표가 생성되었습니다. 다운로드가 시작됩니다.', 'success');
+                } else {
+                    showToast(result.error || '분석표 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('분석표 생성 오류:', err);
+                showToast('분석표 생성 중 오류가 발생했습니다.', 'error');
+            }
         }
         
         function showToast(message, type = 'info') {

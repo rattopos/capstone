@@ -3152,7 +3152,7 @@
     }
   ],
   "decrease_industries_text": "예술·스포츠·여가, 정보통신, 전문·과학·기술, 부동산",
-  "increase_industries_text": "정보통신, 보건·복지, 전문·과학·기술, 예술·스포츠·여가",
+  "increase_industries_text": "예술·스포츠·여가, 보건·복지, 부동산, 정보통신",
   "summary_table": {
     "base_year": 2020,
     "columns": {

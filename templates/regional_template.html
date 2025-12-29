@@ -647,7 +647,8 @@
                 borderColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
                 backgroundColor: 'transparent',
                 borderWidth: 2,
-                pointRadius: 3,
+                pointRadius: 0,
+                pointHoverRadius: 0,
                 pointBackgroundColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
                 tension: 0,
                 borderDash: series.dashStyle === 'dash' ? [5, 5] : series.dashStyle === 'dot' ? [2, 2] : []

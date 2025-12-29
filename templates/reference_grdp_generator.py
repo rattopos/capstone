@@ -74,17 +74,29 @@ class 참고_GRDP_Generator:
         
         # 시도별 데이터 (모두 플레이스홀더)
         regional_data = []
+        prev_group = None
         for region_info in self.REGION_ORDER:
+            current_group = region_info["group"]
+            is_group_start = (current_group is not None) and (current_group != prev_group)
+            
+            # 해당 권역의 지역 수 계산 (그룹 시작점에서만)
+            group_size = 0
+            if is_group_start:
+                group_size = len([r for r in self.REGION_ORDER if r["group"] == current_group])
+            
             regional_data.append({
-                "region_group": region_info["group"],
+                "region_group": current_group,
                 "region": region_info["region"],
                 "growth_rate": 0.0,
                 "manufacturing": 0.0,
                 "construction": 0.0,
                 "service": 0.0,
                 "other": 0.0,
-                "placeholder": True
+                "placeholder": True,
+                "is_group_start": is_group_start,
+                "group_size": group_size
             })
+            prev_group = current_group
         
         return {
             "report_info": {
@@ -156,19 +168,31 @@ class 참고_GRDP_Generator:
         }
         
         regional_data = []
+        prev_group = None
         for region_info in self.REGION_ORDER:
             region = region_info["region"]
             values = sample_values.get(region, {})
+            current_group = region_info["group"]
+            is_group_start = (current_group is not None) and (current_group != prev_group)
+            
+            # 해당 권역의 지역 수 계산 (그룹 시작점에서만)
+            group_size = 0
+            if is_group_start:
+                group_size = len([r for r in self.REGION_ORDER if r["group"] == current_group])
+            
             regional_data.append({
-                "region_group": region_info["group"],
+                "region_group": current_group,
                 "region": region,
                 "growth_rate": values.get("growth_rate", 0.0),
                 "manufacturing": values.get("manufacturing", 0.0),
                 "construction": values.get("construction", 0.0),
                 "service": values.get("service", 0.0),
                 "other": values.get("other", 0.0),
-                "placeholder": False
+                "placeholder": False,
+                "is_group_start": is_group_start,
+                "group_size": group_size
             })
+            prev_group = current_group
         
         return {
             "report_info": {
@@ -222,6 +246,63 @@ class 참고_GRDP_Generator:
         return data
 
 
+def _add_group_flags(regional_data):
+    """regional_data에 is_group_start와 group_size 플래그 추가 (권역별 순서로 정렬)"""
+    
+    # REGION_ORDER 순서로 정렬
+    region_order = [
+        {"group": None, "region": "전국"},
+        {"group": "경인", "region": "서울"},
+        {"group": "경인", "region": "인천"},
+        {"group": "경인", "region": "경기"},
+        {"group": "충청", "region": "대전"},
+        {"group": "충청", "region": "세종"},
+        {"group": "충청", "region": "충북"},
+        {"group": "충청", "region": "충남"},
+        {"group": "호남", "region": "광주"},
+        {"group": "호남", "region": "전북"},
+        {"group": "호남", "region": "전남"},
+        {"group": "호남", "region": "제주"},
+        {"group": "동북", "region": "대구"},
+        {"group": "동북", "region": "경북"},
+        {"group": "동북", "region": "강원"},
+        {"group": "동남", "region": "부산"},
+        {"group": "동남", "region": "울산"},
+        {"group": "동남", "region": "경남"},
+    ]
+    
+    # region -> item 매핑
+    region_map = {item.get('region'): item for item in regional_data}
+    
+    # 정렬된 데이터 생성
+    sorted_data = []
+    prev_group = None
+    
+    # 권역별 지역 수 계산
+    group_counts = {}
+    for r in region_order:
+        if r['group']:
+            group_counts[r['group']] = group_counts.get(r['group'], 0) + 1
+    
+    for r in region_order:
+        region_name = r['region']
+        if region_name in region_map:
+            item = region_map[region_name].copy()
+            current_group = r['group']
+            
+            # region_group 업데이트 (JSON에 없을 수 있음)
+            item['region_group'] = current_group
+            
+            is_group_start = (current_group is not None) and (current_group != prev_group)
+            item['is_group_start'] = is_group_start
+            item['group_size'] = group_counts.get(current_group, 0) if is_group_start else 0
+            
+            sorted_data.append(item)
+            prev_group = current_group
+    
+    return sorted_data
+
+
 def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
     """보고서 데이터 생성 함수 (app.py에서 호출)
     
@@ -241,6 +322,10 @@ def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
             # 연도/분기 업데이트
             data['report_info']['year'] = year
             data['report_info']['quarter'] = quarter
+            
+            # is_group_start와 group_size 플래그 추가 (JSON에 없을 수 있음)
+            data['regional_data'] = _add_group_flags(data['regional_data'])
+            
             print(f"[GRDP Generator] JSON에서 GRDP 데이터 로드 (전국 {data['national_summary']['growth_rate']}%)")
             return data
         except Exception as e:

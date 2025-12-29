@@ -43,20 +43,26 @@ class DataConverter:
     NUM_YEARS = 5      # 당해 제외 최근 5개년
     NUM_QUARTERS = 13  # 최근 13개 분기
     
-    # 집계 시트별 열 구조 정의: (메타열수, 연도시작열, 분기시작열)
+    # 집계 시트별 열 구조 정의: (메타열수, 연도시작열, 분기시작열, 가중치열 위치)
     # 1-based index
     SHEET_STRUCTURE = {
-        'A(광공업생산)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
-        'B(서비스업생산)집계': {'meta_cols': 8, 'year_start': 9, 'quarter_start': 14},
-        'C(소비)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
-        'D(고용률)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
-        'D(실업)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
-        'E(지출목적물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
-        'E(품목성질물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
-        "F'(건설)집계": {'meta_cols': 5, 'year_start': 6, 'quarter_start': 11},
-        'G(수출)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
-        'H(수입)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15},
-        'I(순인구이동)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13},
+        'A(광공업생산)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': 7},
+        'B(서비스업생산)집계': {'meta_cols': 8, 'year_start': 9, 'quarter_start': 14, 'weight_col': 7},
+        'C(소비)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        'D(고용률)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        'D(실업)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        'E(지출목적물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        'E(품목성질물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        "F'(건설)집계": {'meta_cols': 5, 'year_start': 6, 'quarter_start': 11, 'weight_col': None},  # 가중치 없음
+        'G(수출)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': None},  # 가중치 없음
+        'H(수입)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': None},  # 가중치 없음
+        'I(순인구이동)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+    }
+    
+    # 기초자료 시트에서 가중치 열 위치 (0-based index)
+    RAW_WEIGHT_COL_MAPPING = {
+        '광공업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
+        '서비스업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)  
     }
     
     def __init__(self, raw_excel_path: str, template_path: str = None):
@@ -217,11 +223,14 @@ class DataConverter:
         
         return {'years': year_cols, 'quarters': quarter_cols}
     
-    def convert_all(self, output_path: str = None) -> str:
+    def convert_all(self, output_path: str = None, weight_settings: Dict = None) -> str:
         """분석표 생성 (템플릿 복사 + 집계 시트 데이터 교체)
         
         Args:
             output_path: 출력 파일 경로 (None이면 자동 생성)
+            weight_settings: 가중치 설정 {mining: {mode, values}, service: {mode, values}}
+                - mode: 'auto' (기초자료에서 추출), 'manual' (수동입력), 'empty' (공란)
+                - values: 수동입력 시 가중치 배열
             
         Returns:
             생성된 분석표 파일 경로
@@ -255,7 +264,7 @@ class DataConverter:
         for raw_sheet, target_sheet in self.SHEET_MAPPING.items():
             if raw_sheet in raw_xl.sheet_names and target_sheet in wb.sheetnames:
                 print(f"[변환] {raw_sheet} → {target_sheet}")
-                self._copy_sheet_data(raw_xl, raw_sheet, wb[target_sheet])
+                self._copy_sheet_data(raw_xl, raw_sheet, wb[target_sheet], weight_settings)
             else:
                 if raw_sheet not in raw_xl.sheet_names:
                     print(f"  [경고] 기초자료에 '{raw_sheet}' 시트 없음")
@@ -269,12 +278,13 @@ class DataConverter:
         print(f"[완료] 분석표 생성: {output_path}")
         return output_path
     
-    def _copy_sheet_data(self, raw_xl: pd.ExcelFile, raw_sheet: str, target_ws):
+    def _copy_sheet_data(self, raw_xl: pd.ExcelFile, raw_sheet: str, target_ws, weight_settings: Dict = None):
         """기초자료 시트의 데이터를 분석표 집계 시트에 복사
         
         연도/분기 범위에 맞는 열만 선택적으로 복사:
         - 연도: 당해 제외 최근 5개년
         - 분기: 최근 13개 분기
+        - 가중치: weight_settings에 따라 처리 (auto/manual/empty)
         """
         from openpyxl.cell.cell import MergedCell
         
@@ -295,14 +305,44 @@ class DataConverter:
         meta_cols = sheet_structure.get('meta_cols', 7)
         target_year_start_col = sheet_structure.get('year_start', 8)
         target_quarter_start_col = sheet_structure.get('quarter_start', 13)
+        target_weight_col = sheet_structure.get('weight_col')  # 1-based index
+        
+        # 가중치 설정 결정 (raw_sheet에 따라)
+        weight_config = None
+        if weight_settings:
+            if raw_sheet == '광공업생산':
+                weight_config = weight_settings.get('mining', {})
+            elif raw_sheet == '서비스업생산':
+                weight_config = weight_settings.get('service', {})
+        
+        weight_mode = weight_config.get('mode', 'auto') if weight_config else 'auto'
+        manual_weight_values = weight_config.get('values', []) if weight_config else []
         
         # 열 매핑 생성: 기초자료 열 → 집계 시트 열
         col_mapping = {}
         
-        # 메타데이터 열 매핑 (1:1)
+        # 메타데이터 열 매핑 (가중치 열 제외, 1:1)
         meta_end_raw = min(header_mapping['years'].values()) if header_mapping['years'] else meta_cols
+        
+        # 분석표의 가중치 열 위치 (1-based)
+        target_weight_col_0based = (target_weight_col - 1) if target_weight_col else None
+        
+        # 기초자료의 가중치 열 위치 (0-based)
+        raw_weight_col_idx = self.RAW_WEIGHT_COL_MAPPING.get(raw_sheet)
+        
+        # 메타데이터 열 복사 (기초자료의 가중치 열 제외)
+        target_col_idx = 1  # 1-based index
         for col in range(min(meta_cols, meta_end_raw)):
-            col_mapping[col] = col + 1  # 1-based index
+            # 기초자료의 가중치 열은 건너뛰기 (분석표의 가중치 열에 별도 처리)
+            if raw_weight_col_idx is not None and col == raw_weight_col_idx:
+                continue
+            
+            # 분석표의 가중치 열에 도달하면 target_col_idx를 하나 더 증가시켜 건너뛰기
+            if target_weight_col_0based is not None and target_col_idx == target_weight_col:
+                target_col_idx += 1
+                
+            col_mapping[col] = target_col_idx
+            target_col_idx += 1
         
         # 연도 열 매핑
         for i, year in enumerate(target_years):
@@ -318,11 +358,17 @@ class DataConverter:
         
         print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.NUM_YEARS - 1})")
         print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.NUM_QUARTERS - 1})")
+        if target_weight_col:
+            print(f"    가중치 열: {target_weight_col} (모드: {weight_mode})")
         
         copied_count = 0
         skipped_count = 0
         
+        # 기초자료에서 가중치 열 위치 찾기 (auto 모드용)
+        raw_weight_col = self.RAW_WEIGHT_COL_MAPPING.get(raw_sheet)  # 0-based index
+        
         # 데이터 복사 (행 순회)
+        weight_row_idx = 0  # 수동 가중치 배열용 인덱스 (헤더 제외)
         for row_idx in range(len(raw_df)):
             for raw_col, target_col in col_mapping.items():
                 if raw_col >= len(raw_df.columns):
@@ -348,6 +394,50 @@ class DataConverter:
                     copied_count += 1
                 except Exception:
                     skipped_count += 1
+            
+            # 가중치 열 처리 (있는 경우)
+            if target_weight_col:
+                weight_value = None
+                
+                # mode에 따른 가중치 처리
+                if weight_mode == 'empty':
+                    # 공란 처리 - 가중치 설정 안함
+                    pass
+                elif weight_mode == 'manual':
+                    # 수동 입력 모드 - 배열에서 가중치 가져오기
+                    if weight_row_idx < len(manual_weight_values):
+                        weight_value = manual_weight_values[weight_row_idx]
+                elif weight_mode == 'auto':
+                    # 자동 추출 모드 - 기초자료에서 가중치 열 찾기
+                    default_weight = weight_config.get('default_value', 1) if weight_config else 1
+                    
+                    if raw_weight_col is not None and raw_weight_col < len(raw_df.columns):
+                        raw_weight_val = raw_df.iloc[row_idx, raw_weight_col]
+                        if pd.notna(raw_weight_val):
+                            try:
+                                # 숫자인 경우에만 가중치로 사용
+                                weight_value = float(raw_weight_val)
+                                # 가중치가 0인 경우 (비공개) 기본값으로 대체
+                                if weight_value == 0:
+                                    weight_value = default_weight
+                            except (ValueError, TypeError):
+                                # 숫자가 아닌 경우 공란 유지
+                                pass
+                        # NaN인 경우는 공란 유지 (weight_value = None)
+                
+                # 가중치 값 설정 (값이 있으면 설정, 없으면 공란 유지)
+                if weight_value is not None:
+                    try:
+                        weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
+                        if not isinstance(weight_cell, MergedCell):
+                            weight_cell.value = weight_value
+                            copied_count += 1
+                    except Exception:
+                        skipped_count += 1
+                
+                # 수동 가중치 배열용 인덱스 증가 (데이터 행에 대해서만)
+                if row_idx >= 3:  # 헤더 행(0,1,2) 이후부터
+                    weight_row_idx += 1
         
         print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀)")
     
@@ -722,19 +812,20 @@ def detect_file_type(excel_path: str) -> str:
 
 
 def convert_raw_to_analysis(raw_excel_path: str, output_path: str = None, 
-                           template_path: str = None) -> Tuple[str, Dict]:
+                           template_path: str = None, weight_data: Dict[str, Dict] = None) -> Tuple[str, Dict]:
     """기초자료 수집표 → 분석표 변환 및 GRDP 추출
     
     Args:
         raw_excel_path: 기초자료 수집표 경로
         output_path: 분석표 출력 경로 (None이면 자동 생성)
         template_path: 분석표 템플릿 경로 (None이면 기본 템플릿 사용)
+        weight_data: 시트별 가중치 데이터 {시트명: {행인덱스: 가중치값}}
         
     Returns:
         (분석표 경로, GRDP 데이터)
     """
     converter = DataConverter(raw_excel_path, template_path)
-    analysis_path = converter.convert_all(output_path)
+    analysis_path = converter.convert_all(output_path, weight_data)
     grdp_data = converter.extract_grdp_data()
     
     return analysis_path, grdp_data

@@ -36,16 +36,20 @@ def get_summary_overview_data(excel_path, year, quarter):
 def _extract_sector_summary(xl, sheet_name):
     """시트에서 요약 데이터 추출"""
     try:
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
         regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        # 물가 데이터는 집계 시트에서 증감률 계산
+        if sheet_name == 'E(품목성질물가)분석':
+            return _extract_price_summary_from_aggregate(xl, regions)
+        
+        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
         
         sheet_config = {
             'A 분석': {'region_col': 3, 'division_col': 4, 'code_col': 6, 'total_code': 'BCD', 'value_col': 21},
             'B 분석': {'region_col': 3, 'division_col': 4, 'code_col': 6, 'total_code': 'E~S', 'value_col': 20},
             'C 분석': {'region_col': 3, 'division_col': 4, 'code_col': None, 'total_code': '0', 'value_col': 20},
             'G 분석': {'region_col': 3, 'division_col': 4, 'code_col': None, 'total_code': '0', 'value_col': 22},
-            'E(품목성질물가)분석': {'region_col': 0, 'division_col': 1, 'code_col': None, 'total_code': '0', 'value_col': 16},
             'D(고용률)분석': {'region_col': 2, 'division_col': 3, 'code_col': None, 'total_code': '0', 'value_col': 18},
         }
         
@@ -106,6 +110,66 @@ def _extract_sector_summary(xl, sheet_name):
         }
     except Exception as e:
         print(f"{sheet_name} 데이터 추출 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return _get_default_sector_summary()
+
+
+def _extract_price_summary_from_aggregate(xl, regions):
+    """E(품목성질물가)집계 시트에서 소비자물가 증감률 추출"""
+    try:
+        df = pd.read_excel(xl, sheet_name='E(품목성질물가)집계', header=None)
+        
+        # 열 구조: 0=지역이름, 1=분류단계, 2=가중치, 3=분류이름
+        # 열 20=2024 2/4분기, 열 24=2025 2/4분기
+        
+        increase_regions = []
+        decrease_regions = []
+        nationwide = 0.0
+        
+        for i, row in df.iterrows():
+            try:
+                region = str(row[0]).strip() if pd.notna(row[0]) else ''
+                division = str(row[1]).strip() if pd.notna(row[1]) else ''
+                
+                # 총지수 행 (division == '0')
+                if division == '0':
+                    # 2025 2/4분기 지수 (열 24)와 2024 2/4분기 지수 (열 20)
+                    curr_val = float(row[24]) if pd.notna(row[24]) else 0
+                    prev_val = float(row[20]) if pd.notna(row[20]) else 0
+                    
+                    # 전년동분기 대비 증감률 계산
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        change = 0.0
+                    
+                    if region == '전국':
+                        nationwide = change
+                    elif region in regions:
+                        if change >= 0:
+                            increase_regions.append({'name': region, 'value': change})
+                        else:
+                            decrease_regions.append({'name': region, 'value': change})
+            except Exception as e:
+                continue
+        
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': round(nationwide, 1),
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_count': len(increase_regions),
+            'below_count': len(decrease_regions)
+        }
+    except Exception as e:
+        print(f"물가 집계 데이터 추출 오류: {e}")
         import traceback
         traceback.print_exc()
         return _get_default_sector_summary()
@@ -378,11 +442,21 @@ def get_employment_population_data(excel_path, year, quarter):
             regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
             
+            # 시트 구조: col1=지역이름, col2=분류(유입/유출/순인구이동), col24=2025 2/4분기
+            # 순인구이동 수 행만 추출
+            processed_regions = set()
+            
             for i, row in df.iterrows():
-                region = str(row[2]).strip() if not pd.isna(row[2]) else ''
-                if region in regions:
+                region = str(row[1]).strip() if pd.notna(row[1]) else ''
+                category = str(row[2]).strip() if pd.notna(row[2]) else ''
+                
+                # 순인구이동 수 행만 처리, 중복 지역 방지
+                if '순인구이동' in category and region in regions and region not in processed_regions:
                     try:
-                        value = int(float(row[19])) if not pd.isna(row[19]) else 0
+                        # 2025 2/4분기 데이터 (열 24)
+                        value = int(float(row[24])) if pd.notna(row[24]) else 0
+                        processed_regions.add(region)
+                        
                         if value > 0:
                             population['inflow_regions'].append({'name': region, 'value': value})
                         else:
@@ -396,6 +470,8 @@ def get_employment_population_data(excel_path, year, quarter):
             population['outflow_count'] = len(population['outflow_regions'])
         except Exception as e:
             print(f"인구이동 데이터 오류: {e}")
+            import traceback
+            traceback.print_exc()
         
         return {
             'employment': employment,

@@ -24,137 +24,118 @@ except ImportError:
 class StatisticsTableGenerator:
     """통계표 생성 클래스"""
     
-    # 통계표 항목 정의 (시트별 컬럼 매핑 포함)
+    # 통계표 항목 정의 (집계 시트 기준, 전년동기비 계산 필요)
     TABLE_CONFIG = {
         "광공업생산지수": {
-            "분석_시트": "A 분석",
+            "집계_시트": "A(광공업생산)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 6, "값": "BCD"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 9, "2022": 10, "2023": 11, "2024": 12},
-            "분기_컬럼": {
-                "2023_2Q": 13, "2023_3Q": 14, "2023_4Q": 15,
-                "2024_1Q": 16, "2024_2Q": 17, "2024_3Q": 18, "2024_4Q": 19,
-                "2025_1Q": 20, "2025_2Q": 21
-            }
+            "총지수_식별": {"컬럼": 4, "값": "BCD"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 9, "2018": 9, "2019": 9, "2020": 9, "2021": 10, "2022": 11, "2023": 12, "2024": 13},
+            "분기_시작_컬럼": 14,  # 2022 2/4부터
+            "계산방식": "growth_rate"
         },
         "서비스업생산지수": {
-            "분석_시트": "B 분석",
+            "집계_시트": "B(서비스업생산)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 6, "값": "E~S"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 8, "2022": 9, "2023": 10, "2024": 11},
-            "분기_컬럼": {
-                "2023_2Q": 12, "2023_3Q": 13, "2023_4Q": 14,
-                "2024_1Q": 15, "2024_2Q": 16, "2024_3Q": 17, "2024_4Q": 18,
-                "2025_1Q": 19, "2025_2Q": 20
-            }
+            "총지수_식별": {"컬럼": 4, "값": "E~S"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 8, "2018": 8, "2019": 8, "2020": 8, "2021": 9, "2022": 10, "2023": 11, "2024": 12},
+            "분기_시작_컬럼": 13,
+            "계산방식": "growth_rate"
         },
         "소매판매액지수": {
-            "분석_시트": "C 분석",
+            "집계_시트": "C(소비)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 6, "값": "A0"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 8, "2022": 9, "2023": 10, "2024": 11},
-            "분기_컬럼": {
-                "2023_2Q": 12, "2023_3Q": 13, "2023_4Q": 14,
-                "2024_1Q": 15, "2024_2Q": 16, "2024_3Q": 17, "2024_4Q": 18,
-                "2025_1Q": 19, "2025_2Q": 20
-            }
+            "총지수_식별": {"컬럼": 5, "값": "A0"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
+            "분기_시작_컬럼": 12,
+            "계산방식": "growth_rate"
         },
         "건설수주액": {
-            "분석_시트": "F'분석",
+            "집계_시트": "F'(건설)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 3, "값": "0"},  # 분류단계가 0인 행
-            "지역_컬럼": 2,
-            "분류단계_컬럼": 3,
-            "연도_컬럼": {"2021": 7, "2022": 8, "2023": 9, "2024": 10},
-            "분기_컬럼": {
-                "2023_2Q": 11, "2023_3Q": 12, "2023_4Q": 13,
-                "2024_1Q": 14, "2024_2Q": 15, "2024_3Q": 16, "2024_4Q": 17,
-                "2025_1Q": 18, "2025_2Q": 19
-            }
+            "총지수_식별": {"컬럼": 2, "값": "0"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 5, "2018": 5, "2019": 5, "2020": 5, "2021": 6, "2022": 7, "2023": 8, "2024": 9},
+            "분기_시작_컬럼": 10,
+            "계산방식": "growth_rate"
         },
         "고용률": {
-            "분석_시트": "D(고용률)분석",
+            "집계_시트": "D(고용률)집계",
             "단위": "[전년동기비, %p]",
-            "총지수_식별": {"컬럼": 3, "값": "0"},
-            "지역_컬럼": 2,
-            "분류단계_컬럼": 3,
-            "연도_컬럼": {"2021": 6, "2022": 7, "2023": 8, "2024": 9},
-            "분기_컬럼": {
-                "2023_2Q": 10, "2023_3Q": 11, "2023_4Q": 12,
-                "2024_1Q": 13, "2024_2Q": 14, "2024_3Q": 15, "2024_4Q": 16,
-                "2025_1Q": 17, "2025_2Q": 18
-            }
+            "총지수_식별": {"컬럼": 3, "값": "계"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
+            "분기_시작_컬럼": 12,
+            "계산방식": "difference"  # %p 단위
         },
         "실업률": {
-            "분석_시트": "D(실업)분석",
+            "집계_시트": "D(실업)집계",
             "단위": "[전년동기비, %p]",
             "총지수_식별": {"컬럼": 1, "값": "계"},
             "지역_컬럼": 0,
-            "분류단계_컬럼": None,
-            "연도_컬럼": {"2021": 2, "2022": 3, "2023": 4, "2024": 5},
-            "분기_컬럼": {
-                "2023_2Q": 6, "2023_3Q": 7, "2023_4Q": 8,
-                "2024_1Q": 9, "2024_2Q": 10, "2024_3Q": 11, "2024_4Q": 12,
-                "2025_1Q": 13, "2025_2Q": 14
-            }
+            "분류단계_컬럼": 1,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
+            "분기_시작_컬럼": 12,
+            "계산방식": "difference_rate",
+            "지역_매핑": True  # 서울특별시->서울 등 매핑 필요
         },
         "국내인구이동": {
-            "분석_시트": "I(순인구이동)집계",
+            "집계_시트": "I(순인구이동)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 4, "값": "0"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 6, "2022": 7, "2023": 8, "2024": 9},
-            "분기_컬럼": {
-                "2023_2Q": 12, "2023_3Q": 13, "2023_4Q": 14,
-                "2024_1Q": 15, "2024_2Q": 16, "2024_3Q": 17, "2024_4Q": 18,
-                "2025_1Q": 19, "2025_2Q": 20
-            }
+            "총지수_식별": {"컬럼": 2, "값": "순인구이동 수"},  # col2가 분류
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
+            "분기_시작_컬럼": 12,
+            "계산방식": "growth_rate"
         },
         "수출액": {
-            "분석_시트": "G 분석",
+            "집계_시트": "G(수출)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 4, "값": "0"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 10, "2022": 11, "2023": 12, "2024": 13},
-            "분기_컬럼": {
-                "2023_2Q": 14, "2023_3Q": 15, "2023_4Q": 16,
-                "2024_1Q": 17, "2024_2Q": 18, "2024_3Q": 19, "2024_4Q": 20,
-                "2025_1Q": 21, "2025_2Q": 22
-            }
+            "총지수_식별": {"컬럼": 2, "값": "0"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 9, "2018": 9, "2019": 9, "2020": 9, "2021": 10, "2022": 11, "2023": 12, "2024": 13},
+            "분기_시작_컬럼": 14,
+            "계산방식": "growth_rate"
         },
         "수입액": {
-            "분석_시트": "H 분석",
+            "집계_시트": "H(수입)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 4, "값": "0"},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 10, "2022": 11, "2023": 12, "2024": 13},
-            "분기_컬럼": {
-                "2023_2Q": 14, "2023_3Q": 15, "2023_4Q": 16,
-                "2024_1Q": 17, "2024_2Q": 18, "2024_3Q": 19, "2024_4Q": 20,
-                "2025_1Q": 21, "2025_2Q": 22
-            }
+            "총지수_식별": {"컬럼": 2, "값": "0"},
+            "지역_컬럼": 1,
+            "분류단계_컬럼": 2,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 9, "2018": 9, "2019": 9, "2020": 9, "2021": 10, "2022": 11, "2023": 12, "2024": 13},
+            "분기_시작_컬럼": 14,
+            "계산방식": "growth_rate"
         },
         "소비자물가지수": {
-            "분석_시트": "E(지출목적물가) 분석",
+            "집계_시트": "E(품목성질물가)집계",
             "단위": "[전년동기비, %]",
-            "총지수_식별": {"컬럼": 4, "값": 0},
-            "지역_컬럼": 3,
-            "분류단계_컬럼": 4,
-            "연도_컬럼": {"2021": 9, "2022": 10, "2023": 11, "2024": 12},
-            "분기_컬럼": {
-                "2023_2Q": 13, "2023_3Q": 14, "2023_4Q": 15,
-                "2024_1Q": 16, "2024_2Q": 17, "2024_3Q": 18, "2024_4Q": 19,
-                "2025_1Q": 20, "2025_2Q": 21
-            }
+            "총지수_식별": {"컬럼": 1, "값": 0},
+            "지역_컬럼": 0,
+            "분류단계_컬럼": 1,
+            "데이터_시작_행": 3,
+            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
+            "분기_시작_컬럼": 12,
+            "계산방식": "growth_rate"
         }
     }
     
@@ -315,15 +296,47 @@ class StatisticsTableGenerator:
             'quarterly': quarterly_formatted
         }
     
+    # 지역명 매핑 (실업률 시트용)
+    REGION_NAME_MAPPING = {
+        "전국": ["전국"],
+        "서울": ["서울", "서울특별시"],
+        "부산": ["부산", "부산광역시"],
+        "대구": ["대구", "대구광역시"],
+        "인천": ["인천", "인천광역시"],
+        "광주": ["광주", "광주광역시"],
+        "대전": ["대전", "대전광역시"],
+        "울산": ["울산", "울산광역시"],
+        "세종": ["세종", "세종특별자치시"],
+        "경기": ["경기", "경기도"],
+        "강원": ["강원", "강원도", "강원특별자치도"],
+        "충북": ["충북", "충청북도"],
+        "충남": ["충남", "충청남도"],
+        "전북": ["전북", "전라북도", "전북특별자치도"],
+        "전남": ["전남", "전라남도"],
+        "경북": ["경북", "경상북도"],
+        "경남": ["경남", "경상남도"],
+        "제주": ["제주", "제주도", "제주특별자치도"]
+    }
+    
     def _get_total_row(self, df: pd.DataFrame, region: str, config: dict) -> Optional[pd.Series]:
         """특정 지역의 총지수 행 가져오기 (시트별 설정 사용)"""
         region_col = config["지역_컬럼"]
         id_col = config["총지수_식별"]["컬럼"]
         id_val = config["총지수_식별"]["값"]
+        use_region_mapping = config.get("지역_매핑", False)
         
         # 값 타입에 따라 비교
         try:
-            mask = (df[region_col] == region) & (df[id_col].astype(str) == str(id_val))
+            df_region = df[region_col].astype(str).str.strip()
+            region_clean = str(region).strip()
+            
+            # 지역명 매핑 사용 여부
+            if use_region_mapping:
+                region_variants = self.REGION_NAME_MAPPING.get(region_clean, [region_clean])
+                mask = df_region.isin(region_variants) & (df[id_col].astype(str).str.strip() == str(id_val).strip())
+            else:
+                mask = (df_region == region_clean) & (df[id_col].astype(str).str.strip() == str(id_val).strip())
+            
             result = df[mask]
             
             if not result.empty:
@@ -332,6 +345,24 @@ class StatisticsTableGenerator:
             print(f"행 검색 오류: {region} - {e}")
         
         return None
+    
+    def _calculate_yoy_growth(self, current: float, previous: float) -> Optional[float]:
+        """전년동기비 증감률 계산"""
+        if pd.isna(current) or pd.isna(previous) or previous == 0:
+            return None
+        try:
+            return ((float(current) - float(previous)) / float(previous)) * 100
+        except (ValueError, TypeError):
+            return None
+    
+    def _calculate_difference(self, current: float, previous: float) -> Optional[float]:
+        """전년동기비 차이 계산 (%p)"""
+        if pd.isna(current) or pd.isna(previous):
+            return None
+        try:
+            return float(current) - float(previous)
+        except (ValueError, TypeError):
+            return None
     
     def _format_value(self, value, decimals: int = 1) -> str:
         """값 포맷팅"""
@@ -376,7 +407,7 @@ class StatisticsTableGenerator:
         }
     
     def extract_table_data(self, table_name: str) -> Dict[str, Any]:
-        """특정 통계표의 데이터 추출"""
+        """특정 통계표의 데이터 추출 (집계 시트에서 전년동기비 계산)"""
         config = self.TABLE_CONFIG.get(table_name)
         if not config:
             raise ValueError(f"알 수 없는 통계표: {table_name}")
@@ -405,88 +436,95 @@ class StatisticsTableGenerator:
                         return data
                 except Exception as e:
                     print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
-                    # 실패 시 분석표로 fallback
+                    import traceback
+                    traceback.print_exc()
         
-        # 분석표에서 추출 (fallback)
-        df = self._load_sheet(config["분석_시트"])
+        # 집계 시트에서 추출 (fallback)
+        sheet_name = config.get("집계_시트")
+        if not sheet_name:
+            print(f"[통계표] 집계_시트 설정 없음: {table_name}")
+            return data
+            
+        df = self._load_sheet(sheet_name)
         if df is None:
-            print(f"[통계표] 시트를 찾을 수 없음: {config['분석_시트']}")
-            # 시트가 없어도 기본 구조 반환 (모든 값 '-')
+            print(f"[통계표] 시트를 찾을 수 없음: {sheet_name}")
             return data
         
-        # 분석표에 있는 연도별 데이터 추출
-        analysis_years = list(config["연도_컬럼"].keys())
+        print(f"[통계표] 집계 시트에서 추출: {table_name} (시트: {sheet_name})")
         
-        for year in data["yearly_years"]:
-            for region in self.ALL_REGIONS:
-                # 분석표에 있는 데이터
-                if year in analysis_years:
-                    row = self._get_total_row(df, region, config)
-                    if row is not None:
-                        col_idx = config["연도_컬럼"].get(year)
-                        if col_idx is not None and col_idx < len(row):
-                            value = row.iloc[col_idx]
-                            if pd.notna(value):
-                                try:
-                                    data["yearly"][year][region] = round(float(value), 1)
-                                except (ValueError, TypeError):
-                                    pass  # 기본값 '-' 유지
+        # 헤더 행에서 분기 컬럼 위치 파악
+        header_row = df.iloc[2]
+        quarter_col_map = {}
+        for col_idx, header in enumerate(header_row):
+            if pd.notna(header):
+                header_str = str(header).strip()
+                # "2022  2/4" 형식 파싱
+                match = re.match(r'(\d{4})\s+(\d)/4', header_str)
+                if match:
+                    year = match.group(1)
+                    q = match.group(2)
+                    quarter_key = f"{year}.{q}/4"
+                    quarter_col_map[quarter_key] = col_idx
+        
+        calculation_method = config.get("계산방식", "growth_rate")
+        
+        # 각 지역에 대해 데이터 추출
+        for region in self.ALL_REGIONS:
+            row = self._get_total_row(df, region, config)
+            if row is None:
+                continue
+            
+            # 연도별 데이터 (전년동기비 계산)
+            for year in data["yearly_years"]:
+                year_int = int(year)
+                prev_year = str(year_int - 1)
                 
-                # 과거 데이터 (historical_data에서)
-                elif year in self.historical_data.get(table_name, {}).get("yearly", {}):
-                    hist_value = self.historical_data[table_name]["yearly"][year].get(region)
-                    if hist_value is not None:
-                        data["yearly"][year][region] = hist_value
-        
-        # 분석표에 있는 연도별 데이터 추출
-        analysis_years = list(config["연도_컬럼"].keys())
-        
-        for year in data["yearly_years"]:
-            for region in self.ALL_REGIONS:
-                # 분석표에 있는 데이터
-                if year in analysis_years:
-                    row = self._get_total_row(df, region, config)
-                    if row is not None:
-                        col_idx = config["연도_컬럼"].get(year)
-                        if col_idx is not None and col_idx < len(row):
-                            value = row.iloc[col_idx]
-                            if pd.notna(value):
-                                try:
-                                    data["yearly"][year][region] = round(float(value), 1)
-                                except (ValueError, TypeError):
-                                    pass  # 기본값 '-' 유지
-        
-        # 분기별 데이터 추출 - 분석표에서 사용 가능한 분기만
-        quarterly_mapping = {}
-        for quarter_key in data["quarterly_keys"]:
-            # "2016.1/4" 형식을 "2016_1Q" 형식으로 변환
-            match = re.match(r'(\d{4})\.(\d)/4(p?)', quarter_key)
-            if match:
+                # 현재 연도와 전년도 컬럼 인덱스 찾기
+                curr_col = config["연도_컬럼"].get(year)
+                prev_col = config["연도_컬럼"].get(prev_year)
+                
+                if curr_col is not None and curr_col < len(row):
+                    curr_val = row.iloc[curr_col]
+                    
+                    if prev_col is not None and prev_col < len(row):
+                        prev_val = row.iloc[prev_col]
+                        
+                        if calculation_method == "difference":
+                            result = self._calculate_difference(curr_val, prev_val)
+                        else:
+                            result = self._calculate_yoy_growth(curr_val, prev_val)
+                        
+                        if result is not None:
+                            data["yearly"][year][region] = round(result, 1)
+            
+            # 분기별 데이터 (전년동기비 계산)
+            for quarter_key in data["quarterly_keys"]:
+                # "2024.2/4" -> 2024, 2 파싱
+                match = re.match(r'(\d{4})\.(\d)/4(p?)', quarter_key)
+                if not match:
+                    continue
+                
                 year = int(match.group(1))
-                quarter = int(match.group(2))
-                is_provisional = match.group(3) == 'p'
-                col_key = f"{year}_{quarter}Q"
+                q = int(match.group(2))
+                prev_year_quarter_key = f"{year - 1}.{q}/4"
                 
-                # 분석표에 해당 분기가 있는지 확인
-                if col_key in config["분기_컬럼"]:
-                    quarterly_mapping[quarter_key] = col_key
-                else:
-                    quarterly_mapping[quarter_key] = None
-        
-        for quarter_key, col_key in quarterly_mapping.items():
-            for region in self.ALL_REGIONS:
-                if col_key:
-                    # 분석표에 있는 데이터
-                    row = self._get_total_row(df, region, config)
-                    if row is not None:
-                        col_idx = config["분기_컬럼"].get(col_key)
-                        if col_idx is not None and col_idx < len(row):
-                            value = row.iloc[col_idx]
-                            if pd.notna(value):
-                                try:
-                                    data["quarterly"][quarter_key][region] = round(float(value), 1)
-                                except (ValueError, TypeError):
-                                    pass  # 기본값 '-' 유지
+                # 현재 분기와 전년동분기 컬럼 찾기
+                curr_col = quarter_col_map.get(quarter_key.rstrip('p'))
+                prev_col = quarter_col_map.get(prev_year_quarter_key)
+                
+                if curr_col is not None and curr_col < len(row):
+                    curr_val = row.iloc[curr_col]
+                    
+                    if prev_col is not None and prev_col < len(row):
+                        prev_val = row.iloc[prev_col]
+                        
+                        if calculation_method == "difference":
+                            result = self._calculate_difference(curr_val, prev_val)
+                        else:
+                            result = self._calculate_yoy_growth(curr_val, prev_val)
+                        
+                        if result is not None:
+                            data["quarterly"][quarter_key][region] = round(result, 1)
         
         # quarterly_keys 정리 (데이터가 있는 분기만 유지)
         data["quarterly_keys"] = [

@@ -320,7 +320,7 @@
         <!-- 헤더 -->
         <div class="header">
             <span class="header-badge">참고</span>
-            <span class="header-title">{{ report_info.year }}년 {{ report_info.quarter }}/4분기 실질 지역내총생산(GRDP)</span>
+            <span class="header-title">2025년 2/4분기 실질 지역내총생산(GRDP)</span>
         </div>
         
         <!-- 요약 섹션 -->
@@ -328,32 +328,27 @@
             <div class="summary-item">
                 <span class="marker square">□</span>
                 전국 GRDP는 전년동분기대비 
-                {% if national_summary.placeholder %}
-                <span class="placeholder" contenteditable="true">{{ national_summary.growth_rate }}</span>%
-                {% else %}
-                <span class="highlight">{{ "%.1f"|format(national_summary.growth_rate) }}%</span>
-                {% endif %}
-                {{ national_summary.direction }}하였으며, 산업별 기여도는 
-                서비스업({% if national_summary.placeholder %}<span class="placeholder" contenteditable="true">{{ national_summary.contributions.service }}</span>{% else %}{{ "%.1f"|format(national_summary.contributions.service) }}{% endif %}%p), 
-                광·제조업({% if national_summary.placeholder %}<span class="placeholder" contenteditable="true">{{ national_summary.contributions.manufacturing }}</span>{% else %}{{ "%.1f"|format(national_summary.contributions.manufacturing) }}{% endif %}%p), 
-                기타({% if national_summary.placeholder %}<span class="placeholder" contenteditable="true">{{ national_summary.contributions.other }}</span>{% else %}{{ "%.1f"|format(national_summary.contributions.other) }}{% endif %}%p), 
-                건설업({% if national_summary.placeholder %}<span class="placeholder" contenteditable="true">{{ national_summary.contributions.construction }}</span>{% else %}{{ "%.1f"|format(national_summary.contributions.construction) }}{% endif %}%p) 순임
+                
+                <span class="highlight">0.4%</span>
+                
+                증가하였으며, 산업별 기여도는 
+                서비스업(0.7%p), 
+                광·제조업(0.5%p), 
+                기타(-0.2%p), 
+                건설업(-0.6%p) 순임
             </div>
             <div class="summary-item">
                 <span class="marker circle">○</span>
                 17개 시도 중 
-                {% if top_region.placeholder %}
-                <span class="placeholder" contenteditable="true">{{ top_region.name }}</span>의 
-                성장률(<span class="placeholder" contenteditable="true">{{ top_region.growth_rate }}</span>%)이
-                {% else %}
-                <span class="highlight">{{ top_region.name }}</span>의 
-                성장률(<span class="highlight">{{ "%.1f"|format(top_region.growth_rate) }}%</span>)이
-                {% endif %}
+                
+                <span class="highlight">충북</span>의 
+                성장률(<span class="highlight">5.8%</span>)이
+                
                 가장 높고, 산업별 기여도는 
-                광·제조업({% if top_region.placeholder %}<span class="placeholder" contenteditable="true">{{ top_region.contributions.manufacturing }}</span>{% else %}{{ "%.1f"|format(top_region.contributions.manufacturing) }}{% endif %}%p), 
-                서비스업({% if top_region.placeholder %}<span class="placeholder" contenteditable="true">{{ top_region.contributions.service }}</span>{% else %}{{ "%.1f"|format(top_region.contributions.service) }}{% endif %}%p), 
-                기타({% if top_region.placeholder %}<span class="placeholder" contenteditable="true">{{ top_region.contributions.other }}</span>{% else %}{{ "%.1f"|format(top_region.contributions.other) }}{% endif %}%p), 
-                건설업({% if top_region.placeholder %}<span class="placeholder" contenteditable="true">{{ top_region.contributions.construction }}</span>{% else %}{{ "%.1f"|format(top_region.contributions.construction) }}{% endif %}%p) 순임
+                광·제조업(5.1%p), 
+                서비스업(0.8%p), 
+                기타(0.5%p), 
+                건설업(-0.5%p) 순임
             </div>
         </div>
         
@@ -389,15 +384,15 @@
             <div class="chart-controls">
                 <div class="control-group">
                     <label>Y축 최소:</label>
-                    <input type="number" id="yAxisMin" value="{{ chart_config.y_axis.min | default(-6) }}" step="1">
+                    <input type="number" id="yAxisMin" value="-6" step="1">
                 </div>
                 <div class="control-group">
                     <label>Y축 최대:</label>
-                    <input type="number" id="yAxisMax" value="{{ chart_config.y_axis.max | default(8) }}" step="1">
+                    <input type="number" id="yAxisMax" value="8" step="1">
                 </div>
                 <div class="control-group">
                     <label>간격:</label>
-                    <input type="number" id="yAxisStep" value="{{ chart_config.y_axis.step | default(2) }}" step="0.5">
+                    <input type="number" id="yAxisStep" value="2" step="0.5">
                 </div>
                 <div class="control-group">
                     <button onclick="updateChart()">적용</button>
@@ -432,55 +427,333 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in regional_data %}
+                    
                     <tr>
-                        {% if loop.first %}
+                        
                         <!-- 전국 (첫 번째 항목) -->
                         <td class="national" colspan="2">전 국</td>
-                        {% elif item.is_group_start %}
-                        <!-- 새 권역 그룹 시작 -->
-                        <td class="region-group" rowspan="{{ item.group_size }}">{{ item.region_group }}</td>
-                        <td class="region-name">{{ item.region }}</td>
-                        {% elif item.region_group %}
-                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
-                        <td class="region-name">{{ item.region }}</td>
-                        {% else %}
-                        <!-- region_group이 없는 경우 -->
-                        <td class="region-name" colspan="2">{{ item.region }}</td>
-                        {% endif %}
                         
-                        {% if item.placeholder %}
-                        <td><span class="placeholder" contenteditable="true">{{ item.growth_rate }}</span></td>
-                        <td><span class="placeholder" contenteditable="true">{{ item.manufacturing }}</span></td>
-                        <td><span class="placeholder" contenteditable="true">{{ item.construction }}</span></td>
-                        <td><span class="placeholder" contenteditable="true">{{ item.service }}</span></td>
-                        <td><span class="placeholder" contenteditable="true">{{ item.other }}</span></td>
-                        {% else %}
-                        <td>{{ "%.1f"|format(item.growth_rate) }}</td>
-                        <td>{{ "%.1f"|format(item.manufacturing) }}</td>
-                        <td>{{ "%.1f"|format(item.construction) }}</td>
-                        <td>{{ "%.1f"|format(item.service) }}</td>
-                        <td>{{ "%.1f"|format(item.other) }}</td>
-                        {% endif %}
+                        
+                        
+                        <td>0.4</td>
+                        <td>0.5</td>
+                        <td>-0.6</td>
+                        <td>0.7</td>
+                        <td>-0.2</td>
+                        
                     </tr>
-                    {% endfor %}
+                    
+                    <tr>
+                        
+                        <!-- 새 권역 그룹 시작 -->
+                        <td class="region-group" rowspan="3">경인</td>
+                        <td class="region-name">서울</td>
+                        
+                        
+                        
+                        <td>1.2</td>
+                        <td>-0.1</td>
+                        <td>-0.1</td>
+                        <td>1.5</td>
+                        <td>-0.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">인천</td>
+                        
+                        
+                        
+                        <td>-1.6</td>
+                        <td>-1.2</td>
+                        <td>-0.4</td>
+                        <td>0.5</td>
+                        <td>-0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">경기</td>
+                        
+                        
+                        
+                        <td>2.7</td>
+                        <td>2.6</td>
+                        <td>-0.7</td>
+                        <td>1.0</td>
+                        <td>-0.0</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 새 권역 그룹 시작 -->
+                        <td class="region-group" rowspan="4">충청</td>
+                        <td class="region-name">대전</td>
+                        
+                        
+                        
+                        <td>-0.6</td>
+                        <td>-0.4</td>
+                        <td>-0.5</td>
+                        <td>0.4</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">세종</td>
+                        
+                        
+                        
+                        <td>-0.3</td>
+                        <td>-0.0</td>
+                        <td>-1.2</td>
+                        <td>1.2</td>
+                        <td>-0.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">충북</td>
+                        
+                        
+                        
+                        <td>5.8</td>
+                        <td>5.1</td>
+                        <td>-0.5</td>
+                        <td>0.8</td>
+                        <td>0.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">충남</td>
+                        
+                        
+                        
+                        <td>-3.9</td>
+                        <td>-2.4</td>
+                        <td>-0.4</td>
+                        <td>0.3</td>
+                        <td>-1.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 새 권역 그룹 시작 -->
+                        <td class="region-group" rowspan="4">호남</td>
+                        <td class="region-name">광주</td>
+                        
+                        
+                        
+                        <td>-0.9</td>
+                        <td>0.0</td>
+                        <td>-0.7</td>
+                        <td>-0.0</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">전북</td>
+                        
+                        
+                        
+                        <td>-0.9</td>
+                        <td>0.5</td>
+                        <td>-0.8</td>
+                        <td>-0.4</td>
+                        <td>-0.1</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">전남</td>
+                        
+                        
+                        
+                        <td>-3.2</td>
+                        <td>-1.0</td>
+                        <td>-1.2</td>
+                        <td>0.1</td>
+                        <td>-0.8</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">제주</td>
+                        
+                        
+                        
+                        <td>-3.7</td>
+                        <td>-0.1</td>
+                        <td>-1.1</td>
+                        <td>-2.9</td>
+                        <td>0.5</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 새 권역 그룹 시작 -->
+                        <td class="region-group" rowspan="3">동북</td>
+                        <td class="region-name">대구</td>
+                        
+                        
+                        
+                        <td>-3.2</td>
+                        <td>-0.9</td>
+                        <td>-1.1</td>
+                        <td>-0.7</td>
+                        <td>-0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">경북</td>
+                        
+                        
+                        
+                        <td>1.9</td>
+                        <td>2.7</td>
+                        <td>-1.1</td>
+                        <td>0.1</td>
+                        <td>0.3</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">강원</td>
+                        
+                        
+                        
+                        <td>-0.5</td>
+                        <td>0.0</td>
+                        <td>-1.0</td>
+                        <td>0.3</td>
+                        <td>0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 새 권역 그룹 시작 -->
+                        <td class="region-group" rowspan="3">동남</td>
+                        <td class="region-name">부산</td>
+                        
+                        
+                        
+                        <td>0.7</td>
+                        <td>-0.7</td>
+                        <td>-0.2</td>
+                        <td>1.9</td>
+                        <td>-0.2</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">울산</td>
+                        
+                        
+                        
+                        <td>-1.0</td>
+                        <td>-0.5</td>
+                        <td>-0.3</td>
+                        <td>0.3</td>
+                        <td>-0.4</td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <!-- 같은 권역 내 지역 (rowspan 영역 내) -->
+                        <td class="region-name">경남</td>
+                        
+                        
+                        
+                        <td>-2.2</td>
+                        <td>-0.4</td>
+                        <td>-0.6</td>
+                        <td>-0.5</td>
+                        <td>-0.6</td>
+                        
+                    </tr>
+                    
                 </tbody>
             </table>
         </div>
         
         <!-- 페이지 번호 -->
-        {% if report_info.page_number %}
-        <div class="page-number">- {{ report_info.page_number }} -</div>
-        {% endif %}
+        
+        <div class="page-number">- 20 -</div>
+        
     </div>
     
     <script>
         // 차트 데이터
         const chartData = {
             labels: [
-                {% for item in regional_data %}
-                '{{ item.region }}'{% if not loop.last %},{% endif %}
-                {% endfor %}
+                
+                '전국',
+                
+                '서울',
+                
+                '인천',
+                
+                '경기',
+                
+                '대전',
+                
+                '세종',
+                
+                '충북',
+                
+                '충남',
+                
+                '광주',
+                
+                '전북',
+                
+                '전남',
+                
+                '제주',
+                
+                '대구',
+                
+                '경북',
+                
+                '강원',
+                
+                '부산',
+                
+                '울산',
+                
+                '경남'
+                
             ],
             groupLabels: ['전국', '경인', '충청', '호남', '동북', '동남'],
             regionGroups: {
@@ -491,11 +764,11 @@
                 '동북': ['대구', '경북', '강원'],
                 '동남': ['부산', '울산', '경남']
             },
-            manufacturing: [{% for item in regional_data %}{{ item.manufacturing }}{% if not loop.last %},{% endif %}{% endfor %}],
-            construction: [{% for item in regional_data %}{{ item.construction }}{% if not loop.last %},{% endif %}{% endfor %}],
-            service: [{% for item in regional_data %}{{ item.service }}{% if not loop.last %},{% endif %}{% endfor %}],
-            other: [{% for item in regional_data %}{{ item.other }}{% if not loop.last %},{% endif %}{% endfor %}],
-            growthRate: [{% for item in regional_data %}{{ item.growth_rate }}{% if not loop.last %},{% endif %}{% endfor %}]
+            manufacturing: [0.5,-0.1,-1.2,2.6,-0.4,-0.0,5.1,-2.4,0.0,0.5,-1.0,-0.1,-0.9,2.7,0.0,-0.7,-0.5,-0.4],
+            construction: [-0.6,-0.1,-0.4,-0.7,-0.5,-1.2,-0.5,-0.4,-0.7,-0.8,-1.2,-1.1,-1.1,-1.1,-1.0,-0.2,-0.3,-0.6],
+            service: [0.7,1.5,0.5,1.0,0.4,1.2,0.8,0.3,-0.0,-0.4,0.1,-2.9,-0.7,0.1,0.3,1.9,0.3,-0.5],
+            other: [-0.2,-0.1,-0.4,-0.0,-0.2,-0.1,0.5,-1.2,-0.2,-0.1,-0.8,0.5,-0.4,0.3,0.4,-0.2,-0.4,-0.6],
+            growthRate: [0.4,1.2,-1.6,2.7,-0.6,-0.3,5.8,-3.9,-0.9,-0.9,-3.2,-3.7,-3.2,1.9,-0.5,0.7,-1.0,-2.2]
         };
         
         let chart;
@@ -548,8 +821,8 @@
                             backgroundColor: '#c55a11',
                             pointBackgroundColor: '#c55a11',
                             pointBorderColor: '#c55a11',
-                            pointRadius: 0,
-                            pointHoverRadius: 0,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
                             borderWidth: 0,
                             fill: false,
                             showLine: false,
@@ -644,4 +917,3 @@
     </script>
 </body>
 </html>
-
