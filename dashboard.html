@@ -2951,26 +2951,32 @@
             isEditMode = true;
             currentEditingReport = reportInfo;
             
-            // 현재 iframe의 HTML 가져오기
-            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
-            const bodyContent = iframeDoc.body.innerHTML;
-            const headContent = iframeDoc.head.innerHTML;
-            
             // 원본 저장
             originalHtmlBeforeEdit = state.cachedHtml[reportInfo.type][reportInfo.report.id];
             
-            // 편집 가능하게 만들기
-            const editableHtml = makeEditable(bodyContent);
+            // iframe 내에서 직접 편집 모드 활성화 (스타일 유지)
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
             
-            // 스타일 포함한 전체 HTML 구성
-            elements.editContent.innerHTML = `
-                <style>${extractStyles(headContent)}</style>
-                ${editableHtml}
+            // body를 편집 가능하게 설정
+            iframeDoc.body.contentEditable = 'true';
+            iframeDoc.body.style.cursor = 'text';
+            
+            // 편집 가능한 요소에 하이라이트 스타일 추가
+            const editStyle = iframeDoc.createElement('style');
+            editStyle.id = 'edit-mode-style';
+            editStyle.textContent = `
+                [contenteditable="true"]:focus {
+                    outline: 2px solid #007bff;
+                    outline-offset: 2px;
+                }
+                body {
+                    cursor: text !important;
+                }
+                td, th, p, span, div, h1, h2, h3, h4, h5, h6, li {
+                    min-height: 1em;
+                }
             `;
-            
-            // UI 전환
-            elements.previewIframe.style.display = 'none';
-            elements.editContainer.style.display = 'flex';
+            iframeDoc.head.appendChild(editStyle);
             
             // 버튼 상태 변경
             elements.editBtn.style.display = 'none';
@@ -3031,31 +3037,19 @@
                 return;
             }
 
-            // 편집된 내용 추출 (contenteditable 속성 제거)
-            const editedContent = elements.editContent.cloneNode(true);
-            editedContent.querySelectorAll('[contenteditable]').forEach(el => {
-                el.removeAttribute('contenteditable');
-            });
+            // iframe에서 직접 편집된 내용 추출
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
             
-            // style 태그 분리
-            const styleTag = editedContent.querySelector('style');
-            const styleContent = styleTag ? styleTag.outerHTML : '';
-            if (styleTag) styleTag.remove();
+            // 편집 모드 스타일 제거
+            const editStyle = iframeDoc.getElementById('edit-mode-style');
+            if (editStyle) editStyle.remove();
             
-            // 새 HTML 생성
-            const newHtml = `
-                <!DOCTYPE html>
-                <html lang="ko">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    ${styleContent}
-                </head>
-                <body>
-                    ${editedContent.innerHTML}
-                </body>
-                </html>
-            `;
+            // contentEditable 비활성화
+            iframeDoc.body.contentEditable = 'false';
+            iframeDoc.body.style.cursor = '';
+            
+            // 현재 상태의 전체 HTML 저장
+            const newHtml = `<!DOCTYPE html>\n<html lang="ko">\n${iframeDoc.documentElement.innerHTML}\n</html>`;
             
             // 캐시 업데이트
             const { type, report } = currentEditingReport;
@@ -3068,9 +3062,6 @@
             // 편집 모드 종료
             exitEditMode();
             
-            // iframe에 변경된 내용 표시
-            elements.previewIframe.srcdoc = newHtml;
-            
             // 수정됨 표시
             markReportAsEdited(type, report.id);
             
@@ -3078,19 +3069,23 @@
         }
 
         function cancelEditMode() {
-            if (originalHtmlBeforeEdit && currentEditingReport) {
-                // 원본 복원
-                const { type, report } = currentEditingReport;
-                state.cachedHtml[type][report.id] = originalHtmlBeforeEdit;
-            }
+            // iframe에서 편집 모드 해제
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
             
-            exitEditMode();
+            // 편집 모드 스타일 제거
+            const editStyle = iframeDoc.getElementById('edit-mode-style');
+            if (editStyle) editStyle.remove();
             
-            // iframe 다시 표시
-            if (currentEditingReport) {
+            // contentEditable 비활성화
+            iframeDoc.body.contentEditable = 'false';
+            iframeDoc.body.style.cursor = '';
+            
+            // 원본 HTML로 복원
+            if (originalHtmlBeforeEdit) {
                 elements.previewIframe.srcdoc = originalHtmlBeforeEdit;
             }
             
+            exitEditMode();
             showToast('편집이 취소되었습니다.', 'info');
         }
 
@@ -3098,10 +3093,6 @@
             isEditMode = false;
             originalHtmlBeforeEdit = null;
             currentEditingReport = null;
-            
-            // UI 복원
-            elements.editContainer.style.display = 'none';
-            elements.previewIframe.style.display = 'block';
             
             // 버튼 상태 복원
             elements.editBtn.style.display = 'inline-flex';
