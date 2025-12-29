@@ -43,6 +43,10 @@ def _extract_sector_summary(xl, sheet_name):
         if sheet_name == 'E(품목성질물가)분석':
             return _extract_price_summary_from_aggregate(xl, regions)
         
+        # 고용률 데이터는 집계 시트에서 증감 계산
+        if sheet_name == 'D(고용률)분석':
+            return _extract_employment_summary_from_aggregate(xl, regions)
+        
         df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
         
         sheet_config = {
@@ -170,6 +174,64 @@ def _extract_price_summary_from_aggregate(xl, regions):
         }
     except Exception as e:
         print(f"물가 집계 데이터 추출 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return _get_default_sector_summary()
+
+
+def _extract_employment_summary_from_aggregate(xl, regions):
+    """D(고용률)집계 시트에서 고용률 증감 추출"""
+    try:
+        df = pd.read_excel(xl, sheet_name='D(고용률)집계', header=None)
+        
+        # 열 구조: 0=지역코드, 1=지역이름, 2=분류단계, 3=산업이름
+        # 열 24=2025 2/4분기 고용률, 열 20=2024 2/4분기 고용률
+        
+        increase_regions = []
+        decrease_regions = []
+        nationwide = 0.0
+        
+        for i, row in df.iterrows():
+            try:
+                region = str(row[1]).strip() if pd.notna(row[1]) else ''
+                division = str(row[2]).strip() if pd.notna(row[2]) else ''
+                industry = str(row[3]).strip() if pd.notna(row[3]) else ''
+                
+                # 총계 행 (division == '0' 또는 industry == '계')
+                if division == '0' or industry == '계':
+                    # 2025 2/4분기 고용률 (열 24)와 2024 2/4분기 고용률 (열 20)
+                    curr_val = float(row[24]) if pd.notna(row[24]) else 0
+                    prev_val = float(row[20]) if pd.notna(row[20]) else 0
+                    
+                    # 전년동분기 대비 증감 (고용률은 %p 단위)
+                    change = round(curr_val - prev_val, 1)
+                    
+                    if region == '전국':
+                        nationwide = change
+                    elif region in regions:
+                        if change >= 0:
+                            increase_regions.append({'name': region, 'value': change})
+                        else:
+                            decrease_regions.append({'name': region, 'value': change})
+            except Exception as e:
+                continue
+        
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': round(nationwide, 1),
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_count': len(increase_regions),
+            'below_count': len(decrease_regions)
+        }
+    except Exception as e:
+        print(f"고용률 집계 데이터 추출 오류: {e}")
         import traceback
         traceback.print_exc()
         return _get_default_sector_summary()
