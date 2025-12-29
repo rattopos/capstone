@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 생산</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         
@@ -105,95 +107,10 @@
             margin-bottom: 10px;
         }
         
-        .chart-wrapper {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 3px;
-            height: 200px;
-            padding: 10px;
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .chart-bar-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 35px;
-        }
-        
-        .chart-bar-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 160px;
-            justify-content: flex-end;
+        .chart-canvas-wrapper {
             position: relative;
-        }
-        
-        .chart-bar {
-            width: 25px;
-            background: #90caf9;
-            border-radius: 2px 2px 0 0;
-        }
-        
-        .chart-value-index {
-            font-size: 7pt;
-            color: #333;
-            margin-bottom: 2px;
-        }
-        
-        .chart-value-rate {
-            position: absolute;
-            font-size: 7pt;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        
-        .chart-value-rate.positive {
-            color: #e65100;
-            top: -15px;
-        }
-        
-        .chart-value-rate.negative {
-            color: #1565c0;
-        }
-        
-        .chart-label {
-            font-size: 7pt;
-            text-align: center;
-            margin-top: 5px;
-            writing-mode: horizontal-tb;
-        }
-        
-        .chart-region-group {
-            font-size: 7pt;
-            color: #666;
-            text-align: center;
-            border-top: 1px solid #ccc;
-            padding-top: 2px;
-        }
-        
-        /* Y축 */
-        .chart-y-axis {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 160px;
-            padding-right: 5px;
-            font-size: 7pt;
-            color: #666;
-        }
-        
-        .chart-y-axis-right {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 160px;
-            padding-left: 5px;
-            font-size: 7pt;
-            color: #e65100;
+            height: 280px;
+            width: 100%;
         }
         
         /* 구분선 */
@@ -241,41 +158,8 @@
         <!-- 광공업생산 차트 -->
         <div class="chart-container">
             <div class="chart-title">&lt;광공업생산지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-wrapper">
-                <div class="chart-y-axis">
-                    <span>160</span>
-                    <span>140</span>
-                    <span>120</span>
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                </div>
-                {% for region in mining_production.chart_data %}
-                <div class="chart-bar-group">
-                    <div class="chart-bar-container">
-                        <span class="chart-value-index">{{ "%.1f"|format(region.index) }}</span>
-                        <div class="chart-bar" style="height: {{ (region.index / 160 * 100)|int }}%;"></div>
-                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
-                            {{ "%.1f"|format(region.change) }}
-                        </span>
-                    </div>
-                    <div class="chart-label">{{ region.name }}</div>
-                    {% if region.group %}
-                    <div class="chart-region-group">{{ region.group }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                <div class="chart-y-axis-right">
-                    <span>30</span>
-                    <span>20</span>
-                    <span>10</span>
-                    <span>0</span>
-                    <span>-10</span>
-                    <span>-20</span>
-                </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="miningChart"></canvas>
             </div>
         </div>
         
@@ -299,45 +183,130 @@
         <!-- 서비스업생산 차트 -->
         <div class="chart-container">
             <div class="chart-title">&lt;서비스업생산지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-wrapper">
-                <div class="chart-y-axis">
-                    <span>140</span>
-                    <span>120</span>
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                </div>
-                {% for region in service_production.chart_data %}
-                <div class="chart-bar-group">
-                    <div class="chart-bar-container">
-                        <span class="chart-value-index">{{ "%.1f"|format(region.index) }}</span>
-                        <div class="chart-bar" style="height: {{ (region.index / 140 * 100)|int }}%;"></div>
-                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
-                            {{ "%.1f"|format(region.change) }}
-                        </span>
-                    </div>
-                    <div class="chart-label">{{ region.name }}</div>
-                    {% if region.group %}
-                    <div class="chart-region-group">{{ region.group }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                <div class="chart-y-axis-right">
-                    <span>15</span>
-                    <span>10</span>
-                    <span>5</span>
-                    <span>0</span>
-                    <span>-5</span>
-                    <span>-10</span>
-                </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="serviceChart"></canvas>
             </div>
         </div>
         
         <div class="page-number">- {{ page_number }} -</div>
     </div>
+    
+    <script>
+        // 공통 차트 생성 함수
+        function createProductionChart(canvasId, chartData, maxIndex, minChange, maxChange) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            const labels = chartData.map(d => d.name);
+            const indexData = chartData.map(d => d.index);
+            const changeData = chartData.map(d => d.change);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: '지수',
+                            data: indexData,
+                            backgroundColor: '#90caf9',
+                            borderColor: '#64b5f6',
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                            order: 2,
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: -2,
+                                font: { size: 8 },
+                                color: '#333',
+                                formatter: (value) => value.toFixed(1)
+                            }
+                        },
+                        {
+                            type: 'line',
+                            label: '증감률',
+                            data: changeData,
+                            borderColor: '#e65100',
+                            backgroundColor: '#e65100',
+                            pointBackgroundColor: '#e65100',
+                            pointBorderColor: '#fff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1',
+                            order: 1,
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 2,
+                                font: { size: 8, weight: 'bold' },
+                                color: '#e65100',
+                                formatter: (value) => value.toFixed(1)
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: true }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9 } }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 0,
+                            max: maxIndex,
+                            ticks: { 
+                                font: { size: 9 },
+                                stepSize: 20
+                            },
+                            grid: { color: '#e0e0e0' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            min: minChange,
+                            max: maxChange,
+                            ticks: { 
+                                font: { size: 9 },
+                                color: '#e65100',
+                                callback: (value) => value
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+        
+        // 차트 데이터
+        const miningData = [
+            {% for region in mining_production.chart_data %}
+            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        const serviceData = [
+            {% for region in service_production.chart_data %}
+            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // 차트 생성
+        document.addEventListener('DOMContentLoaded', function() {
+            createProductionChart('miningChart', miningData, 160, -20, 30);
+            createProductionChart('serviceChart', serviceData, 140, -10, 15);
+        });
+    </script>
 </body>
 </html>
-

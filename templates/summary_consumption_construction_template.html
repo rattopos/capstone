@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 소비/건설</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         
@@ -28,7 +30,6 @@
             padding: 30px 40px;
         }
         
-        /* 섹션 헤더 */
         .section-header {
             background: linear-gradient(90deg, #4a4a4a 0%, #6a6a6a 100%);
             color: #fff;
@@ -48,7 +49,6 @@
             margin-top: 3px;
         }
         
-        /* 요약 박스 */
         .summary-box {
             margin-bottom: 25px;
         }
@@ -80,157 +80,28 @@
             left: 0;
         }
         
-        .highlight {
-            font-weight: 700;
-        }
+        .highlight { font-weight: 700; }
+        .increase { font-weight: 700; color: #c62828; }
+        .decrease { font-weight: 700; color: #1565c0; }
         
-        .increase {
-            font-weight: 700;
-            color: #c62828;
-        }
+        .chart-container { margin: 20px 0; }
+        .chart-title { text-align: center; font-size: 10pt; margin-bottom: 10px; }
+        .chart-canvas-wrapper { position: relative; height: 280px; width: 100%; }
         
-        .decrease {
-            font-weight: 700;
-            color: #1565c0;
-        }
-        
-        /* 차트 컨테이너 */
-        .chart-container {
-            margin: 20px 0;
-        }
-        
-        .chart-title {
-            text-align: center;
-            font-size: 10pt;
-            margin-bottom: 10px;
-        }
-        
-        .chart-wrapper {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 3px;
-            height: 200px;
-            padding: 10px;
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .chart-bar-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 35px;
-        }
-        
-        .chart-bar-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 160px;
-            justify-content: flex-end;
-            position: relative;
-        }
-        
-        .chart-bar {
-            width: 25px;
-            background: #90caf9;
-            border-radius: 2px 2px 0 0;
-        }
-        
-        .chart-value-index {
-            font-size: 7pt;
-            color: #333;
-            margin-bottom: 2px;
-        }
-        
-        .chart-value-rate {
-            position: absolute;
-            font-size: 7pt;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        
-        .chart-value-rate.positive {
-            color: #e65100;
-            top: -15px;
-        }
-        
-        .chart-value-rate.negative {
-            color: #1565c0;
-        }
-        
-        .chart-label {
-            font-size: 7pt;
-            text-align: center;
-            margin-top: 5px;
-            writing-mode: horizontal-tb;
-        }
-        
-        .chart-region-group {
-            font-size: 7pt;
-            color: #666;
-            text-align: center;
-            border-top: 1px solid #ccc;
-            padding-top: 2px;
-        }
-        
-        /* Y축 */
-        .chart-y-axis {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 160px;
-            padding-right: 5px;
-            font-size: 7pt;
-            color: #666;
-        }
-        
-        .chart-y-axis-right {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 160px;
-            padding-left: 5px;
-            font-size: 7pt;
-            color: #e65100;
-        }
-        
-        /* 구분선 */
-        .section-divider {
-            border: none;
-            border-top: 1px solid #ccc;
-            margin: 30px 0;
-        }
-        
-        /* 주석 */
-        .footnote {
-            font-size: 9pt;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        /* 페이지 번호 */
-        .page-number {
-            text-align: center;
-            font-size: 10pt;
-            margin-top: 20px;
-        }
+        .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
+        .footnote { font-size: 9pt; color: #666; margin-top: 5px; }
+        .page-number { text-align: center; font-size: 10pt; margin-top: 20px; }
         
         @media print {
-            .summary-container {
-                width: 210mm;
-                height: 297mm;
-            }
+            .summary-container { width: 210mm; height: 297mm; }
         }
     </style>
 </head>
 <body>
     <div class="summary-container">
-        <!-- 소비 섹션 헤더 -->
+        <!-- 소비 섹션 -->
         <div class="section-header">소비</div>
         
-        <!-- 소매판매 -->
         <div class="summary-box">
             <div class="summary-main">
                 {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는 전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change) }}% {% if retail_sales.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
@@ -245,52 +116,19 @@
             </div>
         </div>
         
-        <!-- 소매판매 차트 -->
         <div class="chart-container">
             <div class="chart-title">&lt;소매판매액지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-wrapper">
-                <div class="chart-y-axis">
-                    <span>120</span>
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                </div>
-                {% for region in retail_sales.chart_data %}
-                <div class="chart-bar-group">
-                    <div class="chart-bar-container">
-                        <span class="chart-value-index">{{ "%.1f"|format(region.index) }}</span>
-                        <div class="chart-bar" style="height: {{ (region.index / 120 * 100)|int }}%;"></div>
-                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
-                            {{ "%.1f"|format(region.change) }}
-                        </span>
-                    </div>
-                    <div class="chart-label">{{ region.name }}</div>
-                    {% if region.group %}
-                    <div class="chart-region-group">{{ region.group }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                <div class="chart-y-axis-right">
-                    <span>15</span>
-                    <span>10</span>
-                    <span>5</span>
-                    <span>0</span>
-                    <span>-5</span>
-                    <span>-10</span>
-                </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="retailChart"></canvas>
             </div>
             <div class="footnote">* 전국은 무점포소매 포함, 시도는 무점포소매 제외</div>
         </div>
         
         <hr class="section-divider">
         
-        <!-- 건설 섹션 헤더 -->
+        <!-- 건설 섹션 -->
         <div class="section-header">건설</div>
         
-        <!-- 건설수주 -->
         <div class="summary-box">
             <div class="summary-main">
                 {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 건설수주</span>({{ construction.nationwide.amount }}조원)는 전년동분기대비 <span class="{% if construction.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(construction.nationwide.change) }}% {% if construction.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
@@ -305,40 +143,122 @@
             </div>
         </div>
         
-        <!-- 건설수주 차트 -->
         <div class="chart-container">
             <div class="chart-title">&lt;건설수주액(백억원) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-wrapper">
-                <div class="chart-y-axis">
-                    <span>3,000</span>
-                    <span>1,500</span>
-                    <span>0</span>
-                </div>
-                {% for region in construction.chart_data %}
-                <div class="chart-bar-group">
-                    <div class="chart-bar-container">
-                        <span class="chart-value-index">{{ region.amount }}</span>
-                        <div class="chart-bar" style="height: {{ (region.amount_normalized / 100 * 100)|int }}%;"></div>
-                        <span class="chart-value-rate {% if region.change >= 0 %}positive{% else %}negative{% endif %}" style="{% if region.change >= 0 %}top: -15px;{% else %}bottom: -15px;{% endif %}">
-                            {{ "%.1f"|format(region.change) }}
-                        </span>
-                    </div>
-                    <div class="chart-label">{{ region.name }}</div>
-                    {% if region.group %}
-                    <div class="chart-region-group">{{ region.group }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                <div class="chart-y-axis-right">
-                    <span>400</span>
-                    <span>200</span>
-                    <span>0</span>
-                </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="constructionChart"></canvas>
             </div>
         </div>
         
         <div class="page-number">- {{ page_number }} -</div>
     </div>
+    
+    <script>
+        function createComboChart(canvasId, chartData, maxY, minChange, maxChange, isAmount) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            const labels = chartData.map(d => d.name);
+            const values = chartData.map(d => isAmount ? d.amount : d.index);
+            const changeData = chartData.map(d => d.change);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: isAmount ? '금액' : '지수',
+                            data: values,
+                            backgroundColor: '#90caf9',
+                            borderColor: '#64b5f6',
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                            order: 2,
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: -2,
+                                font: { size: 8 },
+                                color: '#333',
+                                formatter: (value) => isAmount ? value : value.toFixed(1)
+                            }
+                        },
+                        {
+                            type: 'line',
+                            label: '증감률',
+                            data: changeData,
+                            borderColor: '#e65100',
+                            backgroundColor: '#e65100',
+                            pointBackgroundColor: '#e65100',
+                            pointBorderColor: '#fff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1',
+                            order: 1,
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 2,
+                                font: { size: 8, weight: 'bold' },
+                                color: '#e65100',
+                                formatter: (value) => value.toFixed(1)
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: true }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9 } }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 0,
+                            max: maxY,
+                            ticks: { font: { size: 9 } },
+                            grid: { color: '#e0e0e0' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            min: minChange,
+                            max: maxChange,
+                            ticks: { font: { size: 9 }, color: '#e65100' },
+                            grid: { display: false }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+        
+        const retailData = [
+            {% for region in retail_sales.chart_data %}
+            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        const constructionData = [
+            {% for region in construction.chart_data %}
+            { name: '{{ region.name }}', amount: {{ region.amount }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            createComboChart('retailChart', retailData, 120, -10, 15, false);
+            createComboChart('constructionChart', constructionData, 3000, -100, 400, true);
+        });
+    </script>
 </body>
 </html>
-
