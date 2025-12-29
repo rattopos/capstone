@@ -810,3 +810,280 @@ def get_industry_weights():
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
 
+
+@api_bp.route('/export-hwp-ready', methods=['POST'])
+def export_hwp_ready():
+    """한글(HWP) 복붙용 HTML 문서 생성"""
+    try:
+        data = request.get_json()
+        pages = data.get('pages', [])
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 한글 복붙에 최적화된 HTML 생성
+        final_html = f'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 복붙용</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+        
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: '맑은 고딕', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            padding: 20px;
+            max-width: 210mm;
+            margin: 0 auto;
+        }}
+        
+        /* 페이지 구분선 */
+        .hwp-page {{
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 3px double #333;
+            page-break-after: always;
+        }}
+        
+        .hwp-page:last-child {{
+            border-bottom: none;
+            page-break-after: auto;
+        }}
+        
+        /* 페이지 제목 */
+        .hwp-page-title {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border-left: 4px solid #0066cc;
+        }}
+        
+        /* 페이지 번호 */
+        .hwp-page-number {{
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            margin-top: 20px;
+        }}
+        
+        /* 표 스타일 - 한글에서 잘 인식됨 */
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 9pt;
+        }}
+        
+        th, td {{
+            border: 1px solid #000;
+            padding: 5px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }}
+        
+        th {{
+            background-color: #e6e6e6;
+            font-weight: bold;
+        }}
+        
+        /* 제목 스타일 */
+        h1, h2, h3, h4, h5, h6 {{
+            margin: 15px 0 10px 0;
+            color: #1a1a1a;
+        }}
+        
+        h1 {{ font-size: 16pt; }}
+        h2 {{ font-size: 14pt; }}
+        h3 {{ font-size: 12pt; }}
+        h4 {{ font-size: 11pt; }}
+        
+        /* 목록 */
+        ul, ol {{
+            margin: 10px 0 10px 25px;
+        }}
+        
+        li {{
+            margin: 5px 0;
+        }}
+        
+        /* 강조 */
+        strong, b {{
+            font-weight: bold;
+        }}
+        
+        /* 차트 대체 안내 */
+        .chart-placeholder {{
+            border: 2px dashed #999;
+            padding: 20px;
+            text-align: center;
+            background: #fafafa;
+            color: #666;
+            margin: 15px 0;
+        }}
+        
+        /* 숨김 처리 (복붙 시 불필요한 요소) */
+        script, canvas, .chart-container canvas {{
+            display: none !important;
+        }}
+        
+        /* 복사 안내 */
+        .copy-guide {{
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #0066cc;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 11pt;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }}
+        
+        .copy-guide:hover {{
+            background: #0055aa;
+        }}
+        
+        @media print {{
+            .copy-guide {{
+                display: none;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="copy-guide" onclick="selectAll()">📋 전체 선택 (Ctrl+A) 후 복사 (Ctrl+C)</div>
+    
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 18pt; margin-bottom: 5px;">{year}년 {quarter}/4분기 지역경제동향</h1>
+        <p style="color: #666;">한글 복붙용 문서 - 복사 후 한글에 붙여넣기 하세요</p>
+    </div>
+'''
+        
+        for idx, page in enumerate(pages, 1):
+            page_html = page.get('html', '')
+            page_title = page.get('title', f'페이지 {idx}')
+            category = page.get('category', '')
+            
+            # body 내용 추출
+            body_content = page_html
+            if '<body' in page_html.lower():
+                import re
+                body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
+                if body_match:
+                    body_content = body_match.group(1)
+            
+            # 한글 복붙에 불필요한 요소 제거/변환
+            import re
+            
+            # style 태그 제거
+            body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
+            
+            # script 태그 제거
+            body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
+            
+            # canvas를 차트 플레이스홀더로 대체
+            body_content = re.sub(
+                r'<canvas[^>]*>.*?</canvas>',
+                '<div class="chart-placeholder">📊 [차트 영역 - 별도 이미지 삽입 필요]</div>',
+                body_content,
+                flags=re.DOTALL
+            )
+            
+            # 빈 canvas 태그도 처리
+            body_content = re.sub(
+                r'<canvas[^>]*/?>',
+                '<div class="chart-placeholder">📊 [차트 영역 - 별도 이미지 삽입 필요]</div>',
+                body_content
+            )
+            
+            # class 속성은 유지 (일부 스타일 적용 위해)
+            # inline style은 유지
+            
+            # 카테고리 한글명
+            category_names = {{
+                'summary': '요약',
+                'sectoral': '부문별',
+                'regional': '시도별',
+                'statistics': '통계표'
+            }}
+            category_name = category_names.get(category, '')
+            
+            final_html += f'''
+    <div class="hwp-page" data-page="{idx}">
+        <div class="hwp-page-title">[{category_name}] {page_title}</div>
+        <div class="hwp-page-content">
+{body_content}
+        </div>
+        <div class="hwp-page-number">- {idx} / {len(pages)} -</div>
+    </div>
+'''
+        
+        final_html += '''
+    <script>
+        function selectAll() {
+            // 가이드 요소 제외하고 선택
+            const guide = document.querySelector('.copy-guide');
+            guide.style.display = 'none';
+            
+            const range = document.createRange();
+            range.selectNodeContents(document.body);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            // 복사 후 가이드 다시 표시
+            setTimeout(() => {
+                guide.style.display = 'block';
+            }, 100);
+            
+            alert('전체 선택되었습니다.\\nCtrl+C로 복사 후 한글에서 Ctrl+V로 붙여넣기 하세요.');
+        }
+        
+        // Ctrl+A 시 전체 선택 함수 호출
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                selectAll();
+            }
+        });
+    </script>
+</body>
+</html>
+'''
+        
+        output_filename = f'지역경제동향_{year}년_{quarter}분기_한글복붙용.html'
+        output_path = UPLOAD_FOLDER / output_filename
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
+        return jsonify({
+            'success': True,
+            'html': final_html,
+            'filename': output_filename,
+            'view_url': f'/uploads/{output_filename}',
+            'total_pages': len(pages)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
