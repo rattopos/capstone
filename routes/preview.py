@@ -106,7 +106,7 @@ def generate_summary_preview():
             report_data['sections'] = _get_toc_sections()
         
         elif report_id == 'guide':
-            report_data.update(_get_guide_data(year, quarter))
+            report_data.update(_get_guide_data(year, quarter, contact_info_input))
         
         elif report_id == 'summary_overview':
             report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
@@ -302,8 +302,16 @@ def _get_toc_sections():
     }
 
 
-def _get_guide_data(year, quarter):
+def _get_guide_data(year, quarter, contact_info=None):
     """일러두기 데이터"""
+    # 관세청 담당자 정보 (contact_info에서 가져오거나 기본값 사용)
+    customs_dept = '관세청 정보데이터기획담당관'
+    customs_phone = '042-481-7845'
+    
+    if contact_info:
+        customs_dept = contact_info.get('customs_department', customs_dept)
+        customs_phone = contact_info.get('customs_phone', customs_phone)
+    
     return {
         'intro': {
             'background': '지역경제동향은 시·도별 경제 현황을 생산, 소비, 건설, 수출입, 물가, 고용, 인구 등의 주요 경제지표를 통하여 분석한 자료입니다.',
@@ -327,7 +335,7 @@ def _get_guide_data(year, quarter):
             {'category': '생산', 'statistics_name': '서비스업생산지수', 'department': '서비스업동향과', 'phone': '042-481-2196'},
             {'category': '소비', 'statistics_name': '소매판매액지수', 'department': '서비스업동향과', 'phone': '042-481-2199'},
             {'category': '건설', 'statistics_name': '건설수주액', 'department': '건설동향과', 'phone': '042-481-2556'},
-            {'category': '수출입', 'statistics_name': '수출입액', 'department': '관세청', 'phone': '-'},
+            {'category': '수출입', 'statistics_name': '수출입액', 'department': customs_dept, 'phone': customs_phone},
             {'category': '물가', 'statistics_name': '소비자물가지수', 'department': '물가동향과', 'phone': '042-481-2532'},
             {'category': '고용', 'statistics_name': '고용률, 실업률', 'department': '고용통계과', 'phone': '042-481-2264'},
             {'category': '인구', 'statistics_name': '국내인구이동', 'department': '인구동향과', 'phone': '042-481-2252'}
