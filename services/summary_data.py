@@ -304,19 +304,51 @@ def _get_default_sector_summary():
 
 
 def get_summary_table_data(excel_path):
-    """요약 테이블 데이터"""
+    """요약 테이블 데이터 (집계 시트에서 전년동기비 계산)"""
     try:
         xl = pd.ExcelFile(excel_path)
         all_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
+        # 집계 시트 설정 (전년동기비 계산)
+        # curr_col: 2025 2/4, prev_col: 2024 2/4
         sheet_configs = {
-            'A 분석': {'region_col': 3, 'code_col': 6, 'total_code': 'BCD', 'value_col': 21, 'key': 'mining_production'},
-            'B 분석': {'region_col': 3, 'code_col': 6, 'total_code': 'E~S', 'value_col': 20, 'key': 'service_production'},
-            'C 분석': {'region_col': 3, 'code_col': 4, 'total_code': '0', 'value_col': 20, 'key': 'retail_sales'},
-            'G 분석': {'region_col': 3, 'code_col': 4, 'total_code': '0', 'value_col': 22, 'key': 'exports'},
-            'E(품목성질물가)분석': {'region_col': 3, 'code_col': 4, 'total_code': '0', 'value_col': 20, 'key': 'price'},
-            'D(고용률)분석': {'region_col': 2, 'code_col': 3, 'total_code': '0', 'value_col': 20, 'key': 'employment'},
+            'mining_production': {
+                'sheet': 'A(광공업생산)집계',
+                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'curr_col': 26, 'prev_col': 22,  # 2025 2/4, 2024 2/4
+                'calc_type': 'growth_rate'
+            },
+            'service_production': {
+                'sheet': 'B(서비스업생산)집계',
+                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'curr_col': 25, 'prev_col': 21,
+                'calc_type': 'growth_rate'
+            },
+            'retail_sales': {
+                'sheet': 'C(소비)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,
+                'calc_type': 'growth_rate'
+            },
+            'exports': {
+                'sheet': 'G(수출)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 26, 'prev_col': 22,
+                'calc_type': 'growth_rate'
+            },
+            'price': {
+                'sheet': 'E(품목성질물가)집계',
+                'region_col': 0, 'division_col': 1, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,  # 2025 2/4, 2024 2/4
+                'calc_type': 'growth_rate'
+            },
+            'employment': {
+                'sheet': 'D(고용률)집계',
+                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'curr_col': 24, 'prev_col': 20,  # 2025 2/4, 2024 2/4
+                'calc_type': 'difference'  # 고용률은 %p
+            },
         }
         
         nationwide_data = {
@@ -328,26 +360,46 @@ def get_summary_table_data(excel_path):
                           'retail_sales': 0.0, 'exports': 0.0, 'price': 0.0, 'employment': 0.0}
                       for r in all_regions}
         
-        for sheet_name, config in sheet_configs.items():
+        for key, config in sheet_configs.items():
             try:
+                sheet_name = config['sheet']
+                if sheet_name not in xl.sheet_names:
+                    print(f"시트 없음: {sheet_name}")
+                    continue
+                    
                 df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
                 region_col = config['region_col']
-                code_col = config['code_col']
+                code_col = config.get('code_col')
+                division_col = config.get('division_col')
                 total_code = config['total_code']
-                value_col = config['value_col']
-                key = config['key']
+                curr_col = config['curr_col']
+                prev_col = config['prev_col']
+                calc_type = config['calc_type']
                 
                 for i, row in df.iterrows():
                     try:
                         region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
-                        code = str(row[code_col]).strip() if pd.notna(row[code_col]) else ''
                         
-                        if code == total_code:
-                            value = 0.0
-                            if value_col < len(row) and pd.notna(row[value_col]):
-                                try:
-                                    value = round(float(row[value_col]), 1)
-                                except (ValueError, TypeError):
+                        # 총지수 행 찾기
+                        is_total_row = False
+                        if code_col is not None:
+                            code = str(row[code_col]).strip() if pd.notna(row[code_col]) else ''
+                            is_total_row = (code == total_code)
+                        elif division_col is not None:
+                            division = str(row[division_col]).strip() if pd.notna(row[division_col]) else ''
+                            is_total_row = (division == total_code)
+                        
+                        if is_total_row:
+                            curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
+                            prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                            
+                            # 계산 방식에 따라 증감률 또는 차이 계산
+                            if calc_type == 'difference':
+                                value = round(curr_val - prev_val, 1)
+                            else:  # growth_rate
+                                if prev_val != 0:
+                                    value = round((curr_val - prev_val) / prev_val * 100, 1)
+                                else:
                                     value = 0.0
                             
                             if region == '전국':
@@ -357,7 +409,7 @@ def get_summary_table_data(excel_path):
                     except:
                         continue
             except Exception as e:
-                print(f"{sheet_name} 테이블 데이터 추출 오류: {e}")
+                print(f"{config.get('sheet', key)} 테이블 데이터 추출 오류: {e}")
                 continue
         
         region_groups = [
