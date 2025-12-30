@@ -62,7 +62,10 @@ class DataConverter:
     # 기초자료 시트에서 가중치 열 위치 (0-based index)
     RAW_WEIGHT_COL_MAPPING = {
         '광공업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
-        '서비스업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)  
+        '서비스업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
+        '소비(소매, 추가)': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
+        '지출목적별 물가': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
+        '품목성질별 물가': 2,  # 기초자료에서 가중치 열 (0-based: 열 C)
     }
     
     def __init__(self, raw_excel_path: str, template_path: str = None):

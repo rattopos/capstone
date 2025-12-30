@@ -1712,11 +1712,65 @@
                 </div>
             </div>
             
+            <!-- 소비(소매) 가중치 -->
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
+                    <span>🛒</span> 소비(소매) 가중치
+                </div>
+                <div>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <label class="missing-field-label">가중치 사용 방식</label>
+                        <select id="consumptionWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            <option value="auto">기초자료에서 자동 추출</option>
+                            <option value="empty">가중치 없음 (공란)</option>
+                            <option value="manual">수동 입력</option>
+                        </select>
+                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('consumption')">기초자료에서 불러오기</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 지출목적별 물가 가중치 -->
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
+                    <span>💰</span> 지출목적별 물가 가중치
+                </div>
+                <div>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <label class="missing-field-label">가중치 사용 방식</label>
+                        <select id="expenditurePriceWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            <option value="auto">기초자료에서 자동 추출</option>
+                            <option value="empty">가중치 없음 (공란)</option>
+                            <option value="manual">수동 입력</option>
+                        </select>
+                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('expenditure_price')">기초자료에서 불러오기</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 품목성질별 물가 가중치 -->
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
+                    <span>📊</span> 품목성질별 물가 가중치
+                </div>
+                <div>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <label class="missing-field-label">가중치 사용 방식</label>
+                        <select id="itemPriceWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            <option value="auto">기초자료에서 자동 추출</option>
+                            <option value="empty">가중치 없음 (공란)</option>
+                            <option value="manual">수동 입력</option>
+                        </select>
+                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('item_price')">기초자료에서 불러오기</button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 기타 시트 안내 -->
             <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
                 <div style="font-size: 0.85rem; color: var(--text-muted);">
                     <strong style="color: var(--text-secondary);">📋 기타 시트 (가중치 없음)</strong><br>
-                    소비, 고용률, 실업, 물가, 건설, 수출, 수입, 인구이동 등의 시트는 가중치 열이 없어 공란으로 처리됩니다.
+                    고용률, 실업, 건설, 수출, 수입, 인구이동 등의 시트는 가중치 열이 없어 공란으로 처리됩니다.
                 </div>
             </div>
             
@@ -1993,7 +2047,25 @@
                     mode: 'auto',
                     values: [],
                     rows: [],
-                    default_value: 1  // 비공개 가중치(0) 대체 기본값
+                    default_value: 1
+                },
+                consumption: {
+                    mode: 'auto',
+                    values: [],
+                    rows: [],
+                    default_value: 1
+                },
+                expenditure_price: {
+                    mode: 'auto',
+                    values: [],
+                    rows: [],
+                    default_value: 1
+                },
+                item_price: {
+                    mode: 'auto',
+                    values: [],
+                    rows: [],
+                    default_value: 1
                 }
             }
         };
@@ -2058,6 +2130,9 @@
         function initApp() {
             setupEventListeners();
             loadReportList();
+            
+            // 알림 권한 요청 (분석 완료 시 알림용)
+            requestNotificationPermission();
         }
 
         function setupEventListeners() {
@@ -2303,6 +2378,15 @@
             const serviceRows = serviceMode === 'manual' ? collectWeightRows('service') : [];
             const serviceDefaultValue = parseFloat(document.getElementById('serviceDefaultWeight').value) || 1;
             
+            // 소비(소매) 설정
+            const consumptionMode = document.getElementById('consumptionWeightMode').value;
+            
+            // 지출목적별 물가 설정
+            const expenditurePriceMode = document.getElementById('expenditurePriceWeightMode').value;
+            
+            // 품목성질별 물가 설정
+            const itemPriceMode = document.getElementById('itemPriceWeightMode').value;
+            
             state.weightSettings = {
                 mining: {
                     mode: miningMode,
@@ -2315,6 +2399,24 @@
                     rows: serviceRows,
                     values: serviceRows.filter(r => r.weight !== null).map(r => r.weight),
                     default_value: serviceDefaultValue
+                },
+                consumption: {
+                    mode: consumptionMode,
+                    rows: [],
+                    values: [],
+                    default_value: 1
+                },
+                expenditure_price: {
+                    mode: expenditurePriceMode,
+                    rows: [],
+                    values: [],
+                    default_value: 1
+                },
+                item_price: {
+                    mode: itemPriceMode,
+                    rows: [],
+                    values: [],
+                    default_value: 1
                 }
             };
             
@@ -2397,6 +2499,59 @@
             }
             
             showToast(`✅ 전체 ${state.generationStats.completed}개 보고서 생성 완료!`, 'success');
+            
+            // 시스템 알림 보내기
+            sendSystemNotification('분석 완료', `${state.generationStats.completed}개 보고서 생성이 완료되었습니다.`);
+        }
+        
+        // 시스템 알림 권한 요청 및 알림 보내기
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+        
+        function sendSystemNotification(title, body) {
+            // 브라우저 알림 API 지원 확인
+            if (!('Notification' in window)) {
+                console.log('이 브라우저는 알림을 지원하지 않습니다.');
+                return;
+            }
+            
+            // 알림 권한이 허용된 경우
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title, {
+                    body: body,
+                    icon: '📊',
+                    badge: '📊',
+                    tag: 'analysis-complete',
+                    requireInteraction: false
+                });
+                
+                // 3초 후 자동 닫기
+                setTimeout(() => notification.close(), 5000);
+                
+                // 알림 클릭 시 창 포커스
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            } 
+            // 알림 권한이 거부되지 않은 경우 권한 요청
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        sendSystemNotification(title, body);
+                    }
+                });
+            }
+            
+            // 사운드 알림 (선택적)
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAAAJofI4PKuahEEOnLY8PnLeBMAAFrQ9//tjhAAAD7l//+9cwAAAEDz//+uZgAAOPz//6dbAAAs////nVEAACP///+TRwAAHv///4s9AAAb////hDQAABn///9+LAAA');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
         }
 
         async function generateSingleReport(type, report) {
