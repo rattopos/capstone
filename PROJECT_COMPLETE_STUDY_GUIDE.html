@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보고서 자동 생성 시스템 - 종합 학습 가이드</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', -apple-system, sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            padding: 15mm 20mm;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                font-size: 9pt;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        
+        /* 표지 */
+        .cover {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 3px solid #000;
+            padding: 40px;
+            margin-bottom: 20px;
+        }
+        
+        .cover-title {
+            font-size: 28pt;
+            font-weight: 900;
+            margin-bottom: 20px;
+            border-bottom: 4px solid #000;
+            padding-bottom: 20px;
+        }
+        
+        .cover-subtitle {
+            font-size: 16pt;
+            font-weight: 500;
+            margin-bottom: 40px;
+            color: #333;
+        }
+        
+        .cover-info {
+            font-size: 12pt;
+            margin-top: 60px;
+            line-height: 2;
+        }
+        
+        /* 목차 */
+        .toc {
+            padding: 20px;
+        }
+        
+        .toc h1 {
+            font-size: 20pt;
+            border-bottom: 3px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .toc-section {
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+        
+        .toc-section-title {
+            font-size: 12pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toc-section-title::before {
+            content: "▸";
+            margin-right: 8px;
+        }
+        
+        .toc-items {
+            padding-left: 25px;
+            font-size: 10pt;
+        }
+        
+        .toc-items li {
+            margin-bottom: 4px;
+            list-style-type: none;
+        }
+        
+        .toc-items li::before {
+            content: "•";
+            margin-right: 8px;
+            color: #666;
+        }
+        
+        /* 섹션 헤더 */
+        .section-header {
+            background: #000;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 18pt;
+            font-weight: 700;
+            margin: 30px 0 20px 0;
+        }
+        
+        .section-header-gray {
+            background: #333;
+            color: #fff;
+            padding: 12px 20px;
+            font-size: 14pt;
+            font-weight: 700;
+            margin: 20px 0 15px 0;
+        }
+        
+        h2 {
+            font-size: 14pt;
+            font-weight: 700;
+            border-left: 5px solid #000;
+            padding-left: 15px;
+            margin: 25px 0 15px 0;
+        }
+        
+        h3 {
+            font-size: 12pt;
+            font-weight: 700;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #ccc;
+        }
+        
+        h4 {
+            font-size: 11pt;
+            font-weight: 700;
+            margin: 15px 0 8px 0;
+            color: #333;
+        }
+        
+        /* 테이블 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 9pt;
+        }
+        
+        th, td {
+            border: 1px solid #666;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #e0e0e0;
+            font-weight: 700;
+        }
+        
+        tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+        
+        /* 코드 블록 */
+        .code-block {
+            background: #f0f0f0;
+            border: 1px solid #999;
+            border-left: 4px solid #333;
+            padding: 12px 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 8pt;
+            margin: 10px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        
+        code {
+            background: #e8e8e8;
+            padding: 2px 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+        }
+        
+        /* 박스 */
+        .highlight-box {
+            border: 2px solid #000;
+            padding: 15px;
+            margin: 15px 0;
+            background: #f8f8f8;
+        }
+        
+        .highlight-box-title {
+            font-weight: 700;
+            font-size: 11pt;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .warning-box {
+            border: 2px solid #666;
+            border-left: 8px solid #000;
+            padding: 12px 15px;
+            margin: 15px 0;
+            background: #f5f5f5;
+        }
+        
+        .tip-box {
+            border: 1px dashed #666;
+            padding: 12px 15px;
+            margin: 15px 0;
+            background: #fafafa;
+        }
+        
+        /* 다이어그램 */
+        .diagram {
+            background: #f8f8f8;
+            border: 1px solid #999;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 8pt;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        /* 리스트 */
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin-bottom: 5px;
+        }
+        
+        /* 강조 */
+        .bold {
+            font-weight: 700;
+        }
+        
+        .underline {
+            text-decoration: underline;
+        }
+        
+        .gray-bg {
+            background: #ddd;
+            padding: 2px 5px;
+        }
+        
+        /* 2단 레이아웃 */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .column {
+            border: 1px solid #ccc;
+            padding: 15px;
+        }
+        
+        /* 플로우차트 박스 */
+        .flow-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .flow-box {
+            border: 2px solid #000;
+            padding: 10px 15px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            font-size: 20pt;
+            font-weight: bold;
+        }
+        
+        /* Q&A 스타일 */
+        .qa-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .qa-q {
+            font-weight: 700;
+            font-size: 10pt;
+            margin-bottom: 8px;
+            color: #000;
+        }
+        
+        .qa-q::before {
+            content: "Q. ";
+            font-weight: 900;
+        }
+        
+        .qa-a {
+            padding-left: 20px;
+            font-size: 9pt;
+            line-height: 1.7;
+        }
+        
+        .qa-a::before {
+            content: "A. ";
+            font-weight: 700;
+        }
+        
+        /* 타임라인 */
+        .timeline {
+            border-left: 3px solid #000;
+            margin-left: 20px;
+            padding-left: 20px;
+        }
+        
+        .timeline-item {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: "●";
+            position: absolute;
+            left: -27px;
+            font-size: 14pt;
+        }
+        
+        .timeline-date {
+            font-weight: 700;
+            font-size: 10pt;
+            color: #333;
+        }
+        
+        /* 페이지 번호 */
+        .page-number {
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        
+        /* 간격 */
+        p {
+            margin-bottom: 10px;
+        }
+        
+        blockquote {
+            border-left: 4px solid #666;
+            padding-left: 15px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== 표지 ==================== -->
+<div class="cover">
+    <div class="cover-title">지역경제동향 보고서<br>자동 생성 시스템</div>
+    <div class="cover-subtitle">종합 학습 가이드</div>
+    <div style="font-size: 14pt; color: #666;">Regional Economic Trends Report Auto-Generation System</div>
+    <div class="cover-info">
+        <strong>캡스톤 프로젝트</strong><br>
+        국가데이터처 (Ministry of Data and Statistics)<br><br>
+        개발 기간: 2025.12.11 ~ 12.30 (약 20일)<br>
+        총 커밋: 147개 | 보고서: 50개 | 템플릿: 71개
+    </div>
+</div>
+
+<!-- ==================== 목차 ==================== -->
+<div class="page-break"></div>
+<div class="toc">
+    <h1>📚 목차</h1>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 1. 프로젝트 개요</div>
+        <ul class="toc-items">
+            <li>프로젝트 배경 및 목적</li>
+            <li>핵심 기능 요약</li>
+            <li>지원하는 보고서 목록 (50개)</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 2. 시스템 아키텍처</div>
+        <ul class="toc-items">
+            <li>전체 디렉토리 구조</li>
+            <li>모듈별 역할 및 상호작용</li>
+            <li>데이터 흐름도</li>
+            <li>기술 스택</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 3. 핵심 모듈 상세</div>
+        <ul class="toc-items">
+            <li>Config 모듈 (설정 관리)</li>
+            <li>Routes 모듈 (API 엔드포인트)</li>
+            <li>Services 모듈 (비즈니스 로직)</li>
+            <li>Templates 모듈 (Generator/Schema/Template)</li>
+            <li>Utils 모듈 (유틸리티 함수)</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 4. 개발 히스토리</div>
+        <ul class="toc-items">
+            <li>Phase별 개발 과정 (8단계)</li>
+            <li>AI 페어 프로그래밍 프롬프트</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 5. 개발 지연 원인 분석</div>
+        <ul class="toc-items">
+            <li>9가지 주요 지연 원인</li>
+            <li>날짜별 커밋 분포</li>
+            <li>교훈 및 개선 방안</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">PART 6. Q&A 대비</div>
+        <ul class="toc-items">
+            <li>기술 관련 예상 질문</li>
+            <li>당황스러운 질문 대응 전략</li>
+            <li>환경 제약 설명 킬러 멘트</li>
+        </ul>
+    </div>
+    
+    <div class="toc-section">
+        <div class="toc-section-title">부록</div>
+        <ul class="toc-items">
+            <li>API 엔드포인트 목록</li>
+            <li>실행 방법</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ==================== PART 1: 프로젝트 개요 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 1. 프로젝트 개요</div>
+
+<h2>1.1 프로젝트 배경</h2>
+
+<p>국가데이터처(구 통계청)에서는 매 분기마다 <strong>지역경제동향 보고서</strong>를 발간합니다. 이 보고서는 17개 시·도별 경제 현황을 다양한 지표로 분석합니다.</p>
+
+<table>
+    <tr>
+        <th>부문</th>
+        <th>지표</th>
+    </tr>
+    <tr><td>생산</td><td>광공업생산지수, 서비스업생산지수</td></tr>
+    <tr><td>소비</td><td>소매판매액지수</td></tr>
+    <tr><td>건설</td><td>건설수주액</td></tr>
+    <tr><td>수출입</td><td>수출액, 수입액</td></tr>
+    <tr><td>물가</td><td>소비자물가지수</td></tr>
+    <tr><td>고용</td><td>고용률, 실업률</td></tr>
+    <tr><td>인구</td><td>국내인구이동</td></tr>
+</table>
+
+<h3>기존 문제점</h3>
+<ul>
+    <li><strong>시간 소요</strong>: 50+ 페이지 보고서 작성에 상당한 인력/시간 투입</li>
+    <li><strong>오류 가능성</strong>: 수작업 데이터 입력 시 휴먼 에러 발생</li>
+    <li><strong>일관성 부족</strong>: 매 분기 보고서 형식의 미세한 차이 발생</li>
+    <li><strong>비효율적 검토</strong>: 결측치/이상치 확인의 어려움</li>
+</ul>
+
+<h2>1.2 프로젝트 목적</h2>
+
+<div class="highlight-box">
+    <div class="highlight-box-title">핵심 목표</div>
+    <strong>기초자료 수집표(Excel)를 업로드하면 완성된 지역경제동향 보고서를 자동 생성하는 웹 기반 시스템 개발</strong>
+</div>
+
+<div class="flow-container">
+    <div class="flow-box">기초자료 수집표<br>(Excel)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">자동 생성 시스템<br>(Web App)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">지역경제동향 보고서<br>(HTML/PDF)</div>
+</div>
+
+<h3>달성 목표</h3>
+<table>
+    <tr><th>목표</th><th>설명</th></tr>
+    <tr><td>업무 자동화</td><td>수작업 보고서 작성 시간 90% 이상 단축</td></tr>
+    <tr><td>품질 향상</td><td>데이터 오류 및 결측치 자동 검출</td></tr>
+    <tr><td>표준화</td><td>일관된 보고서 형식 및 디자인 유지</td></tr>
+    <tr><td>접근성</td><td>웹 기반 UI로 누구나 쉽게 사용 가능</td></tr>
+    <tr><td>유연성</td><td>보고서 순서 변경, 커스텀 데이터 입력 지원</td></tr>
+</table>
+
+<h2>1.3 지원하는 보고서 (50개)</h2>
+
+<table>
+    <tr><th>카테고리</th><th>보고서 수</th><th>내용</th></tr>
+    <tr><td>요약</td><td>9개</td><td>표지, 목차, 인포그래픽, 요약 페이지들</td></tr>
+    <tr><td>부문별</td><td>10개</td><td>광공업생산, 서비스업생산, 소비, 건설, 수출, 수입, 물가, 고용률, 실업률, 인구이동</td></tr>
+    <tr><td>시도별</td><td>18개</td><td>17개 시·도 + 참고_GRDP</td></tr>
+    <tr><td>통계표</td><td>13개</td><td>목차, 10개 지표 통계표, GRDP 참고, 용어정의</td></tr>
+    <tr><td><strong>합계</strong></td><td><strong>50개</strong></td><td></td></tr>
+</table>
+
+<h2>1.4 핵심 기능</h2>
+
+<table>
+    <tr><th>기능</th><th>설명</th></tr>
+    <tr><td>📁 기초자료 업로드</td><td>드래그 앤 드롭 또는 클릭으로 기초자료 수집표 업로드</td></tr>
+    <tr><td>📅 연도/분기 선택</td><td>드롭다운 메뉴로 선택, 최신 데이터 자동 감지</td></tr>
+    <tr><td>👁️ 미리보기</td><td>각 보고서 HTML을 실시간으로 확인</td></tr>
+    <tr><td>◀️▶️ 페이지 네비게이션</td><td>이전/다음 버튼으로 보고서 간 쉬운 이동</td></tr>
+    <tr><td>⚠️ 결측치 처리</td><td>누락된 데이터를 모달창에서 직접 입력</td></tr>
+    <tr><td>✅ 검토 시스템</td><td>각 페이지 검토 완료 상태 추적</td></tr>
+    <tr><td>✨ 전체 생성</td><td>모든 페이지 검토 완료 후 일괄 생성</td></tr>
+</table>
+
+<!-- ==================== PART 2: 시스템 아키텍처 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 2. 시스템 아키텍처</div>
+
+<h2>2.1 전체 디렉토리 구조</h2>
+
+<div class="code-block">capstone/
+│
+├── 📄 app.py                      # Flask 애플리케이션 엔트리포인트
+├── 📄 dashboard.html              # 메인 대시보드 UI (프론트엔드)
+├── 📄 data_converter.py           # 기초자료 → 분석표 변환기
+├── 📄 kosis_collector.py          # KOSIS API 데이터 수집기
+├── 📄 report_generator.py         # CLI용 보고서 생성기
+├── 📄 requirements.txt            # Python 의존성 패키지 목록
+│
+├── 📁 config/                     # 설정 모듈
+│   ├── settings.py               # 경로, 시크릿 키 등 기본 설정
+│   └── reports.py                # 보고서 순서 및 정의 상수
+│
+├── 📁 routes/                     # Flask 라우트 (API 엔드포인트)
+│   ├── main.py                   # 메인 페이지 라우트
+│   ├── api.py                    # 파일 업로드, 생성 API
+│   └── preview.py                # 미리보기 생성 API
+│
+├── 📁 services/                   # 비즈니스 로직 서비스
+│   ├── report_generator.py       # 보고서 HTML 생성 핵심 로직
+│   ├── summary_data.py           # 요약 페이지 데이터 추출
+│   └── grdp_service.py           # GRDP 데이터 처리 서비스
+│
+├── 📁 utils/                      # 유틸리티 함수
+│   ├── filters.py                # Jinja2 커스텀 필터
+│   ├── excel_utils.py            # 엑셀 파일 처리 유틸
+│   └── data_utils.py             # 데이터 처리 유틸
+│
+├── 📁 templates/                  # Jinja2 템플릿 및 Generator
+│   ├── *_template.html           # HTML 템플릿 (71개)
+│   ├── *_generator.py            # 데이터 추출 모듈 (15개)
+│   └── *_schema.json             # 데이터 스키마 정의 (39개)
+│
+├── 📁 uploads/                    # 업로드된 파일 저장소
+└── 📁 correct_answer/             # 정답 이미지 (QA 비교용)</div>
+
+<h2>2.2 모듈 구조도</h2>
+
+<div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                        Flask App (app.py)                    │
+├─────────────────────────────────────────────────────────────┤
+│   routes/          │   services/         │   templates/      │
+│   ├─ main.py       │   ├─ report_gen..   │   ├─ *_generator  │
+│   ├─ api.py        │   ├─ grdp_service   │   ├─ *_template   │
+│   └─ preview.py    │   └─ summary_data   │   └─ *_schema     │
+├─────────────────────────────────────────────────────────────┤
+│   config/          │   utils/                                │
+│   ├─ reports.py    │   ├─ excel_utils.py                     │
+│   └─ settings.py   │   ├─ data_utils.py                      │
+│                    │   └─ filters.py                         │
+├─────────────────────────────────────────────────────────────┤
+│                   data_converter.py                          │
+│              (기초자료 → 분석표 변환)                          │
+└─────────────────────────────────────────────────────────────┘</div>
+
+<h2>2.3 데이터 흐름도</h2>
+
+<div class="diagram">┌──────────────────┐
+│ 기초자료 수집표   │ (사용자 업로드)
+└────────┬─────────┘
+         │ DataConverter.convert()
+         ▼
+┌──────────────────┐
+│     분석표       │ (수식 포함 엑셀)
+└────────┬─────────┘
+         │ Generator.extract_all_data()
+         ▼
+┌──────────────────┐
+│   Python Dict    │ (데이터 딕셔너리)
+└────────┬─────────┘
+         │ Template.render(**data)
+         ▼
+┌──────────────────┐
+│   HTML 보고서    │ (출력물)
+└──────────────────┘</div>
+
+<h2>2.4 기술 스택</h2>
+
+<table>
+    <tr><th>계층</th><th>기술</th><th>버전</th><th>용도</th></tr>
+    <tr><td>Frontend</td><td>HTML5, CSS3, JavaScript</td><td>-</td><td>대시보드 UI</td></tr>
+    <tr><td>Backend</td><td>Python, Flask</td><td>3.10+, 2.3+</td><td>웹 서버, API</td></tr>
+    <tr><td>Template Engine</td><td>Jinja2</td><td>3.1+</td><td>동적 HTML 생성</td></tr>
+    <tr><td>Data Processing</td><td>pandas, openpyxl, numpy</td><td>2.0+, 3.1+, 1.24+</td><td>엑셀 파싱, 데이터 처리</td></tr>
+</table>
+
+<h3>각 기술의 선택 이유</h3>
+
+<div class="highlight-box">
+    <div class="highlight-box-title">★ 환경 제약 조건</div>
+    <ul>
+        <li><strong>외부 프로그램 반입 제한</strong>: 보안상 외부 소프트웨어 설치 승인 절차 필요</li>
+        <li><strong>인터넷 접근 제한</strong>: 내부망 사용, 외부 API 호출 불가</li>
+        <li><strong>업무 환경</strong>: 윈도우 PC + 엑셀 + 한글(HWP)</li>
+    </ul>
+</div>
+
+<table>
+    <tr><th>기술</th><th>선택 이유</th></tr>
+    <tr><td>Flask</td><td>의존성 최소화, pip만으로 설치 가능, 내부망 적합</td></tr>
+    <tr><td>Jinja2</td><td>추가 빌드 도구 불필요, Python만 있으면 동작</td></tr>
+    <tr><td>pandas</td><td>엑셀 파싱 표준 라이브러리</td></tr>
+    <tr><td>JSON 파일</td><td>DB 서버 없이 운영 가능, 담당자가 직접 수정 가능</td></tr>
+</table>
+
+<!-- ==================== PART 3: 핵심 모듈 상세 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 3. 핵심 모듈 상세</div>
+
+<h2>3.1 Config 모듈</h2>
+
+<h3>config/settings.py - 시스템 설정</h3>
+<ul>
+    <li>프로젝트 경로 설정 (BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER)</li>
+    <li>Flask 기본 설정 (SECRET_KEY, MAX_CONTENT_LENGTH)</li>
+</ul>
+
+<div class="code-block">from pathlib import Path
+
+BASE_DIR = Path(__file__).parent.parent  # 프로젝트 루트
+TEMPLATES_DIR = BASE_DIR / 'templates'
+UPLOAD_FOLDER = BASE_DIR / 'uploads'
+SECRET_KEY = 'capstone_secret_key_2025'
+MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB</div>
+
+<h3>config/reports.py - 보고서 정의</h3>
+<p>50개 보고서의 메타데이터를 딕셔너리로 관리합니다.</p>
+
+<div class="code-block">SECTOR_REPORTS = [
+    {
+        'id': 'manufacturing',           # 고유 식별자
+        'name': '광공업생산',              # 화면 표시 이름
+        'sheet': 'A 분석',               # 엑셀 시트명
+        'generator': 'mining_manufacturing_generator.py',  # 데이터 추출기
+        'template': 'mining_manufacturing_template.html',  # HTML 템플릿
+        'icon': '🏭',
+        'category': 'production'
+    },
+    # ... 총 10개
+]
+
+REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS</div>
+
+<div class="tip-box">
+    <strong>💡 Config 분리의 장점</strong><br>
+    새 보고서 추가 시 <code>reports.py</code>에 딕셔너리만 추가하면 됩니다. 다른 코드 수정 불필요!
+</div>
+
+<h2>3.2 Routes 모듈</h2>
+
+<table>
+    <tr><th>파일</th><th>역할</th><th>주요 엔드포인트</th></tr>
+    <tr><td>main.py</td><td>메인 페이지</td><td><code>/</code> - 대시보드</td></tr>
+    <tr><td>api.py</td><td>파일 업로드, 생성</td><td><code>/api/upload</code>, <code>/api/generate-all</code></td></tr>
+    <tr><td>preview.py</td><td>미리보기 생성</td><td><code>/api/generate-preview</code></td></tr>
+</table>
+
+<h3>api.py 핵심 로직 - 업로드 프로세스</h3>
+<div class="code-block">1. 파일 업로드
+2. 파일 유형 감지 (기초자료 vs 분석표)
+3. 기초자료면 → DataConverter로 분석표 변환
+4. 분석표 → 보고서 생성 준비 완료</div>
+
+<h2>3.3 Services 모듈</h2>
+
+<h3>services/report_generator.py (핵심)</h3>
+<p>Generator 모듈을 동적 로드하여 데이터 추출 → 템플릿 렌더링 → HTML 생성</p>
+
+<div class="code-block">def generate_report_html(excel_path, report_config, year, quarter):
+    # 1. Generator 모듈 동적 로드
+    module = load_generator_module(report_config['generator'])
+    
+    # 2. 데이터 추출 (3가지 방식 시도)
+    if hasattr(module, 'generate_report_data'):
+        data = module.generate_report_data(excel_path)
+    elif generator_class:
+        generator = generator_class(excel_path)
+        data = generator.extract_all_data()
+    
+    # 3. 템플릿 렌더링
+    template = Template(template_content)
+    html_content = template.render(**data)
+    
+    return html_content, error, missing_fields</div>
+
+<h2>3.4 Templates 모듈</h2>
+
+<div class="two-column">
+    <div class="column">
+        <h4>*_generator.py (데이터 추출기)</h4>
+        <ul>
+            <li>엑셀 시트에서 데이터 추출</li>
+            <li>데이터 변환 및 정규화</li>
+            <li>스키마에 맞는 딕셔너리 반환</li>
+        </ul>
+    </div>
+    <div class="column">
+        <h4>*_template.html (HTML 템플릿)</h4>
+        <ul>
+            <li>Jinja2 문법으로 동적 HTML 생성</li>
+            <li>데이터 바인딩</li>
+            <li>결측치 하이라이트</li>
+        </ul>
+    </div>
+</div>
+
+<h3>Generator 예시 (광공업생산)</h3>
+<div class="code-block">class 광공업생산Generator:
+    INDUSTRY_NAME_MAP = {...}  # 업종명 매핑
+    
+    def __init__(self, excel_path):
+        self.excel_path = excel_path
+    
+    def extract_all_data(self):
+        return {
+            'nationwide_data': self.extract_nationwide_data(),
+            'regional_data': self.extract_regional_data(),
+            'summary_table': self.extract_summary_table()
+        }</div>
+
+<h3>Template 예시</h3>
+<div class="code-block">&lt;h2&gt;{{ report_info.year }}년 {{ report_info.quarter }}분기 광공업생산&lt;/h2&gt;
+
+&lt;p&gt;전국 광공업생산은 {{ nationwide_data.growth_rate | format_value }}% 
+   {% if nationwide_data.growth_rate &gt; 0 %}증가{% else %}감소{% endif %}&lt;/p&gt;
+
+{% for region in regional_data %}
+&lt;tr&gt;
+  &lt;td&gt;{{ region.name }}&lt;/td&gt;
+  &lt;td&gt;{{ region.growth_rate | format_value }}&lt;/td&gt;
+&lt;/tr&gt;
+{% endfor %}</div>
+
+<h2>3.5 Utils 모듈</h2>
+
+<h3>utils/filters.py - Jinja2 커스텀 필터</h3>
+<div class="code-block">def is_missing(value):
+    """결측치 여부 확인"""
+    if value is None or value in ['', '-', 'N/A']:
+        return True
+    return False
+
+def format_value(value, format_str="%.1f", placeholder="[  ]"):
+    """결측치면 노란 플레이스홀더 표시"""
+    if is_missing(value):
+        return '&lt;span class="editable-placeholder"&gt;[  ]&lt;/span&gt;'
+    return format_str % float(value)</div>
+
+<h2>3.6 data_converter.py (핵심)</h2>
+
+<p><strong>역할</strong>: 기초자료 수집표 → 분석표 변환</p>
+
+<div class="diagram">기초자료                    분석표
+┌─────────────┐            ┌─────────────┐
+│ 광공업생산   │ ──────────▶ │ A(광공업)집계│
+├─────────────┤            ├─────────────┤
+│ 서비스업생산 │ ──────────▶ │ B(서비스)집계│
+└─────────────┘            └─────────────┘
+                                 │
+                                 ▼ (수식 참조)
+                           ┌─────────────┐
+                           │  A 분석     │ ← 수식 유지
+                           └─────────────┘</div>
+
+<div class="warning-box">
+    <strong>핵심 포인트</strong>: 집계 시트에 데이터를 넣으면 분석 시트의 수식이 자동 계산됩니다!
+</div>
+
+<!-- ==================== PART 4: 개발 히스토리 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 4. 개발 히스토리</div>
+
+<h2>4.1 Phase별 개발 과정</h2>
+
+<div class="timeline">
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 1: 프로젝트 시작 (12/11~12)</div>
+        <p>프로젝트 기본 구조 설계, JSON 스키마 체계 수립</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 2: 알파 버전 (12/15)</div>
+        <p>엑셀 파싱 엔진, 정답 검증 시스템, 문장 생성 로직</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 3: 웹 앱 구현 (12/16~17)</div>
+        <p>Flask 대시보드, 드래그앤드롭 업로드, 의미 기반 마커 시스템</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 4: 고도화 (12/18~21)</div>
+        <p>스키마 기반 아키텍처, 가중치 기반 순위 시스템</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 5: 품질 개선 (12/22~23)</div>
+        <p>시트 매핑 변경 대응, 코드 모듈화, 실업률 템플릿</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 6: 대시보드 완성 (12/25)</div>
+        <p>4개 탭 구조, 결측치 시각화, 기초자료→분석표 변환</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 7: 코드 정리 (12/26)</div>
+        <p>템플릿 파일명 영문화, KOSIS GRDP 연동</p>
+    </div>
+    
+    <div class="timeline-item">
+        <div class="timeline-date">Phase 8: 기능 고도화 (12/27~30)</div>
+        <p>이중 프로세스 구조, 한글 복붙용 HTML, Chart.js 복합 차트</p>
+    </div>
+</div>
+
+<h2>4.2 대표 프롬프트 예시</h2>
+
+<h4>프롬프트: 의미 기반 마커 시스템</h4>
+<div class="code-block">기존에 위치 기반(행/열 번호)으로 데이터를 추출했는데,
+엑셀 구조가 변경되면 오류가 발생해.
+
+의미 기반 마커 시스템으로 전환해줘.
+예: "전국" 텍스트를 찾고, 그 오른쪽 셀에서 증감률을 읽는 방식</div>
+
+<h4>프롬프트: 한글 복붙용 HTML 내보내기</h4>
+<div class="code-block">HWPX 파일 생성이 복잡하고 호환성 문제가 있어.
+대신 한글 프로그램에 복사-붙여넣기하기 좋은 HTML을 생성해줘.
+
+요구사항:
+- 표(table)가 한글에서 잘 인식되도록
+- 차트는 "[차트 영역]" 플레이스홀더로
+- 페이지별 구분선 추가</div>
+
+<!-- ==================== PART 5: 개발 지연 원인 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 5. 개발 지연 원인 분석</div>
+
+<h2>5.1 개요</h2>
+
+<table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td>총 개발 기간</td><td>2025.12.11 ~ 12.30 (약 20일)</td></tr>
+    <tr><td>총 커밋 수</td><td>147개</td></tr>
+    <tr><td>버그 수정 커밋</td><td>26개 (전체의 18%)</td></tr>
+    <tr><td>Revert/롤백 커밋</td><td>4개</td></tr>
+</table>
+
+<h2>5.2 날짜별 커밋 분포</h2>
+
+<table>
+    <tr><th>날짜</th><th>커밋 수</th><th>비고</th></tr>
+    <tr><td>12/11~12</td><td>4개</td><td>초기 설정</td></tr>
+    <tr><td>12/15</td><td>8개</td><td>알파 버전</td></tr>
+    <tr><td>12/16</td><td>9개</td><td>웹 앱</td></tr>
+    <tr style="background:#ddd;"><td><strong>12/17</strong></td><td><strong>30개</strong></td><td>🔴 가장 많은 커밋 - 문제 발생</td></tr>
+    <tr><td>12/18</td><td>9개</td><td>버그 수정</td></tr>
+    <tr><td>12/21~22</td><td>16개</td><td>스키마 전환</td></tr>
+    <tr><td>12/23</td><td>12개</td><td>고용률/실업률</td></tr>
+    <tr style="background:#ddd;"><td><strong>12/25</strong></td><td><strong>24개</strong></td><td>🔴 대규모 리팩토링</td></tr>
+    <tr><td>12/26~28</td><td>5개</td><td>영문화</td></tr>
+    <tr style="background:#ddd;"><td><strong>12/29</strong></td><td><strong>22개</strong></td><td>🔴 요약/통계표 버그</td></tr>
+    <tr><td>12/30</td><td>8개</td><td>마무리</td></tr>
+</table>
+
+<h2>5.3 9가지 주요 지연 원인</h2>
+
+<h3>1. 엑셀 데이터 구조의 복잡성 (3~4일)</h3>
+<ul>
+    <li><strong>시트명 불일치</strong>: "고용률" 시트가 "D(고용률)분석", "고용" 등 다양한 이름</li>
+    <li><strong>열/행 위치 변동</strong>: 같은 데이터가 분기별로 다른 위치</li>
+    <li><strong>결측치 다양성</strong>: 빈 셀, 0, "-", "비공개" 등</li>
+</ul>
+
+<h3>2. 템플릿 변수 바인딩 불일치 (1일)</h3>
+<ul>
+    <li>Python 백엔드와 Jinja2 템플릿의 변수명 불일치</li>
+    <li><code>nationwide_change</code> vs <code>nationwide_data.change</code> 혼재</li>
+</ul>
+
+<h3>3. 요약 페이지 데이터 추출 오류 (2일)</h3>
+<ul>
+    <li>복합 데이터 소스: 여러 시트의 데이터 조합 필요</li>
+    <li>데이터가 0으로 표시되는 문제</li>
+</ul>
+
+<h3>4. 가중치 및 순위 계산 문제 (2일)</h3>
+<ul>
+    <li>비공개 가중치(0) 처리</li>
+    <li>실업률처럼 낮을수록 좋은 역방향 지표</li>
+</ul>
+
+<h3>5. 아키텍처 전환 (3일)</h3>
+<ul>
+    <li>위치 기반 → 의미 기반 마커</li>
+    <li>하드코딩 → 스키마 기반</li>
+    <li>단일 파일 → 모듈화</li>
+</ul>
+
+<h3>6. 차트 및 시각화 문제 (1일)</h3>
+<ul>
+    <li>막대+점 복합 차트 구현</li>
+    <li>Y축 범위 동적 설정</li>
+</ul>
+
+<h3>7. 출력 포맷 변경 (2일)</h3>
+<ul>
+    <li>HWPX → DOCX → HTML 복붙 방식으로 전략 변경</li>
+    <li>HWP 독점 포맷의 한계</li>
+</ul>
+
+<h3>8. 결측치 표시 및 검토 기능 (2일)</h3>
+<ul>
+    <li>결측치 판별: None, 0, "", "-", "비공개" 등 구분</li>
+    <li>노란색 형광펜 하이라이트</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h3 style="border: 3px solid #000; padding: 10px; background: #f0f0f0;">★ 9. 파일 업로드 버그 원인 파악 지연 (2~3일)</h3>
+
+<div class="warning-box">
+    <strong>가장 중요한 지연 원인!</strong><br><br>
+    <strong>증상</strong>: 엑셀 파일 업로드 후 보고서가 비어있는 상태로 생성<br><br>
+    <strong>잘못된 원인 추적</strong>:
+    <ul>
+        <li>템플릿 파일 문제로 오인 → Jinja2 변수명 여러 차례 수정</li>
+        <li>데이터 추출 로직 문제로 오인 → 스키마/생성기 반복 수정</li>
+        <li>엑셀 파싱 문제로 오인 → openpyxl 디버깅</li>
+    </ul>
+    <br>
+    <strong>실제 원인</strong>: <strong>파일 경로 불일치!</strong><br>
+    - 업로드된 파일의 저장 위치와 데이터 추출 시 참조 경로가 다름<br>
+    - 세션 상태 유실로 파일 정보 접근 불가<br><br>
+    <strong>원인 파악이 늦은 이유</strong>:
+    <ul>
+        <li>에러 메시지 없이 빈 데이터만 반환</li>
+        <li>일부 보고서는 캐시로 정상 동작해서 혼란</li>
+        <li>파이프라인이 길어서 문제 지점 파악 어려움</li>
+        <li>상세 로그 부족</li>
+    </ul>
+</div>
+
+<h2>5.4 총 지연 시간 추정</h2>
+
+<table>
+    <tr><th>원인</th><th>소요 시간</th></tr>
+    <tr><td>엑셀 구조 파악 및 수정</td><td>3~4일</td></tr>
+    <tr><td>아키텍처 전환</td><td>3일</td></tr>
+    <tr style="background:#ddd;"><td><strong>파일 업로드 문제 원인 파악 지연</strong></td><td><strong>2~3일</strong></td></tr>
+    <tr><td>요약 페이지 데이터 추출</td><td>2일</td></tr>
+    <tr><td>가중치/순위 계산</td><td>2일</td></tr>
+    <tr><td>결측치 처리</td><td>2일</td></tr>
+    <tr><td>출력 포맷 변경</td><td>2일</td></tr>
+    <tr><td>템플릿 변수 수정</td><td>1일</td></tr>
+    <tr><td>차트 문제</td><td>1일</td></tr>
+    <tr><td><strong>합계</strong></td><td><strong>약 18~20일</strong></td></tr>
+</table>
+
+<h2>5.5 교훈 및 개선 방안</h2>
+
+<div class="highlight-box">
+    <div class="highlight-box-title">★ 가장 중요한 교훈: 기본부터 확인하기</div>
+    <p><strong>문제</strong>: 비어있는 보고서 생성 시 복잡한 로직(템플릿, 데이터 추출)만 의심하고, 파일 자체가 제대로 업로드/저장되었는지 기본적인 확인을 나중에 함</p>
+    <p><strong>개선</strong>:</p>
+    <ul>
+        <li>디버깅 시 <strong>가장 기본적인 것부터 확인</strong> (파일 존재, 경로 확인, 권한 등)</li>
+        <li>파이프라인 각 단계에 <strong>상세 로그 추가</strong></li>
+        <li>"복잡한 곳에 문제가 있을 것"이라는 선입견 버리기</li>
+    </ul>
+</div>
+
+<table>
+    <tr><th>교훈</th><th>문제</th><th>개선</th></tr>
+    <tr><td>사전 데이터 분석</td><td>엑셀 구조 미분석</td><td>스키마 문서 먼저 작성</td></tr>
+    <tr><td>프로토타입</td><td>초기 아키텍처 오류</td><td>작은 범위로 검증 후 확장</td></tr>
+    <tr><td>템플릿-백엔드 계약</td><td>변수명 불일치</td><td>인터페이스/스키마 먼저 정의</td></tr>
+    <tr><td>단위 테스트</td><td>수정 시 기능 깨짐</td><td>핵심 함수 테스트 작성</td></tr>
+    <tr><td>출력 포맷 조기 결정</td><td>HWPX→DOCX→HTML 변경</td><td>초기에 요구사항 명확화</td></tr>
+</table>
+
+<!-- ==================== PART 6: Q&A 대비 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">PART 6. Q&A 대비</div>
+
+<h2>6.1 기술 관련 예상 질문</h2>
+
+<div class="qa-item">
+    <div class="qa-q">스키마 기반 시스템의 장점은 무엇인가요?</div>
+    <div class="qa-a">가장 큰 장점은 확장성입니다. 새로운 보고서를 추가할 때 코드를 수정할 필요 없이 JSON 스키마 파일만 작성하면 됩니다. 이렇게 하면 유지보수가 훨씬 쉬워지고, 데이터 매핑도 명확해집니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">Flask 말고 Django나 FastAPI 쓰지, 왜 Flask야?</div>
+    <div class="qa-a">Flask는 가볍고 <strong>의존성이 최소화</strong>되어서 국가데이터처 내부망 환경에 적합합니다. Django는 ORM, Admin 등 불필요한 의존성이 많고, FastAPI의 async는 분기별 보고서 생성에 오버스펙입니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">왜 데이터베이스 안 썼어?</div>
+    <div class="qa-a">국가데이터처 내부망에서 DB 서버를 별도로 운영하기 어렵습니다. 분기별 보고서 생성이 목적이라 실시간 대용량 처리가 필요 없습니다. JSON 파일 기반이면 <strong>담당자가 직접 수정</strong>할 수 있고, 추가 서버 설치 없이 동작합니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">한글(HWP) 직접 출력 왜 안 해?</div>
+    <div class="qa-a">HWP는 한컴오피스 <strong>독점 포맷</strong>이라 공식 라이브러리가 없습니다. 그래서 <strong>'한글 복붙용 HTML'</strong>을 제공합니다. 담당자분들이 HTML을 열고 Ctrl+A, Ctrl+C 후 한글 문서에 Ctrl+V 하면 서식이 유지된 채 붙여넣기 됩니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">자연어처리 기술은 왜 안 썼어?</div>
+    <div class="qa-a">
+        <strong>내부망 환경</strong>으로 외부 LLM API 사용 불가능합니다. 로컬 LLM은 고사양 GPU 필요한데 업무용 PC에서 어렵습니다.<br><br>
+        또한 이 보고서는 <strong>정형화된 통계 데이터</strong>입니다. '증가율 2.1%'를 '전년동기대비 2.1% 증가'로 변환하는 건 if-else 로직으로 충분합니다. 공문서 특성상 '자연스러움'보다 '정확성과 일관성'이 더 중요합니다.
+    </div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">배포는 어떻게 해?</div>
+    <div class="qa-a">내부망에서는 Docker 설치가 불가능합니다. 가장 현실적인 방법은 <strong>폴더 복사</strong>입니다. 프로젝트 폴더를 USB나 내부망 공유 드라이브로 복사하고, <code>python app.py</code> 실행하면 됩니다.</div>
+</div>
+
+<h2>6.2 당황스러운 질문 대응</h2>
+
+<div class="qa-item">
+    <div class="qa-q">이거 AI(ChatGPT/Claude)가 다 만든 거 아니야?</div>
+    <div class="qa-a">AI 도구를 코딩 보조로 활용한 건 맞습니다. 하지만 <strong>아키텍처 설계, 스키마 구조, 엑셀 파싱 로직, 국가데이터처 요구사항 분석은 직접 수행</strong>했습니다. AI는 문법 체크나 코드 스니펫 정도로 활용했고, 핵심 로직은 제가 설계했습니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">팀원 2명이 왜 나갔어?</div>
+    <div class="qa-a">개인적인 사유로 팀을 떠나셨고, 구체적인 이유는 말씀드리기 어렵습니다. 다만 팀원 이탈 후에도 프로젝트를 완수한 점에서 제 <strong>위기 대응 능력</strong>을 보여드릴 수 있다고 생각합니다.</div>
+</div>
+
+<div class="qa-item">
+    <div class="qa-q">빅데이터/AI/핀테크 과정인데 그중에 뭐 들어간 게 있냐?</div>
+    <div class="qa-a">"AI 적극적으로 활용했습니다! 멘토이신 공대표님께 <strong>바이브 코딩</strong>을 과외받으면서 개발했거든요. AI 도구를 페어 프로그래밍 파트너로 활용해서 2주 만에 50개 보고서 시스템을 완성할 수 있었습니다."<br><br>
+    진지하게는: 빅데이터(대규모 통계 데이터 처리), AI/자동화(규칙 기반 50개 보고서 자동 생성), 실무 문제 해결(공공기관 업무 자동화)을 적용했습니다.</div>
+</div>
+
+<h2>6.3 환경 제약 킬러 멘트</h2>
+
+<div class="highlight-box">
+    <div class="highlight-box-title">★ 모든 기술 선택 질문에 활용</div>
+    <blockquote>
+        "국가데이터처는 <strong>내부망 환경</strong>이라 인터넷 접근이 제한되고, 외부 프로그램 반입에 보안 승인이 필요합니다. 그래서 <strong>오프라인에서 동작</strong>하고, <strong>의존성이 최소화</strong>된 기술을 선택했습니다."
+    </blockquote>
+    <blockquote>
+        "기술적으로 더 좋은 방법이 있을 수 있지만, <strong>제약 조건 안에서 최선의 선택</strong>을 했습니다."
+    </blockquote>
+</div>
+
+<h2>6.4 방어 멘트 무기고</h2>
+
+<table>
+    <tr><th>카드</th><th>멘트</th></tr>
+    <tr><td>시간 제약</td><td>"2주라는 개발 기간과 1인 프로젝트 상황에서..."</td></tr>
+    <tr><td>환경 제약</td><td>"국가데이터처 내부망 환경의 제약으로..."</td></tr>
+    <tr><td>프로토타입</td><td>"현재는 프로토타입 단계라 완벽하지 않지만..."</td></tr>
+    <tr><td>향후 과제</td><td>"향후 개선 과제로 인지하고 있습니다..."</td></tr>
+    <tr><td>손절</td><td>"좋은 피드백 감사합니다. 더 고민해보겠습니다."</td></tr>
+</table>
+
+<h2>6.5 꼬장부리는 심사위원 대응</h2>
+
+<table>
+    <tr><th>유형</th><th>전략</th></tr>
+    <tr><td>같은 질문 반복</td><td>더 단순하게 + 비유 사용 (레고 블록처럼 조립)</td></tr>
+    <tr><td>자기 생각 고집</td><td>"말씀하신 방법도 좋지만, 내부망 환경에서는..."</td></tr>
+    <tr><td>계속 꼬투리</td><td>"향후 개선 과제로 포함시켜두었습니다"로 손절</td></tr>
+    <tr><td>압박 면접</td><td>1초 멈춤 + 팩트만 + 짧게</td></tr>
+</table>
+
+<div class="tip-box">
+    <strong>심리적 준비</strong><br>
+    - 심사위원은 적이 아니다<br>
+    - 틀려도 괜찮다 - 모르면 모른다고<br>
+    - 최악의 상황도 10분 - Q&A 시간은 한정됨<br><br>
+    <strong>마음속 주문</strong>: "이 사람이 뭐라 하든 나는 2주 동안 50개 보고서 시스템을 혼자 만들었다. 대단한 거 맞음."
+</div>
+
+<!-- ==================== 부록 ==================== -->
+<div class="page-break"></div>
+<div class="section-header">부록</div>
+
+<h2>A. 주요 API 엔드포인트</h2>
+
+<table>
+    <tr><th>메서드</th><th>엔드포인트</th><th>설명</th></tr>
+    <tr><td>GET</td><td><code>/</code></td><td>대시보드 페이지</td></tr>
+    <tr><td>POST</td><td><code>/api/upload</code></td><td>엑셀 파일 업로드</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-preview</code></td><td>부문별 보고서 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-summary-preview</code></td><td>요약 보고서 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-regional-preview</code></td><td>시도별 보고서 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-statistics-preview</code></td><td>통계표 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-all</code></td><td>전체 보고서 일괄 생성</td></tr>
+    <tr><td>GET</td><td><code>/api/download-analysis</code></td><td>분석표 다운로드</td></tr>
+    <tr><td>POST</td><td><code>/api/export-final</code></td><td>PDF용 HTML 생성</td></tr>
+    <tr><td>POST</td><td><code>/api/export-hwp-ready</code></td><td>한글 복붙용 HTML 생성</td></tr>
+</table>
+
+<h2>B. 프로젝트 실행 방법</h2>
+
+<div class="code-block"># 1. 가상환경 활성화
+source VENV/bin/activate
+
+# 2. 의존성 설치
+pip install -r requirements.txt
+
+# 3. 서버 실행
+python app.py
+
+# 4. 브라우저에서 접속
+# http://localhost:5050</div>
+
+<h2>C. 핵심 모듈 한 줄 설명</h2>
+
+<table>
+    <tr><th>모듈</th><th>한 줄 설명</th></tr>
+    <tr><td><code>app.py</code></td><td>Flask 앱 진입점, Blueprint 등록</td></tr>
+    <tr><td><code>config/reports.py</code></td><td>50개 보고서 정의 (id, generator, template)</td></tr>
+    <tr><td><code>routes/api.py</code></td><td>업로드, 생성, 다운로드 API</td></tr>
+    <tr><td><code>routes/preview.py</code></td><td>개별 보고서 미리보기 API</td></tr>
+    <tr><td><code>services/report_generator.py</code></td><td>Generator 호출 → 템플릿 렌더링</td></tr>
+    <tr><td><code>templates/*_generator.py</code></td><td>엑셀 → 딕셔너리 데이터 추출</td></tr>
+    <tr><td><code>templates/*_schema.json</code></td><td>데이터 구조 문서화/기본값</td></tr>
+    <tr><td><code>templates/*_template.html</code></td><td>Jinja2 HTML 템플릿</td></tr>
+    <tr><td><code>data_converter.py</code></td><td>기초자료 → 분석표 변환</td></tr>
+    <tr><td><code>utils/excel_utils.py</code></td><td>동적 모듈 로드, 파일 유형 감지</td></tr>
+    <tr><td><code>utils/filters.py</code></td><td>결측치 표시, 값 포맷팅 필터</td></tr>
+</table>
+
+<div style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 2px solid #000;">
+    <p style="font-size: 12pt; font-weight: 700;">지역경제동향 보고서 자동 생성 시스템</p>
+    <p style="font-size: 10pt; color: #666;">종합 학습 가이드 | 2025년 12월 30일</p>
+    <p style="font-size: 9pt; color: #999;">캡스톤 프로젝트 | 국가데이터처</p>
+</div>
+
+</body>
+</html>
+
