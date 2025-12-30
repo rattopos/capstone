@@ -473,8 +473,8 @@ class RegionalGenerator:
             total_row = df[(df[region_col] == region) & (df[category_col].astype(str) == '총지수')]
             if len(total_row) == 0:
                 return {"total_growth_rate": 0, "direction": "감소",
-                        "increase_categories": [{"name": "[업태명]", "growth_rate": 0, "placeholder": True}], 
-                        "decrease_categories": [{"name": "[업태명]", "growth_rate": 0, "placeholder": True}]}
+                        "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
             
             total_row = total_row.iloc[0]
             curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
@@ -528,9 +528,9 @@ class RegionalGenerator:
             
             # 플레이스홀더 추가
             if len(increase_categories) == 0:
-                increase_categories.append({"name": "[업태명]", "growth_rate": 0, "placeholder": True})
+                increase_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
             if len(decrease_categories) == 0:
-                decrease_categories.append({"name": "[업태명]", "growth_rate": 0, "placeholder": True})
+                decrease_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
             
             return {
                 "total_growth_rate": growth_rate,
@@ -600,8 +600,8 @@ class RegionalGenerator:
             total_row = df[(df[region_col] == region) & (df[division_col].astype(str) == '0')]
             if len(total_row) == 0:
                 return {"total_growth_rate": 0, "direction": "증가",
-                        "increase_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
-                        "decrease_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+                        "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
             
             total_row = total_row.iloc[0]
             curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
@@ -639,8 +639,8 @@ class RegionalGenerator:
             total_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
             if len(total_row) == 0:
                 return {"total_growth_rate": 0, "direction": "증가",
-                        "increase_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
-                        "decrease_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+                        "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
             
             total_row = total_row.iloc[0]
             quarter_col = self.QUARTER_COLS["F'분석"]['2025_2Q']
@@ -670,15 +670,15 @@ class RegionalGenerator:
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_categories) == 0:
-            increase_categories.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            increase_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
         if len(decrease_categories) == 0:
-            decrease_categories.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            decrease_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
         
         return {
             "total_growth_rate": growth_rate,
             "direction": "증가" if growth_rate > 0 else "감소",
-            "increase_categories": sorted([c for c in increase_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'], reverse=True)[:2] or [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}],
-            "decrease_categories": sorted([c for c in decrease_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'])[:2] or [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]
+            "increase_categories": sorted([c for c in increase_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'], reverse=True)[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}],
+            "decrease_categories": sorted([c for c in decrease_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'])[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}]
         }
     
     def extract_export_data(self, region: str) -> Dict[str, Any]:
@@ -706,8 +706,8 @@ class RegionalGenerator:
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
             return {"total_growth_rate": 0, "direction": "증가",
-                    "increase_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
-                    "decrease_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
@@ -794,9 +794,9 @@ class RegionalGenerator:
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
-            increase_items.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            increase_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         if len(decrease_items) == 0:
-            decrease_items.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         
         return {
             "total_growth_rate": growth_rate,
@@ -828,8 +828,8 @@ class RegionalGenerator:
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
             return {"total_growth_rate": 0, "direction": "감소",
-                    "increase_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}],
-                    "decrease_items": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}],
+                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
@@ -911,9 +911,9 @@ class RegionalGenerator:
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
-            increase_items.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            increase_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         if len(decrease_items) == 0:
-            decrease_items.append({"name": "[품목명]", "growth_rate": 0, "placeholder": True})
+            decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         
         return {
             "total_growth_rate": growth_rate,

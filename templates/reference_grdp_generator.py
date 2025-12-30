@@ -61,7 +61,7 @@ class 참고_GRDP_Generator:
         
         # 성장률 1위 지역 (플레이스홀더)
         top_region = {
-            "name": "[지역명]",
+            "name": "",
             "growth_rate": 0.0,
             "contributions": {
                 "manufacturing": 0.0,

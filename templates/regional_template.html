@@ -120,7 +120,8 @@
         .placeholder {
             background-color: #fff3cd;
             border: 1px dashed #ffc107;
-            padding: 0 4px;
+            padding: 2px 8px;
+            min-width: 50px;
             border-radius: 3px;
             color: #856404;
             cursor: text;
@@ -371,7 +372,7 @@
                 {% if has_real_increase %}
                     {% for cat in consumption_construction.construction.increase_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.increase_categories[0].growth_rate) }}%){% if has_real_decrease %}이 늘어{% else %}이 증가하여{% endif %}
                 {% else %}
-                    <span class="placeholder" contenteditable="true">[증가품목]</span>(<span class="placeholder" contenteditable="true">[증감률]</span>%)이 증가하여
+                    <span class="placeholder" contenteditable="true"></span>(<span class="placeholder" contenteditable="true"></span>%)이 증가하여
                 {% endif %}
                 전년동분기대비 <span class="increase">{{ "%.1f"|format(consumption_construction.construction.total_growth_rate) }}% 증가</span>
             {% else %}
@@ -381,7 +382,7 @@
                 {% if has_real_decrease %}
                     {% for cat in consumption_construction.construction.decrease_categories %}{% if not cat.placeholder %}{{ cat.name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}({{ "%.1f"|format(consumption_construction.construction.decrease_categories[0].growth_rate) }}%){% if has_real_increase %}이 줄어{% else %}이 감소하여{% endif %}
                 {% else %}
-                    <span class="placeholder" contenteditable="true">[감소품목]</span>(<span class="placeholder" contenteditable="true">[증감률]</span>%)이 감소하여
+                    <span class="placeholder" contenteditable="true"></span>(<span class="placeholder" contenteditable="true"></span>%)이 감소하여
                 {% endif %}
                 전년동분기대비 <span class="decrease">{{ "%.1f"|format(consumption_construction.construction.total_growth_rate | abs) }}% 감소</span>
             {% endif %}
@@ -423,7 +424,7 @@
         <div class="item">
             <span class="item-label">(수출)</span>
             {% macro render_items(items) %}{% for i in items %}{% if i.placeholder %}<span class="placeholder" contenteditable="true">{{ i.name }}</span>{% else %}{{ i.name }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endmacro %}
-            {% macro render_rates(items) %}{% for i in items %}{% if i.placeholder %}<span class="placeholder" contenteditable="true">[증감률]</span>{% else %}{{ "%.1f"|format(i.growth_rate) }}%{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endmacro %}
+            {% macro render_rates(items) %}{% for i in items %}{% if i.placeholder %}<span class="placeholder" contenteditable="true"></span>{% else %}{{ "%.1f"|format(i.growth_rate) }}%{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endmacro %}
             {% if export_import_price.export.direction == '증가' %}
             {{ render_items(export_import_price.export.decrease_items) }}({{ render_rates(export_import_price.export.decrease_items) }}) 등이 줄었으나, {{ render_items(export_import_price.export.increase_items) }}({{ render_rates(export_import_price.export.increase_items) }}) 등이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(export_import_price.export.total_growth_rate) }}% 증가</span>
             {% else %}
