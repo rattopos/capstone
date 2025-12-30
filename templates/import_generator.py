@@ -212,6 +212,7 @@ def get_regional_data(sido_data, sido_products_top, sido_products_bottom):
         if change > 0:
             products = sido_products_top.get(sido, [])
             region_info = {
+                'region': sido,  # 템플릿에서 region 키 사용
                 'name': sido,
                 'change': change,
                 'products': products[:3]
@@ -220,6 +221,7 @@ def get_regional_data(sido_data, sido_products_top, sido_products_bottom):
         elif change < 0:
             products = sido_products_bottom.get(sido, [])
             region_info = {
+                'region': sido,  # 템플릿에서 region 키 사용
                 'name': sido,
                 'change': change,
                 'products': products[:3]
@@ -242,14 +244,24 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     top_increase = increase_regions[:3]
     top_decrease = decrease_regions[:3]
     
+    # main_decrease_regions: 템플릿에서 사용하는 데이터 구조
+    main_decrease_regions = []
+    for r in top_decrease:
+        products = r.get('products', [])
+        product_names = [p['name'] for p in products[:2]] if products else []
+        main_decrease_regions.append({
+            'region': r.get('region', r.get('name', '')),
+            'products': product_names
+        })
+    
     # 헤드라인 (감소 중심)
     headline_regions = []
     for r in top_decrease[:3]:
         products = r.get('products', [])
         if products:
-            headline_regions.append(f"<span class='bold highlight'>{r['name']}</span>({products[0]['name']})")
+            headline_regions.append(f"<span class='bold highlight'>{r.get('region', r.get('name', ''))}</span>({products[0]['name']})")
         else:
-            headline_regions.append(f"<span class='bold highlight'>{r['name']}</span>")
+            headline_regions.append(f"<span class='bold highlight'>{r.get('region', r.get('name', ''))}</span>")
     
     headline = f"◆수입은 {', '.join(headline_regions)} 등 {decrease_count}개 시도에서 전년동분기대비 감소"
     
@@ -270,8 +282,8 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
         c = r.get('change')
         return f"{c:.1f}" if c is not None else "-"
     
-    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_increase])
-    decrease_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_decrease])
+    increase_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_increase])
+    decrease_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_decrease])
     
     # 증가 지역의 품목
     if top_increase:
@@ -300,19 +312,25 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     return {
         'headline': headline,
         'nationwide_summary': nationwide_summary,
-        'regional_summary': regional_summary
+        'regional_summary': regional_summary,
+        'main_decrease_regions': main_decrease_regions,
+        'increase_count': increase_count,
+        'decrease_count': decrease_count
     }
 
-def generate_summary_table(analysis_df, summary_df, sido_data):
+def generate_summary_table(analysis_df, summary_df, sido_data, excel_path=None):
     """요약 테이블 데이터를 생성합니다."""
     rows = []
     
     # H 참고 시트에서 증감률 데이터 가져오기
-    reference_df = pd.read_excel(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '분석표_25년 2분기_캡스톤.xlsx'),
-        sheet_name='H 참고',
-        header=None
-    )
+    # excel_path가 주어지면 해당 파일 사용, 없으면 분석 시트 데이터에서 추출
+    if excel_path:
+        try:
+            reference_df = pd.read_excel(excel_path, sheet_name='H 참고', header=None)
+        except Exception:
+            reference_df = analysis_df.copy()
+    else:
+        reference_df = analysis_df.copy()
     
     # 시도별 증감률 추출
     sido_table_data = {}
@@ -429,7 +447,22 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     summary_box = generate_summary_box(nationwide_data, increase_regions, decrease_regions)
     
     # 요약 테이블
-    summary_table = generate_summary_table(analysis_df, summary_df, sido_data)
+    summary_table = generate_summary_table(analysis_df, summary_df, sido_data, excel_path)
+    
+    # 품목 텍스트 생성
+    decrease_products = []
+    for r in decrease_regions[:3]:
+        prods = r.get('products', [])
+        if prods:
+            decrease_products.append(prods[0]['name'])
+    decrease_products_text = ', '.join(decrease_products[:3]) if decrease_products else ""
+    
+    increase_products = []
+    for r in increase_regions[:3]:
+        prods = r.get('products', [])
+        if prods:
+            increase_products.append(prods[0]['name'])
+    increase_products_text = ', '.join(increase_products[:3]) if increase_products else ""
     
     return {
         'report_info': {
@@ -445,7 +478,9 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         'summary_box': summary_box,
         'top3_increase_regions': top3_increase,
         'top3_decrease_regions': top3_decrease,
-        'summary_table': summary_table
+        'summary_table': summary_table,
+        'decrease_products_text': decrease_products_text,
+        'increase_products_text': increase_products_text
     }
 
 def render_template(data, template_path, output_path):

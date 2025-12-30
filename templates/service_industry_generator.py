@@ -127,11 +127,22 @@ def load_data(excel_path):
 def get_region_indices(df_analysis):
     """각 지역의 시작 인덱스 찾기"""
     region_indices = {}
+    
+    # 시도 목록
+    VALID_REGIONS = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                     '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    
     for i in range(len(df_analysis)):
-        row = df_analysis.iloc[i]
-        if row[7] == '총지수':
-            region = row[3]
-            region_indices[region] = i
+        try:
+            row = df_analysis.iloc[i]
+            col7_val = str(row[7]).strip() if pd.notna(row[7]) else ''
+            col3_val = str(row[3]).strip() if pd.notna(row[3]) else ''
+            
+            if col7_val == '총지수' and col3_val in VALID_REGIONS:
+                region_indices[col3_val] = i
+        except (IndexError, KeyError):
+            continue
+    
     return region_indices
 
 
@@ -142,26 +153,68 @@ def get_nationwide_data(df_analysis, df_index):
     if use_raw:
         return _get_nationwide_from_raw_data(df_analysis)
     
-    # 분석 시트에서 전국 총지수 행
-    nationwide_row = df_analysis.iloc[3]
+    # 시트 구조 동적 감지
+    if len(df_analysis) < 4:
+        # 데이터가 부족한 경우 기본값 반환
+        return {
+            'production_index': 100.0,
+            'growth_rate': 0.0,
+            'main_industries': []
+        }
+    
+    # 전국 총지수 행 찾기 (컬럼 3이 '전국'이고 컬럼 7이 '총지수'인 행)
+    nationwide_row = None
+    nationwide_idx = None
+    for i in range(len(df_analysis)):
+        row = df_analysis.iloc[i]
+        if pd.notna(row[3]) and str(row[3]).strip() == '전국':
+            if pd.notna(row[7]) and str(row[7]).strip() == '총지수':
+                nationwide_row = row
+                nationwide_idx = i
+                break
+    
+    if nationwide_row is None:
+        # 기존 방식 시도 (3번 행)
+        try:
+            nationwide_row = df_analysis.iloc[3]
+            nationwide_idx = 3
+        except IndexError:
+            return {
+                'production_index': 100.0,
+                'growth_rate': 0.0,
+                'main_industries': []
+            }
+    
     growth_rate = safe_float(nationwide_row[20], 0)
     growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
     # 집계 시트에서 전국 지수
-    index_row = df_index.iloc[3]
-    production_index = safe_float(index_row[25], 100)  # 2025.2/4p
+    try:
+        if len(df_index) > 3:
+            index_row = df_index.iloc[3]
+            production_index = safe_float(index_row[25], 100)  # 2025.2/4p
+        else:
+            production_index = 100.0
+    except (IndexError, KeyError):
+        production_index = 100.0
     
     # 전국 주요 업종 (기여도 기준 상위 3개 - 양수만)
     industries = []
-    for i in range(4, 17):
-        row = df_analysis.iloc[i]
-        industry_name = row[7]
-        industry_growth = safe_float(row[20], 0)
-        if industry_growth is not None:
-            industries.append({
-                'name': INDUSTRY_MAPPING.get(industry_name, industry_name),
-                'growth_rate': round(industry_growth, 1)
-            })
+    start_idx = nationwide_idx + 1 if nationwide_idx is not None else 4
+    end_idx = min(start_idx + 13, len(df_analysis))
+    
+    for i in range(start_idx, end_idx):
+        try:
+            row = df_analysis.iloc[i]
+            industry_name = row[7] if pd.notna(row[7]) else ''
+            industry_growth = safe_float(row[20], 0)
+            if industry_growth is not None and str(industry_name).strip() != '총지수':
+                industries.append({
+                    'name': INDUSTRY_MAPPING.get(str(industry_name).strip(), str(industry_name).strip()),
+                    'growth_rate': round(industry_growth, 1)
+                })
+        except (IndexError, KeyError):
+            continue
     
     # 양수 증가율 중 상위 3개 (보건·복지, 금융·보험, 운수·창고 순)
     positive_industries = [i for i in industries if i['growth_rate'] > 0]
@@ -258,61 +311,73 @@ def get_regional_data(df_analysis, df_index):
     region_indices = get_region_indices(df_analysis)
     regions = []
     
+    if not region_indices:
+        # 지역 인덱스를 찾을 수 없는 경우 빈 결과 반환
+        return {
+            'increase_regions': [],
+            'decrease_regions': [],
+            'all_regions': []
+        }
+    
     for region, start_idx in region_indices.items():
         if region == '전국':
             continue
+        
+        try:
+            # 총지수 행에서 증감률
+            total_row = df_analysis.iloc[start_idx]
+            growth_rate_val = safe_float(total_row[20], 0)
+            growth_rate = round(growth_rate_val, 1) if growth_rate_val else 0.0
             
-        # 총지수 행에서 증감률
-        total_row = df_analysis.iloc[start_idx]
-        growth_rate = round(total_row[20], 1)
-        
-        # 집계 시트에서 지수
-        idx_row = df_index[df_index[3] == region]
-        if not idx_row.empty:
-            index_2024 = idx_row.iloc[0][21]
-            index_2025 = idx_row.iloc[0][25]
-        else:
-            index_2024 = 0
-            index_2025 = 0
-        
-        # 업종별 기여도
-        industries = []
-        for i in range(start_idx + 1, start_idx + 14):
-            if i >= len(df_analysis):
-                break
-            row = df_analysis.iloc[i]
-            if row[4] != '1':  # 분류단계가 1이 아니면 스킵
-                continue
-            industry_name = row[7]
-            industry_growth = row[20]
-            contribution = row[26]
+            # 집계 시트에서 지수
+            idx_row = df_index[df_index[3] == region]
+            if not idx_row.empty:
+                index_2024 = safe_float(idx_row.iloc[0][21], 0)
+                index_2025 = safe_float(idx_row.iloc[0][25], 0)
+            else:
+                index_2024 = 0
+                index_2025 = 0
             
-            if pd.notna(contribution):
-                industries.append({
-                    'name': INDUSTRY_MAPPING.get(industry_name, industry_name),
-                    'growth_rate': round(industry_growth, 1),
-                    'contribution': contribution
-                })
-        
-        # 증가 지역: 양수 기여도 순으로 정렬
-        # 감소 지역: 음수 기여도 순으로 정렬 (절대값 큰 순)
-        if growth_rate >= 0:
-            positive_industries = [i for i in industries if i['contribution'] > 0]
-            positive_industries.sort(key=lambda x: x['contribution'], reverse=True)
-            top_industries = positive_industries[:3]
-        else:
-            negative_industries = [i for i in industries if i['contribution'] < 0]
-            negative_industries.sort(key=lambda x: x['contribution'])
-            top_industries = negative_industries[:3]
-        
-        regions.append({
-            'region': region,
-            'growth_rate': growth_rate,
-            'index_2024': index_2024,
-            'index_2025': index_2025,
-            'top_industries': top_industries,
-            'all_industries': industries
-        })
+            # 업종별 기여도
+            industries = []
+            for i in range(start_idx + 1, min(start_idx + 14, len(df_analysis))):
+                row = df_analysis.iloc[i]
+                classification = str(row[4]).strip() if pd.notna(row[4]) else ''
+                if classification != '1':  # 분류단계가 1이 아니면 스킵
+                    continue
+                industry_name = row[7] if pd.notna(row[7]) else ''
+                industry_growth = safe_float(row[20], 0)
+                contribution = safe_float(row[26], 0)
+                
+                if contribution is not None:
+                    industries.append({
+                        'name': INDUSTRY_MAPPING.get(str(industry_name).strip(), str(industry_name).strip()),
+                        'growth_rate': round(industry_growth, 1) if industry_growth else 0.0,
+                        'contribution': contribution
+                    })
+            
+            # 증가 지역: 양수 기여도 순으로 정렬
+            # 감소 지역: 음수 기여도 순으로 정렬 (절대값 큰 순)
+            if growth_rate >= 0:
+                positive_industries = [i for i in industries if i['contribution'] > 0]
+                positive_industries.sort(key=lambda x: x['contribution'], reverse=True)
+                top_industries = positive_industries[:3]
+            else:
+                negative_industries = [i for i in industries if i['contribution'] < 0]
+                negative_industries.sort(key=lambda x: x['contribution'])
+                top_industries = negative_industries[:3]
+            
+            regions.append({
+                'region': region,
+                'growth_rate': growth_rate,
+                'index_2024': index_2024,
+                'index_2025': index_2025,
+                'top_industries': top_industries,
+                'all_industries': industries
+            })
+        except (IndexError, KeyError) as e:
+            print(f"[WARNING] 지역 데이터 추출 실패 ({region}): {e}")
+            continue
     
     # 증가/감소 지역 분류
     increase_regions = sorted(
@@ -338,62 +403,78 @@ def get_growth_rates_table(df_analysis, df_index):
     
     table_data = []
     
-    # 전국
-    nationwide_row = df_analysis.iloc[3]
-    nationwide_idx = df_index.iloc[3]
-    table_data.append({
-        'group': None,
-        'rowspan': None,
-        'region': REGION_DISPLAY_MAPPING['전국'],
-        'growth_rates': [
-            round(nationwide_row[12], 1),  # 2023 2/4
-            round(nationwide_row[16], 1),  # 2024 2/4
-            round(nationwide_row[19], 1),  # 2025 1/4
-            round(nationwide_row[20], 1),  # 2025 2/4
-        ],
-        'indices': [
-            nationwide_idx[21],  # 2024 2/4
-            nationwide_idx[25],  # 2025 2/4
-        ]
-    })
+    # 전국 데이터 찾기
+    nationwide_idx = region_indices.get('전국', 3)
+    try:
+        nationwide_row = df_analysis.iloc[nationwide_idx]
+        nationwide_idx_row = df_index.iloc[nationwide_idx] if len(df_index) > nationwide_idx else None
+        
+        table_data.append({
+            'group': None,
+            'rowspan': None,
+            'region': REGION_DISPLAY_MAPPING['전국'],
+            'growth_rates': [
+                round(safe_float(nationwide_row[12], 0), 1),  # 2023 2/4
+                round(safe_float(nationwide_row[16], 0), 1),  # 2024 2/4
+                round(safe_float(nationwide_row[19], 0), 1),  # 2025 1/4
+                round(safe_float(nationwide_row[20], 0), 1),  # 2025 2/4
+            ],
+            'indices': [
+                safe_float(nationwide_idx_row[21], 0) if nationwide_idx_row is not None else 0,  # 2024 2/4
+                safe_float(nationwide_idx_row[25], 0) if nationwide_idx_row is not None else 0,  # 2025 2/4
+            ]
+        })
+    except (IndexError, KeyError):
+        # 전국 데이터를 찾을 수 없는 경우 기본값 사용
+        table_data.append({
+            'group': None,
+            'rowspan': None,
+            'region': REGION_DISPLAY_MAPPING['전국'],
+            'growth_rates': [0.0, 0.0, 0.0, 0.0],
+            'indices': [0.0, 0.0]
+        })
     
     # 지역별 그룹
     for group_name, group_regions in REGION_GROUPS.items():
         for i, region in enumerate(group_regions):
             if region not in region_indices:
                 continue
-                
-            start_idx = region_indices[region]
-            row = df_analysis.iloc[start_idx]
-            idx_row = df_index[df_index[3] == region]
             
-            if idx_row.empty:
+            try:
+                start_idx = region_indices[region]
+                row = df_analysis.iloc[start_idx]
+                idx_row = df_index[df_index[3] == region]
+                
+                if idx_row.empty:
+                    continue
+                    
+                idx_row = idx_row.iloc[0]
+                
+                entry = {
+                    'region': REGION_DISPLAY_MAPPING.get(region, region),
+                    'growth_rates': [
+                        round(safe_float(row[12], 0), 1),  # 2023 2/4
+                        round(safe_float(row[16], 0), 1),  # 2024 2/4
+                        round(safe_float(row[19], 0), 1),  # 2025 1/4
+                        round(safe_float(row[20], 0), 1),  # 2025 2/4
+                    ],
+                    'indices': [
+                        safe_float(idx_row[21], 0),  # 2024 2/4
+                        safe_float(idx_row[25], 0),  # 2025 2/4
+                    ]
+                }
+                
+                if i == 0:
+                    entry['group'] = group_name
+                    entry['rowspan'] = len(group_regions)
+                else:
+                    entry['group'] = None
+                    entry['rowspan'] = None
+                    
+                table_data.append(entry)
+            except (IndexError, KeyError) as e:
+                print(f"[WARNING] 지역 테이블 데이터 추출 실패 ({region}): {e}")
                 continue
-                
-            idx_row = idx_row.iloc[0]
-            
-            entry = {
-                'region': REGION_DISPLAY_MAPPING.get(region, region),
-                'growth_rates': [
-                    round(row[12], 1),  # 2023 2/4
-                    round(row[16], 1),  # 2024 2/4
-                    round(row[19], 1),  # 2025 1/4
-                    round(row[20], 1),  # 2025 2/4
-                ],
-                'indices': [
-                    idx_row[21],  # 2024 2/4
-                    idx_row[25],  # 2025 2/4
-                ]
-            }
-            
-            if i == 0:
-                entry['group'] = group_name
-                entry['rowspan'] = len(group_regions)
-            else:
-                entry['group'] = None
-                entry['rowspan'] = None
-                
-            table_data.append(entry)
     
     return table_data
 
@@ -416,6 +497,79 @@ def get_summary_box_data(regional_data):
     }
 
 
+def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
+    """미리보기용 보고서 데이터 생성
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항)
+        year: 현재 연도 (선택사항)
+        quarter: 현재 분기 (선택사항)
+    
+    Returns:
+        dict: 템플릿에 전달할 데이터
+    """
+    # 데이터 로드
+    df_analysis, df_index = load_data(excel_path)
+    
+    # 데이터 추출
+    nationwide_data = get_nationwide_data(df_analysis, df_index)
+    regional_data = get_regional_data(df_analysis, df_index)
+    summary_box = get_summary_box_data(regional_data)
+    table_data = get_growth_rates_table(df_analysis, df_index)
+    
+    # Top 3 증가/감소 지역
+    top3_increase = []
+    for r in regional_data['increase_regions'][:3]:
+        top3_increase.append({
+            'region': r['region'],
+            'growth_rate': r['growth_rate'],
+            'industries': r['top_industries']
+        })
+    
+    top3_decrease = []
+    for r in regional_data['decrease_regions'][:3]:
+        top3_decrease.append({
+            'region': r['region'],
+            'growth_rate': r['growth_rate'],
+            'industries': r['top_industries']
+        })
+    
+    # 감소/증가 업종 텍스트 생성
+    decrease_industries = set()
+    for r in regional_data['decrease_regions'][:3]:
+        for ind in r['top_industries'][:2]:
+            decrease_industries.add(ind['name'])
+    decrease_industries_text = ', '.join(list(decrease_industries)[:4])
+    
+    increase_industries = set()
+    for r in regional_data['increase_regions'][:3]:
+        for ind in r['top_industries'][:2]:
+            increase_industries.add(ind['name'])
+    increase_industries_text = ', '.join(list(increase_industries)[:4])
+    
+    # 템플릿 데이터
+    template_data = {
+        'summary_box': summary_box,
+        'nationwide_data': nationwide_data,
+        'regional_data': regional_data,
+        'top3_increase_regions': top3_increase,
+        'top3_decrease_regions': top3_decrease,
+        'decrease_industries_text': decrease_industries_text,
+        'increase_industries_text': increase_industries_text,
+        'summary_table': {
+            'base_year': 2020,
+            'columns': {
+                'growth_rate_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4p'],
+                'index_columns': ['2024.2/4', '2025.2/4p']
+            },
+            'regions': table_data
+        }
+    }
+    
+    return template_data
+
+
 def generate_report(excel_path, template_path, output_path, raw_excel_path=None, year=None, quarter=None):
     """보고서 생성
     
@@ -427,12 +581,6 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
         year: 현재 연도 (선택사항)
         quarter: 현재 분기 (선택사항)
     """
-    # TODO: 향후 기초자료 직접 추출 지원
-    # if raw_excel_path and year and quarter:
-    #     from raw_data_extractor import RawDataExtractor
-    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
-    #     # 기초자료에서 서비스업생산 데이터 직접 추출
-    #     # return extract_from_raw_data(extractor, ...)
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
     

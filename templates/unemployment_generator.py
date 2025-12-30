@@ -137,10 +137,15 @@ def get_nationwide_data(rate_data):
     # 음수 값이 크면(절대값 기준) 먼저 오도록 정렬
     age_groups.sort(key=lambda x: x['change'])
     
+    # 감소한 연령대 이름 리스트 (템플릿용)
+    decreased_ages = [ag['name'] for ag in age_groups if ag['change'] < 0]
+    main_age_groups = decreased_ages[:2] if decreased_ages else [ag['name'] for ag in age_groups[:2]]
+    
     return {
         'rate': total.get('rate_2025_24', 0),
         'change': total.get('change', 0),
-        'age_groups': age_groups[:2]  # 상위 2개
+        'age_groups': age_groups[:2],  # 상위 2개
+        'main_age_groups': main_age_groups  # 템플릿에서 사용하는 연령대 리스트
     }
 
 def get_regional_data(rate_data):
@@ -170,6 +175,7 @@ def get_regional_data(rate_data):
                 })
         
         region_info = {
+            'region': sido,  # 템플릿에서 region 키 사용
             'name': sido,
             'change': change,
             'rate': total.get('rate_2025_24', 0),
@@ -187,10 +193,10 @@ def get_regional_data(rate_data):
     
     # 증가 지역: 증가율이 큰 순서로 정렬 (동일 증감률인 경우 이미지 순서: 광주, 세종, 경북)
     # 이미지 순서에 맞추기 위해 SIDO_ORDER 인덱스로 정렬
-    increase_regions.sort(key=lambda x: (-round(x['change'], 1), SIDO_ORDER.index(x['name'])))
+    increase_regions.sort(key=lambda x: (-round(x['change'], 1), SIDO_ORDER.index(x.get('name', x.get('region', '')))))
     
     # 감소 지역: 감소율이 큰 순서로 정렬 (절대값 기준)
-    decrease_regions.sort(key=lambda x: (x['change'], SIDO_ORDER.index(x['name'])))
+    decrease_regions.sort(key=lambda x: (x['change'], SIDO_ORDER.index(x.get('name', x.get('region', '')))))
     
     return increase_regions, decrease_regions
 
@@ -198,31 +204,39 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     """요약 박스 텍스트를 생성합니다."""
     # 실업률 하락 = 긍정적 의미이므로 하락 지역이 헤드라인
     decrease_count = len(decrease_regions)
-    decrease_names = ", ".join([r['name'] for r in decrease_regions[:3]])
+    increase_count = len(increase_regions)
+    decrease_names = ", ".join([r.get('region', r.get('name', '')) for r in decrease_regions[:3]])
     
     headline = f"실업률은 {decrease_names} 등 {decrease_count}개 시도에서 전년동분기대비 하락"
     
+    # main_decrease_regions: 템플릿에서 사용하는 데이터 구조 (지역명 리스트)
+    main_decrease_regions = [r.get('region', r.get('name', '')) for r in decrease_regions[:3]]
+    
     # 전국 요약
-    rate = nationwide_data['rate']
-    change = nationwide_data['change']
+    rate = nationwide_data.get('rate', 0) or 0
+    change = nationwide_data.get('change', 0) or 0
     direction = "상승" if change > 0 else "하락"
     
     # 전국에서 하락한 연령대
-    decreased_ages = [ag for ag in nationwide_data['age_groups'] if ag['change'] < 0]
-    age_names = ", ".join([ag['name'] for ag in decreased_ages])
+    age_groups = nationwide_data.get('age_groups', [])
+    decreased_ages = [ag for ag in age_groups if ag.get('change', 0) < 0]
+    age_names = ", ".join([ag['name'] for ag in decreased_ages]) if decreased_ages else '15~29세, 30~59세'
     
     nationwide_summary = f"전국 실업률은 <span class='bold'>{rate:.1f}%</span>로, {age_names} 연령대에서 실업률이 내려 전년동분기대비 <span class='bold'>{abs(change):.1f}%p {direction}</span>"
     
     # 시도 요약
-    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({r['change']:.1f}%p)" for r in increase_regions[:3]])
-    decrease_names_detail = ", ".join([f"<span class='bold'>{r['name']}</span>({r['change']:.1f}%p)" for r in decrease_regions[:3]])
+    increase_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({r.get('change', 0):.1f}%p)" for r in increase_regions[:3]])
+    decrease_names_detail = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({r.get('change', 0):.1f}%p)" for r in decrease_regions[:3]])
     
     regional_summary = f"{increase_names} 등의 실업률은 상승하였으나, {decrease_names_detail} 등의 실업률은 하락"
     
     return {
         'headline': headline,
         'nationwide_summary': nationwide_summary,
-        'regional_summary': regional_summary
+        'regional_summary': regional_summary,
+        'main_decrease_regions': main_decrease_regions,
+        'decrease_count': decrease_count,
+        'increase_count': increase_count
     }
 
 def generate_summary_table(summary_df, rate_data):

@@ -147,7 +147,7 @@
             gap: 10px;
         }
         
-        /* Map Section */
+        /* Map Section - PNG 이미지 + 마커 방식 */
         .map-section {
             flex: 1;
             display: flex;
@@ -157,9 +157,53 @@
             position: relative;
         }
         
-        .map-canvas {
-            max-width: 100%;
-            max-height: 150px;
+        .korea-map-wrapper {
+            position: relative;
+            width: 120px;
+            height: 155px;
+        }
+        
+        .korea-map-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* 지역 마커 */
+        .region-marker {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+            border: 1px solid rgba(255,255,255,0.9);
+        }
+        
+        .region-marker.increase {
+            background: #ef5350;
+        }
+        
+        .region-marker.decrease {
+            background: #42a5f5;
+        }
+        
+        .region-marker.same {
+            background: #9e9e9e;
+        }
+        
+        /* 소비자물가 특수 색상 */
+        .region-marker.above-avg {
+            background: #ef5350;
+        }
+        
+        .region-marker.below-avg {
+            background: #42a5f5;
+        }
+        
+        .region-marker.national-avg {
+            background: #fff59d;
+            border-color: #fbc02d;
         }
         
         /* Ranking Section */
@@ -263,11 +307,11 @@
             border-radius: 2px;
         }
         
-        .legend-color.increase { background: #FFCDD2; }
-        .legend-color.decrease { background: #BBDEFB; }
-        .legend-color.same { background: #E0E0E0; }
-        .legend-color.above-avg { background: #FFCDD2; }
-        .legend-color.below-avg { background: #BBDEFB; }
+        .legend-color.increase { background: #ef5350; }
+        .legend-color.decrease { background: #42a5f5; }
+        .legend-color.same { background: #9e9e9e; }
+        .legend-color.above-avg { background: #ef5350; }
+        .legend-color.below-avg { background: #42a5f5; }
         .legend-color.national-avg { background: #FFF9C4; }
     </style>
 </head>
@@ -308,7 +352,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-mining"></canvas>
+                        <div class="korea-map-wrapper" id="map-mining"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -348,7 +392,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-service"></canvas>
+                        <div class="korea-map-wrapper" id="map-service"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -388,7 +432,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-retail"></canvas>
+                        <div class="korea-map-wrapper" id="map-retail"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -429,7 +473,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-export"></canvas>
+                        <div class="korea-map-wrapper" id="map-export"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -470,7 +514,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-employment"></canvas>
+                        <div class="korea-map-wrapper" id="map-employment"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -511,7 +555,7 @@
                 </div>
                 <div class="card-content">
                     <div class="map-section">
-                        <canvas class="map-canvas" id="map-cpi"></canvas>
+                        <div class="korea-map-wrapper" id="map-cpi"></div>
                     </div>
                     <div class="ranking-section">
                         <div class="ranking-group">
@@ -545,35 +589,25 @@
         // ========================================
         const MAP_IMAGE_PATH = 'infographic_map.png';
         
-        // 색상 정의 (단색, 그라데이션 없음)
-        const COLORS = {
-            increase: 'rgba(244, 67, 54, 0.5)',      // 빨간색 (증가)
-            decrease: 'rgba(33, 150, 243, 0.5)',     // 파란색 (감소)
-            same: 'rgba(158, 158, 158, 0.5)',        // 회색 (보합)
-            aboveAvg: 'rgba(244, 67, 54, 0.5)',      // 평균 초과
-            belowAvg: 'rgba(33, 150, 243, 0.5)',     // 평균 미만
-            nationalAvg: 'rgba(255, 235, 59, 0.5)'  // 전국 평균
-        };
-        
-        // 17개 시도 seed points (지도 이미지 내 상대 좌표 0~1)
-        const REGION_SEEDS = {
-            '서울': { x: 0.38, y: 0.22 },
-            '부산': { x: 0.78, y: 0.78 },
-            '대구': { x: 0.68, y: 0.58 },
-            '인천': { x: 0.28, y: 0.25 },
-            '광주': { x: 0.32, y: 0.72 },
-            '대전': { x: 0.45, y: 0.48 },
-            '울산': { x: 0.82, y: 0.65 },
-            '세종': { x: 0.40, y: 0.42 },
-            '경기': { x: 0.35, y: 0.30 },
-            '강원': { x: 0.62, y: 0.22 },
-            '충북': { x: 0.52, y: 0.38 },
-            '충남': { x: 0.30, y: 0.45 },
-            '전북': { x: 0.35, y: 0.58 },
-            '전남': { x: 0.32, y: 0.82 },
-            '경북': { x: 0.70, y: 0.42 },
-            '경남': { x: 0.62, y: 0.72 },
-            '제주': { x: 0.25, y: 0.95 }
+        // PNG 지도 이미지 기준 17개 시도 좌표 (% 기준)
+        const REGION_POSITIONS = {
+            '서울': { x: 32, y: 20 },
+            '인천': { x: 23, y: 24 },
+            '경기': { x: 34, y: 28 },
+            '강원': { x: 58, y: 18 },
+            '충북': { x: 47, y: 37 },
+            '충남': { x: 28, y: 43 },
+            '세종': { x: 38, y: 42 },
+            '대전': { x: 40, y: 48 },
+            '전북': { x: 32, y: 58 },
+            '광주': { x: 27, y: 70 },
+            '전남': { x: 30, y: 80 },
+            '경북': { x: 62, y: 42 },
+            '대구': { x: 58, y: 55 },
+            '경남': { x: 52, y: 70 },
+            '울산': { x: 68, y: 60 },
+            '부산': { x: 64, y: 75 },
+            '제주': { x: 24, y: 97 }
         };
         
         // ========================================
@@ -721,125 +755,47 @@
         };
 
         // ========================================
-        // Flood Fill 알고리즘 (단색)
+        // PNG 지도 + 마커 렌더링 함수
         // ========================================
-        function floodFill(ctx, startX, startY, fillColor, canvasWidth, canvasHeight) {
-            const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-            const data = imageData.data;
-            
-            startX = Math.floor(startX);
-            startY = Math.floor(startY);
-            
-            const startIdx = (startY * canvasWidth + startX) * 4;
-            const startR = data[startIdx];
-            const startG = data[startIdx + 1];
-            const startB = data[startIdx + 2];
-            
-            // 흰색이나 경계선이면 칠하지 않음
-            if (startR > 240 && startG > 240 && startB > 240) return;
-            if (startR < 50 && startG < 50 && startB < 50) return;
-            
-            // 색상 파싱
-            const match = fillColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]*)\)/);
-            if (!match) return;
-            
-            const fillR = parseInt(match[1]);
-            const fillG = parseInt(match[2]);
-            const fillB = parseInt(match[3]);
-            const fillA = match[4] ? parseFloat(match[4]) : 1;
-            
-            const tolerance = 40;
-            const visited = new Set();
-            const stack = [[startX, startY]];
-            
-            function colorMatch(idx) {
-                const r = data[idx];
-                const g = data[idx + 1];
-                const b = data[idx + 2];
-                
-                // 흰색이나 검정(경계선)은 건너뛰기
-                if (r > 240 && g > 240 && b > 240) return false;
-                if (r < 50 && g < 50 && b < 50) return false;
-                
-                // 시작점 색상과 유사한지 확인
-                return Math.abs(r - startR) <= tolerance &&
-                       Math.abs(g - startG) <= tolerance &&
-                       Math.abs(b - startB) <= tolerance;
-            }
-            
-            while (stack.length > 0) {
-                const [x, y] = stack.pop();
-                const key = `${x},${y}`;
-                
-                if (visited.has(key)) continue;
-                if (x < 0 || x >= canvasWidth || y < 0 || y >= canvasHeight) continue;
-                
-                const idx = (y * canvasWidth + x) * 4;
-                if (!colorMatch(idx)) continue;
-                
-                visited.add(key);
-                
-                // 색상 블렌딩 (원본 색상과 혼합)
-                const origR = data[idx];
-                const origG = data[idx + 1];
-                const origB = data[idx + 2];
-                
-                data[idx] = Math.round(origR * (1 - fillA) + fillR * fillA);
-                data[idx + 1] = Math.round(origG * (1 - fillA) + fillG * fillA);
-                data[idx + 2] = Math.round(origB * (1 - fillA) + fillB * fillA);
-                
-                stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
-            }
-            
-            ctx.putImageData(imageData, 0, 0);
-        }
-
-        // ========================================
-        // 지도 렌더링 함수
-        // ========================================
-        function renderMap(canvasId, indicatorKey) {
-            const canvas = document.getElementById(canvasId);
-            const ctx = canvas.getContext('2d');
+        function renderMap(wrapperId, indicatorKey) {
+            const wrapper = document.getElementById(wrapperId);
             const indicator = infographicData.indicators[indicatorKey];
             
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = function() {
-                // 캔버스 크기 설정
-                const scale = 150 / img.height;
-                canvas.width = img.width * scale;
-                canvas.height = 150;
-                
-                // 이미지 그리기
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // 각 지역에 색칠
-                if (indicator.regions) {
-                    for (const [region, status] of Object.entries(indicator.regions)) {
-                        const seed = REGION_SEEDS[region];
-                        if (!seed) continue;
-                        
-                        const x = seed.x * canvas.width;
-                        const y = seed.y * canvas.height;
-                        
-                        let color;
-                        if (indicatorKey === 'cpi') {
-                            // 소비자물가는 평균 대비
-                            if (status === 'above') color = COLORS.aboveAvg;
-                            else if (status === 'below') color = COLORS.belowAvg;
-                            else color = COLORS.nationalAvg;
-                        } else {
-                            // 일반 지표는 증감
-                            if (status === 'up') color = COLORS.increase;
-                            else if (status === 'down') color = COLORS.decrease;
-                            else color = COLORS.same;
-                        }
-                        
-                        floodFill(ctx, x, y, color, canvas.width, canvas.height);
-                    }
-                }
-            };
+            // 지도 이미지 추가
+            const img = document.createElement('img');
+            img.className = 'korea-map-img';
             img.src = MAP_IMAGE_PATH;
+            img.alt = '한국 지도';
+            wrapper.appendChild(img);
+            
+            // 각 지역에 마커 추가
+            if (indicator.regions) {
+                for (const [region, status] of Object.entries(indicator.regions)) {
+                    const pos = REGION_POSITIONS[region];
+                    if (!pos) continue;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'region-marker';
+                    marker.style.left = pos.x + '%';
+                    marker.style.top = pos.y + '%';
+                    marker.title = region;
+                    
+                    // 색상 결정
+                    if (indicatorKey === 'cpi') {
+                        // 소비자물가는 평균 대비
+                        if (status === 'above') marker.classList.add('above-avg');
+                        else if (status === 'below') marker.classList.add('below-avg');
+                        else marker.classList.add('national-avg');
+                    } else {
+                        // 일반 지표는 증감
+                        if (status === 'up') marker.classList.add('increase');
+                        else if (status === 'down') marker.classList.add('decrease');
+                        else marker.classList.add('same');
+                    }
+                    
+                    wrapper.appendChild(marker);
+                }
+            }
         }
 
         // ========================================
@@ -896,17 +852,17 @@
             document.getElementById('organization-name').textContent = infographicData.organization;
             
             const cards = [
-                { cardId: 'card-mining', canvasId: 'map-mining', key: 'mining' },
-                { cardId: 'card-service', canvasId: 'map-service', key: 'service' },
-                { cardId: 'card-retail', canvasId: 'map-retail', key: 'retail' },
-                { cardId: 'card-export', canvasId: 'map-export', key: 'export' },
-                { cardId: 'card-employment', canvasId: 'map-employment', key: 'employment' },
-                { cardId: 'card-cpi', canvasId: 'map-cpi', key: 'cpi' }
+                { cardId: 'card-mining', mapId: 'map-mining', key: 'mining' },
+                { cardId: 'card-service', mapId: 'map-service', key: 'service' },
+                { cardId: 'card-retail', mapId: 'map-retail', key: 'retail' },
+                { cardId: 'card-export', mapId: 'map-export', key: 'export' },
+                { cardId: 'card-employment', mapId: 'map-employment', key: 'employment' },
+                { cardId: 'card-cpi', mapId: 'map-cpi', key: 'cpi' }
             ];
             
-            cards.forEach(({ cardId, canvasId, key }) => {
+            cards.forEach(({ cardId, mapId, key }) => {
                 renderRanking(cardId, key);
-                renderMap(canvasId, key);
+                renderMap(mapId, key);
             });
         }
 
@@ -948,8 +904,7 @@
         // ========================================
         window.InfographicAPI = {
             data: infographicData,
-            colors: COLORS,
-            regionSeeds: REGION_SEEDS,
+            regionPositions: REGION_POSITIONS,
             render: renderInfographic,
             renderMap: renderMap,
             updateNational: updateNational,
@@ -960,4 +915,3 @@
     </script>
 </body>
 </html>
-

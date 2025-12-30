@@ -62,6 +62,9 @@ def view_file(filename):
     """파일 직접 보기 (다운로드 없이)"""
     filepath = UPLOAD_FOLDER / filename
     if filepath.exists():
+        # HTML 파일은 text/html로 명시적으로 제공
+        if filename.endswith('.html'):
+            return send_file(str(filepath), mimetype='text/html')
         return send_file(str(filepath))
     return "파일을 찾을 수 없습니다.", 404
 

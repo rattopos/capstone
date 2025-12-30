@@ -11,8 +11,53 @@ from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, session, send_file, make_response
 from werkzeug.utils import secure_filename
+import unicodedata
+import uuid
 
 from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER
+
+
+def safe_filename(filename):
+    """한글을 보존하면서 안전한 파일명 생성
+    
+    - 한글, 영문, 숫자, 언더스코어, 하이픈, 점 허용
+    - 위험한 문자 제거
+    - 파일명 충돌 방지를 위해 UUID 추가
+    """
+    # 파일명과 확장자 분리
+    if '.' in filename:
+        name, ext = filename.rsplit('.', 1)
+        ext = '.' + ext.lower()
+    else:
+        name = filename
+        ext = ''
+    
+    # 유니코드 정규화
+    name = unicodedata.normalize('NFC', name)
+    
+    # 허용할 문자만 유지 (한글, 영문, 숫자, 언더스코어, 하이픈, 공백)
+    safe_chars = []
+    for char in name:
+        if char.isalnum() or char in ('_', '-', ' ', '년', '분기'):
+            safe_chars.append(char)
+        elif '\uAC00' <= char <= '\uD7A3':  # 한글 완성형
+            safe_chars.append(char)
+        elif '\u3131' <= char <= '\u3163':  # 한글 자모
+            safe_chars.append(char)
+    
+    name = ''.join(safe_chars).strip()
+    
+    # 공백을 언더스코어로
+    name = name.replace(' ', '_')
+    
+    # 빈 파일명 방지
+    if not name:
+        name = 'upload'
+    
+    # 파일명 충돌 방지를 위해 짧은 UUID 추가
+    short_uuid = str(uuid.uuid4())[:8]
+    
+    return f"{name}_{short_uuid}{ext}"
 
 
 def send_file_with_korean_filename(filepath, filename, mimetype):
@@ -157,9 +202,14 @@ def upload_excel():
     if not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다'})
     
-    filename = secure_filename(file.filename)
+    # 한글 파일명 보존하면서 안전한 파일명 생성
+    filename = safe_filename(file.filename)
     filepath = Path(UPLOAD_FOLDER) / filename
     file.save(str(filepath))
+    
+    # 저장된 파일 크기 확인 (데이터 유실 방지)
+    saved_size = filepath.stat().st_size
+    print(f"[업로드] 파일 저장 완료: {filename} ({saved_size:,} bytes)")
     
     # 파일 유형 자동 감지
     file_type = detect_file_type(str(filepath))
@@ -401,12 +451,13 @@ def upload_grdp_file():
     if not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다.'}), 400
     
-    filename = secure_filename(file.filename)
+    filename = safe_filename(file.filename)
     if 'grdp' not in filename.lower() and 'GRDP' not in filename:
         filename = f"grdp_{filename}"
     
     filepath = UPLOAD_FOLDER / filename
     file.save(str(filepath))
+    print(f"[GRDP 업로드] 파일 저장 완료: {filename}")
     
     year = session.get('year', 2025)
     quarter = session.get('quarter', 2)
@@ -1177,7 +1228,7 @@ def get_industry_weights():
 
 @api_bp.route('/export-hwp-ready', methods=['POST'])
 def export_hwp_ready():
-    """한글(HWP) 복붙용 HTML 문서 생성"""
+    """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
     try:
         data = request.get_json()
         pages = data.get('pages', [])
@@ -1187,7 +1238,7 @@ def export_hwp_ready():
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
         
-        # 한글 복붙에 최적화된 HTML 생성
+        # 한글 복붙에 최적화된 HTML 생성 (인라인 스타일 사용)
         final_html = f'''<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1195,16 +1246,9 @@ def export_hwp_ready():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 복붙용</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
-        
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        
+        /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
         body {{
-            font-family: '맑은 고딕', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
             font-size: 10pt;
             line-height: 1.6;
             color: #000;
@@ -1213,131 +1257,28 @@ def export_hwp_ready():
             max-width: 210mm;
             margin: 0 auto;
         }}
-        
-        /* 페이지 구분선 */
-        .hwp-page {{
-            margin-bottom: 30px;
-            padding-bottom: 30px;
-            border-bottom: 3px double #333;
-            page-break-after: always;
-        }}
-        
-        .hwp-page:last-child {{
-            border-bottom: none;
-            page-break-after: auto;
-        }}
-        
-        /* 페이지 제목 */
-        .hwp-page-title {{
-            font-size: 14pt;
-            font-weight: bold;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            padding: 8px 12px;
-            background: #f0f0f0;
-            border-left: 4px solid #0066cc;
-        }}
-        
-        /* 페이지 번호 */
-        .hwp-page-number {{
-            text-align: center;
-            font-size: 9pt;
-            color: #666;
-            margin-top: 20px;
-        }}
-        
-        /* 표 스타일 - 한글에서 잘 인식됨 */
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-            margin: 10px 0;
-            font-size: 9pt;
-        }}
-        
-        th, td {{
-            border: 1px solid #000;
-            padding: 5px 8px;
-            text-align: center;
-            vertical-align: middle;
-        }}
-        
-        th {{
-            background-color: #e6e6e6;
-            font-weight: bold;
-        }}
-        
-        /* 제목 스타일 */
-        h1, h2, h3, h4, h5, h6 {{
-            margin: 15px 0 10px 0;
-            color: #1a1a1a;
-        }}
-        
-        h1 {{ font-size: 16pt; }}
-        h2 {{ font-size: 14pt; }}
-        h3 {{ font-size: 12pt; }}
-        h4 {{ font-size: 11pt; }}
-        
-        /* 목록 */
-        ul, ol {{
-            margin: 10px 0 10px 25px;
-        }}
-        
-        li {{
-            margin: 5px 0;
-        }}
-        
-        /* 강조 */
-        strong, b {{
-            font-weight: bold;
-        }}
-        
-        /* 차트 대체 안내 */
-        .chart-placeholder {{
-            border: 2px dashed #999;
-            padding: 20px;
-            text-align: center;
-            background: #fafafa;
-            color: #666;
-            margin: 15px 0;
-        }}
-        
-        /* 숨김 처리 (복붙 시 불필요한 요소) */
-        script, canvas, .chart-container canvas {{
-            display: none !important;
-        }}
-        
-        /* 복사 안내 */
-        .copy-guide {{
+        .copy-btn {{
             position: fixed;
             top: 10px;
             right: 10px;
             background: #0066cc;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 20px;
+            border: none;
             border-radius: 5px;
-            font-size: 11pt;
+            font-size: 12pt;
+            cursor: pointer;
             z-index: 9999;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }}
-        
-        .copy-guide:hover {{
-            background: #0055aa;
-        }}
-        
-        @media print {{
-            .copy-guide {{
-                display: none;
-            }}
-        }}
+        .copy-btn:hover {{ background: #0055aa; }}
+        @media print {{ .copy-btn {{ display: none; }} }}
     </style>
 </head>
 <body>
-    <div class="copy-guide" onclick="selectAll()">📋 전체 선택 (Ctrl+A) 후 복사 (Ctrl+C)</div>
+    <button class="copy-btn" onclick="copyAll()">📋 전체 복사 (클릭)</button>
     
-    <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="font-size: 18pt; margin-bottom: 5px;">{year}년 {quarter}/4분기 지역경제동향</h1>
-        <p style="color: #666;">한글 복붙용 문서 - 복사 후 한글에 붙여넣기 하세요</p>
-    </div>
+    <div id="hwp-content">
 '''
         
         for idx, page in enumerate(pages, 1):
@@ -1348,37 +1289,26 @@ def export_hwp_ready():
             # body 내용 추출
             body_content = page_html
             if '<body' in page_html.lower():
-                import re
                 body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
                 if body_match:
                     body_content = body_match.group(1)
             
-            # 한글 복붙에 불필요한 요소 제거/변환
-            import re
-            
-            # style 태그 제거
+            # 한글 복붙에 불필요한 요소 제거
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
-            
-            # script 태그 제거
             body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
+            body_content = re.sub(r'<link[^>]*>', '', body_content)
+            body_content = re.sub(r'<meta[^>]*>', '', body_content)
             
-            # canvas를 차트 플레이스홀더로 대체
-            body_content = re.sub(
-                r'<canvas[^>]*>.*?</canvas>',
-                '<div class="chart-placeholder">📊 [차트 영역 - 별도 이미지 삽입 필요]</div>',
-                body_content,
-                flags=re.DOTALL
-            )
+            # canvas를 차트 플레이스홀더로 대체 (인라인 스타일)
+            chart_placeholder = '<div style="border: 2px dashed #666; padding: 15px; text-align: center; background: #f5f5f5; margin: 10px 0;">📊 [차트 영역 - 별도 이미지 삽입]</div>'
+            body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', chart_placeholder, body_content, flags=re.DOTALL)
+            body_content = re.sub(r'<canvas[^>]*/?>',  chart_placeholder, body_content)
             
-            # 빈 canvas 태그도 처리
-            body_content = re.sub(
-                r'<canvas[^>]*/?>',
-                '<div class="chart-placeholder">📊 [차트 영역 - 별도 이미지 삽입 필요]</div>',
-                body_content
-            )
+            # SVG 제거 (복잡한 차트)
+            body_content = re.sub(r'<svg[^>]*>.*?</svg>', chart_placeholder, body_content, flags=re.DOTALL)
             
-            # class 속성은 유지 (일부 스타일 적용 위해)
-            # inline style은 유지
+            # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식)
+            body_content = _add_table_inline_styles(body_content)
             
             # 카테고리 한글명
             category_names = {
@@ -1389,42 +1319,47 @@ def export_hwp_ready():
             }
             category_name = category_names.get(category, '')
             
+            # 페이지 구분 (인라인 스타일로)
             final_html += f'''
-    <div class="hwp-page" data-page="{idx}">
-        <div class="hwp-page-title">[{category_name}] {page_title}</div>
-        <div class="hwp-page-content">
+        <!-- 페이지 {idx}: {page_title} -->
+        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; page-break-after: always;">
+            <h2 style="font-family: '맑은 고딕', sans-serif; font-size: 14pt; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; padding: 8px 12px; background-color: #e8e8e8; border-left: 4px solid #0066cc;">
+                [{category_name}] {page_title}
+            </h2>
+            <div style="font-family: '맑은 고딕', sans-serif; font-size: 10pt; line-height: 1.6;">
 {body_content}
+            </div>
+            <p style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">- {idx} / {len(pages)} -</p>
         </div>
-        <div class="hwp-page-number">- {idx} / {len(pages)} -</div>
-    </div>
 '''
         
         final_html += '''
+    </div>
+    
     <script>
-        function selectAll() {
-            // 가이드 요소 제외하고 선택
-            const guide = document.querySelector('.copy-guide');
-            guide.style.display = 'none';
-            
+        function copyAll() {
+            const content = document.getElementById('hwp-content');
             const range = document.createRange();
-            range.selectNodeContents(document.body);
+            range.selectNodeContents(content);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             
-            // 복사 후 가이드 다시 표시
-            setTimeout(() => {
-                guide.style.display = 'block';
-            }, 100);
+            try {
+                document.execCommand('copy');
+                alert('복사 완료!\\n\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.\\n※ 표와 서식이 유지됩니다.');
+            } catch (e) {
+                alert('자동 복사 실패.\\nCtrl+A로 전체 선택 후 Ctrl+C로 복사하세요.');
+            }
             
-            alert('전체 선택되었습니다.\\nCtrl+C로 복사 후 한글에서 Ctrl+V로 붙여넣기 하세요.');
+            selection.removeAllRanges();
         }
         
-        // Ctrl+A 시 전체 선택 함수 호출
+        // 단축키 지원
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'a') {
                 e.preventDefault();
-                selectAll();
+                copyAll();
             }
         });
     </script>
@@ -1442,7 +1377,8 @@ def export_hwp_ready():
             'success': True,
             'html': final_html,
             'filename': output_filename,
-            'view_url': f'/uploads/{output_filename}',
+            'view_url': f'/view/{output_filename}',
+            'download_url': f'/uploads/{output_filename}',
             'total_pages': len(pages)
         })
         
@@ -1450,4 +1386,76 @@ def export_hwp_ready():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
+
+
+def _add_table_inline_styles(html_content):
+    """표에 인라인 스타일 추가 (한글 복붙 최적화)"""
+    # table 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<table([^>]*)>',
+        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-family: \'맑은 고딕\', sans-serif; font-size: 9pt;">',
+        html_content
+    )
+    
+    # th 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<th([^>]*)>',
+        r'<th\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold;">',
+        html_content
+    )
+    
+    # td 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<td([^>]*)>',
+        r'<td\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle;">',
+        html_content
+    )
+    
+    # 제목 태그들에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<h1([^>]*)>',
+        r'<h1\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 16pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h2([^>]*)>',
+        r'<h2\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h3([^>]*)>',
+        r'<h3\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 12pt; font-weight: bold; margin: 10px 0 8px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h4([^>]*)>',
+        r'<h4\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0;">',
+        html_content
+    )
+    
+    # p 태그에 스타일 추가
+    html_content = re.sub(
+        r'<p([^>]*)>',
+        r'<p\1 style="font-family: \'맑은 고딕\', sans-serif; margin: 5px 0; line-height: 1.6;">',
+        html_content
+    )
+    
+    # ul, ol 태그에 스타일 추가
+    html_content = re.sub(
+        r'<ul([^>]*)>',
+        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<ol([^>]*)>',
+        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<li([^>]*)>',
+        r'<li\1 style="margin: 3px 0;">',
+        html_content
+    )
+    
+    return html_content
 

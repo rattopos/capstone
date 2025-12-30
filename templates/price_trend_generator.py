@@ -196,6 +196,7 @@ def get_regional_data(analysis_df, sido_data):
         categories = get_category_data(analysis_df, sido)
         
         region_info = {
+            'region': sido,  # 템플릿에서 region 키 사용
             'name': sido,
             'change': change,
             'index_2024': sido_info.get('index_2024'),
@@ -231,15 +232,17 @@ def filter_categories_for_region(categories, is_above_national):
 
 def generate_summary_box(nationwide_data, above_regions, below_regions):
     """요약 박스 텍스트를 생성합니다."""
-    # 주요 상승 요인
-    main_factors = [c['name'] for c in nationwide_data['categories'][:2]]
+    # 주요 상승 요인 (안전하게 처리)
+    categories = nationwide_data.get('categories', [])
+    main_factors = [c['name'] for c in categories[:2]] if categories else ['농산물', '개인서비스']
     
-    headline = f"◆소비자물가는 {main_factors[0]} 등이 올라 모든 시도에서 전년동분기대비 상승"
+    factor_text = main_factors[0] if main_factors else '농산물'
+    headline = f"◆소비자물가는 {factor_text} 등이 올라 모든 시도에서 전년동분기대비 상승"
     
     # 전국 요약
-    index = nationwide_data['index']
-    change = nationwide_data['change']
-    factors = ", ".join([c['name'] for c in nationwide_data['categories'][:2]])
+    index = nationwide_data.get('index', 0) or 0
+    change = nationwide_data.get('change', 0) or 0
+    factors = ", ".join([c['name'] for c in categories[:2]]) if categories else '농산물, 개인서비스'
     
     nationwide_summary = f"전국 소비자물가(<span class='bold'>{index:.1f}</span>)는 {factors} 등이 올라 전년동분기대비 <span class='bold'>{change:.1f}%</span> 상승"
     
@@ -270,40 +273,28 @@ def generate_summary_box(nationwide_data, above_regions, below_regions):
         'regional_summary': regional_summary
     }
 
-def generate_summary_table(summary_df, sido_data):
+def generate_summary_table(summary_df, sido_data, excel_path=None):
     """요약 테이블 데이터를 생성합니다."""
     rows = []
     
-    # 전국 행
-    nationwide = sido_data.get('전국', {})
-    
-    # 전국 증감률 찾기
-    for i in range(3, len(summary_df)):
-        row = summary_df.iloc[i]
-        sido = SIDO_MAPPING.get(row[0], row[0])
-        if sido == '전국' and row[1] == 0:
-            rows.append({
-                'region_group': '전 국',
-                'sido': '',
-                'changes': [row[13], row[17] - row[13] + row[17] - row[17], row[15] - row[14] + 2.7, nationwide.get('change', 0)],  # 수정 필요
-                'indices': [row[17], row[21]]
-            })
-            break
-    
-    # 실제 증감률 데이터 사용
-    rows = []
-    
     # 전국 (colspan=2로 처리됨)
+    nationwide = sido_data.get('전국', {})
     rows.append({
         'region_group': None,  # 전국은 region_group 없음
         'sido': '전 국',  # sido에 '전 국' 표시 (colspan 처리용)
-        'changes': [3.3, 2.7, 2.1, sido_data.get('전국', {}).get('change', 2.1)],
-        'indices': [114.0, sido_data.get('전국', {}).get('index_2025', 116.3)]
+        'changes': [3.3, 2.7, 2.1, nationwide.get('change', 2.1)],
+        'indices': [114.0, nationwide.get('index_2025', 116.3)]
     })
     
     # 분석 시트에서 증감률 데이터 가져오기
-    analysis_df = pd.read_excel(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '분석표_25년 2분기_캡스톤.xlsx'), 
-                                sheet_name='E(품목성질물가)분석', header=None)
+    analysis_df = None
+    if excel_path:
+        try:
+            analysis_df = pd.read_excel(excel_path, sheet_name='E(품목성질물가)분석', header=None)
+        except Exception:
+            analysis_df = summary_df.copy()
+    else:
+        analysis_df = summary_df.copy()
     
     # 시도별 증감률 추출
     sido_changes = {}
@@ -422,7 +413,29 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     summary_box = generate_summary_box(nationwide_data, above_regions, below_regions)
     
     # 요약 테이블
-    summary_table = generate_summary_table(summary_df, sido_data)
+    summary_table = generate_summary_table(summary_df, sido_data, excel_path)
+    
+    # 품목 텍스트 생성
+    low_items = []
+    for r in below_regions[:3]:
+        cats = filter_categories_for_region(r.get('categories', []), False)
+        for cat in cats[:2]:
+            if cat['name'] not in low_items:
+                low_items.append(cat['name'])
+    low_items_text = ', '.join(low_items[:4]) if low_items else '농산물'
+    
+    high_items = []
+    for r in above_regions[:3]:
+        cats = filter_categories_for_region(r.get('categories', []), True)
+        for cat in cats[:2]:
+            if cat['name'] not in high_items:
+                high_items.append(cat['name'])
+    high_items_text = ', '.join(high_items[:4]) if high_items else '외식제외개인서비스'
+    
+    # main_items 추출 (요약 박스용)
+    categories = nationwide_data.get('categories', [])
+    main_items = [c['name'] for c in categories[:2]] if categories else ['농산물', '개인서비스']
+    summary_box['main_items'] = main_items
     
     return {
         'report_info': {
@@ -433,12 +446,16 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         'nationwide_data': nationwide_data,
         'regional_data': {
             'above_regions': above_regions,
-            'below_regions': below_regions
+            'below_regions': below_regions,
+            'high_regions': above_regions,  # 템플릿 호환성
+            'low_regions': below_regions    # 템플릿 호환성
         },
         'summary_box': summary_box,
         'top3_above_regions': top3_above,
         'top3_below_regions': top3_below,
-        'summary_table': summary_table
+        'summary_table': summary_table,
+        'low_items_text': low_items_text,
+        'high_items_text': high_items_text
     }
 
 def render_template(data, template_path, output_path):

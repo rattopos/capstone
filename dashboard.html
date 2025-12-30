@@ -3157,14 +3157,25 @@
                 loadingProgress.style.width = '50%';
                 loadingPercent.textContent = '50%';
                 
+                // 페이지가 비어있는 경우 에러 처리
+                if (pages.length === 0) {
+                    loadingOverlay.style.display = 'none';
+                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    return;
+                }
+                
+                // 연도/분기 가져오기
+                const year = parseInt(elements.yearSelect.value) || 2025;
+                const quarter = parseInt(elements.quarterSelect.value) || 2;
+                
                 // API 호출
                 const response = await fetch('/api/export-final', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         pages: pages,
-                        year: state.year,
-                        quarter: state.quarter
+                        year: year,
+                        quarter: quarter
                     })
                 });
                 
@@ -3280,14 +3291,25 @@
                 loadingProgress.style.width = '30%';
                 loadingPercent.textContent = '30%';
                 
+                // 페이지가 비어있는 경우 에러 처리
+                if (pages.length === 0) {
+                    loadingOverlay.style.display = 'none';
+                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    return;
+                }
+                
+                // 연도/분기 가져오기
+                const year = parseInt(elements.yearSelect.value) || 2025;
+                const quarter = parseInt(elements.quarterSelect.value) || 2;
+                
                 // API 호출 - 한글 복붙용
                 const response = await fetch('/api/export-hwp-ready', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         pages: pages,
-                        year: state.year,
-                        quarter: state.quarter,
+                        year: year,
+                        quarter: quarter,
                         mode: 'single'
                     })
                 });
