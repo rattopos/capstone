@@ -154,14 +154,34 @@
         .table-container {
             margin-top: 20px;
         }
+        
+        /* 페이지 구분 */
+        .page {
+            min-height: 297mm;
+            padding: 20px 0;
+        }
+        
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+        
+        @media print {
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="report-container">
-        <h3>나. 서비스업생산</h3>
-        
-        <!-- 요약 박스 -->
-        <div class="summary-box">
+        <!-- 페이지 1: 요약 및 상세 -->
+        <div class="page page-break">
+            <h3>나. 서비스업생산</h3>
+            
+            <!-- 요약 박스 -->
+            <div class="summary-box">
             <div class="headline">◆ 서비스업생산은 
                 {% for region in summary_box.main_increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') }}){% if not loop.last %}, {% endif %}
@@ -212,10 +232,16 @@
             </div>
             {% endfor %}
         </div>
+        </div>
+        <!-- 페이지 1 끝 -->
         
-        <!-- 데이터 테이블 -->
-        <div class="table-container">
-            <div class="table-title">《 서비스업생산지수 및 증감률 》</div>
+        <!-- 페이지 2: 데이터 테이블 -->
+        <div class="page">
+            <h3>나. 서비스업생산 (계속)</h3>
+            
+            <!-- 데이터 테이블 -->
+            <div class="table-container">
+                <div class="table-title">《 서비스업생산지수 및 증감률 》</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -254,6 +280,10 @@
                 </tbody>
             </table>
             
-            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
+                <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
+            </div>
         </div>
-        
+        <!-- 페이지 2 끝 -->
+    </div>
+</body>
+</html>
