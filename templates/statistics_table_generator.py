@@ -22,7 +22,29 @@ except ImportError:
 
 
 class StatisticsTableGenerator:
-    """통계표 생성 클래스"""
+    """통계표 생성 클래스
+    
+    데이터 로딩 전략:
+    1. 과거 데이터 (statistics_historical_data.json)에서 먼저 로드
+    2. JSON에 없는 데이터 (현재/최신 분기)는 기초자료 또는 분석표에서 동적 추출
+    3. 새로 추출한 데이터는 옵션에 따라 JSON에 저장 가능
+    
+    과거 데이터 JSON 구조:
+    {
+        "_metadata": {
+            "quarterly_range": {"start": "2016.1/4", "end": "2025.1/4"},
+            "yearly_range": {"start": "2016", "end": "2024"}
+        },
+        "광공업생산지수": {
+            "yearly": {"2016": {"전국": 2.2, ...}, ...},
+            "quarterly": {"2016.1/4": {"전국": 1.5, ...}, ...}
+        },
+        ...
+    }
+    """
+    
+    # 과거 데이터 JSON 파일 경로
+    HISTORICAL_DATA_FILE = "statistics_historical_data.json"
     
     # 통계표 항목 정의 (집계 시트 기준, 전년동기비 계산 필요)
     TABLE_CONFIG = {
@@ -174,16 +196,18 @@ class StatisticsTableGenerator:
     ALL_REGIONS = PAGE1_REGIONS + PAGE2_REGIONS
     
     def __init__(self, excel_path: str, historical_data_path: Optional[str] = None, 
-                 raw_excel_path: Optional[str] = None, current_year: int = 2025, current_quarter: int = 2):
+                 raw_excel_path: Optional[str] = None, current_year: int = 2025, current_quarter: int = 2,
+                 auto_update_json: bool = False):
         """
         초기화
         
         Args:
             excel_path: 분석표 엑셀 파일 경로
-            historical_data_path: 과거 데이터 JSON 파일 경로 (사용하지 않음, 호환성 유지)
-            raw_excel_path: 기초자료 엑셀 파일 경로 (우선 사용)
+            historical_data_path: 과거 데이터 JSON 파일 경로 (사용하지 않음, 자동 로드)
+            raw_excel_path: 기초자료 엑셀 파일 경로 (최신 데이터 추출용)
             current_year: 현재 연도
             current_quarter: 현재 분기
+            auto_update_json: 새로 추출한 데이터를 JSON에 자동 저장할지 여부
         """
         self.excel_path = excel_path
         self.raw_excel_path = raw_excel_path
@@ -191,9 +215,15 @@ class StatisticsTableGenerator:
         self.current_quarter = current_quarter
         self.historical_data_path = historical_data_path
         self.historical_data = {}
+        self.historical_metadata = {}  # JSON 메타데이터
         self.cached_sheets = {}
+        self.auto_update_json = auto_update_json
+        self.newly_extracted_data = {}  # 새로 추출한 데이터 (JSON 업데이트용)
         
-        # RawDataExtractor 초기화
+        # 과거 데이터 JSON 자동 로드
+        self._load_historical_data()
+        
+        # RawDataExtractor 초기화 (최신 데이터 추출용)
         self.raw_extractor = None
         if raw_excel_path and RawDataExtractor and Path(raw_excel_path).exists():
             try:
@@ -201,11 +231,101 @@ class StatisticsTableGenerator:
                 print(f"[통계표] 기초자료 추출기 초기화 완료: {raw_excel_path}")
             except Exception as e:
                 print(f"[통계표] 기초자료 추출기 초기화 실패: {e}")
+    
+    def _load_historical_data(self):
+        """과거 데이터 JSON 로드 (메타데이터 포함)"""
+        historical_path = Path(__file__).parent / self.HISTORICAL_DATA_FILE
+        if historical_path.exists():
+            try:
+                with open(historical_path, 'r', encoding='utf-8') as f:
+                    raw_data = json.load(f)
+                
+                # 메타데이터 분리
+                self.historical_metadata = raw_data.pop('_metadata', {})
+                self.historical_data = raw_data
+                
+                # 메타데이터에서 범위 정보 확인
+                q_range = self.historical_metadata.get('quarterly_range', {})
+                y_range = self.historical_metadata.get('yearly_range', {})
+                
+                print(f"[통계표] 과거 데이터 로드 완료: {len(self.historical_data)}개 지표")
+                print(f"[통계표] - 연도별 범위: {y_range.get('start', '?')} ~ {y_range.get('end', '?')}")
+                print(f"[통계표] - 분기별 범위: {q_range.get('start', '?')} ~ {q_range.get('end', '?')}")
+                
+            except Exception as e:
+                print(f"[통계표] 과거 데이터 로드 실패: {e}")
+                self.historical_data = {}
+                self.historical_metadata = {}
+        else:
+            print(f"[통계표] 과거 데이터 파일 없음: {historical_path}")
+            self.historical_data = {}
+            self.historical_metadata = {}
+    
+    def _is_quarter_in_json(self, quarter_key: str) -> bool:
+        """해당 분기 데이터가 JSON에 있는지 확인"""
+        q_range = self.historical_metadata.get('quarterly_range', {})
+        json_end = q_range.get('end', '')
         
-        # 과거 데이터 로드 (하위 호환성, 사용하지 않음)
-        if historical_data_path and Path(historical_data_path).exists():
-            with open(historical_data_path, 'r', encoding='utf-8') as f:
-                self.historical_data = json.load(f)
+        if not json_end:
+            return False
+        
+        # 분기 키 비교 (예: "2025.1/4" vs "2025.2/4p")
+        quarter_key_clean = quarter_key.rstrip('p')
+        json_end_clean = json_end.rstrip('p')
+        
+        # 연도.분기 형식 파싱
+        def parse_quarter(q):
+            match = re.match(r'(\d{4})\.(\d)/4', q)
+            if match:
+                return int(match.group(1)), int(match.group(2))
+            return 0, 0
+        
+        current_year, current_q = parse_quarter(quarter_key_clean)
+        end_year, end_q = parse_quarter(json_end_clean)
+        
+        # 현재 분기가 JSON 범위 내에 있는지 확인
+        if current_year < end_year:
+            return True
+        elif current_year == end_year and current_q <= end_q:
+            return True
+        return False
+    
+    def _get_missing_quarters(self) -> List[str]:
+        """JSON에 없는 분기 목록 반환"""
+        missing = []
+        q_range = self.historical_metadata.get('quarterly_range', {})
+        json_end = q_range.get('end', '2016.1/4')
+        
+        # JSON 끝 분기 이후부터 현재 분기까지
+        def parse_quarter(q):
+            match = re.match(r'(\d{4})\.(\d)/4', q.rstrip('p'))
+            if match:
+                return int(match.group(1)), int(match.group(2))
+            return 2016, 1
+        
+        end_year, end_q = parse_quarter(json_end)
+        
+        # JSON 다음 분기부터 시작
+        if end_q == 4:
+            start_year, start_q = end_year + 1, 1
+        else:
+            start_year, start_q = end_year, end_q + 1
+        
+        # 현재 분기까지 목록 생성
+        year, q = start_year, start_q
+        while year < self.current_year or (year == self.current_year and q <= self.current_quarter):
+            is_current = (year == self.current_year and q == self.current_quarter)
+            quarter_key = f"{year}.{q}/4"
+            if is_current:
+                quarter_key += "p"
+            missing.append(quarter_key)
+            
+            if q == 4:
+                year, q = year + 1, 1
+            else:
+                q += 1
+        
+        return missing
     
     def _load_sheet(self, sheet_name: str) -> pd.DataFrame:
         """엑셀 시트 로드 (캐싱)"""
@@ -286,21 +406,12 @@ class StatisticsTableGenerator:
         
         print(f"[통계표] 기초자료 추출 결과 - 연도: {len(yearly_data)}개, 분기: {len(quarterly_data)}개")
         
-        # 데이터 형식 변환 (분기 키 형식 통일: "2016 1/4" -> "2016.1/4" 또는 "2025.2/4p")
+        # 데이터 형식 변환 (분기 키 형식 통일)
+        # raw_data_extractor가 이미 "2025.2/4p" 형식으로 반환하므로 그대로 사용
         quarterly_formatted = {}
         for quarter_key, data in quarterly_data.items():
-            # "2016 1/4" -> "2016.1/4" 형식으로 변환
+            # 공백 형식("2016 1/4")인 경우 점 형식("2016.1/4")으로 변환
             formatted_key = quarter_key.replace(" ", ".")
-            
-            # 현재 분기인 경우 p 접미사 추가
-            import re
-            match = re.match(r'(\d{4})\.(\d)/4', formatted_key)
-            if match:
-                year = int(match.group(1))
-                q = int(match.group(2))
-                if year == self.current_year and q == self.current_quarter:
-                    formatted_key += "p"
-            
             quarterly_formatted[formatted_key] = data
         
         return {
@@ -419,7 +530,13 @@ class StatisticsTableGenerator:
         }
     
     def extract_table_data(self, table_name: str) -> Dict[str, Any]:
-        """특정 통계표의 데이터 추출 (집계 시트에서 전년동기비 계산)"""
+        """특정 통계표의 데이터 추출 (하이브리드: JSON + 동적 추출)
+        
+        데이터 로딩 전략:
+        1. 과거 데이터 JSON에서 먼저 로드 (확정된 데이터)
+        2. JSON에 없는 분기만 기초자료/분석표에서 동적 추출
+        3. auto_update_json이 True면 새 데이터를 JSON에 저장
+        """
         config = self.TABLE_CONFIG.get(table_name)
         if not config:
             raise ValueError(f"알 수 없는 통계표: {table_name}")
@@ -427,40 +544,121 @@ class StatisticsTableGenerator:
         # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
         data = self._create_empty_table_data()
         
+        # 1. 과거 데이터 JSON에서 로드 (우선순위 1)
+        json_loaded = False
+        if table_name in self.historical_data:
+            historical = self.historical_data[table_name]
+            
+            # 연도별 데이터 로드
+            for year, regions in historical.get('yearly', {}).items():
+                if year in data['yearly']:
+                    for region, value in regions.items():
+                        if value is not None:
+                            data['yearly'][year][region] = value
+            
+            # 분기별 데이터 로드
+            for quarter, regions in historical.get('quarterly', {}).items():
+                if quarter in data['quarterly']:
+                    for region, value in regions.items():
+                        if value is not None:
+                            data['quarterly'][quarter][region] = value
+            
+            json_loaded = True
+            print(f"[통계표] JSON에서 과거 데이터 로드: {table_name}")
+        
+        # 2. JSON에 없는 분기 확인
+        missing_quarters = self._get_missing_quarters()
+        
+        if missing_quarters:
+            print(f"[통계표] JSON에 없는 분기 동적 추출 필요: {missing_quarters}")
+            
+            # 기초자료에서 최신 데이터 추출
+            if self.raw_extractor:
+                raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
+                if raw_sheet_name:
+                    try:
+                        print(f"[통계표] 기초자료에서 데이터 추출: {table_name}")
+                        raw_data = self._extract_from_raw_data(raw_sheet_name, config)
+                        if raw_data:
+                            # JSON에 없는 분기만 업데이트
+                            for quarter in missing_quarters:
+                                quarter_clean = quarter.rstrip('p')
+                                # raw_data에서 해당 분기 찾기
+                                quarter_data = raw_data.get('quarterly', {}).get(quarter) or \
+                                              raw_data.get('quarterly', {}).get(quarter_clean)
+                                
+                                if quarter_data and quarter in data['quarterly']:
+                                    for region, value in quarter_data.items():
+                                        if value is not None:
+                                            data['quarterly'][quarter][region] = value
+                                    print(f"[통계표] 분기 데이터 추가: {quarter}")
+                                    
+                                    # 새로 추출한 데이터 저장 (JSON 업데이트용)
+                                    if table_name not in self.newly_extracted_data:
+                                        self.newly_extracted_data[table_name] = {'yearly': {}, 'quarterly': {}}
+                                    self.newly_extracted_data[table_name]['quarterly'][quarter] = quarter_data
+                            
+                            # 연도 데이터도 필요시 업데이트
+                            for year, regions in raw_data.get('yearly', {}).items():
+                                if year not in self.historical_data.get(table_name, {}).get('yearly', {}):
+                                    if year in data['yearly']:
+                                        for region, value in regions.items():
+                                            if value is not None:
+                                                data['yearly'][year][region] = value
+                                        
+                                        # 새로 추출한 데이터 저장
+                                        if table_name not in self.newly_extracted_data:
+                                            self.newly_extracted_data[table_name] = {'yearly': {}, 'quarterly': {}}
+                                        self.newly_extracted_data[table_name]['yearly'][year] = regions
+                    except Exception as e:
+                        print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
+            
+            # 기초자료 없으면 분석표 집계 시트에서 추출
+            if not self.raw_extractor:
+                self._extract_from_aggregate_sheet(table_name, config, data)
+        
+        # JSON 데이터가 없고 동적 추출도 실패한 경우 -> 전체 동적 추출 시도
+        if not json_loaded and not missing_quarters:
+            print(f"[통계표] JSON 없음, 전체 동적 추출: {table_name}")
+            self._extract_all_dynamic(table_name, config, data)
+        
+        return data
+    
+    def _extract_all_dynamic(self, table_name: str, config: dict, data: dict):
+        """모든 데이터를 동적으로 추출 (JSON 없는 경우)"""
         # 기초자료에서 직접 추출 (우선순위 1)
         if self.raw_extractor:
             raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
             if raw_sheet_name:
                 try:
-                    print(f"[통계표] 기초자료에서 추출: {table_name} (시트: {raw_sheet_name})")
+                    print(f"[통계표] 기초자료에서 전체 추출: {table_name}")
                     raw_data = self._extract_from_raw_data(raw_sheet_name, config)
                     if raw_data:
-                        # 기초자료에서 추출한 데이터로 업데이트
-                        for year in raw_data.get('yearly', {}):
+                        for year, regions in raw_data.get('yearly', {}).items():
                             if year in data['yearly']:
-                                data['yearly'][year].update(raw_data['yearly'][year])
+                                data['yearly'][year].update({k: v for k, v in regions.items() if v is not None})
                         
-                        for quarter in raw_data.get('quarterly', {}):
+                        for quarter, regions in raw_data.get('quarterly', {}).items():
                             if quarter in data['quarterly']:
-                                data['quarterly'][quarter].update(raw_data['quarterly'][quarter])
-                        
-                        print(f"[통계표] 기초자료 추출 완료: {table_name}")
-                        return data
+                                data['quarterly'][quarter].update({k: v for k, v in regions.items() if v is not None})
+                        return
                 except Exception as e:
                     print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
-                    import traceback
-                    traceback.print_exc()
         
-        # 집계 시트에서 추출 (fallback)
+        # 분석표 집계 시트에서 추출 (fallback)
+        self._extract_from_aggregate_sheet(table_name, config, data)
+    
+    def _extract_from_aggregate_sheet(self, table_name: str, config: dict, data: dict):
+        """분석표 집계 시트에서 데이터 추출"""
         sheet_name = config.get("집계_시트")
         if not sheet_name:
             print(f"[통계표] 집계_시트 설정 없음: {table_name}")
-            return data
+            return
             
         df = self._load_sheet(sheet_name)
         if df is None:
             print(f"[통계표] 시트를 찾을 수 없음: {sheet_name}")
-            return data
+            return
         
         print(f"[통계표] 집계 시트에서 추출: {table_name} (시트: {sheet_name})")
         
@@ -488,10 +686,13 @@ class StatisticsTableGenerator:
             
             # 연도별 데이터 (전년동기비 계산)
             for year in data["yearly_years"]:
+                # 이미 값이 있으면 스킵 (JSON에서 로드됨)
+                if data["yearly"].get(year, {}).get(region, "-") != "-":
+                    continue
+                
                 year_int = int(year)
                 prev_year = str(year_int - 1)
                 
-                # 현재 연도와 전년도 컬럼 인덱스 찾기
                 curr_col = config["연도_컬럼"].get(year)
                 prev_col = config["연도_컬럼"].get(prev_year)
                 
@@ -511,7 +712,10 @@ class StatisticsTableGenerator:
             
             # 분기별 데이터 (전년동기비 계산)
             for quarter_key in data["quarterly_keys"]:
-                # "2024.2/4" -> 2024, 2 파싱
+                # 이미 값이 있으면 스킵 (JSON에서 로드됨)
+                if data["quarterly"].get(quarter_key, {}).get(region, "-") != "-":
+                    continue
+                
                 match = re.match(r'(\d{4})\.(\d)/4(p?)', quarter_key)
                 if not match:
                     continue
@@ -520,7 +724,6 @@ class StatisticsTableGenerator:
                 q = int(match.group(2))
                 prev_year_quarter_key = f"{year - 1}.{q}/4"
                 
-                # 현재 분기와 전년동분기 컬럼 찾기
                 curr_col = quarter_col_map.get(quarter_key.rstrip('p'))
                 prev_col = quarter_col_map.get(prev_year_quarter_key)
                 
@@ -537,14 +740,6 @@ class StatisticsTableGenerator:
                         
                         if result is not None:
                             data["quarterly"][quarter_key][region] = round(result, 1)
-        
-        # quarterly_keys 정리 (데이터가 있는 분기만 유지)
-        data["quarterly_keys"] = [
-            q for q in data["quarterly_keys"] 
-            if any(v != "-" for v in data["quarterly"].get(q, {}).values())
-        ]
-        
-        return data
     
     def extract_all_tables(self, year: Optional[int] = None, quarter: Optional[int] = None) -> Dict[str, Any]:
         """모든 통계표 데이터 추출"""
@@ -771,6 +966,122 @@ class StatisticsTableGenerator:
             json.dump(template, f, ensure_ascii=False, indent=2)
         
         print(f"과거 데이터 템플릿이 생성되었습니다: {output_path}")
+    
+    def update_historical_json(self, save_path: Optional[str] = None):
+        """새로 추출한 데이터를 JSON 파일에 업데이트
+        
+        Args:
+            save_path: 저장할 경로 (기본: 기존 JSON 파일)
+        """
+        if not self.newly_extracted_data:
+            print("[통계표] 업데이트할 새 데이터가 없습니다.")
+            return
+        
+        # 기존 JSON 로드
+        historical_path = Path(__file__).parent / self.HISTORICAL_DATA_FILE
+        
+        try:
+            with open(historical_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        except Exception as e:
+            print(f"[통계표] 기존 JSON 로드 실패: {e}")
+            existing_data = {'_metadata': {}}
+        
+        # 메타데이터 분리
+        metadata = existing_data.pop('_metadata', {})
+        
+        # 새 데이터 병합
+        new_quarters_added = []
+        new_years_added = []
+        
+        for table_name, new_data in self.newly_extracted_data.items():
+            if table_name not in existing_data:
+                existing_data[table_name] = {'yearly': {}, 'quarterly': {}}
+            
+            # 분기별 데이터 병합
+            for quarter, regions in new_data.get('quarterly', {}).items():
+                if quarter not in existing_data[table_name].get('quarterly', {}):
+                    existing_data[table_name]['quarterly'][quarter] = regions
+                    if quarter not in new_quarters_added:
+                        new_quarters_added.append(quarter)
+            
+            # 연도별 데이터 병합
+            for year, regions in new_data.get('yearly', {}).items():
+                if year not in existing_data[table_name].get('yearly', {}):
+                    existing_data[table_name]['yearly'][year] = regions
+                    if year not in new_years_added:
+                        new_years_added.append(year)
+        
+        # 메타데이터 업데이트
+        if new_quarters_added:
+            # 분기 범위 업데이트
+            all_quarters = []
+            for table_data in existing_data.values():
+                if isinstance(table_data, dict) and 'quarterly' in table_data:
+                    all_quarters.extend(table_data['quarterly'].keys())
+            
+            if all_quarters:
+                sorted_quarters = sorted(set(all_quarters), key=lambda x: (
+                    int(re.match(r'(\d{4})', x).group(1)),
+                    int(re.match(r'\d{4}\.(\d)', x).group(1))
+                ))
+                metadata['quarterly_range'] = {
+                    'start': sorted_quarters[0].rstrip('p'),
+                    'end': sorted_quarters[-1].rstrip('p')
+                }
+        
+        if new_years_added:
+            # 연도 범위 업데이트
+            all_years = []
+            for table_data in existing_data.values():
+                if isinstance(table_data, dict) and 'yearly' in table_data:
+                    all_years.extend(table_data['yearly'].keys())
+            
+            if all_years:
+                sorted_years = sorted(set(all_years))
+                metadata['yearly_range'] = {
+                    'start': sorted_years[0],
+                    'end': sorted_years[-1]
+                }
+        
+        # 업데이트 일시 기록
+        from datetime import datetime
+        metadata['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+        
+        # 저장
+        output_data = {'_metadata': metadata, **existing_data}
+        target_path = save_path or historical_path
+        
+        with open(target_path, 'w', encoding='utf-8') as f:
+            json.dump(output_data, f, ensure_ascii=False, indent=2)
+        
+        print(f"[통계표] JSON 업데이트 완료: {target_path}")
+        if new_quarters_added:
+            print(f"[통계표] - 추가된 분기: {sorted(new_quarters_added)}")
+        if new_years_added:
+            print(f"[통계표] - 추가된 연도: {sorted(new_years_added)}")
+        
+        # 업데이트 완료 후 클리어
+        self.newly_extracted_data = {}
+    
+    def extract_and_save_all(self, year: int = None, quarter: int = None):
+        """모든 통계표 데이터 추출 후 JSON 업데이트
+        
+        새로운 분기 데이터가 있으면 JSON 파일에 자동 저장
+        """
+        if year is None:
+            year = self.current_year
+        if quarter is None:
+            quarter = self.current_quarter
+        
+        # 모든 테이블 데이터 추출
+        result = self.extract_all_tables(year, quarter)
+        
+        # 새 데이터가 있으면 JSON 업데이트
+        if self.newly_extracted_data:
+            self.update_historical_json()
+        
+        return result
 
 
 def main():
