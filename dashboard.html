@@ -39,7 +39,7 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow: auto;
         }
 
         /* Animated background */
@@ -63,7 +63,7 @@
             z-index: 10;
             background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
             border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem;
+            padding: 0.75rem 1.5rem;
         }
 
         .header-content {
@@ -82,19 +82,19 @@
         }
 
         .logo-icon {
-            width: 48px;
-            height: 48px;
+            width: 36px;
+            height: 36px;
             background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             box-shadow: 0 4px 20px var(--accent-glow);
         }
 
         .logo-text h1 {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 700;
             background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
             -webkit-background-clip: text;
@@ -102,7 +102,7 @@
         }
 
         .logo-text p {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
         }
 
@@ -115,15 +115,15 @@
         .select-group {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             background: var(--bg-tertiary);
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
             border: 1px solid var(--border);
         }
 
         .select-group label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -132,10 +132,10 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 0.4rem 0.75rem;
-            border-radius: 6px;
+            padding: 0.3rem 0.5rem;
+            border-radius: 5px;
             font-family: inherit;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -154,26 +154,26 @@
         .period-display {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
-            padding: 0.6rem 1.2rem;
-            border-radius: 12px;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
             border: 1px solid var(--border);
         }
 
         .period-label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             font-weight: 500;
         }
 
         .period-value {
-            font-size: 0.95rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--accent-primary);
-            padding: 0.3rem 0.8rem;
+            padding: 0.2rem 0.5rem;
             background: var(--accent-glow);
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
         .period-value.waiting {
@@ -186,27 +186,30 @@
         .main-container {
             position: relative;
             z-index: 10;
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 0.75rem 1rem;
             display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 2rem;
-            min-height: calc(100vh - 100px);
+            grid-template-columns: 280px 1fr;
+            gap: 1rem;
+            height: calc(100vh - 60px);
+            overflow: hidden;
         }
 
         /* Sidebar */
         .sidebar {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 0.75rem;
+            overflow-y: auto;
+            max-height: 100%;
         }
 
         .upload-section {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
+            border-radius: 12px;
+            padding: 0.75rem;
             transition: all 0.3s;
         }
 
@@ -215,21 +218,21 @@
         }
 
         .section-title {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .upload-zone {
             border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 2rem;
+            border-radius: 8px;
+            padding: 1rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
@@ -253,27 +256,27 @@
         }
 
         .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
             opacity: 0.8;
         }
 
         .upload-text {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
         }
 
         .upload-hint {
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.65rem;
         }
 
         .upload-filename {
             color: var(--success);
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             font-weight: 500;
-            margin-top: 0.5rem;
+            margin-top: 0.25rem;
             word-break: break-all;
         }
 
@@ -281,22 +284,23 @@
         .report-list-section {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
+            border-radius: 12px;
+            padding: 0.75rem;
             flex: 1;
             overflow-y: auto;
+            min-height: 0;
         }
 
         /* Tab Buttons */
         .tab-buttons {
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 0.6rem 0.75rem;
+            padding: 0.4rem 0.5rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -322,17 +326,17 @@
         .report-list {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.25rem;
         }
 
         .report-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.875rem 1rem;
+            gap: 0.5rem;
+            padding: 0.5rem 0.6rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
             user-select: none;
@@ -365,41 +369,48 @@
         }
 
         .report-icon {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             background: var(--bg-card);
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
+            flex-shrink: 0;
         }
 
         .report-info {
             flex: 1;
+            min-width: 0;
         }
 
         .report-name {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            margin-bottom: 0.125rem;
+            margin-bottom: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .report-sheet {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
+            display: none;
         }
 
         .report-status {
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             background: var(--bg-card);
             border: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .report-status.pending {
@@ -438,7 +449,9 @@
         .main-content {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 0.5rem;
+            min-height: 0;
+            overflow: hidden;
         }
 
         /* Control Bar */
@@ -446,11 +459,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
+            gap: 0.75rem;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            flex-shrink: 0;
         }
 
         .nav-controls {
@@ -460,13 +474,13 @@
         }
 
         .nav-btn {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 6px;
             color: var(--text-primary);
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -496,16 +510,16 @@
         }
 
         .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             font-family: inherit;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .btn-primary {
@@ -592,33 +606,36 @@
             flex: 1;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .preview-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.5rem;
+            padding: 0.5rem 1rem;
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .preview-title {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 1rem;
+            gap: 0.5rem;
+            font-size: 0.9rem;
             font-weight: 600;
         }
 
         .preview-content {
-            flex: 1;
-            overflow: auto;
             background: white;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
         }
 
         .preview-iframe {
@@ -626,6 +643,7 @@
             height: 100%;
             border: none;
             background: white;
+            overflow: auto;
         }
 
         .preview-placeholder {
@@ -639,23 +657,23 @@
         }
 
         .preview-placeholder-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
             opacity: 0.5;
         }
 
         .preview-placeholder h3 {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .preview-placeholder p {
-            font-size: 0.9rem;
-            max-width: 400px;
+            font-size: 0.8rem;
+            max-width: 350px;
             text-align: center;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         /* Preview Actions */
@@ -1304,7 +1322,7 @@
                 <div class="upload-zone" id="uploadZone">
                     <div class="upload-icon">📄</div>
                     <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
-                    <p class="upload-hint">기초자료 수집표 (*.xlsx, *.xls)</p>
+                    <p class="upload-hint">기초자료 수집표 또는 분석표 (*.xlsx)</p>
                     <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
                 </div>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
@@ -1355,7 +1373,7 @@
                     </div>
                     
                     <!-- 분석표 다운로드 버튼 -->
-                    <button id="downloadAnalysisBtn" onclick="downloadAnalysisFile()" style="
+                    <button id="downloadAnalysisBtn" onclick="downloadAnalysisFile()" disabled style="
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -1371,9 +1389,10 @@
                         font-weight: 600;
                         cursor: pointer;
                         transition: all 0.3s;
+                        opacity: 0.5;
                     ">
-                        <span>📥</span>
-                        <span>분석표 다운로드</span>
+                        <span id="downloadAnalysisIcon">⏳</span>
+                        <span id="downloadAnalysisText">분석표 생성 중...</span>
                     </button>
                     
                     <!-- 가중치 정보 안내 -->
@@ -1598,179 +1617,60 @@
         </div>
     </div>
 
-    <!-- Weight Settings Modal (가중치 설정) -->
+    <!-- Weight Settings Modal (가중치 설정) - 단순화 버전 -->
     <div class="modal-overlay" id="weightSettingsModal">
-        <div class="modal" style="max-width: 900px; max-height: 85vh; overflow-y: auto;">
+        <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
                 <h2 class="modal-title">
                     <span>⚖️</span>
-                    <span>가중치 설정</span>
+                    <span>가중치 결측치 설정</span>
                 </h2>
                 <button class="modal-close" onclick="closeWeightSettingsModal()">×</button>
             </div>
-            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                분석표 생성 시 사용할 가중치를 설정해주세요. 기초자료에서 자동 추출되지 않는 경우 수동으로 입력할 수 있습니다.
-            </p>
             
-            <!-- 가중치 설정 안내 -->
+            <!-- 안내 메시지 -->
             <div style="padding: 1rem; background: var(--bg-tertiary); border-radius: 10px; margin-bottom: 1.5rem; border-left: 3px solid var(--accent-primary);">
                 <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
                     <strong style="color: var(--text-primary);">💡 가중치 처리 방식</strong><br>
-                    • <strong>광공업생산</strong>, <strong>서비스업생산</strong>: 기초자료에서 자동 추출 또는 행별 수동 입력<br>
-                    • <strong>비공개 가중치 (0)</strong>: 기본값으로 대체됨 (아래에서 설정 가능)<br>
-                    • 기타 시트: 가중치 없음 (공란 처리)
+                    • 가중치는 <strong>기초자료 수집표</strong>에서 입력합니다.<br>
+                    • 가중치가 <strong>공란 또는 0</strong>인 경우 아래 기본값으로 대체됩니다.<br>
+                    • 고용률, 실업, 건설, 수출, 수입, 인구이동은 가중치 없음
                 </div>
             </div>
             
-            <!-- 비공개 가중치 기본값 설정 -->
-            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid var(--accent-secondary);">
-                <h3 style="font-size: 0.9rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>🔒</span> 비공개 가중치 기본값
+            <!-- 결측치 기본값 설정 -->
+            <div style="padding: 1.25rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid var(--accent-secondary);">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔧</span> 결측치(공란/0) 대체값
                 </h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                    기초자료에서 가중치가 0(비공개)인 경우 아래 기본값으로 대체됩니다.
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    기초자료에서 가중치가 비어있거나 0인 경우 아래 값으로 대체합니다.
                 </p>
-                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-                    <div class="missing-field-item" style="max-width: 200px;">
-                        <label class="missing-field-label">광공업생산 기본값</label>
-                        <input type="number" class="missing-field-input" id="miningDefaultWeight" value="1" min="0" step="1" placeholder="1">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">🏭 광공업생산</label>
+                        <input type="number" class="missing-field-input" id="miningDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
                     </div>
-                    <div class="missing-field-item" style="max-width: 200px;">
-                        <label class="missing-field-label">서비스업생산 기본값</label>
-                        <input type="number" class="missing-field-input" id="serviceDefaultWeight" value="1" min="0" step="1" placeholder="1">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">🏢 서비스업생산</label>
+                        <input type="number" class="missing-field-input" id="serviceDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
                     </div>
-                </div>
-            </div>
-            
-            <!-- 광공업생산 가중치 -->
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>🏭</span> 광공업생산 가중치
-                </h3>
-                <div style="margin-bottom: 0.75rem;">
-                    <div class="missing-field-item" style="max-width: 300px;">
-                        <label class="missing-field-label">가중치 사용 방식</label>
-                        <select class="missing-field-input" id="miningWeightMode" onchange="toggleWeightInput('mining')">
-                            <option value="auto">기초자료에서 자동 추출</option>
-                            <option value="manual">수동 입력</option>
-                            <option value="empty">가중치 없음 (공란)</option>
-                        </select>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">🛒 소비(소매)</label>
+                        <input type="number" class="missing-field-input" id="consumptionDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
                     </div>
-                </div>
-                <!-- 수동 입력 영역 (행별 입력) -->
-                <div id="miningWeightInputContainer" style="display: none; margin-top: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <label class="missing-field-label" style="margin-bottom: 0;">업종별 가중치 입력</label>
-                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="loadMiningIndustries()">📥 기초자료에서 불러오기</button>
-                    </div>
-                    <div id="miningWeightRows" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
-                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
-                            <span>행 번호</span>
-                            <span>업종명</span>
-                            <span>가중치</span>
-                        </div>
-                        <!-- 행별 입력 (동적 생성) -->
-                    </div>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        * 기초자료에서 업종 정보를 불러오거나 직접 입력하세요. 빈 값은 공란으로 처리됩니다.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- 서비스업생산 가중치 -->
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>🏢</span> 서비스업생산 가중치
-                </h3>
-                <div style="margin-bottom: 0.75rem;">
-                    <div class="missing-field-item" style="max-width: 300px;">
-                        <label class="missing-field-label">가중치 사용 방식</label>
-                        <select class="missing-field-input" id="serviceWeightMode" onchange="toggleWeightInput('service')">
-                            <option value="auto">기초자료에서 자동 추출</option>
-                            <option value="manual">수동 입력</option>
-                            <option value="empty">가중치 없음 (공란)</option>
-                        </select>
-                    </div>
-                </div>
-                <!-- 수동 입력 영역 (행별 입력) -->
-                <div id="serviceWeightInputContainer" style="display: none; margin-top: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <label class="missing-field-label" style="margin-bottom: 0;">업종별 가중치 입력</label>
-                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="loadServiceIndustries()">📥 기초자료에서 불러오기</button>
-                    </div>
-                    <div id="serviceWeightRows" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
-                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">
-                            <span>행 번호</span>
-                            <span>업종명</span>
-                            <span>가중치</span>
-                        </div>
-                        <!-- 행별 입력 (동적 생성) -->
-                    </div>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        * 기초자료에서 업종 정보를 불러오거나 직접 입력하세요. 빈 값은 공란으로 처리됩니다.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- 소비(소매) 가중치 -->
-            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
-                    <span>🛒</span> 소비(소매) 가중치
-                </div>
-                <div>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <label class="missing-field-label">가중치 사용 방식</label>
-                        <select id="consumptionWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                            <option value="auto">기초자료에서 자동 추출</option>
-                            <option value="empty">가중치 없음 (공란)</option>
-                            <option value="manual">수동 입력</option>
-                        </select>
-                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('consumption')">기초자료에서 불러오기</button>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">💰 물가</label>
+                        <input type="number" class="missing-field-input" id="priceDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
                     </div>
                 </div>
             </div>
             
-            <!-- 지출목적별 물가 가중치 -->
-            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
-                    <span>💰</span> 지출목적별 물가 가중치
-                </div>
-                <div>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <label class="missing-field-label">가중치 사용 방식</label>
-                        <select id="expenditurePriceWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                            <option value="auto">기초자료에서 자동 추출</option>
-                            <option value="empty">가중치 없음 (공란)</option>
-                            <option value="manual">수동 입력</option>
-                        </select>
-                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('expenditure_price')">기초자료에서 불러오기</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 품목성질별 물가 가중치 -->
-            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">
-                    <span>📊</span> 품목성질별 물가 가중치
-                </div>
-                <div>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <label class="missing-field-label">가중치 사용 방식</label>
-                        <select id="itemPriceWeightMode" class="grdp-input" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                            <option value="auto">기초자료에서 자동 추출</option>
-                            <option value="empty">가중치 없음 (공란)</option>
-                            <option value="manual">수동 입력</option>
-                        </select>
-                        <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="loadIndustryWeights('item_price')">기초자료에서 불러오기</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 기타 시트 안내 -->
-            <div style="padding: 1rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border);">
-                <div style="font-size: 0.85rem; color: var(--text-muted);">
-                    <strong style="color: var(--text-secondary);">📋 기타 시트 (가중치 없음)</strong><br>
-                    고용률, 실업, 건설, 수출, 수입, 인구이동 등의 시트는 가중치 열이 없어 공란으로 처리됩니다.
+            <!-- 안내 -->
+            <div style="padding: 0.75rem 1rem; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 1rem;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    <strong style="color: var(--text-secondary);">📝 참고</strong><br>
+                    가중치 값을 직접 수정하려면 <strong>기초자료 수집표</strong>의 해당 시트에서 입력하세요.
                 </div>
             </div>
             
@@ -1900,38 +1800,59 @@
             </div>
             
             <!-- 버튼 영역 -->
-            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-                <button onclick="openKosisGrdpPage()" style="
-                    flex: 1;
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                <button onclick="useDefaultGrdp()" style="
+                    width: 100%;
                     padding: 0.75rem 1rem;
-                    background: transparent;
-                    color: var(--text-secondary);
-                    border: 1px solid var(--border);
+                    background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+                    color: white;
+                    border: none;
                     border-radius: 8px;
                     font-size: 0.85rem;
+                    font-weight: 600;
                     cursor: pointer;
                     transition: all 0.3s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
                 ">
-                    GRDP 파일이 없습니다
+                    <span>🚀</span> GRDP 없이 진행 (기본값 사용)
                 </button>
-                <button onclick="closeGrdpModal()" style="
-                    flex: 1;
-                    padding: 0.75rem 1rem;
-                    background: var(--bg-tertiary);
-                    color: var(--text-primary);
-                    border: 1px solid var(--border);
-                    border-radius: 8px;
-                    font-size: 0.85rem;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                ">
-                    나중에 추가
-                </button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="openKosisGrdpPage()" style="
+                        flex: 1;
+                        padding: 0.6rem 0.75rem;
+                        background: transparent;
+                        color: var(--text-secondary);
+                        border: 1px solid var(--border);
+                        border-radius: 8px;
+                        font-size: 0.8rem;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    ">
+                        📥 KOSIS에서 다운로드
+                    </button>
+                    <button onclick="closeGrdpModalWithoutGenerate()" style="
+                        flex: 1;
+                        padding: 0.6rem 0.75rem;
+                        background: var(--bg-tertiary);
+                        color: var(--text-primary);
+                        border: 1px solid var(--border);
+                        border-radius: 8px;
+                        font-size: 0.8rem;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    ">
+                        ✕ 나중에 추가
+                    </button>
+                </div>
             </div>
             
             <!-- 안내 문구 -->
             <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 1rem; text-align: center;">
-                * GRDP 없이도 다른 보고서는 정상적으로 생성됩니다
+                * GRDP 없이도 다른 보고서는 정상적으로 생성됩니다<br>
+                * 기본값 사용 시 GRDP 관련 차트는 0으로 표시됩니다
             </p>
         </div>
     </div>
@@ -1965,6 +1886,7 @@
             allReports: [],  // 모든 보고서 통합 배열
             fileType: null,  // 'raw' (기초자료 수집표)
             analysisFilename: null,  // 생성된 분석표 파일명
+            analysisReady: false,  // 분석표 생성 완료 여부
             reports: [],
             summaryReports: [],
             sectoralReports: [],
@@ -2035,38 +1957,12 @@
                 customs_department: '관세청 정보데이터기획담당관',
                 customs_phone: '042-481-7845'
             },
-            // 가중치 설정
+            // 가중치 설정 (결측치 대체값만)
             weightSettings: {
-                mining: {
-                    mode: 'auto',  // 'auto', 'manual', 'empty'
-                    values: [],    // 수동 입력 시 가중치 배열
-                    rows: [],      // 행별 데이터 [{row, name, weight}]
-                    default_value: 1  // 비공개 가중치(0) 대체 기본값
-                },
-                service: {
-                    mode: 'auto',
-                    values: [],
-                    rows: [],
-                    default_value: 1
-                },
-                consumption: {
-                    mode: 'auto',
-                    values: [],
-                    rows: [],
-                    default_value: 1
-                },
-                expenditure_price: {
-                    mode: 'auto',
-                    values: [],
-                    rows: [],
-                    default_value: 1
-                },
-                item_price: {
-                    mode: 'auto',
-                    values: [],
-                    rows: [],
-                    default_value: 1
-                }
+                mining: { mode: 'auto', default_value: 1 },      // 광공업생산
+                service: { mode: 'auto', default_value: 1 },     // 서비스업생산
+                consumption: { mode: 'auto', default_value: 1 }, // 소비(소매)
+                price: { mode: 'auto', default_value: 1 }        // 물가
             }
         };
 
@@ -2226,23 +2122,13 @@
             showToast('담당자 정보가 저장되었습니다.', 'success');
         }
 
-        // ===== 가중치 설정 모달 함수 =====
+        // ===== 가중치 설정 모달 함수 (단순화 버전) =====
         function openWeightSettingsModal() {
-            // 현재 설정값 로드
-            document.getElementById('miningWeightMode').value = state.weightSettings.mining.mode;
-            document.getElementById('serviceWeightMode').value = state.weightSettings.service.mode;
-            
-            // 기본값 로드
+            // 현재 기본값 로드
             document.getElementById('miningDefaultWeight').value = state.weightSettings.mining.default_value || 1;
             document.getElementById('serviceDefaultWeight').value = state.weightSettings.service.default_value || 1;
-            
-            // 행별 입력 영역 초기화 및 렌더링
-            renderWeightRows('mining');
-            renderWeightRows('service');
-            
-            // 수동 입력 필드 표시/숨김
-            toggleWeightInput('mining');
-            toggleWeightInput('service');
+            document.getElementById('consumptionDefaultWeight').value = state.weightSettings.consumption?.default_value || 1;
+            document.getElementById('priceDefaultWeight').value = state.weightSettings.price?.default_value || 1;
             
             document.getElementById('weightSettingsModal').classList.add('active');
         }
@@ -2251,177 +2137,34 @@
             document.getElementById('weightSettingsModal').classList.remove('active');
         }
         
-        function toggleWeightInput(type) {
-            const mode = document.getElementById(`${type}WeightMode`).value;
-            const container = document.getElementById(`${type}WeightInputContainer`);
-            
-            if (mode === 'manual') {
-                container.style.display = 'block';
-                // 아직 행이 없으면 기본 행 추가
-                const rowsContainer = document.getElementById(`${type}WeightRows`);
-                if (rowsContainer.querySelectorAll('.weight-row').length === 0) {
-                    addWeightRows(type, 10); // 기본 10행 추가
-                }
-            } else {
-                container.style.display = 'none';
-            }
-        }
-        
-        function renderWeightRows(type) {
-            const container = document.getElementById(`${type}WeightRows`);
-            const rows = state.weightSettings[type].rows || [];
-            
-            // 헤더 유지, 기존 행 제거
-            const header = container.querySelector('div:first-child');
-            container.innerHTML = '';
-            container.appendChild(header);
-            
-            if (rows.length > 0) {
-                rows.forEach((row, index) => {
-                    addWeightRowElement(container, index + 1, row.name || '', row.weight || '');
-                });
-            }
-        }
-        
-        function addWeightRowElement(container, rowNum, industryName, weight) {
-            const row = document.createElement('div');
-            row.className = 'weight-row';
-            row.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 100px; gap: 0.5rem; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); align-items: center;';
-            row.innerHTML = `
-                <span style="font-size: 0.8rem; color: var(--text-muted);">${rowNum}</span>
-                <input type="text" class="weight-industry-name" value="${industryName}" 
-                       style="padding: 0.3rem 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem;"
-                       placeholder="업종명">
-                <input type="number" step="0.1" class="weight-value" value="${weight}" 
-                       style="padding: 0.3rem 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem; text-align: right;"
-                       placeholder="가중치">
-            `;
-            container.appendChild(row);
-        }
-        
-        function addWeightRows(type, count = 5) {
-            const container = document.getElementById(`${type}WeightRows`);
-            const existingRows = container.querySelectorAll('.weight-row').length;
-            
-            for (let i = 0; i < count; i++) {
-                addWeightRowElement(container, existingRows + i + 1, '', '');
-            }
-        }
-        
-        async function loadMiningIndustries() {
-            await loadIndustriesFromExcel('mining', '광공업생산');
-        }
-        
-        async function loadServiceIndustries() {
-            await loadIndustriesFromExcel('service', '서비스업생산');
-        }
-        
-        async function loadIndustriesFromExcel(type, sheetType) {
-            try {
-                const response = await fetch(`/api/get-industry-weights?sheet_type=${sheetType}`);
-                const result = await response.json();
-                
-                if (result.success && result.industries) {
-                    const container = document.getElementById(`${type}WeightRows`);
-                    const header = container.querySelector('div:first-child');
-                    container.innerHTML = '';
-                    container.appendChild(header);
-                    
-                    result.industries.forEach((item, index) => {
-                        addWeightRowElement(container, index + 1, item.name || '', item.weight || '');
-                    });
-                    
-                    showToast(`${result.industries.length}개 업종 정보를 불러왔습니다.`, 'success');
-                } else {
-                    showToast(result.error || '업종 정보를 불러올 수 없습니다.', 'warning');
-                    // 기본 행 추가
-                    addWeightRows(type, 10);
-                }
-            } catch (err) {
-                console.error('업종 정보 로드 오류:', err);
-                showToast('업종 정보 로드 중 오류가 발생했습니다.', 'error');
-                addWeightRows(type, 10);
-            }
-        }
-        
-        function collectWeightRows(type) {
-            const container = document.getElementById(`${type}WeightRows`);
-            const rows = container.querySelectorAll('.weight-row');
-            const result = [];
-            
-            rows.forEach((row, index) => {
-                const nameInput = row.querySelector('.weight-industry-name');
-                const weightInput = row.querySelector('.weight-value');
-                
-                if (nameInput && weightInput) {
-                    const name = nameInput.value.trim();
-                    const weight = weightInput.value.trim();
-                    result.push({
-                        row: index + 1,
-                        name: name,
-                        weight: weight ? parseFloat(weight) : null
-                    });
-                }
-            });
-            
-            return result;
-        }
-        
         function saveWeightSettings() {
-            // 광공업생산 설정
-            const miningMode = document.getElementById('miningWeightMode').value;
-            const miningRows = miningMode === 'manual' ? collectWeightRows('mining') : [];
-            const miningDefaultValue = parseFloat(document.getElementById('miningDefaultWeight').value) || 1;
-            
-            // 서비스업생산 설정
-            const serviceMode = document.getElementById('serviceWeightMode').value;
-            const serviceRows = serviceMode === 'manual' ? collectWeightRows('service') : [];
-            const serviceDefaultValue = parseFloat(document.getElementById('serviceDefaultWeight').value) || 1;
-            
-            // 소비(소매) 설정
-            const consumptionMode = document.getElementById('consumptionWeightMode').value;
-            
-            // 지출목적별 물가 설정
-            const expenditurePriceMode = document.getElementById('expenditurePriceWeightMode').value;
-            
-            // 품목성질별 물가 설정
-            const itemPriceMode = document.getElementById('itemPriceWeightMode').value;
+            // 결측치 대체값 저장
+            const miningDefault = parseFloat(document.getElementById('miningDefaultWeight').value) || 1;
+            const serviceDefault = parseFloat(document.getElementById('serviceDefaultWeight').value) || 1;
+            const consumptionDefault = parseFloat(document.getElementById('consumptionDefaultWeight').value) || 1;
+            const priceDefault = parseFloat(document.getElementById('priceDefaultWeight').value) || 1;
             
             state.weightSettings = {
                 mining: {
-                    mode: miningMode,
-                    rows: miningRows,
-                    values: miningRows.filter(r => r.weight !== null).map(r => r.weight),
-                    default_value: miningDefaultValue
+                    mode: 'auto',  // 항상 기초자료에서 추출
+                    default_value: miningDefault  // 결측치 대체값
                 },
                 service: {
-                    mode: serviceMode,
-                    rows: serviceRows,
-                    values: serviceRows.filter(r => r.weight !== null).map(r => r.weight),
-                    default_value: serviceDefaultValue
+                    mode: 'auto',
+                    default_value: serviceDefault
                 },
                 consumption: {
-                    mode: consumptionMode,
-                    rows: [],
-                    values: [],
-                    default_value: 1
+                    mode: 'auto',
+                    default_value: consumptionDefault
                 },
-                expenditure_price: {
-                    mode: expenditurePriceMode,
-                    rows: [],
-                    values: [],
-                    default_value: 1
-                },
-                item_price: {
-                    mode: itemPriceMode,
-                    rows: [],
-                    values: [],
-                    default_value: 1
+                price: {
+                    mode: 'auto',
+                    default_value: priceDefault
                 }
             };
             
             closeWeightSettingsModal();
-            showToast('가중치 설정이 저장되었습니다.', 'success');
+            showToast('가중치 결측치 설정이 저장되었습니다.', 'success');
         }
 
         // Tab switching
@@ -2500,8 +2243,8 @@
             
             showToast(`✅ 전체 ${state.generationStats.completed}개 보고서 생성 완료!`, 'success');
             
-            // 시스템 알림 보내기
-            sendSystemNotification('분석 완료', `${state.generationStats.completed}개 보고서 생성이 완료되었습니다.`);
+            // 시스템 알림: 미리보기 생성 완료
+            sendSystemNotification('📋 미리보기 생성 완료', `${state.generationStats.completed}개 보고서 미리보기 생성이 완료되었습니다.`);
         }
         
         // 시스템 알림 권한 요청 및 알림 보내기
@@ -2978,27 +2721,28 @@
 
                 if (data.success) {
                     // Step 2 완료
-                    const fileTypeText = '기초자료 수집표';
+                    const fileTypeText = data.file_type === 'analysis' ? '분석표' : '기초자료 수집표';
                     updateUploadStep(2, 'completed', fileTypeText);
                     
-                    // Step 3: 분석표 변환
-                    if (data.file_type === 'raw' && data.conversion_info) {
+                    // ===== 프로세스별 처리 =====
+                    if (data.file_type === 'raw') {
+                        // [프로세스 1] 기초자료 → 분석표 생성
                         updateUploadStep(3, 'active');
-                        document.getElementById('uploadModalSubtitle').textContent = '분석표로 변환하고 있습니다...';
+                        document.getElementById('uploadModalSubtitle').textContent = '분석표 생성 준비 중...';
                         await new Promise(r => setTimeout(r, 500));
-                        updateUploadStep(3, 'completed', data.conversion_info.analysis_file);
+                        updateUploadStep(3, 'completed', data.conversion_info?.analysis_file || '분석표 준비됨');
+                        updateUploadStep(4, 'skipped', '분석표 다운로드로 진행');
                         
-                        // Step 4: GRDP 추출
-                        if (data.conversion_info.grdp_extracted) {
-                            updateUploadStep(4, 'active');
-                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추출하고 있습니다...';
-                            await new Promise(r => setTimeout(r, 500));
-                            updateUploadStep(4, 'completed', `전국 ${data.conversion_info.national_growth_rate}%`);
+                    } else if (data.file_type === 'analysis') {
+                        // [프로세스 2] 분석표 → GRDP 결합 → 지역경제동향 생성
+                        updateUploadStep(3, 'skipped', '분석표 직접 업로드');
+                        
+                        if (data.has_grdp) {
+                            updateUploadStep(4, 'completed', `GRDP 시트: ${data.grdp_sheet || '발견됨'}`);
                         } else {
-                            updateUploadStep(4, 'skipped');
+                            updateUploadStep(4, 'active', 'GRDP 추가 필요');
                         }
                     } else {
-                        // 분석표인 경우 Step 3, 4 건너뜀
                         updateUploadStep(3, 'skipped');
                         updateUploadStep(4, 'skipped');
                     }
@@ -3050,29 +2794,77 @@
                     
                     const grdpMissing = document.getElementById('grdpMissing');
                     
-                    if (data.conversion_info) {
+                    // ===== 프로세스 1: 기초자료 → 분석표 생성 =====
+                    if (data.file_type === 'raw' && data.conversion_info) {
                         conversionInfo.style.display = 'block';
-                        conversionDetails.textContent = `원본: ${data.conversion_info.original_file} → ${data.conversion_info.analysis_file}`;
+                        conversionDetails.textContent = `📁 ${data.conversion_info.original_file}`;
                         
-                        if (data.conversion_info.grdp_extracted) {
+                        // GRDP 정보 숨김 (분석표 생성 프로세스에서는 불필요)
+                        grdpInfo.style.display = 'none';
+                        grdpMissing.style.display = 'none';
+                        
+                        // 분석표 다운로드 버튼 활성화
+                        state.analysisFilename = data.conversion_info.analysis_file;
+                        state.analysisReady = false;
+                        updateAnalysisButton(false, '분석표 생성 중...');
+                        
+                        // 분석표 생성 (백그라운드)
+                        generateAnalysisInBackground();
+                        
+                        // 안내 메시지
+                        document.getElementById('uploadModalSubtitle').textContent = 
+                            '분석표를 다운로드하세요. 지역경제동향 생성은 분석표 업로드 후 가능합니다.';
+                        
+                        // 모달 닫기 (3초 후)
+                        hideUploadModal(3000);
+                        
+                        // 보고서 목록 초기화 (분석표 업로드 시에만 생성)
+                        showToast('💡 분석표를 다운로드한 후, 분석표를 업로드하면 지역경제동향이 생성됩니다.', 'info', 5000);
+                        
+                    // ===== 프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성 =====
+                    } else if (data.file_type === 'analysis') {
+                        // 분석표 직접 업로드
+                        conversionInfo.style.display = 'block';
+                        conversionDetails.textContent = `분석표 직접 업로드: ${data.filename}`;
+                        
+                        // 분석표 다운로드 버튼 비활성화 (직접 업로드한 분석표는 다운로드 불필요)
+                        state.analysisFilename = null;
+                        state.analysisReady = false;
+                        updateAnalysisButton(false, '분석표 업로드됨');
+                        
+                        if (data.needs_grdp) {
+                            // GRDP가 없는 경우 → GRDP 모달 표시
+                            grdpInfo.style.display = 'none';
+                            grdpMissing.style.display = 'none';
+                            
+                            document.getElementById('uploadModalIcon').textContent = '✅';
+                            document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
+                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추가로 업로드해주세요.';
+                            document.getElementById('uploadProgressFill').style.width = '75%';
+                            
+                            updateUploadStep(4, 'active', 'GRDP 추가 필요');
+                            
+                            hideUploadModal(1500);
+                            setTimeout(() => {
+                                showGrdpModal();
+                            }, 1600);
+                        } else {
+                            // GRDP가 있는 경우 → 바로 보고서 생성
                             grdpInfo.style.display = 'block';
                             grdpMissing.style.display = 'none';
-                            document.getElementById('grdpNational').textContent = `${data.conversion_info.national_growth_rate}%`;
-                            document.getElementById('grdpTopRegion').textContent = `${data.conversion_info.top_region} (${data.conversion_info.top_region_growth}%)`;
-                            // 모달 닫기 (2초 후) 후 자동 미리보기 생성
+                            
+                            document.getElementById('uploadModalIcon').textContent = '✅';
+                            document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
+                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 시트가 포함되어 있습니다.';
+                            document.getElementById('uploadProgressFill').style.width = '100%';
+                            
+                            updateUploadStep(3, 'skipped', '분석표 직접 업로드');
+                            updateUploadStep(4, 'completed', 'GRDP 포함');
+                            
                             hideUploadModal(2000);
                             setTimeout(() => {
                                 generateAllReports();
                             }, 2100);
-                        } else {
-                            // GRDP 추출 실패 시 모달 닫고 GRDP 모달 표시
-                            // GRDP 모달 닫힌 후 자동 생성 (saveGrdpData에서 처리)
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
-                            hideUploadModal(500);
-                            setTimeout(() => {
-                                showGrdpModal();
-                            }, 600);
                         }
                     } else {
                         conversionInfo.style.display = 'none';
@@ -3084,10 +2876,8 @@
                         }, 2100);
                     }
                     
-                    // 분석표 다운로드 버튼에 파일명 저장
-                    if (data.conversion_info) {
-                        state.analysisFilename = data.conversion_info.analysis_file;
-                    }
+                    // 시스템 알림: 엑셀 파일 업로드 완료
+                    sendSystemNotification('📁 파일 업로드 완료', `${data.filename || '파일'}이 성공적으로 업로드되었습니다.`);
                 } else {
                     // 오류 발생
                     document.getElementById('uploadModalIcon').textContent = '❌';
@@ -3549,6 +3339,58 @@
             }
         }
         
+        function closeGrdpModalWithoutGenerate() {
+            // GRDP 모달만 닫고 생성하지 않음 (나중에 추가)
+            document.getElementById('grdpModal').classList.remove('active');
+            showToast('GRDP 데이터 없이 진행합니다. 나중에 GRDP를 추가할 수 있습니다.', 'info');
+            
+            // 미리보기 생성은 시작
+            if (!state.allGenerated) {
+                setTimeout(() => {
+                    generateAllReports();
+                }, 500);
+            }
+        }
+        
+        async function useDefaultGrdp() {
+            // 기본 GRDP 데이터(placeholder) 사용
+            document.getElementById('grdpUploadProgress').style.display = 'block';
+            document.getElementById('grdpUploadStatus').textContent = '기본값 설정 중...';
+            
+            try {
+                const response = await fetch('/api/use-default-grdp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('grdpUploadStatus').textContent = '✅ 기본값 설정 완료!';
+                    
+                    // GRDP 정보 업데이트
+                    document.getElementById('grdpMissing').style.display = 'none';
+                    document.getElementById('grdpInfo').style.display = 'block';
+                    document.getElementById('grdpNational').textContent = '기본값 (0%)';
+                    document.getElementById('grdpTopRegion').textContent = '-';
+                    
+                    showToast('GRDP 기본값이 설정되었습니다.', 'success');
+                    
+                    // 1초 후 모달 닫고 보고서 생성
+                    setTimeout(() => {
+                        closeGrdpModal();
+                    }, 1000);
+                } else {
+                    document.getElementById('grdpUploadStatus').textContent = '❌ 설정 실패';
+                    showToast(data.error || 'GRDP 기본값 설정 실패', 'error');
+                }
+            } catch (error) {
+                document.getElementById('grdpUploadStatus').textContent = '❌ 오류 발생';
+                showToast('GRDP 기본값 설정 중 오류가 발생했습니다.', 'error');
+                console.error('Default GRDP error:', error);
+            }
+        }
+        
         function openKosisGrdpPage() {
             // KOSIS 실험적통계 페이지 열기
             window.open('https://kosis.kr/statisticsList/experimentStatistical.do#down23', '_blank');
@@ -3635,21 +3477,70 @@
             }
         });
 
-        // ===== Toast =====
-        // 분석표 다운로드 함수
-        async function downloadAnalysisFile() {
+        // ===== 분석표 관련 함수 =====
+        // 분석표 버튼 상태 업데이트
+        function updateAnalysisButton(ready, text) {
+            const btn = document.getElementById('downloadAnalysisBtn');
+            const icon = document.getElementById('downloadAnalysisIcon');
+            const textEl = document.getElementById('downloadAnalysisText');
+            
+            if (ready) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                icon.textContent = '📥';
+                textEl.textContent = text || '분석표 다운로드';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                icon.textContent = '⏳';
+                textEl.textContent = text || '분석표 생성 중...';
+            }
+        }
+        
+        // 분석표 백그라운드 생성 (미리보기와 병렬 실행)
+        async function generateAnalysisInBackground() {
             if (!state.analysisFilename) {
-                showToast('다운로드할 분석표가 없습니다.', 'warning');
+                updateAnalysisButton(false, '분석표 없음');
                 return;
             }
             
-            // 저장된 가중치 설정 사용
             const weightSettings = state.weightSettings;
             
+            // 로딩 모달 표시
+            elements.loadingOverlay.classList.add('active');
+            elements.loadingIcon.textContent = '📊';
+            elements.loadingTitle.textContent = '분석표 생성 중';
+            elements.loadingSubtitle.textContent = '기초자료에서 분석표를 생성하고 있습니다. 잠시만 기다려주세요.';
+            elements.loadingProgressFill.style.width = '0%';
+            elements.loadingProgressText.textContent = '처리 중...';
+            elements.loadingProgressPercent.textContent = '';
+            elements.loadingCurrentIcon.textContent = '⏳';
+            elements.loadingCurrentText.textContent = '데이터 변환 중...';
+            
+            // 진행률 애니메이션 (가짜 진행률)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    elements.loadingProgressFill.style.width = `${progress}%`;
+                    
+                    // 진행 상태 텍스트 업데이트
+                    if (progress < 30) {
+                        elements.loadingCurrentText.textContent = '템플릿 복사 중...';
+                    } else if (progress < 50) {
+                        elements.loadingCurrentText.textContent = '광공업/서비스업 데이터 처리 중...';
+                    } else if (progress < 70) {
+                        elements.loadingCurrentText.textContent = '고용/물가/수출입 데이터 처리 중...';
+                    } else {
+                        elements.loadingCurrentText.textContent = '수식 계산 및 검증 중...';
+                    }
+                }
+            }, 500);
+            
             try {
-                showToast('분석표 생성 중...', 'info');
-                
-                // 가중치 설정을 포함하여 분석표 재생성
                 const response = await fetch('/api/generate-analysis-with-weights', {
                     method: 'POST',
                     headers: {
@@ -3660,22 +3551,105 @@
                 
                 const result = await response.json();
                 
+                clearInterval(progressInterval);
+                
                 if (result.success) {
-                    // 다운로드 시작
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = '/api/download-analysis';
-                    downloadLink.download = result.filename || state.analysisFilename;
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
+                    // 완료 표시
+                    elements.loadingProgressFill.style.width = '100%';
+                    elements.loadingCurrentIcon.textContent = '✅';
+                    elements.loadingCurrentText.textContent = '분석표 생성 완료!';
                     
-                    showToast('분석표가 생성되었습니다. 다운로드가 시작됩니다.', 'success');
+                    state.analysisReady = true;
+                    updateAnalysisButton(true, '분석표 다운로드');
+                    
+                    // 1초 후 로딩 모달 닫기
+                    setTimeout(() => {
+                        elements.loadingOverlay.classList.remove('active');
+                        showToast('📊 분석표가 준비되었습니다. 다운로드 버튼을 클릭하세요.', 'success');
+                    }, 1000);
+                    
+                    // 시스템 알림: 분석표 생성 완료
+                    sendSystemNotification('📊 분석표 생성 완료', '분석표가 준비되었습니다. 다운로드 버튼을 클릭하세요.');
                 } else {
+                    elements.loadingCurrentIcon.textContent = '❌';
+                    elements.loadingCurrentText.textContent = '생성 실패';
+                    
+                    setTimeout(() => {
+                        elements.loadingOverlay.classList.remove('active');
+                    }, 1500);
+                    
+                    updateAnalysisButton(false, '생성 실패');
                     showToast(result.error || '분석표 생성 실패', 'error');
                 }
             } catch (err) {
+                clearInterval(progressInterval);
                 console.error('분석표 생성 오류:', err);
+                
+                elements.loadingCurrentIcon.textContent = '❌';
+                elements.loadingCurrentText.textContent = '오류 발생';
+                
+                setTimeout(() => {
+                    elements.loadingOverlay.classList.remove('active');
+                }, 1500);
+                
+                updateAnalysisButton(false, '생성 실패');
                 showToast('분석표 생성 중 오류가 발생했습니다.', 'error');
+            }
+        }
+        
+        // 분석표 다운로드 함수 (이미 생성된 파일 다운로드)
+        async function downloadAnalysisFile() {
+            if (!state.analysisReady) {
+                showToast('분석표가 아직 생성 중입니다. 잠시 후 다시 시도하세요.', 'warning');
+                return;
+            }
+            
+            // 다운로드 준비 로딩 표시
+            elements.loadingOverlay.classList.add('active');
+            elements.loadingIcon.textContent = '📥';
+            elements.loadingTitle.textContent = '분석표 다운로드 준비 중';
+            elements.loadingSubtitle.textContent = '분석표 파일을 준비하고 있습니다...';
+            elements.loadingProgressFill.style.width = '50%';
+            elements.loadingProgressText.textContent = '';
+            elements.loadingProgressPercent.textContent = '';
+            elements.loadingCurrentIcon.textContent = '⏳';
+            elements.loadingCurrentText.textContent = '파일 준비 중...';
+            
+            try {
+                // 다운로드 시작
+                const downloadLink = document.createElement('a');
+                downloadLink.href = '/api/download-analysis';
+                downloadLink.download = state.analysisFilename;
+                document.body.appendChild(downloadLink);
+                
+                // 완료 표시
+                elements.loadingProgressFill.style.width = '100%';
+                elements.loadingCurrentIcon.textContent = '✅';
+                elements.loadingCurrentText.textContent = '다운로드 시작!';
+                
+                // 짧은 딜레이 후 다운로드 실행
+                await new Promise(r => setTimeout(r, 500));
+                
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // 로딩 모달 닫기
+                setTimeout(() => {
+                    elements.loadingOverlay.classList.remove('active');
+                    showToast('📥 분석표 다운로드가 시작되었습니다.', 'success');
+                }, 500);
+                
+            } catch (err) {
+                console.error('분석표 다운로드 오류:', err);
+                
+                elements.loadingCurrentIcon.textContent = '❌';
+                elements.loadingCurrentText.textContent = '다운로드 실패';
+                
+                setTimeout(() => {
+                    elements.loadingOverlay.classList.remove('active');
+                }, 1500);
+                
+                showToast('분석표 다운로드 중 오류가 발생했습니다.', 'error');
             }
         }
         

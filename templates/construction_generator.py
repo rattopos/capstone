@@ -187,6 +187,17 @@ def load_data(excel_path):
     possible_analysis_sheets = ["F'분석", "F' 분석", "F분석", "F 분석"]
     analysis_sheet_name = find_sheet_by_pattern(xl.sheet_names, possible_analysis_sheets, "분석")
     
+    # 분석 시트가 없으면 기초자료 시트로 대체
+    use_raw_data = False
+    if not analysis_sheet_name:
+        raw_sheets = ["건설 (공표자료)", "건설(공표자료)", "건설"]
+        for raw_sheet in raw_sheets:
+            if raw_sheet in xl.sheet_names:
+                analysis_sheet_name = raw_sheet
+                use_raw_data = True
+                print(f"[시트 대체] 분석 시트 → '{raw_sheet}' (기초자료)")
+                break
+    
     df_analysis = None
     if analysis_sheet_name:
         try:

@@ -4,9 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ⅰ. 부문별 지역경제동향 - 서비스업생산</title>
+    
+    {# 결측치 플레이스홀더 매크로 #}
+    {% macro val(value, format="%.1f", suffix="") %}
+        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
+        {%- else -%}
+            {{ format|format(value) }}{{ suffix }}
+        {%- endif -%}
+    {% endmacro %}
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
-        
+        /* 기본 리셋 */
         * {
             margin: 0;
             padding: 0;
@@ -14,182 +23,217 @@
         }
         
         body {
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
-            font-size: 10pt;
-            line-height: 1.6;
+            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-size: 10.5pt;
+            line-height: 1.4;
             color: #000;
             background: #fff;
-            padding: 20px 40px;
         }
         
-        .report-container {
-            max-width: 800px;
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
             margin: 0 auto;
+            background: #fff;
         }
         
-        h3 {
-            font-size: 12pt;
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* 소제목 - 나. 서비스업생산 */
+        .subsection-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 11pt;
             font-weight: bold;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
         }
         
+        /* 요약 박스 */
         .summary-box {
-            border: 1px dotted #666;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            background-color: #f9f9f9;
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: transparent;
+            line-height: 1.6;
         }
         
         .summary-box .headline {
-            font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            text-indent: -12px;
+            padding-left: 12px;
         }
         
         .summary-box .nationwide {
-            margin-bottom: 5px;
-            padding-left: 20px;
-            position: relative;
-        }
-        
-        .summary-box .nationwide::before {
-            content: "□";
-            position: absolute;
-            left: 0;
+            margin-bottom: 4px;
+            padding-left: 16px;
+            text-indent: -16px;
         }
         
         .summary-box .regional {
-            padding-left: 20px;
-            position: relative;
-        }
-        
-        .summary-box .regional::before {
-            content: "○";
-            position: absolute;
-            left: 0;
+            padding-left: 16px;
+            text-indent: -16px;
         }
         
         .highlight {
             font-weight: bold;
         }
         
-        .increase {
+        .increase, .decrease {
             font-weight: bold;
         }
         
-        .decrease {
-            font-weight: bold;
-        }
-        
+        /* 상세 박스 */
         .detail-box {
-            border: 1px dotted #666;
-            padding: 15px;
-            margin-bottom: 20px;
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 15px;
         }
         
         .detail-box .title {
             text-align: center;
-            margin-bottom: 10px;
-            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 10pt;
         }
         
         .detail-box .item {
-            margin-bottom: 3px;
-            padding-left: 10px;
-        }
-        
-        .detail-box .item::before {
-            content: "·";
-            margin-right: 5px;
+            margin-bottom: 1px;
+            line-height: 1.45;
+            padding-left: 8px;
+            text-indent: -8px;
         }
         
         .detail-box .separator {
-            border-top: 1px dotted #999;
-            margin: 8px 0;
+            border-top: 1px dotted #888;
+            margin: 5px 0;
         }
         
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 9pt;
-        }
-        
-        .data-table th,
-        .data-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: center;
-        }
-        
-        .data-table th {
-            background-color: #e8f5e9;
-            font-weight: 500;
-        }
-        
-        .data-table .region-group {
-            background-color: #f5f5f5;
-            font-weight: 500;
-        }
-        
-        .data-table .index-section {
-            background-color: #fff3e0;
+        /* 테이블 */
+        .table-container {
+            margin-top: 12px;
         }
         
         .table-title {
             text-align: center;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
             font-size: 11pt;
+            font-family: '돋움', 'Dotum', sans-serif;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 9pt;
+            table-layout: fixed;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+            padding: 2px 3px;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            height: 22px;
+        }
+        
+        /* 테이블 헤더 - 연보라색 */
+        .data-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
+        /* 지역 그룹 셀 */
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: normal;
+            width: 28px;
+        }
+        
+        .data-table .region-name {
+            width: 32px;
+        }
+        
+        /* 지수 섹션 */
+        .data-table td.index-section {
+            background-color: #fef9e7;
+        }
+        
+        .data-table th.index-section {
+            background-color: #e6e0ec;
         }
         
         .footnote {
             font-size: 8pt;
             color: #333;
-            margin-top: 5px;
+            margin-top: 4px;
         }
         
-        
-        .table-container {
-            margin-top: 20px;
+        .page-number {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 15px;
         }
         
-        /* 페이지 구분 */
-        .page {
-            min-height: 297mm;
-            padding: 20px 0;
+        /* 결측치 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 0 4px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            display: inline-block;
+            min-width: 25px;
+            text-align: center;
         }
         
-        .page-break {
-            page-break-after: always;
-            break-after: page;
+        .missing-cell {
+            background-color: #fff9c4 !important;
+        }
+        
+        sup {
+            font-size: 70%;
+            vertical-align: super;
         }
         
         @media print {
-            .page-break {
-                page-break-after: always;
-                break-after: page;
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .data-table th {
+                background-color: #e6e0ec !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
 </head>
 <body>
-    <div class="report-container">
-        <!-- 페이지 1: 요약 및 상세 -->
-        <div class="page page-break">
-            <h3>나. 서비스업생산</h3>
-            
-            <!-- 요약 박스 -->
-            <div class="summary-box">
+    <div class="page">
+        <div class="subsection-title">나. 서비스업생산</div>
+        
+        <!-- 요약 박스 -->
+        <div class="summary-box">
             <div class="headline">◆ 서비스업생산은 
                 {% for region in summary_box.main_increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
             </div>
-            <div class="nationwide">전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span></div>
-            <div class="regional">
+            <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span></div>
+            <div class="regional">○ 
                 {% for region in regional_data.decrease_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}은 {{ decrease_industries_text }} 등의 생산이 줄었으나, 
@@ -204,7 +248,7 @@
             <div class="title">&lt; 주요 증감지역 및 업종 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">전 국( {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
+            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
                 {% for industry in nationwide_data.main_industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
@@ -214,7 +258,7 @@
             
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
                 {% for industry in region.industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
@@ -225,37 +269,31 @@
             
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
                 {% for industry in region.industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
         </div>
-        </div>
-        <!-- 페이지 1 끝 -->
         
-        <!-- 페이지 2: 데이터 테이블 -->
-        <div class="page">
-            <h3>나. 서비스업생산 (계속)</h3>
-            
-            <!-- 데이터 테이블 -->
-            <div class="table-container">
-                <div class="table-title">《 서비스업생산지수 및 증감률 》</div>
+        <!-- 데이터 테이블 -->
+        <div class="table-container">
+            <div class="table-title">《 서비스업생산지수 및 증감률 》</div>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th rowspan="2" colspan="2"></th>
+                        <th rowspan="2" colspan="2" style="width: 60px;"></th>
                         <th colspan="4">전년동분기대비 증감률(%)</th>
                         <th colspan="2" class="index-section">서비스업생산지수({{ summary_table.base_year }}=100)</th>
                     </tr>
                     <tr>
-                        <th>{{ summary_table.columns.growth_rate_columns[0] }}</th>
-                        <th>{{ summary_table.columns.growth_rate_columns[1] }}</th>
-                        <th>{{ summary_table.columns.growth_rate_columns[2] }}</th>
-                        <th>{{ summary_table.columns.growth_rate_columns[3] }}</th>
-                        <th class="index-section">{{ summary_table.columns.index_columns[0] }}</th>
-                        <th class="index-section">{{ summary_table.columns.index_columns[1] }}</th>
+                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[0] }}</th>
+                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[1] }}</th>
+                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[2] }}</th>
+                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[3] }}<sup>p</sup></th>
+                        <th class="index-section" style="width: 70px;">{{ summary_table.columns.index_columns[0] }}</th>
+                        <th class="index-section" style="width: 70px;">{{ summary_table.columns.index_columns[1] }}<sup>p</sup></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -263,27 +301,31 @@
                     <tr>
                         {% if row.group %}
                         <td class="region-group" rowspan="{{ row.rowspan | default(1) }}">{{ row.group }}</td>
-                        <td>{{ row.region }}</td>
+                        <td class="region-name">{{ row.region }}</td>
                         {% elif '전' in row.region and '국' in row.region %}
                         <td colspan="2">{{ row.region }}</td>
                         {% else %}
-                        <td>{{ row.region }}</td>
+                        <td class="region-name">{{ row.region }}</td>
                         {% endif %}
                         {% for rate in row.growth_rates %}
-                        <td>{{ "%.1f"|format(rate) }}</td>
+                        <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}">
+                            {{ val(rate) }}
+                        </td>
                         {% endfor %}
                         {% for idx in row.indices %}
-                        <td class="index-section">{{ "%.1f"|format(idx) }}</td>
+                        <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}">
+                            {{ val(idx) }}
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             
-                <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
-            </div>
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
         </div>
-        <!-- 페이지 2 끝 -->
+        
+        <div class="page-number">- {{ page_number | default(7) }} -</div>
     </div>
 </body>
 </html>

@@ -32,10 +32,54 @@ REGION_GROUPS = {
     "동남": ["부산", "울산", "경남"]
 }
 
+
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-' 체크 포함)"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '':
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터를 로드합니다."""
-    summary_df = pd.read_excel(excel_path, sheet_name='D(실업)집계', header=None)
-    analysis_df = pd.read_excel(excel_path, sheet_name='D(실업)분석', header=None)
+    xl = pd.ExcelFile(excel_path)
+    sheet_names = xl.sheet_names
+    
+    # 집계 시트 찾기
+    summary_sheet = None
+    for name in ['D(실업)집계', 'D(실업) 집계', '실업자 수']:
+        if name in sheet_names:
+            summary_sheet = name
+            if name == '실업자 수':
+                print(f"[시트 대체] 'D(실업)집계' → '실업자 수' (기초자료)")
+            break
+    
+    if not summary_sheet:
+        raise ValueError(f"실업률 집계 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
+    
+    # 분석 시트 찾기 (없으면 집계 시트 사용)
+    analysis_sheet = None
+    for name in ['D(실업)분석', 'D(실업) 분석']:
+        if name in sheet_names:
+            analysis_sheet = name
+            break
+    if not analysis_sheet:
+        analysis_sheet = summary_sheet
+    
+    summary_df = pd.read_excel(excel_path, sheet_name=summary_sheet, header=None)
+    analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
     return summary_df, analysis_df
 
 def get_unemployment_rate_data(summary_df):
@@ -43,20 +87,34 @@ def get_unemployment_rate_data(summary_df):
     # 실업률 데이터는 79행부터 시작
     rate_data = {}
     
-    for i in range(80, 152):
+    max_rows = min(152, len(summary_df))
+    start_row = min(80, len(summary_df) - 1) if len(summary_df) > 80 else 3
+    
+    for i in range(start_row, max_rows):
         row = summary_df.iloc[i]
-        sido = row[0]
-        age_group = row[1]
+        sido = row[0] if pd.notna(row[0]) else None
+        age_group = row[1] if pd.notna(row[1]) else None
+        
+        if sido is None or age_group is None:
+            continue
+        
+        sido = str(sido).strip()
+        age_group = str(age_group).strip()
         
         if sido not in rate_data:
             rate_data[sido] = {}
         
+        rate_2025_24 = safe_float(row[19] if len(row) > 19 else None, 0)
+        rate_2024_24 = safe_float(row[15] if len(row) > 15 else None, 0)
+        
+        change = rate_2025_24 - rate_2024_24 if rate_2025_24 is not None and rate_2024_24 is not None else 0
+        
         rate_data[sido][age_group] = {
-            'rate_2023_24': row[11],
-            'rate_2024_24': row[15],
-            'rate_2025_14': row[18],
-            'rate_2025_24': row[19],
-            'change': row[19] - row[15]  # 2025.2/4 - 2024.2/4
+            'rate_2023_24': safe_float(row[11] if len(row) > 11 else None, 0),
+            'rate_2024_24': rate_2024_24,
+            'rate_2025_14': safe_float(row[18] if len(row) > 18 else None, 0),
+            'rate_2025_24': rate_2025_24,
+            'change': change
         }
     
     return rate_data

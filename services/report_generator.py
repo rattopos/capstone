@@ -368,6 +368,16 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         grdp_data['report_info']['year'] = year
         grdp_data['report_info']['quarter'] = quarter
         
+        # chart_config 기본값 추가 (누락된 경우)
+        if 'chart_config' not in grdp_data:
+            grdp_data['chart_config'] = {
+                'y_axis': {
+                    'min': -6,
+                    'max': 8,
+                    'step': 2
+                }
+            }
+        
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
         if template_path.exists():
@@ -691,24 +701,15 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
                     }
                 }
             
-            yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
-            quarterly_keys = [
-                "2016.4/4",
-                "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
-                "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
-                "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
-                "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
-                "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
-                "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
-                "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
-                "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
-                "2025.1/4"
-            ]
+            # grdp_data에서 yearly_years와 quarterly_keys 가져오기
+            data_dict = grdp_data.get('data', {'yearly': {}, 'quarterly': {}})
+            yearly_years = data_dict.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
+            quarterly_keys = data_dict.get('quarterly_keys', [])
             
             template_data = {
                 'year': year,
                 'quarter': quarter,
-                'data': grdp_data.get('data', {'yearly': {}, 'quarterly': {}}),
+                'data': data_dict,
                 'page1_regions': PAGE1_REGIONS,
                 'page2_regions': PAGE2_REGIONS,
                 'yearly_years': yearly_years,

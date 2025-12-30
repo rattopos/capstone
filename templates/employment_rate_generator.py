@@ -58,11 +58,53 @@ VALID_REGIONS = [
 ]
 
 
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-' 체크 포함)"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '':
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
-    df_analysis = pd.read_excel(xl, sheet_name='D(고용률)분석', header=None)
-    df_index = pd.read_excel(xl, sheet_name='D(고용률)집계', header=None)
+    sheet_names = xl.sheet_names
+    
+    # 분석 시트 찾기
+    analysis_sheet = None
+    for name in ['D(고용률)분석', 'D(고용률) 분석', '고용률']:
+        if name in sheet_names:
+            analysis_sheet = name
+            if name == '고용률':
+                print(f"[시트 대체] 'D(고용률)분석' → '고용률' (기초자료)")
+            break
+    
+    if not analysis_sheet:
+        raise ValueError(f"고용률 분석 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
+    
+    # 집계 시트 찾기 (없으면 분석 시트 사용)
+    index_sheet = None
+    for name in ['D(고용률)집계', 'D(고용률) 집계']:
+        if name in sheet_names:
+            index_sheet = name
+            break
+    if not index_sheet:
+        index_sheet = analysis_sheet
+    
+    df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+    df_index = pd.read_excel(xl, sheet_name=index_sheet, header=None)
     return df_analysis, df_index
 
 
@@ -82,23 +124,25 @@ def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
     # 분석 시트에서 전국 계 행
     nationwide_row = df_analysis.iloc[3]
-    change = round(float(nationwide_row[18]), 1)
+    change = safe_float(nationwide_row[18], 0)
+    change = round(change, 1) if change is not None else 0.0
     
     # 집계 시트에서 전국 고용률
     index_row = df_index.iloc[3]
-    employment_rate = index_row[21]  # 2025.2/4
+    employment_rate = safe_float(index_row[21], 60.0)  # 2025.2/4
     
     # 전국 연령별 증감
     age_groups = []
     for i in range(4, 9):
         row = df_analysis.iloc[i]
         age_name = row[5]
-        age_change = round(float(row[18]), 1)
-        age_groups.append({
-            'name': age_name,
-            'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
-            'change': age_change
-        })
+        age_change = safe_float(row[18], None)
+        if age_change is not None:
+            age_groups.append({
+                'name': age_name,
+                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                'change': round(age_change, 1)
+            })
     
     # 양수 증감률 순으로 정렬
     positive_ages = [a for a in age_groups if a['change'] > 0]
@@ -126,13 +170,18 @@ def get_regional_data(df_analysis, df_index):
             
         # 계 행에서 증감
         total_row = df_analysis.iloc[start_idx]
-        try:
-            change = round(float(total_row[18]), 1)
-            change_2023_2 = round(float(total_row[10]), 1)
-            change_2024_2 = round(float(total_row[14]), 1)
-            change_2025_1 = round(float(total_row[17]), 1)
-        except:
+        change = safe_float(total_row[18], None)
+        change_2023_2 = safe_float(total_row[10], 0)
+        change_2024_2 = safe_float(total_row[14], 0)
+        change_2025_1 = safe_float(total_row[17], 0)
+        
+        if change is None:
             continue
+        
+        change = round(change, 1)
+        change_2023_2 = round(change_2023_2, 1) if change_2023_2 else 0.0
+        change_2024_2 = round(change_2024_2, 1) if change_2024_2 else 0.0
+        change_2025_1 = round(change_2025_1, 1) if change_2025_1 else 0.0
         
         # 집계 시트에서 고용률
         idx_row = df_index[(df_index[1] == region) & (df_index[3] == '계')]

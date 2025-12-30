@@ -59,11 +59,68 @@ REGION_GROUPS = {
 }
 
 
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-' 체크 포함)"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '':
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
+def find_sheet_with_fallback(xl, primary_sheets, fallback_sheets):
+    """시트 찾기 - 기본 시트가 없으면 대체 시트 사용"""
+    for sheet in primary_sheets:
+        if sheet in xl.sheet_names:
+            return sheet, False
+    for sheet in fallback_sheets:
+        if sheet in xl.sheet_names:
+            print(f"[시트 대체] '{primary_sheets[0]}' → '{sheet}' (기초자료)")
+            return sheet, True
+    return None, False
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
-    df_analysis = pd.read_excel(xl, sheet_name='B 분석', header=None)
-    df_index = pd.read_excel(xl, sheet_name='B(서비스업생산)집계', header=None)
+    
+    # 분석 시트 찾기
+    analysis_sheet, use_raw = find_sheet_with_fallback(
+        xl, 
+        ['B 분석', 'B분석'],
+        ['서비스업생산', '서비스업생산지수']
+    )
+    
+    if analysis_sheet:
+        df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+    else:
+        raise ValueError(f"서비스업생산 분석 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
+    
+    # 집계 시트 찾기
+    agg_sheet, _ = find_sheet_with_fallback(
+        xl,
+        ['B(서비스업생산)집계', 'B 집계'],
+        ['서비스업생산', '서비스업생산지수']
+    )
+    
+    if agg_sheet and agg_sheet != analysis_sheet:
+        df_index = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+    else:
+        df_index = df_analysis.copy()
+    
+    # use_raw 정보를 첫번째 df에 속성으로 저장
+    df_analysis.attrs['use_raw'] = use_raw
+    
     return df_analysis, df_index
 
 
@@ -80,24 +137,31 @@ def get_region_indices(df_analysis):
 
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
+    use_raw = df_analysis.attrs.get('use_raw', False)
+    
+    if use_raw:
+        return _get_nationwide_from_raw_data(df_analysis)
+    
     # 분석 시트에서 전국 총지수 행
     nationwide_row = df_analysis.iloc[3]
-    growth_rate = round(nationwide_row[20], 1)
+    growth_rate = safe_float(nationwide_row[20], 0)
+    growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
     # 집계 시트에서 전국 지수
     index_row = df_index.iloc[3]
-    production_index = index_row[25]  # 2025.2/4p
+    production_index = safe_float(index_row[25], 100)  # 2025.2/4p
     
     # 전국 주요 업종 (기여도 기준 상위 3개 - 양수만)
     industries = []
     for i in range(4, 17):
         row = df_analysis.iloc[i]
         industry_name = row[7]
-        industry_growth = row[20]
-        industries.append({
-            'name': INDUSTRY_MAPPING.get(industry_name, industry_name),
-            'growth_rate': round(industry_growth, 1)
-        })
+        industry_growth = safe_float(row[20], 0)
+        if industry_growth is not None:
+            industries.append({
+                'name': INDUSTRY_MAPPING.get(industry_name, industry_name),
+                'growth_rate': round(industry_growth, 1)
+            })
     
     # 양수 증가율 중 상위 3개 (보건·복지, 금융·보험, 운수·창고 순)
     positive_industries = [i for i in industries if i['growth_rate'] > 0]
@@ -108,6 +172,84 @@ def get_nationwide_data(df_analysis, df_index):
         'production_index': production_index,
         'growth_rate': growth_rate,
         'main_industries': main_industries
+    }
+
+
+def _get_nationwide_from_raw_data(df):
+    """기초자료 시트에서 전국 데이터 추출"""
+    # 헤더 행 및 컬럼 인덱스 찾기
+    header_row = 2
+    current_quarter_col = None
+    prev_year_col = None
+    
+    for i in range(min(10, len(df))):
+        row = df.iloc[i]
+        row_str = ' '.join([str(v) for v in row.values[:10] if pd.notna(v)])
+        if '지역' in row_str and ('2024' in row_str or '2025' in row_str):
+            header_row = i
+            break
+    
+    header = df.iloc[header_row] if header_row < len(df) else df.iloc[0]
+    
+    for col_idx in range(len(header) - 1, 4, -1):
+        col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
+        if '2025' in col_val and ('2/4' in col_val or '2' in col_val):
+            current_quarter_col = col_idx
+        if '2024' in col_val and ('2/4' in col_val or '2' in col_val):
+            prev_year_col = col_idx
+        if current_quarter_col and prev_year_col:
+            break
+    
+    if current_quarter_col is None:
+        current_quarter_col = len(header) - 2
+    if prev_year_col is None:
+        prev_year_col = current_quarter_col - 4
+    
+    # 전국 총지수 행 찾기 (분류단계 0)
+    nationwide_row = None
+    for i in range(header_row + 1, len(df)):
+        row = df.iloc[i]
+        region = str(row[1]).strip() if pd.notna(row[1]) else ''
+        classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+        if region == '전국' and classification == '0':
+            nationwide_row = row
+            break
+    
+    if nationwide_row is None:
+        return {'production_index': 100.0, 'growth_rate': 0.0, 'main_industries': []}
+    
+    # 증감률 계산
+    current_val = safe_float(nationwide_row[current_quarter_col], 100)
+    prev_val = safe_float(nationwide_row[prev_year_col], 100)
+    if prev_val and prev_val != 0:
+        growth_rate = ((current_val - prev_val) / prev_val) * 100
+    else:
+        growth_rate = 0.0
+    
+    # 업종별 데이터 추출 (분류단계 1 또는 2)
+    industries = []
+    for i in range(header_row + 1, len(df)):
+        row = df.iloc[i]
+        region = str(row[1]).strip() if pd.notna(row[1]) else ''
+        classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+        if region == '전국' and classification in ['1', '2']:
+            current = safe_float(row[current_quarter_col], None)
+            prev = safe_float(row[prev_year_col], None)
+            if current is not None and prev is not None and prev != 0:
+                ind_growth = ((current - prev) / prev) * 100
+                ind_name = str(row[4]) if pd.notna(row[4]) else ''
+                industries.append({
+                    'name': INDUSTRY_MAPPING.get(ind_name, ind_name),
+                    'growth_rate': round(ind_growth, 1)
+                })
+    
+    positive_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
+                                key=lambda x: x['growth_rate'], reverse=True)[:3]
+    
+    return {
+        'production_index': current_val,
+        'growth_rate': round(growth_rate, 1),
+        'main_industries': positive_industries
     }
 
 

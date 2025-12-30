@@ -13,8 +13,9 @@
 6. [매핑 과정](#6-매핑-과정)
 7. [백엔드 구조와 워크플로우](#7-백엔드-구조와-워크플로우)
 8. [프론트엔드 구성요소와 대시보드 사용법](#8-프론트엔드-구성요소와-대시보드-사용법)
-9. [예상 Q&A](#9-예상-qa)
-10. [향후 개선사항과 고도화 방향](#10-향후-개선사항과-고도화-방향)
+9. [보고서 페이지 유형 및 구조](#9-보고서-페이지-유형-및-구조)
+10. [예상 Q&A](#10-예상-qa)
+11. [향후 개선사항과 고도화 방향](#11-향후-개선사항과-고도화-방향)
 
 ---
 
@@ -1182,9 +1183,196 @@ function saveContactInfo() {
 
 ---
 
-## 9. 예상 Q&A
+## 9. 보고서 페이지 유형 및 구조
 
-### 9.1 기술 선택 관련
+### 9.1 보고서 전체 구성 (총 50개 페이지)
+
+| 구분 | 페이지 수 | 카테고리 |
+|------|----------|---------|
+| 요약 보고서 | 9개 | 표지, 일러두기, 목차, 인포그래픽, 요약 5종 |
+| 부문별 보고서 | 10개 | 생산·소비·물가·고용·무역·인구 |
+| 시도별 보고서 | 18개 | 17개 시도 + 참고(GRDP) |
+| 통계표 | 13개 | 통계표 목차, 지표별 통계표, 부록 |
+
+### 9.2 요약 보고서 (9개)
+
+| 아이콘 | 페이지명 | 템플릿 | 데이터 소스 | 설명 |
+|--------|----------|--------|------------|------|
+| 📑 | 표지 | `cover_template.html` | 스키마(JSON) | 연도/분기 자동 반영 |
+| 📖 | 일러두기 | `guide_template.html` | 스키마(JSON) | 담당부서 연락처 |
+| 📋 | 목차 | `toc_template.html` | 스키마(JSON) | 페이지 번호 자동 |
+| 📊 | **인포그래픽** | `infographic_js_template.html` | 복합(엑셀) | 지도+주요지표 시각화 |
+| 📈 | 요약-지역경제동향 | `summary_regional_economy_template.html` | 복합(엑셀) | GRDP 개요 |
+| 🏭 | 요약-생산 | `summary_production_template.html` | 복합(엑셀) | 광공업+서비스업 |
+| 🛒 | 요약-소비건설 | `summary_consumption_construction_template.html` | 복합(엑셀) | 소비+건설 |
+| 📦 | 요약-수출물가 | `summary_export_price_template.html` | 복합(엑셀) | 수출입+물가 |
+| 👔 | 요약-고용인구 | `summary_employment_template.html` | 복합(엑셀) | 고용률+실업률+인구이동 |
+
+### 9.3 부문별 보고서 (10개)
+
+| 아이콘 | 페이지명 | 엑셀 시트 | Generator | 핵심 구성요소 |
+|--------|----------|----------|-----------|--------------|
+| 🏭 | 광공업생산 | `A 분석` | `mining_manufacturing_generator.py` | 막대차트 + Top3 지역 |
+| 🏢 | 서비스업생산 | `B 분석` | `service_industry_generator.py` | 막대차트 + Top3 지역 |
+| 🛒 | 소비동향 | `C 분석` | `consumption_generator.py` | 막대차트 + Top3 지역 |
+| 🏗️ | 건설동향 | `F'분석` | `construction_generator.py` | 막대차트 + Top3 지역 |
+| 📦 | 수출 | `G 분석` | `export_generator.py` | 막대차트 + Top3 지역 |
+| 🚢 | 수입 | `H 분석` | `import_generator.py` | 막대차트 + Top3 지역 |
+| 💰 | 물가동향 | `E(품목성질물가)분석` | `price_trend_generator.py` | 막대차트 + 세부 품목 |
+| 👔 | 고용률 | `D(고용률)분석` | `employment_rate_generator.py` | 막대차트 + Top3 지역 |
+| 📉 | 실업률 | `D(실업)분석` | `unemployment_generator.py` | 막대차트 + Top3 지역 |
+| 👥 | 국내인구이동 | `I(순인구이동)집계` | `domestic_migration_generator.py` | 막대차트 + Top3 지역 |
+
+### 9.4 시도별 보고서 (18개)
+
+| 권역 | 시도 | 아이콘 |
+|------|------|--------|
+| 수도권 | 서울, 인천, 경기 | 🏙️ ✈️ 🏘️ |
+| 충청권 | 대전, 세종, 충북, 충남 | 🔬 🏛️ 🌾 🌅 |
+| 호남권 | 광주, 전북, 전남, 제주 | 🎨 🌿 🍃 🏝️ |
+| 영남권 | 부산, 대구, 울산, 경북, 경남 | 🌊 🏛️ 🚗 🏔️ 🌳 |
+| 강원권 | 강원 | ⛰️ |
+| 참고 | 참고_GRDP | 📊 |
+
+**시도별 페이지 구성:**
+- **주요지표 테이블** (광공업, 서비스업, 소매판매, 건설, 고용률, 실업률, 수출, 수입, 물가)
+- **부문별 증감 차트** (막대그래프)
+- **참고_GRDP**: 분기 지역내총생산 성장률 표
+
+### 9.5 통계표 (13개)
+
+| 아이콘 | 페이지명 | 템플릿 | 페이지 구성 |
+|--------|----------|--------|------------|
+| 📋 | 통계표-목차 | `statistics_table_toc_template.html` | 1페이지 |
+| 🏭 | 광공업생산지수 | `statistics_table_index_template.html` | 2페이지 (9개 시도씩) |
+| 🏢 | 서비스업생산지수 | `statistics_table_index_template.html` | 2페이지 |
+| 🛒 | 소매판매액지수 | `statistics_table_index_template.html` | 2페이지 |
+| 🏗️ | 건설수주액 | `statistics_table_index_template.html` | 2페이지 |
+| 👔 | 고용률 | `statistics_table_index_template.html` | 2페이지 |
+| 📉 | 실업률 | `statistics_table_index_template.html` | 2페이지 |
+| 👥 | 국내인구이동 | `statistics_table_index_template.html` | 2페이지 |
+| 📦 | 수출액 | `statistics_table_index_template.html` | 2페이지 |
+| 🚢 | 수입액 | `statistics_table_index_template.html` | 2페이지 |
+| 💰 | 소비자물가지수 | `statistics_table_index_template.html` | 2페이지 |
+| 📊 | 참고-GRDP | `statistics_table_grdp_template.html` | 2페이지 |
+| 📖 | 부록-주요용어정의 | `statistics_table_appendix_template.html` | 2페이지 |
+
+### 9.6 페이지 유형별 아키텍처
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    페이지 생성 아키텍처                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌───────────┐    ┌───────────┐    ┌───────────────┐       │
+│  │  엑셀 파일  │ →  │ Generator │ →  │  데이터(JSON)  │       │
+│  │ (분석표)   │    │  (*.py)   │    │               │       │
+│  └───────────┘    └───────────┘    └───────┬───────┘       │
+│                                            │               │
+│                                            ▼               │
+│                                   ┌───────────────┐        │
+│  ┌───────────┐                   │   Template    │        │
+│  │ 스키마(JSON)│ ─────────────────→│   (*.html)    │        │
+│  │ (기본값)   │                   │   + Jinja2    │        │
+│  └───────────┘                   └───────┬───────┘        │
+│                                          │                 │
+│                                          ▼                 │
+│                                  ┌───────────────┐         │
+│                                  │  최종 HTML    │         │
+│                                  │  보고서 출력   │         │
+│                                  └───────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 9.7 핵심 요약 (발표용)
+
+| 항목 | 내용 |
+|------|------|
+| **총 보고서 유형** | 4개 (요약, 부문별, 시도별, 통계표) |
+| **총 페이지 수** | 50개 |
+| **템플릿 파일** | 26개 (HTML) |
+| **Generator 파일** | 15개 (Python) |
+| **스키마 파일** | 20개 (JSON) |
+| **데이터 소스** | 분석표(Excel) + 기초자료 + KOSIS API |
+
+**자동화 포인트:**
+1. 엑셀 시트 → Generator → JSON 데이터 추출
+2. Jinja2 템플릿 + JSON → HTML 렌더링
+3. 연도/분기 정보 자동 반영
+4. 결측치 자동 감지 및 하이라이트
+
+### 9.8 보고서 설정 파일 구조 (`config/reports.py`)
+
+```python
+# 요약 보고서 목록
+SUMMARY_REPORTS = [
+    {'id': 'cover', 'name': '표지', 'template': 'cover_template.html', ...},
+    {'id': 'guide', 'name': '일러두기', 'template': 'guide_template.html', ...},
+    # ... 9개
+]
+
+# 부문별 보고서 목록
+SECTOR_REPORTS = [
+    {'id': 'manufacturing', 'name': '광공업생산', 'sheet': 'A 분석', ...},
+    {'id': 'service', 'name': '서비스업생산', 'sheet': 'B 분석', ...},
+    # ... 10개
+]
+
+# 시도별 보고서 목록
+REGIONAL_REPORTS = [
+    {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', ...},
+    # ... 17개 시도 + 참고_GRDP
+]
+
+# 통계표 목록
+STATISTICS_REPORTS = [
+    {'id': 'stat_toc', 'name': '통계표-목차', ...},
+    {'id': 'stat_mining', 'name': '통계표-광공업생산지수', ...},
+    # ... 13개
+]
+```
+
+### 9.9 보고서 생성 흐름
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   사용자가    │     │  Generator   │     │   Template   │
+│  보고서 선택  │ →   │   모듈 로드   │ →   │    렌더링    │
+└──────────────┘     └──────────────┘     └──────────────┘
+        │                   │                    │
+        ▼                   ▼                    ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  report_id   │     │  엑셀 데이터  │     │  Jinja2로    │
+│  전달        │     │   추출/정제   │     │  HTML 생성   │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**코드 흐름 (report_generator.py):**
+
+```python
+def generate_report_html(excel_path, report_config, year, quarter):
+    # 1. Generator 모듈 동적 로드
+    module = load_generator_module(report_config['generator'])
+    
+    # 2. 데이터 추출
+    if hasattr(module, 'generate_report_data'):
+        data = module.generate_report_data(excel_path)
+    elif generator_class:
+        generator = generator_class(excel_path)
+        data = generator.extract_all_data()
+    
+    # 3. 템플릿 렌더링
+    template = Template(template_content)
+    html_content = template.render(**data)
+    
+    return html_content
+```
+
+---
+
+## 10. 예상 Q&A
+
+### 10.1 기술 선택 관련
 
 #### Q1. 왜 Jinja2를 사용했습니까?
 **A:** 
@@ -1226,7 +1414,7 @@ function saveContactInfo() {
 - **성능**: 번들 크기 없이 빠른 로딩
 - 향후 필요시 React 등으로 마이그레이션 가능
 
-### 9.2 아키텍처 관련
+### 10.2 아키텍처 관련
 
 #### Q6. Generator 모듈을 동적으로 로드하는 이유는?
 **A:**
@@ -1275,7 +1463,7 @@ class DataCache:
   - HWP 직접 생성보다 개발 속도 빠름
 - **향후 HWP 변환**: HTML → HWP 자동 변환 기능 추가 예정 (python-hwp 등 활용)
 
-### 9.3 데이터 처리 관련
+### 10.3 데이터 처리 관련
 
 #### Q11. 업종명 매핑이 필요한 이유는?
 **A:**
@@ -1318,7 +1506,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
 - 분기가 변경되면 해당 매핑만 수정하면 됨
 - 예: `'2025_2Q': 21` → `'2025_3Q': 22`
 
-### 9.4 확장성/유지보수 관련
+### 10.4 확장성/유지보수 관련
 
 #### Q16. 새로운 보고서를 추가하려면 어떻게 하나요?
 **A:**
@@ -1355,7 +1543,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
   - Docker 컨테이너화
   - 또는 내부 서버에 직접 배포
 
-### 9.5 성능 관련
+### 10.5 성능 관련
 
 #### Q21. 대용량 엑셀 파일 처리는?
 **A:**
@@ -1375,7 +1563,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
 - 단일 보고서 렌더링: 0.1초 미만
 - 전체 45+ 보고서: 약 5초
 
-### 9.6 보안 관련
+### 10.6 보안 관련
 
 #### Q24. 파일 업로드 보안은?
 **A:**
@@ -1390,7 +1578,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
 - 세션은 서버 측에만 저장
 - 파일 경로는 클라이언트에 노출되지 않음
 
-### 9.7 사용자 경험 관련
+### 10.7 사용자 경험 관련
 
 #### Q26. 오프라인 사용이 가능한가요?
 **A:**
@@ -1407,7 +1595,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
 - 현재: 클라이언트 메모리에만 저장 (새로고침 시 초기화)
 - 개선 방안: localStorage 또는 서버 DB에 저장
 
-### 9.8 추가 기술 질문
+### 10.8 추가 기술 질문
 
 #### Q29. pandas 대신 polars를 사용하면 어떨까요?
 **A:**
@@ -1453,7 +1641,7 @@ decrease_regions = sorted(regions, key=lambda x: x["growth_rate"])
 - 보고서 미리보기: 스크롤로 확인 가능
 - 보고서 출력은 데스크톱 환경 권장
 
-### 9.9 프로젝트 방법론 관련
+### 10.9 프로젝트 방법론 관련
 
 #### Q36. 이전 프로젝트에서는 Bottom-up 방식을 사용했는데, 왜 Top-down 방식으로 변경했습니까?
 
@@ -1544,7 +1732,7 @@ KOSIS API → 자동 분석표 → 자동 보고서 (특정 정형화된 보고�
 - 완전 자동화(Phase 3)는 정형화된 일부 보고서에만 적용 가능
 - 전문적 판단이 필요한 보고서는 사람의 검토가 필수
 
-### 9.10 제안서 요구사항 관련
+### 10.10 제안서 요구사항 관련
 
 #### Q38. 제안서에서 요구한 KOSIS API 연동은 어떻게 되었습니까?
 
@@ -1738,9 +1926,9 @@ KOSIS API → 자동 분석표 → 자동 보고서 (특정 정형화된 보고�
 
 ---
 
-## 10. 향후 개선사항과 고도화 방향
+## 11. 향후 개선사항과 고도화 방향
 
-### 10.1 단기 개선사항 (1~3개월)
+### 11.1 단기 개선사항 (1~3개월)
 
 #### HWP 직접 출력 기능
 ```python
@@ -1770,7 +1958,7 @@ def validate_data(data, schema):
 - 이전 버전과 비교 기능
 - 변경 사항 추적
 
-### 10.2 중기 개선사항 (3~6개월)
+### 11.2 중기 개선사항 (3~6개월)
 
 #### 차트 이미지 자동 생성
 ```python
@@ -1797,7 +1985,7 @@ def generate_chart_image(data, chart_type, output_path):
 - 이메일/슬랙 알림 연동
 - 발행 일정 예약
 
-### 10.3 장기 개선사항 (6개월~1년)
+### 11.3 장기 개선사항 (6개월~1년)
 
 #### AI 기반 텍스트 생성
 ```python
@@ -1834,7 +2022,7 @@ services:
 - Kubernetes 오케스트레이션
 - Auto-scaling 구현
 
-### 10.4 기술 스택 고도화
+### 11.4 기술 스택 고도화
 
 | 현재 | 개선안 | 이점 |
 |------|--------|------|
@@ -1844,7 +2032,7 @@ services:
 | 동기 처리 | Celery | 대용량 비동기 처리 |
 | 수동 테스트 | pytest + CI/CD | 자동화된 테스트, 배포 |
 
-### 10.5 DevOps 개선
+### 11.5 DevOps 개선
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
@@ -1866,7 +2054,7 @@ services:
 - Docker 이미지 자동 빌드
 - 스테이징 → 프로덕션 배포
 
-### 10.6 사용자 경험 개선
+### 11.6 사용자 경험 개선
 
 1. **대시보드 리디자인**
    - 더 직관적인 UI/UX

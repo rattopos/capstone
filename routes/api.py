@@ -7,11 +7,29 @@ import json
 import base64
 import re
 from pathlib import Path
+from urllib.parse import quote
 
-from flask import Blueprint, request, jsonify, session, send_file
+from flask import Blueprint, request, jsonify, session, send_file, make_response
 from werkzeug.utils import secure_filename
 
 from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER
+
+
+def send_file_with_korean_filename(filepath, filename, mimetype):
+    """한글 파일명을 지원하는 파일 다운로드 응답 생성 (RFC 5987)"""
+    response = make_response(send_file(filepath, mimetype=mimetype))
+    
+    # RFC 5987 방식으로 한글 파일명 인코딩
+    encoded_filename = quote(filename, safe='')
+    
+    # Content-Disposition 헤더 설정 (ASCII fallback + UTF-8 filename)
+    ascii_filename = filename.encode('ascii', 'ignore').decode('ascii') or 'download'
+    response.headers['Content-Disposition'] = (
+        f"attachment; filename=\"{ascii_filename}\"; "
+        f"filename*=UTF-8''{encoded_filename}"
+    )
+    
+    return response
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
 from utils.excel_utils import extract_year_quarter_from_excel, extract_year_quarter_from_raw, detect_file_type
 from services.report_generator import (
@@ -27,11 +45,15 @@ import openpyxl
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 
-def _calculate_analysis_sheets(excel_path: str):
-    """분석 시트의 수식을 계산하여 값으로 채움 (집계 시트 참조)
+def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
+    """분석 시트의 수식 계산 및 검증 (수식 보존 옵션)
     
-    분석 시트의 수식은 집계 시트를 참조하므로, 집계 시트 값을 복사합니다.
-    예: ='A(광공업생산)집계'!A4 → A(광공업생산)집계 시트의 A4 값 복사
+    분석 시트의 수식은 집계 시트를 참조합니다.
+    수식을 유지하면서 계산 결과를 로그로 출력합니다.
+    
+    Args:
+        excel_path: 분석표 파일 경로
+        preserve_formulas: True면 수식 유지 (엑셀에서 계산), False면 값으로 대체
     """
     # 분석 시트 → 집계 시트 매핑
     analysis_aggregate_mapping = {
@@ -49,6 +71,9 @@ def _calculate_analysis_sheets(excel_path: str):
     
     wb = openpyxl.load_workbook(excel_path, data_only=False)
     
+    calculated_count = 0
+    formula_count = 0
+    
     for analysis_sheet, aggregate_sheet in analysis_aggregate_mapping.items():
         if analysis_sheet not in wb.sheetnames:
             continue
@@ -65,7 +90,7 @@ def _calculate_analysis_sheets(excel_path: str):
                 if cell.value is not None:
                     aggregate_data[(cell.row, cell.column)] = cell.value
         
-        # 분석 시트의 수식 셀을 값으로 교체
+        # 분석 시트의 수식 셀 처리
         for row in ws_analysis.iter_rows(min_row=1, max_row=ws_analysis.max_row):
             for cell in row:
                 if cell.value is None:
@@ -75,6 +100,8 @@ def _calculate_analysis_sheets(excel_path: str):
                 
                 # 수식인 경우 (=로 시작)
                 if val.startswith('='):
+                    formula_count += 1
+                    
                     # 집계 시트 참조 파싱: ='시트이름'!셀주소
                     import re
                     match = re.match(r"^='?([^'!]+)'?!([A-Z]+)(\d+)$", val)
@@ -91,20 +118,35 @@ def _calculate_analysis_sheets(excel_path: str):
                         # 집계 시트에서 값 가져오기
                         ref_value = aggregate_data.get((ref_row, ref_col))
                         if ref_value is not None:
-                            cell.value = ref_value
-                    else:
-                        # 다른 복잡한 수식은 0으로 처리 (나중에 확장 가능)
-                        # 증감률 계산 수식 등은 별도 처리 필요
-                        pass
+                            calculated_count += 1
+                            
+                            if preserve_formulas:
+                                # 수식 유지 (엑셀에서 열면 자동 계산)
+                                # 계산 결과는 로그로만 출력
+                                pass
+                            else:
+                                # 수식을 계산된 값으로 대체
+                                cell.value = ref_value
     
     wb.save(excel_path)
     wb.close()
-    print(f"[분석표] 분석 시트 수식 계산 완료: {excel_path}")
+    
+    if preserve_formulas:
+        print(f"[분석표] 수식 보존 완료: {excel_path}")
+        print(f"  → 총 {formula_count}개 수식 유지, {calculated_count}개 참조 값 확인")
+        print(f"  → 엑셀에서 열면 수식이 자동으로 계산됩니다.")
+    else:
+        print(f"[분석표] 수식 계산 완료: {excel_path}")
+        print(f"  → {calculated_count}개 셀 값으로 변환")
 
 
 @api_bp.route('/upload', methods=['POST'])
 def upload_excel():
-    """엑셀 파일 업로드 (기초자료 수집표만 지원)"""
+    """엑셀 파일 업로드
+    
+    프로세스 1: 기초자료 수집표 → 분석표 생성
+    프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성
+    """
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '파일이 없습니다'})
     
@@ -122,38 +164,89 @@ def upload_excel():
     # 파일 유형 자동 감지
     file_type = detect_file_type(str(filepath))
     
-    # 기초자료 수집표만 허용 (분석표는 더 이상 지원하지 않음)
+    # ===== 프로세스 2: 분석표 업로드 → GRDP 결합 → 지역경제동향 생성 =====
     if file_type == 'analysis':
-        filepath.unlink()  # 업로드된 파일 삭제
+        print(f"\n{'='*50}")
+        print(f"[프로세스 2] 분석표 업로드: {filename}")
+        print(f"{'='*50}")
+        
+        # 연도/분기 추출
+        year, quarter = extract_year_quarter_from_excel(str(filepath))
+        
+        # GRDP 시트 존재 여부 확인 및 데이터 추출
+        has_grdp = False
+        grdp_data = None
+        grdp_sheet_found = None
+        
+        try:
+            grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
+            wb = openpyxl.load_workbook(str(filepath), read_only=True, data_only=True)
+            
+            for sheet_name in grdp_sheet_names:
+                if sheet_name in wb.sheetnames:
+                    has_grdp = True
+                    grdp_sheet_found = sheet_name
+                    print(f"[GRDP] 시트 발견: {sheet_name}")
+                    
+                    # GRDP 시트에서 데이터 추출
+                    grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
+                    if grdp_data:
+                        print(f"[GRDP] 데이터 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
+                    break
+            wb.close()
+        except Exception as e:
+            print(f"[경고] GRDP 시트 확인 실패: {e}")
+        
+        # 세션에 저장
+        session['excel_path'] = str(filepath)
+        session['year'] = year
+        session['quarter'] = quarter
+        session['file_type'] = 'analysis'
+        
+        if grdp_data:
+            session['grdp_data'] = grdp_data
+            # JSON 파일로도 저장
+            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+            with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+        
+        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보고서 생성' if has_grdp else 'GRDP 모달 표시'}")
+        
         return jsonify({
-            'success': False, 
-            'error': '분석표는 더 이상 지원하지 않습니다. 기초자료 수집표를 업로드해주세요.'
+            'success': True,
+            'filename': filename,
+            'file_type': 'analysis',
+            'year': year,
+            'quarter': quarter,
+            'reports': REPORT_ORDER,
+            'regional_reports': REGIONAL_REPORTS,
+            'needs_grdp': not has_grdp,
+            'has_grdp': has_grdp,
+            'grdp_sheet': grdp_sheet_found,
+            'conversion_info': None
         })
     
-    # 기초자료 수집표 처리 (분석표는 다운로드 시점에 생성)
-    grdp_data = None
-    conversion_info = None
+    # ===== 프로세스 1: 기초자료 수집표 → 분석표 생성 =====
+    print(f"\n{'='*50}")
+    print(f"[프로세스 1] 기초자료 수집표 업로드: {filename}")
+    print(f"{'='*50}")
     
-    print(f"[업로드] 기초자료 수집표 감지")
     try:
         converter = DataConverter(str(filepath))
+        year = converter.year
+        quarter = converter.quarter
         
-        # GRDP 데이터만 추출 (분석표는 다운로드 시 생성)
-        grdp_data = converter.extract_grdp_data()
-        
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-        with open(grdp_json_path, 'w', encoding='utf-8') as f:
-            json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+        # 분석표 파일명 (다운로드 시 생성)
+        analysis_filename = f"분석표_{year}년_{quarter}분기_자동생성.xlsx"
         
         conversion_info = {
             'original_file': filename,
-            'grdp_extracted': True,
-            'national_growth_rate': grdp_data['national_summary']['growth_rate'],
-            'top_region': grdp_data['top_region']['name'],
-            'top_region_growth': grdp_data['top_region']['growth_rate']
+            'analysis_file': analysis_filename,
+            'year': year,
+            'quarter': quarter
         }
         
-        print(f"[업로드] GRDP 추출 - 전국: {grdp_data['national_summary']['growth_rate']}%, 1위: {grdp_data['top_region']['name']}")
+        print(f"[결과] 분석표 다운로드 준비 완료: {analysis_filename}")
         
     except Exception as e:
         import traceback
@@ -164,18 +257,11 @@ def upload_excel():
             'error': f'기초자료 처리 중 오류가 발생했습니다: {str(e)}'
         })
     
-    # 연도/분기 추출 (기초자료 파일에서)
-    year, quarter = extract_year_quarter_from_raw(str(filepath))
-    
-    # 세션에 저장 (분석표는 다운로드 시 생성, 보고서는 기초자료에서 직접 추출)
+    # 세션에 저장
     session['raw_excel_path'] = str(filepath)
-    session['excel_path'] = str(filepath)  # 보고서 생성용 (기초자료 직접 사용)
     session['year'] = year
     session['quarter'] = quarter
     session['file_type'] = 'raw'
-    
-    if grdp_data:
-        session['grdp_data'] = grdp_data
     
     return jsonify({
         'success': True,
@@ -187,6 +273,91 @@ def upload_excel():
         'regional_reports': REGIONAL_REPORTS,
         'conversion_info': conversion_info
     })
+
+
+def _extract_grdp_from_analysis_sheet(ws, year, quarter):
+    """분석표의 GRDP 시트에서 데이터 추출"""
+    import pandas as pd
+    
+    try:
+        # 시트 데이터를 DataFrame으로 변환
+        data = []
+        for row in ws.iter_rows(values_only=True):
+            data.append(row)
+        
+        if not data:
+            return None
+        
+        df = pd.DataFrame(data)
+        
+        regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        region_groups = {
+            '서울': '경인', '인천': '경인', '경기': '경인',
+            '대전': '충청', '세종': '충청', '충북': '충청', '충남': '충청',
+            '광주': '호남', '전북': '호남', '전남': '호남', '제주': '호남',
+            '대구': '동북', '경북': '동북', '강원': '동북',
+            '부산': '동남', '울산': '동남', '경남': '동남'
+        }
+        
+        regional_data = []
+        national_growth = 0.0
+        top_region = {'name': '-', 'growth_rate': 0.0}
+        
+        # 지역별 성장률 추출
+        for i, row in df.iterrows():
+            for j, val in enumerate(row):
+                if pd.notna(val) and str(val).strip() in regions:
+                    region_name = str(val).strip()
+                    growth_rate = 0.0
+                    
+                    # 다음 컬럼에서 성장률 찾기
+                    for k in range(j+1, min(j+10, len(row))):
+                        try:
+                            growth_rate = float(row.iloc[k])
+                            break
+                        except:
+                            continue
+                    
+                    if region_name == '전국':
+                        national_growth = growth_rate
+                    else:
+                        regional_data.append({
+                            'region': region_name,
+                            'region_group': region_groups.get(region_name, ''),
+                            'growth_rate': growth_rate,
+                            'manufacturing': 0.0,
+                            'construction': 0.0,
+                            'service': 0.0,
+                            'other': 0.0
+                        })
+                        
+                        if growth_rate > top_region['growth_rate']:
+                            top_region = {'name': region_name, 'growth_rate': growth_rate}
+        
+        if not regional_data and national_growth == 0.0:
+            return None
+        
+        return {
+            'report_info': {'year': year, 'quarter': quarter, 'page_number': ''},
+            'national_summary': {
+                'growth_rate': national_growth,
+                'direction': '증가' if national_growth > 0 else '감소',
+                'contributions': {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
+            },
+            'top_region': {
+                'name': top_region['name'],
+                'growth_rate': top_region['growth_rate'],
+                'contributions': {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
+            },
+            'regional_data': regional_data,
+            'source': 'analysis_sheet'
+        }
+        
+    except Exception as e:
+        print(f"[GRDP] 시트 데이터 추출 오류: {e}")
+        return None
 
 
 @api_bp.route('/check-grdp', methods=['GET'])
@@ -219,7 +390,7 @@ def check_grdp_status():
 
 @api_bp.route('/upload-grdp', methods=['POST'])
 def upload_grdp_file():
-    """KOSIS GRDP 파일 업로드 및 파싱"""
+    """KOSIS GRDP 파일 업로드 및 파싱 + 분석표에 GRDP 시트 추가"""
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '파일이 없습니다.'}), 400
     
@@ -248,11 +419,24 @@ def upload_grdp_file():
         with open(grdp_json_path, 'w', encoding='utf-8') as f:
             json.dump(grdp_data, f, ensure_ascii=False, indent=2)
         
+        # 분석표에 GRDP 시트 추가 (분석표가 업로드된 경우)
+        analysis_path = session.get('excel_path')
+        grdp_sheet_added = False
+        
+        if analysis_path and Path(analysis_path).exists():
+            try:
+                grdp_sheet_added = _add_grdp_sheet_to_analysis(analysis_path, str(filepath), year, quarter)
+                if grdp_sheet_added:
+                    print(f"[GRDP] 분석표에 GRDP 시트 추가 완료: {analysis_path}")
+            except Exception as e:
+                print(f"[GRDP] 분석표에 GRDP 시트 추가 실패: {e}")
+        
         return jsonify({
             'success': True,
             'message': 'GRDP 데이터가 성공적으로 업로드되었습니다.',
             'national_growth_rate': grdp_data.get('national_summary', {}).get('growth_rate', 0),
-            'top_region': grdp_data.get('top_region', {}).get('name', '-')
+            'top_region': grdp_data.get('top_region', {}).get('name', '-'),
+            'grdp_sheet_added': grdp_sheet_added
         })
     else:
         return jsonify({
@@ -261,9 +445,150 @@ def upload_grdp_file():
         }), 400
 
 
+def _add_grdp_sheet_to_analysis(analysis_path: str, grdp_file_path: str, year: int, quarter: int) -> bool:
+    """분석표에 GRDP 시트 추가 (KOSIS 파일에서 시트 복사)"""
+    import pandas as pd
+    from openpyxl import load_workbook
+    from openpyxl.utils.dataframe import dataframe_to_rows
+    
+    try:
+        # GRDP 파일에서 데이터 읽기
+        grdp_df = pd.read_excel(grdp_file_path, header=None)
+        
+        # 분석표 열기
+        wb = load_workbook(analysis_path)
+        
+        # 기존 GRDP 시트가 있으면 삭제
+        grdp_sheet_names = ['I GRDP', 'GRDP', '분기 GRDP']
+        for sheet_name in grdp_sheet_names:
+            if sheet_name in wb.sheetnames:
+                del wb[sheet_name]
+        
+        # 새 GRDP 시트 생성
+        ws = wb.create_sheet('I GRDP')
+        
+        # 데이터 복사
+        for r_idx, row in enumerate(dataframe_to_rows(grdp_df, index=False, header=False), 1):
+            for c_idx, value in enumerate(row, 1):
+                ws.cell(row=r_idx, column=c_idx, value=value)
+        
+        # 저장
+        wb.save(analysis_path)
+        wb.close()
+        
+        print(f"[GRDP] 'I GRDP' 시트 추가 완료 ({len(grdp_df)}행)")
+        return True
+        
+    except Exception as e:
+        import traceback
+        print(f"[GRDP] 시트 추가 오류: {e}")
+        traceback.print_exc()
+        return False
+
+
+@api_bp.route('/use-default-grdp', methods=['POST'])
+def use_default_grdp():
+    """GRDP 파일이 없을 때 기본값(placeholder) 사용"""
+    from services.grdp_service import get_default_grdp_data
+    
+    year = session.get('year', 2025)
+    quarter = session.get('quarter', 2)
+    
+    # 기본 GRDP 데이터 생성 (placeholder)
+    grdp_data = get_default_grdp_data(year, quarter)
+    
+    # 세션에 저장
+    session['grdp_data'] = grdp_data
+    
+    # JSON 파일로도 저장
+    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+    with open(grdp_json_path, 'w', encoding='utf-8') as f:
+        json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+    
+    # 분석표에 플레이스홀더 GRDP 시트 추가 (분석표가 업로드된 경우)
+    analysis_path = session.get('excel_path')
+    grdp_sheet_added = False
+    
+    if analysis_path and Path(analysis_path).exists():
+        try:
+            grdp_sheet_added = _add_placeholder_grdp_sheet(analysis_path, grdp_data)
+            if grdp_sheet_added:
+                print(f"[GRDP] 분석표에 플레이스홀더 GRDP 시트 추가 완료")
+        except Exception as e:
+            print(f"[GRDP] 분석표에 GRDP 시트 추가 실패: {e}")
+    
+    print(f"[GRDP] 기본값 사용 - {year}년 {quarter}분기")
+    
+    return jsonify({
+        'success': True,
+        'message': 'GRDP 기본값이 설정되었습니다. 나중에 실제 데이터로 업데이트할 수 있습니다.',
+        'is_placeholder': True,
+        'national_growth_rate': 0.0,
+        'kosis_info': grdp_data.get('kosis_info', {}),
+        'grdp_sheet_added': grdp_sheet_added
+    })
+
+
+def _add_placeholder_grdp_sheet(analysis_path: str, grdp_data: dict) -> bool:
+    """분석표에 플레이스홀더 GRDP 시트 추가"""
+    from openpyxl import load_workbook
+    
+    try:
+        wb = load_workbook(analysis_path)
+        
+        # 기존 GRDP 시트가 있으면 삭제
+        grdp_sheet_names = ['I GRDP', 'GRDP', '분기 GRDP']
+        for sheet_name in grdp_sheet_names:
+            if sheet_name in wb.sheetnames:
+                del wb[sheet_name]
+        
+        # 새 GRDP 시트 생성
+        ws = wb.create_sheet('I GRDP')
+        
+        # 헤더 행
+        year = grdp_data.get('report_info', {}).get('year', 2025)
+        quarter = grdp_data.get('report_info', {}).get('quarter', 2)
+        
+        ws['A1'] = '지역'
+        ws['B1'] = f'{year}년 {quarter}분기 성장률(%)'
+        ws['C1'] = '제조업'
+        ws['D1'] = '건설업'
+        ws['E1'] = '서비스업'
+        ws['F1'] = '기타'
+        
+        # 전국 데이터
+        ws['A2'] = '전국'
+        ws['B2'] = grdp_data.get('national_summary', {}).get('growth_rate', 0.0)
+        
+        # 지역별 데이터
+        regional_data = grdp_data.get('regional_data', [])
+        for i, region in enumerate(regional_data, start=3):
+            ws[f'A{i}'] = region.get('region', '')
+            ws[f'B{i}'] = region.get('growth_rate', 0.0)
+            ws[f'C{i}'] = region.get('manufacturing', 0.0)
+            ws[f'D{i}'] = region.get('construction', 0.0)
+            ws[f'E{i}'] = region.get('service', 0.0)
+            ws[f'F{i}'] = region.get('other', 0.0)
+        
+        wb.save(analysis_path)
+        wb.close()
+        
+        print(f"[GRDP] 플레이스홀더 'I GRDP' 시트 추가 완료")
+        return True
+        
+    except Exception as e:
+        import traceback
+        print(f"[GRDP] 플레이스홀더 시트 추가 오류: {e}")
+        traceback.print_exc()
+        return False
+
+
 @api_bp.route('/download-analysis', methods=['GET'])
 def download_analysis():
     """분석표 다운로드 (다운로드 시점에 생성 + 수식 계산)"""
+    import time
+    import zipfile
+    
     raw_excel_path = session.get('raw_excel_path')
     
     if not raw_excel_path or not Path(raw_excel_path).exists():
@@ -271,21 +596,46 @@ def download_analysis():
     
     try:
         converter = DataConverter(str(raw_excel_path))
-        
-        # 분석표 생성
         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
         
-        # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
-        _calculate_analysis_sheets(analysis_path)
+        # 이미 유효한 분석표가 있는지 확인 (세션에서 생성된 파일)
+        download_path = session.get('download_analysis_path')
+        need_regenerate = True
+        
+        if download_path and Path(download_path).exists():
+            # 기존 파일 유효성 검사
+            try:
+                with zipfile.ZipFile(download_path, 'r') as zf:
+                    # zip 파일이 유효한지 테스트
+                    if zf.testzip() is None:
+                        need_regenerate = False
+                        analysis_output = download_path
+                        print(f"[다운로드] 기존 분석표 재사용: {download_path}")
+            except (zipfile.BadZipFile, EOFError):
+                print(f"[다운로드] 기존 파일 손상됨, 재생성 필요")
+                need_regenerate = True
+        
+        if need_regenerate:
+            # 분석표 생성
+            analysis_path = converter.convert_all(analysis_output, weight_settings=None)
+            
+            # 파일 저장 완료 대기 (파일 시스템 동기화)
+            time.sleep(0.3)
+            
+            # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
+            _calculate_analysis_sheets(analysis_path)
+            
+            # 세션에 저장
+            session['download_analysis_path'] = analysis_path
+        else:
+            analysis_path = analysis_output
         
         filename = Path(analysis_path).name
         
-        return send_file(
+        return send_file_with_korean_filename(
             analysis_path,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            filename,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     except Exception as e:
         import traceback
@@ -296,6 +646,8 @@ def download_analysis():
 @api_bp.route('/generate-analysis-with-weights', methods=['POST'])
 def generate_analysis_with_weights():
     """가중치 설정을 포함하여 분석표 생성 + 다운로드"""
+    import time
+    
     data = request.get_json()
     weight_settings = data.get('weight_settings', {})  # {mining: {mode, values}, service: {mode, values}}
     
@@ -310,8 +662,20 @@ def generate_analysis_with_weights():
         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
         analysis_path = converter.convert_all(analysis_output, weight_settings=weight_settings)
         
+        # 파일 저장 완료 대기 (파일 시스템 동기화)
+        time.sleep(0.3)
+        
         # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
         _calculate_analysis_sheets(analysis_path)
+        
+        # 파일 무결성 확인
+        import zipfile
+        try:
+            with zipfile.ZipFile(analysis_path, 'r') as zf:
+                if zf.testzip() is not None:
+                    raise Exception("생성된 파일이 손상되었습니다.")
+        except zipfile.BadZipFile:
+            raise Exception("생성된 파일이 손상되었습니다. 다시 시도해주세요.")
         
         session['download_analysis_path'] = analysis_path
         
@@ -1017,12 +1381,12 @@ def export_hwp_ready():
             # inline style은 유지
             
             # 카테고리 한글명
-            category_names = {{
+            category_names = {
                 'summary': '요약',
                 'sectoral': '부문별',
                 'regional': '시도별',
                 'statistics': '통계표'
-            }}
+            }
             category_name = category_names.get(category, '')
             
             final_html += f'''

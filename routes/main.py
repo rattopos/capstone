@@ -3,13 +3,34 @@
 메인 페이지 라우트
 """
 
-from flask import Blueprint, render_template, send_file, send_from_directory
+from flask import Blueprint, render_template, send_file, make_response
 from pathlib import Path
+from urllib.parse import quote
 
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS
 from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
 
 main_bp = Blueprint('main', __name__)
+
+
+def send_file_with_korean_filename(filepath, filename, mimetype=None):
+    """한글 파일명을 지원하는 파일 다운로드 응답 생성 (RFC 5987)"""
+    if mimetype:
+        response = make_response(send_file(filepath, mimetype=mimetype))
+    else:
+        response = make_response(send_file(filepath))
+    
+    # RFC 5987 방식으로 한글 파일명 인코딩
+    encoded_filename = quote(filename, safe='')
+    
+    # Content-Disposition 헤더 설정 (ASCII fallback + UTF-8 filename)
+    ascii_filename = filename.encode('ascii', 'ignore').decode('ascii') or 'download'
+    response.headers['Content-Disposition'] = (
+        f"attachment; filename=\"{ascii_filename}\"; "
+        f"filename*=UTF-8''{encoded_filename}"
+    )
+    
+    return response
 
 
 @main_bp.route('/')
@@ -29,12 +50,18 @@ def preview_infographic():
 
 @main_bp.route('/uploads/<filename>')
 def download_file(filename):
-    """업로드된 파일 다운로드"""
-    return send_from_directory(str(UPLOAD_FOLDER), filename, as_attachment=True)
+    """업로드된 파일 다운로드 (한글 파일명 지원)"""
+    filepath = UPLOAD_FOLDER / filename
+    if filepath.exists():
+        return send_file_with_korean_filename(str(filepath), filename)
+    return "파일을 찾을 수 없습니다.", 404
 
 
 @main_bp.route('/view/<filename>')
 def view_file(filename):
     """파일 직접 보기 (다운로드 없이)"""
-    return send_from_directory(str(UPLOAD_FOLDER), filename, as_attachment=False)
+    filepath = UPLOAD_FOLDER / filename
+    if filepath.exists():
+        return send_file(str(filepath))
+    return "파일을 찾을 수 없습니다.", 404
 

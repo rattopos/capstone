@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4;
-            margin: 15mm 15mm 20mm 15mm;
+            margin: 15mm 20mm 20mm 20mm;
         }
         
         * {
@@ -17,8 +17,8 @@
         }
         
         body {
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-            font-size: 10pt;
+            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-size: 11pt;
             line-height: 1.4;
             color: #000;
             background: #fff;
@@ -27,75 +27,91 @@
         .page {
             width: 210mm;
             min-height: 297mm;
-            padding: 15mm;
+            padding: 15mm 20mm;
             margin: 0 auto;
             background: #fff;
             position: relative;
         }
         
+        /* 헤더 영역 */
         .header {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
+            padding-top: 10mm;
         }
         
         .header-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #4a6fa5 0%, #6b8cce 100%);
-            border-radius: 8px;
-            margin-right: 15px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #5577aa 0%, #7799cc 50%, #6688bb 100%);
+            border-radius: 6px;
+            margin-right: 12px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
         }
         
         .header-title {
-            background: linear-gradient(90deg, #5a7cb8 0%, #8aa3d4 100%);
-            color: white;
-            font-size: 22pt;
+            background: linear-gradient(to right, #aaaaaa 0%, #cccccc 15%, #cccccc 85%, #aaaaaa 100%);
+            color: #000;
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 18pt;
             font-weight: bold;
-            letter-spacing: 20px;
-            padding: 12px 60px;
-            border-radius: 3px;
+            letter-spacing: 25px;
+            padding: 10px 80px 10px 100px;
+            border-radius: 2px;
         }
         
+        /* 목차 리스트 */
         .toc-list {
             list-style: none;
-            padding: 30px 40px;
+            padding: 20px 50px;
         }
         
         .toc-list li {
-            font-size: 13pt;
-            padding: 18px 0;
+            font-size: 12pt;
+            padding: 15px 0;
             display: flex;
             align-items: baseline;
+            line-height: 1.6;
         }
         
         .toc-number {
-            min-width: 35px;
+            min-width: 40px;
+            font-weight: normal;
         }
         
         .toc-title {
-            flex: 1;
+            min-width: 120px;
+            white-space: nowrap;
         }
         
         .toc-dots {
-            flex: 3;
-            border-bottom: 1px dotted #999;
-            margin: 0 10px 5px 10px;
+            flex: 1;
+            overflow: hidden;
+            margin-left: 10px;
+            font-family: serif;
+            letter-spacing: 1px;
+            color: #666;
         }
         
+        .toc-dots::after {
+            content: "…………………………………………………………………………………………………………";
+        }
+        
+        /* 참고 항목 */
         .toc-reference {
-            margin-top: 20px;
-            padding-left: 0;
+            margin-top: 15px;
+            padding-left: 50px;
         }
         
         .toc-reference li {
-            color: #333;
+            color: #000;
         }
         
         .page-number {
             position: absolute;
-            bottom: 10mm;
+            bottom: 15mm;
             left: 0;
             right: 0;
             text-align: center;
@@ -108,8 +124,14 @@
             }
             .page {
                 margin: 0;
-                padding: 15mm;
+                padding: 15mm 20mm;
                 page-break-after: always;
+            }
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
             }
         }
     </style>
@@ -122,13 +144,56 @@
         </div>
         
         <ol class="toc-list">
-            {% for item in toc_items %}
             <li>
-                <span class="toc-number">{{ item.number }}.</span>
-                <span class="toc-title">{{ item.name }}</span>
+                <span class="toc-number">1.</span>
+                <span class="toc-title">광공업생산지수</span>
                 <span class="toc-dots"></span>
             </li>
-            {% endfor %}
+            <li>
+                <span class="toc-number">2.</span>
+                <span class="toc-title">서비스업생산지수</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">3.</span>
+                <span class="toc-title">소매판매액지수</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">4.</span>
+                <span class="toc-title">건설수주액</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">5.</span>
+                <span class="toc-title">고용률</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">6.</span>
+                <span class="toc-title">실업률</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">7.</span>
+                <span class="toc-title">국내 인구이동</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">8.</span>
+                <span class="toc-title">수출액</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">9.</span>
+                <span class="toc-title">수입액</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">10.</span>
+                <span class="toc-title">소비자물가지수</span>
+                <span class="toc-dots"></span>
+            </li>
         </ol>
         
         <ul class="toc-list toc-reference">
@@ -139,8 +204,7 @@
             </li>
         </ul>
         
-        <div class="page-number">- {{ page_number }} -</div>
+        <div class="page-number">- {{ page_number | default(21) }} -</div>
     </div>
 </body>
 </html>
-

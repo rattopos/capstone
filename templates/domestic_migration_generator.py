@@ -27,8 +27,32 @@ REGION_GROUPS = {
 
 def load_data(excel_path):
     """엑셀 파일에서 데이터를 로드합니다."""
-    summary_df = pd.read_excel(excel_path, sheet_name='I(순인구이동)집계', header=None)
-    reference_df = pd.read_excel(excel_path, sheet_name='I 참고', header=None)
+    xl = pd.ExcelFile(excel_path)
+    sheet_names = xl.sheet_names
+    
+    # 집계 시트 찾기
+    summary_sheet = None
+    for name in ['I(순인구이동)집계', 'I(순인구이동) 집계', '시도 간 이동']:
+        if name in sheet_names:
+            summary_sheet = name
+            if name == '시도 간 이동':
+                print(f"[시트 대체] 'I(순인구이동)집계' → '시도 간 이동' (기초자료)")
+            break
+    
+    if not summary_sheet:
+        raise ValueError(f"국내인구이동 집계 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
+    
+    # 참고 시트 찾기 (없으면 집계 시트 사용)
+    reference_sheet = None
+    for name in ['I 참고', 'I참고']:
+        if name in sheet_names:
+            reference_sheet = name
+            break
+    if not reference_sheet:
+        reference_sheet = summary_sheet
+    
+    summary_df = pd.read_excel(excel_path, sheet_name=summary_sheet, header=None)
+    reference_df = pd.read_excel(excel_path, sheet_name=reference_sheet, header=None)
     return summary_df, reference_df
 
 def get_sido_data(summary_df):

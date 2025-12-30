@@ -33,9 +33,42 @@ PRODUCT_NAME_MAPPING = {
 
 def load_data(excel_path):
     """엑셀 파일에서 데이터를 로드합니다."""
-    analysis_df = pd.read_excel(excel_path, sheet_name='G 분석', header=None)
-    reference_df = pd.read_excel(excel_path, sheet_name='G 참고', header=None)
-    summary_df = pd.read_excel(excel_path, sheet_name='G(수출)집계', header=None)
+    xl = pd.ExcelFile(excel_path)
+    sheet_names = xl.sheet_names
+    
+    # 분석 시트 찾기
+    analysis_sheet = None
+    for name in ['G 분석', 'G분석', '수출']:
+        if name in sheet_names:
+            analysis_sheet = name
+            if name == '수출':
+                print(f"[시트 대체] 'G 분석' → '수출' (기초자료)")
+            break
+    
+    if not analysis_sheet:
+        raise ValueError(f"수출 분석 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
+    
+    # 참고 시트 찾기 (없으면 분석 시트 사용)
+    reference_sheet = None
+    for name in ['G 참고', 'G참고']:
+        if name in sheet_names:
+            reference_sheet = name
+            break
+    if not reference_sheet:
+        reference_sheet = analysis_sheet
+    
+    # 집계 시트 찾기 (없으면 분석 시트 사용)
+    summary_sheet = None
+    for name in ['G(수출)집계', 'G수출집계', 'G집계']:
+        if name in sheet_names:
+            summary_sheet = name
+            break
+    if not summary_sheet:
+        summary_sheet = analysis_sheet
+    
+    analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
+    reference_df = pd.read_excel(excel_path, sheet_name=reference_sheet, header=None)
+    summary_df = pd.read_excel(excel_path, sheet_name=summary_sheet, header=None)
     return analysis_df, reference_df, summary_df
 
 def get_sido_data_from_analysis(analysis_df):
@@ -107,8 +140,9 @@ def get_sido_products_from_reference(reference_df):
                 rank_num = int(rank)
                 max_rank = max_rank_per_sido.get(current_sido, 151)
                 
-                # 품목명 매핑 적용
-                display_name = PRODUCT_NAME_MAPPING.get(product, product).strip()
+                # 품목명 매핑 적용 (정수인 경우 문자열로 변환)
+                product_str = str(product).strip() if not isinstance(product, str) else product.strip()
+                display_name = PRODUCT_NAME_MAPPING.get(product_str, product_str)
                 
                 product_info = {
                     'rank': rank_num,
@@ -242,16 +276,25 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     headline = f"◆수출은 {', '.join(headline_regions)} 등 {increase_count}개 시도에서 전년동분기대비 증가"
     
     # 전국 요약
-    amount = nationwide_data['amount']
-    change = nationwide_data['change']
-    products = nationwide_data['products']
-    product_names = ", ".join([p['name'] for p in products[:3]])
+    amount = nationwide_data.get('amount')
+    change = nationwide_data.get('change', 0)
+    products = nationwide_data.get('products', [])
+    product_names = ", ".join([p['name'] for p in products[:3]]) if products else "기타"
     
-    nationwide_summary = f"전국 수출(<span class='bold'>{amount:,.1f}억달러</span>)은 {product_names} 등의 수출이 늘어 전년동분기대비 <span class='bold'>{change:.1f}%</span> 증가"
+    # None 값 안전 처리
+    amount_str = f"{amount:,.1f}억달러" if amount is not None else "-"
+    change_val = change if change is not None else 0
+    change_str = f"{change_val:.1f}%"
     
-    # 시도 요약
-    decrease_names = ", ".join([f"<span class='bold'>{r['name']}</span>({r['change']:.1f}%)" for r in top_decrease])
-    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({r['change']:.1f}%)" for r in top_increase])
+    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 늘어 전년동분기대비 <span class='bold'>{change_str}</span> 증가"
+    
+    # 시도 요약 - None 값 안전 처리
+    def safe_change(r):
+        c = r.get('change')
+        return f"{c:.1f}" if c is not None else "-"
+    
+    decrease_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_decrease])
+    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_increase])
     
     # 감소 지역의 품목
     if top_decrease:

@@ -62,11 +62,68 @@ VALID_REGIONS = [
 ]
 
 
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-' 체크 포함)"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '':
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
+def find_sheet_with_fallback(xl, primary_sheets, fallback_sheets):
+    """시트 찾기 - 기본 시트가 없으면 대체 시트 사용"""
+    for sheet in primary_sheets:
+        if sheet in xl.sheet_names:
+            return sheet, False
+    for sheet in fallback_sheets:
+        if sheet in xl.sheet_names:
+            print(f"[시트 대체] '{primary_sheets[0]}' → '{sheet}' (기초자료)")
+            return sheet, True
+    return None, False
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
-    df_analysis = pd.read_excel(xl, sheet_name='C 분석', header=None)
-    df_index = pd.read_excel(xl, sheet_name='C(소비)집계', header=None)
+    
+    # 분석 시트 찾기
+    analysis_sheet, use_raw = find_sheet_with_fallback(
+        xl, 
+        ['C 분석', 'C분석'],
+        ['소비(소매, 추가)', '소비', '소매판매액지수']
+    )
+    
+    if analysis_sheet:
+        df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+    else:
+        raise ValueError(f"소비동향 분석 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
+    
+    # 집계 시트 찾기
+    agg_sheet, _ = find_sheet_with_fallback(
+        xl,
+        ['C(소비)집계', 'C 집계'],
+        ['소비(소매, 추가)', '소비', '소매판매액지수']
+    )
+    
+    if agg_sheet and agg_sheet != analysis_sheet:
+        df_index = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+    else:
+        df_index = df_analysis.copy()
+    
+    # use_raw 정보를 첫번째 df에 속성으로 저장
+    df_analysis.attrs['use_raw'] = use_raw
+    
     return df_analysis, df_index
 
 
@@ -84,24 +141,31 @@ def get_region_indices(df_analysis):
 
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
+    use_raw = df_analysis.attrs.get('use_raw', False)
+    
+    if use_raw:
+        return _get_nationwide_from_raw_data(df_analysis)
+    
     # 분석 시트에서 전국 총지수 행
     nationwide_row = df_analysis.iloc[3]
-    growth_rate = round(float(nationwide_row[20]), 1)
+    growth_rate = safe_float(nationwide_row[20], 0)
+    growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
     # 집계 시트에서 전국 지수
     index_row = df_index.iloc[3]
-    sales_index = index_row[24]  # 2025.2/4p
+    sales_index = safe_float(index_row[24], 100)  # 2025.2/4p
     
     # 전국 업태별 증감률
     businesses = []
     for i in range(4, 12):
         row = df_analysis.iloc[i]
         business_name = row[7]
-        business_growth = float(row[20])
-        businesses.append({
-            'name': BUSINESS_MAPPING.get(business_name, business_name),
-            'growth_rate': round(business_growth, 1)
-        })
+        business_growth = safe_float(row[20], None)
+        if business_growth is not None:
+            businesses.append({
+                'name': BUSINESS_MAPPING.get(business_name, business_name),
+                'growth_rate': round(business_growth, 1)
+            })
     
     # 감소율이 큰 순으로 정렬 (음수 중 절대값이 큰 것)
     negative_businesses = [b for b in businesses if b['growth_rate'] < 0]
@@ -112,6 +176,85 @@ def get_nationwide_data(df_analysis, df_index):
         'sales_index': sales_index,
         'growth_rate': growth_rate,
         'main_businesses': main_businesses
+    }
+
+
+def _get_nationwide_from_raw_data(df):
+    """기초자료 시트에서 전국 데이터 추출"""
+    # 헤더 행 및 컬럼 인덱스 찾기
+    header_row = 2
+    current_quarter_col = None
+    prev_year_col = None
+    
+    for i in range(min(10, len(df))):
+        row = df.iloc[i]
+        row_str = ' '.join([str(v) for v in row.values[:10] if pd.notna(v)])
+        if '지역' in row_str and ('2024' in row_str or '2025' in row_str):
+            header_row = i
+            break
+    
+    header = df.iloc[header_row] if header_row < len(df) else df.iloc[0]
+    
+    for col_idx in range(len(header) - 1, 4, -1):
+        col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
+        if '2025' in col_val and ('2/4' in col_val or '2' in col_val):
+            current_quarter_col = col_idx
+        if '2024' in col_val and ('2/4' in col_val or '2' in col_val):
+            prev_year_col = col_idx
+        if current_quarter_col and prev_year_col:
+            break
+    
+    if current_quarter_col is None:
+        current_quarter_col = len(header) - 2
+    if prev_year_col is None:
+        prev_year_col = current_quarter_col - 4
+    
+    # 전국 총지수 행 찾기 (분류단계 0)
+    nationwide_row = None
+    for i in range(header_row + 1, len(df)):
+        row = df.iloc[i]
+        region = str(row[1]).strip() if pd.notna(row[1]) else ''
+        classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+        if region == '전국' and classification == '0':
+            nationwide_row = row
+            break
+    
+    if nationwide_row is None:
+        return {'sales_index': 100.0, 'growth_rate': 0.0, 'main_businesses': []}
+    
+    # 증감률 계산
+    current_val = safe_float(nationwide_row[current_quarter_col], 100)
+    prev_val = safe_float(nationwide_row[prev_year_col], 100)
+    if prev_val and prev_val != 0:
+        growth_rate = ((current_val - prev_val) / prev_val) * 100
+    else:
+        growth_rate = 0.0
+    
+    # 업태별 데이터 추출 (분류단계 1)
+    businesses = []
+    for i in range(header_row + 1, len(df)):
+        row = df.iloc[i]
+        region = str(row[1]).strip() if pd.notna(row[1]) else ''
+        classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+        if region == '전국' and classification == '1':
+            current = safe_float(row[current_quarter_col], None)
+            prev = safe_float(row[prev_year_col], None)
+            if current is not None and prev is not None and prev != 0:
+                bus_growth = ((current - prev) / prev) * 100
+                bus_name = str(row[4]) if pd.notna(row[4]) else ''
+                businesses.append({
+                    'name': BUSINESS_MAPPING.get(bus_name, bus_name),
+                    'growth_rate': round(bus_growth, 1)
+                })
+    
+    # 감소율이 큰 순으로 정렬
+    negative_businesses = sorted([b for b in businesses if b['growth_rate'] < 0], 
+                                key=lambda x: x['growth_rate'])[:3]
+    
+    return {
+        'sales_index': current_val,
+        'growth_rate': round(growth_rate, 1),
+        'main_businesses': negative_businesses
     }
 
 
