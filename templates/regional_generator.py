@@ -66,6 +66,8 @@ class DataCache:
             'H 분석': '수입',
             'E(지출목적물가) 분석': '지출목적별 물가',
             'D(고용률)분석': '고용률',
+            "F'분석": '건설 (공표자료)',
+            'I(순인구이동)집계': '시도 간 이동',
         }
         
     def get_sheet(self, sheet_name: str) -> pd.DataFrame:
@@ -454,10 +456,90 @@ class RegionalGenerator:
         }
     
     def extract_retail_data(self, region: str) -> Dict[str, Any]:
-        """소매판매 데이터 추출"""
+        """소매판매 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet('C 분석')
         
-        # 총지수 행
+        # 기초자료 시트인지 확인 (fallback된 경우)
+        is_raw = 'C 분석' not in self.cache._xl.sheet_names
+        
+        if is_raw:
+            # 기초자료 '소비(소매, 추가)' 시트 구조
+            region_col = 1      # 지역이름
+            category_col = 4    # 업태종류
+            curr_col = 63       # 2025 Q2
+            prev_col = 59       # 2024 Q2
+            
+            # 총지수 행
+            total_row = df[(df[region_col] == region) & (df[category_col].astype(str) == '총지수')]
+            if len(total_row) == 0:
+                return {"total_growth_rate": 0, "direction": "감소",
+                        "increase_categories": [{"name": "[업태명]", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "[업태명]", "growth_rate": 0, "placeholder": True}]}
+            
+            total_row = total_row.iloc[0]
+            curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
+            prev_val = float(total_row[prev_col]) if pd.notna(total_row[prev_col]) else 0
+            
+            if prev_val != 0:
+                growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
+            else:
+                growth_rate = 0.0
+            
+            # 업태별 데이터 (총지수가 아닌 모든 항목)
+            categories = df[(df[region_col] == region) & (df[category_col].astype(str) != '총지수') & (df[category_col].astype(str) != '대형소매점판매지수')]
+            
+            increase_categories = []
+            decrease_categories = []
+            
+            for _, row in categories.iterrows():
+                name = self._clean_name(row[category_col])
+                if not name or name == '-' or name == 'nan':
+                    continue
+                    
+                curr_v = row[curr_col]
+                prev_v = row[prev_col]
+                
+                # 결측치 처리
+                if pd.isna(curr_v) or curr_v == '-':
+                    continue
+                if pd.isna(prev_v) or prev_v == '-':
+                    continue
+                
+                try:
+                    curr_v = float(curr_v)
+                    prev_v = float(prev_v)
+                except (ValueError, TypeError):
+                    continue
+                
+                if prev_v != 0:
+                    rate = round((curr_v - prev_v) / prev_v * 100, 1)
+                else:
+                    rate = 0.0
+                
+                display_name = self._get_display_name(name, self.RETAIL_NAME_MAP)
+                
+                if rate > 0:
+                    increase_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+                elif rate < 0:
+                    decrease_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+            
+            increase_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
+            decrease_categories.sort(key=lambda x: x['growth_rate'])
+            
+            # 플레이스홀더 추가
+            if len(increase_categories) == 0:
+                increase_categories.append({"name": "[업태명]", "growth_rate": 0, "placeholder": True})
+            if len(decrease_categories) == 0:
+                decrease_categories.append({"name": "[업태명]", "growth_rate": 0, "placeholder": True})
+            
+            return {
+                "total_growth_rate": growth_rate,
+                "direction": "증가" if growth_rate > 0 else "감소",
+                "increase_categories": increase_categories[:2],
+                "decrease_categories": decrease_categories[:2]
+            }
+        
+        # 분석 시트 구조 (기존 로직)
         total_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
         if len(total_row) == 0:
             return {"total_growth_rate": 0, "direction": "감소",
@@ -498,31 +580,81 @@ class RegionalGenerator:
         }
     
     def extract_construction_data(self, region: str) -> Dict[str, Any]:
-        """건설수주 데이터 추출"""
+        """건설수주 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet("F'분석")
         
-        # 총지수 행 (합계)
-        total_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
-        if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "증가",
-                    "increase_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
-                    "decrease_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+        # 기초자료 시트인지 확인 (fallback된 경우)
+        # 기초자료 '건설 (공표자료)' 시트 구조: 열1=지역이름, 열2=분류단계, 열3=분류코드, 열4=공정이름
+        is_raw = "F'분석" not in self.cache._xl.sheet_names
         
-        total_row = total_row.iloc[0]
-        quarter_col = self.QUARTER_COLS["F'분석"]['2025_2Q']
-        growth_rate = round(float(total_row[quarter_col]) if pd.notna(total_row[quarter_col]) else 0, 1)
-        
-        # 건축/토목 분류
-        categories = df[(df[2] == region) & (df[3].astype(str).isin(['1', '2']))]
-        
-        increase_categories = []
-        decrease_categories = []
-        
-        if len(categories) > 0:
+        if is_raw:
+            # 기초자료 시트 구조
+            region_col = 1      # 지역이름
+            division_col = 2    # 분류단계 (0=총계)
+            code_col = 3        # 분류코드 (0=총계, 1=건축, 2=토목)
+            name_col = 4        # 공정이름
+            curr_col = 67       # 2025 Q2
+            prev_col = 63       # 2024 Q2
+            
+            # 총계 행
+            total_row = df[(df[region_col] == region) & (df[division_col].astype(str) == '0')]
+            if len(total_row) == 0:
+                return {"total_growth_rate": 0, "direction": "증가",
+                        "increase_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+            
+            total_row = total_row.iloc[0]
+            curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
+            prev_val = float(total_row[prev_col]) if pd.notna(total_row[prev_col]) else 0
+            
+            if prev_val != 0:
+                growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
+            else:
+                growth_rate = 0.0
+            
+            # 건축/토목 분류 (분류단계 = 1)
+            categories = df[(df[region_col] == region) & (df[division_col].astype(str) == '1')]
+            
+            increase_categories = []
+            decrease_categories = []
+            
+            for _, row in categories.iterrows():
+                name = self._clean_name(row[name_col])
+                curr_v = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
+                prev_v = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                
+                if prev_v != 0:
+                    rate = round((curr_v - prev_v) / prev_v * 100, 1)
+                else:
+                    rate = 0.0
+                
+                category_info = {"name": name, "growth_rate": rate, "placeholder": False}
+                
+                if rate > 0:
+                    increase_categories.append(category_info)
+                elif rate < 0:
+                    decrease_categories.append(category_info)
+        else:
+            # 분석 시트 구조 (기존 로직)
+            total_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
+            if len(total_row) == 0:
+                return {"total_growth_rate": 0, "direction": "증가",
+                        "increase_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_categories": [{"name": "[품목명]", "growth_rate": 0, "placeholder": True}]}
+            
+            total_row = total_row.iloc[0]
+            quarter_col = self.QUARTER_COLS["F'분석"]['2025_2Q']
+            growth_rate = round(float(total_row[quarter_col]) if pd.notna(total_row[quarter_col]) else 0, 1)
+            
+            # 건축/토목 분류
+            categories = df[(df[2] == region) & (df[3].astype(str).isin(['1', '2']))]
+            
+            increase_categories = []
+            decrease_categories = []
+            
             for _, row in categories.iterrows():
                 name = self._clean_name(row[6])
                 val = row[quarter_col]
-                # '없음' 등의 문자열 처리 - 건축/토목 외 품목은 비공개
                 if pd.isna(val) or val == '없음' or val == '-':
                     continue
                 try:
@@ -947,10 +1079,37 @@ class RegionalGenerator:
         }
     
     def extract_migration_data(self, region: str) -> Dict[str, Any]:
-        """인구이동 데이터 추출"""
+        """인구이동 데이터 추출 (집계 시트 또는 기초자료)"""
         df = self.cache.get_sheet('I(순인구이동)집계')
         
-        # 총계 행
+        # 기초자료 시트인지 확인 (fallback된 경우)
+        is_raw = 'I(순인구이동)집계' not in self.cache._xl.sheet_names
+        
+        if is_raw:
+            # 기초자료 '시도 간 이동' 시트 구조
+            # 열 0: 지역코드, 열 1: 지역이름, 열 2: 분류
+            region_col = 1
+            category_col = 2  # 유입인구 수, 유출인구 수, 순인구이동 수
+            curr_col = 80     # 2025 Q2
+            
+            # 순인구이동 행
+            net_row = df[(df[region_col] == region) & (df[category_col].astype(str).str.contains('순인구이동'))]
+            if len(net_row) == 0:
+                return {"net_migration": 0, "direction": "순유출",
+                        "inflow_age_groups": [], "outflow_age_groups": []}
+            
+            net_row = net_row.iloc[0]
+            net_migration = int(net_row[curr_col]) if pd.notna(net_row[curr_col]) else 0
+            
+            # 기초자료에는 연령대별 데이터가 없으므로 빈 리스트 반환
+            return {
+                "net_migration": abs(net_migration),
+                "direction": "순유입" if net_migration > 0 else "순유출",
+                "inflow_age_groups": [],
+                "outflow_age_groups": []
+            }
+        
+        # 집계 시트 구조 (기존 로직)
         total_row = df[(df[4] == region) & (df[5].astype(str) == '0')]
         if len(total_row) == 0:
             return {"net_migration": 0, "direction": "순유출",
