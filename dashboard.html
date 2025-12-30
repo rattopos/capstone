@@ -2837,6 +2837,27 @@
             
             const report = state.allReports[state.currentGlobalIndex];
             state.reviewedReports[report.type].add(report.id);
+            
+            // iframe 내 placeholder 하이라이트 제거
+            try {
+                const iframe = elements.previewIframe;
+                if (iframe && iframe.contentDocument) {
+                    const placeholders = iframe.contentDocument.querySelectorAll('.placeholder');
+                    placeholders.forEach(el => {
+                        el.classList.remove('placeholder');
+                        el.removeAttribute('contenteditable');
+                        el.style.backgroundColor = '';
+                        el.style.border = '';
+                    });
+                    
+                    // 수정된 HTML을 캐시에 저장
+                    const cacheKey = `${report.type}_${report.id}`;
+                    state.htmlCache[cacheKey] = iframe.contentDocument.documentElement.outerHTML;
+                }
+            } catch (e) {
+                console.warn('플레이스홀더 하이라이트 제거 실패:', e);
+            }
+            
             renderAllReportsList();
             
             showToast(`${report.name} 검토 완료`, 'success');
