@@ -26,6 +26,183 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-02
+
+#### 통계표 섹션 페이지 붙어보이는 문제 해결
+- **시간**: (현재)
+- **문제 설명**: 통계표 섹션에서 두 장씩 페이지가 붙어서 표시됨 (브라우저에서 볼 때)
+- **원인 분석**: 
+  - `.page` 클래스의 CSS에서 `margin: 0 auto;`로만 설정되어 페이지 사이에 간격이 없음
+  - `page-break-after: always`는 인쇄 시에만 작동하고 화면 표시에는 영향 없음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 통계표에서 페이지가 붙어있다고 제보
+  - 코드 분석: 통계표 관련 템플릿 5개 파일의 `.page` CSS 확인
+  - 원인 파악: 화면 표시 시 페이지 간 마진이 없음
+  - 해결책: 기본 CSS에 마진, 그림자, 테두리 추가 / 인쇄 시에는 제거
+- **해결 방법**: 
+  - 5개 통계표 템플릿 수정:
+    - `statistics_table_template.html`
+    - `statistics_table_index_template.html`
+    - `statistics_table_grdp_template.html`
+    - `statistics_table_toc_template.html`
+    - `statistics_table_appendix_template.html`
+  - 기본 `.page` CSS 변경:
+    - `margin: 0 auto 20mm auto;` (페이지 간 20mm 간격)
+    - `box-shadow: 0 2px 8px rgba(0,0,0,0.1);` (그림자 효과)
+    - `border: 1px solid #ddd;` (테두리)
+  - `@media print`에서 마진/그림자/테두리 제거
+- **관련 파일**: 
+  - `templates/statistics_table_template.html`
+  - `templates/statistics_table_index_template.html`
+  - `templates/statistics_table_grdp_template.html`
+  - `templates/statistics_table_toc_template.html`
+  - `templates/statistics_table_appendix_template.html`
+- **상태**: ✅ 완료
+- **참고 사항**: 인쇄/PDF 출력 시에는 간격 없이 정상적으로 페이지 나뉨
+
+---
+
+#### 통계표-참고-GRDP 표 데이터 누락 문제 해결
+- **시간**: (현재)
+- **문제 설명**: 통계표-참고-GRDP의 표가 모두 비어있음 (연도별, 분기별 데이터 전체 "-"로 표시)
+- **원인 분석**: 
+  - `_create_grdp_placeholder` 함수에서 `grdp_extracted.json` 로드 시 `item.get('placeholder', True)` 조건으로 인해 데이터가 무시됨
+  - JSON에 `placeholder` 필드가 없으면 기본값 `True`가 사용되어 `not True` = `False`로 데이터가 채워지지 않음
+  - 과거 연도별/분기별 데이터를 위한 historical JSON 파일이 없었음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 GRDP 표가 비어있다고 제보
+  - 코드 분석: `_create_grdp_placeholder` 함수 확인
+    - 현재 분기만 `grdp_extracted.json`에서 로드 시도
+    - `not item.get('placeholder', True)` 조건이 항상 False가 됨
+  - 정답 이미지 확인: 2017년부터 2025년 1분기까지의 과거 데이터가 필요함
+  - 해결책 분석:
+    1. `placeholder` 기본값을 `False`로 변경 → 현재 분기 데이터 로드 가능
+    2. 과거 데이터를 위한 historical JSON 파일 생성 필요
+    3. 정답 이미지에서 과거 데이터 추출하여 JSON 생성
+  - 구현 결정:
+    - 조건을 `not item.get('placeholder', False)`로 변경
+    - `grdp_historical_data.json` 파일 생성하여 과거 데이터 저장
+    - `_create_grdp_placeholder` 함수 수정하여 historical JSON 먼저 로드
+- **해결 방법**: 
+  1. `templates/statistics_table_generator.py` 수정:
+     - `item.get('placeholder', True)` → `item.get('placeholder', False)`로 변경
+     - `grdp_historical_data.json`에서 과거 데이터 로드 로직 추가
+  2. `templates/grdp_historical_data.json` 생성:
+     - 연도별: 2017 ~ 2024 (18개 지역)
+     - 분기별: 2017.3/4 ~ 2025.2/4p (18개 지역)
+     - 정답 이미지에서 데이터 추출
+- **관련 파일**: 
+  - `templates/statistics_table_generator.py` (수정)
+  - `templates/grdp_historical_data.json` (신규 생성)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - GRDP 데이터는 KOSIS 실험적통계에서 별도 다운로드 필요
+  - 새 분기 데이터는 `grdp_extracted.json`에서 자동 로드
+  - 과거 데이터는 `grdp_historical_data.json`에 수동 추가 필요
+
+---
+
+#### 부문별/시도별 보도자료의 수출·수입·물가 품목 누락 문제 해결
+- **시간**: (현재)
+- **문제 설명**: 
+  - 부문별 보도자료에서 수출, 수입, 물가동향의 품목이 하나도 표시되지 않음
+  - 시도별 보도자료에서 수출, 수입, 물가의 품목이 제대로 표시되지 않음
+- **원인 분석**: 
+  - 분석표 엑셀 파일의 "분석" 시트에 수식이 계산되지 않은 상태로 업로드됨
+  - 각 generator가 "분석" 시트에서 품목 데이터를 읽으려 했으나 값이 NaN/빈값
+  - "참조" 시트에서 품목 데이터를 가져오려 했으나 해당 시트도 비어있음
+  - 집계 시트로의 fallback 로직이 일부 generator에 없거나 불완전했음
+  - regional_generator.py의 열 매핑이 집계 시트 구조와 맞지 않았음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 부문별/시도별 4가지 문제 제보
+    1. 부문별 수출 품목 미표시
+    2. 부문별 수입 품목 미표시
+    3. 부문별 물가동향 품목 미표시
+    4. 시도별 시트 전체 미표시
+  - 초기 분석:
+    - 분석 시트 데이터 확인 → 수식 결과가 NaN
+    - 집계 시트 확인 → 실제 데이터 존재
+    - 각 generator 코드 분석 → fallback 로직 불완전
+  - 해결책 분석:
+    1. export_generator.py: `get_sido_products_from_reference()` 함수가 "참조" 시트를 읽는데, 시트가 비어있음 → 집계 시트에서 품목 추출 함수 추가 필요
+    2. import_generator.py: export와 동일한 패턴 → 집계 시트 fallback 추가
+    3. price_trend_generator.py: `get_category_data()` 함수가 분석 시트를 읽는데 NaN → 집계 시트 fallback 추가
+    4. regional_generator.py: 
+       - extract_export_data, extract_import_data의 품목 추출 로직에서 열 인덱스 오류
+       - extract_consumer_price_data에서 is_raw 체크 로직이 잘못됨
+       - _extract_price_items_from_aggregation의 열 매핑 오류 (3→2, 4→3, 8→6)
+  - 구현 결정:
+    - 각 generator에 `_get_sido_products_from_aggregation()` 또는 유사 함수 추가
+    - 분석 시트가 비어있을 때 집계 시트로 fallback하는 로직 추가
+    - regional_generator.py의 열 매핑 수정 및 is_raw 로직 제거
+- **해결 방법**: 
+  1. `templates/export_generator.py`:
+     - `_get_sido_products_from_aggregation()` 함수 추가 (G(수출)집계 시트에서 품목 추출)
+     - `get_sido_products_from_reference()`에서 use_aggregation_only일 때 집계 시트 사용
+  2. `templates/import_generator.py`:
+     - `_get_sido_products_from_aggregation()` 함수 추가 (H(수입)집계 시트에서 품목 추출)
+     - export와 동일한 패턴으로 fallback 로직 추가
+  3. `templates/price_trend_generator.py`:
+     - `_get_category_data_from_aggregation()` 함수 추가 (E(품목성질물가)집계 시트에서 품목 추출)
+     - `get_category_data()`에서 use_aggregation_only일 때 집계 시트 사용
+  4. `templates/regional_generator.py`:
+     - `extract_export_data()`: 집계 시트 품목 추출 시 열 인덱스 수정 (분류단계: 열2→'2', 상품이름: 열7)
+     - `extract_import_data()`: export와 동일한 수정
+     - `extract_consumer_price_data()`: is_raw 체크 제거, 분석 시트 데이터가 비어있으면 집계 시트로 fallback
+     - `_extract_price_data_from_aggregation()` 함수 추가 (총지수 + 품목 데이터 한번에 추출)
+     - `_extract_price_items_from_aggregation()`: 열 매핑 수정 (2=지역이름, 3=분류단계, 6=분류이름)
+- **관련 파일**: 
+  - `templates/export_generator.py` (수정)
+  - `templates/import_generator.py` (수정)
+  - `templates/price_trend_generator.py` (수정)
+  - `templates/regional_generator.py` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 집계 시트의 열 구조 확인 방법: `pd.read_excel(xl, sheet_name='시트명', header=None).iloc[2, :]`
+  - 수출 집계 시트 구조: 열3=지역이름, 열4=분류단계, 열7=상품이름
+  - 물가 집계 시트 구조: 열2=지역이름, 열3=분류단계, 열6=분류이름
+  - 테스트 명령어: `python3 -c "from templates.xxx_generator import ..."`
+
+---
+
+#### 인포그래픽 지도 표시 방식 변경 - 마커에서 지역 채색으로
+- **시간**: (현재)
+- **문제 설명**: 인포그래픽 지도에서 지역을 동그란 마커로 표시하는 방식 대신, 지역 path 내부를 색상표에 따라 색칠하는 방식으로 변경 요청
+- **원인 분석**: 
+  - SVG 지도 파일의 각 path에 인라인 스타일 `fill:#878787`이 설정되어 있음
+  - JavaScript에서 `setAttribute('fill', fillColor)`로 설정해도 인라인 스타일의 CSS 우선순위가 높아 적용되지 않음
+  - 지역별 상태(증가/감소/보합)에 따른 시각적 구분이 명확하지 않았음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 마커 대신 지역 채색 방식을 요청
+  - 코드 분석: 
+    - `infographic_template.html`의 `renderMap` 함수 확인
+    - SVG 파일 `infographic_map.svg` 구조 확인
+    - 각 지역 path에 이미 고유 ID가 있음 (jeju, busan, seoul 등)
+  - 문제 발견: 
+    - SVG의 각 path에 인라인 스타일 `style="fill:#878787..."`이 있음
+    - JavaScript의 `setAttribute('fill', ...)`는 인라인 스타일보다 우선순위가 낮음
+  - 해결 방안 고려:
+    1. SVG 파일에서 인라인 스타일 제거 → 다른 용도 사용 시 문제 가능
+    2. `path.style.fill = fillColor`로 인라인 스타일 직접 설정 → 안전하고 효과적
+  - 결정: 두 번째 방안 선택 + CSS 클래스 기반 색상 적용 병행
+- **해결 방법**: 
+  1. CSS에서 마커 관련 스타일 제거, 지역 path 색상 클래스 추가
+     - `.increase`, `.decrease`, `.same` 클래스에 `!important`로 fill 색상 지정
+     - CPI용 `.above-avg`, `.below-avg`, `.national-avg` 클래스 추가
+  2. JavaScript `renderMap` 함수 수정
+     - `path.style.fill = fillColor`로 인라인 스타일 직접 설정
+     - 상태에 따른 CSS 클래스 추가 (시맨틱 + 스타일)
+  3. 불필요한 마커 위치 데이터(`REGION_POSITIONS`) 제거
+- **관련 파일**: 
+  - `templates/infographic_template.html` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 지역별 색상이 path fill로 직접 적용되어 시각적으로 더 명확함
+  - 범례는 기존 그대로 유지 (증가=붉은색, 감소=푸른색)
+  - SVG 원본 파일은 수정하지 않고 런타임에 스타일 적용
+
+---
+
 ### 2026-01-01
 
 #### 파일 유형 분석 성능 최적화 - 빠른 판정 로직 구현
@@ -362,14 +539,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 9
-- 완료: 9
+- 총 항목: 12
+- 완료: 12
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-01 (현재)
+- 마지막 업데이트: 2026-01-02
 
 ---
 

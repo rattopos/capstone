@@ -193,8 +193,12 @@ def _get_sido_data_from_aggregation(summary_df):
     
     return sido_data
 
-def get_category_data(analysis_df, sido_name):
+def get_category_data(analysis_df, sido_name, summary_df=None, use_aggregation_only=False):
     """특정 시도의 품목별 기여도 데이터를 추출합니다."""
+    # 분석 시트가 비어있으면 집계 시트에서 추출
+    if use_aggregation_only and summary_df is not None:
+        return _get_category_data_from_aggregation(summary_df, sido_name)
+    
     categories = []
     
     for i in range(3, len(analysis_df)):
@@ -221,12 +225,65 @@ def get_category_data(analysis_df, sido_name):
             'rank': rank
         })
     
+    # 데이터가 없으면 집계 시트에서 추출
+    if len(categories) == 0 and summary_df is not None:
+        return _get_category_data_from_aggregation(summary_df, sido_name)
+    
     return categories
 
-def get_nationwide_data(analysis_df, summary_df, sido_data):
+
+def _get_category_data_from_aggregation(summary_df, sido_name):
+    """집계 시트에서 특정 시도의 품목별 데이터를 추출합니다."""
+    categories = []
+    
+    # 집계 시트 구조: 0=지역이름, 1=분류단계, 3=분류이름
+    # 지수 컬럼: 17=2024.2/4, 21=2025.2/4
+    
+    sido_items = summary_df[(summary_df[0] == sido_name) & (summary_df[1].isin([2, 3]))]
+    
+    if len(sido_items) == 0:
+        # 짧은 지역명으로 다시 시도
+        for full_name, short_name in SIDO_MAPPING.items():
+            if short_name == sido_name:
+                sido_items = summary_df[(summary_df[0] == full_name) & (summary_df[1].isin([2, 3]))]
+                if len(sido_items) > 0:
+                    break
+    
+    for _, row in sido_items.iterrows():
+        category = row[3]
+        if pd.isna(category):
+            continue
+        
+        idx_2024 = safe_float(row[17], 0)
+        idx_2025 = safe_float(row[21], 0)
+        
+        # 증감률 계산 (전년동분기대비)
+        if idx_2024 and idx_2024 != 0:
+            change = ((idx_2025 - idx_2024) / idx_2024) * 100
+        else:
+            change = 0.0
+        
+        # 기여도 계산 (지수 변화량 * 가중치 근사)
+        contribution = idx_2025 - idx_2024
+        
+        categories.append({
+            'name': category,
+            'change': round(change, 1),
+            'contribution': round(contribution, 2),
+            'rank': 0  # 집계 시트에는 순위가 없으므로 0으로 설정
+        })
+    
+    # 기여도 순으로 정렬하고 순위 부여
+    categories.sort(key=lambda x: -x['contribution'])
+    for i, cat in enumerate(categories):
+        cat['rank'] = i + 1
+    
+    return categories
+
+def get_nationwide_data(analysis_df, summary_df, sido_data, use_aggregation_only=False):
     """전국 데이터를 추출합니다."""
     nationwide = sido_data.get('전국', {})
-    categories = get_category_data(analysis_df, '전국')
+    categories = get_category_data(analysis_df, '전국', summary_df, use_aggregation_only)
     
     # 기여도 순서로 정렬 (양수 기여도, 높은 순)
     positive_cats = [c for c in categories if c['contribution'] > 0]
@@ -238,7 +295,7 @@ def get_nationwide_data(analysis_df, summary_df, sido_data):
         'categories': positive_cats[:4]  # 상위 4개
     }
 
-def get_regional_data(analysis_df, sido_data):
+def get_regional_data(analysis_df, sido_data, summary_df=None, use_aggregation_only=False):
     """시도별 데이터를 추출하고 전국보다 높은/낮은 지역으로 분류합니다."""
     nationwide_change = sido_data.get('전국', {}).get('change', 0)
     
@@ -255,7 +312,7 @@ def get_regional_data(analysis_df, sido_data):
         if pd.isna(change):
             continue
         
-        categories = get_category_data(analysis_df, sido)
+        categories = get_category_data(analysis_df, sido, summary_df, use_aggregation_only)
         
         region_info = {
             'region': sido,  # 템플릿에서 region 키 사용
@@ -524,14 +581,17 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     #     # return extract_from_raw_data(extractor, ...)
     summary_df, analysis_df = load_data(excel_path)
     
+    # 분석 시트 비어있는지 확인
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    
     # 시도별 데이터 추출
     sido_data = get_sido_data(analysis_df, summary_df)
     
     # 전국 데이터
-    nationwide_data = get_nationwide_data(analysis_df, summary_df, sido_data)
+    nationwide_data = get_nationwide_data(analysis_df, summary_df, sido_data, use_aggregation_only)
     
     # 시도별 데이터
-    above_regions, below_regions = get_regional_data(analysis_df, sido_data)
+    above_regions, below_regions = get_regional_data(analysis_df, sido_data, summary_df, use_aggregation_only)
     
     # Top 3 지역 추출 및 품목 필터링
     top3_above = []

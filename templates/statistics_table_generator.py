@@ -886,7 +886,7 @@ class StatisticsTableGenerator:
         }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
-        """GRDP 데이터 생성 - grdp_extracted.json에서 데이터 로드 시도"""
+        """GRDP 데이터 생성 - grdp_historical_data.json 및 grdp_extracted.json에서 데이터 로드"""
         import json
         
         yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
@@ -911,7 +911,34 @@ class StatisticsTableGenerator:
         for qk in quarterly_keys:
             quarterly[qk] = {region: "-" for region in self.ALL_REGIONS}
         
-        # grdp_extracted.json에서 현재 분기 데이터 로드 시도
+        # grdp_historical_data.json에서 과거 데이터 로드
+        try:
+            hist_json_path = Path(__file__).parent / 'grdp_historical_data.json'
+            if hist_json_path.exists():
+                with open(hist_json_path, 'r', encoding='utf-8') as f:
+                    hist_data = json.load(f)
+                
+                # 연도별 데이터 로드
+                if 'yearly' in hist_data:
+                    for year_key, regions_data in hist_data['yearly'].items():
+                        if year_key in yearly:
+                            for region, value in regions_data.items():
+                                if region in self.ALL_REGIONS:
+                                    yearly[year_key][region] = value
+                
+                # 분기별 데이터 로드
+                if 'quarterly' in hist_data:
+                    for qkey, regions_data in hist_data['quarterly'].items():
+                        if qkey in quarterly:
+                            for region, value in regions_data.items():
+                                if region in self.ALL_REGIONS:
+                                    quarterly[qkey][region] = value
+                
+                print(f"[통계표] GRDP 과거 데이터 로드 완료")
+        except Exception as e:
+            print(f"[통계표] GRDP 과거 데이터 로드 실패: {e}")
+        
+        # grdp_extracted.json에서 현재 분기 데이터 로드 시도 (최신 데이터로 덮어쓰기)
         try:
             grdp_json_path = Path(__file__).parent / 'grdp_extracted.json'
             if grdp_json_path.exists():
@@ -925,7 +952,8 @@ class StatisticsTableGenerator:
                     for item in grdp_data['regional_data']:
                         region = item.get('region', '')
                         growth_rate = item.get('growth_rate', 0)
-                        if region in self.ALL_REGIONS and not item.get('placeholder', True):
+                        # placeholder가 명시적으로 True가 아니면 데이터 사용
+                        if region in self.ALL_REGIONS and not item.get('placeholder', False):
                             quarterly[current_key][region] = round(growth_rate, 1)
                     
                     print(f"[통계표] GRDP JSON에서 {current_key} 데이터 로드 완료")

@@ -160,12 +160,23 @@ def safe_float(value, default=None):
     except (ValueError, TypeError):
         return default
 
-def get_sido_products_from_reference(reference_df):
+def get_sido_products_from_reference(reference_df, summary_df=None, use_aggregation_only=False):
     """G 참고 시트에서 시도별 품목 데이터를 추출합니다. 상위/하위 순위 모두 수집."""
+    # 분석 시트가 비어있으면 집계 시트에서 품목 데이터 추출
+    if use_aggregation_only and summary_df is not None:
+        return _get_sido_products_from_aggregation(summary_df)
+    
     sido_products = {}  # 상위 순위 (증가 품목)
     sido_products_bottom = {}  # 하위 순위 (감소 품목)
     current_sido = None
     max_rank_per_sido = {}
+    
+    # 참고 시트에 데이터가 있는지 확인
+    test_data = reference_df.iloc[3:10, 1:5].dropna(how='all')
+    if len(test_data) == 0 or reference_df.iloc[3:10, 12].isna().all():
+        # 참고 시트가 비어있으면 집계 시트 사용
+        if summary_df is not None:
+            return _get_sido_products_from_aggregation(summary_df)
     
     # 먼저 각 시도의 최대 순위를 파악
     for i in range(2, len(reference_df)):
@@ -235,6 +246,69 @@ def get_sido_products_from_reference(reference_df):
     # 하위 순위는 역순 정렬 (가장 하위가 먼저)
     for sido in sido_products_bottom:
         sido_products_bottom[sido].sort(key=lambda x: -x['rank'])
+    
+    return sido_products, sido_products_bottom
+
+
+def _get_sido_products_from_aggregation(summary_df):
+    """집계 시트에서 시도별 품목 데이터를 추출합니다 (기여도 기준 순위)."""
+    sido_products = {}  # 상위 순위 (증가 기여 품목)
+    sido_products_bottom = {}  # 하위 순위 (감소 기여 품목)
+    
+    # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=상품이름
+    # 데이터 컬럼: 22=2024.2/4, 26=2025.2/4
+    
+    for sido in SIDO_ORDER:
+        sido_products[sido] = []
+        sido_products_bottom[sido] = []
+        
+        # 해당 시도의 소분류(2) 데이터만 추출
+        sido_items = summary_df[(summary_df[3] == sido) & (summary_df[4].astype(str) == '2')]
+        
+        if len(sido_items) == 0:
+            continue
+        
+        # 기여도(금액 변화량) 계산
+        items_data = []
+        for _, row in sido_items.iterrows():
+            product = row[7]
+            if pd.isna(product) or product == '합계':
+                continue
+            
+            curr = safe_float(row[26], 0)  # 2025.2/4
+            prev = safe_float(row[22], 0)  # 2024.2/4
+            
+            # 증감률 계산
+            if prev and prev != 0:
+                change = ((curr - prev) / prev) * 100
+            else:
+                change = 0.0
+            
+            # 기여도 = 금액 변화량 (절대값으로 순위 결정)
+            contribution = curr - prev
+            
+            product_str = str(product).strip()
+            display_name = PRODUCT_NAME_MAPPING.get(product_str, product_str)
+            
+            items_data.append({
+                'name': display_name,
+                'change': round(change, 1),
+                'contribution': contribution
+            })
+        
+        # 기여도 양수 (증가에 기여한 품목) - 내림차순
+        positive_items = sorted([i for i in items_data if i['contribution'] > 0], 
+                               key=lambda x: -x['contribution'])
+        for i, item in enumerate(positive_items[:5]):
+            item['rank'] = i + 1
+            sido_products[sido].append(item)
+        
+        # 기여도 음수 (감소에 기여한 품목) - 오름차순 (가장 큰 감소가 먼저)
+        negative_items = sorted([i for i in items_data if i['contribution'] < 0], 
+                               key=lambda x: x['contribution'])
+        for i, item in enumerate(negative_items[:5]):
+            item['rank'] = i + 1
+            sido_products_bottom[sido].append(item)
     
     return sido_products, sido_products_bottom
 
@@ -616,9 +690,13 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     #     # return extract_from_raw_data(extractor, ...)
     analysis_df, reference_df, summary_df = load_data(excel_path)
     
+    # 분석 시트 비어있는지 확인
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    
     # 시도별 데이터 추출
     sido_data = get_sido_data_from_analysis(analysis_df, summary_df)
-    sido_products_top, sido_products_bottom = get_sido_products_from_reference(reference_df)
+    sido_products_top, sido_products_bottom = get_sido_products_from_reference(
+        reference_df, summary_df, use_aggregation_only)
     
     # 전국 데이터
     nationwide_data = get_nationwide_data(sido_data, sido_products_top, summary_df)

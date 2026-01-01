@@ -754,25 +754,14 @@ class RegionalGenerator:
         }
     
     def extract_export_data(self, region: str) -> Dict[str, Any]:
-        """수출 데이터 추출 (분석 시트 또는 기초자료)"""
+        """수출 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('G 분석')
         
-        # 기초자료 시트 여부 확인
-        config = self.QUARTER_COLS.get('수출', {})
-        is_raw = config.get('is_raw', False)
-        
-        if is_raw:
-            # 기초자료 수출 시트 열 구조
-            region_col = config.get('region_col', 1)
-            code_col = config.get('code_col', 5)
-            total_code = config.get('total_code', '합계')
-            sheet_key = '수출'
-        else:
-            # 분석 시트 열 구조
-            region_col = 3
-            code_col = 4
-            total_code = '0'
-            sheet_key = 'G 분석'
+        # 분석 시트 열 구조
+        region_col = 3
+        code_col = 4
+        total_code = '0'
+        sheet_key = 'G 분석'
         
         # 총계 행
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
@@ -784,22 +773,20 @@ class RegionalGenerator:
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
         
-        # 품목별 데이터 (기여도 기준) - 분류단계 2 (소분류)
-        if is_raw:
-            # 기초자료에서는 분류단계 컬럼(열2)이 '2'인 행
-            items = df[(df[region_col] == region) & (df[2].astype(str) == '2')]
-        else:
-            items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2') & (pd.notna(df[26]))]
+        # 분석 시트의 기여도(열 26)가 비어있는지 확인
+        items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2')]
+        has_contribution = len(items) > 0 and not items[26].isna().all()
         
         increase_items = []
         decrease_items = []
         
-        if len(items) > 0 and not is_raw:
+        if has_contribution:
             # 분석 시트: 기여도 기반 정렬
+            items_with_contrib = items[pd.notna(items[26])]
             quarter_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
             
             # 기여도 양수 (증가 기여)
-            pos_items = items[items[26] > 0].sort_values(26, ascending=False)
+            pos_items = items_with_contrib[items_with_contrib[26] > 0].sort_values(26, ascending=False)
             for _, row in pos_items.head(2).iterrows():
                 val = row[quarter_col]
                 if pd.isna(val) or val == '없음' or val == '-':
@@ -819,7 +806,7 @@ class RegionalGenerator:
                 })
             
             # 기여도 음수 (감소 기여)
-            neg_items = items[items[26] < 0].sort_values(26)
+            neg_items = items_with_contrib[items_with_contrib[26] < 0].sort_values(26)
             for _, row in neg_items.head(2).iterrows():
                 val = row[quarter_col]
                 if pd.isna(val) or val == '없음' or val == '-':
@@ -837,32 +824,14 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
-        elif len(items) > 0 and is_raw:
-            # 기초자료: 전년동기비 직접 계산
-            prev_col = self.QUARTER_COLS.get(sheet_key, {}).get('2024_2Q')
-            curr_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
-            name_col = 5  # 기초자료 수출 시트의 상품이름 열
-            
-            for _, row in items.iterrows():
-                name = self._clean_name(row[name_col])
-                curr_val = row[curr_col] if pd.notna(row[curr_col]) else 0
-                prev_val = row[prev_col] if pd.notna(row[prev_col]) else 0
-                
-                if prev_val != 0:
-                    try:
-                        rate = round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
-                        if rate > 0:
-                            increase_items.append({"name": name, "growth_rate": rate, "placeholder": False})
-                        elif rate < 0:
-                            decrease_items.append({"name": name, "growth_rate": rate, "placeholder": False})
-                    except (ValueError, TypeError):
-                        pass
-            
-            # 정렬
-            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
-            decrease_items.sort(key=lambda x: x['growth_rate'])
-            increase_items = increase_items[:2]
-            decrease_items = decrease_items[:2]
+        else:
+            # 분석 시트가 비어있으면 집계 시트에서 품목 추출
+            try:
+                summary_df = self.cache.get_sheet('G(수출)집계')
+                increase_items, decrease_items = self._extract_items_from_aggregation(
+                    summary_df, region, is_export=True)
+            except Exception:
+                pass
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
@@ -877,24 +846,67 @@ class RegionalGenerator:
             "decrease_items": decrease_items
         }
     
+    def _extract_items_from_aggregation(self, summary_df, region: str, is_export: bool = True) -> tuple:
+        """집계 시트에서 품목별 데이터 추출 (기여도 기준)"""
+        # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=상품이름
+        # 데이터 컬럼: 22=2024.2/4, 26=2025.2/4
+        
+        increase_items = []
+        decrease_items = []
+        
+        # 해당 시도의 소분류(2) 데이터만 추출
+        sido_items = summary_df[(summary_df[3] == region) & (summary_df[4].astype(str) == '2')]
+        
+        if len(sido_items) == 0:
+            return increase_items, decrease_items
+        
+        # 기여도(금액 변화량) 계산
+        items_data = []
+        for _, row in sido_items.iterrows():
+            product = row[7]
+            if pd.isna(product) or product == '합계':
+                continue
+            
+            curr = float(row[26]) if pd.notna(row[26]) else 0
+            prev = float(row[22]) if pd.notna(row[22]) else 0
+            
+            # 증감률 계산
+            if prev and prev != 0:
+                change = ((curr - prev) / prev) * 100
+            else:
+                change = 0.0
+            
+            # 기여도 = 금액 변화량
+            contribution = curr - prev
+            
+            items_data.append({
+                'name': self._clean_name(product),
+                'growth_rate': round(change, 1),
+                'contribution': contribution,
+                'placeholder': False
+            })
+        
+        # 기여도 양수 (증가에 기여한 품목) - 내림차순
+        positive_items = sorted([i for i in items_data if i['contribution'] > 0], 
+                               key=lambda x: -x['contribution'])
+        increase_items = positive_items[:2]
+        
+        # 기여도 음수 (감소에 기여한 품목) - 오름차순
+        negative_items = sorted([i for i in items_data if i['contribution'] < 0], 
+                               key=lambda x: x['contribution'])
+        decrease_items = negative_items[:2]
+        
+        return increase_items, decrease_items
+    
     def extract_import_data(self, region: str) -> Dict[str, Any]:
-        """수입 데이터 추출 (분석 시트 또는 기초자료)"""
+        """수입 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('H 분석')
         
-        # 기초자료 시트 여부 확인
-        config = self.QUARTER_COLS.get('수입', {})
-        is_raw = config.get('is_raw', False)
-        
-        if is_raw:
-            region_col = config.get('region_col', 1)
-            code_col = config.get('code_col', 5)
-            total_code = config.get('total_code', '합계')
-            sheet_key = '수입'
-        else:
-            region_col = 3
-            code_col = 4
-            total_code = '0'
-            sheet_key = 'H 분석'
+        # 분석 시트 열 구조
+        region_col = 3
+        code_col = 4
+        total_code = '0'
+        sheet_key = 'H 분석'
         
         # 총계 행
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
@@ -906,19 +918,19 @@ class RegionalGenerator:
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
         
-        # 품목별 데이터 - 분류단계 2 (소분류)
-        if is_raw:
-            items = df[(df[region_col] == region) & (df[2].astype(str) == '2')]
-        else:
-            items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2') & (pd.notna(df[26]))]
+        # 분석 시트의 기여도(열 26)가 비어있는지 확인
+        items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2')]
+        has_contribution = len(items) > 0 and not items[26].isna().all()
         
         increase_items = []
         decrease_items = []
         
-        if len(items) > 0 and not is_raw:
+        if has_contribution:
+            # 분석 시트: 기여도 기반 정렬
+            items_with_contrib = items[pd.notna(items[26])]
             quarter_col = self.QUARTER_COLS[sheet_key]['2025_2Q']
             
-            pos_items = items[items[26] > 0].sort_values(26, ascending=False)
+            pos_items = items_with_contrib[items_with_contrib[26] > 0].sort_values(26, ascending=False)
             for _, row in pos_items.head(2).iterrows():
                 val = row[quarter_col]
                 if pd.isna(val) or val == '없음' or val == '-':
@@ -937,7 +949,7 @@ class RegionalGenerator:
                     "placeholder": is_placeholder
                 })
             
-            neg_items = items[items[26] < 0].sort_values(26)
+            neg_items = items_with_contrib[items_with_contrib[26] < 0].sort_values(26)
             for _, row in neg_items.head(2).iterrows():
                 val = row[quarter_col]
                 if pd.isna(val) or val == '없음' or val == '-':
@@ -955,31 +967,14 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
-        elif len(items) > 0 and is_raw:
-            # 기초자료: 전년동기비 직접 계산
-            prev_col = self.QUARTER_COLS.get(sheet_key, {}).get('2024_2Q')
-            curr_col = self.QUARTER_COLS.get(sheet_key, {}).get('2025_2Q')
-            name_col = 5
-            
-            for _, row in items.iterrows():
-                name = self._clean_name(row[name_col])
-                curr_val = row[curr_col] if pd.notna(row[curr_col]) else 0
-                prev_val = row[prev_col] if pd.notna(row[prev_col]) else 0
-                
-                if prev_val != 0:
-                    try:
-                        rate = round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
-                        if rate > 0:
-                            increase_items.append({"name": name, "growth_rate": rate, "placeholder": False})
-                        elif rate < 0:
-                            decrease_items.append({"name": name, "growth_rate": rate, "placeholder": False})
-                    except (ValueError, TypeError):
-                        pass
-            
-            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
-            decrease_items.sort(key=lambda x: x['growth_rate'])
-            increase_items = increase_items[:2]
-            decrease_items = decrease_items[:2]
+        else:
+            # 분석 시트가 비어있으면 집계 시트에서 품목 추출
+            try:
+                summary_df = self.cache.get_sheet('H(수입)집계')
+                increase_items, decrease_items = self._extract_items_from_aggregation(
+                    summary_df, region, is_export=False)
+            except Exception:
+                pass
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
@@ -995,69 +990,19 @@ class RegionalGenerator:
         }
     
     def extract_consumer_price_data(self, region: str) -> Dict[str, Any]:
-        """소비자물가 데이터 추출 (분석 시트 또는 기초자료)"""
+        """소비자물가 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('E(지출목적물가) 분석')
         
-        # 기초자료 시트 여부 확인 (fallback된 경우)
-        config = self.QUARTER_COLS.get('지출목적별 물가', {})
-        is_raw = config.get('is_raw', False)
+        # 분석 시트에서 총지수 행 확인
+        total_row = df[(df[3] == region) & (df[4].astype(str) == '0') & (df[8] == '총지수')]
         
-        if is_raw:
-            # 기초자료 시트 열 구조
-            region_col = 1  # 지역이름
-            name_col = 5    # 분류이름
-            total_code = '총지수'
-            curr_col = 58   # 2025 2/4
-            prev_col = 54   # 2024 2/4
-            
-            # 총지수 행
-            total_row = df[(df[region_col] == region) & (df[name_col].astype(str) == total_code)]
-            if len(total_row) == 0:
-                return {"total_growth_rate": 0, "direction": "상승",
-                        "increase_items": [], "decrease_items": []}
-            
-            total_row = total_row.iloc[0]
-            curr_val = float(total_row[curr_col]) if pd.notna(total_row[curr_col]) else 0
-            prev_val = float(total_row[prev_col]) if pd.notna(total_row[prev_col]) else 0
-            
-            if prev_val != 0:
-                growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
-            else:
-                growth_rate = 0.0
-            
-            # 품목별 데이터 (총지수가 아닌 모든 항목)
-            items = df[(df[region_col] == region) & (df[name_col].astype(str) != total_code) & (df[name_col].astype(str) != '생활물가')]
-            
-            increase_items = []
-            decrease_items = []
-            
-            for _, row in items.iterrows():
-                name = self._clean_name(row[name_col])
-                if not name or '생활물가' in name:
-                    continue
-                    
-                curr_v = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
-                prev_v = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
-                
-                if prev_v != 0:
-                    rate = round((curr_v - prev_v) / prev_v * 100, 1)
-                else:
-                    rate = 0.0
-                
-                if rate > 0:
-                    increase_items.append({"name": name, "growth_rate": rate})
-                elif rate < 0:
-                    decrease_items.append({"name": name, "growth_rate": rate})
-            
-            increase_items.sort(key=lambda x: x['growth_rate'], reverse=True)
-            decrease_items.sort(key=lambda x: x['growth_rate'])
-            
-            return {
-                "total_growth_rate": growth_rate,
-                "direction": "상승" if growth_rate > 0 else "하락",
-                "increase_items": increase_items[:2],
-                "decrease_items": decrease_items[:2]
-            }
+        # 분석 시트의 증감률 데이터가 비어있는지 확인
+        quarter_col = self.QUARTER_COLS.get('E(지출목적물가) 분석', {}).get('2025_2Q', 21)
+        use_aggregation = len(total_row) == 0 or (len(total_row) > 0 and pd.isna(total_row.iloc[0][quarter_col]))
+        
+        if use_aggregation:
+            # 집계 시트에서 총지수 및 품목 데이터 추출
+            return self._extract_price_data_from_aggregation(region)
         
         # 분석 시트 사용
         # 총지수 행
@@ -1075,23 +1020,35 @@ class RegionalGenerator:
         increase_items = []
         decrease_items = []
         
+        # 분석 시트에서 품목 데이터 추출
         if len(items) > 0:
             quarter_col = self.QUARTER_COLS['E(지출목적물가) 분석']['2025_2Q']
-            sorted_data = items.sort_values(quarter_col, ascending=False)
+            # 증감률 데이터가 있는지 확인
+            has_data = not items[quarter_col].isna().all()
             
-            pos_data = sorted_data[sorted_data[quarter_col] > 0]
-            for _, row in pos_data.head(2).iterrows():
-                increase_items.append({
-                    "name": self._clean_name(row[8]),
-                    "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
-                })
-            
-            neg_data = sorted_data[sorted_data[quarter_col] < 0].sort_values(quarter_col)
-            for _, row in neg_data.head(2).iterrows():
-                decrease_items.append({
-                    "name": self._clean_name(row[8]),
-                    "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
-                })
+            if has_data:
+                sorted_data = items.sort_values(quarter_col, ascending=False)
+                
+                pos_data = sorted_data[sorted_data[quarter_col] > 0]
+                for _, row in pos_data.head(2).iterrows():
+                    increase_items.append({
+                        "name": self._clean_name(row[8]),
+                        "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
+                    })
+                
+                neg_data = sorted_data[sorted_data[quarter_col] < 0].sort_values(quarter_col)
+                for _, row in neg_data.head(2).iterrows():
+                    decrease_items.append({
+                        "name": self._clean_name(row[8]),
+                        "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
+                    })
+        
+        # 분석 시트에서 품목이 추출되지 않으면 집계 시트에서 추출
+        if len(increase_items) == 0 and len(decrease_items) == 0:
+            try:
+                increase_items, decrease_items = self._extract_price_items_from_aggregation(region)
+            except Exception:
+                pass
         
         return {
             "total_growth_rate": growth_rate,
@@ -1099,6 +1056,91 @@ class RegionalGenerator:
             "increase_items": increase_items,
             "decrease_items": decrease_items
         }
+    
+    def _extract_price_data_from_aggregation(self, region: str) -> Dict[str, Any]:
+        """집계 시트에서 물가 총지수 및 품목 데이터 추출"""
+        # E(지출목적물가)집계 시트 사용
+        try:
+            summary_df = self.cache.get_sheet('E(지출목적물가)집계')
+        except Exception:
+            return {"total_growth_rate": 0, "direction": "상승",
+                    "increase_items": [], "decrease_items": []}
+        
+        # 집계 시트 구조: 2=지역이름, 3=분류단계, 6=분류이름
+        # 지수 컬럼: 17=2024.2/4, 21=2025.2/4
+        
+        # 총지수 행 (분류단계 0)
+        total_row = summary_df[(summary_df[2] == region) & (summary_df[3].astype(str) == '0')]
+        if len(total_row) == 0:
+            return {"total_growth_rate": 0, "direction": "상승",
+                    "increase_items": [], "decrease_items": []}
+        
+        total_row = total_row.iloc[0]
+        idx_2024 = float(total_row[17]) if pd.notna(total_row[17]) else 0
+        idx_2025 = float(total_row[21]) if pd.notna(total_row[21]) else 0
+        
+        if idx_2024 and idx_2024 != 0:
+            growth_rate = round(((idx_2025 - idx_2024) / idx_2024) * 100, 1)
+        else:
+            growth_rate = 0.0
+        
+        # 품목별 데이터 추출
+        increase_items, decrease_items = self._extract_price_items_from_aggregation(region)
+        
+        return {
+            "total_growth_rate": growth_rate,
+            "direction": "상승" if growth_rate > 0 else "하락",
+            "increase_items": increase_items,
+            "decrease_items": decrease_items
+        }
+    
+    def _extract_price_items_from_aggregation(self, region: str) -> tuple:
+        """집계 시트에서 물가 품목별 데이터 추출"""
+        # E(지출목적물가)집계 시트 사용
+        try:
+            summary_df = self.cache.get_sheet('E(지출목적물가)집계')
+        except Exception:
+            return [], []
+        
+        increase_items = []
+        decrease_items = []
+        
+        # 집계 시트 구조: 2=지역이름, 3=분류단계, 6=분류이름
+        # 지수 컬럼: 17=2024.2/4, 21=2025.2/4
+        
+        # 대분류(level=1) 품목 추출
+        region_items = summary_df[(summary_df[2] == region) & (summary_df[3].astype(str) == '1')]
+        
+        if len(region_items) == 0:
+            return [], []
+        
+        items_data = []
+        for _, row in region_items.iterrows():
+            name = row[6]  # 분류 이름
+            if pd.isna(name) or name == '총지수':
+                continue
+            
+            idx_2024 = float(row[17]) if pd.notna(row[17]) else 0
+            idx_2025 = float(row[21]) if pd.notna(row[21]) else 0
+            
+            if idx_2024 and idx_2024 != 0:
+                change = ((idx_2025 - idx_2024) / idx_2024) * 100
+            else:
+                change = 0.0
+            
+            items_data.append({
+                "name": self._clean_name(name),
+                "growth_rate": round(change, 1)
+            })
+        
+        # 증감률 순으로 정렬
+        items_data.sort(key=lambda x: -x['growth_rate'])
+        
+        increase_items = [i for i in items_data if i['growth_rate'] > 0][:2]
+        decrease_items = sorted([i for i in items_data if i['growth_rate'] < 0], 
+                               key=lambda x: x['growth_rate'])[:2]
+        
+        return increase_items, decrease_items
     
     def extract_employment_data(self, region: str) -> Dict[str, Any]:
         """고용률 데이터 추출"""
