@@ -137,6 +137,11 @@ def get_region_indices(df_analysis):
 
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    if use_aggregation_only:
+        return _get_nationwide_data_from_aggregation(df_index)
+    
     # 분석 시트에서 전국 계 행
     nationwide_row = df_analysis.iloc[3]
     change = safe_float(nationwide_row[18], 0)
@@ -174,8 +179,65 @@ def get_nationwide_data(df_analysis, df_index):
     }
 
 
+def _get_nationwide_data_from_aggregation(df_index):
+    """집계 시트에서 전국 데이터 추출"""
+    # 전국 계 행 찾기
+    nationwide_total = df_index[(df_index[1] == '전국') & (df_index[3] == '계')]
+    
+    if nationwide_total.empty:
+        return {
+            'employment_rate': 60.0,
+            'change': 0.0,
+            'main_age_groups': [],
+            'top_age_groups': []
+        }
+    
+    nrow = nationwide_total.iloc[0]
+    
+    # 고용률 및 증감 계산
+    rate_2024_2 = safe_float(nrow[17], 0)
+    rate_2025_2 = safe_float(nrow[21], 0)
+    change = round(rate_2025_2 - rate_2024_2, 1)
+    
+    # 연령별 데이터 추출
+    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상']
+    age_groups = []
+    
+    for age_name in age_names:
+        age_row = df_index[(df_index[1] == '전국') & (df_index[3] == age_name)]
+        if age_row.empty:
+            continue
+        
+        arow = age_row.iloc[0]
+        age_rate_2024 = safe_float(arow[17], 0)
+        age_rate_2025 = safe_float(arow[21], 0)
+        age_change = round(age_rate_2025 - age_rate_2024, 1)
+        
+        age_groups.append({
+            'name': age_name,
+            'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+            'change': age_change
+        })
+    
+    # 양수 증감률 순으로 정렬
+    positive_ages = [a for a in age_groups if a['change'] > 0]
+    positive_ages.sort(key=lambda x: x['change'], reverse=True)
+    
+    return {
+        'employment_rate': round(rate_2025_2, 1),
+        'change': change,
+        'main_age_groups': positive_ages[:4],
+        'top_age_groups': positive_ages[:4]
+    }
+
+
 def get_regional_data(df_analysis, df_index):
     """시도별 데이터 추출"""
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    if use_aggregation_only:
+        return _get_regional_data_from_aggregation(df_index)
+    
     region_indices = get_region_indices(df_analysis)
     regions = []
     
@@ -272,8 +334,100 @@ def get_regional_data(df_analysis, df_index):
     }
 
 
+def _get_regional_data_from_aggregation(df_index):
+    """집계 시트에서 시도별 데이터 추출"""
+    regions = []
+    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상']
+    
+    for region in VALID_REGIONS:
+        region_total = df_index[(df_index[1] == region) & (df_index[3] == '계')]
+        if region_total.empty:
+            continue
+        
+        rrow = region_total.iloc[0]
+        
+        # 고용률 값
+        rate_2022_2 = safe_float(rrow[9], 0)
+        rate_2023_2 = safe_float(rrow[13], 0)
+        rate_2024_1 = safe_float(rrow[16], 0)
+        rate_2024_2 = safe_float(rrow[17], 0)
+        rate_2025_1 = safe_float(rrow[20], 0)
+        rate_2025_2 = safe_float(rrow[21], 0)
+        
+        # 전년동분기대비 %p 변화
+        change = round(rate_2025_2 - rate_2024_2, 1)
+        change_2023_2 = round(rate_2023_2 - rate_2022_2, 1)
+        change_2024_2 = round(rate_2024_2 - rate_2023_2, 1)
+        change_2025_1 = round(rate_2025_1 - rate_2024_1, 1)
+        
+        # 20-29세 고용률
+        age_row = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
+        rate_20_29 = safe_float(age_row.iloc[0][21], 0) if not age_row.empty else 0
+        
+        # 연령별 증감 계산
+        age_groups = []
+        for age_name in age_names:
+            age_data = df_index[(df_index[1] == region) & (df_index[3] == age_name)]
+            if age_data.empty:
+                continue
+            
+            arow = age_data.iloc[0]
+            age_rate_2024 = safe_float(arow[17], 0)
+            age_rate_2025 = safe_float(arow[21], 0)
+            age_change = round(age_rate_2025 - age_rate_2024, 1)
+            
+            age_groups.append({
+                'name': age_name,
+                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                'change': age_change
+            })
+        
+        # 증가/감소에 따른 정렬
+        if change >= 0:
+            sorted_ages = sorted([a for a in age_groups if a['change'] > 0],
+                               key=lambda x: x['change'], reverse=True)
+        else:
+            sorted_ages = sorted([a for a in age_groups if a['change'] < 0],
+                               key=lambda x: x['change'])
+        
+        regions.append({
+            'region': region,
+            'change': change,
+            'change_2023_2': change_2023_2,
+            'change_2024_2': change_2024_2,
+            'change_2025_1': change_2025_1,
+            'rate_2024': round(rate_2024_2, 1),
+            'rate_2025': round(rate_2025_2, 1),
+            'rate_20_29': round(rate_20_29, 1),
+            'top_age_groups': sorted_ages[:3],
+            'all_age_groups': age_groups
+        })
+    
+    # 증가/감소 지역 분류
+    increase_regions = sorted(
+        [r for r in regions if r['change'] > 0],
+        key=lambda x: x['change'],
+        reverse=True
+    )
+    decrease_regions = sorted(
+        [r for r in regions if r['change'] < 0],
+        key=lambda x: x['change']
+    )
+    
+    return {
+        'increase_regions': increase_regions,
+        'decrease_regions': decrease_regions,
+        'all_regions': regions
+    }
+
+
 def get_table_data(df_analysis, df_index):
     """표에 들어갈 데이터 생성"""
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    if use_aggregation_only:
+        return _get_table_data_from_aggregation(df_index)
+    
     region_indices = get_region_indices(df_analysis)
     
     table_data = []
@@ -343,6 +497,107 @@ def get_table_data(df_analysis, df_index):
                 entry['group'] = None
                 entry['rowspan'] = None
                 
+            table_data.append(entry)
+    
+    return table_data
+
+
+def _get_table_data_from_aggregation(df_index):
+    """집계 시트에서 표 데이터 생성"""
+    # 집계 시트 구조: 1=지역명, 3=연령구분
+    # 컬럼: 9=2022.2/4, 13=2023.2/4, 16=2024.1/4, 17=2024.2/4, 20=2025.1/4, 21=2025.2/4
+    
+    table_data = []
+    
+    # 전국 데이터
+    nationwide_total = df_index[(df_index[1] == '전국') & (df_index[3] == '계')]
+    nationwide_age = df_index[(df_index[1] == '전국') & (df_index[3] == '15 - 29세')]
+    
+    if not nationwide_total.empty:
+        nrow = nationwide_total.iloc[0]
+        age_row = nationwide_age.iloc[0] if not nationwide_age.empty else None
+        
+        # 증감률 계산 (전년동분기대비 %p 변화)
+        rate_2022_2 = safe_float(nrow[9], 0)
+        rate_2023_2 = safe_float(nrow[13], 0)
+        rate_2024_1 = safe_float(nrow[16], 0)
+        rate_2024_2 = safe_float(nrow[17], 0)
+        rate_2025_1 = safe_float(nrow[20], 0)
+        rate_2025_2 = safe_float(nrow[21], 0)
+        
+        change_2023_2 = rate_2023_2 - rate_2022_2
+        change_2024_2 = rate_2024_2 - rate_2023_2
+        change_2025_1 = rate_2025_1 - rate_2024_1
+        change_2025_2 = rate_2025_2 - rate_2024_2
+        
+        age_rate = safe_float(age_row[21], 0) if age_row is not None else 0
+        
+        table_data.append({
+            'group': None,
+            'rowspan': None,
+            'region': REGION_DISPLAY_MAPPING['전국'],
+            'changes': [
+                round(change_2023_2, 1),
+                round(change_2024_2, 1),
+                round(change_2025_1, 1),
+                round(change_2025_2, 1),
+            ],
+            'rates': [
+                round(rate_2024_2, 1),
+                round(rate_2025_2, 1),
+                round(age_rate, 1),
+            ]
+        })
+    
+    # 지역별 그룹
+    for group_name, group_regions in REGION_GROUPS.items():
+        for i, region in enumerate(group_regions):
+            region_total = df_index[(df_index[1] == region) & (df_index[3] == '계')]
+            region_age = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
+            
+            if region_total.empty:
+                continue
+            
+            rrow = region_total.iloc[0]
+            age_row = region_age.iloc[0] if not region_age.empty else None
+            
+            # 증감률 계산
+            rate_2022_2 = safe_float(rrow[9], 0)
+            rate_2023_2 = safe_float(rrow[13], 0)
+            rate_2024_1 = safe_float(rrow[16], 0)
+            rate_2024_2 = safe_float(rrow[17], 0)
+            rate_2025_1 = safe_float(rrow[20], 0)
+            rate_2025_2 = safe_float(rrow[21], 0)
+            
+            change_2023_2 = rate_2023_2 - rate_2022_2
+            change_2024_2 = rate_2024_2 - rate_2023_2
+            change_2025_1 = rate_2025_1 - rate_2024_1
+            change_2025_2 = rate_2025_2 - rate_2024_2
+            
+            age_rate = safe_float(age_row[21], 0) if age_row is not None else 0
+            
+            entry = {
+                'region': REGION_DISPLAY_MAPPING.get(region, region),
+                'changes': [
+                    round(change_2023_2, 1),
+                    round(change_2024_2, 1),
+                    round(change_2025_1, 1),
+                    round(change_2025_2, 1),
+                ],
+                'rates': [
+                    round(rate_2024_2, 1),
+                    round(rate_2025_2, 1),
+                    round(age_rate, 1),
+                ]
+            }
+            
+            if i == 0:
+                entry['group'] = group_name
+                entry['rowspan'] = len(group_regions)
+            else:
+                entry['group'] = None
+                entry['rowspan'] = None
+            
             table_data.append(entry)
     
     return table_data

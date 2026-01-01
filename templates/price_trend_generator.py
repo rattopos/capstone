@@ -109,8 +109,23 @@ def load_data(excel_path):
     
     return summary_df, analysis_df
 
+def safe_float(value, default=0.0):
+    """안전하게 float로 변환합니다."""
+    try:
+        if pd.isna(value):
+            return default
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def get_sido_data(analysis_df, summary_df):
     """시도별 총지수 데이터를 추출합니다."""
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    
+    if use_aggregation_only:
+        return _get_sido_data_from_aggregation(summary_df)
+    
     sido_data = {}
     
     for i in range(3, len(analysis_df)):
@@ -140,6 +155,38 @@ def get_sido_data(analysis_df, summary_df):
         
         sido_data[sido] = {
             'change': change,
+            'index_2024': index_2024,
+            'index_2025': index_2025
+        }
+    
+    return sido_data
+
+
+def _get_sido_data_from_aggregation(summary_df):
+    """집계 시트에서 시도별 총지수 데이터를 추출합니다."""
+    sido_data = {}
+    
+    for i in range(3, len(summary_df)):
+        row = summary_df.iloc[i]
+        sido_raw = row[0]
+        level = row[1]
+        
+        if level != 0:  # 총지수만
+            continue
+        
+        sido = SIDO_MAPPING.get(sido_raw, sido_raw)
+        if sido not in SIDO_ORDER:
+            continue
+        
+        # 집계 시트 구조: 17=2024.2/4 지수, 21=2025.2/4 지수
+        index_2024 = safe_float(row[17], 0)
+        index_2025 = safe_float(row[21], 0)
+        
+        # 증감률 계산 (전년동분기대비)
+        change = ((index_2025 - index_2024) / index_2024 * 100) if index_2024 != 0 else 0.0
+        
+        sido_data[sido] = {
+            'change': round(change, 1),
             'index_2024': index_2024,
             'index_2025': index_2025
         }
@@ -288,8 +335,12 @@ def generate_summary_box(nationwide_data, above_regions, below_regions):
         'regional_summary': regional_summary
     }
 
-def generate_summary_table(summary_df, sido_data, excel_path=None):
+def generate_summary_table(summary_df, sido_data, excel_path=None, use_aggregation_only=False):
     """요약 테이블 데이터를 생성합니다."""
+    # use_aggregation_only인 경우 집계 시트에서 직접 계산
+    if use_aggregation_only:
+        return _generate_summary_table_from_aggregation(summary_df, sido_data)
+    
     rows = []
     
     # 전국 (colspan=2로 처리됨)
@@ -355,7 +406,7 @@ def generate_summary_table(summary_df, sido_data, excel_path=None):
                     break
             
             row_data = {
-                'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
+                'sido': ' '.join(sido) if len(sido) == 2 else sido,
                 'changes': [
                     changes_info.get('change_2023_24', change_2023_24),
                     changes_info.get('change_2024_24', change_2024_24),
@@ -378,6 +429,83 @@ def generate_summary_table(summary_df, sido_data, excel_path=None):
             rows.append(row_data)
     
     return {'rows': rows}
+
+
+def _generate_summary_table_from_aggregation(summary_df, sido_data):
+    """집계 시트에서 요약 테이블 데이터를 생성합니다."""
+    rows = []
+    
+    # 전국 (colspan=2로 처리됨)
+    nationwide = sido_data.get('전국', {})
+    
+    # 전국 증감률 계산 (집계 시트에서)
+    nationwide_changes = _calculate_changes_from_aggregation(summary_df, '전국')
+    
+    rows.append({
+        'region_group': None,
+        'sido': '전 국',
+        'changes': nationwide_changes + [nationwide.get('change', 0)],
+        'indices': [nationwide.get('index_2024', 0), nationwide.get('index_2025', 0)]
+    })
+    
+    # 권역별 시도
+    region_group_order = ['경인', '충청', '호남', '동북', '동남']
+    
+    for group_name in region_group_order:
+        sidos = REGION_GROUPS[group_name]
+        for idx, sido in enumerate(sidos):
+            sido_info = sido_data.get(sido, {})
+            changes = _calculate_changes_from_aggregation(summary_df, sido)
+            
+            row_data = {
+                'sido': ' '.join(sido) if len(sido) == 2 else sido,
+                'changes': changes + [sido_info.get('change', 0)],
+                'indices': [
+                    sido_info.get('index_2024', 0),
+                    sido_info.get('index_2025', 0)
+                ]
+            }
+            
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
+    
+    return {'rows': rows}
+
+
+def _calculate_changes_from_aggregation(summary_df, sido_name):
+    """집계 시트에서 시도별 증감률을 계산합니다."""
+    # 집계 시트 구조: 9=2022.2/4, 13=2023.2/4, 16=2024.1/4, 17=2024.2/4, 20=2025.1/4, 21=2025.2/4
+    for i in range(3, len(summary_df)):
+        row = summary_df.iloc[i]
+        sido_raw = row[0]
+        level = row[1]
+        
+        if level != 0:
+            continue
+        
+        sido = SIDO_MAPPING.get(sido_raw, sido_raw)
+        if sido != sido_name:
+            continue
+        
+        idx_2022_2 = safe_float(row[9], 0)
+        idx_2023_2 = safe_float(row[13], 0)
+        idx_2024_1 = safe_float(row[16], 0)
+        idx_2024_2 = safe_float(row[17], 0)
+        idx_2025_1 = safe_float(row[20], 0)
+        
+        # 전년동분기대비 증감률
+        change_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 != 0 else 0.0
+        change_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 != 0 else 0.0
+        change_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 != 0 else 0.0
+        
+        return [round(change_2023_2, 1), round(change_2024_2, 1), round(change_2025_1, 1)]
+    
+    return [0.0, 0.0, 0.0]
 
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
     """보고서 데이터를 생성합니다.
@@ -427,8 +555,9 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     # 요약 박스
     summary_box = generate_summary_box(nationwide_data, above_regions, below_regions)
     
-    # 요약 테이블
-    summary_table = generate_summary_table(summary_df, sido_data, excel_path)
+    # 요약 테이블 (use_aggregation_only 플래그 전달)
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    summary_table = generate_summary_table(summary_df, sido_data, excel_path, use_aggregation_only)
     
     # 품목 텍스트 생성
     low_items = []

@@ -26,7 +26,10 @@ et-xmlfile>=1.1.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 
-# 엑셀 수식 계산
+# 엑셀 수식 계산 (옵션 - 하나만 설치해도 됨)
+# xlwings: Excel 앱이 설치된 경우 가장 정확한 계산 (Mac/Windows)
+xlwings>=0.30.0
+# formulas: 순수 Python으로 수식 계산 (서버 환경에서도 동작)
 formulas>=1.2.0
 
 # 데모 녹화 (선택사항)

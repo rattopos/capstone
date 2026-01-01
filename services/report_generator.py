@@ -673,19 +673,16 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
             if config:
                 data = generator.extract_table_data(table_name)
                 
-                yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
-                quarterly_keys = [
-                    "2016.4/4",
-                    "2017.1/4", "2017.2/4", "2017.3/4", "2017.4/4",
-                    "2018.1/4", "2018.2/4", "2018.3/4", "2018.4/4",
-                    "2019.1/4", "2019.2/4", "2019.3/4", "2019.4/4",
-                    "2020.1/4", "2020.2/4", "2020.3/4", "2020.4/4",
-                    "2021.1/4", "2021.2/4", "2021.3/4", "2021.4/4",
-                    "2022.1/4", "2022.2/4", "2022.3/4", "2022.4/4",
-                    "2023.1/4", "2023.2/4", "2023.3/4", "2023.4/4",
-                    "2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4",
-                    "2025.1/4", f"2025.{quarter}/4p"
-                ]
+                # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
+                yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
+                
+                # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
+                quarterly_keys = data.get('quarterly_keys', [])
+                if not quarterly_keys and data.get('quarterly'):
+                    # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
+                    quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
+                        int(x[:4]), int(x[5]) if len(x) > 5 else 0
+                    ))
                 
                 page_base = 22 + (table_index - 1) * 2
                 

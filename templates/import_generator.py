@@ -115,17 +115,19 @@ def get_sido_data_from_analysis(analysis_df, summary_df=None):
 
 def _get_sido_data_from_aggregation(summary_df):
     """집계 시트에서 시도별 수입 데이터 추출 (증감률 직접 계산)"""
+    # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=상품이름
+    # 데이터 컬럼: 22=2024.2/4, 26=2025.2/4
     sido_data = {}
     
     for i in range(3, len(summary_df)):
         row = summary_df.iloc[i]
         sido = row[3]
-        level = row[4]
+        level = str(row[4]).strip() if pd.notna(row[4]) else ''
         
-        if level == 0 and sido in SIDO_ORDER:
+        if level == '0' and sido in SIDO_ORDER:
             # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수입액으로 증감률 계산
-            current = safe_float(row[27], 0)  # 2025.2/4
-            prev = safe_float(row[23], 0)  # 2024.2/4
+            current = safe_float(row[26], 0)  # 2025.2/4
+            prev = safe_float(row[22], 0)  # 2024.2/4
             
             if prev and prev != 0:
                 change = ((current - prev) / prev) * 100
@@ -388,6 +390,12 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
 
 def generate_summary_table(analysis_df, summary_df, sido_data, excel_path=None):
     """요약 테이블 데이터를 생성합니다."""
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    
+    # 분석 시트가 비어있으면 집계 시트에서 직접 계산
+    if use_aggregation_only:
+        return _generate_summary_table_from_aggregation(summary_df, sido_data)
+    
     rows = []
     
     # H 참고 시트에서 증감률 데이터 가져오기
@@ -464,12 +472,94 @@ def generate_summary_table(analysis_df, summary_df, sido_data, excel_path=None):
             ]
             
             row_data = {
-                'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
+                'sido': ' '.join(sido) if len(sido) == 2 else sido,
                 'changes': changes,
                 'amounts': [amount_2024, amount_2025]
             }
             
             # 첫 번째 시도에만 region_group과 rowspan 추가
+            if idx == 0:
+                row_data['region_group'] = group_name
+                row_data['rowspan'] = len(sidos)
+            else:
+                row_data['region_group'] = None
+            
+            rows.append(row_data)
+    
+    return {'rows': rows}
+
+
+def _generate_summary_table_from_aggregation(summary_df, sido_data):
+    """집계 시트에서 테이블 데이터 추출"""
+    # 집계 시트 구조: 3=지역이름, 4=분류단계
+    # 데이터 컬럼: 14=2022.2/4, 18=2023.2/4, 21=2024.1/4, 22=2024.2/4, 25=2025.1/4, 26=2025.2/4
+    
+    rows = []
+    region_display = {
+        '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+        '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+        '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+        '경북': '경 북', '경남': '경 남', '제주': '제 주'
+    }
+    
+    all_regions = ['전국', '서울', '인천', '경기', '대전', '세종', '충북', '충남', 
+                   '광주', '전북', '전남', '제주', '대구', '경북', '강원', '부산', '울산', '경남']
+    
+    sido_table_data = {}
+    for region in all_regions:
+        region_total = summary_df[(summary_df[3] == region) & (summary_df[4].astype(str) == '0')]
+        if region_total.empty:
+            continue
+        
+        row = region_total.iloc[0]
+        
+        # 수입액 (백만달러 -> 억달러)
+        amount_2024 = safe_float(row[22], 0) / 10
+        amount_2025 = safe_float(row[26], 0) / 10
+        
+        # 지수 값
+        idx_2022_2 = safe_float(row[14], 0)
+        idx_2023_2 = safe_float(row[18], 0)
+        idx_2024_1 = safe_float(row[21], 0)
+        idx_2024_2 = safe_float(row[22], 0)
+        idx_2025_1 = safe_float(row[25], 0)
+        idx_2025_2 = safe_float(row[26], 0)
+        
+        # 전년동분기비 증감률 계산
+        change_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 and idx_2022_2 != 0 else 0.0
+        change_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 and idx_2023_2 != 0 else 0.0
+        change_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 and idx_2024_1 != 0 else 0.0
+        change_2025_2 = ((idx_2025_2 - idx_2024_2) / idx_2024_2 * 100) if idx_2024_2 and idx_2024_2 != 0 else 0.0
+        
+        sido_table_data[region] = {
+            'changes': [round(change_2023_2, 1), round(change_2024_2, 1), round(change_2025_1, 1), round(change_2025_2, 1)],
+            'amounts': [round(amount_2024, 1), round(amount_2025, 1)]
+        }
+    
+    # 전국 먼저
+    if '전국' in sido_table_data:
+        rows.append({
+            'region_group': None,
+            'sido': '전 국',
+            'changes': sido_table_data['전국']['changes'],
+            'amounts': sido_table_data['전국']['amounts']
+        })
+    
+    # 권역별 시도
+    region_group_order = ['경인', '충청', '호남', '동북', '동남']
+    
+    for group_name in region_group_order:
+        sidos = REGION_GROUPS[group_name]
+        for idx, sido in enumerate(sidos):
+            if sido not in sido_table_data:
+                continue
+            
+            row_data = {
+                'sido': region_display.get(sido, sido),
+                'changes': sido_table_data[sido]['changes'],
+                'amounts': sido_table_data[sido]['amounts']
+            }
+            
             if idx == 0:
                 row_data['region_group'] = group_name
                 row_data['rowspan'] = len(sidos)

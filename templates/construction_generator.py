@@ -725,18 +725,30 @@ def _get_regional_from_raw_data(df_analysis, df_index):
     return _get_regional_from_aggregation(df_index)
 
 
-def get_growth_rates_table(df_analysis, df_index):
-    """표에 들어갈 증감률 및 지수 데이터 생성"""
+def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide_data=None):
+    """표에 들어갈 증감률 및 지수 데이터 생성
+    
+    Args:
+        df_analysis: 분석 시트 데이터프레임
+        df_index: 집계 시트 데이터프레임
+        regional_data: 시도별 데이터 (이미 계산된 증감률 포함)
+        nationwide_data: 전국 데이터 (이미 계산된 증감률 포함)
+    """
+    # regional_data가 제공되면 그것을 사용 (집계 시트 기반 계산된 값)
+    if regional_data and nationwide_data:
+        return _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data)
+    
+    # 기존 로직 (분석 시트 기반)
     region_indices = get_region_indices(df_analysis)
     
     table_data = []
     
     # 전국
     nationwide_idx = region_indices.get('전국', 3)
-    nationwide_row = df_analysis.iloc[nationwide_idx]
+    nationwide_row = df_analysis.iloc[nationwide_idx] if nationwide_idx < len(df_analysis) else None
     nationwide_idx_row = df_index[df_index[1] == '전국']
     
-    if not nationwide_idx_row.empty:
+    if not nationwide_idx_row.empty and nationwide_row is not None:
         nationwide_idx_row = nationwide_idx_row.iloc[0]
         table_data.append({
             'group': None,
@@ -761,6 +773,8 @@ def get_growth_rates_table(df_analysis, df_index):
                 continue
                 
             start_idx = region_indices[region]
+            if start_idx >= len(df_analysis):
+                continue
             row = df_analysis.iloc[start_idx]
             idx_row = df_index[df_index[1] == region]
             
@@ -780,6 +794,111 @@ def get_growth_rates_table(df_analysis, df_index):
                 'indices': [
                     safe_float(idx_row[19], None),  # 2024 2/4
                     safe_float(idx_row[22], None),  # 2025 2/4
+                ]
+            }
+            
+            if i == 0:
+                entry['group'] = group_name
+                entry['rowspan'] = len(group_regions)
+            else:
+                entry['group'] = None
+                entry['rowspan'] = None
+                
+            table_data.append(entry)
+    
+    return table_data
+
+
+def _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data):
+    """regional_data에서 이미 계산된 값으로 테이블 생성 (집계 시트 기반)"""
+    table_data = []
+    
+    # 지역별 데이터를 딕셔너리로 변환
+    region_data_map = {r['region']: r for r in regional_data.get('all_regions', [])}
+    
+    # 집계 시트 컬럼 구조 (확인된 값):
+    # 컬럼 10: 2022 2/4, 컬럼 14: 2023 2/4
+    # 컬럼 17: 2024 1/4, 컬럼 18: 2024 2/4
+    # 컬럼 21: 2025 1/4, 컬럼 22: 2025 2/4p
+    
+    # 전국 데이터 - 집계 시트에서 증감률 직접 계산
+    nationwide_idx_row = df_index[(df_index[1] == '전국') & (df_index[2].astype(str) == '0')]
+    if not nationwide_idx_row.empty:
+        row = nationwide_idx_row.iloc[0]
+        
+        # 각 분기의 지수 (정확한 컬럼 위치 사용)
+        idx_2022_2 = safe_float(row[10], 0)  # 2022 2/4
+        idx_2023_2 = safe_float(row[14], 0)  # 2023 2/4
+        idx_2024_1 = safe_float(row[17], 0)  # 2024 1/4
+        idx_2024_2 = safe_float(row[18], 0)  # 2024 2/4
+        idx_2025_1 = safe_float(row[21], 0)  # 2025 1/4
+        idx_2025_2 = safe_float(row[22], 0)  # 2025 2/4p
+        
+        # 증감률 계산 (전년동분기대비)
+        growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 else None
+        growth_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 else None
+        growth_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 else None
+        growth_2025_2 = ((idx_2025_2 - idx_2024_2) / idx_2024_2 * 100) if idx_2024_2 else None
+        
+        table_data.append({
+            'group': None,
+            'rowspan': None,
+            'region': REGION_DISPLAY_MAPPING['전국'],
+            'growth_rates': [
+                safe_round(growth_2023_2, 1),
+                safe_round(growth_2024_2, 1),
+                safe_round(growth_2025_1, 1),
+                safe_round(growth_2025_2, 1),
+            ],
+            'indices': [
+                safe_round(idx_2024_2 / 10, 1),  # 백억원 단위로 변환
+                safe_round(idx_2025_2 / 10, 1),
+            ]
+        })
+    
+    # 지역별 그룹
+    for group_name, group_regions in REGION_GROUPS.items():
+        for i, region in enumerate(group_regions):
+            # 집계 시트에서 해당 지역 찾기
+            region_idx_row = df_index[(df_index[1] == region) & (df_index[2].astype(str) == '0')]
+            
+            if region_idx_row.empty:
+                continue
+            
+            row = region_idx_row.iloc[0]
+            
+            # 각 분기의 지수로 증감률 계산 (정확한 컬럼 위치 사용)
+            idx_2022_2 = safe_float(row[10], 0)  # 2022 2/4
+            idx_2023_2 = safe_float(row[14], 0)  # 2023 2/4
+            idx_2024_1 = safe_float(row[17], 0)  # 2024 1/4
+            idx_2024_2 = safe_float(row[18], 0)  # 2024 2/4
+            idx_2025_1 = safe_float(row[21], 0)  # 2025 1/4
+            idx_2025_2 = safe_float(row[22], 0)  # 2025 2/4p
+            
+            growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 else None
+            growth_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 else None
+            growth_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 else None
+            growth_2025_2 = ((idx_2025_2 - idx_2024_2) / idx_2024_2 * 100) if idx_2024_2 else None
+            
+            # regional_data에서 증감률 가져오기 (이미 계산된 값)
+            region_info = region_data_map.get(region, {})
+            if region_info:
+                growth_2023_2 = region_info.get('growth_2023_2', growth_2023_2)
+                growth_2024_2 = region_info.get('growth_2024_2', growth_2024_2)
+                growth_2025_1 = region_info.get('growth_2025_1', growth_2025_1)
+                growth_2025_2 = region_info.get('growth_rate', growth_2025_2)
+            
+            entry = {
+                'region': REGION_DISPLAY_MAPPING.get(region, region),
+                'growth_rates': [
+                    safe_round(growth_2023_2, 1),
+                    safe_round(growth_2024_2, 1),
+                    safe_round(growth_2025_1, 1),
+                    safe_round(growth_2025_2, 1),
+                ],
+                'indices': [
+                    safe_round(idx_2024_2 / 10, 1),  # 백억원 단위
+                    safe_round(idx_2025_2 / 10, 1),
                 ]
             }
             
@@ -864,7 +983,8 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     nationwide_data = get_nationwide_data(df_analysis, df_index)
     regional_data = get_regional_data(df_analysis, df_index)
     summary_box = get_summary_box_data(regional_data)
-    table_data = get_growth_rates_table(df_analysis, df_index)
+    # 테이블 데이터 생성 (regional_data와 nationwide_data 전달하여 집계 시트 기반 계산)
+    table_data = get_growth_rates_table(df_analysis, df_index, regional_data, nationwide_data)
     
     # Top 3 증가/감소 지역 (토목/건축 증감률 및 세부 품목 포함)
     top3_increase = []

@@ -665,6 +665,17 @@ class StatisticsTableGenerator:
             print(f"[통계표] JSON 없음, 전체 동적 추출: {table_name}")
             self._extract_all_dynamic(table_name, config, data)
         
+        # 모든 지역이 "-"인 분기 제거 (해당 통계에서 데이터를 제공하지 않는 분기)
+        quarters_to_remove = []
+        for q_key, regions in data['quarterly'].items():
+            if all(v == '-' or v is None for v in regions.values()):
+                quarters_to_remove.append(q_key)
+        
+        for q_key in quarters_to_remove:
+            del data['quarterly'][q_key]
+            if q_key in data['quarterly_keys']:
+                data['quarterly_keys'].remove(q_key)
+        
         return data
     
     def _extract_all_dynamic(self, table_name: str, config: dict, data: dict):

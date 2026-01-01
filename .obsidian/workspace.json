@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "PRESENTATION.md",
-                "mode": "preview",
+                "file": "docs/GLOSSARY.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "PRESENTATION"
+              "title": "GLOSSARY"
             }
           }
         ]
@@ -185,22 +185,29 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
+    "services/excel_processor.py",
+    "docs/README_배포용.md",
+    "docs/빠른시작_가이드.md",
+    "docs/문제해결_가이드.md",
+    "docs/images",
+    "보고서생성.bat",
+    "초기설정.bat",
+    "docs/배포_사용자_가이드.md",
+    "uploads/분석표_25년_2분기_캡스톤_계산완료.xlsx",
+    "uploads/~$분석표_25년_2분기_캡스톤_계산완료.xlsx",
+    "uploads/~$분석표_25년_2분기_캡스톤_34b9d183.xlsx",
+    "VENV/lib/python3.13/site-packages/xlwings-0.33.19.dist-info/REQUESTED",
+    "VENV/lib/python3.13/site-packages/xlwings-0.33.19.dist-info/INSTALLER",
+    "VENV/bin/xlwings",
+    "VENV/lib/python3.13/site-packages/xlwings/pro/reports/__pycache__/pdf.cpython-313.pyc",
+    "VENV/lib/python3.13/site-packages/xlwings/pro/README.md",
+    "docs/GLOSSARY.md",
     "PROJECT_PROGRESS.md",
     "PRESENTATION.md",
     "AI_DEVELOPMENT_HISTORY.md",
     "DEVELOPMENT_CHALLENGES.md",
     "PROJECT_STUDY_GUIDE.md",
-    "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_f21aabe2.xlsx",
-    "uploads/분석표_25년_2분기_캡스톤_d3606449.xlsx",
-    "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_c31cd2d1.xlsx",
-    "uploads/분석표_25년_2분기_캡스톤_4121f0d2.xlsx",
-    "uploads/분석표_25년_2분기_캡스톤_210d86f4.xlsx",
     "REPORT_GENERATION_FIX.md",
-    "uploads/분석표_25년_2분기_캡스톤_a128ae80.xlsx",
-    "uploads/grdp_2025년_3분기_실질_지역내총생산잠정_99febe99.xlsx",
-    "uploads/분석표_25년_2분기_캡스톤_4b66b38b.xlsx",
-    "uploads/기초자료_수집표_2025년_2분기_캡스톤_보완_82fcf89b.xlsx",
-    "PROJECT_COMPLETE_STUDY_GUIDE.html",
     "presentation/config_explanation.md",
     "presentation/module_explanation.md",
     "presentation/tough_questions.md",

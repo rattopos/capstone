@@ -25,6 +25,17 @@ REGION_GROUPS = {
     "동남": ["부산", "울산", "경남"]
 }
 
+
+def safe_float(value, default=0.0):
+    """안전하게 float로 변환합니다."""
+    try:
+        if pd.isna(value):
+            return default
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터를 로드합니다."""
     xl = pd.ExcelFile(excel_path)
@@ -66,10 +77,10 @@ def get_sido_data(summary_df):
         if age_group == '합계':
             sido = row[4]
             if sido in SIDO_ORDER:
-                net_migration_2025_24 = row[25]  # 2025.2/4 순이동
-                net_migration_2025_14 = row[24]  # 2025.1/4
-                net_migration_2024_24 = row[21]  # 2024.2/4
-                net_migration_2023_24 = row[17]  # 2023.2/4
+                net_migration_2025_24 = safe_float(row[25], 0)  # 2025.2/4 순이동
+                net_migration_2025_14 = safe_float(row[24], 0)  # 2025.1/4
+                net_migration_2024_24 = safe_float(row[21], 0)  # 2024.2/4
+                net_migration_2023_24 = safe_float(row[17], 0)  # 2023.2/4
                 
                 sido_data[sido] = {
                     'net_migration': net_migration_2025_24,
@@ -89,7 +100,7 @@ def get_sido_age_data(summary_df):
         age_group = row[7]
         rank = row[6]
         level = row[5]
-        net_migration = row[25]  # 2025.2/4 순이동
+        net_migration = safe_float(row[25], 0)  # 2025.2/4 순이동
         
         if sido in SIDO_ORDER and age_group == '합계':
             current_sido = sido
@@ -100,9 +111,12 @@ def get_sido_age_data(summary_df):
                 'age_other': 0
             }
         
-        if current_sido and pd.notna(rank) and age_group != '합계':
+        # rank 또는 level로 연령별 데이터 판별 (rank가 없는 경우 level=1로 판별)
+        is_age_row = (pd.notna(rank) and age_group != '합계') or (current_sido and str(level) == '1' and age_group != '합계')
+        
+        if current_sido and is_age_row:
             try:
-                rank_num = int(rank)
+                rank_num = int(rank) if pd.notna(rank) else i  # rank가 없으면 행 인덱스 사용
                 sido_age_data[current_sido]['ages'].append({
                     'rank': rank_num,
                     'name': age_group,
@@ -208,7 +222,7 @@ def generate_summary_table(sido_data, sido_age_data):
             age_other = age_info.get('age_other', 0) / 1000
             
             row_data = {
-                'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
+                'sido': ' '.join(sido) if len(sido) == 2 else sido,
                 'net_migrations': net_migrations_k,
                 'age_20_29': age_20_29,
                 'age_other': age_other

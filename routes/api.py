@@ -84,6 +84,7 @@ from services.report_generator import (
     generate_individual_statistics_html
 )
 from services.grdp_service import get_kosis_grdp_download_info, parse_kosis_grdp_file
+from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
 from data_converter import DataConverter
 import openpyxl
 
@@ -278,6 +279,17 @@ def upload_excel():
         print(f"[프로세스 2] 분석표 업로드: {filename}")
         print(f"{'='*50}")
         
+        # 수식 계산 전처리 (분석 시트의 수식을 계산)
+        print(f"[전처리] 엑셀 수식 계산 시작...")
+        processed_path, preprocess_success, preprocess_msg = preprocess_excel(str(filepath))
+        
+        if preprocess_success:
+            print(f"[전처리] 성공: {preprocess_msg}")
+            # 전처리된 파일 경로 사용
+            filepath = Path(processed_path)
+        else:
+            print(f"[전처리] {preprocess_msg} - generator fallback 로직 사용")
+        
         # 연도/분기 추출
         year, quarter = extract_year_quarter_from_excel(str(filepath))
         
@@ -338,7 +350,12 @@ def upload_excel():
             'needs_grdp': not has_grdp,
             'has_grdp': has_grdp,
             'grdp_sheet': grdp_sheet_found,
-            'conversion_info': None
+            'conversion_info': None,
+            'preprocessing': {
+                'success': preprocess_success,
+                'message': preprocess_msg,
+                'method': get_recommended_method()
+            }
         })
     
     # ===== 프로세스 1: 기초자료 수집표 → 분석표 생성 =====

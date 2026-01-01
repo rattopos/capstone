@@ -293,7 +293,7 @@ def generate_summary_table(summary_df, rate_data):
             ]
             
             row_data = {
-                'sido': sido.replace('', ' ') if len(sido) == 2 else sido,
+                'sido': ' '.join(sido) if len(sido) == 2 else sido,
                 'changes': changes,
                 'rates': [
                     total.get('rate_2024_24', None),

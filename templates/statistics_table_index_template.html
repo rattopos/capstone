@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - {{ year }}년 {{ quarter }}분기</title>
     
-    {# 결측치 플레이스홀더 매크로 #}
+    {# 통계표 값 표시 매크로 - "-"는 데이터 없음을 의미하므로 그대로 표시 #}
     {% macro val(value) %}
-        {%- if value is none or value == '' or value == '-' or value == 'N/A' or value == '없음' -%}
-            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+        {%- if value is none or value == '' -%}
+            -
         {%- else -%}
             {{ value }}
         {%- endif -%}
