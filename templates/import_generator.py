@@ -38,15 +38,27 @@ def load_data(excel_path):
     
     # 분석 시트 찾기
     analysis_sheet = None
+    use_raw = False
     for name in ['H 분석', 'H분석', '수입']:
         if name in sheet_names:
             analysis_sheet = name
             if name == '수입':
                 print(f"[시트 대체] 'H 분석' → '수입' (기초자료)")
+                use_raw = True
             break
     
     if not analysis_sheet:
         raise ValueError(f"수입 분석 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
+    
+    analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
+    
+    # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+    test_row = analysis_df[(analysis_df[3].isin(SIDO_ORDER)) & (analysis_df[8] == '합계')]
+    if test_row.empty or test_row.iloc[0].isna().sum() > 20:
+        print(f"[수입] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+        use_aggregation_only = True
+    else:
+        use_aggregation_only = False
     
     # 참고 시트 찾기 (없으면 분석 시트 사용)
     reference_sheet = None
@@ -66,13 +78,23 @@ def load_data(excel_path):
     if not summary_sheet:
         summary_sheet = analysis_sheet
     
-    analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
     reference_df = pd.read_excel(excel_path, sheet_name=reference_sheet, header=None)
     summary_df = pd.read_excel(excel_path, sheet_name=summary_sheet, header=None)
+    
+    # use_raw, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
+    analysis_df.attrs['use_raw'] = use_raw
+    analysis_df.attrs['use_aggregation_only'] = use_aggregation_only
+    
     return analysis_df, reference_df, summary_df
 
-def get_sido_data_from_analysis(analysis_df):
+def get_sido_data_from_analysis(analysis_df, summary_df=None):
     """H 분석 시트에서 시도별 수입 데이터를 추출합니다."""
+    use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
+    
+    # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+    if use_aggregation_only and summary_df is not None:
+        return _get_sido_data_from_aggregation(summary_df)
+    
     sido_data = {}
     
     for i in range(3, len(analysis_df)):
@@ -89,6 +111,52 @@ def get_sido_data_from_analysis(analysis_df):
                 }
     
     return sido_data
+
+
+def _get_sido_data_from_aggregation(summary_df):
+    """집계 시트에서 시도별 수입 데이터 추출 (증감률 직접 계산)"""
+    sido_data = {}
+    
+    for i in range(3, len(summary_df)):
+        row = summary_df.iloc[i]
+        sido = row[3]
+        level = row[4]
+        
+        if level == 0 and sido in SIDO_ORDER:
+            # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수입액으로 증감률 계산
+            current = safe_float(row[27], 0)  # 2025.2/4
+            prev = safe_float(row[23], 0)  # 2024.2/4
+            
+            if prev and prev != 0:
+                change = ((current - prev) / prev) * 100
+            else:
+                change = 0.0
+            
+            sido_data[sido] = {
+                'change': change,
+                'row_idx': i
+            }
+    
+    return sido_data
+
+
+def safe_float(value, default=None):
+    """안전한 float 변환 함수"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '':
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
 
 def get_sido_products_from_reference(reference_df):
     """H 참고 시트에서 시도별 품목 데이터를 추출합니다. 상위/하위 순위 모두 수집."""
@@ -430,7 +498,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     analysis_df, reference_df, summary_df = load_data(excel_path)
     
     # 시도별 데이터 추출
-    sido_data = get_sido_data_from_analysis(analysis_df)
+    sido_data = get_sido_data_from_analysis(analysis_df, summary_df)
     sido_products_top, sido_products_bottom = get_sido_products_from_reference(reference_df)
     
     # 전국 데이터

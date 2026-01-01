@@ -220,6 +220,16 @@ class StatisticsTableGenerator:
         self.auto_update_json = auto_update_json
         self.newly_extracted_data = {}  # 새로 추출한 데이터 (JSON 업데이트용)
         
+        # 파일 존재 및 수정 시간 확인
+        excel_path_obj = Path(excel_path)
+        if not excel_path_obj.exists():
+            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {excel_path}")
+        
+        try:
+            self._file_mtime = excel_path_obj.stat().st_mtime
+        except OSError:
+            self._file_mtime = None
+        
         # 과거 데이터 JSON 자동 로드
         self._load_historical_data()
         
@@ -327,15 +337,48 @@ class StatisticsTableGenerator:
         
         return missing
     
+    def _check_file_modified(self) -> bool:
+        """파일이 수정되었는지 확인 (캐시 무효화 판단)"""
+        if self._file_mtime is None:
+            return False
+        
+        try:
+            excel_path_obj = Path(self.excel_path)
+            if not excel_path_obj.exists():
+                return True  # 파일이 없으면 무효화 필요
+            
+            current_mtime = excel_path_obj.stat().st_mtime
+            if abs(current_mtime - self._file_mtime) > 1.0:  # 1초 이상 차이
+                return True
+            return False
+        except OSError:
+            return True  # 파일 접근 오류 시 안전하게 무효화
+    
+    def _clear_cache(self):
+        """캐시 무효화"""
+        self.cached_sheets.clear()
+    
     def _load_sheet(self, sheet_name: str) -> pd.DataFrame:
-        """엑셀 시트 로드 (캐싱)"""
+        """엑셀 시트 로드 (캐싱, 파일 수정 시간 확인)"""
+        # 파일이 수정되었으면 캐시 무효화
+        if self._check_file_modified():
+            self._clear_cache()
+            try:
+                excel_path_obj = Path(self.excel_path)
+                self._file_mtime = excel_path_obj.stat().st_mtime
+            except OSError:
+                pass
+        
         if sheet_name not in self.cached_sheets:
             try:
-                self.cached_sheets[sheet_name] = pd.read_excel(
+                # 시트 데이터 로드 (예외 발생 시 캐시에 저장하지 않음)
+                df = pd.read_excel(
                     self.excel_path,
                     sheet_name=sheet_name,
                     header=None
                 )
+                # 정상 로드된 경우에만 캐시에 저장
+                self.cached_sheets[sheet_name] = df
             except Exception as e:
                 print(f"시트 로드 실패: {sheet_name} - {e}")
                 return None

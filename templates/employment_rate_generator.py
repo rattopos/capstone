@@ -84,11 +84,13 @@ def load_data(excel_path):
     
     # 분석 시트 찾기
     analysis_sheet = None
+    use_raw = False
     for name in ['D(고용률)분석', 'D(고용률) 분석', '고용률']:
         if name in sheet_names:
             analysis_sheet = name
             if name == '고용률':
                 print(f"[시트 대체] 'D(고용률)분석' → '고용률' (기초자료)")
+                use_raw = True
             break
     
     if not analysis_sheet:
@@ -105,6 +107,19 @@ def load_data(excel_path):
     
     df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
     df_index = pd.read_excel(xl, sheet_name=index_sheet, header=None)
+    
+    # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+    test_row = df_analysis[(df_analysis[0].isin(VALID_REGIONS + ['전국'])) | (df_analysis[1].isin(VALID_REGIONS + ['전국']))]
+    if test_row.empty or (len(test_row) > 0 and test_row.iloc[0].isna().sum() > 20):
+        print(f"[고용률] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+        use_aggregation_only = True
+    else:
+        use_aggregation_only = False
+    
+    # use_raw, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
+    df_analysis.attrs['use_raw'] = use_raw
+    df_analysis.attrs['use_aggregation_only'] = use_aggregation_only
+    
     return df_analysis, df_index
 
 

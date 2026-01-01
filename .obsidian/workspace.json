@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "PROJECT_STUDY_GUIDE.md",
+                "file": "PRESENTATION.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "PROJECT_STUDY_GUIDE"
+              "title": "PRESENTATION"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "PROJECT_STUDY_GUIDE.md",
+                "file": "PRESENTATION.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for PROJECT_STUDY_GUIDE"
+              "title": "Backlinks for PRESENTATION"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "PROJECT_STUDY_GUIDE.md",
+                "file": "PRESENTATION.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from PROJECT_STUDY_GUIDE"
+              "title": "Outgoing links from PRESENTATION"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "PROJECT_STUDY_GUIDE.md",
+                "file": "PRESENTATION.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of PROJECT_STUDY_GUIDE"
+              "title": "Outline of PRESENTATION"
             }
           }
         ]
@@ -185,23 +185,25 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
-    "presentation/config_explanation.md",
-    "DEVELOPMENT_CHALLENGES_PRINT.html",
-    "DEVELOPMENT_CHALLENGES.md",
-    "cookies_new.txt",
-    "uploads/분석표_25년_2분기_캡스톤_a5e3cea2.xlsx",
-    "templates/regional_output/참고_GRDP_output.html",
-    "templates/regional_output/제주_output.html",
-    "templates/regional_output/경남_output.html",
-    "templates/regional_output/경북_output.html",
-    "templates/regional_output/전남_output.html",
-    "templates/regional_output/전북_output.html",
-    "templates/regional_output/충남_output.html",
-    "presentation/module_explanation.md",
-    "AI_DEVELOPMENT_HISTORY.md",
-    "presentation/tough_questions.md",
-    "presentation/challenges.md",
     "PROJECT_PROGRESS.md",
-    "PROJECT_STUDY_GUIDE.md"
+    "PRESENTATION.md",
+    "AI_DEVELOPMENT_HISTORY.md",
+    "DEVELOPMENT_CHALLENGES.md",
+    "PROJECT_STUDY_GUIDE.md",
+    "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_f21aabe2.xlsx",
+    "uploads/분석표_25년_2분기_캡스톤_d3606449.xlsx",
+    "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_c31cd2d1.xlsx",
+    "uploads/분석표_25년_2분기_캡스톤_4121f0d2.xlsx",
+    "uploads/분석표_25년_2분기_캡스톤_210d86f4.xlsx",
+    "REPORT_GENERATION_FIX.md",
+    "uploads/분석표_25년_2분기_캡스톤_a128ae80.xlsx",
+    "uploads/grdp_2025년_3분기_실질_지역내총생산잠정_99febe99.xlsx",
+    "uploads/분석표_25년_2분기_캡스톤_4b66b38b.xlsx",
+    "uploads/기초자료_수집표_2025년_2분기_캡스톤_보완_82fcf89b.xlsx",
+    "PROJECT_COMPLETE_STUDY_GUIDE.html",
+    "presentation/config_explanation.md",
+    "presentation/module_explanation.md",
+    "presentation/tough_questions.md",
+    "presentation/challenges.md"
   ]
 }

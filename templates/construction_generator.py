@@ -203,6 +203,13 @@ def load_data(excel_path):
         try:
             print(f"[DEBUG] 건설동향 분석 시트 발견: '{analysis_sheet_name}'")
             df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet_name, header=None)
+            # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+            test_row = df_analysis[(df_analysis[2].isin(VALID_REGIONS + ['전국'])) | (df_analysis[1].isin(VALID_REGIONS + ['전국']))]
+            if test_row.empty or (len(test_row) > 0 and test_row.iloc[0].isna().sum() > 20):
+                print(f"[건설동향] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+                use_aggregation_only = True
+            else:
+                use_aggregation_only = False
         except Exception as e:
             print(f"[ERROR] 건설동향 분석 시트 읽기 실패: {e}")
             raise ValueError(f"건설동향 분석 시트를 읽을 수 없습니다: '{analysis_sheet_name}'")
@@ -226,6 +233,10 @@ def load_data(excel_path):
     if df_index is None:
         print(f"[DEBUG] 건설동향 집계 시트를 찾지 못해 분석 시트를 사용합니다.")
         df_index = df_analysis.copy()
+    
+    # use_raw_data, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
+    df_analysis.attrs['use_raw'] = use_raw_data
+    df_analysis.attrs['use_aggregation_only'] = use_aggregation_only if 'use_aggregation_only' in locals() else False
     
     return df_analysis, df_index
 
@@ -281,19 +292,30 @@ def get_region_indices(df_analysis):
 
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
+    use_raw = df_analysis.attrs.get('use_raw', False)
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+    if use_aggregation_only:
+        return _get_nationwide_from_aggregation(df_index)
+    
+    if use_raw:
+        return _get_nationwide_from_raw_data(df_analysis, df_index)
+    
     # 분석 시트에서 전국 총지수 행 (분류단계 0)
     region_indices = get_region_indices(df_analysis)
     nationwide_idx = region_indices.get('전국', 3)
     
     if nationwide_idx >= len(df_analysis):
         print(f"[WARNING] 건설동향 - 전국 인덱스 {nationwide_idx}가 범위를 벗어남 (총 행수: {len(df_analysis)})")
-        nationwide_idx = 3
+        return _get_nationwide_from_aggregation(df_index)
     
     nationwide_row = df_analysis.iloc[nationwide_idx]
     
     # 컬럼 인덱스 확인 및 디버깅
     if len(nationwide_row) <= 19:
         print(f"[WARNING] 건설동향 - 전국 행의 컬럼 수가 부족함: {len(nationwide_row)} (최소 20개 필요)")
+        return _get_nationwide_from_aggregation(df_index)
     
     growth_rate = safe_round(nationwide_row[19] if len(nationwide_row) > 19 else None, 1, 0.0)  # 2025.2/4p
     print(f"[DEBUG] 건설동향 - 전국 증감률: {growth_rate}%")
@@ -376,16 +398,130 @@ def get_nationwide_data(df_analysis, df_index):
     }
 
 
+def _get_nationwide_from_aggregation(df_index):
+    """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)"""
+    # 집계 시트 구조: 1=지역이름, 2=분류단계, 5=공종명
+    # 데이터 컬럼: 19=2024.2/4, 22=2025.2/4p
+    
+    # 전국 총지수 행 찾기
+    nationwide_rows = df_index[(df_index[1] == '전국') & (df_index[2].astype(str) == '0')]
+    if nationwide_rows.empty:
+        return {
+            'construction_index': 0.0,
+            'construction_index_trillion': 0.0,
+            'growth_rate': 0.0,
+            'main_types': [],
+            'civil_growth': 0.0,
+            'building_growth': 0.0,
+            'civil_subtypes': NATIONWIDE_CIVIL_SUBTYPES_DECREASE,
+            'building_subtypes': NATIONWIDE_BUILDING_SUBTYPES,
+            'main_category': '건축',
+            'sub_types_text': NATIONWIDE_CIVIL_SUBTYPES_INCREASE
+        }
+    
+    nationwide_total = nationwide_rows.iloc[0]
+    
+    # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수주액으로 증감률 계산
+    current = safe_float(nationwide_total[22], 0)  # 2025.2/4p (억원)
+    prev = safe_float(nationwide_total[19], 0)  # 2024.2/4 (억원)
+    
+    if prev and prev != 0:
+        growth_rate = ((current - prev) / prev) * 100
+    else:
+        growth_rate = 0.0
+    
+    # 조원 단위로 변환
+    construction_index_trillion = current / 10000 if current else 0.0
+    
+    # 전국 공종별 데이터 (분류단계 1)
+    nationwide_types = df_index[(df_index[1] == '전국') & (df_index[2].astype(str) == '1')]
+    
+    construction_types = []
+    civil_growth = None
+    building_growth = None
+    
+    for _, row in nationwide_types.iterrows():
+        curr = safe_float(row[22], None)
+        prev_ind = safe_float(row[19], None)
+        type_name = str(row[5]).strip() if pd.notna(row[5]) else ''
+        
+        if curr is not None and prev_ind is not None and prev_ind != 0:
+            type_growth = ((curr - prev_ind) / prev_ind) * 100
+            construction_types.append({
+                'name': CONSTRUCTION_TYPE_MAPPING.get(type_name, type_name),
+                'growth_rate': round(type_growth, 1)
+            })
+            
+            if '토목' in type_name:
+                civil_growth = round(type_growth, 1)
+            elif '건축' in type_name:
+                building_growth = round(type_growth, 1)
+    
+    # 기본값 적용
+    default_nationwide = DEFAULT_CIVIL_BUILDING_RATES.get('전국', {'civil': -44.2, 'building': 9.0})
+    if civil_growth is None:
+        civil_growth = default_nationwide['civil']
+    if building_growth is None:
+        building_growth = default_nationwide['building']
+    
+    # 증감 큰 순으로 정렬
+    if growth_rate < 0:
+        negative_types = [t for t in construction_types if t['growth_rate'] < 0]
+        negative_types.sort(key=lambda x: x['growth_rate'])
+        main_types = negative_types[:3]
+        main_category = "토목" if civil_growth < 0 else "건축"
+        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_DECREASE
+    else:
+        positive_types = [t for t in construction_types if t['growth_rate'] > 0]
+        positive_types.sort(key=lambda x: x['growth_rate'], reverse=True)
+        main_types = positive_types[:3]
+        main_category = "토목" if civil_growth > 0 else "건축"
+        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_INCREASE
+    
+    return {
+        'construction_index': current,
+        'construction_index_trillion': round(construction_index_trillion, 1),
+        'growth_rate': round(growth_rate, 1),
+        'main_types': main_types if main_types else construction_types[:3],
+        'civil_growth': civil_growth,
+        'building_growth': building_growth,
+        'civil_subtypes': NATIONWIDE_CIVIL_SUBTYPES_DECREASE if growth_rate < 0 else NATIONWIDE_CIVIL_SUBTYPES_INCREASE,
+        'building_subtypes': NATIONWIDE_BUILDING_SUBTYPES,
+        'main_category': main_category,
+        'sub_types_text': sub_types_text
+    }
+
+
+def _get_nationwide_from_raw_data(df_analysis, df_index):
+    """기초자료 시트에서 전국 데이터 추출"""
+    # 기초자료 처리 로직 (필요시 구현)
+    return _get_nationwide_from_aggregation(df_index)
+
+
 def get_regional_data(df_analysis, df_index):
     """시도별 데이터 추출"""
+    use_raw = df_analysis.attrs.get('use_raw', False)
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+    if use_aggregation_only:
+        return _get_regional_from_aggregation(df_index)
+    
+    if use_raw:
+        return _get_regional_from_raw_data(df_analysis, df_index)
+    
     region_indices = get_region_indices(df_analysis)
     regions = []
+    
+    if not region_indices:
+        # 지역 인덱스를 찾을 수 없는 경우 집계 시트에서 계산
+        return _get_regional_from_aggregation(df_index)
     
     for region, start_idx in region_indices.items():
         if region == '전국':
             continue
             
-        # 분류단계 0 행에서 증감률
+        # 분류단계 0 행에서 증감률 (컬럼 19: 2025.2/4p)
         total_row = df_analysis.iloc[start_idx]
         growth_rate = safe_round(total_row[19], 1)  # 2025.2/4p
         growth_2023_2 = safe_round(total_row[11], 1)  # 2023 2/4
@@ -487,6 +623,106 @@ def get_regional_data(df_analysis, df_index):
         'decrease_regions': decrease_regions,
         'all_regions': regions
     }
+
+
+def _get_regional_from_aggregation(df_index):
+    """집계 시트에서 시도별 데이터 추출"""
+    individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
+                          '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    
+    regions = []
+    
+    for region in individual_regions:
+        # 해당 지역 총지수 (분류단계 0)
+        region_total = df_index[(df_index[1] == region) & (df_index[2].astype(str) == '0')]
+        if region_total.empty:
+            continue
+        region_total = region_total.iloc[0]
+        
+        # 증감률 계산
+        current = safe_float(region_total[22], 0)  # 2025.2/4p
+        prev = safe_float(region_total[19], 0)  # 2024.2/4
+        prev_2023_2 = safe_float(region_total[15], 0)  # 2023.2/4
+        prev_2025_1 = safe_float(region_total[21], 0)  # 2025.1/4
+        
+        if prev and prev != 0:
+            growth_rate = ((current - prev) / prev) * 100
+        else:
+            growth_rate = 0.0
+        
+        # 전년동분기비 계산
+        growth_2023_2 = ((prev_2023_2 - safe_float(region_total[11], 0)) / safe_float(region_total[11], 100) * 100) if safe_float(region_total[11], 0) != 0 else 0.0
+        growth_2024_2 = ((prev - prev_2023_2) / prev_2023_2 * 100) if prev_2023_2 != 0 else 0.0
+        growth_2025_1 = ((prev_2025_1 - safe_float(region_total[18], 0)) / safe_float(region_total[18], 100) * 100) if safe_float(region_total[18], 0) != 0 else 0.0
+        
+        # 해당 지역 공종별 데이터 (분류단계 1)
+        region_types = df_index[(df_index[1] == region) & (df_index[2].astype(str) == '1')]
+        
+        construction_types = []
+        civil_growth = None
+        building_growth = None
+        
+        for _, row in region_types.iterrows():
+            curr = safe_float(row[22], None)
+            prev_ind = safe_float(row[19], None)
+            type_name = str(row[5]).strip() if pd.notna(row[5]) else ''
+            
+            if curr is not None and prev_ind is not None and prev_ind != 0:
+                type_growth = ((curr - prev_ind) / prev_ind) * 100
+                construction_types.append({
+                    'name': CONSTRUCTION_TYPE_MAPPING.get(type_name, type_name),
+                    'growth_rate': round(type_growth, 1)
+                })
+                
+                if '토목' in type_name:
+                    civil_growth = round(type_growth, 1)
+                elif '건축' in type_name:
+                    building_growth = round(type_growth, 1)
+        
+        # 증가/감소 지역에 따라 정렬
+        if growth_rate >= 0:
+            sorted_types = sorted([t for t in construction_types if t['growth_rate'] > 0], 
+                                 key=lambda x: x['growth_rate'], reverse=True)
+        else:
+            sorted_types = sorted([t for t in construction_types if t['growth_rate'] < 0], 
+                                 key=lambda x: x['growth_rate'])
+        
+        regions.append({
+            'region': region,
+            'growth_rate': round(growth_rate, 1),
+            'growth_2023_2': round(growth_2023_2, 1),
+            'growth_2024_2': round(growth_2024_2, 1),
+            'growth_2025_1': round(growth_2025_1, 1),
+            'index_2024': prev,
+            'index_2025': current,
+            'top_types': sorted_types[:3],
+            'all_types': construction_types,
+            'civil_growth': civil_growth,
+            'building_growth': building_growth
+        })
+    
+    # 증가/감소 지역 분류
+    increase_regions = sorted(
+        [r for r in regions if r['growth_rate'] > 0],
+        key=lambda x: x['growth_rate'],
+        reverse=True
+    )
+    decrease_regions = sorted(
+        [r for r in regions if r['growth_rate'] < 0],
+        key=lambda x: x['growth_rate']
+    )
+    
+    return {
+        'increase_regions': increase_regions,
+        'decrease_regions': decrease_regions,
+        'all_regions': regions
+    }
+
+
+def _get_regional_from_raw_data(df_analysis, df_index):
+    """기초자료 시트에서 시도별 데이터 추출"""
+    # 기초자료 처리 로직 (필요시 구현)
+    return _get_regional_from_aggregation(df_index)
 
 
 def get_growth_rates_table(df_analysis, df_index):

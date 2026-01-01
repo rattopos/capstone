@@ -4,17 +4,27 @@
 기초자료 수집표 → 분석표 변환 모듈
 
 기존 분석표를 템플릿으로 사용하고, 기초자료의 데이터를 집계 시트에 복사합니다.
-분석 시트의 엑셀 수식은 그대로 유지되어 자동으로 계산됩니다.
+분석 시트의 엑셀 수식은 Python에서 계산하여 값으로 저장합니다.
 """
 
 import openpyxl
 from openpyxl.utils import get_column_letter
+from openpyxl.cell.cell import MergedCell
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import json
 import shutil
+import re
+
+# 수식 계산 라이브러리
+try:
+    import formulas
+    FORMULAS_AVAILABLE = True
+except ImportError:
+    FORMULAS_AVAILABLE = False
+    print("[경고] formulas 라이브러리가 설치되지 않았습니다. pip install formulas 를 실행하세요.")
 
 
 class DataConverter:
@@ -45,27 +55,36 @@ class DataConverter:
     
     # 집계 시트별 열 구조 정의: (메타열수, 연도시작열, 분기시작열, 가중치열 위치)
     # 1-based index
+    # 분석표 템플릿은 열 1~3에 조회용 컬럼이 있어 기초자료와 다름
+    # meta_start: 분석표에서 메타데이터가 시작하는 열 (1-based)
+    # raw_meta_cols: 기초자료에서 메타데이터 열 개수 (0-based로 0~5)
     SHEET_STRUCTURE = {
-        'A(광공업생산)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': 7},
-        'B(서비스업생산)집계': {'meta_cols': 8, 'year_start': 9, 'quarter_start': 14, 'weight_col': 7},
-        'C(소비)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
-        'D(고용률)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
-        'D(실업)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
-        'E(지출목적물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
-        'E(품목성질물가)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
-        "F'(건설)집계": {'meta_cols': 5, 'year_start': 6, 'quarter_start': 11, 'weight_col': None},  # 가중치 없음
-        'G(수출)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': None},  # 가중치 없음
-        'H(수입)집계': {'meta_cols': 9, 'year_start': 10, 'quarter_start': 15, 'weight_col': None},  # 가중치 없음
-        'I(순인구이동)집계': {'meta_cols': 7, 'year_start': 8, 'quarter_start': 13, 'weight_col': None},  # 가중치 없음
+        'A(광공업생산)집계': {'meta_start': 4, 'raw_meta_cols': 6, 'year_start': 10, 'quarter_start': 15, 'weight_col': 7, 'raw_weight_col': 3},
+        'B(서비스업생산)집계': {'meta_start': 4, 'raw_meta_cols': 6, 'year_start': 9, 'quarter_start': 14, 'weight_col': 7, 'raw_weight_col': 3},
+        'C(소비)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
+        'D(고용률)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
+        'D(실업)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
+        'E(지출목적물가)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
+        'E(품목성질물가)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
+        "F'(건설)집계": {'meta_start': 2, 'raw_meta_cols': 4, 'year_start': 6, 'quarter_start': 11, 'weight_col': None, 'raw_weight_col': None},
+        'G(수출)집계': {'meta_start': 4, 'raw_meta_cols': 6, 'year_start': 10, 'quarter_start': 15, 'weight_col': None, 'raw_weight_col': None},
+        'H(수입)집계': {'meta_start': 4, 'raw_meta_cols': 6, 'year_start': 10, 'quarter_start': 15, 'weight_col': None, 'raw_weight_col': None},
+        'I(순인구이동)집계': {'meta_start': 3, 'raw_meta_cols': 5, 'year_start': 8, 'quarter_start': 13, 'weight_col': None, 'raw_weight_col': None},
     }
     
-    # 기초자료 시트에서 가중치 열 위치 (0-based index)
+    # 기초자료 시트에서 가중치 열 위치 (0-based index) - 레거시 호환용
+    # 실제로는 SHEET_STRUCTURE의 raw_weight_col 사용
     RAW_WEIGHT_COL_MAPPING = {
         '광공업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
         '서비스업생산': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
-        '소비(소매, 추가)': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
-        '지출목적별 물가': 3,  # 기초자료에서 가중치 열 (0-based: 열 D)
-        '품목성질별 물가': 2,  # 기초자료에서 가중치 열 (0-based: 열 C)
+    }
+    
+    # GRDP 기본 데이터 (25년 2분기 기준)
+    DEFAULT_GRDP_DATA = {
+        'year': 2025,
+        'quarter': 2,
+        'regions': ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'],
     }
     
     def __init__(self, raw_excel_path: str, template_path: str = None):
@@ -274,12 +293,284 @@ class DataConverter:
                 if target_sheet not in wb.sheetnames:
                     print(f"  [경고] 템플릿에 '{target_sheet}' 시트 없음")
         
-        # 5. 저장
+        # 6. 저장
         wb.save(output_path)
         wb.close()
         
+        # 7. 수식 계산 및 값으로 저장
+        print(f"[변환] 분석 시트 수식 계산 중...")
+        self._calculate_formulas_in_file(output_path)
+        
         print(f"[완료] 분석표 생성: {output_path}")
         return output_path
+    
+    def add_grdp_sheet(self, analysis_path: str, grdp_file_path: str = None) -> bool:
+        """분석표에 GRDP 시트 추가 (마지막 시트로)
+        
+        Args:
+            analysis_path: 분석표 파일 경로
+            grdp_file_path: GRDP 엑셀 파일 경로 (None이면 기본값 사용)
+            
+        Returns:
+            성공 여부
+        """
+        try:
+            wb = openpyxl.load_workbook(analysis_path)
+            
+            # 기존 GRDP 시트가 있으면 삭제
+            grdp_sheet_names = ['GRDP', 'I GRDP', '분기 GRDP']
+            for sheet_name in grdp_sheet_names:
+                if sheet_name in wb.sheetnames:
+                    del wb[sheet_name]
+                    print(f"[GRDP] 기존 '{sheet_name}' 시트 삭제")
+            
+            # 새 GRDP 시트 생성 (마지막 위치에)
+            ws = wb.create_sheet('GRDP')
+            
+            if grdp_file_path and Path(grdp_file_path).exists():
+                # GRDP 파일에서 데이터 복사
+                self._copy_grdp_from_file(ws, grdp_file_path)
+            else:
+                # 기본값으로 GRDP 시트 생성
+                self._create_default_grdp_sheet(ws)
+            
+            wb.save(analysis_path)
+            wb.close()
+            
+            print(f"[GRDP] 'GRDP' 시트 추가 완료 (마지막 시트)")
+            return True
+            
+        except Exception as e:
+            import traceback
+            print(f"[GRDP] 시트 추가 오류: {e}")
+            traceback.print_exc()
+            return False
+    
+    def _copy_grdp_from_file(self, ws, grdp_file_path: str):
+        """GRDP 파일에서 성장률 시트 데이터를 복사"""
+        from openpyxl.utils.dataframe import dataframe_to_rows
+        
+        xl = pd.ExcelFile(grdp_file_path)
+        
+        # 성장률 시트 우선, 없으면 첫 번째 시트 사용
+        if '성장률' in xl.sheet_names:
+            df = pd.read_excel(xl, sheet_name='성장률', header=None)
+            print(f"[GRDP] '성장률' 시트 복사 ({df.shape[0]}행)")
+        else:
+            df = pd.read_excel(xl, sheet_name=xl.sheet_names[0], header=None)
+            print(f"[GRDP] '{xl.sheet_names[0]}' 시트 복사 ({df.shape[0]}행)")
+        
+        # 데이터 복사
+        for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=False), 1):
+            for c_idx, value in enumerate(row, 1):
+                if pd.notna(value):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
+    
+    def _create_default_grdp_sheet(self, ws):
+        """기본값으로 GRDP 시트 생성 (25년 2분기 기준)"""
+        # 헤더 행
+        ws['A1'] = '지역별 경제활동별 성장률'
+        ws['A3'] = '지역별'
+        ws['B3'] = '경제활동별'
+        ws['C3'] = f'{self.year}.{self.quarter}/4'
+        
+        # 데이터 행
+        regions = self.DEFAULT_GRDP_DATA['regions']
+        
+        row = 4
+        for region in regions:
+            ws.cell(row=row, column=1, value=region)
+            ws.cell(row=row, column=2, value='지역내총생산(시장가격)')
+            ws.cell(row=row, column=3, value=0.0)  # 기본값
+            row += 1
+            
+            # 산업별 기여도
+            industries = ['광업, 제조업', '건설업', '서비스업']
+            for industry in industries:
+                ws.cell(row=row, column=1, value='')
+                ws.cell(row=row, column=2, value=industry)
+                ws.cell(row=row, column=3, value=0.0)
+                row += 1
+        
+        print(f"[GRDP] 기본값 시트 생성 ({row-4}행, {self.year}년 {self.quarter}분기)")
+    
+    def _calculate_formulas_in_file(self, excel_path: str):
+        """분석표 파일의 수식을 계산하여 값으로 저장
+        
+        formulas 라이브러리를 사용하여 엑셀 수식을 계산합니다.
+        """
+        if FORMULAS_AVAILABLE:
+            try:
+                self._calculate_with_formulas_lib(excel_path)
+                return
+            except Exception as e:
+                print(f"[경고] formulas 라이브러리 계산 실패: {e}")
+                print("[경고] 대체 방식으로 수식 계산 시도...")
+        
+        # formulas 라이브러리 사용 불가 시 직접 계산
+        self._calculate_formulas_manually(excel_path)
+    
+    def _calculate_with_formulas_lib(self, excel_path: str):
+        """formulas 라이브러리를 사용하여 수식 계산"""
+        import formulas
+        
+        # 엑셀 파일 모델 생성
+        xl_model = formulas.ExcelModel().loads(excel_path).finish()
+        
+        # 수식 계산
+        solution = xl_model.calculate()
+        
+        # 계산된 값으로 파일 업데이트
+        wb = openpyxl.load_workbook(excel_path)
+        
+        # 분석 시트 목록
+        analysis_sheets = [s for s in wb.sheetnames if '분석' in s]
+        
+        for sheet_name in analysis_sheets:
+            ws = wb[sheet_name]
+            
+            for row in ws.iter_rows():
+                for cell in row:
+                    if isinstance(cell, MergedCell):
+                        continue
+                    
+                    # 수식이 있는 셀인 경우
+                    if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                        # solution에서 계산된 값 가져오기
+                        cell_ref = f"'{sheet_name}'!{cell.coordinate}"
+                        try:
+                            if cell_ref in solution:
+                                calc_value = solution[cell_ref].value
+                                if calc_value is not None and not pd.isna(calc_value):
+                                    # 에러가 아닌 경우에만 값 대체
+                                    if not isinstance(calc_value, str) or not calc_value.startswith('#'):
+                                        cell.value = calc_value
+                        except Exception:
+                            pass
+        
+        wb.save(excel_path)
+        wb.close()
+        print(f"[변환] formulas 라이브러리로 수식 계산 완료")
+    
+    def _calculate_formulas_manually(self, excel_path: str):
+        """수동으로 수식 계산 (증감률 등 기본 수식)
+        
+        분석 시트의 주요 수식 패턴을 파악하여 직접 계산합니다.
+        """
+        wb = openpyxl.load_workbook(excel_path)
+        
+        # 분석 시트와 집계 시트 매핑
+        analysis_to_aggregate = {
+            'A 분석': 'A(광공업생산)집계',
+            'B 분석': 'B(서비스업생산)집계',
+            'C 분석': 'C(소비)집계',
+            'D(고용률)분석': 'D(고용률)집계',
+            'D(실업)분석': 'D(실업)집계',
+            'E(지출목적물가) 분석': 'E(지출목적물가)집계',
+            'E(품목성질물가)분석': 'E(품목성질물가)집계',
+            "F'분석": "F'(건설)집계",
+            'G 분석': 'G(수출)집계',
+            'H 분석': 'H(수입)집계',
+            'I(순인구이동)분석': 'I(순인구이동)집계',
+        }
+        
+        calc_count = 0
+        
+        for analysis_sheet, aggregate_sheet in analysis_to_aggregate.items():
+            if analysis_sheet not in wb.sheetnames:
+                continue
+            if aggregate_sheet not in wb.sheetnames:
+                continue
+            
+            ws_analysis = wb[analysis_sheet]
+            ws_aggregate = wb[aggregate_sheet]
+            
+            # 분석 시트의 모든 셀 순회
+            for row in ws_analysis.iter_rows():
+                for cell in row:
+                    if isinstance(cell, MergedCell):
+                        continue
+                    
+                    if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                        formula = cell.value
+                        
+                        try:
+                            # 증감률 계산 패턴: (A-B)/B*100
+                            calc_value = self._evaluate_growth_formula(formula, wb)
+                            if calc_value is not None:
+                                cell.value = calc_value
+                                calc_count += 1
+                        except Exception:
+                            pass
+        
+        wb.save(excel_path)
+        wb.close()
+        print(f"[변환] 수동 수식 계산 완료 ({calc_count}개 셀)")
+    
+    def _evaluate_growth_formula(self, formula: str, wb) -> Optional[float]:
+        """증감률 수식 평가
+        
+        주요 패턴:
+        - =IFERROR(('시트'!A1-'시트'!B1)/'시트'!B1*100,"없음")
+        - =('시트'!A1-'시트'!B1)/'시트'!B1*100
+        """
+        # IFERROR 래핑 제거
+        if 'IFERROR' in formula.upper():
+            # IFERROR(수식, 대체값) 에서 수식 부분만 추출
+            match = re.match(r'=IFERROR\s*\(\s*(.+?)\s*,\s*["\']?없음["\']?\s*\)', formula, re.IGNORECASE)
+            if match:
+                formula = '=' + match.group(1)
+        
+        # 셀 참조 패턴: 'Sheet'!A1 또는 Sheet!A1
+        cell_ref_pattern = r"'?([^'!]+)'?!([A-Z]+)(\d+)"
+        
+        # 수식에서 모든 셀 참조 추출
+        refs = re.findall(cell_ref_pattern, formula)
+        if not refs:
+            return None
+        
+        # 각 셀의 값 가져오기
+        cell_values = {}
+        for sheet_name, col, row in refs:
+            sheet_name = sheet_name.strip("'")
+            if sheet_name not in wb.sheetnames:
+                return None
+            
+            ws = wb[sheet_name]
+            cell_value = ws[f"{col}{row}"].value
+            
+            # 수식인 경우 재귀 계산
+            if isinstance(cell_value, str) and cell_value.startswith('='):
+                cell_value = self._evaluate_growth_formula(cell_value, wb)
+            
+            if cell_value is None or (isinstance(cell_value, float) and pd.isna(cell_value)):
+                return None
+            
+            try:
+                cell_values[f"'{sheet_name}'!{col}{row}"] = float(cell_value)
+            except (ValueError, TypeError):
+                return None
+        
+        # 간단한 증감률 계산 패턴 감지
+        # 패턴: (A-B)/B*100
+        if len(refs) == 2 and '-' in formula and '/' in formula and '*100' in formula:
+            keys = list(cell_values.keys())
+            a_val = cell_values[keys[0]]
+            b_val = cell_values[keys[1]]
+            
+            if b_val != 0:
+                result = ((a_val - b_val) / b_val) * 100
+                return round(result, 2)
+        
+        # 패턴: A-B (차이 계산, %p 단위)
+        elif len(refs) == 2 and '-' in formula and '/' not in formula and '*' not in formula:
+            keys = list(cell_values.keys())
+            a_val = cell_values[keys[0]]
+            b_val = cell_values[keys[1]]
+            result = a_val - b_val
+            return round(result, 2)
+        
+        return None
     
     def _copy_sheet_data(self, raw_xl: pd.ExcelFile, raw_sheet: str, target_ws, weight_settings: Dict = None):
         """기초자료 시트의 데이터를 분석표 집계 시트에 복사
@@ -288,8 +579,10 @@ class DataConverter:
         - 연도: 당해 제외 최근 5개년
         - 분기: 최근 13개 분기
         - 가중치: weight_settings에 따라 처리 (auto/manual/empty)
+        
+        중요: 분석표 템플릿의 열 1~3은 조회용 컬럼이므로 건너뛰고, 
+        기초자료의 메타데이터는 분석표의 열 4부터 매핑됨.
         """
-        from openpyxl.cell.cell import MergedCell
         
         # 기초자료 읽기 (헤더 없이)
         raw_df = pd.read_excel(raw_xl, sheet_name=raw_sheet, header=None)
@@ -305,10 +598,13 @@ class DataConverter:
         target_sheet_name = target_ws.title
         sheet_structure = self.SHEET_STRUCTURE.get(target_sheet_name, {})
         
-        meta_cols = sheet_structure.get('meta_cols', 7)
-        target_year_start_col = sheet_structure.get('year_start', 8)
-        target_quarter_start_col = sheet_structure.get('quarter_start', 13)
+        # 새로운 구조: meta_start는 분석표에서 메타데이터가 시작하는 열 (1-based)
+        meta_start = sheet_structure.get('meta_start', 4)  # 기본값 4 (열 D)
+        raw_meta_cols = sheet_structure.get('raw_meta_cols', 6)  # 기초자료의 메타 열 개수
+        target_year_start_col = sheet_structure.get('year_start', 10)
+        target_quarter_start_col = sheet_structure.get('quarter_start', 15)
         target_weight_col = sheet_structure.get('weight_col')  # 1-based index
+        raw_weight_col = sheet_structure.get('raw_weight_col')  # 0-based index
         
         # 가중치 설정 결정 (raw_sheet에 따라)
         weight_config = None
@@ -324,28 +620,22 @@ class DataConverter:
         # 열 매핑 생성: 기초자료 열 → 집계 시트 열
         col_mapping = {}
         
-        # 메타데이터 열 매핑 (가중치 열 제외, 1:1)
-        meta_end_raw = min(header_mapping['years'].values()) if header_mapping['years'] else meta_cols
-        
-        # 분석표의 가중치 열 위치 (1-based)
-        target_weight_col_0based = (target_weight_col - 1) if target_weight_col else None
-        
-        # 기초자료의 가중치 열 위치 (0-based)
-        raw_weight_col_idx = self.RAW_WEIGHT_COL_MAPPING.get(raw_sheet)
-        
-        # 메타데이터 열 복사 (기초자료의 가중치 열 제외)
-        target_col_idx = 1  # 1-based index
-        for col in range(min(meta_cols, meta_end_raw)):
-            # 기초자료의 가중치 열은 건너뛰기 (분석표의 가중치 열에 별도 처리)
-            if raw_weight_col_idx is not None and col == raw_weight_col_idx:
+        # 메타데이터 열 매핑 (기초자료 열 0~(raw_meta_cols-1) → 분석표 열 meta_start~)
+        # 가중치 열은 별도 처리
+        target_col_idx = meta_start
+        for raw_col in range(raw_meta_cols):
+            # 기초자료의 가중치 열은 별도 처리 (분석표의 가중치 열에 매핑)
+            if raw_weight_col is not None and raw_col == raw_weight_col:
+                # 가중치는 별도 매핑
+                col_mapping[raw_col] = target_weight_col
                 continue
             
-            # 분석표의 가중치 열에 도달하면 target_col_idx를 하나 더 증가시켜 건너뛰기
-            if target_weight_col_0based is not None and target_col_idx == target_weight_col:
-                target_col_idx += 1
-                
-            col_mapping[col] = target_col_idx
+            col_mapping[raw_col] = target_col_idx
             target_col_idx += 1
+            
+            # 분석표의 가중치 열 위치에 도달하면 건너뛰기
+            if target_weight_col is not None and target_col_idx == target_weight_col:
+                target_col_idx += 1
         
         # 연도 열 매핑
         for i, year in enumerate(target_years):
@@ -359,19 +649,17 @@ class DataConverter:
                 raw_col = header_mapping['quarters'][q_key]
                 col_mapping[raw_col] = target_quarter_start_col + i
         
+        print(f"    메타데이터: 기초자료 열 0~{raw_meta_cols-1} → 분석표 열 {meta_start}~")
         print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.NUM_YEARS - 1})")
         print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.NUM_QUARTERS - 1})")
         if target_weight_col:
-            print(f"    가중치 열: {target_weight_col} (모드: {weight_mode})")
+            print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (모드: {weight_mode})")
         
         copied_count = 0
         skipped_count = 0
+        error_count = 0
         
-        # 기초자료에서 가중치 열 위치 찾기 (auto 모드용)
-        raw_weight_col = self.RAW_WEIGHT_COL_MAPPING.get(raw_sheet)  # 0-based index
-        
-        # 데이터 복사 (행 순회)
-        weight_row_idx = 0  # 수동 가중치 배열용 인덱스 (헤더 제외)
+        # 데이터 복사 (행 순회) - 헤더 3행 이후부터 데이터
         for row_idx in range(len(raw_df)):
             for raw_col, target_col in col_mapping.items():
                 if raw_col >= len(raw_df.columns):
@@ -382,6 +670,33 @@ class DataConverter:
                 # NaN 처리
                 if pd.isna(value):
                     continue
+                
+                # 데이터 검증: 숫자 열에 문자열이 들어가는 것 방지
+                # 연도/분기 데이터 열 (target_year_start_col 이후)에는 숫자만 허용
+                if target_col >= target_year_start_col:
+                    if not isinstance(value, (int, float)):
+                        try:
+                            value = float(value)
+                        except (ValueError, TypeError):
+                            # 숫자가 아닌 값은 건너뛰기
+                            error_count += 1
+                            if error_count <= 5:  # 최대 5개까지만 로그
+                                print(f"    [경고] 행 {row_idx+1}, 열 {target_col}: 숫자가 아닌 값 무시 '{value}'")
+                            continue
+                
+                # 가중치 열 특별 처리
+                if target_weight_col and target_col == target_weight_col:
+                    if weight_mode == 'empty':
+                        continue  # 가중치 공란 유지
+                    elif weight_mode == 'manual':
+                        # 수동 입력 모드는 아래에서 별도 처리
+                        continue
+                    # auto 모드: 기초자료에서 가져온 값 사용
+                    if not isinstance(value, (int, float)):
+                        try:
+                            value = float(value)
+                        except (ValueError, TypeError):
+                            continue  # 숫자가 아니면 건너뛰기
                 
                 # openpyxl은 1-based 인덱스
                 cell = target_ws.cell(row=row_idx + 1, column=target_col)
@@ -398,51 +713,21 @@ class DataConverter:
                 except Exception:
                     skipped_count += 1
             
-            # 가중치 열 처리 (있는 경우)
-            if target_weight_col:
-                weight_value = None
-                
-                # mode에 따른 가중치 처리
-                if weight_mode == 'empty':
-                    # 공란 처리 - 가중치 설정 안함
-                    pass
-                elif weight_mode == 'manual':
-                    # 수동 입력 모드 - 배열에서 가중치 가져오기
-                    if weight_row_idx < len(manual_weight_values):
-                        weight_value = manual_weight_values[weight_row_idx]
-                elif weight_mode == 'auto':
-                    # 자동 추출 모드 - 기초자료에서 가중치 열 찾기
-                    default_weight = weight_config.get('default_value', 1) if weight_config else 1
-                    
-                    if raw_weight_col is not None and raw_weight_col < len(raw_df.columns):
-                        raw_weight_val = raw_df.iloc[row_idx, raw_weight_col]
-                        if pd.notna(raw_weight_val):
-                            try:
-                                # 숫자인 경우에만 가중치로 사용
-                                weight_value = float(raw_weight_val)
-                                # 가중치가 0인 경우 (비공개) 기본값으로 대체
-                                if weight_value == 0:
-                                    weight_value = default_weight
-                            except (ValueError, TypeError):
-                                # 숫자가 아닌 경우 공란 유지
-                                pass
-                        # NaN인 경우는 공란 유지 (weight_value = None)
-                
-                # 가중치 값 설정 (값이 있으면 설정, 없으면 공란 유지)
-                if weight_value is not None:
-                    try:
-                        weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
-                        if not isinstance(weight_cell, MergedCell):
-                            weight_cell.value = weight_value
-                            copied_count += 1
-                    except Exception:
-                        skipped_count += 1
-                
-                # 수동 가중치 배열용 인덱스 증가 (데이터 행에 대해서만)
-                if row_idx >= 3:  # 헤더 행(0,1,2) 이후부터
-                    weight_row_idx += 1
+            # 수동 가중치 처리
+            if target_weight_col and weight_mode == 'manual':
+                data_row_idx = row_idx - 3  # 헤더 3행 제외
+                if 0 <= data_row_idx < len(manual_weight_values):
+                    weight_value = manual_weight_values[data_row_idx]
+                    if weight_value is not None:
+                        try:
+                            weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
+                            if not isinstance(weight_cell, MergedCell):
+                                weight_cell.value = float(weight_value)
+                                copied_count += 1
+                        except Exception:
+                            skipped_count += 1
         
-        print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀)")
+        print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀, {error_count}개 오류)")
     
     def _calculate_analysis_values(self, wb):
         """분석 시트의 수식을 계산하여 값으로 저장 (캐시용)
@@ -793,20 +1078,69 @@ class DataConverter:
 
 
 def detect_file_type(excel_path: str) -> str:
-    """엑셀 파일 유형 감지 (기초자료 vs 분석표)"""
+    """엑셀 파일 유형 감지 (기초자료 vs 분석표)
+    
+    기초자료 수집표와 분석표는 시트 구조가 완전히 다릅니다:
+    
+    [기초자료 수집표] 17개 시트
+    - 시트명: '광공업생산', '서비스업생산', '고용률', '분기 GRDP' 등
+    - 특징: 원본 데이터 형태, 한글 시트명
+    
+    [분석표] 42개 시트  
+    - 시트명: 'A(광공업생산)집계', 'A 분석', '본청', '이용관련' 등
+    - 특징: 알파벳+키워드(집계/분석/참고) 패턴
+    
+    두 파일은 공통 시트가 하나도 없습니다.
+    """
     try:
         xl = pd.ExcelFile(excel_path)
-        sheet_names = xl.sheet_names
+        sheet_names = set(xl.sheet_names)
         
-        # '분석' 키워드가 포함된 시트가 있으면 분석표
-        analysis_sheets = [s for s in sheet_names if '분석' in s]
-        if analysis_sheets:
+        # ========================================
+        # 기초자료 수집표 전용 시트 (분석표에는 없음)
+        # ========================================
+        RAW_ONLY_SHEETS = {
+            '광공업생산', '서비스업생산', '소비(소매, 추가)', 
+            '고용', '고용(kosis)', '고용률', '실업자 수',
+            '지출목적별 물가', '품목성질별 물가', '건설 (공표자료)',
+            '수출', '수입', '분기 GRDP', '완료체크'
+        }
+        
+        # ========================================
+        # 분석표 전용 시트 (기초자료에는 없음)
+        # ========================================
+        ANALYSIS_ONLY_SHEETS = {
+            '본청', '시도별 현황', '지방청 이용자료', '이용관련',
+            'A(광공업생산)집계', 'A 분석', 'A 참고',
+            'B(서비스업생산)집계', 'B 분석',
+            "F'(건설)집계", "F'분석",
+            'G(수출)집계', 'G 분석',
+        }
+        
+        # 매칭된 시트 수로 판정
+        raw_matches = len(sheet_names & RAW_ONLY_SHEETS)
+        analysis_matches = len(sheet_names & ANALYSIS_ONLY_SHEETS)
+        
+        # 분석표 전용 시트가 있으면 분석표
+        if analysis_matches >= 3:
             return 'analysis'
         
-        # 기초자료 특유의 시트가 있으면 기초자료
-        raw_indicators = ['광공업생산', '서비스업생산', '분기 GRDP', '완료체크']
-        if any(ind in sheet_names for ind in raw_indicators):
+        # 기초자료 전용 시트가 있으면 기초자료
+        if raw_matches >= 3:
             return 'raw'
+        
+        # 시트명 패턴으로 추가 판정
+        analysis_pattern_count = sum(1 for s in sheet_names 
+                                      if '분석' in s or '집계' in s)
+        if analysis_pattern_count >= 3:
+            return 'analysis'
+        
+        # 파일명으로 최종 추정
+        filename = Path(excel_path).stem.lower()
+        if '기초' in filename or '수집' in filename:
+            return 'raw'
+        elif '분석' in filename:
+            return 'analysis'
         
         return 'unknown'
     except Exception as e:

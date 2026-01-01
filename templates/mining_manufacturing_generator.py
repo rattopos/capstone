@@ -137,6 +137,18 @@ class 광공업생산Generator:
         """엑셀 데이터 로드"""
         xl = pd.ExcelFile(self.excel_path)
         
+        # 집계 시트 찾기 (우선)
+        agg_sheet, _ = find_sheet_with_fallback(
+            xl,
+            ['A(광공업생산)집계', 'A 집계'],
+            ['광공업생산', '광공업생산지수']
+        )
+        
+        if agg_sheet:
+            self.df_aggregation = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+        else:
+            raise ValueError(f"광공업생산 집계 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
+        
         # 분석 시트 찾기
         analysis_sheet, self.use_raw_data = find_sheet_with_fallback(
             xl, 
@@ -146,20 +158,16 @@ class 광공업생산Generator:
         
         if analysis_sheet:
             self.df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+            # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+            test_row = self.df_analysis[(self.df_analysis[3] == '전국') | (self.df_analysis[4] == '전국')]
+            if test_row.empty or test_row.iloc[0].isna().sum() > 20:
+                print(f"[광공업생산] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+                self.use_aggregation_only = True
+            else:
+                self.use_aggregation_only = False
         else:
-            raise ValueError(f"광공업생산 분석 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
-        
-        # 집계 시트 찾기 (선택사항)
-        agg_sheet, _ = find_sheet_with_fallback(
-            xl,
-            ['A(광공업생산)집계', 'A 집계'],
-            ['광공업생산', '광공업생산지수']
-        )
-        
-        if agg_sheet and agg_sheet != analysis_sheet:
-            self.df_aggregation = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
-        else:
-            self.df_aggregation = self.df_analysis.copy()
+            self.df_analysis = self.df_aggregation.copy()
+            self.use_aggregation_only = True
         
     def _get_industry_display_name(self, raw_name: str) -> str:
         """업종명을 보고서 표기명으로 변환"""
@@ -177,32 +185,53 @@ class 광공업생산Generator:
     
     def extract_nationwide_data(self) -> dict:
         """전국 데이터 추출"""
-        df = self.df_analysis
+        # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+        if hasattr(self, 'use_aggregation_only') and self.use_aggregation_only:
+            return self._extract_nationwide_from_aggregation()
         
         if self.use_raw_data:
             return self._extract_nationwide_from_raw_data()
         
-        # 전국 총지수 행
-        nationwide_total = df[(df[3] == '전국') & (df[6] == 'BCD')].iloc[0]
+        df = self.df_analysis
+        
+        # 전국 총지수 행 찾기 (컬럼 인덱스 자동 감지)
+        nationwide_total = None
+        for col_offset in [0, 1]:  # df[3] 또는 df[4]에 지역명
+            try:
+                region_col = 3 + col_offset
+                code_col = 6 + col_offset
+                filtered = df[(df[region_col] == '전국') & (df[code_col] == 'BCD')]
+                if not filtered.empty:
+                    nationwide_total = filtered.iloc[0]
+                    break
+            except:
+                continue
+        
+        if nationwide_total is None:
+            return self._extract_nationwide_from_aggregation()
         
         # 전국 중분류 데이터 (분류단계 2)
-        nationwide_industries = df[(df[3] == '전국') & (df[4].astype(str) == '2') & (pd.notna(df[28]))]
+        class_col = 4 + col_offset
+        contrib_col = 28 + col_offset if 28 + col_offset < len(df.columns) else 28
         
-        # 기여도 순 정렬
-        sorted_industries = nationwide_industries.sort_values(28, ascending=False)
-        
-        # 증가 업종 (기여도 양수)
-        increase_industries = sorted_industries[sorted_industries[28] > 0]
-        
-        # 감소 업종 (기여도 음수)
-        decrease_industries = sorted_industries[sorted_industries[28] < 0].sort_values(28, ascending=True)
+        try:
+            nationwide_industries = df[(df[region_col] == '전국') & (df[class_col].astype(str) == '2') & (pd.notna(df[contrib_col]))]
+            sorted_industries = nationwide_industries.sort_values(contrib_col, ascending=False)
+            increase_industries = sorted_industries[sorted_industries[contrib_col] > 0]
+            decrease_industries = sorted_industries[sorted_industries[contrib_col] < 0].sort_values(contrib_col, ascending=True)
+        except:
+            increase_industries = pd.DataFrame()
+            decrease_industries = pd.DataFrame()
         
         # 광공업생산지수 (집계 시트에서)
         df_agg = self.df_aggregation
         nationwide_agg = df_agg[(df_agg[4] == '전국') & (df_agg[7] == 'BCD')].iloc[0]
         production_index = nationwide_agg[26]  # 2025.2/4p 컬럼
         
-        growth_rate = nationwide_total[21]  # 2025 2/4 증감률
+        growth_col = 21 + col_offset if 21 + col_offset < len(nationwide_total) else 21
+        growth_rate = nationwide_total[growth_col] if pd.notna(nationwide_total[growth_col]) else 0
+        
+        industry_name_col = 7 + col_offset
         
         return {
             "production_index": safe_float(production_index, 100.0),
@@ -210,20 +239,78 @@ class 광공업생산Generator:
             "growth_direction": "증가" if safe_float(growth_rate, 0) > 0 else "감소",
             "main_increase_industries": [
                 {
-                    "name": self._get_industry_display_name(str(row[7])),
-                    "growth_rate": safe_round(row[21], 1, 0.0),
-                    "contribution": safe_round(row[28], 6, 0.0)
+                    "name": self._get_industry_display_name(str(row[industry_name_col]) if pd.notna(row[industry_name_col]) else ''),
+                    "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
+                    "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
                 }
                 for _, row in increase_industries.head(5).iterrows()
             ],
             "main_decrease_industries": [
                 {
-                    "name": self._get_industry_display_name(str(row[7])),
-                    "growth_rate": safe_round(row[21], 1, 0.0),
-                    "contribution": safe_round(row[28], 6, 0.0)
+                    "name": self._get_industry_display_name(str(row[industry_name_col]) if pd.notna(row[industry_name_col]) else ''),
+                    "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
+                    "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
                 }
                 for _, row in decrease_industries.head(5).iterrows()
             ]
+        }
+    
+    def _extract_nationwide_from_aggregation(self) -> dict:
+        """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)"""
+        df = self.df_aggregation
+        
+        # 컬럼 구조: 4=지역이름, 5=분류단계, 6=가중치, 7=산업코드, 8=산업이름
+        # 9~26: 연도/분기별 지수 데이터
+        # 데이터 컬럼: 9=2020, 10=2021, 11=2022, 12=2023, 13=2024
+        # 분기: 14=2022.1/4, ..., 22=2024.2/4, 23=2024.3/4, 24=2024.4/4, 25=2025.1/4, 26=2025.2/4p
+        
+        # 전국 총지수 행 (BCD)
+        nationwide_rows = df[(df[4] == '전국') & (df[7] == 'BCD')]
+        if nationwide_rows.empty:
+            return self._get_default_nationwide_data()
+        
+        nationwide_total = nationwide_rows.iloc[0]
+        
+        # 당분기(2025.2/4)와 전년동분기(2024.2/4) 지수로 증감률 계산
+        current_index = safe_float(nationwide_total[26], 100)  # 2025.2/4p
+        prev_year_index = safe_float(nationwide_total[22], 100)  # 2024.2/4
+        
+        if prev_year_index and prev_year_index != 0:
+            growth_rate = ((current_index - prev_year_index) / prev_year_index) * 100
+        else:
+            growth_rate = 0.0
+        
+        # 전국 중분류 업종별 데이터 (분류단계 2)
+        nationwide_industries = df[(df[4] == '전국') & (df[5].astype(str) == '2')]
+        
+        industries = []
+        for _, row in nationwide_industries.iterrows():
+            curr = safe_float(row[26], None)
+            prev = safe_float(row[22], None)
+            weight = safe_float(row[6], 0)
+            
+            if curr is not None and prev is not None and prev != 0:
+                ind_growth = ((curr - prev) / prev) * 100
+                # 기여도 = (당기 - 전기) / 전국전기 * 가중치/10000
+                contribution = (curr - prev) / prev_year_index * weight / 10000 * 100 if prev_year_index else 0
+                industries.append({
+                    'name': self._get_industry_display_name(str(row[8]) if pd.notna(row[8]) else ''),
+                    'growth_rate': round(ind_growth, 1),
+                    'contribution': round(contribution, 6)
+                })
+        
+        # 기여도 순 정렬
+        increase_industries = sorted([i for i in industries if i['contribution'] > 0], 
+                                    key=lambda x: x['contribution'], reverse=True)[:5]
+        decrease_industries = sorted([i for i in industries if i['contribution'] < 0], 
+                                    key=lambda x: x['contribution'])[:5]
+        
+        return {
+            "production_index": current_index,
+            "growth_rate": round(growth_rate, 1),
+            "growth_direction": "증가" if growth_rate > 0 else "감소",
+            "main_increase_industries": increase_industries,
+            "main_decrease_industries": decrease_industries
         }
     
     def _extract_nationwide_from_raw_data(self) -> dict:
@@ -326,48 +413,69 @@ class 광공업생산Generator:
     
     def extract_regional_data(self) -> dict:
         """시도별 데이터 추출"""
-        df = self.df_analysis
+        # 집계 시트 기반으로 추출
+        if hasattr(self, 'use_aggregation_only') and self.use_aggregation_only:
+            return self._extract_regional_from_aggregation()
         
         if self.use_raw_data:
             return self._extract_regional_from_raw_data()
+        
+        df = self.df_analysis
         
         # 개별 시도 목록 (수도, 충청 등 권역 제외)
         individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
                               '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
+        # 컬럼 인덱스 자동 감지
+        col_offset = 0
+        for offset in [0, 1]:
+            test = df[df[3 + offset] == '전국']
+            if not test.empty:
+                col_offset = offset
+                break
+        
+        region_col = 3 + col_offset
+        code_col = 6 + col_offset
+        growth_col = 21 + col_offset
+        contrib_col = 28 + col_offset if 28 + col_offset < len(df.columns) else 28
+        industry_name_col = 7 + col_offset
+        
         regions_data = []
         
         for region in individual_regions:
             # 해당 지역 총지수
-            region_total = df[(df[3] == region) & (df[6] == 'BCD')]
+            region_total = df[(df[region_col] == region) & (df[code_col] == 'BCD')]
             if region_total.empty:
                 continue
             region_total = region_total.iloc[0]
             
-            growth_rate = safe_float(region_total[21], 0)
+            growth_rate = safe_float(region_total[growth_col] if growth_col < len(region_total) else 0, 0)
             
             # 해당 지역 업종별 데이터
-            region_industries = df[(df[3] == region) & (pd.notna(df[28]))]
-            
-            # 기여도 순 정렬 (증가는 높은 순, 감소는 낮은 순)
-            if growth_rate >= 0:
-                sorted_ind = region_industries.sort_values(28, ascending=False)
-            else:
-                sorted_ind = region_industries.sort_values(28, ascending=True)
-            
-            # 상위 3개 업종 (BCD 제외)
-            top_industries = []
-            industry_count = 0
-            for _, row in sorted_ind.iterrows():
-                if industry_count >= 3:
-                    break
-                if pd.notna(row[7]) and str(row[6]) != 'BCD':
-                    top_industries.append({
-                        "name": self._get_industry_display_name(str(row[7])),
-                        "growth_rate": safe_round(row[21], 1, 0.0),
-                        "contribution": safe_round(row[28], 6, 0.0)
-                    })
-                    industry_count += 1
+            try:
+                region_industries = df[(df[region_col] == region) & (pd.notna(df[contrib_col]))]
+                
+                # 기여도 순 정렬 (증가는 높은 순, 감소는 낮은 순)
+                if growth_rate >= 0:
+                    sorted_ind = region_industries.sort_values(contrib_col, ascending=False)
+                else:
+                    sorted_ind = region_industries.sort_values(contrib_col, ascending=True)
+                
+                # 상위 3개 업종 (BCD 제외)
+                top_industries = []
+                industry_count = 0
+                for _, row in sorted_ind.iterrows():
+                    if industry_count >= 3:
+                        break
+                    if pd.notna(row[industry_name_col]) and str(row[code_col]) != 'BCD':
+                        top_industries.append({
+                            "name": self._get_industry_display_name(str(row[industry_name_col])),
+                            "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
+                            "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
+                        })
+                        industry_count += 1
+            except:
+                top_industries = []
             
             regions_data.append({
                 "region": region,
@@ -385,6 +493,83 @@ class 광공업생산Generator:
         decrease_regions = sorted(
             [r for r in regions_data if r["growth_rate"] < 0],
             key=lambda x: x["growth_rate"]  # 가장 낮은 값(큰 감소)이 먼저
+        )
+        
+        return {
+            "increase_regions": increase_regions,
+            "decrease_regions": decrease_regions,
+            "region_count": len(increase_regions)
+        }
+    
+    def _extract_regional_from_aggregation(self) -> dict:
+        """집계 시트에서 시도별 데이터 추출"""
+        df = self.df_aggregation
+        
+        individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
+                              '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        
+        # 전국 전년동분기 지수 (기여도 계산용)
+        nationwide_rows = df[(df[4] == '전국') & (df[7] == 'BCD')]
+        nationwide_prev = safe_float(nationwide_rows.iloc[0][22], 100) if not nationwide_rows.empty else 100
+        
+        regions_data = []
+        
+        for region in individual_regions:
+            # 해당 지역 총지수 (BCD)
+            region_total = df[(df[4] == region) & (df[7] == 'BCD')]
+            if region_total.empty:
+                continue
+            region_total = region_total.iloc[0]
+            
+            # 증감률 계산
+            current = safe_float(region_total[26], 100)  # 2025.2/4p
+            prev = safe_float(region_total[22], 100)  # 2024.2/4
+            
+            if prev and prev != 0:
+                growth_rate = ((current - prev) / prev) * 100
+            else:
+                growth_rate = 0.0
+            
+            # 해당 지역 업종별 데이터 (분류단계 2)
+            region_industries = df[(df[4] == region) & (df[5].astype(str) == '2')]
+            
+            industries = []
+            for _, row in region_industries.iterrows():
+                curr = safe_float(row[26], None)
+                prev_ind = safe_float(row[22], None)
+                weight = safe_float(row[6], 0)
+                
+                if curr is not None and prev_ind is not None and prev_ind != 0:
+                    ind_growth = ((curr - prev_ind) / prev_ind) * 100
+                    contribution = (curr - prev_ind) / nationwide_prev * weight / 10000 * 100 if nationwide_prev else 0
+                    industries.append({
+                        'name': self._get_industry_display_name(str(row[8]) if pd.notna(row[8]) else ''),
+                        'growth_rate': round(ind_growth, 1),
+                        'contribution': round(contribution, 6)
+                    })
+            
+            # 기여도 순 정렬
+            if growth_rate >= 0:
+                sorted_ind = sorted(industries, key=lambda x: x['contribution'], reverse=True)
+            else:
+                sorted_ind = sorted(industries, key=lambda x: x['contribution'])
+            
+            regions_data.append({
+                "region": region,
+                "growth_rate": round(growth_rate, 1),
+                "top_industries": sorted_ind[:3]
+            })
+        
+        # 증가/감소 지역 분류
+        increase_regions = sorted(
+            [r for r in regions_data if r["growth_rate"] > 0],
+            key=lambda x: x["growth_rate"],
+            reverse=True
+        )
+        
+        decrease_regions = sorted(
+            [r for r in regions_data if r["growth_rate"] < 0],
+            key=lambda x: x["growth_rate"]
         )
         
         return {
@@ -545,7 +730,6 @@ class 광공업생산Generator:
     def extract_summary_table(self) -> dict:
         """하단 표 데이터 추출"""
         df_agg = self.df_aggregation
-        df_analysis = self.df_analysis
         
         # 컬럼 정의
         columns = {
@@ -575,6 +759,9 @@ class 광공업생산Generator:
             {"region": "경남", "group": None},
         ]
         
+        # 집계 시트 컬럼 매핑:
+        # 18=2023.2/4, 22=2024.2/4, 25=2025.1/4, 26=2025.2/4p
+        
         regions_data = []
         
         for r_info in region_order:
@@ -586,24 +773,32 @@ class 광공업생산Generator:
                 continue
             region_agg = region_agg.iloc[0]
             
-            # 분석 데이터에서 증감률 찾기
-            region_analysis = df_analysis[(df_analysis[3] == region) & (df_analysis[6] == 'BCD')]
-            if region_analysis.empty:
-                continue
-            region_analysis = region_analysis.iloc[0]
+            # 지수 추출
+            idx_2023_2q = safe_float(region_agg[18], 100)  # 2023.2/4
+            idx_2024_2q = safe_float(region_agg[22], 100)  # 2024.2/4
+            idx_2025_1q = safe_float(region_agg[25], 100)  # 2025.1/4
+            idx_2025_2q = safe_float(region_agg[26], 100)  # 2025.2/4p
             
-            # 증감률 (A 분석 시트 컬럼)
+            # 전년동분기 지수로 증감률 계산
+            idx_2022_2q = safe_float(region_agg[14], 100)  # 2022.2/4 (2023.2/4의 전년동분기)
+            idx_2023_2q_for_2024 = safe_float(region_agg[18], 100)  # 2023.2/4 (2024.2/4의 전년동분기)
+            idx_2024_1q = safe_float(region_agg[21], 100)  # 2024.1/4 (2025.1/4의 전년동분기)
+            
+            def calc_growth(curr, prev):
+                if prev and prev != 0:
+                    return round(((curr - prev) / prev) * 100, 1)
+                return 0.0
+            
             growth_rates = [
-                round(float(region_analysis[13]) if pd.notna(region_analysis[13]) else 0, 1),  # 2023 2/4
-                round(float(region_analysis[17]) if pd.notna(region_analysis[17]) else 0, 1),  # 2024 2/4
-                round(float(region_analysis[20]) if pd.notna(region_analysis[20]) else 0, 1),  # 2025 1/4
-                round(float(region_analysis[21]) if pd.notna(region_analysis[21]) else 0, 1),  # 2025 2/4
+                calc_growth(idx_2023_2q, idx_2022_2q),
+                calc_growth(idx_2024_2q, idx_2023_2q_for_2024),
+                calc_growth(idx_2025_1q, idx_2024_1q),
+                calc_growth(idx_2025_2q, idx_2024_2q),
             ]
             
-            # 지수 (집계 시트 컬럼)
             indices = [
-                round(float(region_agg[22]) if pd.notna(region_agg[22]) else 0, 1),  # 2024 2/4
-                round(float(region_agg[26]) if pd.notna(region_agg[26]) else 0, 1),  # 2025 2/4
+                round(idx_2024_2q, 1),
+                round(idx_2025_2q, 1),
             ]
             
             row_data = {

@@ -47,23 +47,77 @@ class RawDataExtractor:
         self._xl = None
         self._sheet_cache = {}
         self._header_cache = {}
+        
+        # 파일 존재 및 수정 시간 확인
+        if not self.raw_excel_path.exists():
+            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {raw_excel_path}")
+        
+        try:
+            self._file_mtime = self.raw_excel_path.stat().st_mtime
+        except OSError:
+            self._file_mtime = None
+    
+    def _check_file_modified(self) -> bool:
+        """파일이 수정되었는지 확인 (캐시 무효화 판단)"""
+        if self._file_mtime is None:
+            return False  # 수정 시간을 확인할 수 없으면 변경되지 않은 것으로 간주
+        
+        try:
+            if not self.raw_excel_path.exists():
+                return True  # 파일이 없으면 무효화 필요
+            
+            current_mtime = self.raw_excel_path.stat().st_mtime
+            if abs(current_mtime - self._file_mtime) > 1.0:  # 1초 이상 차이
+                return True
+            return False
+        except OSError:
+            return True  # 파일 접근 오류 시 안전하게 무효화
+    
+    def _clear_cache(self):
+        """캐시 무효화"""
+        self._sheet_cache.clear()
+        self._header_cache.clear()
+        if self._xl is not None:
+            try:
+                self._xl.close()
+            except:
+                pass
+            self._xl = None
     
     def _get_excel_file(self) -> pd.ExcelFile:
-        """ExcelFile 객체 가져오기 (캐시)"""
+        """ExcelFile 객체 가져오기 (캐시, 파일 수정 시간 확인)"""
+        # 파일이 수정되었으면 캐시 무효화
+        if self._check_file_modified():
+            self._clear_cache()
+            try:
+                self._file_mtime = self.raw_excel_path.stat().st_mtime
+            except OSError:
+                pass
+        
         if self._xl is None:
-            self._xl = pd.ExcelFile(self.raw_excel_path)
+            try:
+                self._xl = pd.ExcelFile(self.raw_excel_path)
+            except Exception as e:
+                raise RuntimeError(f"엑셀 파일을 열 수 없습니다: {self.raw_excel_path} - {e}")
         return self._xl
     
     def _load_sheet(self, sheet_name: str) -> Optional[pd.DataFrame]:
-        """시트 로드 (캐시)"""
+        """시트 로드 (캐시, 파일 수정 시간 확인)"""
+        # 파일이 수정되었으면 캐시 무효화
+        if self._check_file_modified():
+            self._clear_cache()
+        
         if sheet_name not in self._sheet_cache:
             xl = self._get_excel_file()
             if sheet_name not in xl.sheet_names:
                 return None
             try:
-                self._sheet_cache[sheet_name] = pd.read_excel(
+                # 시트 데이터 로드 (예외 발생 시 캐시에 저장하지 않음)
+                df = pd.read_excel(
                     xl, sheet_name=sheet_name, header=None
                 )
+                # 정상 로드된 경우에만 캐시에 저장
+                self._sheet_cache[sheet_name] = df
             except Exception as e:
                 print(f"[RawDataExtractor] 시트 로드 실패: {sheet_name} - {e}")
                 return None

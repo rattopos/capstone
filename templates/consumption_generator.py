@@ -106,6 +106,13 @@ def load_data(excel_path):
     
     if analysis_sheet:
         df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+        # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+        test_row = df_analysis[(df_analysis[3] == '전국') | (df_analysis[4] == '전국')]
+        if test_row.empty or test_row.iloc[0].isna().sum() > 20:
+            print(f"[소비동향] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+            use_aggregation_only = True
+        else:
+            use_aggregation_only = False
     else:
         raise ValueError(f"소비동향 분석 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
     
@@ -123,6 +130,7 @@ def load_data(excel_path):
     
     # use_raw 정보를 첫번째 df에 속성으로 저장
     df_analysis.attrs['use_raw'] = use_raw
+    df_analysis.attrs['use_aggregation_only'] = use_aggregation_only
     
     return df_analysis, df_index
 
@@ -142,30 +150,44 @@ def get_region_indices(df_analysis):
 def get_nationwide_data(df_analysis, df_index):
     """전국 데이터 추출"""
     use_raw = df_analysis.attrs.get('use_raw', False)
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     if use_raw:
         return _get_nationwide_from_raw_data(df_analysis)
     
+    # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+    if use_aggregation_only:
+        return _get_nationwide_from_aggregation(df_index)
+    
     # 분석 시트에서 전국 총지수 행
-    nationwide_row = df_analysis.iloc[3]
-    growth_rate = safe_float(nationwide_row[20], 0)
-    growth_rate = round(growth_rate, 1) if growth_rate else 0.0
+    try:
+        nationwide_row = df_analysis.iloc[3]
+        growth_rate = safe_float(nationwide_row[20], 0)
+        growth_rate = round(growth_rate, 1) if growth_rate else 0.0
+    except (IndexError, KeyError):
+        return _get_nationwide_from_aggregation(df_index)
     
     # 집계 시트에서 전국 지수
-    index_row = df_index.iloc[3]
-    sales_index = safe_float(index_row[24], 100)  # 2025.2/4p
+    try:
+        index_row = df_index.iloc[3]
+        sales_index = safe_float(index_row[24], 100)  # 2025.2/4p
+    except (IndexError, KeyError):
+        sales_index = 100.0
     
-    # 전국 업태별 증감률
+    # 전국 업태별 증감률 (컬럼 20: 2025.2/4)
     businesses = []
     for i in range(4, 12):
-        row = df_analysis.iloc[i]
-        business_name = row[7]
-        business_growth = safe_float(row[20], None)
-        if business_growth is not None:
-            businesses.append({
-                'name': BUSINESS_MAPPING.get(business_name, business_name),
-                'growth_rate': round(business_growth, 1)
-            })
+        try:
+            row = df_analysis.iloc[i]
+            business_name = row[7]
+            business_growth = safe_float(row[20], None)
+            if business_growth is not None:
+                businesses.append({
+                    'name': BUSINESS_MAPPING.get(business_name, business_name),
+                    'growth_rate': round(business_growth, 1)
+                })
+        except (IndexError, KeyError):
+            continue
     
     # 감소율이 큰 순으로 정렬 (음수 중 절대값이 큰 것)
     negative_businesses = [b for b in businesses if b['growth_rate'] < 0]
@@ -176,6 +198,57 @@ def get_nationwide_data(df_analysis, df_index):
         'sales_index': sales_index,
         'growth_rate': growth_rate,
         'main_businesses': main_businesses
+    }
+
+
+def _get_nationwide_from_aggregation(df_index):
+    """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)"""
+    # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=업태코드, 8=업태이름
+    # 데이터 컬럼: 20=2024.2/4, 24=2025.2/4p
+    
+    # 전국 총지수 행 찾기
+    nationwide_rows = df_index[(df_index[3] == '전국') & (df_index[4].astype(str) == '0')]
+    if nationwide_rows.empty:
+        return {
+            'sales_index': 100.0,
+            'growth_rate': 0.0,
+            'main_businesses': []
+        }
+    
+    nationwide_total = nationwide_rows.iloc[0]
+    
+    # 당분기(2025.2/4)와 전년동분기(2024.2/4) 지수로 증감률 계산
+    current_index = safe_float(nationwide_total[24], 100)  # 2025.2/4p
+    prev_year_index = safe_float(nationwide_total[20], 100)  # 2024.2/4
+    
+    if prev_year_index and prev_year_index != 0:
+        growth_rate = ((current_index - prev_year_index) / prev_year_index) * 100
+    else:
+        growth_rate = 0.0
+    
+    # 전국 업태별 데이터 (분류단계 1)
+    nationwide_businesses = df_index[(df_index[3] == '전국') & (df_index[4].astype(str) == '1')]
+    
+    businesses = []
+    for _, row in nationwide_businesses.iterrows():
+        curr = safe_float(row[24], None)
+        prev = safe_float(row[20], None)
+        
+        if curr is not None and prev is not None and prev != 0:
+            bus_growth = ((curr - prev) / prev) * 100
+            businesses.append({
+                'name': BUSINESS_MAPPING.get(str(row[8]) if pd.notna(row[8]) else '', str(row[8]) if pd.notna(row[8]) else ''),
+                'growth_rate': round(bus_growth, 1)
+            })
+    
+    # 감소율이 큰 순으로 정렬 (음수 중 절대값이 큰 것)
+    negative_businesses = sorted([b for b in businesses if b['growth_rate'] < 0], 
+                                key=lambda x: x['growth_rate'])[:3]
+    
+    return {
+        'sales_index': current_index,
+        'growth_rate': round(growth_rate, 1),
+        'main_businesses': negative_businesses
     }
 
 
@@ -260,14 +333,28 @@ def _get_nationwide_from_raw_data(df):
 
 def get_regional_data(df_analysis, df_index):
     """시도별 데이터 추출"""
+    use_raw = df_analysis.attrs.get('use_raw', False)
+    use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
+    
+    # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
+    if use_aggregation_only:
+        return _get_regional_from_aggregation(df_index)
+    
+    if use_raw:
+        return _get_regional_from_raw_data(df_analysis)
+    
     region_indices = get_region_indices(df_analysis)
     regions = []
+    
+    if not region_indices:
+        # 지역 인덱스를 찾을 수 없는 경우 집계 시트에서 계산
+        return _get_regional_from_aggregation(df_index)
     
     for region, start_idx in region_indices.items():
         if region == '전국':
             continue
             
-        # 총지수 행에서 증감률
+        # 총지수 행에서 증감률 (컬럼 20: 2025.2/4)
         total_row = df_analysis.iloc[start_idx]
         try:
             growth_rate = round(float(total_row[20]), 1)
@@ -331,6 +418,203 @@ def get_regional_data(df_analysis, df_index):
             'index_2024': index_2024,
             'index_2025': index_2025,
             'top_businesses': top_businesses,
+            'all_businesses': businesses
+        })
+    
+    # 증가/감소 지역 분류
+    increase_regions = sorted(
+        [r for r in regions if r['growth_rate'] > 0],
+        key=lambda x: x['growth_rate'],
+        reverse=True
+    )
+    decrease_regions = sorted(
+        [r for r in regions if r['growth_rate'] < 0],
+        key=lambda x: x['growth_rate']
+    )
+    
+    return {
+        'increase_regions': increase_regions,
+        'decrease_regions': decrease_regions,
+        'all_regions': regions
+    }
+
+
+def _get_regional_from_aggregation(df_index):
+    """집계 시트에서 시도별 데이터 추출"""
+    individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
+                          '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    
+    regions = []
+    
+    for region in individual_regions:
+        # 해당 지역 총지수 (분류단계 0)
+        region_total = df_index[(df_index[3] == region) & (df_index[4].astype(str) == '0')]
+        if region_total.empty:
+            continue
+        region_total = region_total.iloc[0]
+        
+        # 증감률 계산
+        current = safe_float(region_total[24], 100)  # 2025.2/4p
+        prev = safe_float(region_total[20], 100)  # 2024.2/4
+        prev_2023_2 = safe_float(region_total[16], 100)  # 2023.2/4
+        prev_2024_2 = prev
+        prev_2025_1 = safe_float(region_total[23], 100)  # 2025.1/4
+        
+        if prev and prev != 0:
+            growth_rate = ((current - prev) / prev) * 100
+        else:
+            growth_rate = 0.0
+        
+        # 전년동분기비 계산
+        growth_2023_2 = ((prev_2023_2 - safe_float(region_total[12], 100)) / safe_float(region_total[12], 100) * 100) if safe_float(region_total[12], 0) != 0 else 0.0
+        growth_2024_2 = ((prev_2024_2 - prev_2023_2) / prev_2023_2 * 100) if prev_2023_2 != 0 else 0.0
+        growth_2025_1 = ((prev_2025_1 - safe_float(region_total[19], 100)) / safe_float(region_total[19], 100) * 100) if safe_float(region_total[19], 0) != 0 else 0.0
+        
+        # 해당 지역 업태별 데이터 (분류단계 1)
+        region_businesses = df_index[(df_index[3] == region) & (df_index[4].astype(str) == '1')]
+        
+        businesses = []
+        for _, row in region_businesses.iterrows():
+            curr = safe_float(row[24], None)
+            prev_ind = safe_float(row[20], None)
+            
+            if curr is not None and prev_ind is not None and prev_ind != 0:
+                bus_growth = ((curr - prev_ind) / prev_ind) * 100
+                businesses.append({
+                    'name': BUSINESS_MAPPING.get(str(row[8]) if pd.notna(row[8]) else '', str(row[8]) if pd.notna(row[8]) else ''),
+                    'growth_rate': round(bus_growth, 1)
+                })
+        
+        # 증가 지역: 양수 증감률 순으로 정렬
+        # 감소 지역: 음수 증감률 순으로 정렬
+        if growth_rate >= 0:
+            sorted_bus = sorted([b for b in businesses if b['growth_rate'] > 0], 
+                              key=lambda x: x['growth_rate'], reverse=True)
+        else:
+            sorted_bus = sorted([b for b in businesses if b['growth_rate'] < 0], 
+                              key=lambda x: x['growth_rate'])
+        
+        regions.append({
+            'region': region,
+            'growth_rate': round(growth_rate, 1),
+            'growth_2023_2': round(growth_2023_2, 1),
+            'growth_2024_2': round(growth_2024_2, 1),
+            'growth_2025_1': round(growth_2025_1, 1),
+            'index_2024': prev,
+            'index_2025': current,
+            'top_businesses': sorted_bus[:3],
+            'all_businesses': businesses
+        })
+    
+    # 증가/감소 지역 분류
+    increase_regions = sorted(
+        [r for r in regions if r['growth_rate'] > 0],
+        key=lambda x: x['growth_rate'],
+        reverse=True
+    )
+    decrease_regions = sorted(
+        [r for r in regions if r['growth_rate'] < 0],
+        key=lambda x: x['growth_rate']
+    )
+    
+    return {
+        'increase_regions': increase_regions,
+        'decrease_regions': decrease_regions,
+        'all_regions': regions
+    }
+
+
+def _get_regional_from_raw_data(df):
+    """기초자료 시트에서 시도별 데이터 추출"""
+    individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
+                          '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+    
+    # 헤더 행 및 컬럼 인덱스 찾기
+    header_row = 2
+    current_quarter_col = None
+    prev_year_col = None
+    
+    for i in range(min(10, len(df))):
+        row = df.iloc[i]
+        row_str = ' '.join([str(v) for v in row.values[:10] if pd.notna(v)])
+        if '지역' in row_str and ('2024' in row_str or '2025' in row_str):
+            header_row = i
+            break
+    
+    header = df.iloc[header_row] if header_row < len(df) else df.iloc[0]
+    
+    for col_idx in range(len(header) - 1, 4, -1):
+        col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
+        if '2025' in col_val and ('2/4' in col_val or '2' in col_val):
+            current_quarter_col = col_idx
+        if '2024' in col_val and ('2/4' in col_val or '2' in col_val):
+            prev_year_col = col_idx
+        if current_quarter_col and prev_year_col:
+            break
+    
+    if current_quarter_col is None:
+        current_quarter_col = len(header) - 2
+    if prev_year_col is None:
+        prev_year_col = current_quarter_col - 4
+    
+    regions = []
+    
+    for region in individual_regions:
+        # 해당 지역 총지수 (분류단계 0) 찾기
+        region_row = None
+        for i in range(header_row + 1, len(df)):
+            row = df.iloc[i]
+            r_name = str(row[1]).strip() if pd.notna(row[1]) else ''
+            classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+            if r_name == region and classification == '0':
+                region_row = row
+                break
+        
+        if region_row is None:
+            continue
+        
+        # 증감률 계산
+        current_val = safe_float(region_row[current_quarter_col], None)
+        prev_val = safe_float(region_row[prev_year_col], None)
+        
+        if current_val is not None and prev_val is not None and prev_val != 0:
+            growth_rate = ((current_val - prev_val) / prev_val) * 100
+        else:
+            growth_rate = 0.0
+        
+        # 해당 지역의 업태별 데이터 (분류단계 1)
+        businesses = []
+        for i in range(header_row + 1, len(df)):
+            row = df.iloc[i]
+            r_name = str(row[1]).strip() if pd.notna(row[1]) else ''
+            classification = str(row[2]).strip() if pd.notna(row[2]) else ''
+            if r_name == region and classification == '1':
+                current = safe_float(row[current_quarter_col], None)
+                prev = safe_float(row[prev_year_col], None)
+                if current is not None and prev is not None and prev != 0:
+                    bus_growth = ((current - prev) / prev) * 100
+                    businesses.append({
+                        'name': BUSINESS_MAPPING.get(str(row[4]) if pd.notna(row[4]) else '', str(row[4]) if pd.notna(row[4]) else ''),
+                        'growth_rate': round(bus_growth, 1)
+                    })
+        
+        # 기여도 순 정렬
+        if growth_rate >= 0:
+            sorted_bus = sorted([b for b in businesses if b['growth_rate'] > 0], 
+                              key=lambda x: x['growth_rate'], reverse=True)
+        else:
+            sorted_bus = sorted([b for b in businesses if b['growth_rate'] < 0], 
+                              key=lambda x: x['growth_rate'])
+        
+        regions.append({
+            'region': region,
+            'growth_rate': round(growth_rate, 1),
+            'growth_2023_2': 0.0,  # 기초자료에서는 계산 불가
+            'growth_2024_2': 0.0,
+            'growth_2025_1': 0.0,
+            'index_2024': prev_val or 0,
+            'index_2025': current_val or 0,
+            'top_businesses': sorted_bus[:3],
             'all_businesses': businesses
         })
     

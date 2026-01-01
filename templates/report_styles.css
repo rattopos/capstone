@@ -42,7 +42,7 @@ body {
     font-weight: bold;
     text-align: center;
     padding: 8px 30px;
-    background: linear-gradient(to right, #c9c9c9 0%, #e8e8e8 15%, #e8e8e8 85%, #c9c9c9 100%);
+    background: #e8e8e8;
     border-radius: 0;
     margin-bottom: 20px;
     letter-spacing: 2px;

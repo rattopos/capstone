@@ -75,6 +75,18 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
 def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
     """보고서 HTML 생성"""
     try:
+        # 파일 존재 및 접근 가능 여부 확인
+        excel_path_obj = Path(excel_path)
+        if not excel_path_obj.exists():
+            error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg, []
+        
+        if not excel_path_obj.is_file():
+            error_msg = f"유효한 파일이 아닙니다: {excel_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg, []
+        
         generator_name = report_config['generator']
         template_name = report_config['template']
         report_name = report_config['name']
@@ -261,6 +273,13 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
 def generate_regional_report_html(excel_path, region_name, is_reference=False):
     """시도별 보고서 HTML 생성"""
     try:
+        # 파일 존재 확인
+        excel_path_obj = Path(excel_path)
+        if not excel_path_obj.exists() or not excel_path_obj.is_file():
+            error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg
+        
         if region_name == '참고_GRDP' or is_reference:
             return generate_grdp_reference_html(excel_path)
         

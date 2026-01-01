@@ -247,18 +247,25 @@ def upload_excel():
         except Exception as e:
             print(f"[경고] GRDP 시트 확인 실패: {e}")
         
-        # 세션에 저장
+        # 세션에 저장 (파일 수정 시간 포함)
         session['excel_path'] = str(filepath)
         session['year'] = year
         session['quarter'] = quarter
         session['file_type'] = 'analysis'
+        try:
+            session['excel_file_mtime'] = Path(filepath).stat().st_mtime
+        except OSError:
+            pass  # 파일 시간 확인 실패는 무시
         
         if grdp_data:
             session['grdp_data'] = grdp_data
             # JSON 파일로도 저장
             grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-            with open(grdp_json_path, 'w', encoding='utf-8') as f:
-                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+            try:
+                with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[경고] GRDP JSON 저장 실패: {e}")
         
         print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보고서 생성' if has_grdp else 'GRDP 모달 표시'}")
         
@@ -307,11 +314,15 @@ def upload_excel():
             'error': f'기초자료 처리 중 오류가 발생했습니다: {str(e)}'
         })
     
-    # 세션에 저장
+    # 세션에 저장 (파일 수정 시간 포함)
     session['raw_excel_path'] = str(filepath)
     session['year'] = year
     session['quarter'] = quarter
     session['file_type'] = 'raw'
+    try:
+        session['raw_file_mtime'] = Path(filepath).stat().st_mtime
+    except OSError:
+        pass  # 파일 시간 확인 실패는 무시
     
     return jsonify({
         'success': True,
@@ -651,20 +662,30 @@ def download_analysis():
         
         # 이미 유효한 분석표가 있는지 확인 (세션에서 생성된 파일)
         download_path = session.get('download_analysis_path')
+        raw_file_mtime = session.get('raw_file_mtime')  # 원본 파일 수정 시간
         need_regenerate = True
         
         if download_path and Path(download_path).exists():
-            # 기존 파일 유효성 검사
-            try:
-                with zipfile.ZipFile(download_path, 'r') as zf:
-                    # zip 파일이 유효한지 테스트
-                    if zf.testzip() is None:
-                        need_regenerate = False
-                        analysis_output = download_path
-                        print(f"[다운로드] 기존 분석표 재사용: {download_path}")
-            except (zipfile.BadZipFile, EOFError):
-                print(f"[다운로드] 기존 파일 손상됨, 재생성 필요")
+            # 원본 파일이 변경되었는지 확인
+            current_raw_mtime = Path(raw_excel_path).stat().st_mtime if Path(raw_excel_path).exists() else None
+            file_changed = (raw_file_mtime is None or current_raw_mtime is None or 
+                          abs(current_raw_mtime - raw_file_mtime) > 1.0)  # 1초 이상 차이
+            
+            if file_changed:
+                print(f"[다운로드] 원본 파일이 변경되었습니다, 재생성 필요")
                 need_regenerate = True
+            else:
+                # 기존 파일 유효성 검사
+                try:
+                    with zipfile.ZipFile(download_path, 'r') as zf:
+                        # zip 파일이 유효한지 테스트
+                        if zf.testzip() is None:
+                            need_regenerate = False
+                            analysis_output = download_path
+                            print(f"[다운로드] 기존 분석표 재사용: {download_path}")
+                except (zipfile.BadZipFile, EOFError):
+                    print(f"[다운로드] 기존 파일 손상됨, 재생성 필요")
+                    need_regenerate = True
         
         if need_regenerate:
             # 분석표 생성
@@ -676,8 +697,12 @@ def download_analysis():
             # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
             _calculate_analysis_sheets(analysis_path)
             
-            # 세션에 저장
+            # 세션에 저장 (원본 파일 수정 시간 포함)
             session['download_analysis_path'] = analysis_path
+            try:
+                session['raw_file_mtime'] = Path(raw_excel_path).stat().st_mtime
+            except OSError:
+                pass  # 파일 시간 확인 실패는 무시
         else:
             analysis_path = analysis_output
         

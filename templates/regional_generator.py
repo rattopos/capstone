@@ -49,13 +49,22 @@ REGIONS = [
 
 
 class DataCache:
-    """엑셀 데이터 캐시 클래스"""
+    """엑셀 데이터 캐시 클래스 (파일 수정 시간 기반 캐시 무효화)"""
     
     def __init__(self, excel_path: str):
+        import os
+        
         self.excel_path = excel_path
         self._sheets: Dict[str, pd.DataFrame] = {}
         self._nationwide_cache: Dict[str, Any] = {}
-        self._xl = pd.ExcelFile(excel_path)
+        
+        # 파일 존재 및 접근 가능 여부 확인
+        if not os.path.exists(excel_path):
+            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {excel_path}")
+        
+        # 파일 수정 시간 저장 (캐시 무효화용)
+        self._file_mtime = os.path.getmtime(excel_path)
+        self._xl = None  # 지연 로딩
         
         # 분석 시트 -> 기초자료 시트 fallback 매핑
         self.SHEET_FALLBACK = {
@@ -69,26 +78,89 @@ class DataCache:
             "F'분석": '건설 (공표자료)',
             'I(순인구이동)집계': '시도 간 이동',
         }
+    
+    def _check_file_modified(self) -> bool:
+        """파일이 수정되었는지 확인 (캐시 무효화 판단)"""
+        import os
+        
+        try:
+            if not os.path.exists(self.excel_path):
+                return True  # 파일이 없으면 무효화 필요
+            
+            current_mtime = os.path.getmtime(self.excel_path)
+            if current_mtime != self._file_mtime:
+                print(f"[캐시 무효화] 파일이 수정되었습니다: {self.excel_path}")
+                return True
+            return False
+        except OSError:
+            # 파일 접근 오류 시 안전하게 무효화
+            return True
+    
+    def _get_excel_file(self) -> pd.ExcelFile:
+        """ExcelFile 객체 가져오기 (필요 시에만 생성)"""
+        import os
+        
+        # 파일이 수정되었거나 ExcelFile이 없으면 새로 생성
+        if self._check_file_modified() or self._xl is None:
+            # 파일 수정 확인 및 캐시 무효화
+            if self._check_file_modified():
+                self.clear_cache()
+                try:
+                    self._file_mtime = os.path.getmtime(self.excel_path)
+                except OSError:
+                    pass
+            
+            try:
+                self._xl = pd.ExcelFile(self.excel_path)
+            except Exception as e:
+                raise RuntimeError(f"엑셀 파일을 열 수 없습니다: {self.excel_path} - {e}")
+        
+        return self._xl
+    
+    def clear_cache(self):
+        """캐시 무효화 (파일이 변경되었을 때 호출)"""
+        self._sheets.clear()
+        self._nationwide_cache.clear()
+        if self._xl is not None:
+            try:
+                self._xl.close()
+            except:
+                pass
+            self._xl = None
         
     def get_sheet(self, sheet_name: str) -> pd.DataFrame:
         """시트 데이터를 캐시에서 가져오거나 로드 (분석 시트 없으면 기초자료로 fallback)"""
+        # 파일이 수정되었으면 캐시 무효화
+        if self._check_file_modified():
+            self.clear_cache()
+        
         if sheet_name not in self._sheets:
+            # ExcelFile 객체 가져오기 (필요 시 생성)
+            xl = self._get_excel_file()
             actual_sheet = sheet_name
             
             # 시트가 없으면 fallback 시트 시도
-            if sheet_name not in self._xl.sheet_names:
+            if sheet_name not in xl.sheet_names:
                 fallback = self.SHEET_FALLBACK.get(sheet_name)
-                if fallback and fallback in self._xl.sheet_names:
+                if fallback and fallback in xl.sheet_names:
                     actual_sheet = fallback
                     print(f"[시트 대체] '{sheet_name}' → '{fallback}'")
                 else:
                     raise ValueError(f"Sheet '{sheet_name}' not found")
             
-            self._sheets[sheet_name] = pd.read_excel(
-                self.excel_path, 
-                sheet_name=actual_sheet, 
-                header=None
-            )
+            try:
+                # 시트 데이터 로드 (예외 발생 시 캐시에 저장하지 않음)
+                df = pd.read_excel(
+                    self.excel_path, 
+                    sheet_name=actual_sheet, 
+                    header=None
+                )
+                # 정상 로드된 경우에만 캐시에 저장
+                self._sheets[sheet_name] = df
+            except Exception as e:
+                # 예외 발생 시 캐시에 저장하지 않고 예외 재발생
+                raise RuntimeError(f"시트 '{actual_sheet}' 로드 실패: {e}") from e
+        
         return self._sheets[sheet_name]
     
     def preload_all_sheets(self):

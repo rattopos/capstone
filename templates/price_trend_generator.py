@@ -71,11 +71,13 @@ def load_data(excel_path):
     
     # 집계 시트 찾기
     summary_sheet = None
+    use_raw = False
     for name in ['E(품목성질물가)집계', 'E(품목성질물가) 집계', '품목성질별 물가']:
         if name in sheet_names:
             summary_sheet = name
             if name == '품목성질별 물가':
                 print(f"[시트 대체] 'E(품목성질물가)집계' → '품목성질별 물가' (기초자료)")
+                use_raw = True
             break
     
     if not summary_sheet:
@@ -92,6 +94,19 @@ def load_data(excel_path):
     
     summary_df = pd.read_excel(excel_path, sheet_name=summary_sheet, header=None)
     analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
+    
+    # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
+    test_row = analysis_df[(analysis_df[3].isin(SIDO_ORDER)) & (analysis_df[4].astype(str) == '0')]
+    if test_row.empty or (len(test_row) > 0 and test_row.iloc[0].isna().sum() > 20):
+        print(f"[물가동향] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+        use_aggregation_only = True
+    else:
+        use_aggregation_only = False
+    
+    # use_raw, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
+    analysis_df.attrs['use_raw'] = use_raw
+    analysis_df.attrs['use_aggregation_only'] = use_aggregation_only
+    
     return summary_df, analysis_df
 
 def get_sido_data(analysis_df, summary_df):

@@ -100,28 +100,26 @@ python app.py
 
 ## 📁 프로젝트 구조
 
-```
-capstone/
-├── app.py                    # Flask 웹 애플리케이션
-├── dashboard.html            # 대시보드 UI 템플릿
-├── report_generator.py       # 통합 보고서 생성기
-├── requirements.txt          # Python 의존성
-├── README.md                 # 프로젝트 문서
-│
-├── templates/                # 템플릿 및 생성기
-│   ├── index.html           # 기존 인덱스 페이지
-│   ├── *_template.html      # Jinja2 HTML 템플릿
-│   ├── *_generator.py       # 데이터 추출 생성기
-│   ├── *_schema.json        # 데이터 스키마
-│   ├── *_data.json          # 추출된 데이터
-│   └── *_output.html        # 생성된 보고서
-│
-├── correct_answer/           # 참고용 정답 이미지
-│   └── 부문별/
-│
-├── uploads/                  # 업로드된 파일 저장소
-│
-└── VENV/                     # Python 가상환경
+```mermaid
+graph TD
+    Root[capstone/] --> App[app.py<br/>Flask 웹 애플리케이션]
+    Root --> Dashboard[dashboard.html<br/>대시보드 UI 템플릿]
+    Root --> ReportGen[report_generator.py<br/>통합 보고서 생성기]
+    Root --> Req[requirements.txt<br/>Python 의존성]
+    Root --> Readme[README.md<br/>프로젝트 문서]
+    Root --> Templates[templates/<br/>템플릿 및 생성기]
+    Root --> Correct[correct_answer/<br/>참고용 정답 이미지]
+    Root --> Uploads[uploads/<br/>업로드된 파일 저장소]
+    Root --> Venv[VENV/<br/>Python 가상환경]
+    
+    Templates --> T1[index.html<br/>기존 인덱스 페이지]
+    Templates --> T2[*_template.html<br/>Jinja2 HTML 템플릿]
+    Templates --> T3[*_generator.py<br/>데이터 추출 생성기]
+    Templates --> T4[*_schema.json<br/>데이터 스키마]
+    Templates --> T5[*_data.json<br/>추출된 데이터]
+    Templates --> T6[*_output.html<br/>생성된 보고서]
+    
+    Correct --> C1[부문별/]
 ```
 
 ## ⚙️ 설정

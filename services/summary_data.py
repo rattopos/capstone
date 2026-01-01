@@ -6,6 +6,46 @@
 import pandas as pd
 
 
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-', 빈 문자열 체크 포함)"""
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none']:
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
+# 지역명 정식 명칭 → 약칭 매핑
+REGION_NAME_MAP = {
+    '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구',
+    '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전',
+    '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기',
+    '강원도': '강원', '충청북도': '충북', '충청남도': '충남',
+    '전라북도': '전북', '전라남도': '전남', '경상북도': '경북',
+    '경상남도': '경남', '제주특별자치도': '제주',
+    # 추가 변형 (강원특별자치도 등)
+    '강원특별자치도': '강원', '전북특별자치도': '전북',
+}
+
+
+def normalize_region_name(name):
+    """지역명을 약칭으로 정규화"""
+    if not name:
+        return name
+    name = str(name).strip()
+    return REGION_NAME_MAP.get(name, name)
+
+
 def get_summary_overview_data(excel_path, year, quarter):
     """요약-지역경제동향 데이터 추출"""
     try:
@@ -74,37 +114,37 @@ def _extract_sector_summary(xl, sheet_name):
             },
         }
         
-        # 집계 시트 설정 (fallback)
+        # 집계 시트 설정 (fallback) - 실제 엑셀 열 구조에 맞게 수정
         aggregate_config = {
             'A 분석': {
                 'aggregate_sheet': 'A(광공업생산)집계',
-                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'region_col': 4, 'code_col': 7, 'total_code': 'BCD',
                 'curr_col': 26, 'prev_col': 22,
             },
             'B 분석': {
                 'aggregate_sheet': 'B(서비스업생산)집계',
-                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'region_col': 3, 'code_col': 6, 'total_code': 'E~S',
                 'curr_col': 25, 'prev_col': 21,
             },
             'C 분석': {
                 'aggregate_sheet': 'C(소비)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'region_col': 2, 'code_col': 6, 'total_code': '총지수',
                 'curr_col': 24, 'prev_col': 20,
             },
             'G 분석': {
                 'aggregate_sheet': 'G(수출)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 26, 'prev_col': 22,
+                'region_col': 3, 'code_col': 7, 'total_code': '합계',
+                'curr_col': 56, 'prev_col': 52,
             },
             'E(품목성질물가)분석': {
                 'aggregate_sheet': 'E(품목성질물가)집계',
-                'region_col': 0, 'division_col': 1, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,
+                'region_col': 0, 'code_col': 3, 'total_code': '총지수',
+                'curr_col': 21, 'prev_col': 17,
             },
             'D(고용률)분석': {
                 'aggregate_sheet': 'D(고용률)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,
+                'region_col': 1, 'code_col': 3, 'total_code': '계',
+                'curr_col': 21, 'prev_col': 17,
                 'calc_type': 'difference'
             },
         }
@@ -141,7 +181,8 @@ def _extract_sector_summary(xl, sheet_name):
         
         for i, row in df.iterrows():
             try:
-                region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                region_raw = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                region = normalize_region_name(region_raw)
                 
                 # 총지수 행 찾기
                 is_total_row = False
@@ -154,14 +195,14 @@ def _extract_sector_summary(xl, sheet_name):
                 
                 if is_total_row:
                     # 전년동기비 계산
-                    curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
-                    prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                    curr_val = safe_float(row[curr_col], 0)
+                    prev_val = safe_float(row[prev_col], 0)
                     
                     # 계산 방식에 따라 증감률 또는 차이 계산
                     if calc_type == 'difference':
-                        change = round(curr_val - prev_val, 1)
+                        change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
                     else:  # growth_rate
-                        if prev_val != 0:
+                        if prev_val is not None and prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
                             change = 0.0
@@ -211,17 +252,18 @@ def _extract_price_summary_from_aggregate(xl, regions):
         
         for i, row in df.iterrows():
             try:
-                region = str(row[0]).strip() if pd.notna(row[0]) else ''
+                region_raw = str(row[0]).strip() if pd.notna(row[0]) else ''
+                region = normalize_region_name(region_raw)  # 지역명 정규화
                 division = str(row[1]).strip() if pd.notna(row[1]) else ''
                 
                 # 총지수 행 (division == '0')
                 if division == '0':
                     # 2025 2/4분기 지수 (열 24)와 2024 2/4분기 지수 (열 20)
-                    curr_val = float(row[24]) if pd.notna(row[24]) else 0
-                    prev_val = float(row[20]) if pd.notna(row[20]) else 0
+                    curr_val = safe_float(row[24], 0)
+                    prev_val = safe_float(row[20], 0)
                     
                     # 전년동분기 대비 증감률 계산
-                    if prev_val != 0:
+                    if prev_val is not None and prev_val != 0:
                         change = round((curr_val - prev_val) / prev_val * 100, 1)
                     else:
                         change = 0.0
@@ -271,18 +313,19 @@ def _extract_employment_summary_from_aggregate(xl, regions):
         
         for i, row in df.iterrows():
             try:
-                region = str(row[1]).strip() if pd.notna(row[1]) else ''
+                region_raw = str(row[1]).strip() if pd.notna(row[1]) else ''
+                region = normalize_region_name(region_raw)  # 지역명 정규화
                 division = str(row[2]).strip() if pd.notna(row[2]) else ''
                 industry = str(row[3]).strip() if pd.notna(row[3]) else ''
                 
                 # 총계 행 (division == '0' 또는 industry == '계')
                 if division == '0' or industry == '계':
                     # 2025 2/4분기 고용률 (열 24)와 2024 2/4분기 고용률 (열 20)
-                    curr_val = float(row[24]) if pd.notna(row[24]) else 0
-                    prev_val = float(row[20]) if pd.notna(row[20]) else 0
+                    curr_val = safe_float(row[24], 0)
+                    prev_val = safe_float(row[20], 0)
                     
                     # 전년동분기 대비 증감 (고용률은 %p 단위)
-                    change = round(curr_val - prev_val, 1)
+                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
                     
                     if region == '전국':
                         nationwide = change
@@ -392,42 +435,42 @@ def get_summary_table_data(excel_path):
             },
         }
         
-        # 집계 시트 설정 (fallback)
+        # 집계 시트 설정 (fallback) - 실제 엑셀 열 구조에 맞게 수정
         aggregate_sheet_configs = {
             'mining_production': {
                 'sheet': 'A(광공업생산)집계',
-                'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
+                'region_col': 4, 'code_col': 7, 'total_code': 'BCD',
                 'curr_col': 26, 'prev_col': 22,
                 'calc_type': 'growth_rate'
             },
             'service_production': {
                 'sheet': 'B(서비스업생산)집계',
-                'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
+                'region_col': 3, 'code_col': 6, 'total_code': 'E~S',
                 'curr_col': 25, 'prev_col': 21,
                 'calc_type': 'growth_rate'
             },
             'retail_sales': {
                 'sheet': 'C(소비)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
+                'region_col': 2, 'code_col': 6, 'total_code': '총지수',
                 'curr_col': 24, 'prev_col': 20,
                 'calc_type': 'growth_rate'
             },
             'exports': {
                 'sheet': 'G(수출)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 26, 'prev_col': 22,
+                'region_col': 3, 'code_col': 7, 'total_code': '합계',
+                'curr_col': 56, 'prev_col': 52,
                 'calc_type': 'growth_rate'
             },
             'price': {
                 'sheet': 'E(품목성질물가)집계',
-                'region_col': 0, 'division_col': 1, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,
+                'region_col': 0, 'code_col': 3, 'total_code': '총지수',
+                'curr_col': 21, 'prev_col': 17,
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': 'D(고용률)집계',
-                'region_col': 1, 'division_col': 2, 'total_code': '0',
-                'curr_col': 24, 'prev_col': 20,
+                'region_col': 1, 'code_col': 3, 'total_code': '계',
+                'curr_col': 21, 'prev_col': 17,
                 'calc_type': 'difference'
             },
         }
@@ -469,7 +512,8 @@ def get_summary_table_data(excel_path):
                 
                 for i, row in df.iterrows():
                     try:
-                        region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                        region_raw = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                        region = normalize_region_name(region_raw)  # 지역명 정규화
                         
                         # 총지수 행 찾기
                         is_total_row = False
@@ -481,14 +525,14 @@ def get_summary_table_data(excel_path):
                             is_total_row = (division == total_code)
                         
                         if is_total_row:
-                            curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
-                            prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                            curr_val = safe_float(row[curr_col], 0)
+                            prev_val = safe_float(row[prev_col], 0)
                             
                             # 계산 방식에 따라 증감률 또는 차이 계산
                             if calc_type == 'difference':
-                                value = round(curr_val - prev_val, 1)
+                                value = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
                             else:  # growth_rate
-                                if prev_val != 0:
+                                if prev_val is not None and prev_val != 0:
                                     value = round((curr_val - prev_val) / prev_val * 100, 1)
                                 else:
                                     value = 0.0
@@ -586,11 +630,11 @@ def _extract_construction_chart_data(xl):
                     # 총계 행 (code == '0')
                     if code == '0':
                         # 현재 분기 값 (열 19)과 전년동분기 값 (열 15)
-                        curr_val = float(row[19]) if pd.notna(row[19]) else 0
-                        prev_val = float(row[15]) if pd.notna(row[15]) else 0
+                        curr_val = safe_float(row[19], 0)
+                        prev_val = safe_float(row[15], 0)
                         
                         # 증감률 계산
-                        if prev_val != 0:
+                        if prev_val is not None and prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
                             change = 0.0
@@ -683,19 +727,20 @@ def get_employment_population_data(excel_path, year, quarter):
             regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
             
-            # 시트 구조: col1=지역이름, col2=분류(유입/유출/순인구이동), col24=2025 2/4분기
-            # 순인구이동 수 행만 추출
+            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기
+            # 합계(분류단계 0) 행만 추출
             processed_regions = set()
             
             for i, row in df.iterrows():
-                region = str(row[1]).strip() if pd.notna(row[1]) else ''
-                category = str(row[2]).strip() if pd.notna(row[2]) else ''
+                region = str(row[4]).strip() if pd.notna(row[4]) else ''
+                division = str(row[5]).strip() if pd.notna(row[5]) else ''
                 
-                # 순인구이동 수 행만 처리, 중복 지역 방지
-                if '순인구이동' in category and region in regions and region not in processed_regions:
+                # 합계 행 (분류단계 0)만 처리, 중복 지역 방지
+                if division == '0' and region in regions and region not in processed_regions:
                     try:
-                        # 2025 2/4분기 데이터 (열 24)
-                        value = int(float(row[24])) if pd.notna(row[24]) else 0
+                        # 2025 2/4분기 데이터 (열 25)
+                        value_float = safe_float(row[25], 0)
+                        value = int(value_float) if value_float is not None else 0
                         processed_regions.add(region)
                         
                         if value > 0:
@@ -769,7 +814,7 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
             },
         }
         
-        # 시트별 설정 (분석 시트와 집계 시트 매핑)
+        # 시트별 설정 (분석 시트와 집계 시트 매핑) - 실제 엑셀 열 구조에 맞게 수정
         sheet_config = {
             'A 분석': {
                 'region_col': 3, 'code_col': 6, 'total_code': 'BCD',
@@ -789,28 +834,28 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                 'region_col': 3, 'division_col': 4, 'total_code': '0',
                 'change_col': 20,  # 증감률
                 'index_sheet': 'C(소비)집계',
-                'index_region_col': 2, 'index_division_col': 3, 'index_total_code': 0,
+                'index_region_col': 2, 'index_code_col': 6, 'index_total_code': '총지수',
                 'index_value_col': 24  # 2025 2/4분기 지수
             },
             'G 분석': {
                 'region_col': 3, 'division_col': 4, 'total_code': '0',
                 'change_col': 22,  # 증감률
                 'index_sheet': 'G(수출)집계',
-                'index_region_col': 3, 'index_division_col': 4, 'index_total_code': '0',
-                'index_value_col': 26,  # 2025 2/4분기 수출액
+                'index_region_col': 3, 'index_code_col': 7, 'index_total_code': '합계',
+                'index_value_col': 56,  # 2025 2/4분기 수출액
                 'is_amount': True  # 금액 단위 (억달러 변환)
             },
             'E(품목성질물가)분석': {
                 'region_col': 0, 'division_col': 1, 'total_code': '0',
                 'change_col': 16,  # 증감률
                 'index_sheet': 'E(품목성질물가)집계',
-                'index_region_col': 0, 'index_division_col': 1, 'index_total_code': 0,
+                'index_region_col': 0, 'index_code_col': 3, 'index_total_code': '총지수',
                 'index_value_col': 21  # 2025 2/4분기 지수
             },
             'D(고용률)분석': {
                 'region_col': 2, 'division_col': 3, 'total_code': '0',
                 'rate_sheet': 'D(고용률)집계',
-                'rate_region_col': 1, 'rate_division_col': 2, 'rate_total_code': '0',
+                'rate_region_col': 1, 'rate_code_col': 3, 'rate_total_code': '계',
                 'rate_value_col': 21,  # 2025 2/4분기 고용률
                 'prev_rate_col': 17  # 2024 2/4분기 고용률 (증감 계산용)
             },
@@ -864,11 +909,10 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                 if is_total_row:
                     # 유효한 숫자 값인지 확인
                     change_val = None
-                    if change_col < len(row) and pd.notna(row[change_col]):
-                        try:
-                            change_val = round(float(row[change_col]), 1)
-                        except (ValueError, TypeError):
-                            change_val = None
+                    if change_col < len(row):
+                        change_val = safe_float(row[change_col], None)
+                        if change_val is not None:
+                            change_val = round(change_val, 1)
                     
                     if region == '전국':
                         # 첫 번째 유효한 전국 값만 사용
@@ -890,20 +934,30 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
             try:
                 df_rate = pd.read_excel(xl, sheet_name=config['rate_sheet'], header=None)
                 rate_region_col = config['rate_region_col']
-                rate_division_col = config['rate_division_col']
+                rate_code_col = config.get('rate_code_col')
+                rate_division_col = config.get('rate_division_col')
                 rate_total_code = config['rate_total_code']
                 rate_value_col = config['rate_value_col']
                 prev_rate_col = config.get('prev_rate_col', rate_value_col - 4)
                 
                 for i, row in df_rate.iterrows():
                     try:
-                        region = str(row[rate_region_col]).strip() if pd.notna(row[rate_region_col]) else ''
-                        division = str(row[rate_division_col]).strip() if pd.notna(row[rate_division_col]) else ''
+                        region_raw = str(row[rate_region_col]).strip() if pd.notna(row[rate_region_col]) else ''
+                        region = normalize_region_name(region_raw)  # 지역명 정규화
                         
-                        if division == rate_total_code:
-                            rate_val = float(row[rate_value_col]) if pd.notna(row[rate_value_col]) else 60.0
-                            prev_rate = float(row[prev_rate_col]) if pd.notna(row[prev_rate_col]) else rate_val
-                            change_val = round(rate_val - prev_rate, 1)
+                        # 코드 컬럼 또는 division 컬럼으로 총계 행 확인
+                        is_total = False
+                        if rate_code_col is not None:
+                            code = str(row[rate_code_col]).strip() if pd.notna(row[rate_code_col]) else ''
+                            is_total = (code == rate_total_code)
+                        elif rate_division_col is not None:
+                            division = str(row[rate_division_col]).strip() if pd.notna(row[rate_division_col]) else ''
+                            is_total = (division == rate_total_code)
+                        
+                        if is_total:
+                            rate_val = safe_float(row[rate_value_col], 60.0)
+                            prev_rate = safe_float(row[prev_rate_col], rate_val if rate_val is not None else 60.0)
+                            change_val = round(rate_val - prev_rate, 1) if (rate_val is not None and prev_rate is not None) else 0.0
                             
                             if region == '전국':
                                 nationwide['rate'] = round(rate_val, 1)
@@ -931,7 +985,8 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                 
                 for i, row in df_index.iterrows():
                     try:
-                        region = str(row[idx_region_col]).strip() if pd.notna(row[idx_region_col]) else ''
+                        region_raw = str(row[idx_region_col]).strip() if pd.notna(row[idx_region_col]) else ''
+                        region = normalize_region_name(region_raw)  # 지역명 정규화
                         
                         is_total = False
                         if idx_code_col is not None:
@@ -943,12 +998,9 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                         
                         if is_total:
                             # 유효한 숫자 값인지 확인
-                            index_val = None
-                            if pd.notna(row[idx_value_col]):
-                                try:
-                                    index_val = round(float(row[idx_value_col]), 1)
-                                except (ValueError, TypeError):
-                                    index_val = None
+                            index_val = safe_float(row[idx_value_col], None)
+                            if index_val is not None:
+                                index_val = round(index_val, 1)
                             
                             if region == '전국':
                                 # 첫 번째 유효한 전국 값만 사용
@@ -978,7 +1030,8 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             division = str(row[4]).strip() if pd.notna(row[4]) else ''
                             if division == '0':
                                 # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
-                                amount_val = float(row[26]) if pd.notna(row[26]) else 0
+                                amount_val = safe_float(row[26], 0)
+                                amount_val = amount_val if amount_val is not None else 0
                                 amount_in_billion = round(amount_val / 100, 0)  # 백만달러 → 억달러
                                 if region == '전국':
                                     nationwide['amount'] = amount_in_billion
@@ -1066,14 +1119,14 @@ def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employm
                     continue
                 
                 # 현재 분기와 전년동기 값
-                curr_val = float(row[curr_col]) if pd.notna(row[curr_col]) else 0
-                prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0
+                curr_val = safe_float(row[curr_col], 0)
+                prev_val = safe_float(row[prev_col], 0)
                 
                 # 전년동기비 계산
                 if calc_type == 'difference':
-                    change = round(curr_val - prev_val, 1)
+                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
                 else:  # growth_rate
-                    if prev_val != 0:
+                    if prev_val is not None and prev_val != 0:
                         change = round((curr_val - prev_val) / prev_val * 100, 1)
                     else:
                         change = 0.0

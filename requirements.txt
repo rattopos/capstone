@@ -26,3 +26,9 @@ et-xmlfile>=1.1.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 
+# 엑셀 수식 계산
+formulas>=1.2.0
+
+# 데모 녹화 (선택사항)
+playwright>=1.40.0
+
