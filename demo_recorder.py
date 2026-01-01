@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-지역경제동향 보고서 생성 시스템 - 데모 영상 자동 녹화 스크립트
+지역경제동향 보도자료 생성 시스템 - 데모 영상 자동 녹화 스크립트
 
 Playwright를 사용하여 전체 기능을 시연하고 영상으로 녹화합니다.
 SRT 자막 파일도 자동으로 생성됩니다.
@@ -50,7 +50,7 @@ SCENE_DELAY = 2.0   # 씬 전환
 SUBTITLES = [
     # ========== Scene 1: 시스템 소개 ==========
     {
-        "text": "지역경제동향 보고서 생성 시스템\n국가데이터처 캡스톤 프로젝트",
+        "text": "지역경제동향 보도자료 생성 시스템\n국가데이터처 캡스톤 프로젝트",
         "duration": 5.0
     },
     {
@@ -84,7 +84,7 @@ SUBTITLES = [
     
     # ========== Scene 4: 담당자 설정 ==========
     {
-        "text": "[기술적 차별화 #2] 담당자 정보 설정\n보고서에 자동 반영",
+        "text": "[기술적 차별화 #2] 담당자 정보 설정\n보도자료에 자동 반영",
         "duration": 3.0
     },
     {
@@ -112,17 +112,17 @@ SUBTITLES = [
         "duration": 5.0
     },
     
-    # ========== Scene 7: 보고서 미리보기 ==========
+    # ========== Scene 7: 보도자료 미리보기 ==========
     {
-        "text": "[핵심 기능] 보고서 미리보기\n실시간 렌더링",
+        "text": "[핵심 기능] 보도자료 미리보기\n실시간 렌더링",
         "duration": 3.0
     },
     {
-        "text": "부문별 보고서: 광공업, 서비스업, 고용률, 물가 등",
+        "text": "부문별 보도자료: 광공업, 서비스업, 고용률, 물가 등",
         "duration": 5.0
     },
     {
-        "text": "시도별 보고서: 17개 시도 경제동향",
+        "text": "시도별 보도자료: 17개 시도 경제동향",
         "duration": 5.0
     },
     {
@@ -146,7 +146,7 @@ SUBTITLES = [
     
     # ========== Scene 9: 편집 기능 ==========
     {
-        "text": "[기술적 차별화 #6] 편집 기능\n보고서 내용 직접 수정",
+        "text": "[기술적 차별화 #6] 편집 기능\n보도자료 내용 직접 수정",
         "duration": 3.0
     },
     {
@@ -156,7 +156,7 @@ SUBTITLES = [
     
     # ========== Scene 10: 내보내기 ==========
     {
-        "text": "[핵심 기능] 보고서 내보내기\n다양한 출력 형식 지원",
+        "text": "[핵심 기능] 보도자료 내보내기\n다양한 출력 형식 지원",
         "duration": 3.0
     },
     {
@@ -166,7 +166,7 @@ SUBTITLES = [
     
     # ========== 마무리 ==========
     {
-        "text": "지역경제동향 보고서 생성 완료!\n\n✓ 기초자료 → 분석표 자동화\n✓ 보도자료 생성 시간 단축",
+        "text": "지역경제동향 보도자료 생성 완료!\n\n✓ 기초자료 → 분석표 자동화\n✓ 보도자료 생성 시간 단축",
         "duration": 5.0
     }
 ]
@@ -303,7 +303,7 @@ class DemoRecorder:
         await self.page.wait_for_load_state("networkidle")
         await self.wait(2)
         
-        self.next_subtitle()  # 지역경제동향 보고서 생성 시스템
+        self.next_subtitle()  # 지역경제동향 보도자료 생성 시스템
         await self.wait(5)
         
         self.next_subtitle()  # 보도자료 생성 자동화
@@ -460,10 +460,10 @@ class DemoRecorder:
         await self.scene_transition()
     
     async def scene_7_preview(self):
-        """Scene 7: 보고서 미리보기"""
-        print("\n[Scene 7] 보고서 미리보기")
+        """Scene 7: 보도자료 미리보기"""
+        print("\n[Scene 7] 보도자료 미리보기")
         
-        self.next_subtitle()  # Step 6: 보고서 미리보기
+        self.next_subtitle()  # Step 6: 보도자료 미리보기
         await self.wait(3)
         
         # 부문별 탭 클릭
@@ -472,9 +472,9 @@ class DemoRecorder:
             await sectoral_tab.click()
             await self.wait(1)
             
-            self.next_subtitle()  # 부문별 보고서
+            self.next_subtitle()  # 부문별 보도자료
             
-            # 첫 번째 보고서 클릭
+            # 첫 번째 보도자료 클릭
             first_report = self.page.locator('.report-list .report-item').first
             if await first_report.is_visible():
                 await first_report.click()
@@ -489,7 +489,7 @@ class DemoRecorder:
             await regional_tab.click()
             await self.wait(1)
             
-            self.next_subtitle()  # 시도별 보고서
+            self.next_subtitle()  # 시도별 보도자료
             
             # 서울 클릭
             seoul_report = self.page.locator('.report-item:has-text("서울")')
@@ -559,7 +559,7 @@ class DemoRecorder:
         # 편집 버튼 클릭
         edit_btn = self.page.locator('#editBtn')
         if await edit_btn.is_visible():
-            self.next_subtitle()  # 보고서 내용 직접 수정 가능
+            self.next_subtitle()  # 보도자료 내용 직접 수정 가능
             await edit_btn.click()
             await self.wait(2)
             
@@ -585,7 +585,7 @@ class DemoRecorder:
         """Scene 10: 내보내기"""
         print("\n[Scene 10] 내보내기")
         
-        self.next_subtitle()  # Step 9: 보고서 내보내기
+        self.next_subtitle()  # Step 9: 보도자료 내보내기
         await self.wait(3)
         
         self.next_subtitle()  # PDF용 HTML / 한글 복붙용 HTML
@@ -608,7 +608,7 @@ class DemoRecorder:
         """마무리"""
         print("\n[Finale] 마무리")
         
-        self.next_subtitle()  # 지역경제동향 보고서 생성 완료!
+        self.next_subtitle()  # 지역경제동향 보도자료 생성 완료!
         await self.wait(5)
     
     async def record(self):
@@ -676,7 +676,7 @@ async def main():
 if __name__ == "__main__":
     # 서버 실행 확인 안내
     print("\n" + "=" * 60)
-    print("📹 지역경제동향 보고서 생성 시스템 - 데모 녹화")
+    print("📹 지역경제동향 보도자료 생성 시스템 - 데모 녹화")
     print("=" * 60)
     print("\n⚠️  녹화 전 확인사항:")
     print(f"  1. 서버가 실행 중인지 확인: {SERVER_URL}")

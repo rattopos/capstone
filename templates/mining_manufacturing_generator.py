@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-광공업생산 보고서 생성기
+광공업생산 보도자료 생성기
 
 엑셀 데이터를 읽어 스키마에 맞게 데이터를 추출하고,
-Jinja2 템플릿을 사용하여 HTML 보고서를 생성합니다.
+Jinja2 템플릿을 사용하여 HTML 보도자료를 생성합니다.
 """
 
 import pandas as pd
@@ -53,9 +53,9 @@ def find_sheet_with_fallback(xl, primary_sheets, fallback_sheets):
 
 
 class 광공업생산Generator:
-    """광공업생산 보고서 생성 클래스"""
+    """광공업생산 보도자료 생성 클래스"""
     
-    # 업종명 매핑 사전 (엑셀 데이터 → 보고서 표기명)
+    # 업종명 매핑 사전 (엑셀 데이터 → 보도자료 표기명)
     INDUSTRY_NAME_MAP = {
         "전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업": "반도체·전자부품",
         "의료, 정밀, 광학 기기 및 시계 제조업": "의료·정밀",
@@ -170,7 +170,7 @@ class 광공업생산Generator:
             self.use_aggregation_only = True
         
     def _get_industry_display_name(self, raw_name: str) -> str:
-        """업종명을 보고서 표기명으로 변환"""
+        """업종명을 보도자료 표기명으로 변환"""
         # 공백 제거
         cleaned = raw_name.strip().replace("\u3000", "").replace("　", "")
         
@@ -845,7 +845,7 @@ class 광공업생산Generator:
         }
     
     def render_html(self, template_path: str, output_path: str = None) -> str:
-        """HTML 보고서 렌더링"""
+        """HTML 보도자료 렌더링"""
         data = self.extract_all_data()
         
         # Jinja2 환경 설정
@@ -860,7 +860,7 @@ class 광공업생산Generator:
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            print(f"보고서가 생성되었습니다: {output_path}")
+            print(f"보도자료가 생성되었습니다: {output_path}")
         
         return html_content
     
@@ -878,7 +878,7 @@ def main():
     """메인 실행 함수"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='광공업생산 보고서 생성기')
+    parser = argparse.ArgumentParser(description='광공업생산 보도자료 생성기')
     parser.add_argument('--excel', '-e', required=True, help='엑셀 파일 경로')
     parser.add_argument('--template', '-t', required=True, help='템플릿 파일 경로')
     parser.add_argument('--output', '-o', help='출력 HTML 파일 경로')

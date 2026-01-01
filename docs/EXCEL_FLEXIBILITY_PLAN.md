@@ -64,7 +64,7 @@ flowchart TB
     
     subgraph output [출력]
         Data[정규화된 데이터]
-        Generator[보고서 생성기]
+        Generator[보도자료 생성기]
     end
     
     Excel --> Detector

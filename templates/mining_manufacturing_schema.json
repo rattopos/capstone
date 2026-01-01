@@ -1,11 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "광공업생산 보고서 스키마",
-  "description": "광공업생산 통계 보고서 생성을 위한 데이터 스키마",
+  "title": "광공업생산 보도자료 스키마",
+  "description": "광공업생산 통계 보도자료 생성을 위한 데이터 스키마",
   
   "definitions": {
     "industry_name_mapping": {
-      "description": "엑셀 데이터의 업종명과 보고서 표기명 매핑",
+      "description": "엑셀 데이터의 업종명과 보도자료 표기명 매핑",
       "type": "object",
       "properties": {
         "반도체·전자부품": ["전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업", "반도체 제조업", "전자 부품 제조업"],
@@ -31,7 +31,7 @@
     },
     
     "region_mapping": {
-      "description": "엑셀 데이터의 지역명과 보고서 표기명 매핑",
+      "description": "엑셀 데이터의 지역명과 보도자료 표기명 매핑",
       "type": "object",
       "properties": {
         "서울": "서울",
@@ -61,17 +61,17 @@
   "properties": {
     "report_info": {
       "type": "object",
-      "description": "보고서 기본 정보",
+      "description": "보도자료 기본 정보",
       "required": ["year", "quarter", "data_source"],
       "properties": {
         "year": {
           "type": "integer",
-          "description": "보고서 기준 연도",
+          "description": "보도자료 기준 연도",
           "example": 2025
         },
         "quarter": {
           "type": "integer",
-          "description": "보고서 기준 분기",
+          "description": "보도자료 기준 분기",
           "enum": [1, 2, 3, 4],
           "example": 2
         },
@@ -110,7 +110,7 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": {"type": "string", "description": "업종명 (보고서 표기명)"},
+              "name": {"type": "string", "description": "업종명 (보도자료 표기명)"},
               "contribution": {"type": "number", "description": "기여도"}
             }
           },
@@ -272,7 +272,7 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": {"type": "string", "description": "업종명 (보고서 표기명)"},
+              "name": {"type": "string", "description": "업종명 (보도자료 표기명)"},
               "growth_rate": {"type": "number", "description": "업종 증감률 (%)"},
               "contribution": {"type": "number", "description": "기여도"}
             }

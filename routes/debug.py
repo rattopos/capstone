@@ -430,7 +430,7 @@ DEBUG_PAGE_TEMPLATE = '''
                 <div class="value ok">{{ year }}년 {{ quarter }}분기</div>
             </div>
             <div class="status-card">
-                <div class="label">총 보고서</div>
+                <div class="label">총 보도자료</div>
                 <div class="value">{{ total_reports }}개</div>
             </div>
             <div class="status-card">
@@ -441,7 +441,7 @@ DEBUG_PAGE_TEMPLATE = '''
         
         <div class="debug-actions">
             <div class="action-card">
-                <h3>📄 전체 보고서 생성</h3>
+                <h3>📄 전체 보도자료 생성</h3>
                 <p>모든 섹션을 A4 크기로 순차적으로 이어붙인 HTML 파일을 생성합니다. 
                    디버그 주석과 페이지 정보가 포함됩니다.</p>
                 <button class="action-btn" onclick="generateFullReport()" {{ 'disabled' if not excel_loaded else '' }}>
@@ -459,7 +459,7 @@ DEBUG_PAGE_TEMPLATE = '''
             
             <div class="action-card">
                 <h3>🏭 부문별 섹션만</h3>
-                <p>광공업생산, 서비스업생산, 소비동향 등 부문별 보고서만 생성합니다.</p>
+                <p>광공업생산, 서비스업생산, 소비동향 등 부문별 보도자료만 생성합니다.</p>
                 <button class="action-btn secondary" onclick="generateSection('sector')" {{ 'disabled' if not excel_loaded else '' }}>
                     부문별 섹션 생성
                 </button>
@@ -467,7 +467,7 @@ DEBUG_PAGE_TEMPLATE = '''
             
             <div class="action-card">
                 <h3>🗺️ 시도별 섹션만</h3>
-                <p>17개 시도별 경제동향 보고서와 참고 GRDP를 생성합니다.</p>
+                <p>17개 시도별 경제동향 보도자료와 참고 GRDP를 생성합니다.</p>
                 <button class="action-btn secondary" onclick="generateSection('regional')" {{ 'disabled' if not excel_loaded else '' }}>
                     시도별 섹션 생성
                 </button>
@@ -483,7 +483,7 @@ DEBUG_PAGE_TEMPLATE = '''
             
             <div class="action-card">
                 <h3>🔍 개별 페이지 테스트</h3>
-                <p>특정 보고서 ID를 입력하여 개별 페이지만 테스트합니다.</p>
+                <p>특정 보도자료 ID를 입력하여 개별 페이지만 테스트합니다.</p>
                 <input type="text" id="single-report-id" placeholder="예: manufacturing" 
                        style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 10px; 
                               border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: #fff;">
@@ -494,10 +494,10 @@ DEBUG_PAGE_TEMPLATE = '''
         </div>
         
         <div class="report-list">
-            <h3>📋 보고서 구성 목록</h3>
+            <h3>📋 보도자료 구성 목록</h3>
             <div class="report-sections">
                 <div class="report-section">
-                    <h4>요약 보고서 ({{ summary_reports|length }}개)</h4>
+                    <h4>요약 보도자료 ({{ summary_reports|length }}개)</h4>
                     <div class="report-items">
                         {% for r in summary_reports %}
                         <span class="report-item">
@@ -509,7 +509,7 @@ DEBUG_PAGE_TEMPLATE = '''
                 </div>
                 
                 <div class="report-section">
-                    <h4>부문별 보고서 ({{ sector_reports|length }}개)</h4>
+                    <h4>부문별 보도자료 ({{ sector_reports|length }}개)</h4>
                     <div class="report-items">
                         {% for r in sector_reports %}
                         <span class="report-item">
@@ -521,7 +521,7 @@ DEBUG_PAGE_TEMPLATE = '''
                 </div>
                 
                 <div class="report-section">
-                    <h4>시도별 보고서 ({{ regional_reports|length }}개)</h4>
+                    <h4>시도별 보도자료 ({{ regional_reports|length }}개)</h4>
                     <div class="report-items">
                         {% for r in regional_reports %}
                         <span class="report-item">
@@ -560,7 +560,7 @@ DEBUG_PAGE_TEMPLATE = '''
     
     <div class="loading-overlay" id="loading-overlay">
         <div class="spinner"></div>
-        <div class="loading-text" id="loading-text">보고서 생성 중...</div>
+        <div class="loading-text" id="loading-text">보도자료 생성 중...</div>
         <div class="progress-info" id="progress-info"></div>
     </div>
     
@@ -612,8 +612,8 @@ DEBUG_PAGE_TEMPLATE = '''
         }
         
         async function generateFullReport() {
-            addLog('전체 보고서 생성 시작...', 'info');
-            showLoading('전체 보고서 생성 중...', '모든 섹션을 처리합니다');
+            addLog('전체 보도자료 생성 시작...', 'info');
+            showLoading('전체 보도자료 생성 중...', '모든 섹션을 처리합니다');
             
             try {
                 const response = await fetch('/debug/generate-full-html', {
@@ -624,7 +624,7 @@ DEBUG_PAGE_TEMPLATE = '''
                 const result = await response.json();
                 
                 if (result.success) {
-                    addLog('✓ 보고서 생성 완료: ' + result.filename, 'info');
+                    addLog('✓ 보도자료 생성 완료: ' + result.filename, 'info');
                     addLog('총 ' + result.page_count + '개 페이지, 생성시간: ' + result.generation_time, 'info');
                     
                     // 새 탭에서 열기
@@ -668,11 +668,11 @@ DEBUG_PAGE_TEMPLATE = '''
         async function generateSingleReport() {
             const reportId = document.getElementById('single-report-id').value.trim();
             if (!reportId) {
-                addLog('보고서 ID를 입력하세요', 'warn');
+                addLog('보도자료 ID를 입력하세요', 'warn');
                 return;
             }
             
-            addLog(reportId + ' 개별 보고서 생성 시작...', 'info');
+            addLog(reportId + ' 개별 보도자료 생성 시작...', 'info');
             showLoading(reportId + ' 생성 중...');
             
             try {
@@ -1132,7 +1132,7 @@ def debug_page():
     quarter = session.get('quarter', 2)
     
     total_reports = len(SUMMARY_REPORTS) + len(SECTOR_REPORTS) + len(REGIONAL_REPORTS) + len(STATISTICS_REPORTS)
-    # 대략적인 페이지 수 계산 (각 보고서당 평균 2페이지)
+    # 대략적인 페이지 수 계산 (각 보도자료당 평균 2페이지)
     total_pages = total_reports * 2
     
     return render_template_string(
@@ -1151,7 +1151,7 @@ def debug_page():
 
 @debug_bp.route('/generate-full-html', methods=['POST'])
 def generate_full_html():
-    """전체 보고서 HTML 생성"""
+    """전체 보도자료 HTML 생성"""
     start_time = datetime.now()
     
     excel_path = session.get('excel_path')
@@ -1166,17 +1166,17 @@ def generate_full_html():
         pages = []
         sections = []
         
-        # 1. 요약 보고서
+        # 1. 요약 보도자료
         summary_pages = _generate_summary_pages(excel_path, year, quarter)
         pages.extend(summary_pages)
         sections.append({'name': '요약', 'count': len(summary_pages), 'pages': summary_pages})
         
-        # 2. 부문별 보고서
+        # 2. 부문별 보도자료
         sector_pages = _generate_sector_pages(excel_path, year, quarter, raw_excel_path)
         pages.extend(sector_pages)
         sections.append({'name': '부문별', 'count': len(sector_pages), 'pages': sector_pages})
         
-        # 3. 시도별 보고서
+        # 3. 시도별 보도자료
         regional_pages = _generate_regional_pages(excel_path, year, quarter)
         pages.extend(regional_pages)
         sections.append({'name': '시도별', 'count': len(regional_pages), 'pages': regional_pages})
@@ -1293,7 +1293,7 @@ def generate_section_html():
 
 @debug_bp.route('/generate-single-html', methods=['POST'])
 def generate_single_html():
-    """개별 보고서 HTML 생성"""
+    """개별 보도자료 HTML 생성"""
     data = request.get_json()
     report_id = data.get('report_id')
     
@@ -1309,7 +1309,7 @@ def generate_single_html():
         pages = []
         section_name = '개별'
         
-        # 요약 보고서에서 찾기
+        # 요약 보도자료에서 찾기
         report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
         if report_config:
             section_name = '요약'
@@ -1317,7 +1317,7 @@ def generate_single_html():
             if html:
                 pages.append({'id': report_id, 'name': report_config['name'], 'section': section_name, 'content': html})
         
-        # 부문별 보고서에서 찾기
+        # 부문별 보도자료에서 찾기
         if not pages:
             report_config = next((r for r in SECTOR_REPORTS if r['id'] == report_id), None)
             if report_config:
@@ -1326,7 +1326,7 @@ def generate_single_html():
                 if html:
                     pages.append({'id': report_id, 'name': report_config['name'], 'section': section_name, 'content': html})
         
-        # 시도별 보고서에서 찾기
+        # 시도별 보도자료에서 찾기
         if not pages:
             region_config = next((r for r in REGIONAL_REPORTS if r['id'] == report_id), None)
             if region_config:
@@ -1346,7 +1346,7 @@ def generate_single_html():
                     pages.append({'id': report_id, 'name': stat_config['name'], 'section': section_name, 'content': html})
         
         if not pages:
-            return jsonify({'success': False, 'error': f'보고서를 찾을 수 없습니다: {report_id}'})
+            return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'})
         
         sections = [{'name': section_name, 'count': len(pages), 'pages': pages}]
         
@@ -1360,7 +1360,7 @@ def generate_single_html():
             generation_time="0.1초"
         )
         
-        # 파일명 형식: YYYYMMDD_HHMMSS_single_보고서ID.html (시간순 정렬 가능)
+        # 파일명 형식: YYYYMMDD_HHMMSS_single_보도자료ID.html (시간순 정렬 가능)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{timestamp}_single_{report_id}.html"
         output_path = DEBUG_FOLDER / filename
@@ -1382,7 +1382,7 @@ def generate_single_html():
 
 
 def _generate_summary_pages(excel_path, year, quarter):
-    """요약 보고서 페이지 생성"""
+    """요약 보도자료 페이지 생성"""
     pages = []
     
     for report in SUMMARY_REPORTS:
@@ -1425,7 +1425,7 @@ def _generate_summary_pages(excel_path, year, quarter):
 
 
 def _generate_single_summary(excel_path, report_config, year, quarter):
-    """단일 요약 보고서 생성"""
+    """단일 요약 보도자료 생성"""
     try:
         template_name = report_config['template']
         generator_name = report_config.get('generator')
@@ -1501,7 +1501,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
 
 
 def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
-    """부문별 보고서 페이지 생성"""
+    """부문별 보도자료 페이지 생성"""
     pages = []
     
     for report in SECTOR_REPORTS:
@@ -1543,7 +1543,7 @@ def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
 
 
 def _generate_regional_pages(excel_path, year, quarter):
-    """시도별 보고서 페이지 생성"""
+    """시도별 보도자료 페이지 생성"""
     pages = []
     
     for region in REGIONAL_REPORTS:

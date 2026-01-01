@@ -44,7 +44,7 @@ def generate_preview():
     
     report_config = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
     if not report_config:
-        return jsonify({'success': False, 'error': f'보고서를 찾을 수 없습니다: {report_id}'})
+        return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'})
     
     raw_excel_path = session.get('raw_excel_path')
     
@@ -66,7 +66,7 @@ def generate_preview():
 
 @preview_bp.route('/generate-summary-preview', methods=['POST'])
 def generate_summary_preview():
-    """요약 보고서 미리보기 생성 (표지, 목차, 인포그래픽 등)"""
+    """요약 보도자료 미리보기 생성 (표지, 목차, 인포그래픽 등)"""
     data = request.get_json()
     report_id = data.get('report_id')
     year = data.get('year', session.get('year', 2025))
@@ -80,7 +80,7 @@ def generate_summary_preview():
     
     report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
     if not report_config:
-        return jsonify({'success': False, 'error': f'요약 보고서를 찾을 수 없습니다: {report_id}'})
+        return jsonify({'success': False, 'error': f'요약 보도자료를 찾을 수 없습니다: {report_id}'})
     
     try:
         template_name = report_config['template']
@@ -165,7 +165,7 @@ def generate_summary_preview():
         
     except Exception as e:
         import traceback
-        error_msg = f"요약 보고서 생성 오류: {str(e)}"
+        error_msg = f"요약 보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return jsonify({'success': False, 'error': error_msg})
@@ -173,7 +173,7 @@ def generate_summary_preview():
 
 @preview_bp.route('/generate-regional-preview', methods=['POST'])
 def generate_regional_preview():
-    """시도별 보고서 미리보기 생성"""
+    """시도별 보도자료 미리보기 생성"""
     data = request.get_json()
     region_id = data.get('region_id')
     
@@ -203,7 +203,7 @@ def generate_regional_preview():
 
 @preview_bp.route('/generate-statistics-preview', methods=['POST'])
 def generate_statistics_preview():
-    """개별 통계표 보고서 미리보기 생성"""
+    """개별 통계표 보도자료 미리보기 생성"""
     data = request.get_json()
     stat_id = data.get('stat_id')
     year = data.get('year', session.get('year', 2025))
@@ -233,7 +233,7 @@ def generate_statistics_preview():
 
 @preview_bp.route('/generate-statistics-full-preview', methods=['POST'])
 def generate_statistics_full_preview():
-    """통계표 전체 보고서 미리보기 생성"""
+    """통계표 전체 보도자료 미리보기 생성"""
     data = request.get_json()
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))

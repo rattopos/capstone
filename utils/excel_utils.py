@@ -100,20 +100,12 @@ def extract_year_quarter_from_raw(filepath):
 
 
 def detect_file_type(filepath: str) -> str:
-    """엑셀 파일 유형 자동 감지 (기초자료 수집표 vs 분석표)
+    """엑셀 파일 유형 자동 감지 (기초자료 수집표 vs 분석표) - 최적화 버전
     
-    기초자료 수집표와 분석표는 시트 구조가 완전히 다릅니다:
-    
-    [기초자료 수집표] 17개 시트
-    - 시트명 예: '광공업생산', '서비스업생산', '소비(소매, 추가)', '고용률', 
-                 '실업자 수', '수출', '수입', '분기 GRDP', '완료체크' 등
-    - 특징: 원본 데이터 형태, 한글 시트명
-    
-    [분석표] 42개 시트
-    - 시트명 예: 'A(광공업생산)집계', 'A 분석', 'A 참고', 'B(서비스업생산)집계' 등
-    - 특징: 알파벳+키워드(집계/분석/참고) 패턴, '본청', '이용관련' 시트 존재
-    
-    두 파일은 공통 시트가 하나도 없습니다.
+    빠른 판정을 위해 다음 순서로 확인:
+    1. 파일명 확인 (가장 빠름)
+    2. 시트명만 빠르게 읽어서 핵심 시트 확인
+    3. 첫 매칭 시 즉시 반환
     
     Returns:
         'raw': 기초자료 수집표
@@ -121,84 +113,80 @@ def detect_file_type(filepath: str) -> str:
         'unknown': 알 수 없는 형식
     """
     try:
-        xl = pd.ExcelFile(filepath)
-        sheet_names = set(xl.sheet_names)
-        sheet_count = len(sheet_names)
-        
         # ========================================
-        # 기초자료 수집표 전용 시트 (분석표에는 없음)
+        # 1단계: 파일명으로 빠른 판정 (가장 빠름)
         # ========================================
-        RAW_ONLY_SHEETS = {
-            '광공업생산', '서비스업생산', '소비(소매, 추가)', 
-            '고용', '고용(kosis)', '고용률', '실업자 수',
-            '지출목적별 물가', '품목성질별 물가', '건설 (공표자료)',
-            '수출', '수입', '연령별 인구이동', '시도 간 이동',
-            '시군구인구이동', '분기 GRDP', '완료체크'
-        }
-        
-        # ========================================
-        # 분석표 전용 시트 (기초자료에는 없음)
-        # ========================================
-        ANALYSIS_ONLY_SHEETS = {
-            '본청', '시도별 현황', '지방청 이용자료', '이용관련',
-            'A(광공업생산)집계', 'A 분석', 'A 참고',
-            'B(서비스업생산)집계', 'B 분석', 'B 참고',
-            'C(소비)집계', 'C 분석', 'C 참고',
-            'D(고용률)집계', 'D(고용률)분석',
-            'D(실업)집계', 'D(실업)분석',
-            'E(지출목적물가)집계', 'E(지출목적물가) 분석',
-            'E(품목성질물가)집계', 'E(품목성질물가)분석',
-            "F'(건설)집계", "F'분석",
-            'G(수출)집계', 'G 분석',
-            'H(수입)집계', 'H 분석',
-            'I(순인구이동)집계',
-        }
-        
-        # 매칭된 시트 수 계산
-        raw_matches = len(sheet_names & RAW_ONLY_SHEETS)
-        analysis_matches = len(sheet_names & ANALYSIS_ONLY_SHEETS)
-        
-        # ========================================
-        # 판정 로직 (상호 배타적 시트 기반)
-        # ========================================
-        
-        # 1. 분석표 전용 시트가 있으면 분석표
-        if analysis_matches >= 3:
-            return 'analysis'
-        
-        # 2. 기초자료 전용 시트가 있으면 기초자료
-        if raw_matches >= 3:
-            return 'raw'
-        
-        # 3. 시트명 패턴으로 추가 판정
-        # 분석표: '분석', '집계', '참고' 키워드 포함
-        analysis_pattern_count = sum(1 for s in sheet_names 
-                                      if '분석' in s or '집계' in s or '참고' in s)
-        if analysis_pattern_count >= 3:
-            return 'analysis'
-        
-        # 4. 시트 개수로 추정 (기초자료: ~17개, 분석표: ~42개)
-        if sheet_count <= 20:
-            # 기초자료일 가능성
-            if raw_matches >= 1:
-                return 'raw'
-        elif sheet_count >= 30:
-            # 분석표일 가능성
-            if analysis_matches >= 1:
-                return 'analysis'
-        
-        # 5. 파일명으로 최종 추정
         filename = Path(filepath).stem.lower()
         if '기초' in filename or '수집' in filename or 'raw' in filename:
             return 'raw'
         elif '분석' in filename or 'analysis' in filename:
             return 'analysis'
         
+        # ========================================
+        # 2단계: 시트명만 빠르게 읽기 (openpyxl 사용 - pandas보다 빠름)
+        # ========================================
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(filepath, read_only=True, data_only=False)
+            sheet_names = set(wb.sheetnames)
+            wb.close()
+        except:
+            # openpyxl 실패 시 pandas 사용 (fallback)
+            xl = pd.ExcelFile(filepath)
+            sheet_names = set(xl.sheet_names)
+        
+        sheet_count = len(sheet_names)
+        
+        # ========================================
+        # 3단계: 핵심 시트만 확인 (빠른 판정)
+        # ========================================
+        # 분석표의 가장 특징적인 시트들 (우선순위 높음)
+        ANALYSIS_KEY_SHEETS = {
+            '본청', '이용관련',  # 분석표에만 있는 확실한 시트
+            'A(광공업생산)집계', 'A 분석',  # 가장 흔한 분석표 시트
+            'B(서비스업생산)집계', 'B 분석',
+        }
+        
+        # 기초자료의 가장 특징적인 시트들 (우선순위 높음)
+        RAW_KEY_SHEETS = {
+            '광공업생산', '서비스업생산',  # 가장 흔한 기초자료 시트
+            '완료체크',  # 기초자료에만 있는 시트
+            '고용률', '실업자 수',
+        }
+        
+        # 핵심 시트 매칭 확인 (첫 매칭 시 즉시 반환)
+        for sheet in sheet_names:
+            if sheet in ANALYSIS_KEY_SHEETS:
+                return 'analysis'
+            if sheet in RAW_KEY_SHEETS:
+                return 'raw'
+        
+        # ========================================
+        # 4단계: 패턴 매칭 (빠른 확인)
+        # ========================================
+        # 분석표 패턴: '집계', '분석', '참고' 키워드
+        analysis_pattern_count = 0
+        raw_pattern_count = 0
+        
+        for sheet in sheet_names:
+            if '집계' in sheet or '분석' in sheet or '참고' in sheet:
+                analysis_pattern_count += 1
+                if analysis_pattern_count >= 2:  # 2개만 찾으면 충분
+                    return 'analysis'
+            # 기초자료는 한글 시트명이 많고 특별한 패턴이 없으므로 패턴 매칭 생략
+        
+        # ========================================
+        # 5단계: 시트 개수로 추정 (빠른 판정)
+        # ========================================
+        if sheet_count <= 20:
+            # 기초자료일 가능성 높음 (~17개)
+            return 'raw'
+        elif sheet_count >= 30:
+            # 분석표일 가능성 높음 (~42개)
+            return 'analysis'
+        
         # 기본값: 분석표 (더 복잡한 처리가 필요하므로)
-        print(f"[경고] 파일 유형을 명확히 판단할 수 없음: {filepath}")
-        print(f"  - 시트 수: {sheet_count}")
-        print(f"  - 기초자료 매칭: {raw_matches}, 분석표 매칭: {analysis_matches}")
-        return 'unknown'
+        return 'analysis'
             
     except Exception as e:
         print(f"[오류] 파일 유형 감지 실패: {e}")

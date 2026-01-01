@@ -17,7 +17,7 @@
 │  • 경로 설정 (파일 저장 위치, 템플릿 위치)              │
 │  • 상수 값 (최대 파일 크기, 비밀 키)                   │
 │  • 환경 설정 (개발/운영 모드, 디버그 설정)              │
-│  • 비즈니스 규칙 (보고서 목록, 시트 매핑)               │
+│  • 비즈니스 규칙 (보도자료 목록, 시트 매핑)               │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -38,7 +38,7 @@
 config/
 ├── __init__.py      # 모듈 초기화, 외부 export 정의
 ├── settings.py      # 시스템 기본 설정 (경로, 상수)
-└── reports.py       # 보고서 정의 (50개 보고서 설정)
+└── reports.py       # 보도자료 정의 (50개 보도자료 설정)
 ```
 
 ---
@@ -84,25 +84,25 @@ MAX_CONTENT_LENGTH = 50 * 1024 * 1024
 
 ---
 
-## 2. config/reports.py - 보고서 정의 ⭐
+## 2. config/reports.py - 보도자료 정의 ⭐
 
 ### 역할
-- **50개 보고서**의 메타데이터 관리
-- 보고서 ID, 이름, 엑셀 시트, Generator, Template 매핑
+- **50개 보도자료**의 메타데이터 관리
+- 보도자료 ID, 이름, 엑셀 시트, Generator, Template 매핑
 
 ### 구조 개요
 ```python
 # 4개 카테고리로 분류
-SUMMARY_REPORTS = [...]      # 요약 보고서 9개
-SECTOR_REPORTS = [...]       # 부문별 보고서 10개
-REGIONAL_REPORTS = [...]     # 시도별 보고서 18개
+SUMMARY_REPORTS = [...]      # 요약 보도자료 9개
+SECTOR_REPORTS = [...]       # 부문별 보도자료 10개
+REGIONAL_REPORTS = [...]     # 시도별 보도자료 18개
 STATISTICS_REPORTS = [...]   # 통계표 13개
 
 # 전체 순서
 REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS
 ```
 
-### 보고서 정의 예시
+### 보도자료 정의 예시
 ```python
 SECTOR_REPORTS = [
     {
@@ -127,7 +127,7 @@ SECTOR_REPORTS = [
 ]
 ```
 
-### 시도별 보고서 정의
+### 시도별 보도자료 정의
 ```python
 REGIONAL_REPORTS = [
     {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
@@ -205,14 +205,14 @@ from config.reports import REPORT_ORDER, REGIONAL_REPORTS
 
 @main_bp.route('/')
 def index():
-    # Config에서 보고서 목록을 가져와서 템플릿에 전달
+    # Config에서 보도자료 목록을 가져와서 템플릿에 전달
     return render_template('dashboard.html', 
-        reports=REPORT_ORDER,           # 요약+부문별 보고서 목록
-        regional_reports=REGIONAL_REPORTS  # 시도별 보고서 목록
+        reports=REPORT_ORDER,           # 요약+부문별 보도자료 목록
+        regional_reports=REGIONAL_REPORTS  # 시도별 보도자료 목록
     )
 ```
 
-### 3️⃣ routes/api.py - 보고서 생성
+### 3️⃣ routes/api.py - 보도자료 생성
 ```python
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS
 
@@ -220,7 +220,7 @@ from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS
 def generate_preview():
     report_id = request.json.get('report_id')
     
-    # Config에서 보고서 찾기
+    # Config에서 보도자료 찾기
     for report in REPORT_ORDER:
         if report['id'] == report_id:
             # report 설정에 따라 적절한 generator와 template 사용
@@ -229,7 +229,7 @@ def generate_preview():
             break
 ```
 
-### 4️⃣ services/report_generator.py - 보고서 HTML 생성
+### 4️⃣ services/report_generator.py - 보도자료 HTML 생성
 ```python
 from config.settings import TEMPLATES_DIR
 
@@ -264,7 +264,7 @@ def generate_report_html(excel_path, report_config, year, quarter):
 │  routes/      │ │  services/    │ │  대시보드     │
 │  main.py      │ │  report_gen.. │ │  dashboard    │
 ├───────────────┤ ├───────────────┤ ├───────────────┤
-│ 보고서 목록   │ │ generator/    │ │ 보고서 버튼   │
+│ 보도자료 목록   │ │ generator/    │ │ 보도자료 버튼   │
 │ 전달          │ │ template 결정 │ │ 렌더링        │
 └───────────────┘ └───────────────┘ └───────────────┘
 ```
@@ -273,12 +273,12 @@ def generate_report_html(excel_path, report_config, year, quarter):
 
 ## 💡 Config 분리의 장점 (발표 포인트)
 
-### 1. 새 보고서 추가가 쉬움
+### 1. 새 보도자료 추가가 쉬움
 ```python
 # reports.py에 한 줄만 추가하면 됨
 SECTOR_REPORTS.append({
     'id': 'new_report',
-    'name': '새로운 보고서',
+    'name': '새로운 보도자료',
     'generator': 'new_report_generator.py',
     'template': 'new_report_template.html',
     'icon': '📝',
@@ -331,14 +331,14 @@ from config import TEMPLATES_DIR
 ### Q1: 왜 설정을 코드에 직접 안 쓰고 분리했나요?
 > **A:** 설정이 바뀔 때 모든 파일을 수정하면 실수 가능성이 높습니다. 한 곳에서 관리하면 유지보수가 쉽고 일관성이 유지됩니다.
 
-### Q2: 보고서 50개를 어떻게 관리하나요?
-> **A:** `config/reports.py`에 딕셔너리 리스트로 정의합니다. 각 보고서의 ID, 이름, 사용할 generator와 template을 명시하고, 필요한 곳에서 이 Config를 참조합니다.
+### Q2: 보도자료 50개를 어떻게 관리하나요?
+> **A:** `config/reports.py`에 딕셔너리 리스트로 정의합니다. 각 보도자료의 ID, 이름, 사용할 generator와 template을 명시하고, 필요한 곳에서 이 Config를 참조합니다.
 
 ### Q3: Config와 환경변수의 차이는?
-> **A:** 환경변수는 OS 레벨 설정(비밀키, API 키 등), Config는 애플리케이션 레벨 설정(보고서 목록, 경로 등)입니다. 이 프로젝트는 보안 민감 정보가 없어 Config 파일로 충분합니다.
+> **A:** 환경변수는 OS 레벨 설정(비밀키, API 키 등), Config는 애플리케이션 레벨 설정(보도자료 목록, 경로 등)입니다. 이 프로젝트는 보안 민감 정보가 없어 Config 파일로 충분합니다.
 
-### Q4: 새 보고서 추가하려면?
-> **A:** `config/reports.py`에 보고서 정의 추가 → `templates/`에 generator와 template 파일 생성 → 끝! 다른 코드 수정 불필요.
+### Q4: 새 보도자료 추가하려면?
+> **A:** `config/reports.py`에 보도자료 정의 추가 → `templates/`에 generator와 template 파일 생성 → 끝! 다른 코드 수정 불필요.
 
 ---
 
@@ -347,15 +347,15 @@ from config import TEMPLATES_DIR
 | 파일 | 역할 | 주요 내용 |
 |------|------|----------|
 | `settings.py` | 시스템 설정 | 경로, 파일 크기, 비밀키 |
-| `reports.py` | 보고서 정의 | 50개 보고서 메타데이터 |
+| `reports.py` | 보도자료 정의 | 50개 보도자료 메타데이터 |
 | `__init__.py` | 모듈 인터페이스 | 외부 import 단순화 |
 
 ---
 
 ## 🎯 발표 시 핵심 메시지
 
-> "Config 분리로 **보고서 추가/수정이 설정 파일 수정만으로 가능**합니다.  
-> 50개 보고서를 관리하면서도 코드 변경 없이 유연하게 확장할 수 있습니다."
+> "Config 분리로 **보도자료 추가/수정이 설정 파일 수정만으로 가능**합니다.  
+> 50개 보도자료를 관리하면서도 코드 변경 없이 유연하게 확장할 수 있습니다."
 
 ---
 

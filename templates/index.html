@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 보고서 시스템</title>
+    <title>지역경제동향 보도자료 시스템</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -342,17 +342,17 @@
 </head>
 <body>
     <header class="header">
-        <h1>📊 지역경제동향 보고서 시스템</h1>
-        <p>분석표_25년 2분기_캡스톤 데이터 기반 자동 보고서 생성</p>
+        <h1>📊 지역경제동향 보도자료 시스템</h1>
+        <p>분석표_25년 2분기_캡스톤 데이터 기반 자동 보도자료 생성</p>
         <div class="nav-container">
             <button class="nav-btn active" onclick="showDashboard()">대시보드</button>
-            <button class="nav-btn" onclick="showAllReports()">전체 보고서</button>
+            <button class="nav-btn" onclick="showAllReports()">전체 보도자료</button>
         </div>
     </header>
 
     <div class="main-content">
         <aside class="sidebar">
-            <div class="sidebar-title">📋 보고서 목록</div>
+            <div class="sidebar-title">📋 보도자료 목록</div>
             <ul class="report-list" id="reportList">
                 <!-- Reports will be loaded here -->
             </ul>
@@ -361,17 +361,17 @@
         <main class="content-area" id="contentArea">
             <div class="welcome-screen" id="welcomeScreen">
                 <div class="welcome-icon">📈</div>
-                <h2 class="welcome-title">보고서를 선택하세요</h2>
+                <h2 class="welcome-title">보도자료를 선택하세요</h2>
                 <p class="welcome-desc">
-                    왼쪽 사이드바에서 보고서를 선택하면 여기에 표시됩니다.
-                    각 보고서는 Excel 데이터를 기반으로 자동 생성되며,
+                    왼쪽 사이드바에서 보도자료를 선택하면 여기에 표시됩니다.
+                    각 보도자료는 Excel 데이터를 기반으로 자동 생성되며,
                     Jinja2 템플릿을 사용하여 렌더링됩니다.
                 </p>
                 
                 <div class="stats-container" style="margin-top: 2rem; width: 100%; max-width: 800px;">
                     <div class="stat-card">
                         <div class="stat-value" id="totalReports">0</div>
-                        <div class="stat-label">총 보고서</div>
+                        <div class="stat-label">총 보도자료</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="totalSheets">0</div>
@@ -386,7 +386,7 @@
 
             <div class="report-viewer" id="reportViewer" style="display: none;">
                 <div class="viewer-header">
-                    <span class="viewer-title" id="viewerTitle">보고서</span>
+                    <span class="viewer-title" id="viewerTitle">보도자료</span>
                     <div class="viewer-actions">
                         <button class="viewer-btn" onclick="openInNewTab()">🔗 새 탭에서 열기</button>
                         <button class="viewer-btn" onclick="closeViewer()">✕ 닫기</button>

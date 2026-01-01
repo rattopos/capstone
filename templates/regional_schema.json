@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "시도별 경제동향 보고서 스키마",
-  "description": "17개 시도별 경제동향 통계 보고서 생성을 위한 데이터 스키마",
+  "title": "시도별 경제동향 보도자료 스키마",
+  "description": "17개 시도별 경제동향 통계 보도자료 생성을 위한 데이터 스키마",
 
   "definitions": {
     "region_codes": {
@@ -75,7 +75,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "산업/업종명 (보고서 표기)"
+          "description": "산업/업종명 (보도자료 표기)"
         },
         "growth_rate": {
           "type": "number",
@@ -157,17 +157,17 @@
   "properties": {
     "report_info": {
       "type": "object",
-      "description": "보고서 기본 정보",
+      "description": "보도자료 기본 정보",
       "required": ["year", "quarter", "region", "region_full_name", "region_code", "page_number"],
       "properties": {
         "year": {
           "type": "integer",
-          "description": "보고서 기준 연도",
+          "description": "보도자료 기준 연도",
           "example": 2025
         },
         "quarter": {
           "type": "integer",
-          "description": "보고서 기준 분기",
+          "description": "보도자료 기준 분기",
           "enum": [1, 2, 3, 4]
         },
         "region": {
@@ -187,7 +187,7 @@
         },
         "region_index": {
           "type": "integer",
-          "description": "보고서 내 지역 순번 (1~17)",
+          "description": "보도자료 내 지역 순번 (1~17)",
           "minimum": 1,
           "maximum": 17
         },

@@ -1,13 +1,13 @@
-# 광공업생산 보고서 생성 오류 분석 및 해결
+# 광공업생산 보도자료 생성 오류 분석 및 해결
 
 ## 📋 문제 요약
 
-**증상**: 분석표 파일을 업로드했을 때 광공업생산 보고서가 생성되지 않고 다음 오류 발생:
+**증상**: 분석표 파일을 업로드했을 때 광공업생산 보도자료가 생성되지 않고 다음 오류 발생:
 ```
-[ERROR] 보고서 생성 오류: single positional indexer is out-of-bounds
+[ERROR] 보도자료 생성 오류: single positional indexer is out-of-bounds
 ```
 
-**영향 범위**: 광공업생산 보고서 (`mining_manufacturing_generator.py`)
+**영향 범위**: 광공업생산 보도자료 (`mining_manufacturing_generator.py`)
 
 ---
 
@@ -98,7 +98,7 @@ def _extract_nationwide_from_aggregation(self):
 
 ### 수정 전
 ```
-[ERROR] 보고서 생성 오류: single positional indexer is out-of-bounds
+[ERROR] 보도자료 생성 오류: single positional indexer is out-of-bounds
 IndexError: single positional indexer is out-of-bounds
 ```
 
@@ -106,7 +106,7 @@ IndexError: single positional indexer is out-of-bounds
 ```
 [광공업생산] 분석 시트가 비어있음 → 집계 시트에서 직접 계산
 [DEBUG] 추출된 데이터 키: ['report_info', 'nationwide_data', 'regional_data', ...]
-[DEBUG] 보고서 생성 성공!
+[DEBUG] 보도자료 생성 성공!
 
 === 추출된 데이터 ===
 전국 증감률: 2.1%

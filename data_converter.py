@@ -817,7 +817,7 @@ class DataConverter:
         """GRDP 데이터 추출
         
         Returns:
-            GRDP 보고서용 데이터 딕셔너리
+            GRDP 보도자료용 데이터 딕셔너리
         """
         raw_xl = pd.ExcelFile(self.raw_excel_path)
         

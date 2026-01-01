@@ -531,7 +531,7 @@ class 인포그래픽Generator:
 
 
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
-    """보고서 데이터 생성 (app.py에서 호출)
+    """보도자료 데이터 생성 (app.py에서 호출)
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -551,7 +551,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
 
 
 def generate_report(excel_path, template_path, output_path=None):
-    """보고서 HTML 생성"""
+    """보도자료 HTML 생성"""
     generator = 인포그래픽Generator(excel_path)
     html = generator.render_html(template_path, output_path)
     data = generator.extract_all_data()

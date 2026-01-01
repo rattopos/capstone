@@ -101,6 +101,26 @@ def view_export_file(filepath):
     return "파일을 찾을 수 없습니다.", 404
 
 
+@main_bp.route('/templates/<filename>')
+def serve_template_file(filename):
+    """templates 폴더의 정적 파일 제공 (이미지 등)"""
+    filepath = TEMPLATES_DIR / filename
+    if filepath.exists() and filepath.is_file():
+        # 이미지 파일
+        if filename.endswith('.png'):
+            return send_file(str(filepath), mimetype='image/png')
+        elif filename.endswith('.jpg') or filename.endswith('.jpeg'):
+            return send_file(str(filepath), mimetype='image/jpeg')
+        elif filename.endswith('.svg'):
+            return send_file(str(filepath), mimetype='image/svg+xml')
+        elif filename.endswith('.css'):
+            return send_file(str(filepath), mimetype='text/css')
+        elif filename.endswith('.js'):
+            return send_file(str(filepath), mimetype='application/javascript')
+        return send_file(str(filepath))
+    return "파일을 찾을 수 없습니다.", 404
+
+
 @main_bp.route('/download-export/<export_dir>')
 def download_export_zip(export_dir):
     """내보내기 폴더를 ZIP으로 다운로드"""

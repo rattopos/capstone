@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 보고서 생성 시스템</title>
+    <title>지역경제동향 보도자료 생성 시스템</title>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1291,7 +1291,7 @@
             <div class="logo">
                 <div class="logo-icon">📊</div>
                 <div class="logo-text">
-                    <h1>지역경제동향 보고서 시스템</h1>
+                    <h1>지역경제동향 보도자료 시스템</h1>
                     <p>Regional Economic Report Generator</p>
                 </div>
             </div>
@@ -1361,7 +1361,7 @@
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <div>
                                 <div style="font-size: 0.8rem; font-weight: 600; color: #f59e0b;">⚠️ GRDP 데이터 누락</div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">참고_GRDP 보고서에 영향</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">참고_GRDP 보도자료에 영향</div>
                             </div>
                             <button onclick="showGrdpModal()" style="
                                 padding: 0.4rem 0.75rem;
@@ -1419,10 +1419,10 @@
 
             <!-- Report List -->
             <div class="report-list-section">
-                <div class="section-title">📋 보고서 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
+                <div class="section-title">📋 보도자료 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
                 
-                <!-- 전체 보고서 통합 리스트 (순차적 페이지 넘김) -->
-                <div class="report-list" id="allReportsList" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                <!-- 전체 보도자료 통합 리스트 (순차적 페이지 넘김) -->
+                <div class="report-list" id="allReportsList">
                     <!-- 초기 상태 안내 -->
                     <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
                         <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
@@ -1497,8 +1497,8 @@
                 <div class="preview-content" id="previewContent">
                     <div class="preview-placeholder" id="previewPlaceholder">
                         <div class="preview-placeholder-icon">📊</div>
-                        <h3>보고서를 선택하세요</h3>
-                        <p>엑셀 파일을 업로드하면 자동으로 보고서가 생성됩니다.</p>
+                        <h3>보도자료를 선택하세요</h3>
+                        <p>엑셀 파일을 업로드하면 자동으로 보도자료가 생성됩니다.</p>
                     </div>
                     <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
                     <!-- 편집 모드용 에디터 -->
@@ -1525,7 +1525,7 @@
                 <button class="modal-close" onclick="closeContactModal()">×</button>
             </div>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                보고서 표지에 표시될 담당부서 및 담당자 정보를 입력해주세요.
+                보도자료 표지에 표시될 담당부서 및 담당자 정보를 입력해주세요.
             </p>
             
             <!-- 보도자료 정보 -->
@@ -1755,8 +1755,8 @@
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
             <div class="loading-icon" id="loadingIcon">📊</div>
-            <h2 class="loading-title" id="loadingTitle">보고서 생성 중</h2>
-            <p class="loading-subtitle" id="loadingSubtitle">모든 보고서를 미리 생성하고 있습니다. 잠시만 기다려주세요.</p>
+            <h2 class="loading-title" id="loadingTitle">보도자료 생성 중</h2>
+            <p class="loading-subtitle" id="loadingSubtitle">모든 보도자료를 미리 생성하고 있습니다. 잠시만 기다려주세요.</p>
             
             <div class="loading-progress-container">
                 <div class="loading-progress-bar">
@@ -1777,10 +1777,6 @@
                 <div class="loading-time-item">
                     <span class="loading-time-value" id="elapsedTime">00:00</span>
                     <span class="loading-time-label">경과 시간</span>
-                </div>
-                <div class="loading-time-item" id="estimatedTimeContainer" style="display: none;">
-                    <span class="loading-time-value" id="estimatedTime">--:--</span>
-                    <span class="loading-time-label">예상 시간</span>
                 </div>
                 <div class="loading-time-item" id="remainingTimeContainer" style="display: none;">
                     <span class="loading-time-value" id="remainingTime">--:--</span>
@@ -1882,7 +1878,7 @@
             
             <!-- 안내 문구 -->
             <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 1rem; text-align: center;">
-                * GRDP 없이도 다른 보고서는 정상적으로 생성됩니다<br>
+                * GRDP 없이도 다른 보도자료는 정상적으로 생성됩니다<br>
                 * 기본값 사용 시 GRDP 관련 차트는 0으로 표시됩니다
             </p>
         </div>
@@ -1913,8 +1909,8 @@
             fileUploaded: false,
             allGenerated: false,
             currentReportIndex: -1,
-            currentGlobalIndex: -1,  // 전체 보고서 통합 인덱스
-            allReports: [],  // 모든 보고서 통합 배열
+            currentGlobalIndex: -1,  // 전체 보도자료 통합 인덱스
+            allReports: [],  // 모든 보도자료 통합 배열
             fileType: null,  // 'raw' (기초자료 수집표)
             analysisFilename: null,  // 생성된 분석표 파일명
             analysisReady: false,  // 분석표 생성 완료 여부
@@ -2041,8 +2037,6 @@
             loadingCurrentIcon: document.getElementById('loadingCurrentIcon'),
             loadingCurrentText: document.getElementById('loadingCurrentText'),
             elapsedTime: document.getElementById('elapsedTime'),
-            estimatedTimeContainer: document.getElementById('estimatedTimeContainer'),
-            estimatedTime: document.getElementById('estimatedTime'),
             remainingTimeContainer: document.getElementById('remainingTimeContainer'),
             remainingTime: document.getElementById('remainingTime'),
             generationStatus: document.getElementById('generationStatus'),
@@ -2100,20 +2094,20 @@
                     state.sectoralReports = data.reports.filter(r => r.category !== 'summary');
                     state.regionalReports = data.regional_reports || [];
                     
-                    // 총 보고서 수 계산
+                    // 총 보도자료 수 계산
                     state.generationStats.total = 
                         state.summaryReports.length + 
                         state.sectoralReports.length + 
                         state.regionalReports.length + 
                         state.statisticsReports.length;
                     
-                    // 전체 보고서 배열 초기화 및 렌더링
+                    // 전체 보도자료 배열 초기화 및 렌더링
                     initializeAllReports();
                     renderAllReportsList();
                 })
                 .catch(err => {
-                    console.error('보고서 목록 로드 오류:', err);
-                    showToast('보고서 목록을 불러오는데 실패했습니다.', 'error');
+                    console.error('보도자료 목록 로드 오류:', err);
+                    showToast('보도자료 목록을 불러오는데 실패했습니다.', 'error');
                 });
         }
 
@@ -2270,19 +2264,19 @@
             elements.exportHwpBtn.style.display = 'inline-flex';
             elements.exportHwpImportBtn.style.display = 'inline-flex';
             
-            // 전체 보고서 배열 초기화 및 렌더링
+            // 전체 보도자료 배열 초기화 및 렌더링
             initializeAllReports();
             renderAllReportsList();
             
-            // 첫 번째 보고서 자동 선택
+            // 첫 번째 보도자료 자동 선택
             if (state.allReports.length > 0) {
                 selectGlobalReport(0);
             }
             
-            showToast(`✅ 전체 ${state.generationStats.completed}개 보고서 생성 완료!`, 'success');
+            showToast(`✅ 전체 ${state.generationStats.completed}개 보도자료 생성 완료!`, 'success');
             
             // 시스템 알림: 미리보기 생성 완료
-            sendSystemNotification('📋 미리보기 생성 완료', `${state.generationStats.completed}개 보고서 미리보기 생성이 완료되었습니다.`);
+            sendSystemNotification('📋 미리보기 생성 완료', `${state.generationStats.completed}개 보도자료 미리보기 생성이 완료되었습니다.`);
         }
         
         // 시스템 알림 권한 요청 및 알림 보내기
@@ -2430,15 +2424,12 @@
         }
 
         function startTimer() {
-            // 예상 시간 표시
+            // 남은 시간 계산용 예상 시간 설정
             const estimated = getEstimatedTime();
             if (estimated && estimated.duration) {
-                elements.estimatedTimeContainer.style.display = 'flex';
-                elements.estimatedTime.textContent = formatTime(estimated.duration);
                 elements.remainingTimeContainer.style.display = 'flex';
                 state.estimatedDuration = estimated.duration;
             } else {
-                elements.estimatedTimeContainer.style.display = 'none';
                 elements.remainingTimeContainer.style.display = 'none';
                 state.estimatedDuration = null;
             }
@@ -2452,7 +2443,7 @@
                     const remaining = Math.max(0, state.estimatedDuration - elapsed);
                     elements.remainingTime.textContent = formatTime(remaining);
                     
-                    // 예상 시간 초과 시 스타일 변경
+                    // 시간 초과 시 스타일 변경
                     if (remaining === 0) {
                         elements.remainingTime.style.color = 'var(--warning)';
                         elements.remainingTime.textContent = '+' + formatTime(elapsed - state.estimatedDuration);
@@ -2489,7 +2480,7 @@
             elements.generationMiniFill.style.width = `${(completed / total) * 100}%`;
         }
 
-        // ===== 보고서 선택 (캐시에서 표시) =====
+        // ===== 보도자료 선택 (캐시에서 표시) =====
         function selectSummaryReport(index) {
             // globalIndex로 변환하여 호출
             const globalIndex = state.allReports.findIndex(r => r.type === 'summary' && r.originalIndex === index);
@@ -2543,12 +2534,12 @@
                 elements.cancelEditBtn.style.display = 'none';
                 elements.markReviewedBtn.style.display = 'block';
             } else {
-                showToast('보고서를 찾을 수 없습니다.', 'error');
+                showToast('보도자료를 찾을 수 없습니다.', 'error');
             }
         }
 
         // ===== 렌더링 함수들 =====
-        // 전체 보고서 통합 배열 초기화
+        // 전체 보도자료 통합 배열 초기화
         function initializeAllReports() {
             state.allReports = [
                 ...state.summaryReports.map((r, idx) => ({ ...r, type: 'summary', originalIndex: idx })),
@@ -2561,7 +2552,7 @@
             }
         }
 
-        // 전체 보고서 통합 리스트 렌더링
+        // 전체 보도자료 통합 리스트 렌더링
         function renderAllReportsList() {
             if (!elements.allReportsList) return;
             
@@ -2652,10 +2643,10 @@
             }
         }
 
-        // 전체 보고서 선택 함수
+        // 전체 보도자료 선택 함수
         function selectGlobalReport(globalIndex) {
             if (!state.allGenerated) {
-                showToast('보고서 생성 중입니다. 잠시만 기다려주세요.', 'info');
+                showToast('보도자료 생성 중입니다. 잠시만 기다려주세요.', 'info');
                 return;
             }
             
@@ -2989,7 +2980,7 @@
                                 showGrdpModal();
                             }, 1600);
                         } else {
-                            // GRDP가 있는 경우 → 바로 보고서 생성
+                            // GRDP가 있는 경우 → 바로 보도자료 생성
                             grdpInfo.style.display = 'block';
                             grdpMissing.style.display = 'none';
                             
@@ -3034,7 +3025,7 @@
 
         // ===== 편집 모드 함수들 =====
         function getCurrentReportInfo() {
-            // 현재 선택된 보고서 정보 반환
+            // 현재 선택된 보도자료 정보 반환
             if (state.currentSummaryIndex >= 0) {
                 return { type: 'summary', report: state.summaryReports[state.currentSummaryIndex] };
             } else if (state.currentReportIndex >= 0) {
@@ -3050,7 +3041,7 @@
         function enterEditMode() {
             const reportInfo = getCurrentReportInfo();
             if (!reportInfo) {
-                showToast('편집할 보고서를 먼저 선택하세요.', 'warning');
+                showToast('편집할 보도자료를 먼저 선택하세요.', 'warning');
                 return;
             }
 
@@ -3139,7 +3130,7 @@
 
         function saveEditedContent() {
             if (!currentEditingReport) {
-                showToast('저장할 보고서가 없습니다.', 'error');
+                showToast('저장할 보도자료가 없습니다.', 'error');
                 return;
             }
 
@@ -3208,7 +3199,7 @@
         }
 
         function markReportAsEdited(type, reportId) {
-            // 편집된 보고서 표시 (옵션: 리스트에 표시 추가)
+            // 편집된 보도자료 표시 (옵션: 리스트에 표시 추가)
             if (!state.editedReports) {
                 state.editedReports = { summary: new Set(), sectoral: new Set(), regional: new Set(), statistics: new Set() };
             }
@@ -3285,7 +3276,7 @@
         // ===== 최종 문서 내보내기 =====
         async function exportFinalDocument() {
             if (!state.allGenerated) {
-                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
                 return;
             }
             
@@ -3323,7 +3314,7 @@
                     return null;
                 };
                 
-                // 1. 요약 보고서
+                // 1. 요약 보도자료
                 for (const report of state.summaryReports) {
                     const html = getHtmlContent('summary', report.id);
                     if (html) {
@@ -3335,7 +3326,7 @@
                     }
                 }
                 
-                // 2. 부문별 보고서
+                // 2. 부문별 보도자료
                 for (const report of state.sectoralReports) {
                     const html = getHtmlContent('sectoral', report.id);
                     if (html) {
@@ -3347,7 +3338,7 @@
                     }
                 }
                 
-                // 3. 시도별 보고서
+                // 3. 시도별 보도자료
                 for (const region of state.regionalReports) {
                     const html = getHtmlContent('regional', region.id);
                     if (html) {
@@ -3378,7 +3369,7 @@
                 // 페이지가 비어있는 경우 에러 처리
                 if (pages.length === 0) {
                     loadingOverlay.style.display = 'none';
-                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
                     return;
                 }
                 
@@ -3447,7 +3438,7 @@
         // ===== 한글 복붙용 문서 내보내기 =====
         async function exportHwpReadyDocument() {
             if (!state.allGenerated) {
-                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
                 return;
             }
             
@@ -3483,7 +3474,7 @@
                     return null;
                 };
                 
-                // 1. 요약 보고서
+                // 1. 요약 보도자료
                 for (const report of state.summaryReports) {
                     const html = getHtmlContent('summary', report.id);
                     if (html) {
@@ -3495,7 +3486,7 @@
                     }
                 }
                 
-                // 2. 부문별 보고서
+                // 2. 부문별 보도자료
                 for (const report of state.sectoralReports) {
                     const html = getHtmlContent('sectoral', report.id);
                     if (html) {
@@ -3507,7 +3498,7 @@
                     }
                 }
                 
-                // 3. 시도별 보고서
+                // 3. 시도별 보도자료
                 for (const region of state.regionalReports) {
                     const html = getHtmlContent('regional', region.id);
                     if (html) {
@@ -3538,7 +3529,7 @@
                 // 페이지가 비어있는 경우 에러 처리
                 if (pages.length === 0) {
                     loadingOverlay.style.display = 'none';
-                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
                     return;
                 }
                 
@@ -3604,7 +3595,7 @@
         // ===== 한글 불러오기용 문서 내보내기 =====
         async function exportHwpImportDocument() {
             if (!state.allGenerated) {
-                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
                 return;
             }
             
@@ -3636,7 +3627,7 @@
                         || null;
                 };
                 
-                // 1. 요약 보고서
+                // 1. 요약 보도자료
                 for (const report of state.summaryReports) {
                     const html = getHtmlContent('summary', report.id);
                     if (html) {
@@ -3648,7 +3639,7 @@
                     }
                 }
                 
-                // 2. 부문별 보고서
+                // 2. 부문별 보도자료
                 for (const report of state.sectoralReports) {
                     const html = getHtmlContent('sectoral', report.id);
                     if (html) {
@@ -3660,7 +3651,7 @@
                     }
                 }
                 
-                // 3. 시도별 보고서
+                // 3. 시도별 보도자료
                 for (const region of state.regionalReports) {
                     const html = getHtmlContent('regional', region.id);
                     if (html) {
@@ -3690,7 +3681,7 @@
                 
                 if (pages.length === 0) {
                     loadingOverlay.style.display = 'none';
-                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
                     return;
                 }
                 
@@ -3818,7 +3809,7 @@
                     
                     showToast('GRDP 기본값이 설정되었습니다.', 'success');
                     
-                    // 1초 후 모달 닫고 보고서 생성
+                    // 1초 후 모달 닫고 보도자료 생성
                     setTimeout(() => {
                         closeGrdpModal();
                     }, 1000);

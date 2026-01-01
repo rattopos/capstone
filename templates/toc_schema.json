@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "목차 스키마",
-  "description": "지역경제동향 보고서 목차 생성을 위한 데이터 스키마",
+  "description": "지역경제동향 보도자료 목차 생성을 위한 데이터 스키마",
   
   "type": "object",
   "required": ["sections"],

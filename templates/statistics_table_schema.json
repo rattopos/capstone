@@ -313,17 +313,17 @@
   "properties": {
     "report_info": {
       "type": "object",
-      "description": "보고서 기본 정보",
+      "description": "보도자료 기본 정보",
       "required": ["year", "quarter"],
       "properties": {
         "year": {
           "type": "integer",
-          "description": "보고서 기준 연도",
+          "description": "보도자료 기준 연도",
           "example": 2025
         },
         "quarter": {
           "type": "integer",
-          "description": "보고서 기준 분기",
+          "description": "보도자료 기준 분기",
           "enum": [1, 2, 3, 4]
         }
       }

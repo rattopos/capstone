@@ -337,7 +337,7 @@ def upload_excel():
             except Exception as e:
                 print(f"[경고] GRDP JSON 저장 실패: {e}")
         
-        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보고서 생성' if has_grdp else 'GRDP 모달 표시'}")
+        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보도자료 생성' if has_grdp else 'GRDP 모달 표시'}")
         
         return jsonify({
             'success': True,
@@ -843,13 +843,13 @@ def generate_analysis_with_weights():
 
 @api_bp.route('/report-order', methods=['GET'])
 def get_report_order():
-    """현재 보고서 순서 반환"""
+    """현재 보도자료 순서 반환"""
     return jsonify({'reports': REPORT_ORDER, 'regional_reports': REGIONAL_REPORTS})
 
 
 @api_bp.route('/report-order', methods=['POST'])
 def update_report_order():
-    """보고서 순서 업데이트"""
+    """보도자료 순서 업데이트"""
     from config import reports as reports_module
     data = request.get_json()
     new_order = data.get('order', [])
@@ -874,7 +874,7 @@ def get_session_info():
 
 @api_bp.route('/generate-all', methods=['POST'])
 def generate_all_reports():
-    """모든 보고서 일괄 생성"""
+    """모든 보도자료 일괄 생성"""
     data = request.get_json()
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
@@ -916,7 +916,7 @@ def generate_all_reports():
 
 @api_bp.route('/generate-all-regional', methods=['POST'])
 def generate_all_regional_reports():
-    """시도별 보고서 전체 생성"""
+    """시도별 보도자료 전체 생성"""
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
@@ -951,7 +951,7 @@ def generate_all_regional_reports():
 
 @api_bp.route('/export-final', methods=['POST'])
 def export_final_document():
-    """모든 보고서를 PDF 출력용 HTML 문서로 합치기"""
+    """모든 보도자료를 PDF 출력용 HTML 문서로 합치기"""
     try:
         data = request.get_json()
         pages = data.get('pages', [])

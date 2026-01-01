@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 보고서 자동 생성 시스템 - 종합 학습 가이드</title>
+    <title>지역경제동향 보도자료 자동 생성 시스템 - 종합 학습 가이드</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         
@@ -387,14 +387,14 @@
 
 <!-- ==================== 표지 ==================== -->
 <div class="cover">
-    <div class="cover-title">지역경제동향 보고서<br>자동 생성 시스템</div>
+    <div class="cover-title">지역경제동향 보도자료<br>자동 생성 시스템</div>
     <div class="cover-subtitle">종합 학습 가이드</div>
     <div style="font-size: 14pt; color: #666;">Regional Economic Trends Report Auto-Generation System</div>
     <div class="cover-info">
         <strong>캡스톤 프로젝트</strong><br>
         국가데이터처 (Ministry of Data and Statistics)<br><br>
         개발 기간: 2025.12.11 ~ 12.30 (약 20일)<br>
-        총 커밋: 147개 | 보고서: 50개 | 템플릿: 71개
+        총 커밋: 147개 | 보도자료: 50개 | 템플릿: 71개
     </div>
 </div>
 
@@ -408,7 +408,7 @@
         <ul class="toc-items">
             <li>프로젝트 배경 및 목적</li>
             <li>핵심 기능 요약</li>
-            <li>지원하는 보고서 목록 (50개)</li>
+            <li>지원하는 보도자료 목록 (50개)</li>
         </ul>
     </div>
     
@@ -474,7 +474,7 @@
 
 <h2>1.1 프로젝트 배경</h2>
 
-<p>국가데이터처(구 통계청)에서는 매 분기마다 <strong>지역경제동향 보고서</strong>를 발간합니다. 이 보고서는 17개 시·도별 경제 현황을 다양한 지표로 분석합니다.</p>
+<p>국가데이터처(구 통계청)에서는 매 분기마다 <strong>지역경제동향 보도자료</strong>를 발간합니다. 이 보도자료는 17개 시·도별 경제 현황을 다양한 지표로 분석합니다.</p>
 
 <table>
     <tr>
@@ -492,9 +492,9 @@
 
 <h3>기존 문제점</h3>
 <ul>
-    <li><strong>시간 소요</strong>: 50+ 페이지 보고서 작성에 상당한 인력/시간 투입</li>
+    <li><strong>시간 소요</strong>: 50+ 페이지 보도자료 작성에 상당한 인력/시간 투입</li>
     <li><strong>오류 가능성</strong>: 수작업 데이터 입력 시 휴먼 에러 발생</li>
-    <li><strong>일관성 부족</strong>: 매 분기 보고서 형식의 미세한 차이 발생</li>
+    <li><strong>일관성 부족</strong>: 매 분기 보도자료 형식의 미세한 차이 발생</li>
     <li><strong>비효율적 검토</strong>: 결측치/이상치 확인의 어려움</li>
 </ul>
 
@@ -502,7 +502,7 @@
 
 <div class="highlight-box">
     <div class="highlight-box-title">핵심 목표</div>
-    <strong>기초자료 수집표(Excel)를 업로드하면 완성된 지역경제동향 보고서를 자동 생성하는 웹 기반 시스템 개발</strong>
+    <strong>기초자료 수집표(Excel)를 업로드하면 완성된 지역경제동향 보도자료를 자동 생성하는 웹 기반 시스템 개발</strong>
 </div>
 
 <div class="flow-container">
@@ -510,23 +510,23 @@
     <div class="flow-arrow">→</div>
     <div class="flow-box">자동 생성 시스템<br>(Web App)</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box">지역경제동향 보고서<br>(HTML/PDF)</div>
+    <div class="flow-box">지역경제동향 보도자료<br>(HTML/PDF)</div>
 </div>
 
 <h3>달성 목표</h3>
 <table>
     <tr><th>목표</th><th>설명</th></tr>
-    <tr><td>업무 자동화</td><td>수작업 보고서 작성 시간 90% 이상 단축</td></tr>
+    <tr><td>업무 자동화</td><td>수작업 보도자료 작성 시간 90% 이상 단축</td></tr>
     <tr><td>품질 향상</td><td>데이터 오류 및 결측치 자동 검출</td></tr>
-    <tr><td>표준화</td><td>일관된 보고서 형식 및 디자인 유지</td></tr>
+    <tr><td>표준화</td><td>일관된 보도자료 형식 및 디자인 유지</td></tr>
     <tr><td>접근성</td><td>웹 기반 UI로 누구나 쉽게 사용 가능</td></tr>
-    <tr><td>유연성</td><td>보고서 순서 변경, 커스텀 데이터 입력 지원</td></tr>
+    <tr><td>유연성</td><td>보도자료 순서 변경, 커스텀 데이터 입력 지원</td></tr>
 </table>
 
-<h2>1.3 지원하는 보고서 (50개)</h2>
+<h2>1.3 지원하는 보도자료 (50개)</h2>
 
 <table>
-    <tr><th>카테고리</th><th>보고서 수</th><th>내용</th></tr>
+    <tr><th>카테고리</th><th>보도자료 수</th><th>내용</th></tr>
     <tr><td>요약</td><td>9개</td><td>표지, 목차, 인포그래픽, 요약 페이지들</td></tr>
     <tr><td>부문별</td><td>10개</td><td>광공업생산, 서비스업생산, 소비, 건설, 수출, 수입, 물가, 고용률, 실업률, 인구이동</td></tr>
     <tr><td>시도별</td><td>18개</td><td>17개 시·도 + 참고_GRDP</td></tr>
@@ -540,8 +540,8 @@
     <tr><th>기능</th><th>설명</th></tr>
     <tr><td>📁 기초자료 업로드</td><td>드래그 앤 드롭 또는 클릭으로 기초자료 수집표 업로드</td></tr>
     <tr><td>📅 연도/분기 선택</td><td>드롭다운 메뉴로 선택, 최신 데이터 자동 감지</td></tr>
-    <tr><td>👁️ 미리보기</td><td>각 보고서 HTML을 실시간으로 확인</td></tr>
-    <tr><td>◀️▶️ 페이지 네비게이션</td><td>이전/다음 버튼으로 보고서 간 쉬운 이동</td></tr>
+    <tr><td>👁️ 미리보기</td><td>각 보도자료 HTML을 실시간으로 확인</td></tr>
+    <tr><td>◀️▶️ 페이지 네비게이션</td><td>이전/다음 버튼으로 보도자료 간 쉬운 이동</td></tr>
     <tr><td>⚠️ 결측치 처리</td><td>누락된 데이터를 모달창에서 직접 입력</td></tr>
     <tr><td>✅ 검토 시스템</td><td>각 페이지 검토 완료 상태 추적</td></tr>
     <tr><td>✨ 전체 생성</td><td>모든 페이지 검토 완료 후 일괄 생성</td></tr>
@@ -559,12 +559,12 @@
 ├── 📄 dashboard.html              # 메인 대시보드 UI (프론트엔드)
 ├── 📄 data_converter.py           # 기초자료 → 분석표 변환기
 ├── 📄 kosis_collector.py          # KOSIS API 데이터 수집기
-├── 📄 report_generator.py         # CLI용 보고서 생성기
+├── 📄 report_generator.py         # CLI용 보도자료 생성기
 ├── 📄 requirements.txt            # Python 의존성 패키지 목록
 │
 ├── 📁 config/                     # 설정 모듈
 │   ├── settings.py               # 경로, 시크릿 키 등 기본 설정
-│   └── reports.py                # 보고서 순서 및 정의 상수
+│   └── reports.py                # 보도자료 순서 및 정의 상수
 │
 ├── 📁 routes/                     # Flask 라우트 (API 엔드포인트)
 │   ├── main.py                   # 메인 페이지 라우트
@@ -572,7 +572,7 @@
 │   └── preview.py                # 미리보기 생성 API
 │
 ├── 📁 services/                   # 비즈니스 로직 서비스
-│   ├── report_generator.py       # 보고서 HTML 생성 핵심 로직
+│   ├── report_generator.py       # 보도자료 HTML 생성 핵심 로직
 │   ├── summary_data.py           # 요약 페이지 데이터 추출
 │   └── grdp_service.py           # GRDP 데이터 처리 서비스
 │
@@ -626,7 +626,7 @@
          │ Template.render(**data)
          ▼
 ┌──────────────────┐
-│   HTML 보고서    │ (출력물)
+│   HTML 보도자료    │ (출력물)
 └──────────────────┘</div>
 
 <h2>2.4 기술 스택</h2>
@@ -678,8 +678,8 @@ UPLOAD_FOLDER = BASE_DIR / 'uploads'
 SECRET_KEY = 'capstone_secret_key_2025'
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB</div>
 
-<h3>config/reports.py - 보고서 정의</h3>
-<p>50개 보고서의 메타데이터를 딕셔너리로 관리합니다.</p>
+<h3>config/reports.py - 보도자료 정의</h3>
+<p>50개 보도자료의 메타데이터를 딕셔너리로 관리합니다.</p>
 
 <div class="code-block">SECTOR_REPORTS = [
     {
@@ -698,7 +698,7 @@ REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS</div>
 
 <div class="tip-box">
     <strong>💡 Config 분리의 장점</strong><br>
-    새 보고서 추가 시 <code>reports.py</code>에 딕셔너리만 추가하면 됩니다. 다른 코드 수정 불필요!
+    새 보도자료 추가 시 <code>reports.py</code>에 딕셔너리만 추가하면 됩니다. 다른 코드 수정 불필요!
 </div>
 
 <h2>3.2 Routes 모듈</h2>
@@ -714,7 +714,7 @@ REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS</div>
 <div class="code-block">1. 파일 업로드
 2. 파일 유형 감지 (기초자료 vs 분석표)
 3. 기초자료면 → DataConverter로 분석표 변환
-4. 분석표 → 보고서 생성 준비 완료</div>
+4. 분석표 → 보도자료 생성 준비 완료</div>
 
 <h2>3.3 Services 모듈</h2>
 
@@ -976,7 +976,7 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
 
 <div class="warning-box">
     <strong>가장 중요한 지연 원인!</strong><br><br>
-    <strong>증상</strong>: 엑셀 파일 업로드 후 보고서가 비어있는 상태로 생성<br><br>
+    <strong>증상</strong>: 엑셀 파일 업로드 후 보도자료가 비어있는 상태로 생성<br><br>
     <strong>잘못된 원인 추적</strong>:
     <ul>
         <li>템플릿 파일 문제로 오인 → Jinja2 변수명 여러 차례 수정</li>
@@ -990,7 +990,7 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
     <strong>원인 파악이 늦은 이유</strong>:
     <ul>
         <li>에러 메시지 없이 빈 데이터만 반환</li>
-        <li>일부 보고서는 캐시로 정상 동작해서 혼란</li>
+        <li>일부 보도자료는 캐시로 정상 동작해서 혼란</li>
         <li>파이프라인이 길어서 문제 지점 파악 어려움</li>
         <li>상세 로그 부족</li>
     </ul>
@@ -1016,7 +1016,7 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
 
 <div class="highlight-box">
     <div class="highlight-box-title">★ 가장 중요한 교훈: 기본부터 확인하기</div>
-    <p><strong>문제</strong>: 비어있는 보고서 생성 시 복잡한 로직(템플릿, 데이터 추출)만 의심하고, 파일 자체가 제대로 업로드/저장되었는지 기본적인 확인을 나중에 함</p>
+    <p><strong>문제</strong>: 비어있는 보도자료 생성 시 복잡한 로직(템플릿, 데이터 추출)만 의심하고, 파일 자체가 제대로 업로드/저장되었는지 기본적인 확인을 나중에 함</p>
     <p><strong>개선</strong>:</p>
     <ul>
         <li>디버깅 시 <strong>가장 기본적인 것부터 확인</strong> (파일 존재, 경로 확인, 권한 등)</li>
@@ -1042,17 +1042,17 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
 
 <div class="qa-item">
     <div class="qa-q">스키마 기반 시스템의 장점은 무엇인가요?</div>
-    <div class="qa-a">가장 큰 장점은 확장성입니다. 새로운 보고서를 추가할 때 코드를 수정할 필요 없이 JSON 스키마 파일만 작성하면 됩니다. 이렇게 하면 유지보수가 훨씬 쉬워지고, 데이터 매핑도 명확해집니다.</div>
+    <div class="qa-a">가장 큰 장점은 확장성입니다. 새로운 보도자료를 추가할 때 코드를 수정할 필요 없이 JSON 스키마 파일만 작성하면 됩니다. 이렇게 하면 유지보수가 훨씬 쉬워지고, 데이터 매핑도 명확해집니다.</div>
 </div>
 
 <div class="qa-item">
     <div class="qa-q">Flask 말고 Django나 FastAPI 쓰지, 왜 Flask야?</div>
-    <div class="qa-a">Flask는 가볍고 <strong>의존성이 최소화</strong>되어서 국가데이터처 내부망 환경에 적합합니다. Django는 ORM, Admin 등 불필요한 의존성이 많고, FastAPI의 async는 분기별 보고서 생성에 오버스펙입니다.</div>
+    <div class="qa-a">Flask는 가볍고 <strong>의존성이 최소화</strong>되어서 국가데이터처 내부망 환경에 적합합니다. Django는 ORM, Admin 등 불필요한 의존성이 많고, FastAPI의 async는 분기별 보도자료 생성에 오버스펙입니다.</div>
 </div>
 
 <div class="qa-item">
     <div class="qa-q">왜 데이터베이스 안 썼어?</div>
-    <div class="qa-a">국가데이터처 내부망에서 DB 서버를 별도로 운영하기 어렵습니다. 분기별 보고서 생성이 목적이라 실시간 대용량 처리가 필요 없습니다. JSON 파일 기반이면 <strong>담당자가 직접 수정</strong>할 수 있고, 추가 서버 설치 없이 동작합니다.</div>
+    <div class="qa-a">국가데이터처 내부망에서 DB 서버를 별도로 운영하기 어렵습니다. 분기별 보도자료 생성이 목적이라 실시간 대용량 처리가 필요 없습니다. JSON 파일 기반이면 <strong>담당자가 직접 수정</strong>할 수 있고, 추가 서버 설치 없이 동작합니다.</div>
 </div>
 
 <div class="qa-item">
@@ -1064,7 +1064,7 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
     <div class="qa-q">자연어처리 기술은 왜 안 썼어?</div>
     <div class="qa-a">
         <strong>내부망 환경</strong>으로 외부 LLM API 사용 불가능합니다. 로컬 LLM은 고사양 GPU 필요한데 업무용 PC에서 어렵습니다.<br><br>
-        또한 이 보고서는 <strong>정형화된 통계 데이터</strong>입니다. '증가율 2.1%'를 '전년동기대비 2.1% 증가'로 변환하는 건 if-else 로직으로 충분합니다. 공문서 특성상 '자연스러움'보다 '정확성과 일관성'이 더 중요합니다.
+        또한 이 보도자료는 <strong>정형화된 통계 데이터</strong>입니다. '증가율 2.1%'를 '전년동기대비 2.1% 증가'로 변환하는 건 if-else 로직으로 충분합니다. 공문서 특성상 '자연스러움'보다 '정확성과 일관성'이 더 중요합니다.
     </div>
 </div>
 
@@ -1087,8 +1087,8 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
 
 <div class="qa-item">
     <div class="qa-q">빅데이터/AI/핀테크 과정인데 그중에 뭐 들어간 게 있냐?</div>
-    <div class="qa-a">"AI 적극적으로 활용했습니다! 멘토이신 공대표님께 <strong>바이브 코딩</strong>을 과외받으면서 개발했거든요. AI 도구를 페어 프로그래밍 파트너로 활용해서 2주 만에 50개 보고서 시스템을 완성할 수 있었습니다."<br><br>
-    진지하게는: 빅데이터(대규모 통계 데이터 처리), AI/자동화(규칙 기반 50개 보고서 자동 생성), 실무 문제 해결(공공기관 업무 자동화)을 적용했습니다.</div>
+    <div class="qa-a">"AI 적극적으로 활용했습니다! 멘토이신 공대표님께 <strong>바이브 코딩</strong>을 과외받으면서 개발했거든요. AI 도구를 페어 프로그래밍 파트너로 활용해서 2주 만에 50개 보도자료 시스템을 완성할 수 있었습니다."<br><br>
+    진지하게는: 빅데이터(대규모 통계 데이터 처리), AI/자동화(규칙 기반 50개 보도자료 자동 생성), 실무 문제 해결(공공기관 업무 자동화)을 적용했습니다.</div>
 </div>
 
 <h2>6.3 환경 제약 킬러 멘트</h2>
@@ -1129,7 +1129,7 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
     - 심사위원은 적이 아니다<br>
     - 틀려도 괜찮다 - 모르면 모른다고<br>
     - 최악의 상황도 10분 - Q&A 시간은 한정됨<br><br>
-    <strong>마음속 주문</strong>: "이 사람이 뭐라 하든 나는 2주 동안 50개 보고서 시스템을 혼자 만들었다. 대단한 거 맞음."
+    <strong>마음속 주문</strong>: "이 사람이 뭐라 하든 나는 2주 동안 50개 보도자료 시스템을 혼자 만들었다. 대단한 거 맞음."
 </div>
 
 <!-- ==================== 부록 ==================== -->
@@ -1142,11 +1142,11 @@ def format_value(value, format_str="%.1f", placeholder="[  ]"):
     <tr><th>메서드</th><th>엔드포인트</th><th>설명</th></tr>
     <tr><td>GET</td><td><code>/</code></td><td>대시보드 페이지</td></tr>
     <tr><td>POST</td><td><code>/api/upload</code></td><td>엑셀 파일 업로드</td></tr>
-    <tr><td>POST</td><td><code>/api/generate-preview</code></td><td>부문별 보고서 미리보기</td></tr>
-    <tr><td>POST</td><td><code>/api/generate-summary-preview</code></td><td>요약 보고서 미리보기</td></tr>
-    <tr><td>POST</td><td><code>/api/generate-regional-preview</code></td><td>시도별 보고서 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-preview</code></td><td>부문별 보도자료 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-summary-preview</code></td><td>요약 보도자료 미리보기</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-regional-preview</code></td><td>시도별 보도자료 미리보기</td></tr>
     <tr><td>POST</td><td><code>/api/generate-statistics-preview</code></td><td>통계표 미리보기</td></tr>
-    <tr><td>POST</td><td><code>/api/generate-all</code></td><td>전체 보고서 일괄 생성</td></tr>
+    <tr><td>POST</td><td><code>/api/generate-all</code></td><td>전체 보도자료 일괄 생성</td></tr>
     <tr><td>GET</td><td><code>/api/download-analysis</code></td><td>분석표 다운로드</td></tr>
     <tr><td>POST</td><td><code>/api/export-final</code></td><td>PDF용 HTML 생성</td></tr>
     <tr><td>POST</td><td><code>/api/export-hwp-ready</code></td><td>한글 복붙용 HTML 생성</td></tr>
@@ -1171,9 +1171,9 @@ python app.py
 <table>
     <tr><th>모듈</th><th>한 줄 설명</th></tr>
     <tr><td><code>app.py</code></td><td>Flask 앱 진입점, Blueprint 등록</td></tr>
-    <tr><td><code>config/reports.py</code></td><td>50개 보고서 정의 (id, generator, template)</td></tr>
+    <tr><td><code>config/reports.py</code></td><td>50개 보도자료 정의 (id, generator, template)</td></tr>
     <tr><td><code>routes/api.py</code></td><td>업로드, 생성, 다운로드 API</td></tr>
-    <tr><td><code>routes/preview.py</code></td><td>개별 보고서 미리보기 API</td></tr>
+    <tr><td><code>routes/preview.py</code></td><td>개별 보도자료 미리보기 API</td></tr>
     <tr><td><code>services/report_generator.py</code></td><td>Generator 호출 → 템플릿 렌더링</td></tr>
     <tr><td><code>templates/*_generator.py</code></td><td>엑셀 → 딕셔너리 데이터 추출</td></tr>
     <tr><td><code>templates/*_schema.json</code></td><td>데이터 구조 문서화/기본값</td></tr>
@@ -1184,7 +1184,7 @@ python app.py
 </table>
 
 <div style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 2px solid #000;">
-    <p style="font-size: 12pt; font-weight: 700;">지역경제동향 보고서 자동 생성 시스템</p>
+    <p style="font-size: 12pt; font-weight: 700;">지역경제동향 보도자료 자동 생성 시스템</p>
     <p style="font-size: 10pt; color: #666;">종합 학습 가이드 | 2025년 12월 30일</p>
     <p style="font-size: 9pt; color: #999;">캡스톤 프로젝트 | 국가데이터처</p>
 </div>

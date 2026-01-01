@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-통합 보고서 생성기
+통합 보도자료 생성기
 모든 개별 Generator들을 통합하여 관리하고, 데이터 추출 및 HTML 생성을 처리합니다.
 """
 
@@ -17,9 +17,9 @@ TEMPLATES_DIR = BASE_DIR / 'templates'
 
 
 class ReportGenerator:
-    """통합 보고서 생성기"""
+    """통합 보도자료 생성기"""
     
-    # 보고서 설정
+    # 보도자료 설정
     REPORT_CONFIGS = {
         'manufacturing': {
             'name': '광공업생산',
@@ -120,16 +120,16 @@ class ReportGenerator:
     
     def extract_data(self, report_id: str) -> dict:
         """
-        특정 보고서의 데이터 추출
+        특정 보도자료의 데이터 추출
         
         Args:
-            report_id: 보고서 ID
+            report_id: 보도자료 ID
             
         Returns:
             추출된 데이터 딕셔너리
         """
         if report_id not in self.REPORT_CONFIGS:
-            raise ValueError(f"알 수 없는 보고서 ID: {report_id}")
+            raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
         
         config = self.REPORT_CONFIGS[report_id]
         module = self._load_module(config['generator'])
@@ -217,17 +217,17 @@ class ReportGenerator:
     
     def generate_html(self, report_id: str, custom_data: dict = None) -> str:
         """
-        보고서 HTML 생성
+        보도자료 HTML 생성
         
         Args:
-            report_id: 보고서 ID
+            report_id: 보도자료 ID
             custom_data: 사용자 정의 데이터 (결측치 대체용)
             
         Returns:
             생성된 HTML 문자열
         """
         if report_id not in self.REPORT_CONFIGS:
-            raise ValueError(f"알 수 없는 보고서 ID: {report_id}")
+            raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
         
         config = self.REPORT_CONFIGS[report_id]
         
@@ -292,10 +292,10 @@ class ReportGenerator:
     
     def save_report(self, report_id: str, output_path: str = None, custom_data: dict = None) -> str:
         """
-        보고서를 파일로 저장
+        보도자료를 파일로 저장
         
         Args:
-            report_id: 보고서 ID
+            report_id: 보도자료 ID
             output_path: 출력 파일 경로 (미지정 시 기본 경로)
             custom_data: 사용자 정의 데이터
             
@@ -316,10 +316,10 @@ class ReportGenerator:
     
     def generate_all(self, custom_data_by_report: dict = None) -> dict:
         """
-        모든 보고서 생성
+        모든 보도자료 생성
         
         Args:
-            custom_data_by_report: 보고서별 커스텀 데이터
+            custom_data_by_report: 보도자료별 커스텀 데이터
             
         Returns:
             생성 결과 딕셔너리
@@ -354,16 +354,16 @@ def main():
     """CLI 실행"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='통합 보고서 생성기')
+    parser = argparse.ArgumentParser(description='통합 보도자료 생성기')
     parser.add_argument('--excel', '-e', required=True, help='엑셀 파일 경로')
-    parser.add_argument('--report', '-r', help='생성할 보고서 ID (미지정 시 전체)')
+    parser.add_argument('--report', '-r', help='생성할 보도자료 ID (미지정 시 전체)')
     parser.add_argument('--output', '-o', help='출력 파일 경로')
-    parser.add_argument('--list', '-l', action='store_true', help='사용 가능한 보고서 목록')
+    parser.add_argument('--list', '-l', action='store_true', help='사용 가능한 보도자료 목록')
     
     args = parser.parse_args()
     
     if args.list:
-        print("사용 가능한 보고서:")
+        print("사용 가능한 보도자료:")
         for report_id, config in ReportGenerator.REPORT_CONFIGS.items():
             print(f"  {report_id}: {config['name']} ({config['sheet']})")
         return
@@ -372,7 +372,7 @@ def main():
     
     if args.report:
         output_path = generator.save_report(args.report, args.output)
-        print(f"보고서 생성 완료: {output_path}")
+        print(f"보도자료 생성 완료: {output_path}")
     else:
         results = generator.generate_all()
         print(f"\n성공: {len(results['success'])}개")

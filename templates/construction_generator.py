@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-건설동향 보고서 생성기
-F'분석 시트에서 데이터를 추출하여 HTML 보고서를 생성합니다.
+건설동향 보도자료 생성기
+F'분석 시트에서 데이터를 추출하여 HTML 보도자료를 생성합니다.
 """
 
 import pandas as pd
@@ -957,7 +957,7 @@ def get_summary_box_data(regional_data):
 
 
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
-    """보고서 데이터 생성 (app.py에서 호출)
+    """보도자료 데이터 생성 (app.py에서 호출)
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -966,7 +966,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         quarter: 현재 분기 (선택사항)
     
     Returns:
-        보고서 데이터 딕셔너리
+        보도자료 데이터 딕셔너리
     """
     # TODO: 향후 기초자료 직접 추출 지원
     # if raw_excel_path and year and quarter:
@@ -1065,7 +1065,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
 
 
 def generate_report(excel_path, template_path, output_path):
-    """보고서 생성"""
+    """보도자료 생성"""
     template_data = generate_report_data(excel_path)
     
     # JSON 데이터 저장
@@ -1083,7 +1083,7 @@ def generate_report(excel_path, template_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_output)
     
-    print(f"보고서 생성 완료: {output_path}")
+    print(f"보도자료 생성 완료: {output_path}")
     print(f"데이터 파일 저장: {data_path}")
     
     return template_data

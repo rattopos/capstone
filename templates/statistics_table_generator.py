@@ -1148,8 +1148,8 @@ def main():
     parser.add_argument('--json', '-j', help='데이터 JSON 출력 경로')
     parser.add_argument('--historical', help='과거 데이터 JSON 파일 경로')
     parser.add_argument('--create-historical-template', help='과거 데이터 템플릿 생성')
-    parser.add_argument('--year', '-y', type=int, default=2025, help='보고서 연도')
-    parser.add_argument('--quarter', '-q', type=int, default=2, help='보고서 분기')
+    parser.add_argument('--year', '-y', type=int, default=2025, help='보도자료 연도')
+    parser.add_argument('--quarter', '-q', type=int, default=2, help='보도자료 분기')
     
     args = parser.parse_args()
     

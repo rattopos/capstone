@@ -1,7 +1,7 @@
-# 📊 지역경제동향 보고서 자동 생성 시스템
+# 📊 지역경제동향 보도자료 자동 생성 시스템
 ## 캡스톤 프로젝트 학습 가이드
 
-> **프레젠테이션 준비를 위한 종합 보고서**  
+> **프레젠테이션 준비를 위한 종합 보도자료**  
 > 작성일: 2025년 12월 30일
 
 ---
@@ -19,7 +19,7 @@
 
 ### 1.1 프로젝트 배경
 
-국가데이터처(구 통계청)에서는 매 분기마다 **지역경제동향 보고서**를 발간합니다. 이 보고서는 17개 시·도별 경제 현황을 다음과 같은 지표로 분석합니다:
+국가데이터처(구 통계청)에서는 매 분기마다 **지역경제동향 보도자료**를 발간합니다. 이 보도자료는 17개 시·도별 경제 현황을 다음과 같은 지표로 분석합니다:
 
 | 부문 | 지표 |
 |------|------|
@@ -31,34 +31,34 @@
 | 고용 | 고용률, 실업률 |
 | 인구 | 국내인구이동 |
 
-기존에는 이 보고서를 수작업으로 작성해야 했으며, 이는 다음과 같은 문제를 발생시켰습니다:
+기존에는 이 보도자료를 수작업으로 작성해야 했으며, 이는 다음과 같은 문제를 발생시켰습니다:
 
-- **시간 소요**: 50+ 페이지 보고서 작성에 상당한 인력/시간 투입
+- **시간 소요**: 50+ 페이지 보도자료 작성에 상당한 인력/시간 투입
 - **오류 가능성**: 수작업 데이터 입력 시 휴먼 에러 발생
-- **일관성 부족**: 매 분기 보고서 형식의 미세한 차이 발생
+- **일관성 부족**: 매 분기 보도자료 형식의 미세한 차이 발생
 - **비효율적 검토**: 결측치/이상치 확인의 어려움
 
 ### 1.2 프로젝트 목적
 
-**기초자료 수집표(Excel)를 업로드하면 완성된 지역경제동향 보고서를 자동 생성하는 웹 기반 시스템 개발**
+**기초자료 수집표(Excel)를 업로드하면 완성된 지역경제동향 보도자료를 자동 생성하는 웹 기반 시스템 개발**
 
 ```mermaid
 flowchart LR
     A[기초자료 수집표<br/>Excel] -->|자동 생성| B[자동 생성 시스템<br/>Web App]
-    B -->|생성| C[지역경제동향 보고서<br/>HTML/PDF]
+    B -->|생성| C[지역경제동향 보도자료<br/>HTML/PDF]
 ```
 
 ### 1.3 핵심 목표
 
-1. **업무 자동화**: 수작업 보고서 작성 시간 90% 이상 단축
+1. **업무 자동화**: 수작업 보도자료 작성 시간 90% 이상 단축
 2. **품질 향상**: 데이터 오류 및 결측치 자동 검출
-3. **표준화**: 일관된 보고서 형식 및 디자인 유지
+3. **표준화**: 일관된 보도자료 형식 및 디자인 유지
 4. **접근성**: 웹 기반 UI로 누구나 쉽게 사용 가능
-5. **유연성**: 보고서 순서 변경, 커스텀 데이터 입력 지원
+5. **유연성**: 보도자료 순서 변경, 커스텀 데이터 입력 지원
 
-### 1.4 지원하는 보고서 종류
+### 1.4 지원하는 보도자료 종류
 
-| 카테고리 | 보고서 수 | 내용 |
+| 카테고리 | 보도자료 수 | 내용 |
 |----------|-----------|------|
 | **요약** | 9개 | 표지, 목차, 인포그래픽, 요약 페이지들 |
 | **부문별** | 10개 | 광공업생산, 서비스업생산, 소비, 건설, 수출, 수입, 물가, 고용률, 실업률, 인구이동 |
@@ -79,14 +79,14 @@ capstone/
 ├── 📄 dashboard.html              # 메인 대시보드 UI (프론트엔드)
 ├── 📄 data_converter.py           # 기초자료 → 분석표 변환기
 ├── 📄 kosis_collector.py          # KOSIS API 데이터 수집기
-├── 📄 report_generator.py         # CLI용 보고서 생성기
+├── 📄 report_generator.py         # CLI용 보도자료 생성기
 ├── 📄 requirements.txt            # Python 의존성 패키지 목록
 ├── 📄 README.md                   # 프로젝트 설명 문서
 │
 ├── 📁 config/                     # 설정 모듈
 │   ├── __init__.py
 │   ├── settings.py               # 경로, 시크릿 키 등 기본 설정
-│   └── reports.py                # 보고서 순서 및 정의 상수
+│   └── reports.py                # 보도자료 순서 및 정의 상수
 │
 ├── 📁 routes/                     # Flask 라우트 (API 엔드포인트)
 │   ├── __init__.py
@@ -96,7 +96,7 @@ capstone/
 │
 ├── 📁 services/                   # 비즈니스 로직 서비스
 │   ├── __init__.py
-│   ├── report_generator.py       # 보고서 HTML 생성 핵심 로직
+│   ├── report_generator.py       # 보도자료 HTML 생성 핵심 로직
 │   ├── summary_data.py           # 요약 페이지 데이터 추출
 │   └── grdp_service.py           # GRDP 데이터 처리 서비스
 │
@@ -111,16 +111,16 @@ capstone/
 │   ├── *_generator.py            # 데이터 추출 모듈 (15개)
 │   ├── *_schema.json             # 데이터 스키마 정의 (39개)
 │   ├── *_data.json               # 추출된 데이터 캐시
-│   └── *_output.html             # 생성된 보고서 결과물
+│   └── *_output.html             # 생성된 보도자료 결과물
 │
 ├── 📁 uploads/                    # 업로드된 파일 저장소
 │   ├── *.xlsx                    # 업로드된 엑셀 파일
 │   └── *.html                    # 생성된 최종 문서
 │
 ├── 📁 correct_answer/             # 정답 이미지 (QA 비교용)
-│   ├── 부문별/                   # 부문별 보고서 정답 이미지
-│   ├── 시도별/                   # 시도별 보고서 정답 이미지
-│   ├── 요약/                     # 요약 보고서 정답 이미지
+│   ├── 부문별/                   # 부문별 보도자료 정답 이미지
+│   ├── 시도별/                   # 시도별 보도자료 정답 이미지
+│   ├── 요약/                     # 요약 보도자료 정답 이미지
 │   └── 통계표/                   # 통계표 정답 이미지
 │
 └── 📁 VENV/                       # Python 가상환경
@@ -155,11 +155,11 @@ def create_app():
 ├────────────────┬─────────────────────────────────────────┤
 │                │                                          │
 │   사이드바      │           미리보기 영역                   │
-│   (보고서 목록)  │           (실시간 HTML 렌더링)            │
+│   (보도자료 목록)  │           (실시간 HTML 렌더링)            │
 │                │                                          │
 │   • 요약 탭     │   ┌─────────────────────────────────┐   │
 │   • 부문별 탭   │   │                                 │   │
-│   • 시도별 탭   │   │      보고서 미리보기             │   │
+│   • 시도별 탭   │   │      보도자료 미리보기             │   │
 │   • 통계표 탭   │   │                                 │   │
 │                │   │                                 │   │
 │                │   └─────────────────────────────────┘   │
@@ -178,8 +178,8 @@ def create_app():
 
 | 모듈 | 위치 | 역할 |
 |------|------|------|
-| **Dashboard UI** | `dashboard.html` | 사용자 인터페이스, 보고서 목록/미리보기 |
-| **Report Viewer** | 내장 iframe | 생성된 HTML 보고서 렌더링 |
+| **Dashboard UI** | `dashboard.html` | 사용자 인터페이스, 보도자료 목록/미리보기 |
+| **Report Viewer** | 내장 iframe | 생성된 HTML 보도자료 렌더링 |
 | **Missing Data Modal** | 내장 JavaScript | 결측치 입력 모달 |
 
 #### 🔹 백엔드 모듈 (Flask)
@@ -187,14 +187,14 @@ def create_app():
 | 모듈 | 위치 | 역할 |
 |------|------|------|
 | **Main Route** | `routes/main.py` | 대시보드 페이지 서빙 |
-| **API Route** | `routes/api.py` | 파일 업로드, 보고서 생성 API |
+| **API Route** | `routes/api.py` | 파일 업로드, 보도자료 생성 API |
 | **Preview Route** | `routes/preview.py` | 실시간 미리보기 생성 API |
 
 #### 🔹 서비스 모듈 (비즈니스 로직)
 
 | 모듈 | 위치 | 역할 |
 |------|------|------|
-| **Report Generator** | `services/report_generator.py` | 보고서 HTML 생성 핵심 로직 |
+| **Report Generator** | `services/report_generator.py` | 보도자료 HTML 생성 핵심 로직 |
 | **Summary Data** | `services/summary_data.py` | 요약 페이지 데이터 추출 |
 | **GRDP Service** | `services/grdp_service.py` | GRDP 데이터 처리 |
 
@@ -218,9 +218,9 @@ def create_app():
 
 ```mermaid
 flowchart LR
-    A[① 파일 업로드<br/>기초자료 수집표<br/>.xlsx] --> B[② 미리보기 확인<br/>각 보고서<br/>실시간 렌더링]
+    A[① 파일 업로드<br/>기초자료 수집표<br/>.xlsx] --> B[② 미리보기 확인<br/>각 보도자료<br/>실시간 렌더링]
     B --> C[③ 검토 및 수정<br/>결측치<br/>입력 모달]
-    C --> D[④ 전체 생성<br/>50개 보고서<br/>일괄생성]
+    C --> D[④ 전체 생성<br/>50개 보도자료<br/>일괄생성]
 ```
 
 ### 3.3 상세 데이터 흐름도
@@ -243,16 +243,16 @@ flowchart TD
     C --> D[Dashboard UI<br/>iframe에서<br/>HTML 렌더링]
 ```
 
-### 3.4 보고서 생성 함수 호출 흐름
+### 3.4 보도자료 생성 함수 호출 흐름
 
 ```python
 # 1. API 요청 수신 (routes/api.py)
 @api_bp.route('/generate-preview', methods=['POST'])
 def generate_preview():
-    # 2. 보고서 설정 조회
+    # 2. 보도자료 설정 조회
     report_config = get_report_config(report_id)
     
-    # 3. 보고서 HTML 생성 (services/report_generator.py)
+    # 3. 보도자료 HTML 생성 (services/report_generator.py)
     html_content, error, missing = generate_report_html(
         excel_path, report_config, year, quarter, custom_data
     )
@@ -320,7 +320,7 @@ app.register_blueprint(preview_bp)
 
 #### 🔹 Jinja2 (템플릿 엔진)
 
-**용도**: 동적 HTML 보고서 생성
+**용도**: 동적 HTML 보도자료 생성
 
 **기능**:
 - Python 딕셔너리를 HTML로 렌더링
@@ -364,7 +364,7 @@ app.register_blueprint(preview_bp)
 **구현 목록**:
 | 구현 | 파일 | 설명 |
 |------|------|------|
-| 데이터 추출 | `templates/*_generator.py` | 엑셀에서 보고서 데이터 추출 |
+| 데이터 추출 | `templates/*_generator.py` | 엑셀에서 보도자료 데이터 추출 |
 | 요약 데이터 | `services/summary_data.py` | 요약 페이지용 집계 |
 | 변환기 | `data_converter.py` | 기초자료 → 분석표 변환 |
 
@@ -429,7 +429,7 @@ wb.save(output_path)
 |------|------|------|
 | 파일 업로드 | `dashboard.html` | 드래그 앤 드롭 + 클릭 |
 | 미리보기 | `dashboard.html` | iframe 동적 업데이트 |
-| 보고서 탐색 | `dashboard.html` | 이전/다음 버튼 |
+| 보도자료 탐색 | `dashboard.html` | 이전/다음 버튼 |
 | 검토 시스템 | `dashboard.html` | 체크박스 상태 관리 |
 
 ```javascript
@@ -567,21 +567,21 @@ graph TB
 
 | 항목 | 성과 |
 |------|------|
-| **업무 자동화** | 50+ 페이지 보고서를 수 분 내 자동 생성 |
+| **업무 자동화** | 50+ 페이지 보도자료를 수 분 내 자동 생성 |
 | **데이터 품질** | 결측치/이상치 자동 탐지 및 하이라이트 |
 | **사용 편의성** | 드래그 앤 드롭 업로드, 실시간 미리보기 |
-| **유연성** | 보고서 순서 변경, 커스텀 데이터 입력 지원 |
-| **표준화** | 일관된 디자인 및 형식의 보고서 |
+| **유연성** | 보도자료 순서 변경, 커스텀 데이터 입력 지원 |
+| **표준화** | 일관된 디자인 및 형식의 보도자료 |
 
 #### 📊 기술적 시사점
 
 1. **모듈화된 아키텍처**
-   - Generator/Template/Schema 분리로 새 보고서 추가 용이
+   - Generator/Template/Schema 분리로 새 보도자료 추가 용이
    - Blueprint 패턴으로 라우트 모듈화
    - 서비스 레이어 분리로 테스트 용이성 확보
 
 2. **데이터 처리 파이프라인**
-   - 기초자료 → 분석표 → 보고서의 단계별 처리
+   - 기초자료 → 분석표 → 보도자료의 단계별 처리
    - 수식 보존 방식으로 엑셀 호환성 유지
    - JSON 스키마를 통한 데이터 검증
 
@@ -617,7 +617,7 @@ graph TB
 | 항목 | 현재 상태 | 개선 방안 |
 |------|----------|----------|
 | **데이터베이스** | 파일 기반 | PostgreSQL/SQLite 도입 |
-| **버전 관리** | 없음 | 보고서 히스토리 저장 |
+| **버전 관리** | 없음 | 보도자료 히스토리 저장 |
 | **협업 기능** | 단일 사용자 | 다중 사용자 동시 편집 |
 | **AI 통합** | 없음 | 코멘트 자동 생성 (LLM) |
 
@@ -645,7 +645,7 @@ def generate_report_html(
 ```python
 # 커스텀 예외 클래스 도입
 class ReportGenerationError(Exception):
-    """보고서 생성 중 발생하는 예외"""
+    """보도자료 생성 중 발생하는 예외"""
     pass
 
 class DataExtractionError(Exception):
@@ -656,12 +656,12 @@ class DataExtractionError(Exception):
 #### 3. 로깅 체계화
 ```python
 # 현재: print() 사용
-print(f"[DEBUG] 보고서 생성 완료")
+print(f"[DEBUG] 보도자료 생성 완료")
 
 # 개선: logging 모듈 사용
 import logging
 logger = logging.getLogger(__name__)
-logger.info("보고서 생성 완료", extra={'report_id': report_id})
+logger.info("보도자료 생성 완료", extra={'report_id': report_id})
 ```
 
 #### 4. 설정 관리 개선
@@ -679,7 +679,7 @@ logger.info("보고서 생성 완료", extra={'report_id': report_id})
 #### 🚀 추가 가능한 기능
 
 1. **다국어 지원**
-   - 영문 보고서 자동 생성
+   - 영문 보도자료 자동 생성
    - 템플릿 다국어화 (i18n)
 
 2. **대시보드 확장**
@@ -707,11 +707,11 @@ logger.info("보고서 생성 완료", extra={'report_id': report_id})
 |--------|-----------|------|
 | `GET` | `/` | 대시보드 페이지 |
 | `POST` | `/api/upload` | 엑셀 파일 업로드 |
-| `POST` | `/api/generate-preview` | 부문별 보고서 미리보기 |
-| `POST` | `/api/generate-summary-preview` | 요약 보고서 미리보기 |
-| `POST` | `/api/generate-regional-preview` | 시도별 보고서 미리보기 |
+| `POST` | `/api/generate-preview` | 부문별 보도자료 미리보기 |
+| `POST` | `/api/generate-summary-preview` | 요약 보도자료 미리보기 |
+| `POST` | `/api/generate-regional-preview` | 시도별 보도자료 미리보기 |
 | `POST` | `/api/generate-statistics-preview` | 통계표 미리보기 |
-| `POST` | `/api/generate-all` | 전체 보고서 일괄 생성 |
+| `POST` | `/api/generate-all` | 전체 보도자료 일괄 생성 |
 | `GET` | `/api/download-analysis` | 분석표 다운로드 |
 | `POST` | `/api/export-final` | PDF용 HTML 생성 |
 | `POST` | `/api/export-hwp-ready` | 한글 복붙용 HTML 생성 |

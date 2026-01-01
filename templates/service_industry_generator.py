@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-서비스업생산 보고서 생성기
-B 분석 시트에서 데이터를 추출하여 HTML 보고서를 생성합니다.
+서비스업생산 보도자료 생성기
+B 분석 시트에서 데이터를 추출하여 HTML 보도자료를 생성합니다.
 """
 
 import pandas as pd
@@ -836,7 +836,7 @@ def get_summary_box_data(regional_data):
 
 
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
-    """미리보기용 보고서 데이터 생성
+    """미리보기용 보도자료 데이터 생성
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -909,7 +909,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
 
 
 def generate_report(excel_path, template_path, output_path, raw_excel_path=None, year=None, quarter=None):
-    """보고서 생성
+    """보도자료 생성
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -992,7 +992,7 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_output)
     
-    print(f"보고서 생성 완료: {output_path}")
+    print(f"보도자료 생성 완료: {output_path}")
     print(f"데이터 파일 저장: {data_path}")
     
     return template_data

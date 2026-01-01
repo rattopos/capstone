@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-보고서 생성 서비스
+보도자료 생성 서비스
 """
 
 import importlib.util
@@ -22,7 +22,7 @@ from .grdp_service import (
 
 
 def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
-    """스키마 기본값으로 보고서 생성 (일러두기 등 generator 없는 경우)"""
+    """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)"""
     try:
         # 스키마 파일에서 기본값 로드
         schema_path = TEMPLATES_DIR / f"{report_id}_schema.json"
@@ -63,17 +63,17 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         template = Template(template_content)
         html_content = template.render(**data)
         
-        print(f"[DEBUG] 스키마 기반 보고서 생성 완료: {report_id}")
+        print(f"[DEBUG] 스키마 기반 보도자료 생성 완료: {report_id}")
         return html_content, None, []
         
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return None, f"스키마 기반 보고서 생성 오류: {str(e)}", []
+        return None, f"스키마 기반 보도자료 생성 오류: {str(e)}", []
 
 
 def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
-    """보고서 HTML 생성"""
+    """보도자료 HTML 생성"""
     try:
         # 파일 존재 및 접근 가능 여부 확인
         excel_path_obj = Path(excel_path)
@@ -92,7 +92,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         report_name = report_config['name']
         report_id = report_config['id']
         
-        print(f"\n[DEBUG] ========== {report_name} 보고서 생성 시작 ==========")
+        print(f"\n[DEBUG] ========== {report_name} 보도자료 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
         if raw_excel_path:
@@ -259,19 +259,19 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         html_content = template.render(**data)
         
-        print(f"[DEBUG] 보고서 생성 성공!")
+        print(f"[DEBUG] 보도자료 생성 성공!")
         return html_content, None, missing
         
     except Exception as e:
         import traceback
-        error_msg = f"보고서 생성 오류: {str(e)}"
+        error_msg = f"보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg, []
 
 
 def generate_regional_report_html(excel_path, region_name, is_reference=False):
-    """시도별 보고서 HTML 생성"""
+    """시도별 보도자료 HTML 생성"""
     try:
         # 파일 존재 확인
         excel_path_obj = Path(excel_path)
@@ -300,14 +300,14 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
         
     except Exception as e:
         import traceback
-        error_msg = f"시도별 보고서 생성 오류: {str(e)}"
+        error_msg = f"시도별 보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
 
 
 def generate_grdp_reference_html(excel_path, session_data=None):
-    """참고_GRDP 보고서 HTML 생성"""
+    """참고_GRDP 보도자료 HTML 생성"""
     try:
         from flask import session
         year = session.get('year', 2025) if session_data is None else session_data.get('year', 2025)
@@ -410,7 +410,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         
     except Exception as e:
         import traceback
-        error_msg = f"참고_GRDP 보고서 생성 오류: {str(e)}"
+        error_msg = f"참고_GRDP 보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
@@ -570,7 +570,7 @@ def _generate_default_grdp_html(grdp_data):
         <div class="info-box">
             <p><strong>■ 참고사항</strong></p>
             <p>· 현재 분기 GRDP 데이터는 별도 발표 자료를 참조하시기 바랍니다.</p>
-            <p>· 본 보고서에서는 분기 GRDP의 전년동기비 증감률을 시도별로 제공합니다.</p>
+            <p>· 본 보도자료에서는 분기 GRDP의 전년동기비 증감률을 시도별로 제공합니다.</p>
         </div>
         
         <div class="footnote">
@@ -584,7 +584,7 @@ def _generate_default_grdp_html(grdp_data):
 
 
 def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=None):
-    """통계표 보고서 HTML 생성"""
+    """통계표 보도자료 HTML 생성"""
     try:
         generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
         if not generator_path.exists():
@@ -608,7 +608,7 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
         
     except Exception as e:
         import traceback
-        error_msg = f"통계표 보고서 생성 오류: {str(e)}"
+        error_msg = f"통계표 보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg

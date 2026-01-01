@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-시도별 경제동향 보고서 생성기
+시도별 경제동향 보도자료 생성기
 
 17개 시도별 경제동향 데이터를 엑셀에서 추출하고,
-Jinja2 템플릿을 사용하여 HTML 보고서를 생성합니다.
+Jinja2 템플릿을 사용하여 HTML 보도자료를 생성합니다.
 효율성을 위해 데이터를 캐싱합니다.
 """
 
@@ -184,9 +184,9 @@ class DataCache:
 
 
 class RegionalGenerator:
-    """시도별 경제동향 보고서 생성 클래스"""
+    """시도별 경제동향 보도자료 생성 클래스"""
     
-    # 업종명 매핑 사전 (엑셀 데이터 → 보고서 표기명)
+    # 업종명 매핑 사전 (엑셀 데이터 → 보도자료 표기명)
     INDUSTRY_NAME_MAP = {
         # 광공업
         "전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업": "반도체·전자부품",
@@ -328,7 +328,7 @@ class RegionalGenerator:
         return str(name).strip().replace("\u3000", "").replace("　", "").strip()
     
     def _get_display_name(self, raw_name: str, name_map: Dict[str, str]) -> str:
-        """보고서 표기명으로 변환"""
+        """보도자료 표기명으로 변환"""
         cleaned = self._clean_name(raw_name)
         for key, value in name_map.items():
             if key in cleaned or cleaned in key:
@@ -1590,7 +1590,7 @@ class RegionalGenerator:
         }
     
     def render_html(self, region: str, template_path: str, output_path: str = None) -> str:
-        """HTML 보고서 렌더링"""
+        """HTML 보도자료 렌더링"""
         data = self.extract_all_data(region)
         
         # Jinja2 환경 설정
@@ -1605,7 +1605,7 @@ class RegionalGenerator:
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            print(f"보고서가 생성되었습니다: {output_path}")
+            print(f"보도자료가 생성되었습니다: {output_path}")
         
         return html_content
     
@@ -1633,7 +1633,7 @@ def main():
     """메인 실행 함수"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='시도별 경제동향 보고서 생성기')
+    parser = argparse.ArgumentParser(description='시도별 경제동향 보도자료 생성기')
     parser.add_argument('--excel', '-e', required=True, help='엑셀 파일 경로')
     parser.add_argument('--template', '-t', required=True, help='템플릿 파일 경로')
     parser.add_argument('--region', '-r', help='지역명 (예: 서울). 미지정시 전체 생성')

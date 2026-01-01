@@ -1,6 +1,6 @@
 # 📚 프로젝트 용어 사전
 
-> 지역경제동향 보고서 자동 생성 시스템에서 사용되는 용어들을 정리한 사전입니다.
+> 지역경제동향 보도자료 자동 생성 시스템에서 사용되는 용어들을 정리한 사전입니다.
 
 ---
 
@@ -93,8 +93,8 @@
 | 용어 | 정의 | 비고 (참고 링크) |
 |------|------|------------------|
 | **기초자료 수집표** | KOSIS 등에서 수집한 원본 통계 데이터를 담은 엑셀 파일. 11개 시트(광공업생산, 서비스업생산 등)로 구성된다. | 프로젝트 내부 문서 |
-| **분석표** | 기초자료를 가공하여 집계 및 분석 수식이 적용된 엑셀 파일. 42개 시트로 구성되며, 보고서 생성의 입력 자료이다. | 프로젝트 내부 문서 |
-| **템플릿** (문서 템플릿) | 반복적으로 사용되는 문서의 틀. 이 프로젝트에서는 Jinja2 HTML 템플릿으로 보고서 형식을 정의한다. (코드 템플릿과 구분됨) | [위키백과 - 템플릿](https://ko.wikipedia.org/wiki/템플릿) |
+| **분석표** | 기초자료를 가공하여 집계 및 분석 수식이 적용된 엑셀 파일. 42개 시트로 구성되며, 보도자료 생성의 입력 자료이다. | 프로젝트 내부 문서 |
+| **템플릿** (문서 템플릿) | 반복적으로 사용되는 문서의 틀. 이 프로젝트에서는 Jinja2 HTML 템플릿으로 보도자료 형식을 정의한다. (코드 템플릿과 구분됨) | [위키백과 - 템플릿](https://ko.wikipedia.org/wiki/템플릿) |
 | **스키마** (Schema, 데이터 스키마) | 데이터의 구조와 형식을 정의한 명세서. JSON 스키마 파일은 템플릿에서 사용할 변수 구조를 정의한다. | [JSON Schema](https://json-schema.org/) |
 | **집계 시트** | 분석표에서 기초자료의 값을 정리한 시트. 시트명에 '집계'가 포함된다. (예: A(광공업생산)집계) | 프로젝트 내부 문서 |
 | **분석 시트** | 분석표에서 집계 시트의 데이터를 참조하여 증감률 등을 계산하는 시트. 시트명에 '분석'이 포함된다. | 프로젝트 내부 문서 |
@@ -125,16 +125,16 @@
 
 ---
 
-## 4. 보고서 관련 용어
+## 4. 보도자료 관련 용어
 
 | 용어 | 정의 | 비고 (참고 링크) |
 |------|------|------------------|
-| **지역경제동향** | 17개 시·도별 경제 현황을 분석한 국가데이터처의 분기별 보고서. 생산, 소비, 물가, 고용 등을 포함한다. | [국가데이터처 보고서](https://kostat.go.kr/) |
+| **지역경제동향** | 17개 시·도별 경제 현황을 분석한 국가데이터처의 분기별 보도자료. 생산, 소비, 물가, 고용 등을 포함한다. | [국가데이터처 보도자료](https://kostat.go.kr/) |
 | **인포그래픽** | 정보(Information)와 그래픽(Graphic)의 합성어. 복잡한 데이터를 시각적으로 표현한 이미지이다. | [위키백과 - 인포그래픽](https://ko.wikipedia.org/wiki/인포그래픽) |
-| **일러두기** | 보고서 본문 앞에 위치하여 통계의 작성 목적, 용어 정의, 주의사항 등을 안내하는 페이지이다. | - |
-| **부문별 보고서** | 경제 부문(생산, 소비, 고용 등)별로 전국 17개 시·도의 현황을 분석한 보고서 페이지들이다. | 프로젝트 내부 문서 |
-| **시도별 보고서** | 특정 시·도의 모든 경제 지표(생산, 소비, 고용 등)를 종합 분석한 보고서 페이지들이다. | 프로젝트 내부 문서 |
-| **통계표** | 숫자 데이터를 행과 열로 정리한 표. 보고서 부록에 세부 수치를 기록한다. | - |
+| **일러두기** | 보도자료 본문 앞에 위치하여 통계의 작성 목적, 용어 정의, 주의사항 등을 안내하는 페이지이다. | - |
+| **부문별 보도자료** | 경제 부문(생산, 소비, 고용 등)별로 전국 17개 시·도의 현황을 분석한 보도자료 페이지들이다. | 프로젝트 내부 문서 |
+| **시도별 보도자료** | 특정 시·도의 모든 경제 지표(생산, 소비, 고용 등)를 종합 분석한 보도자료 페이지들이다. | 프로젝트 내부 문서 |
+| **통계표** | 숫자 데이터를 행과 열로 정리한 표. 보도자료 부록에 세부 수치를 기록한다. | - |
 
 ---
 
@@ -429,15 +429,21 @@
 
 | 약어 | 풀이 | 의미 |
 |------|------|------|
+| **ACF** | Autocorrelation Function | 자기상관함수 |
 | **ACID** | Atomicity, Consistency, Isolation, Durability | 데이터베이스 트랜잭션 특성 |
+| **ANOVA** | Analysis of Variance | 분산분석 |
 | **API** | Application Programming Interface | 소프트웨어 간 통신 인터페이스 |
+| **ARIMA** | AutoRegressive Integrated Moving Average | 자기회귀 누적 이동평균 모델 |
 | **CLI** | Command Line Interface | 명령줄 인터페이스 |
 | **CPI** | Consumer Price Index | 소비자물가지수 |
+| **EDA** | Exploratory Data Analysis | 탐색적 데이터 분석 |
+| **EMA** | Exponential Moving Average | 지수이동평균 |
 | **CRUD** | Create, Read, Update, Delete | 데이터 조작 기본 작업 |
 | **CSS** | Cascading Style Sheets | 스타일시트 언어 |
 | **DIP** | Dependency Inversion Principle | 의존성 역전 원칙 |
 | **DRY** | Don't Repeat Yourself | 코드 중복 방지 원칙 |
 | **ETL** | Extract, Transform, Load | 데이터 추출·변환·적재 |
+| **FAB** | Floating Action Button | 플로팅 액션 버튼 |
 | **AJAX** | Asynchronous JavaScript and XML | 비동기 웹 통신 기술 |
 | **CSR** | Client-Side Rendering | 클라이언트 사이드 렌더링 |
 | **DOM** | Document Object Model | 문서 객체 모델 |
@@ -446,24 +452,33 @@
 | **HTML** | HyperText Markup Language | 웹 마크업 언어 |
 | **HTTP** | HyperText Transfer Protocol | 웹 통신 프로토콜 |
 | **IIP** | Index of Industrial Production | 광공업생산지수 |
+| **IQR** | Interquartile Range | 사분위수 범위 |
 | **ISP** | Interface Segregation Principle | 인터페이스 분리 원칙 |
 | **JSON** | JavaScript Object Notation | 데이터 교환 포맷 |
 | **KOSIS** | Korean Statistical Information Service | 국가통계포털 |
+| **KPI** | Key Performance Indicator | 핵심 성과 지표 |
 | **LSP** | Liskov Substitution Principle | 리스코프 치환 원칙 |
+| **MAE** | Mean Absolute Error | 평균 절대 오차 |
+| **MAPE** | Mean Absolute Percentage Error | 평균 절대 백분율 오차 |
 | **MVC** | Model-View-Controller | 모델-뷰-컨트롤러 패턴 |
 | **MVP** | Minimum Viable Product | 최소 기능 제품 |
 | **NaN** | Not a Number | 숫자가 아님 (결측치) |
 | **NoSQL** | Not Only SQL | 비관계형 데이터베이스 |
 | **OCP** | Open-Closed Principle | 개방-폐쇄 원칙 |
+| **OLAP** | Online Analytical Processing | 온라인 분석 처리 |
+| **OLTP** | Online Transaction Processing | 온라인 트랜잭션 처리 |
 | **ORM** | Object-Relational Mapping | 객체-관계 매핑 |
+| **PACF** | Partial Autocorrelation Function | 부분자기상관함수 |
 | **QoQ** | Quarter over Quarter | 전분기비 |
 | **RDBMS** | Relational Database Management System | 관계형 데이터베이스 관리 시스템 |
 | **REST** | Representational State Transfer | 웹 서비스 설계 아키텍처 |
+| **RMSE** | Root Mean Squared Error | 평균 제곱근 오차 |
 | **RPO** | Recovery Point Objective | 복구 시점 목표 |
 | **RTO** | Recovery Time Objective | 복구 시간 목표 |
 | **SOLID** | Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion | 객체 지향 설계 5원칙 |
 | **SPA** | Single Page Application | 싱글 페이지 애플리케이션 |
 | **SQL** | Structured Query Language | 구조화 질의어 |
+| **SVG** | Scalable Vector Graphics | 확장 가능한 벡터 그래픽 |
 | **SRP** | Single Responsibility Principle | 단일 책임 원칙 |
 | **TDD** | Test-Driven Development | 테스트 주도 개발 |
 | **SSR** | Server-Side Rendering | 서버 사이드 렌더링 |
@@ -473,6 +488,312 @@
 | **WSGI** | Web Server Gateway Interface | 웹 서버 게이트웨이 인터페이스 |
 | **YAGNI** | You Aren't Gonna Need It | 필요 없는 기능 구현 금지 원칙 |
 | **YoY** | Year over Year | 전년동기비 |
+
+---
+
+## 12. 대시보드 UI 컴포넌트 용어
+
+| 용어 | 정의 | 비고 (참고 링크) |
+|------|------|------------------|
+| **패널** (Panel) | 대시보드에서 관련된 정보나 기능을 그룹화하여 표시하는 독립적인 영역. 보통 제목, 본문, 액션 버튼으로 구성되며, 접거나 펼칠 수 있다. 카드와 유사하지만 더 큰 영역을 차지한다. | - |
+| **모달** (Modal, Modal Window) | 현재 페이지 위에 오버레이되어 표시되는 대화 상자. 사용자가 모달을 닫기 전까지 뒤의 콘텐츠와 상호작용할 수 없다. 경고, 확인, 입력 폼 등에 사용된다. | [MDN dialog 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/dialog) |
+| **모달리스** (Modeless) | 모달과 달리 뒤의 콘텐츠와 동시에 상호작용할 수 있는 대화 상자. 팔레트 창, 도구 모음 등에 사용된다. | - |
+| **팝업** (Popup) | 새 창이나 현재 요소 근처에 작은 창으로 나타나는 UI 요소. 모달보다 가벼우며, 추가 정보나 작은 기능을 제공한다. | - |
+| **팝오버** (Popover) | 특정 요소를 클릭하면 그 근처에 나타나는 작은 오버레이. 툴팁보다 더 많은 정보나 인터랙션을 제공한다. | [MDN Popover API](https://developer.mozilla.org/ko/docs/Web/API/Popover_API) |
+| **오버레이** (Overlay) | 기존 콘텐츠 위에 겹쳐서 표시되는 반투명 레이어. 모달 뒤의 어두운 배경이나 로딩 화면에 사용된다. | - |
+| **토스트** (Toast) | 화면 구석에 잠시 나타났다가 자동으로 사라지는 알림 메시지. 작업 완료, 오류, 정보 등을 간단히 알려준다. 스낵바(Snackbar)라고도 한다. | [Material Design - Snackbar](https://m3.material.io/components/snackbar) |
+| **알림 배너** (Alert Banner) | 페이지 상단이나 특정 영역에 표시되는 중요한 메시지. 경고, 정보, 성공, 오류 등의 유형이 있으며, 사용자가 닫거나 시간 후 사라진다. | [Bootstrap Alerts](https://getbootstrap.com/docs/5.3/components/alerts/) |
+| **툴팁** (Tooltip) | 요소에 마우스를 올리면 나타나는 작은 설명 텍스트. 버튼, 아이콘 등에 추가 설명을 제공한다. | [MDN title 속성](https://developer.mozilla.org/ko/docs/Web/HTML/Global_attributes/title) |
+| **드롭다운** (Dropdown) | 클릭하면 아래로 펼쳐지는 선택 목록. 메뉴, 옵션 선택 등에 사용된다. | [MDN select 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/select) |
+| **콤보박스** (Combobox) | 드롭다운과 텍스트 입력을 결합한 UI 요소. 목록에서 선택하거나 직접 입력할 수 있다. 자동완성 검색에 자주 사용된다. | [MDN ARIA Combobox](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/combobox_role) |
+| **탭** (Tab) | 같은 영역에서 다른 콘텐츠 간에 전환하는 UI 요소. 탭 헤더를 클릭하면 해당 탭 콘텐츠가 표시된다. 카테고리나 섹션 구분에 사용된다. | [Bootstrap Tabs](https://getbootstrap.com/docs/5.3/components/navs-tabs/) |
+| **카드** (Card) | 제목, 이미지, 텍스트, 버튼 등을 포함하는 독립적인 정보 컨테이너. 대시보드에서 요약 정보나 항목을 표시하는 데 많이 사용된다. | [Material Design - Cards](https://m3.material.io/components/cards) |
+| **위젯** (Widget) | 대시보드에서 특정 기능이나 정보를 제공하는 독립적인 구성 요소. 차트, 통계, 빠른 액션 등을 포함할 수 있다. | - |
+| **아코디언** (Accordion) | 클릭하면 콘텐츠가 펼쳐지고 접히는 접이식 UI 요소. FAQ, 상세 정보 등 긴 콘텐츠를 정리할 때 사용된다. | [Bootstrap Accordion](https://getbootstrap.com/docs/5.3/components/accordion/) |
+| **콜랩서블** (Collapsible) | 접거나 펼칠 수 있는 UI 요소. 아코디언의 개별 항목이나 사이드바 메뉴에 사용된다. | - |
+| **캐러셀** (Carousel, Slider) | 여러 이미지나 콘텐츠를 좌우로 넘기며 볼 수 있는 슬라이드쇼 형태의 UI 요소. 배너, 갤러리 등에 사용된다. | [Bootstrap Carousel](https://getbootstrap.com/docs/5.3/components/carousel/) |
+| **페이지네이션** (Pagination) | 많은 데이터를 여러 페이지로 나누어 표시하는 UI 요소. 이전/다음 버튼, 페이지 번호 등으로 구성된다. | [Bootstrap Pagination](https://getbootstrap.com/docs/5.3/components/pagination/) |
+| **무한 스크롤** (Infinite Scroll) | 페이지 끝까지 스크롤하면 자동으로 추가 콘텐츠를 로드하는 방식. 페이지네이션의 대안으로 사용된다. | - |
+| **브레드크럼** (Breadcrumb) | 현재 페이지의 위치를 계층적으로 보여주는 내비게이션. "홈 > 카테고리 > 하위 카테고리" 형태로 표시된다. | [MDN Breadcrumb](https://developer.mozilla.org/ko/docs/Web/CSS/Layout_cookbook/Breadcrumb_Navigation) |
+| **스피너** (Spinner) | 로딩 중임을 나타내는 회전하는 원형 애니메이션. 비동기 작업 진행 시 사용자에게 피드백을 제공한다. | [Bootstrap Spinners](https://getbootstrap.com/docs/5.3/components/spinners/) |
+| **로더** (Loader) | 데이터나 콘텐츠를 불러오는 중임을 나타내는 시각적 표시. 스피너, 프로그레스 바, 스켈레톤 등이 포함된다. | - |
+| **스켈레톤** (Skeleton) | 콘텐츠가 로드되기 전 레이아웃의 윤곽을 보여주는 플레이스홀더. 실제 콘텐츠 모양을 흉내 내어 로딩 경험을 개선한다. | - |
+| **프로그레스 바** (Progress Bar) | 작업의 진행 상황을 시각적으로 보여주는 막대형 UI 요소. 파일 업로드, 다운로드, 설치 등에 사용된다. | [MDN progress 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/progress) |
+| **배지** (Badge) | 작은 숫자나 라벨을 표시하는 UI 요소. 알림 개수, 상태 표시, 카테고리 태그 등에 사용된다. | [Bootstrap Badges](https://getbootstrap.com/docs/5.3/components/badge/) |
+| **태그** (Tag) | 항목을 분류하거나 라벨을 붙이는 UI 요소. 필터링, 검색, 카테고리화에 사용되며, 삭제 가능한 형태도 있다. | - |
+| **칩** (Chip) | 태그와 유사하지만 더 인터랙티브한 UI 요소. 선택, 삭제, 아바타 포함 등이 가능하다. | [Material Design - Chips](https://m3.material.io/components/chips) |
+| **아바타** (Avatar) | 사용자를 나타내는 작은 원형 이미지나 아이콘. 프로필 사진, 사용자 목록 등에 사용된다. | - |
+| **버튼** (Button) | 클릭하여 액션을 실행하는 UI 요소. 기본, 아웃라인, 텍스트, 아이콘 버튼 등 다양한 스타일이 있다. | [MDN button 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/button) |
+| **플로팅 액션 버튼** (FAB) | Floating Action Button의 약자. 화면에 떠 있는 원형 버튼으로, 주요 액션을 실행한다. | [Material Design - FAB](https://m3.material.io/components/floating-action-button) |
+| **입력 필드** (Input Field) | 사용자가 텍스트를 입력하는 UI 요소. 레이블, 플레이스홀더, 도움말 텍스트, 유효성 검사 메시지와 함께 사용된다. | [MDN input 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input) |
+| **텍스트 영역** (Textarea) | 여러 줄의 텍스트를 입력하는 UI 요소. 긴 내용 입력, 설명, 댓글 등에 사용된다. | [MDN textarea 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/textarea) |
+| **체크박스** (Checkbox) | 다중 선택이 가능한 네모 형태의 UI 요소. 체크/해제 상태를 가지며, 독립적으로 선택할 수 있다. | [MDN checkbox](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input/checkbox) |
+| **라디오 버튼** (Radio Button) | 그룹 내에서 하나만 선택 가능한 원형 UI 요소. 상호 배타적인 옵션 선택에 사용된다. | [MDN radio](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input/radio) |
+| **토글 스위치** (Toggle Switch) | 켜기/끄기 상태를 전환하는 스위치 형태의 UI 요소. 설정 옵션에 자주 사용된다. | - |
+| **슬라이더** (Range Slider) | 드래그하여 값을 조절하는 UI 요소. 음량, 밝기, 범위 선택 등에 사용된다. | [MDN range](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input/range) |
+| **데이트 피커** (Date Picker) | 날짜를 선택하는 달력 형태의 UI 요소. 생년월일, 예약 날짜 등 날짜 입력에 사용된다. | - |
+| **타임 피커** (Time Picker) | 시간을 선택하는 UI 요소. 시, 분, 초를 선택할 수 있다. | - |
+| **컬러 피커** (Color Picker) | 색상을 선택하는 UI 요소. 팔레트, 슬라이더, 입력 필드 등으로 구성된다. | [MDN color](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input/color) |
+| **파일 업로드** (File Upload) | 파일을 선택하거나 드래그 앤 드롭으로 업로드하는 UI 요소. 드롭존, 프로그레스 바와 함께 사용된다. | [MDN file](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input/file) |
+| **드롭존** (Dropzone) | 파일을 드래그 앤 드롭하여 업로드할 수 있는 영역. 시각적 피드백으로 드래그 상태를 표시한다. | - |
+| **테이블** (Table) | 데이터를 행과 열로 정리하여 표시하는 UI 요소. 정렬, 필터링, 페이지네이션 기능과 함께 사용된다. | [MDN table 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/table) |
+| **데이터 테이블** (Data Table) | 대량의 데이터를 표시하고 조작할 수 있는 고급 테이블. 정렬, 검색, 필터, 페이지네이션, 행 선택 등의 기능을 포함한다. | - |
+| **그리드** (Grid) | 항목을 격자 형태로 배치하는 레이아웃. 카드, 이미지 갤러리 등을 정렬하는 데 사용된다. | [MDN CSS Grid](https://developer.mozilla.org/ko/docs/Web/CSS/CSS_grid_layout) |
+| **리스트** (List) | 항목을 세로로 나열하는 UI 요소. 순서 있는 목록(ol), 순서 없는 목록(ul) 등이 있다. | [MDN ul/ol 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/ul) |
+| **리스트 뷰** (List View) | 데이터를 목록 형태로 표시하는 뷰. 그리드 뷰와 전환하여 사용되는 경우가 많다. | - |
+| **트리 뷰** (Tree View) | 계층적 데이터를 트리 구조로 표시하는 UI 요소. 폴더 구조, 카테고리 등에 사용된다. | - |
+| **차트** (Chart) | 데이터를 시각적으로 표현하는 그래프. 막대 차트, 라인 차트, 파이 차트, 도넛 차트 등이 있다. | [Chart.js](https://www.chartjs.org/) |
+| **대시보드 레이아웃** | 대시보드의 전체 구조. 보통 사이드바(메뉴), 헤더(상단바), 메인 콘텐츠 영역으로 구성된다. | - |
+| **사이드 네비게이션** (Side Navigation) | 화면 왼쪽에 위치하는 세로 방향 메뉴. 접거나 펼칠 수 있으며, 아이콘과 텍스트로 구성된다. | - |
+| **탑바** (Top Bar, App Bar) | 화면 상단에 위치하는 가로 방향 헤더. 로고, 검색, 알림, 프로필 등을 포함한다. | - |
+| **스테퍼** (Stepper) | 여러 단계로 구성된 프로세스를 안내하는 UI 요소. 회원가입, 주문 과정 등 단계별 진행에 사용된다. | [Material Design - Stepper](https://m3.material.io/components/progress-indicators/stepper-overview) |
+| **마법사** (Wizard) | 복잡한 작업을 단계별로 안내하는 인터페이스. 스테퍼와 함께 사용되며, 각 단계별 폼이나 설명을 포함한다. | - |
+| **분할 화면** (Split View) | 화면을 두 개 이상의 영역으로 분할하여 표시하는 레이아웃. 마스터-디테일 패턴에 자주 사용된다. | - |
+| **마스터-디테일** (Master-Detail) | 목록(마스터)과 상세 정보(디테일)를 함께 표시하는 UI 패턴. 이메일 클라이언트, 파일 탐색기 등에 사용된다. | - |
+| **컨텍스트 메뉴** (Context Menu) | 우클릭 시 나타나는 메뉴. 선택한 항목에 대한 관련 작업을 제공한다. | - |
+| **액션 바** (Action Bar) | 선택한 항목에 대해 수행할 수 있는 액션을 표시하는 툴바. 삭제, 이동, 복사 등의 버튼이 포함된다. | - |
+| **툴바** (Toolbar) | 자주 사용하는 기능 버튼을 모아 놓은 가로 막대. 편집기, 뷰어 등에서 상단에 위치한다. | - |
+| **상태 표시기** (Status Indicator) | 항목의 상태를 색상, 아이콘, 텍스트로 표시하는 UI 요소. 온라인/오프라인, 성공/실패 등을 나타낸다. | - |
+| **포커스 상태** (Focus State) | 키보드 탐색 시 현재 선택된 요소를 표시하는 시각적 상태. 접근성을 위해 중요하다. | [MDN :focus](https://developer.mozilla.org/ko/docs/Web/CSS/:focus) |
+| **호버 상태** (Hover State) | 마우스를 요소 위에 올렸을 때의 시각적 상태. 색상 변경, 그림자 추가 등으로 피드백을 제공한다. | [MDN :hover](https://developer.mozilla.org/ko/docs/Web/CSS/:hover) |
+| **비활성 상태** (Disabled State) | 요소가 상호작용할 수 없는 상태. 회색 처리되고 클릭이 되지 않는다. | [MDN disabled 속성](https://developer.mozilla.org/ko/docs/Web/HTML/Attributes/disabled) |
+| **스크롤바** (Scrollbar) | 콘텐츠가 영역을 넘칠 때 나타나는 스크롤 컨트롤. 커스텀 스타일을 적용할 수 있다. | - |
+| **스크롤 투 탑** (Scroll to Top) | 페이지 하단에서 클릭하면 페이지 최상단으로 이동하는 버튼. 긴 페이지에서 유용하다. | - |
+| **스티키 요소** (Sticky Element) | 스크롤해도 특정 위치에 고정되는 요소. 헤더, 사이드바 메뉴 등에 사용된다. | [MDN position: sticky](https://developer.mozilla.org/ko/docs/Web/CSS/position) |
+| **플레이스홀더** (Placeholder) | 입력 필드에 값이 없을 때 표시되는 힌트 텍스트. 입력 예시나 형식을 안내한다. | [MDN placeholder](https://developer.mozilla.org/ko/docs/Web/HTML/Element/input#placeholder) |
+| **레이블** (Label) | 입력 필드의 이름이나 설명을 표시하는 텍스트. 접근성을 위해 필수적이다. | [MDN label 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/label) |
+| **도움말 텍스트** (Helper Text) | 입력 필드 아래에 표시되는 추가 설명. 입력 형식, 유효성 규칙 등을 안내한다. | - |
+| **유효성 검사 메시지** (Validation Message) | 입력값이 유효하지 않을 때 표시되는 오류 메시지. 빨간색으로 강조되며, 수정 방법을 안내한다. | - |
+| **폼** (Form) | 사용자 입력을 받아 서버로 전송하는 UI 요소 그룹. 입력 필드, 버튼, 유효성 검사 등으로 구성된다. | [MDN form 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/form) |
+| **그룹** (Group) | 관련된 UI 요소를 묶어 정리하는 컨테이너. 필드셋, 카드 그룹 등이 있다. | [MDN fieldset 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/fieldset) |
+| **구분선** (Divider) | UI 요소 사이를 시각적으로 분리하는 가로/세로 선. 섹션 구분에 사용된다. | [MDN hr 요소](https://developer.mozilla.org/ko/docs/Web/HTML/Element/hr) |
+| **공백** (Spacer) | UI 요소 사이에 여백을 추가하는 빈 공간. 레이아웃 조정에 사용된다. | - |
+
+---
+
+## 13. 데이터 시각화 및 차트 용어
+
+| 용어 | 정의 | 비고 (참고 링크) |
+|------|------|------------------|
+| **인포그래픽** (Infographic) | 정보(Information)와 그래픽(Graphic)의 합성어. 복잡한 데이터를 시각적으로 표현한 이미지. 텍스트, 아이콘, 차트, 다이어그램을 조합하여 정보를 쉽게 이해할 수 있게 만든다. | [위키백과 - 인포그래픽](https://ko.wikipedia.org/wiki/인포그래픽) |
+| **데이터 시각화** (Data Visualization) | 데이터를 그래프, 차트, 지도 등 시각적 형태로 표현하는 것. 패턴, 트렌드, 관계를 쉽게 파악할 수 있게 한다. | [위키백과 - 데이터 시각화](https://ko.wikipedia.org/wiki/데이터_시각화) |
+| **차트** (Chart) | 데이터를 시각적으로 표현하는 그래프. 막대 차트, 라인 차트, 파이 차트, 도넛 차트 등이 있다. | [Chart.js](https://www.chartjs.org/) |
+| **그래프** (Graph) | 데이터의 관계나 변화를 선, 막대, 점 등으로 표현한 시각화. 차트와 유사하지만 수학적 관계를 강조한다. | [위키백과 - 그래프](https://ko.wikipedia.org/wiki/그래프) |
+| **막대 차트** (Bar Chart) | 데이터를 수직 또는 수평 막대로 표현하는 차트. 범주별 값을 비교할 때 사용한다. | [MDN - Bar Chart](https://developer.mozilla.org/ko/docs/Web/SVG/Tutorial) |
+| **세로 막대 차트** (Column Chart) | 막대가 수직으로 세워진 막대 차트. 시간에 따른 변화나 범주별 비교에 사용된다. | - |
+| **가로 막대 차트** (Horizontal Bar Chart) | 막대가 수평으로 누워있는 막대 차트. 긴 레이블이 있을 때 가독성이 좋다. | - |
+| **그룹 막대 차트** (Grouped Bar Chart) | 여러 데이터 시리즈를 그룹으로 묶어 비교하는 막대 차트. 여러 범주를 동시에 비교할 때 사용한다. | - |
+| **스택 막대 차트** (Stacked Bar Chart) | 여러 데이터 시리즈를 쌓아 올린 막대 차트. 전체 대비 부분의 비율을 보여준다. | - |
+| **100% 스택 막대 차트** (100% Stacked Bar Chart) | 전체를 100%로 정규화한 스택 막대 차트. 비율 비교에 특화되어 있다. | - |
+| **라인 차트** (Line Chart) | 데이터 포인트를 선으로 연결한 차트. 시간에 따른 추이를 보여줄 때 사용한다. | - |
+| **영역 차트** (Area Chart) | 라인 차트 아래 영역을 채운 차트. 누적값이나 전체 대비 부분을 강조한다. | - |
+| **스택 영역 차트** (Stacked Area Chart) | 여러 데이터 시리즈를 쌓아 올린 영역 차트. 전체 대비 각 구성 요소의 변화를 보여준다. | - |
+| **파이 차트** (Pie Chart) | 원을 부채꼴로 나누어 비율을 표현하는 차트. 전체 대비 부분의 비율을 보여준다. | - |
+| **도넛 차트** (Donut Chart) | 중앙이 비어있는 파이 차트. 중앙에 추가 정보를 표시할 수 있다. | - |
+| **트리맵** (Treemap) | 계층적 데이터를 직사각형으로 표현한 차트. 크기와 색상으로 두 가지 차원을 동시에 표현한다. | - |
+| **히트맵** (Heatmap) | 데이터 값을 색상의 강도로 표현한 차트. 행과 열의 교차점에서 패턴을 파악할 수 있다. | - |
+| **산점도** (Scatter Plot) | 두 변수의 관계를 점으로 표현한 차트. 상관관계를 파악할 때 사용한다. | - |
+| **버블 차트** (Bubble Chart) | 산점도에 세 번째 차원(크기)을 추가한 차트. 점의 크기로 추가 정보를 표현한다. | - |
+| **히스토그램** (Histogram) | 데이터의 분포를 막대로 표현한 차트. 연속된 구간의 빈도를 보여준다. | - |
+| **박스 플롯** (Box Plot, Box-and-Whisker Plot) | 데이터의 분포를 사분위수로 표현한 차트. 중앙값, 사분위수, 이상치를 한눈에 볼 수 있다. | - |
+| **바이올린 플롯** (Violin Plot) | 박스 플롯과 커널 밀도 추정을 결합한 차트. 분포의 모양을 더 자세히 보여준다. | - |
+| **게이지 차트** (Gauge Chart) | 속도계처럼 원형으로 목표 대비 현재 값을 표시하는 차트. KPI, 진행률 등에 사용된다. | - |
+| **레이더 차트** (Radar Chart, Spider Chart) | 여러 지표를 다각형으로 표현한 차트. 여러 차원의 성능을 비교할 때 사용한다. | - |
+| **워터폴 차트** (Waterfall Chart) | 누적값의 변화를 단계별로 보여주는 차트. 수익, 비용 분석에 자주 사용된다. | - |
+| **깔때기 차트** (Funnel Chart) | 단계별로 감소하는 과정을 표현한 차트. 전환율, 판매 프로세스 분석에 사용된다. | - |
+| **캔들스틱 차트** (Candlestick Chart) | 금융 데이터의 시가, 고가, 저가, 종가를 표현한 차트. 주식, 환율 분석에 사용된다. | - |
+| **지도 차트** (Map Chart) | 지리적 데이터를 지도 위에 표현한 차트. 지역별 통계, 분포를 보여준다. | - |
+| **단계 영역 차트** (Step Area Chart) | 라인 차트를 계단식으로 표현한 차트. 이산적인 변화를 강조한다. | - |
+| **콤보 차트** (Combo Chart) | 여러 차트 유형을 결합한 차트. 예: 막대 차트와 라인 차트를 함께 표시. | - |
+| **축** (Axis) | 차트의 기준선. X축(가로축), Y축(세로축)이 있으며, 데이터의 범위와 스케일을 정의한다. | - |
+| **X축** (X-Axis, 가로축) | 차트의 가로 방향 축. 보통 독립 변수(시간, 범주 등)를 나타낸다. | - |
+| **Y축** (Y-Axis, 세로축) | 차트의 세로 방향 축. 보통 종속 변수(값, 수치 등)를 나타낸다. | - |
+| **이중 Y축** (Dual Y-Axis) | 두 개의 Y축을 사용하는 차트. 서로 다른 단위나 스케일의 데이터를 함께 표현할 수 있다. | - |
+| **범례** (Legend) | 차트의 각 데이터 시리즈를 구분하는 색상과 라벨을 표시하는 영역. | - |
+| **데이터 시리즈** (Data Series) | 차트에 표시되는 하나의 데이터 집합. 같은 색상과 스타일로 표현된다. | - |
+| **데이터 포인트** (Data Point) | 차트에서 하나의 값을 나타내는 점, 막대, 조각 등. | - |
+| **레이블** (Label, 차트 레이블) | 차트의 축, 데이터 포인트, 범례에 표시되는 텍스트. 데이터를 설명하는 이름이다. | - |
+| **툴팁** (Tooltip, 차트 툴팁) | 차트의 데이터 포인트에 마우스를 올렸을 때 나타나는 상세 정보. 값, 날짜, 설명 등을 표시한다. | - |
+| **그리드** (Grid, 차트 그리드) | 차트 배경의 격자선. 데이터 값을 읽기 쉽게 해준다. | - |
+| **눈금선** (Gridline) | 축의 눈금을 표시하는 선. 그리드의 일부이다. | - |
+| **눈금** (Tick) | 축에 표시되는 값의 표시. 0, 10, 20, 30 등 숫자나 날짜가 표시된다. | - |
+| **눈금 간격** (Tick Interval) | 축의 눈금 사이 간격. 데이터 범위에 따라 자동 또는 수동으로 설정한다. | - |
+| **최소값** (Minimum, Min) | 차트에 표시되는 데이터의 최소값. Y축의 시작점을 결정한다. | - |
+| **최대값** (Maximum, Max) | 차트에 표시되는 데이터의 최대값. Y축의 끝점을 결정한다. | - |
+| **범위** (Range) | 차트에 표시되는 데이터의 최소값과 최대값 사이의 구간. | - |
+| **스케일** (Scale) | 차트 축의 값의 범위와 간격. 선형 스케일, 로그 스케일 등이 있다. | - |
+| **선형 스케일** (Linear Scale) | 일정한 간격으로 값을 배치하는 스케일. 일반적인 차트에서 사용된다. | - |
+| **로그 스케일** (Logarithmic Scale) | 로그 함수를 사용하여 값을 배치하는 스케일. 큰 범위의 데이터를 표현할 때 사용한다. | - |
+| **색상 팔레트** (Color Palette) | 차트에 사용되는 색상 집합. 일관된 색상 체계로 데이터를 구분한다. | - |
+| **색상 맵** (Color Map) | 데이터 값을 색상으로 매핑하는 규칙. 히트맵, 지도 차트에서 사용된다. | - |
+| **그라데이션** (Gradient) | 한 색상에서 다른 색상으로 부드럽게 변하는 색상. 영역 차트, 히트맵에서 사용된다. | - |
+| **애니메이션** (Animation) | 차트가 나타날 때나 데이터가 변경될 때 부드럽게 변화하는 효과. | - |
+| **트랜지션** (Transition) | 차트의 상태 변화를 부드럽게 표현하는 애니메이션. | - |
+| **줌** (Zoom) | 차트의 특정 영역을 확대하여 자세히 보는 기능. | - |
+| **팬** (Pan) | 확대된 차트를 드래그하여 이동하는 기능. | - |
+| **필터** (Filter, 차트 필터) | 차트에 표시되는 데이터를 선택적으로 보여주는 기능. 특정 범주나 기간만 표시할 수 있다. | - |
+| **드릴다운** (Drill-down) | 차트의 데이터 포인트를 클릭하여 더 상세한 정보를 보는 기능. | - |
+| **인터랙티브 차트** (Interactive Chart) | 사용자가 클릭, 호버, 줌 등으로 상호작용할 수 있는 차트. | - |
+| **정적 차트** (Static Chart) | 상호작용이 불가능한 이미지 형태의 차트. 인쇄나 정적 문서에 사용된다. | - |
+| **대시보드 차트** (Dashboard Chart) | 대시보드에 표시되는 간단하고 명확한 차트. 빠른 인사이트를 제공한다. | - |
+| **리포트 차트** (Report Chart) | 상세한 분석 리포트에 포함되는 차트. 더 많은 정보와 설명을 포함한다. | - |
+| **차트 라이브러리** (Chart Library) | 차트를 쉽게 만들 수 있게 해주는 JavaScript 라이브러리. Chart.js, D3.js, Highcharts 등이 있다. | - |
+| **Chart.js** | 간단하고 유연한 JavaScript 차트 라이브러리. Canvas를 사용하여 렌더링한다. | [Chart.js 공식 사이트](https://www.chartjs.org/) |
+| **D3.js** | 데이터 기반 문서 조작 라이브러리. 복잡하고 커스터마이징 가능한 시각화를 만들 수 있다. | [D3.js 공식 사이트](https://d3js.org/) |
+| **Highcharts** | 상업용 및 오픈소스 차트 라이브러리. 다양한 차트 유형과 옵션을 제공한다. | [Highcharts 공식 사이트](https://www.highcharts.com/) |
+| **Plotly** | 인터랙티브 차트를 만드는 라이브러리. Python, R, JavaScript 등 여러 언어를 지원한다. | [Plotly 공식 사이트](https://plotly.com/) |
+| **ECharts** | Apache ECharts. 강력한 인터랙티브 차트 라이브러리. 중국 바이두에서 개발했다. | [Apache ECharts 공식 사이트](https://echarts.apache.org/) |
+| **SVG** | Scalable Vector Graphics의 약자. 벡터 기반 그래픽 포맷. 확대해도 깨지지 않아 차트에 적합하다. | [MDN SVG](https://developer.mozilla.org/ko/docs/Web/SVG) |
+| **Canvas** | HTML5의 그래픽 렌더링 요소. 픽셀 기반으로 그려지며, 차트 라이브러리에서 많이 사용된다. | [MDN Canvas](https://developer.mozilla.org/ko/docs/Web/HTML/Element/canvas) |
+| **벡터 그래픽** (Vector Graphics) | 수학적 좌표로 그려진 그래픽. 확대해도 깨지지 않는다. SVG가 대표적이다. | [위키백과 - 벡터 그래픽](https://ko.wikipedia.org/wiki/벡터_그래픽) |
+| **래스터 그래픽** (Raster Graphics) | 픽셀의 배열로 구성된 그래픽. 확대하면 깨진다. PNG, JPG가 대표적이다. | [위키백과 - 래스터 그래픽](https://ko.wikipedia.org/wiki/래스터_그래픽) |
+| **다이어그램** (Diagram) | 개념, 프로세스, 구조를 시각적으로 표현한 그림. 플로우차트, 조직도, UML 다이어그램 등이 있다. | [위키백과 - 다이어그램](https://ko.wikipedia.org/wiki/다이어그램) |
+| **플로우차트** (Flowchart) | 프로세스나 알고리즘을 도형과 화살표로 표현한 다이어그램. | [위키백과 - 플로우차트](https://ko.wikipedia.org/wiki/플로우차트) |
+| **시각화 타입** (Visualization Type) | 데이터를 표현하는 차트나 그래프의 종류. 데이터의 특성과 목적에 따라 선택한다. | - |
+| **데이터 밀도** (Data Density) | 차트에 표시되는 데이터의 양. 너무 많으면 가독성이 떨어지고, 너무 적으면 정보가 부족하다. | - |
+| **차트 제목** (Chart Title) | 차트의 목적이나 내용을 설명하는 제목. 차트 상단에 표시된다. | - |
+| **차트 부제목** (Chart Subtitle) | 차트 제목 아래에 표시되는 추가 설명. 더 자세한 정보를 제공한다. | - |
+| **차트 설명** (Chart Description) | 차트의 데이터 출처, 해석 방법, 주의사항 등을 설명하는 텍스트. | - |
+| **데이터 출처** (Data Source) | 차트에 사용된 데이터의 출처. 신뢰성을 위해 표시한다. | - |
+| **KPI** | Key Performance Indicator의 약자. 핵심 성과 지표. 대시보드에서 중요한 수치를 강조하여 표시한다. | [위키백과 - KPI](https://ko.wikipedia.org/wiki/핵심_성과_지표) |
+| **메트릭** (Metric) | 측정 가능한 지표나 수치. 차트나 대시보드에서 표시되는 데이터 값. | - |
+| **비교 분석** (Comparative Analysis) | 여러 데이터를 비교하여 차이와 관계를 파악하는 분석. 막대 차트, 라인 차트로 표현한다. | - |
+| **트렌드 분석** (Trend Analysis) | 시간에 따른 데이터의 변화 추이를 분석하는 것. 라인 차트, 영역 차트로 표현한다. | - |
+| **비율 분석** (Ratio Analysis) | 전체 대비 부분의 비율을 분석하는 것. 파이 차트, 도넛 차트로 표현한다. | - |
+| **상관관계** (Correlation) | 두 변수 간의 관계. 산점도, 버블 차트로 표현한다. | - |
+| **분포** (Distribution) | 데이터가 어떻게 분산되어 있는지. 히스토그램, 박스 플롯으로 표현한다. | - |
+| **인사이트** (Insight) | 데이터에서 발견한 의미 있는 패턴이나 결론. 차트를 통해 시각적으로 전달한다. | - |
+
+---
+
+## 14. 통계 및 데이터 분석 용어
+
+| 용어 | 정의 | 비고 (참고 링크) |
+|------|------|------------------|
+| **통계** (Statistics) | 데이터를 수집, 분석, 해석하는 학문. 기술통계와 추론통계로 나뉜다. | [위키백과 - 통계학](https://ko.wikipedia.org/wiki/통계학) |
+| **기술통계** (Descriptive Statistics) | 데이터의 특성을 요약하여 설명하는 통계. 평균, 분산, 히스토그램 등이 포함된다. | [위키백과 - 기술통계](https://ko.wikipedia.org/wiki/기술통계) |
+| **추론통계** (Inferential Statistics) | 표본 데이터로부터 모집단의 특성을 추론하는 통계. 가설검정, 신뢰구간 등이 포함된다. | [위키백과 - 추론통계](https://ko.wikipedia.org/wiki/추론통계) |
+| **모집단** (Population) | 연구의 대상이 되는 전체 집단. 통계 분석에서 추론하고자 하는 대상이다. | [위키백과 - 모집단](https://ko.wikipedia.org/wiki/모집단) |
+| **표본** (Sample) | 모집단에서 선택된 일부 데이터. 모집단을 대표할 수 있도록 무작위로 선택한다. | [위키백과 - 표본](https://ko.wikipedia.org/wiki/표본) |
+| **표본 크기** (Sample Size) | 표본에 포함된 데이터의 개수. n으로 표기하며, 표본이 클수록 정확도가 높아진다. | - |
+| **변수** (Variable, 통계 변수) | 측정하거나 관찰할 수 있는 특성이나 속성. 독립변수, 종속변수, 범주형 변수, 수치형 변수 등이 있다. | [위키백과 - 변수](https://ko.wikipedia.org/wiki/변수) |
+| **독립변수** (Independent Variable) | 다른 변수에 영향을 주는 변수. 원인 변수, 설명 변수라고도 한다. X로 표기한다. | [위키백과 - 독립변수](https://ko.wikipedia.org/wiki/독립변수) |
+| **종속변수** (Dependent Variable) | 독립변수에 의해 영향을 받는 변수. 결과 변수, 반응 변수라고도 한다. Y로 표기한다. | [위키백과 - 종속변수](https://ko.wikipedia.org/wiki/종속변수) |
+| **범주형 변수** (Categorical Variable) | 범주나 그룹으로 분류되는 변수. 성별(남/여), 지역(서울/부산) 등이 있다. | [위키백과 - 범주형 변수](https://ko.wikipedia.org/wiki/범주형_변수) |
+| **수치형 변수** (Numerical Variable) | 숫자로 측정되는 변수. 연속형 변수와 이산형 변수로 나뉜다. | [위키백과 - 수치형 변수](https://ko.wikipedia.org/wiki/수치형_변수) |
+| **연속형 변수** (Continuous Variable) | 연속된 값을 가질 수 있는 변수. 키, 몸무게, 온도 등이 있다. | - |
+| **이산형 변수** (Discrete Variable) | 셀 수 있는 정수 값을 가진 변수. 가족 수, 방 개수 등이 있다. | - |
+| **명목형 변수** (Nominal Variable) | 순서가 없는 범주형 변수. 성별, 혈액형 등이 있다. | - |
+| **순서형 변수** (Ordinal Variable) | 순서가 있는 범주형 변수. 만족도(매우 불만족/불만족/보통/만족/매우 만족) 등이 있다. | - |
+| **평균** (Mean, Average) | 데이터의 합을 개수로 나눈 값. 중심 경향성을 나타내는 대표값이다. 수식: (x₁ + x₂ + ... + xₙ) / n | [위키백과 - 평균](https://ko.wikipedia.org/wiki/평균) |
+| **중앙값** (Median) | 데이터를 크기 순으로 정렬했을 때 가운데 값. 이상치에 강건한 중심 경향성 지표이다. | [위키백과 - 중앙값](https://ko.wikipedia.org/wiki/중앙값) |
+| **최빈값** (Mode) | 데이터에서 가장 자주 나타나는 값. 범주형 데이터의 대표값으로 사용된다. | [위키백과 - 최빈값](https://ko.wikipedia.org/wiki/최빈값) |
+| **중심 경향성** (Central Tendency) | 데이터가 집중되는 중심 위치를 나타내는 지표. 평균, 중앙값, 최빈값이 있다. | - |
+| **분산** (Variance) | 데이터가 평균으로부터 얼마나 퍼져 있는지를 나타내는 지표. 수식: Σ(xᵢ - μ)² / n | [위키백과 - 분산](https://ko.wikipedia.org/wiki/분산) |
+| **표준편차** (Standard Deviation) | 분산의 제곱근. 데이터의 퍼짐 정도를 원래 단위로 나타낸다. σ 또는 s로 표기한다. | [위키백과 - 표준편차](https://ko.wikipedia.org/wiki/표준편차) |
+| **범위** (Range) | 데이터의 최댓값과 최솟값의 차이. 가장 간단한 분산 지표이다. | - |
+| **사분위수** (Quartile) | 데이터를 4등분한 지점의 값. Q1(1사분위수), Q2(중앙값), Q3(3사분위수)가 있다. | [위키백과 - 사분위수](https://ko.wikipedia.org/wiki/사분위수) |
+| **사분위수 범위** (IQR) | Interquartile Range의 약자. Q3 - Q1로 계산하며, 이상치 탐지에 사용된다. | - |
+| **백분위수** (Percentile) | 데이터를 100등분한 지점의 값. 예: 90백분위수는 상위 10%를 의미한다. | [위키백과 - 백분위수](https://ko.wikipedia.org/wiki/백분위수) |
+| **왜도** (Skewness) | 데이터 분포의 비대칭 정도. 왼쪽으로 치우치면 양의 왜도, 오른쪽으로 치우치면 음의 왜도이다. | [위키백과 - 왜도](https://ko.wikipedia.org/wiki/왜도) |
+| **첨도** (Kurtosis) | 데이터 분포의 뾰족한 정도. 정규분포보다 뾰족하면 양의 첨도, 평평하면 음의 첨도이다. | [위키백과 - 첨도](https://ko.wikipedia.org/wiki/첨도) |
+| **정규분포** (Normal Distribution) | 종 모양의 대칭 분포. 평균과 표준편차로 정의되며, 많은 자연 현상이 이 분포를 따른다. | [위키백과 - 정규분포](https://ko.wikipedia.org/wiki/정규분포) |
+| **표준정규분포** (Standard Normal Distribution) | 평균이 0이고 표준편차가 1인 정규분포. Z-점수 변환으로 얻을 수 있다. | - |
+| **Z-점수** (Z-Score) | 데이터를 표준화한 값. 수식: (x - μ) / σ. 평균으로부터 몇 표준편차 떨어져 있는지 나타낸다. | [위키백과 - Z-점수](https://ko.wikipedia.org/wiki/Z-점수) |
+| **표준화** (Standardization) | 데이터를 평균 0, 표준편차 1로 변환하는 과정. 서로 다른 단위의 데이터를 비교할 때 사용한다. | - |
+| **정규화** (Normalization) | 데이터를 특정 범위(보통 0~1)로 변환하는 과정. 최소-최대 정규화, Z-점수 정규화 등이 있다. | [위키백과 - 정규화](https://ko.wikipedia.org/wiki/정규화) |
+| **상관계수** (Correlation Coefficient) | 두 변수 간 선형 관계의 강도와 방향을 나타내는 지표. -1과 1 사이의 값을 가진다. | [위키백과 - 상관계수](https://ko.wikipedia.org/wiki/상관계수) |
+| **피어슨 상관계수** (Pearson Correlation) | 선형 관계를 측정하는 상관계수. r로 표기하며, 가장 널리 사용된다. | [위키백과 - 피어슨 상관계수](https://ko.wikipedia.org/wiki/피어슨_상관계수) |
+| **스피어만 상관계수** (Spearman Correlation) | 순위 기반 상관계수. 비선형 관계나 순서형 데이터에 사용된다. | [위키백과 - 스피어만 상관계수](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) |
+| **공분산** (Covariance) | 두 변수가 함께 변하는 정도를 나타내는 지표. 상관계수의 기초가 된다. | [위키백과 - 공분산](https://ko.wikipedia.org/wiki/공분산) |
+| **회귀분석** (Regression Analysis) | 독립변수와 종속변수 간의 관계를 모델링하는 통계 기법. | [위키백과 - 회귀분석](https://ko.wikipedia.org/wiki/회귀분석) |
+| **선형 회귀** (Linear Regression) | 독립변수와 종속변수 간의 선형 관계를 모델링하는 회귀분석. Y = aX + b 형태이다. | [위키백과 - 선형 회귀](https://ko.wikipedia.org/wiki/선형_회귀) |
+| **다중 회귀** (Multiple Regression) | 여러 독립변수를 사용하는 회귀분석. Y = a₁X₁ + a₂X₂ + ... + b 형태이다. | - |
+| **결정계수** (R², R-squared) | 회귀 모델이 데이터를 얼마나 잘 설명하는지를 나타내는 지표. 0과 1 사이의 값을 가진다. | [위키백과 - 결정계수](https://ko.wikipedia.org/wiki/결정계수) |
+| **가설검정** (Hypothesis Testing) | 통계적 가설이 맞는지 검증하는 과정. 귀무가설과 대립가설을 설정하고 검정한다. | [위키백과 - 가설검정](https://ko.wikipedia.org/wiki/가설검정) |
+| **귀무가설** (Null Hypothesis, H₀) | 검정하고자 하는 기본 가설. 보통 "차이가 없다", "관계가 없다"는 내용이다. | [위키백과 - 귀무가설](https://ko.wikipedia.org/wiki/귀무가설) |
+| **대립가설** (Alternative Hypothesis, H₁) | 귀무가설의 반대 가설. 연구자가 증명하고자 하는 가설이다. | [위키백과 - 대립가설](https://ko.wikipedia.org/wiki/대립가설) |
+| **유의수준** (Significance Level, α) | 가설검정에서 허용할 오류의 확률. 보통 0.05(5%) 또는 0.01(1%)을 사용한다. | - |
+| **p-값** (P-value) | 귀무가설이 참일 때 관측된 결과 이상의 극단적인 결과가 나올 확률. p < 0.05이면 유의하다고 판단한다. | [위키백과 - p-값](https://ko.wikipedia.org/wiki/P값) |
+| **유의미하다** (Significant) | 통계적으로 의미 있는 결과. p-값이 유의수준보다 작을 때 사용한다. | - |
+| **제1종 오류** (Type I Error) | 귀무가설이 참인데 기각하는 오류. α로 표기하며, 유의수준과 같다. | [위키백과 - 제1종 오류](https://ko.wikipedia.org/wiki/제1종_오류) |
+| **제2종 오류** (Type II Error) | 귀무가설이 거짓인데 채택하는 오류. β로 표기한다. | [위키백과 - 제2종 오류](https://ko.wikipedia.org/wiki/제2종_오류) |
+| **검정력** (Power) | 대립가설이 참일 때 귀무가설을 기각할 확률. 1 - β로 계산한다. | - |
+| **신뢰구간** (Confidence Interval) | 모집단의 참값이 포함될 것으로 예상되는 구간. 보통 95% 신뢰구간을 사용한다. | [위키백과 - 신뢰구간](https://ko.wikipedia.org/wiki/신뢰구간) |
+| **신뢰수준** (Confidence Level) | 신뢰구간이 참값을 포함할 확률. 보통 95% 또는 99%를 사용한다. | - |
+| **t-검정** (T-test) | 두 집단의 평균 차이를 검정하는 방법. 표본이 작을 때 사용한다. | [위키백과 - t-검정](https://ko.wikipedia.org/wiki/T-검정) |
+| **카이제곱 검정** (Chi-square Test) | 범주형 변수 간의 독립성을 검정하는 방법. | [위키백과 - 카이제곱 검정](https://ko.wikipedia.org/wiki/카이제곱_검정) |
+| **ANOVA** | Analysis of Variance의 약자. 세 개 이상 집단의 평균 차이를 검정하는 방법. | [위키백과 - ANOVA](https://ko.wikipedia.org/wiki/분산분석) |
+| **분산분석** (Analysis of Variance) | ANOVA의 한글명. 집단 간 분산과 집단 내 분산을 비교하여 평균 차이를 검정한다. | [위키백과 - 분산분석](https://ko.wikipedia.org/wiki/분산분석) |
+| **시계열** (Time Series) | 시간 순서대로 관측된 데이터의 나열. 주식 가격, 기온, 매출액 등 시간에 따라 변하는 데이터이다. | [위키백과 - 시계열](https://ko.wikipedia.org/wiki/시계열) |
+| **시계열 데이터** (Time Series Data) | 시간 인덱스를 가진 데이터. 각 관측값이 특정 시점에 대응된다. | - |
+| **시계열 분석** (Time Series Analysis) | 시계열 데이터의 패턴, 트렌드, 계절성을 분석하는 통계 기법. | [위키백과 - 시계열 분석](https://ko.wikipedia.org/wiki/시계열_분석) |
+| **트렌드** (Trend) | 시계열 데이터의 장기적인 증가 또는 감소 패턴. 시간에 따른 전반적인 방향성을 나타낸다. | - |
+| **계절성** (Seasonality) | 시계열 데이터에서 반복적으로 나타나는 주기적 패턴. 계절, 요일, 월별 패턴 등이 있다. | - |
+| **주기성** (Cyclicality) | 고정된 주기가 없는 반복 패턴. 경기 순환 등이 있다. | - |
+| **불규칙 성분** (Irregular Component) | 시계열에서 설명할 수 없는 랜덤한 변동. 노이즈라고도 한다. | - |
+| **추세** (Trend) | 트렌드의 한글 표현. 데이터의 장기적인 변화 방향. | - |
+| **선형 추세** (Linear Trend) | 직선 형태로 증가하거나 감소하는 추세. | - |
+| **비선형 추세** (Non-linear Trend) | 곡선 형태의 추세. 지수적 증가, 로그적 증가 등이 있다. | - |
+| **이동평균** (Moving Average) | 시계열 데이터를 평활화하는 방법. 일정 기간의 평균을 계산하여 노이즈를 줄인다. | [위키백과 - 이동평균](https://ko.wikipedia.org/wiki/이동평균) |
+| **지수이동평균** (Exponential Moving Average, EMA) | 최근 데이터에 더 큰 가중치를 주는 이동평균. 최신 정보를 더 반영한다. | - |
+| **평활화** (Smoothing) | 시계열 데이터의 노이즈를 제거하여 패턴을 더 명확하게 만드는 과정. | - |
+| **차분** (Differencing) | 시계열 데이터의 이전 값과의 차이를 계산하는 것. 비정상성을 제거할 때 사용한다. | - |
+| **정상성** (Stationarity) | 시계열의 통계적 특성(평균, 분산)이 시간에 따라 변하지 않는 성질. 많은 시계열 분석 기법의 전제조건이다. | [위키백과 - 정상성](https://ko.wikipedia.org/wiki/정상성) |
+| **비정상성** (Non-stationarity) | 시계열의 통계적 특성이 시간에 따라 변하는 성질. 트렌드나 계절성이 있으면 비정상적이다. | - |
+| **자기상관** (Autocorrelation) | 시계열 데이터가 이전 시점의 값과 상관관계를 가지는 것. 시차(lag)에 따라 측정한다. | [위키백과 - 자기상관](https://ko.wikipedia.org/wiki/자기상관) |
+| **ACF** | Autocorrelation Function의 약자. 자기상관함수. 각 시차에서의 자기상관계수를 계산한다. | - |
+| **PACF** | Partial Autocorrelation Function의 약자. 부분자기상관함수. 중간 시차의 영향을 제거한 자기상관이다. | - |
+| **ARIMA** | AutoRegressive Integrated Moving Average의 약자. 자기회귀 누적 이동평균 모델. 시계열 예측에 널리 사용된다. | [위키백과 - ARIMA](https://ko.wikipedia.org/wiki/ARIMA) |
+| **AR 모델** | AutoRegressive Model의 약자. 자기회귀 모델. 이전 값들을 사용하여 현재 값을 예측한다. | - |
+| **MA 모델** | Moving Average Model의 약자. 이동평균 모델. 과거 오차를 사용하여 현재 값을 예측한다. | - |
+| **시계열 예측** (Time Series Forecasting) | 과거 데이터를 바탕으로 미래 값을 예측하는 것. ARIMA, LSTM 등 다양한 모델을 사용한다. | - |
+| **계절성 분해** (Seasonal Decomposition) | 시계열을 트렌드, 계절성, 불규칙 성분으로 분해하는 것. | - |
+| **시차** (Lag) | 시계열에서 이전 시점과의 간격. Lag 1은 한 시점 전, Lag 12는 12시점 전을 의미한다. | - |
+| **주기** (Period) | 시계열 패턴이 반복되는 간격. 일별 데이터에서 주기는 7일, 월별 데이터에서 주기는 12개월이다. | - |
+| **빈도** (Frequency) | 단위 시간당 관측 횟수. 일별 데이터는 빈도 365, 월별 데이터는 빈도 12이다. | - |
+| **시작점** (Start) | 시계열 데이터의 첫 번째 관측 시점. | - |
+| **종료점** (End) | 시계열 데이터의 마지막 관측 시점. | - |
+| **관측값** (Observation) | 시계열에서 특정 시점의 값. | - |
+| **시점** (Time Point) | 시계열 데이터가 관측된 특정 시간. | - |
+| **시간 인덱스** (Time Index) | 시계열 데이터의 시간 정보. 날짜, 타임스탬프 등이 있다. | - |
+| **타임스탬프** (Timestamp) | 특정 시점을 나타내는 시간 정보. 예: 2025-01-01 12:00:00 | - |
+| **일별 데이터** (Daily Data) | 매일 관측된 시계열 데이터. | - |
+| **주별 데이터** (Weekly Data) | 매주 관측된 시계열 데이터. | - |
+| **월별 데이터** (Monthly Data) | 매월 관측된 시계열 데이터. | - |
+| **분기별 데이터** (Quarterly Data) | 분기(3개월)마다 관측된 시계열 데이터. | - |
+| **연별 데이터** (Yearly Data) | 매년 관측된 시계열 데이터. | - |
+| **불규칙 간격** (Irregular Interval) | 일정하지 않은 간격으로 관측된 시계열 데이터. | - |
+| **결측값 처리** (Missing Value Handling) | 시계열에서 결측값을 처리하는 방법. 보간, 전방 채우기, 후방 채우기 등이 있다. | - |
+| **보간** (Interpolation) | 결측값을 주변 값들로부터 추정하여 채우는 방법. | [위키백과 - 보간법](https://ko.wikipedia.org/wiki/보간법) |
+| **전방 채우기** (Forward Fill) | 결측값을 이전 값으로 채우는 방법. | - |
+| **후방 채우기** (Backward Fill) | 결측값을 다음 값으로 채우는 방법. | - |
+| **이상치 제거** (Outlier Removal) | 시계열에서 이상치를 식별하고 제거하는 과정. | - |
+| **변환** (Transformation) | 시계열 데이터를 다른 형태로 변환하는 것. 로그 변환, 차분 등이 있다. | - |
+| **로그 변환** (Log Transformation) | 데이터에 로그를 취하는 변환. 비선형 추세를 선형화하거나 분산을 안정화한다. | - |
+| **박스-콕스 변환** (Box-Cox Transformation) | 데이터를 정규분포에 가깝게 만드는 변환. λ 파라미터로 조절한다. | [위키백과 - 박스-콕스 변환](https://en.wikipedia.org/wiki/Power_transform) |
+| **정규화** (Normalization, 시계열) | 시계열 데이터를 특정 범위로 변환하는 것. 최소-최대 정규화 등이 있다. | - |
+| **스케일링** (Scaling) | 데이터의 범위를 조정하는 것. 정규화와 유사한 개념이다. | - |
+| **시계열 시각화** (Time Series Visualization) | 시계열 데이터를 그래프로 표현하는 것. 라인 차트, 영역 차트 등이 사용된다. | - |
+| **시계열 플롯** (Time Series Plot) | 시간을 X축, 값을 Y축으로 하는 라인 차트. 가장 기본적인 시계열 시각화이다. | - |
+| **계절성 플롯** (Seasonal Plot) | 계절성 패턴을 시각화한 그래프. 같은 계절의 데이터를 같은 색으로 표시한다. | - |
+| **상관 플롯** (Correlation Plot) | 자기상관계수를 시각화한 그래프. ACF, PACF 플롯이 있다. | - |
+| **예측 구간** (Prediction Interval) | 미래 값이 포함될 것으로 예상되는 구간. 불확실성을 나타낸다. | - |
+| **예측 오차** (Forecast Error) | 예측값과 실제값의 차이. | - |
+| **MAE** | Mean Absolute Error의 약자. 평균 절대 오차. 예측 정확도를 측정하는 지표이다. | - |
+| **RMSE** | Root Mean Squared Error의 약자. 평균 제곱근 오차. 큰 오차에 더 큰 가중치를 준다. | - |
+| **MAPE** | Mean Absolute Percentage Error의 약자. 평균 절대 백분율 오차. 상대적 오차를 측정한다. | - |
+| **데이터 분석** (Data Analysis) | 데이터를 탐색하고 패턴을 발견하는 과정. 기술통계, 시각화, 모델링 등이 포함된다. | [위키백과 - 데이터 분석](https://ko.wikipedia.org/wiki/데이터_분석) |
+| **탐색적 데이터 분석** (EDA) | Exploratory Data Analysis의 약자. 데이터를 탐색하여 패턴과 관계를 발견하는 분석. | [위키백과 - 탐색적 데이터 분석](https://ko.wikipedia.org/wiki/탐색적_데이터_분석) |
+| **데이터 마이닝** (Data Mining) | 대량의 데이터에서 유용한 패턴을 발견하는 과정. 통계, 머신러닝 기법을 사용한다. | [위키백과 - 데이터 마이닝](https://ko.wikipedia.org/wiki/데이터_마이닝) |
+| **데이터 사이언스** (Data Science) | 데이터로부터 인사이트를 도출하는 학문. 통계, 컴퓨터 과학, 도메인 지식을 결합한다. | [위키백과 - 데이터 사이언스](https://ko.wikipedia.org/wiki/데이터_사이언스) |
+| **데이터 분석가** (Data Analyst) | 데이터를 분석하여 비즈니스 인사이트를 제공하는 전문가. 통계, 시각화, 리포트 작성 능력이 필요하다. | - |
+| **데이터 사이언티스트** (Data Scientist) | 데이터 분석, 머신러닝, 통계 모델링을 수행하는 전문가. 프로그래밍, 통계, 도메인 지식이 필요하다. | - |
+| **비즈니스 인텔리전스** (BI) | Business Intelligence의 약자. 비즈니스 데이터를 분석하여 의사결정을 지원하는 시스템. | [위키백과 - 비즈니스 인텔리전스](https://ko.wikipedia.org/wiki/비즈니스_인텔리전스) |
+| **데이터 웨어하우스** (Data Warehouse) | 분석을 위해 구조화된 데이터를 저장하는 중앙 저장소. | [위키백과 - 데이터 웨어하우스](https://ko.wikipedia.org/wiki/데이터_웨어하우스) |
+| **데이터 레이크** (Data Lake) | 원시 데이터를 그대로 저장하는 저장소. 구조화되지 않은 데이터도 포함한다. | [위키백과 - 데이터 레이크](https://ko.wikipedia.org/wiki/데이터_레이크) |
+| **OLAP** | Online Analytical Processing의 약자. 다차원 데이터 분석을 위한 시스템. | [위키백과 - OLAP](https://ko.wikipedia.org/wiki/OLAP) |
+| **OLTP** | Online Transaction Processing의 약자. 실시간 트랜잭션 처리를 위한 시스템. | [위키백과 - OLTP](https://ko.wikipedia.org/wiki/OLTP) |
 
 ---
 

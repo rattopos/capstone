@@ -15,7 +15,7 @@ from pathlib import Path
 class RawDataExtractor:
     """기초자료에서 직접 데이터 추출하는 클래스"""
     
-    # 기초자료 시트 → 보고서 시트 매핑
+    # 기초자료 시트 → 보도자료 시트 매핑
     RAW_SHEET_MAPPING = {
         "광공업생산지수": "광공업생산",
         "서비스업생산지수": "서비스업생산",
@@ -408,7 +408,7 @@ class RawDataExtractor:
         return result
     
     def get_raw_sheet_name(self, report_name: str) -> Optional[str]:
-        """보고서 이름에 대응하는 기초자료 시트 이름 반환"""
+        """보도자료 이름에 대응하는 기초자료 시트 이름 반환"""
         return self.RAW_SHEET_MAPPING.get(report_name)
     
     def extract_yearly_difference(

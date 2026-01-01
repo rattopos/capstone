@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-요약 보고서 데이터 추출 서비스
+요약 보도자료 데이터 추출 서비스
 """
 
 import pandas as pd

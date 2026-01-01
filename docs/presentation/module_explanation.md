@@ -78,8 +78,8 @@ def create_app():
 ### 2.1 config/reports.py
 
 #### 역할
-- **50개 보고서 정의**: 요약(9개) + 부문별(10개) + 시도별(18개) + 통계표(13개)
-- 각 보고서의 id, name, generator, template, icon, category 명시
+- **50개 보도자료 정의**: 요약(9개) + 부문별(10개) + 시도별(18개) + 통계표(13개)
+- 각 보도자료의 id, name, generator, template, icon, category 명시
 
 #### 구현 방식
 ```python
@@ -99,7 +99,7 @@ SECTOR_REPORTS = [
 
 #### 질문 대비
 > **Q: 왜 코드가 아니라 딕셔너리로 관리해?**  
-> A: 새 보고서 추가 시 이 파일만 수정하면 됩니다. 코드 변경 없이 확장 가능합니다.
+> A: 새 보도자료 추가 시 이 파일만 수정하면 됩니다. 코드 변경 없이 확장 가능합니다.
 
 ---
 
@@ -132,7 +132,7 @@ def index():
 
 #### 역할
 - 엑셀 파일 업로드 (`/api/upload`)
-- 보고서 생성 및 다운로드 (`/api/generate-all`, `/api/download-html`)
+- 보도자료 생성 및 다운로드 (`/api/generate-all`, `/api/download-html`)
 - 분석표 수식 계산
 
 #### 핵심 로직: 업로드 프로세스
@@ -140,7 +140,7 @@ def index():
 1. 파일 업로드
 2. 파일 유형 감지 (기초자료 vs 분석표)
 3. 기초자료면 → DataConverter로 분석표 변환
-4. 분석표 → 보고서 생성 준비 완료
+4. 분석표 → 보도자료 생성 준비 완료
 ```
 
 #### 구현 방식
@@ -159,7 +159,7 @@ def upload_excel():
 ### 3.3 routes/preview.py
 
 #### 역할
-- 개별 보고서 미리보기 (`/api/generate-preview`)
+- 개별 보도자료 미리보기 (`/api/generate-preview`)
 - 요약/시도별/통계표 미리보기
 
 #### 핵심 로직
@@ -222,7 +222,7 @@ def generate_report_html(excel_path, report_config, year, quarter):
 ### 4.3 services/summary_data.py
 
 #### 역할
-- 요약 보고서용 데이터 집계
+- 요약 보도자료용 데이터 집계
 - 부문별 데이터 → 요약 페이지 데이터 변환
 
 ---
@@ -268,7 +268,7 @@ class 광공업생산Generator:
 ### 5.2 *_schema.json (데이터 스키마)
 
 #### 역할
-- 보고서 데이터 **구조 문서화**
+- 보도자료 데이터 **구조 문서화**
 - 필수 필드 및 타입 정의
 - 예시 값 제공 (기본값)
 
@@ -439,7 +439,7 @@ flowchart LR
 flowchart TD
     A[기초자료 수집표<br/>사용자 업로드] -->|DataConverter.convert| B[분석표<br/>수식 포함 엑셀]
     B -->|Generator.extract_all_data| C[Python Dict<br/>데이터 딕셔너리]
-    C -->|Template.render**data| D[HTML 보고서<br/>출력물]
+    C -->|Template.render**data| D[HTML 보도자료<br/>출력물]
 ```
 
 ---
@@ -449,9 +449,9 @@ flowchart TD
 | 모듈 | 한 줄 설명 |
 |------|----------|
 | `app.py` | Flask 앱 진입점, Blueprint 등록 |
-| `config/reports.py` | 50개 보고서 정의 (id, generator, template) |
+| `config/reports.py` | 50개 보도자료 정의 (id, generator, template) |
 | `routes/api.py` | 업로드, 생성, 다운로드 API |
-| `routes/preview.py` | 개별 보고서 미리보기 API |
+| `routes/preview.py` | 개별 보도자료 미리보기 API |
 | `services/report_generator.py` | Generator 호출 → 템플릿 렌더링 |
 | `templates/*_generator.py` | 엑셀 → 딕셔너리 데이터 추출 |
 | `templates/*_schema.json` | 데이터 구조 문서화/기본값 |
@@ -465,7 +465,7 @@ flowchart TD
 ## 💡 발표 시 강조 포인트
 
 1. **관심사 분리**: 라우트/서비스/유틸 분리로 유지보수 용이
-2. **동적 로드**: `importlib`으로 Generator 동적 로드 → 새 보고서 추가 시 코드 수정 불필요
+2. **동적 로드**: `importlib`으로 Generator 동적 로드 → 새 보도자료 추가 시 코드 수정 불필요
 3. **수식 보존**: 분석표의 엑셀 수식을 유지하여 데이터 정합성 확보
 4. **스키마 기반**: 데이터 구조 문서화로 개발/유지보수 효율화
 

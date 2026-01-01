@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-실업률 보고서 생성기
-D(실업)분석 및 D(실업)집계 시트에서 데이터를 추출하여 HTML 보고서를 생성합니다.
+실업률 보도자료 생성기
+D(실업)분석 및 D(실업)집계 시트에서 데이터를 추출하여 HTML 보도자료를 생성합니다.
 """
 
 import pandas as pd
@@ -327,7 +327,7 @@ def filter_age_groups(age_groups, is_increase_region):
     return filtered[:2] if filtered else age_groups[:2]
 
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
-    """보고서 데이터를 생성합니다.
+    """보도자료 데이터를 생성합니다.
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -407,7 +407,7 @@ def render_template(data, template_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print(f"HTML 보고서가 생성되었습니다: {output_path}")
+    print(f"HTML 보도자료가 생성되었습니다: {output_path}")
 
 def main():
     # 경로 설정

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-참고 GRDP (지역내총생산) 보고서 생성기
+참고 GRDP (지역내총생산) 보도자료 생성기
 - GRDP 데이터는 결측치이므로 플레이스홀더로 생성
 - 사용자가 직접 입력할 수 있도록 편집 가능한 필드 제공
 """
@@ -12,7 +12,7 @@ from jinja2 import Template
 
 
 class 참고_GRDP_Generator:
-    """참고 GRDP 보고서 생성기"""
+    """참고 GRDP 보도자료 생성기"""
     
     # 지역 순서 (차트 및 테이블 순서)
     REGION_ORDER = [
@@ -304,7 +304,7 @@ def _add_group_flags(regional_data):
 
 
 def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
-    """보고서 데이터 생성 함수 (app.py에서 호출)
+    """보도자료 데이터 생성 함수 (app.py에서 호출)
     
     우선순위:
     1. 추출된 GRDP JSON 파일이 있으면 사용
@@ -343,7 +343,7 @@ def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
 if __name__ == '__main__':
     import argparse
     
-    parser = argparse.ArgumentParser(description='참고 GRDP 보고서 생성')
+    parser = argparse.ArgumentParser(description='참고 GRDP 보도자료 생성')
     parser.add_argument('--template', type=str, default='templates/reference_grdp_template.html',
                         help='템플릿 파일 경로')
     parser.add_argument('--output', type=str, default='templates/reference_grdp_output.html',

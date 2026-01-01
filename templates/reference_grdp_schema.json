@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "참고 GRDP 보고서 스키마",
+  "title": "참고 GRDP 보도자료 스키마",
   "description": "2025년 2/4분기 실질 지역내총생산(GRDP) 참고 페이지",
   "type": "object",
   "properties": {
