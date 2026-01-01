@@ -26,11 +26,14 @@
         
         .page {
             width: 210mm;
+            height: 297mm;
             min-height: 297mm;
             padding: 15mm;
             margin: 0 auto;
             background: #fff;
             page-break-after: always;
+            page-break-inside: avoid;
+            overflow: hidden;
         }
         
         .page:last-child {
@@ -87,6 +90,12 @@
             flex: 3;
             border-bottom: 1px dotted #999;
             margin: 0 10px 5px 10px;
+        }
+        
+        .toc-page-number {
+            min-width: 30px;
+            text-align: right;
+            font-weight: normal;
         }
         
         .toc-reference {
@@ -331,8 +340,14 @@
             
             .page {
                 margin: 0;
-                padding: 10mm;
+                padding: 15mm;
+                height: 297mm;
                 page-break-after: always;
+                page-break-inside: avoid;
+            }
+            
+            .page:last-child {
+                page-break-after: auto;
             }
             
             .no-print {
@@ -356,60 +371,70 @@
             <span class="toc-number">1.</span>
             <span class="toc-title">광공업생산지수</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">22</span>
         </li>
         
         <li>
             <span class="toc-number">2.</span>
             <span class="toc-title">서비스업생산지수</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">24</span>
         </li>
         
         <li>
             <span class="toc-number">3.</span>
             <span class="toc-title">소매판매액지수</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">26</span>
         </li>
         
         <li>
             <span class="toc-number">4.</span>
             <span class="toc-title">건설수주액</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">28</span>
         </li>
         
         <li>
             <span class="toc-number">5.</span>
             <span class="toc-title">고용률</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">30</span>
         </li>
         
         <li>
             <span class="toc-number">6.</span>
             <span class="toc-title">실업률</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">32</span>
         </li>
         
         <li>
             <span class="toc-number">7.</span>
             <span class="toc-title">국내인구이동</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">34</span>
         </li>
         
         <li>
             <span class="toc-number">8.</span>
             <span class="toc-title">수출액</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">36</span>
         </li>
         
         <li>
             <span class="toc-number">9.</span>
             <span class="toc-title">수입액</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">38</span>
         </li>
         
         <li>
             <span class="toc-number">10.</span>
             <span class="toc-title">소비자물가지수</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">40</span>
         </li>
         
     </ol>
@@ -420,6 +445,7 @@
             <span class="toc-number">&lt;참고&gt;</span>
             <span class="toc-title">분기 지역내총생산(GRDP)</span>
             <span class="toc-dots"></span>
+            <span class="toc-page-number">42</span>
         </li>
     </ul>
     
