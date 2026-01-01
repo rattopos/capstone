@@ -213,8 +213,49 @@
 | 용어 | 정의 | 비고 (참고 링크) |
 |------|------|------------------|
 | **Git** | 분산 버전 관리 시스템. 코드의 변경 이력을 추적하고, 여러 개발자가 협업할 수 있게 한다. | [Git 공식 사이트](https://git-scm.com/) |
-| **커밋** (Commit) | Git에서 변경 사항을 저장소에 기록하는 단위. 각 커밋은 고유한 해시값을 가진다. | [Git 커밋 문서](https://git-scm.com/docs/git-commit) |
-| **브랜치** (Branch) | Git에서 독립적인 개발 흐름을 만드는 기능. 기능 개발, 버그 수정 등을 분리하여 작업할 수 있다. | [Git 브랜치 문서](https://git-scm.com/book/ko/v2/Git-브랜치-브랜치란-무엇인가) |
+| **저장소** (Repository, Repo) | Git으로 관리되는 프로젝트 폴더. .git 디렉토리에 버전 관리 정보가 저장된다. 로컬 저장소와 원격 저장소로 나뉜다. | [Git 저장소 문서](https://git-scm.com/book/ko/v2/Git의-기초-Git-저장소-만들기) |
+| **스테이징** (Staging) | 변경된 파일을 커밋할 준비가 되었다고 표시하는 과정. git add 명령으로 파일을 스테이징 영역(Index)에 추가한다. | [Git 스테이징 문서](https://git-scm.com/book/ko/v2/Git의-기초-변경사항-저장소에-저장하기) |
+| **add** (추가) | 변경된 파일을 스테이징 영역에 추가하는 Git 명령. `git add <파일명>` 또는 `git add .`로 모든 변경사항을 추가할 수 있다. 커밋 전 반드시 거쳐야 하는 단계이다. | [Git add 문서](https://git-scm.com/docs/git-add) |
+| **커밋** (Commit) | 스테이징된 변경 사항을 저장소에 영구적으로 기록하는 Git 명령. 각 커밋은 고유한 해시값(커밋 ID)을 가지며, 메시지와 함께 저장된다. | [Git 커밋 문서](https://git-scm.com/docs/git-commit) |
+| **스테이징 영역** (Staging Area, Index) | 커밋되기 전에 파일이 임시로 저장되는 영역. git add로 추가한 파일들이 모이는 곳이다. 실제 커밋 전에 변경사항을 검토하고 선택적으로 커밋할 수 있다. | [Git Index 문서](https://git-scm.com/book/ko/v2/Git의-기초-변경사항-저장소에-저장하기) |
+| **작업 디렉토리** (Working Directory) | 실제 파일들이 있는 작업 중인 디렉토리. 파일을 수정하면 작업 디렉토리에 변경사항이 반영되며, git add로 스테이징해야 커밋할 수 있다. | [Git 작업 디렉토리](https://git-scm.com/book/ko/v2/Git의-기초-변경사항-저장소에-저장하기) |
+| **버전** (Version) | 특정 시점의 코드 상태를 나타내는 스냅샷. Git에서는 커밋이 버전에 해당한다. 각 버전(커밋)은 고유한 해시값으로 식별된다. | [Git 버전 관리](https://git-scm.com/book/ko/v2/시작하기-Git이란) |
+| **해시** (Hash) | 커밋을 고유하게 식별하는 암호화된 문자열. SHA-1 알고리즘으로 생성되며, 커밋 ID라고도 부른다. 예: `a1b2c3d4e5f6...` 전체 해시는 40자리이며, 앞 7자리로도 식별 가능하다. | [Git 해시 문서](https://git-scm.com/book/ko/v2/Git의-내부-Git-객체) |
+| **커밋 ID** (Commit ID) | 커밋을 식별하는 고유한 해시값. 커밋 메시지, 작성자, 날짜, 부모 커밋 등의 정보를 기반으로 생성된다. | [Git 커밋 ID](https://git-scm.com/book/ko/v2/Git의-기초-커밋-히스토리-조회하기) |
+| **HEAD** | 현재 작업 중인 브랜치의 최신 커밋을 가리키는 포인터. HEAD를 이동하면 다른 커밋으로 체크아웃할 수 있다. | [Git HEAD 문서](https://git-scm.com/book/ko/v2/Git의-기초-커밋-히스토리-조회하기) |
+| **브랜치** (Branch) | 독립적인 개발 흐름을 만드는 기능. 메인 코드에 영향을 주지 않고 새 기능을 개발하거나 버그를 수정할 수 있다. 기본 브랜치는 보통 main 또는 master이다. | [Git 브랜치 문서](https://git-scm.com/book/ko/v2/Git-브랜치-브랜치란-무엇인가) |
+| **main 브랜치** | 기본 브랜치. 프로젝트의 안정적인 버전이 저장되는 메인 개발 라인이다. (이전에는 master 브랜치였음) | [Git main 브랜치](https://git-scm.com/docs/git-branch) |
+| **체크아웃** (Checkout) | 특정 브랜치나 커밋으로 전환하는 Git 명령. `git checkout <브랜치명>` 또는 `git switch <브랜치명>`으로 사용한다. | [Git checkout 문서](https://git-scm.com/docs/git-checkout) |
+| **switch** | 브랜치를 전환하는 Git 명령. checkout보다 명확한 의미를 가진다. `git switch <브랜치명>`으로 사용한다. | [Git switch 문서](https://git-scm.com/docs/git-switch) |
+| **병합** (Merge) | 두 브랜치의 변경 사항을 하나로 합치는 과정. `git merge <브랜치명>`으로 실행하며, 같은 부분이 다르게 수정되면 충돌(conflict)이 발생할 수 있다. | [Git 병합 문서](https://git-scm.com/docs/git-merge) |
+| **충돌** (Conflict) | 병합 시 같은 파일의 같은 부분이 서로 다르게 수정되어 Git이 자동으로 병합할 수 없는 상황. 수동으로 해결해야 한다. | [Git 충돌 해결](https://git-scm.com/book/ko/v2/Git-브랜치-브랜치의-분기) |
+| **충돌 해결** (Conflict Resolution) | 병합 충돌을 수동으로 해결하는 과정. 충돌된 부분을 확인하고 어떤 버전을 사용할지 또는 두 버전을 어떻게 통합할지 결정한다. | [Git 충돌 해결 문서](https://git-scm.com/docs/git-merge#_how_conflicts_are_presented) |
+| **원격 저장소** (Remote Repository) | 인터넷이나 네트워크에 있는 저장소. GitHub, GitLab 등에 호스팅되며, 여러 개발자가 협업할 수 있게 한다. | [Git 원격 저장소](https://git-scm.com/book/ko/v2/Git-기초-원격-저장소) |
+| **로컬 저장소** (Local Repository) | 개발자의 컴퓨터에 있는 저장소. 원격 저장소와 독립적으로 작업할 수 있다. | [Git 로컬 저장소](https://git-scm.com/book/ko/v2/Git-기초-변경사항-저장소에-저장하기) |
+| **origin** | 기본 원격 저장소의 별칭(alias). `git clone`으로 저장소를 복제하면 자동으로 origin이 설정된다. | [Git origin 문서](https://git-scm.com/book/ko/v2/Git-기초-원격-저장소) |
+| **clone** (복제) | 원격 저장소를 로컬로 복사하는 Git 명령. `git clone <저장소-URL>`로 실행하면 전체 프로젝트와 히스토리가 복제된다. | [Git clone 문서](https://git-scm.com/docs/git-clone) |
+| **fetch** (가져오기) | 원격 저장소의 변경사항을 가져오되 로컬 브랜치에 병합하지 않는 Git 명령. 원격의 상태만 확인할 때 사용한다. | [Git fetch 문서](https://git-scm.com/docs/git-fetch) |
+| **pull** (당기기) | 원격 저장소의 변경사항을 가져와서 현재 브랜치에 자동으로 병합하는 Git 명령. `git fetch + git merge`와 같다. | [Git pull 문서](https://git-scm.com/docs/git-pull) |
+| **push** (밀기) | 로컬 커밋을 원격 저장소에 업로드하는 Git 명령. `git push <원격명> <브랜치명>`으로 실행한다. | [Git push 문서](https://git-scm.com/docs/git-pull) |
+| **싱크** (Sync) | 로컬과 원격 저장소를 동기화하는 작업. 일반적으로 `git pull`로 원격 변경사항을 가져오고 `git push`로 로컬 변경사항을 업로드하는 과정을 의미한다. | - |
+| **status** (상태) | 작업 디렉토리와 스테이징 영역의 상태를 확인하는 Git 명령. 변경된 파일, 스테이징된 파일, 추적되지 않은 파일을 보여준다. | [Git status 문서](https://git-scm.com/docs/git-status) |
+| **log** (로그) | 커밋 히스토리를 조회하는 Git 명령. 커밋 ID, 작성자, 날짜, 메시지 등을 확인할 수 있다. | [Git log 문서](https://git-scm.com/docs/git-log) |
+| **diff** (차이) | 파일의 변경사항을 비교하여 보여주는 Git 명령. 커밋 전 변경 내용을 확인하거나 두 커밋 간 차이를 볼 때 사용한다. | [Git diff 문서](https://git-scm.com/docs/git-diff) |
+| **reset** (리셋) | 커밋을 취소하거나 이전 상태로 되돌리는 Git 명령. `--soft`, `--mixed`, `--hard` 옵션으로 다양한 수준의 되돌림이 가능하다. | [Git reset 문서](https://git-scm.com/docs/git-reset) |
+| **revert** (되돌리기) | 특정 커밋의 변경사항을 취소하는 새로운 커밋을 만드는 Git 명령. 히스토리를 유지하면서 변경을 되돌릴 때 사용한다. | [Git revert 문서](https://git-scm.com/docs/git-revert) |
+| **stash** (임시 저장) | 작업 중인 변경사항을 임시로 저장하는 Git 명령. 커밋하지 않고도 브랜치를 전환하거나 다른 작업을 할 수 있다. | [Git stash 문서](https://git-scm.com/docs/git-stash) |
+| **태그** (Tag) | 특정 커밋에 이름을 붙여 표시하는 기능. 주로 릴리스 버전(v1.0.0 등)을 표시할 때 사용한다. | [Git 태그 문서](https://git-scm.com/book/ko/v2/Git-기초-태그) |
+| **cherry-pick** | 특정 커밋만 선택하여 현재 브랜치에 적용하는 Git 명령. 다른 브랜치의 특정 변경사항만 가져올 때 유용하다. | [Git cherry-pick 문서](https://git-scm.com/docs/git-cherry-pick) |
+| **rebase** (리베이스) | 브랜치의 커밋을 다른 브랜치 위에 재배치하는 Git 명령. 히스토리를 선형으로 만들 수 있지만 충돌이 발생할 수 있다. | [Git rebase 문서](https://git-scm.com/docs/git-rebase) |
+| **포크** (Fork) | 원격 저장소(GitHub 등)를 자신의 계정으로 복사하는 것. 원본 저장소를 수정할 권한이 없을 때 독립적으로 작업할 수 있다. | [GitHub Fork 문서](https://docs.github.com/ko/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks) |
+| **풀 리퀘스트** (Pull Request, PR) | 자신의 변경사항을 원본 저장소에 반영해달라고 요청하는 것. 코드 리뷰를 통해 검토 후 병합된다. GitHub에서는 PR, GitLab에서는 Merge Request(MR)라고 한다. | [GitHub PR 문서](https://docs.github.com/ko/pull-requests/collaborating-with-pull-requests/about-pull-requests) |
+| **머지 리퀘스트** (Merge Request, MR) | GitLab에서 사용하는 용어. Pull Request와 동일한 개념이다. | [GitLab MR 문서](https://docs.gitlab.com/ee/user/project/merge_requests/) |
+| **이슈** (Issue) | 버그 리포트, 기능 제안, 작업 항목 등을 추적하는 기능. GitHub, GitLab 등에서 제공한다. | [GitHub Issues 문서](https://docs.github.com/ko/issues) |
+| **브랜치 전략** (Branching Strategy) | 브랜치를 어떻게 생성하고 병합할지 결정하는 전략. Git Flow, GitHub Flow, GitLab Flow 등이 있다. | [위키백과 - Git Flow](https://en.wikipedia.org/wiki/Git-flow) |
+| **Git Flow** | main, develop, feature, release, hotfix 브랜치를 사용하는 브랜치 전략. 대규모 프로젝트에 적합하다. | [Git Flow 문서](https://nvie.com/posts/a-successful-git-branching-model/) |
+| **GitHub Flow** | main 브랜치와 feature 브랜치만 사용하는 간단한 브랜치 전략. 빠른 배포가 필요한 프로젝트에 적합하다. | [GitHub Flow 문서](https://docs.github.com/ko/get-started/quickstart/github-flow) |
+| **분산 버전 관리** (Distributed Version Control) | 각 개발자가 전체 저장소 히스토리를 가지고 있는 버전 관리 방식. Git, Mercurial 등이 있다. 중앙 서버 없이도 작업 가능하다. | [위키백과 - 분산 버전 관리](https://ko.wikipedia.org/wiki/분산_버전_관리) |
+| **버전 관리** (Version Control) | 코드 변경 이력을 추적하고 관리하는 것. Git이 대표적인 버전 관리 시스템이다. | [위키백과 - 버전 관리](https://ko.wikipedia.org/wiki/버전_관리) |
 | **CI/CD** | Continuous Integration / Continuous Deployment의 약자. 코드 변경 시 자동으로 빌드, 테스트, 배포하는 프로세스이다. | [위키백과 - CI/CD](https://ko.wikipedia.org/wiki/CI/CD) |
 | **Docker** | 애플리케이션을 컨테이너로 패키징하여 어디서든 동일하게 실행할 수 있게 하는 플랫폼이다. | [Docker 공식 사이트](https://www.docker.com/) |
 
@@ -287,10 +328,6 @@
 | **TDD** | Test-Driven Development의 약자. 테스트 주도 개발. 테스트를 먼저 작성하고, 그 테스트를 통과하는 코드를 작성하는 개발 방법론. | [위키백과 - TDD](https://ko.wikipedia.org/wiki/테스트_주도_개발) |
 | **버그** (Bug) | 프로그램의 오류나 결함. 의도하지 않은 동작이나 프로그램 중단을 일으킨다. | [위키백과 - 버그](https://ko.wikipedia.org/wiki/버그) |
 | **디버깅** (Debugging) | 프로그램의 버그(오류)를 찾아내고 수정하는 과정. 디버거 도구를 사용하여 코드를 단계별로 실행하고 변수 값을 확인한다. | [위키백과 - 디버깅](https://ko.wikipedia.org/wiki/디버깅) |
-| **버전 관리** (Version Control) | 코드 변경 이력을 추적하고 관리하는 것. Git이 대표적인 버전 관리 시스템이다. | [위키백과 - 버전 관리](https://ko.wikipedia.org/wiki/버전_관리) |
-| **브랜치 전략** (Branching Strategy) | 버전 관리에서 브랜치를 어떻게 생성하고 병합할지 결정하는 전략. Git Flow, GitHub Flow 등이 있다. | [위키백과 - Git Flow](https://en.wikipedia.org/wiki/Git-flow) |
-| **병합** (Merge) | 두 브랜치의 변경 사항을 하나로 합치는 과정. 충돌(conflict)이 발생할 수 있다. | [Git 병합](https://git-scm.com/docs/git-merge) |
-| **충돌 해결** (Conflict Resolution) | 병합 시 같은 부분이 서로 다르게 수정되어 발생한 충돌을 해결하는 과정. 수동으로 어느 버전을 사용할지 결정한다. | [Git 충돌 해결](https://git-scm.com/docs/git-merge#_how_conflicts_are_presented) |
 | **추상화** (Abstraction) | 복잡한 것을 단순화하여 표현하는 것. 공통된 특징만 남기고 세부 사항을 숨긴다. | [위키백과 - 추상화](https://ko.wikipedia.org/wiki/추상화) |
 | **캡슐화** (Encapsulation) | 데이터와 메서드를 하나의 단위로 묶고, 내부 구현을 숨기는 것. 객체 지향 프로그래밍의 핵심 개념이다. | [위키백과 - 캡슐화](https://ko.wikipedia.org/wiki/캡슐화) |
 | **인터페이스** (Interface) | 클래스나 모듈이 제공하는 기능을 정의한 계약. 구현 세부 사항을 숨기고 사용 방법만 공개한다. | [위키백과 - 인터페이스](https://ko.wikipedia.org/wiki/인터페이스_(컴퓨팅)) |

@@ -1782,8 +1782,6 @@ def _create_placeholder_image(image_path):
     except Exception as e:
         print(f"[경고] 플레이스홀더 이미지 생성 실패: {e}")
         return False
-
-
 @api_bp.route('/export-hwp-ready', methods=['POST'])
 def export_hwp_ready():
     """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
