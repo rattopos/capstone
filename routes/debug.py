@@ -6,10 +6,64 @@
 
 from pathlib import Path
 from datetime import datetime
+import re
 
 from flask import Blueprint, request, jsonify, session, render_template_string
 
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
+from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, DEBUG_FOLDER
+
+
+def extract_body_content(html_content):
+    """
+    완전한 HTML 문서에서 body 내용과 스타일을 추출합니다.
+    스타일은 scoped style 태그로 컨텐츠에 포함됩니다.
+    """
+    if not html_content:
+        return html_content, ""
+    
+    # body 태그 내용 추출
+    body_match = re.search(r'<body[^>]*>(.*?)</body>', html_content, re.DOTALL | re.IGNORECASE)
+    if body_match:
+        body_content = body_match.group(1)
+    else:
+        # body 태그가 없으면 원본 반환
+        body_content = html_content
+    
+    # script 태그 분리 (차트 등에 필요)
+    scripts = re.findall(r'<script[^>]*>.*?</script>', body_content, re.DOTALL | re.IGNORECASE)
+    
+    # style 태그 추출 (head에서)
+    style_matches = re.findall(r'<style[^>]*>(.*?)</style>', html_content, re.DOTALL | re.IGNORECASE)
+    inline_style = "\n".join(style_matches) if style_matches else ""
+    
+    # body 내부에서 불필요한 래퍼 제거
+    # .page 컨테이너 내부 추출
+    page_match = re.search(r'<div[^>]*class="[^"]*page[^"]*"[^>]*>(.*)</div>\s*$', body_content, re.DOTALL | re.IGNORECASE)
+    if page_match:
+        inner_content = page_match.group(1).strip()
+    else:
+        # cover-container 패턴
+        cover_match = re.search(r'<div[^>]*class="[^"]*cover-container[^"]*"[^>]*>(.*)</div>\s*$', body_content, re.DOTALL | re.IGNORECASE)
+        if cover_match:
+            inner_content = cover_match.group(1).strip()
+        else:
+            inner_content = body_content.strip()
+    
+    # script 태그 제거 (나중에 별도로 추가)
+    inner_content = re.sub(r'<script[^>]*>.*?</script>', '', inner_content, flags=re.DOTALL | re.IGNORECASE)
+    
+    # 최종 컨텐츠 구성: 스타일 + 본문 + 스크립트
+    result_content = ""
+    if inline_style:
+        # 스타일을 scoped 형태로 추가 (중복 방지를 위해 각 페이지별 고유 스타일 유지)
+        result_content += f"<style>{inline_style}</style>\n"
+    result_content += inner_content
+    
+    # script 태그 추가
+    for script in scripts:
+        result_content += "\n" + script
+    
+    return result_content, inline_style
 from config.reports import REPORT_ORDER, SUMMARY_REPORTS, SECTOR_REPORTS, REGIONAL_REPORTS, STATISTICS_REPORTS
 from services.report_generator import (
     generate_report_html,
@@ -656,6 +710,8 @@ A4_FULL_REPORT_TEMPLATE = '''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>지역경제동향 {{ year }}년 {{ quarter }}분기 - 디버그 출력</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
     <!-- ===== DEBUG INFO ===== -->
     <!-- 
@@ -677,26 +733,27 @@ A4_FULL_REPORT_TEMPLATE = '''
             box-sizing: border-box;
         }
         
-        /* ===== A4 페이지 설정 ===== */
+        /* ===== A4 페이지 설정 (통일된 크기와 여백) ===== */
         @page {
             size: A4;
-            margin: 0;
+            margin: 15mm 20mm;
         }
         
         body {
-            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-            font-size: 10pt;
-            line-height: 1.6;
+            font-family: '바탕', 'Batang', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.4;
             color: #000;
             background: #f5f5f5;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
         
-        /* ===== A4 페이지 컨테이너 ===== */
+        /* ===== A4 페이지 컨테이너 (통일된 여백: 15mm 상하, 20mm 좌우) ===== */
         .a4-page {
             width: 210mm;
-            min-height: 297mm;
+            height: 297mm;
+            max-height: 297mm;
             background: #fff;
             margin: 20px auto;
             padding: 15mm 20mm;
@@ -730,24 +787,107 @@ A4_FULL_REPORT_TEMPLATE = '''
             position: absolute;
             bottom: 5mm;
             left: 5mm;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.85);
             color: #fff;
-            padding: 4px 10px;
-            border-radius: 3px;
+            padding: 6px 12px;
+            border-radius: 4px;
             font-size: 7pt;
             font-family: 'Courier New', monospace;
             z-index: 100;
+            max-width: 60%;
+            line-height: 1.4;
+        }
+        
+        .debug-page-info .debug-id {
+            color: #4fc3f7;
+        }
+        
+        .debug-page-info .debug-name {
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .debug-page-info .debug-template {
+            color: #81c784;
+            font-size: 6.5pt;
+        }
+        
+        .debug-page-info .debug-error {
+            color: #ef5350;
+            font-size: 6.5pt;
         }
         
         /* ===== 페이지 내용 컨테이너 ===== */
         .page-content {
             width: 100%;
             height: 100%;
+            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-size: 10.5pt;
+            line-height: 1.4;
         }
         
-        /* 원본 템플릿 스타일이 깨지지 않도록 iframe 사용 대신 직접 삽입 */
+        /* 중복된 .page, .cover-container 스타일 무효화 */
+        .page-content .page,
+        .page-content .cover-container {
+            width: auto !important;
+            min-height: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+        
         .page-content > * {
             max-width: 100%;
+        }
+        
+        /* ===== 공통 섹션 스타일 ===== */
+        .section-main-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 40px;
+            background: #e0e0e0;
+            margin-bottom: 18px;
+            letter-spacing: 3px;
+        }
+        
+        .section-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .subsection-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        /* 요약 박스 */
+        .summary-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: transparent;
+            line-height: 1.6;
+        }
+        
+        /* 증가/감소 표시 */
+        .increase { color: #d32f2f; font-weight: bold; }
+        .decrease { color: #1976d2; font-weight: bold; }
+        
+        /* 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff3cd;
+            border: 1px dashed #ffc107;
+            padding: 0 4px;
+            color: #856404;
+            min-width: 30px;
+            display: inline-block;
         }
         
         /* ===== 섹션 구분선 ===== */
@@ -779,8 +919,11 @@ A4_FULL_REPORT_TEMPLATE = '''
             
             .a4-page {
                 margin: 0;
+                padding: 15mm 20mm;
                 box-shadow: none;
                 page-break-after: always;
+                height: auto;
+                max-height: none;
             }
             
             .debug-overlay,
@@ -872,14 +1015,31 @@ A4_FULL_REPORT_TEMPLATE = '''
         
         .page-content th,
         .page-content td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
+            border: 1px solid #000;
+            padding: 4px 6px;
             text-align: center;
+            font-size: 9pt;
+        }
+        
+        .page-content th {
+            background-color: #e3f2fd;
+            font-weight: 500;
         }
         
         .page-content img {
             max-width: 100%;
             height: auto;
+        }
+        
+        /* 차트 컨테이너 */
+        .page-content .chart-container {
+            position: relative;
+            width: 100%;
+            max-height: 200px;
+        }
+        
+        .page-content canvas {
+            max-width: 100%;
         }
     </style>
 </head>
@@ -900,11 +1060,23 @@ A4_FULL_REPORT_TEMPLATE = '''
     
     <!-- 페이지 내용 -->
     {% for page in pages %}
-    <!-- [DEBUG] 페이지 ID: {{ page.id }} | 이름: {{ page.name }} | 섹션: {{ page.section }} -->
+    <!-- 
+    ===== [DEBUG] 페이지 {{ loop.index }}/{{ page_count }} =====
+    ID: {{ page.id }}
+    이름: {{ page.name }}
+    섹션: {{ page.section }}
+    템플릿: {{ page.template or 'N/A' }}
+    생성기: {{ page.generator or 'N/A' }}
+    {% if page.error %}오류: {{ page.error }}{% endif %}
+    ================================
+    -->
     <div class="a4-page" id="page-{{ page.id }}">
         <div class="debug-overlay">{{ page.section }} #{{ loop.index }}</div>
         <div class="debug-page-info">
-            ID: {{ page.id }} | {{ page.name }}
+            <span class="debug-id">ID: {{ page.id }}</span> | 
+            <span class="debug-name">{{ page.name }}</span>
+            {% if page.template %}<br><span class="debug-template">📄 {{ page.template }}</span>{% endif %}
+            {% if page.error %}<br><span class="debug-error">⚠️ {{ page.error }}</span>{% endif %}
         </div>
         <div class="page-content">
             {{ page.content|safe }}
@@ -914,11 +1086,16 @@ A4_FULL_REPORT_TEMPLATE = '''
     
     <!-- 
     ===== DEBUG SUMMARY =====
-    총 페이지 수: {{ page_count }}
     생성 시간: {{ generation_time }}
+    총 페이지 수: {{ page_count }}
     섹션별 페이지:
     {% for section in sections %}
     - {{ section.name }}: {{ section.count }}개
+    {% endfor %}
+    
+    페이지 상세:
+    {% for page in pages %}
+    {{ loop.index }}. [{{ page.section }}] {{ page.id }} - {{ page.name }}{% if page.template %} ({{ page.template }}){% endif %}{% if page.error %} ❌ ERROR: {{ page.error }}{% endif %}
     {% endfor %}
     ========================
     -->
@@ -1022,9 +1199,11 @@ def generate_full_html():
             generation_time=f"{generation_time:.2f}초"
         )
         
-        # 파일 저장
-        filename = f"지역경제동향_{year}년_{quarter}분기_디버그_{datetime.now().strftime('%H%M%S')}.html"
-        output_path = UPLOAD_FOLDER / filename
+        # 파일 저장 (debug 폴더)
+        # 파일명 형식: YYYYMMDD_HHMMSS_full_연도Q분기.html (시간순 정렬 가능)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_full_{year}Q{quarter}.html"
+        output_path = DEBUG_FOLDER / filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(full_html)
@@ -1090,8 +1269,10 @@ def generate_section_html():
             generation_time=f"{generation_time:.2f}초"
         )
         
-        filename = f"지역경제동향_{section}_{datetime.now().strftime('%H%M%S')}.html"
-        output_path = UPLOAD_FOLDER / filename
+        # 파일명 형식: YYYYMMDD_HHMMSS_섹션명_연도Q분기.html (시간순 정렬 가능)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{section}_{year}Q{quarter}.html"
+        output_path = DEBUG_FOLDER / filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(full_html)
@@ -1179,8 +1360,10 @@ def generate_single_html():
             generation_time="0.1초"
         )
         
-        filename = f"디버그_{report_id}_{datetime.now().strftime('%H%M%S')}.html"
-        output_path = UPLOAD_FOLDER / filename
+        # 파일명 형식: YYYYMMDD_HHMMSS_single_보고서ID.html (시간순 정렬 가능)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_single_{report_id}.html"
+        output_path = DEBUG_FOLDER / filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(full_html)
@@ -1206,11 +1389,15 @@ def _generate_summary_pages(excel_path, year, quarter):
         try:
             html, error, _ = _generate_single_summary(excel_path, report, year, quarter)
             if html:
+                # HTML 컨텐츠 정제 (body 내용만 추출)
+                content, _ = extract_body_content(html)
                 pages.append({
                     'id': report['id'],
                     'name': report['name'],
                     'section': '요약',
-                    'content': html
+                    'template': report.get('template', ''),
+                    'generator': report.get('generator', ''),
+                    'content': content
                 })
             else:
                 # 에러 발생 시 플레이스홀더 페이지
@@ -1218,6 +1405,9 @@ def _generate_summary_pages(excel_path, year, quarter):
                     'id': report['id'],
                     'name': report['name'],
                     'section': '요약',
+                    'template': report.get('template', ''),
+                    'generator': report.get('generator', ''),
+                    'error': error or '생성 실패',
                     'content': f'<div style="padding: 50px; text-align: center; color: #999;"><h3>⚠️ {report["name"]}</h3><p>{error or "생성 실패"}</p></div>'
                 })
         except Exception as e:
@@ -1225,6 +1415,9 @@ def _generate_summary_pages(excel_path, year, quarter):
                 'id': report['id'],
                 'name': report['name'],
                 'section': '요약',
+                'template': report.get('template', ''),
+                'generator': report.get('generator', ''),
+                'error': str(e),
                 'content': f'<div style="padding: 50px; text-align: center; color: #f00;"><h3>❌ {report["name"]}</h3><p>오류: {str(e)}</p></div>'
             })
     
@@ -1315,17 +1508,24 @@ def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
         try:
             html, error, _ = generate_report_html(excel_path, report, year, quarter, None, raw_excel_path)
             if html:
+                # HTML 컨텐츠 정제 (body 내용만 추출)
+                content, _ = extract_body_content(html)
                 pages.append({
                     'id': report['id'],
                     'name': report['name'],
                     'section': '부문별',
-                    'content': html
+                    'template': report.get('template', ''),
+                    'generator': report.get('generator', ''),
+                    'content': content
                 })
             else:
                 pages.append({
                     'id': report['id'],
                     'name': report['name'],
                     'section': '부문별',
+                    'template': report.get('template', ''),
+                    'generator': report.get('generator', ''),
+                    'error': error or '생성 실패',
                     'content': f'<div style="padding: 50px; text-align: center; color: #999;"><h3>⚠️ {report["name"]}</h3><p>{error or "생성 실패"}</p></div>'
                 })
         except Exception as e:
@@ -1333,6 +1533,9 @@ def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
                 'id': report['id'],
                 'name': report['name'],
                 'section': '부문별',
+                'template': report.get('template', ''),
+                'generator': report.get('generator', ''),
+                'error': str(e),
                 'content': f'<div style="padding: 50px; text-align: center; color: #f00;"><h3>❌ {report["name"]}</h3><p>오류: {str(e)}</p></div>'
             })
     
@@ -1348,17 +1551,24 @@ def _generate_regional_pages(excel_path, year, quarter):
             is_reference = region.get('is_reference', False)
             html, error = generate_regional_report_html(excel_path, region['name'], is_reference)
             if html:
+                # HTML 컨텐츠 정제 (body 내용만 추출)
+                content, _ = extract_body_content(html)
                 pages.append({
                     'id': region['id'],
                     'name': region['name'],
                     'section': '시도별',
-                    'content': html
+                    'template': 'regional_template.html' if not is_reference else 'grdp_reference_template.html',
+                    'is_reference': is_reference,
+                    'content': content
                 })
             else:
                 pages.append({
                     'id': region['id'],
                     'name': region['name'],
                     'section': '시도별',
+                    'template': 'regional_template.html' if not is_reference else 'grdp_reference_template.html',
+                    'is_reference': is_reference,
+                    'error': error or '생성 실패',
                     'content': f'<div style="padding: 50px; text-align: center; color: #999;"><h3>⚠️ {region["name"]}</h3><p>{error or "생성 실패"}</p></div>'
                 })
         except Exception as e:
@@ -1366,6 +1576,9 @@ def _generate_regional_pages(excel_path, year, quarter):
                 'id': region['id'],
                 'name': region['name'],
                 'section': '시도별',
+                'template': 'regional_template.html' if not region.get('is_reference', False) else 'grdp_reference_template.html',
+                'is_reference': region.get('is_reference', False),
+                'error': str(e),
                 'content': f'<div style="padding: 50px; text-align: center; color: #f00;"><h3>❌ {region["name"]}</h3><p>오류: {str(e)}</p></div>'
             })
     
@@ -1380,17 +1593,24 @@ def _generate_statistics_pages(excel_path, year, quarter, raw_excel_path=None):
         try:
             html, error = generate_individual_statistics_html(excel_path, stat, year, quarter, raw_excel_path)
             if html:
+                # HTML 컨텐츠 정제 (body 내용만 추출)
+                content, _ = extract_body_content(html)
                 pages.append({
                     'id': stat['id'],
                     'name': stat['name'],
                     'section': '통계표',
-                    'content': html
+                    'template': stat.get('template', ''),
+                    'generator': stat.get('generator', ''),
+                    'content': content
                 })
             else:
                 pages.append({
                     'id': stat['id'],
                     'name': stat['name'],
                     'section': '통계표',
+                    'template': stat.get('template', ''),
+                    'generator': stat.get('generator', ''),
+                    'error': error or '생성 실패',
                     'content': f'<div style="padding: 50px; text-align: center; color: #999;"><h3>⚠️ {stat["name"]}</h3><p>{error or "생성 실패"}</p></div>'
                 })
         except Exception as e:
@@ -1398,6 +1618,9 @@ def _generate_statistics_pages(excel_path, year, quarter, raw_excel_path=None):
                 'id': stat['id'],
                 'name': stat['name'],
                 'section': '통계표',
+                'template': stat.get('template', ''),
+                'generator': stat.get('generator', ''),
+                'error': str(e),
                 'content': f'<div style="padding: 50px; text-align: center; color: #f00;"><h3>❌ {stat["name"]}</h3><p>오류: {str(e)}</p></div>'
             })
     

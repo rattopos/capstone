@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 import unicodedata
 import uuid
 
-from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER
+from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER, EXPORT_FOLDER
 
 
 def safe_filename(filename):
@@ -88,6 +88,61 @@ from data_converter import DataConverter
 import openpyxl
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
+    """업로드 폴더 정리 (현재 세션 파일 제외)
+    
+    Args:
+        keep_current_files: True면 현재 세션에서 사용 중인 파일은 보존
+        cleanup_excel_only: True면 엑셀 파일만 정리 (HTML 등은 보존)
+    """
+    try:
+        # 현재 세션에서 사용 중인 파일 목록
+        protected_files = set()
+        if keep_current_files:
+            excel_path = session.get('excel_path')
+            raw_excel_path = session.get('raw_excel_path')
+            
+            if excel_path:
+                protected_files.add(Path(excel_path).name)
+            if raw_excel_path:
+                protected_files.add(Path(raw_excel_path).name)
+        
+        # 업로드 폴더의 모든 파일 확인
+        deleted_count = 0
+        for file_path in UPLOAD_FOLDER.glob('*'):
+            if file_path.is_file():
+                # 정리 대상인지 확인
+                should_delete = False
+                
+                # 현재 세션 파일이 아닌 경우
+                if file_path.name not in protected_files:
+                    # 엑셀 파일만 정리하는 경우
+                    if cleanup_excel_only:
+                        if file_path.suffix.lower() in ['.xlsx', '.xls']:
+                            should_delete = True
+                    else:
+                        # 디버그 파일이 아닌 경우 모두 삭제
+                        if '디버그' not in file_path.name:
+                            should_delete = True
+                
+                if should_delete:
+                    try:
+                        file_path.unlink()
+                        deleted_count += 1
+                        print(f"[정리] 파일 삭제: {file_path.name}")
+                    except Exception as e:
+                        print(f"[경고] 파일 삭제 실패 ({file_path.name}): {e}")
+        
+        if deleted_count > 0:
+            print(f"[정리] 업로드 폴더 정리 완료: {deleted_count}개 파일 삭제")
+        
+        return deleted_count
+        
+    except Exception as e:
+        print(f"[경고] 업로드 폴더 정리 중 오류: {e}")
+        return 0
 
 
 def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
@@ -201,6 +256,9 @@ def upload_excel():
     
     if not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다'})
+    
+    # 새 파일 업로드 전 이전 파일 정리 (현재 세션 파일 제외)
+    cleanup_upload_folder(keep_current_files=False)
     
     # 한글 파일명 보존하면서 안전한 파일명 생성
     filename = safe_filename(file.filename)
@@ -1117,6 +1175,23 @@ def export_final_document():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@api_bp.route('/cleanup-uploads', methods=['POST'])
+def cleanup_uploads():
+    """업로드 폴더 정리 API (작업 완료 후 호출)"""
+    try:
+        deleted_count = cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True)
+        return jsonify({
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'{deleted_count}개 파일이 정리되었습니다.'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+
 @api_bp.route('/render-chart-image', methods=['POST'])
 def render_chart_image():
     """차트/인포그래픽을 이미지로 렌더링"""
@@ -1249,6 +1324,447 @@ def get_industry_weights():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
+
+
+@api_bp.route('/export-hwp-import', methods=['POST'])
+def export_hwp_import():
+    """한글 프로그램 불러오기용 HTML 문서 생성 - 차트를 이미지로 변환"""
+    try:
+        import base64
+        import hashlib
+        from datetime import datetime
+        
+        data = request.get_json()
+        pages = data.get('pages', [])
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 출력 폴더 및 이미지 폴더 생성
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        export_dir_name = f'지역경제동향_{year}년_{quarter}분기_한글불러오기용_{timestamp}'
+        export_dir = EXPORT_FOLDER / export_dir_name
+        export_dir.mkdir(exist_ok=True, parents=True)
+        images_dir = export_dir / 'images'
+        images_dir.mkdir(exist_ok=True)
+        
+        # 한글 불러오기용 HTML 생성
+        final_html = f'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 불러오기용</title>
+    <style>
+        @page {{
+            size: A4;
+            margin: 15mm 20mm;
+        }}
+        
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: '맑은 고딕', 'Malgun Gothic', '돋움', 'Dotum', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            width: 210mm;
+            margin: 0 auto;
+            padding: 0;
+        }}
+        
+        /* A4 페이지 단위 */
+        .hwp-page {{
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0;
+            background: #fff;
+            page-break-after: always;
+            page-break-inside: avoid;
+        }}
+        
+        .hwp-page:last-child {{
+            page-break-after: auto;
+        }}
+        
+        /* 표 스타일 (한글 호환) */
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 9pt;
+            border: 1px solid #000;
+        }}
+        
+        th, td {{
+            border: 1px solid #000;
+            padding: 5px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }}
+        
+        th {{
+            background-color: #d9d9d9;
+            font-weight: bold;
+        }}
+        
+        /* 차트 이미지 스타일 */
+        .chart-image {{
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 10px auto;
+            border: 1px solid #ddd;
+        }}
+        
+        /* 제목 스타일 */
+        h1, h2, h3, h4 {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            margin: 15px 0 10px 0;
+        }}
+        
+        h1 {{ font-size: 16pt; font-weight: bold; }}
+        h2 {{ font-size: 14pt; font-weight: bold; }}
+        h3 {{ font-size: 12pt; font-weight: bold; }}
+        h4 {{ font-size: 11pt; font-weight: bold; }}
+        
+        p {{
+            margin: 5px 0;
+            line-height: 1.6;
+        }}
+        
+        /* 페이지 구분선 */
+        .page-divider {{
+            border-top: 2px solid #333;
+            margin: 20px 0;
+            padding-top: 20px;
+        }}
+    </style>
+</head>
+<body>
+'''
+        
+        # 페이지 처리 (Canvas를 이미지 플레이스홀더로 대체)
+        for idx, page in enumerate(pages, 1):
+            page_html = page.get('html', '')
+            page_title = page.get('title', f'페이지 {idx}')
+            category = page.get('category', '')
+            
+            # body 내용 추출
+            body_content = page_html
+            if '<body' in page_html.lower():
+                body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
+                if body_match:
+                    body_content = body_match.group(1)
+            
+            # 스타일, 스크립트, link, meta 태그 제거
+            body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
+            body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
+            body_content = re.sub(r'<link[^>]*>', '', body_content)
+            body_content = re.sub(r'<meta[^>]*>', '', body_content)
+            
+            # Canvas를 이미지 플레이스홀더로 대체
+            # Canvas ID나 클래스를 기반으로 이미지 경로 생성
+            canvas_pattern = r'<canvas[^>]*id=["\']([^"\']+)["\'][^>]*>.*?</canvas>'
+            canvas_matches = list(re.finditer(canvas_pattern, body_content, re.DOTALL))
+            
+            for match in reversed(canvas_matches):  # 역순으로 처리하여 인덱스 유지
+                canvas_id = match.group(1)
+                # 이미지 파일명 생성 (페이지 번호 + 캔버스 ID)
+                image_filename = f'page{idx}_{canvas_id}.png'
+                image_path = f'images/{image_filename}'
+                
+                # Canvas를 <img> 태그로 대체
+                img_tag = f'<img src="{image_path}" alt="차트: {canvas_id}" class="chart-image" style="max-width: 100%; height: auto;" />'
+                body_content = body_content[:match.start()] + img_tag + body_content[match.end():]
+            
+            # 이름 없는 Canvas도 처리
+            body_content = re.sub(
+                r'<canvas[^>]*>.*?</canvas>',
+                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
+                body_content,
+                flags=re.DOTALL
+            )
+            body_content = re.sub(
+                r'<canvas[^>]*/?>',
+                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
+                body_content
+            )
+            
+            # SVG도 이미지로 대체
+            body_content = re.sub(
+                r'<svg[^>]*>.*?</svg>',
+                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
+                body_content,
+                flags=re.DOTALL
+            )
+            
+            # 표에 인라인 스타일 추가 (한글 호환성)
+            body_content = _add_table_inline_styles(body_content)
+            
+            # 카테고리 한글명
+            category_names = {
+                'summary': '요약',
+                'sectoral': '부문별',
+                'regional': '시도별',
+                'statistics': '통계표'
+            }
+            category_name = category_names.get(category, '')
+            
+            # 페이지 래퍼 추가
+            final_html += f'''
+    <!-- 페이지 {idx}: {page_title} -->
+    <div class="hwp-page">
+        <h2 style="font-size: 14pt; font-weight: bold; margin-bottom: 15px; padding: 8px 12px; background-color: #e8e8e8; border-left: 4px solid #0066cc;">
+            [{category_name}] {page_title}
+        </h2>
+        {body_content}
+        <div class="page-divider"></div>
+        <p style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">- {idx} / {len(pages)} -</p>
+    </div>
+'''
+        
+        # Canvas를 이미지로 변환하는 스크립트 추가 (Chart.js 포함)
+        final_html += '''
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script>
+        // Chart.js가 로드될 때까지 대기
+        let chartInstances = {};
+        let conversionComplete = false;
+        
+        // Canvas를 이미지로 변환하는 함수
+        function convertCanvasToImage() {
+            if (conversionComplete) return;
+            
+            const canvases = document.querySelectorAll('canvas');
+            if (canvases.length === 0) {
+                console.log('변환할 Canvas가 없습니다.');
+                // Canvas가 없으면 이미 모두 이미지로 변환된 것으로 간주
+                conversionComplete = true;
+                return;
+            }
+            
+            console.log(`${canvases.length}개의 Canvas를 찾았습니다.`);
+            let convertedCount = 0;
+            
+            canvases.forEach(function(canvas, index) {
+                try {
+                    // Canvas가 실제로 그려졌는지 확인
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const isBlank = imageData.data.every(function(pixel) {
+                        return pixel === 0; // 투명 또는 검은색만 있으면 빈 Canvas
+                    });
+                    
+                    if (isBlank && canvas.width > 0 && canvas.height > 0) {
+                        console.log(`Canvas ${canvas.id || index}가 비어있습니다. 잠시 후 다시 시도합니다.`);
+                        return; // 아직 렌더링 중
+                    }
+                    
+                    // Canvas를 이미지로 변환 (Base64)
+                    const imageDataUrl = canvas.toDataURL('image/png', 1.0);
+                    
+                    // Base64를 Blob으로 변환
+                    const blob = base64ToBlob(imageDataUrl);
+                    
+                    // 다운로드 링크 생성
+                    const canvasId = canvas.id || `canvas_${index}`;
+                    const filename = `${canvasId}.png`;
+                    downloadBlob(blob, filename);
+                    
+                    // Canvas를 <img> 태그로 대체
+                    const img = document.createElement('img');
+                    img.src = imageDataUrl;
+                    img.className = 'chart-image';
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    img.alt = `차트: ${canvasId}`;
+                    
+                    // 기존 Canvas의 부모 요소 찾기
+                    if (canvas.parentNode) {
+                        canvas.parentNode.replaceChild(img, canvas);
+                    }
+                    
+                    convertedCount++;
+                    console.log(`✓ ${canvasId} 변환 완료`);
+                } catch (e) {
+                    console.error(`Canvas 변환 오류 (${canvas.id || index}):`, e);
+                }
+            });
+            
+            if (convertedCount > 0) {
+                conversionComplete = true;
+                // 모든 변환 완료 후 안내
+                setTimeout(function() {
+                    alert(`Canvas 차트 ${convertedCount}개 변환 완료!\\n\\n변환된 이미지가 자동으로 다운로드되었습니다.\\n다운로드 폴더에서 images 폴더로 이동한 후 한글에서 HTML을 불러오세요.`);
+                }, 500);
+            }
+        }
+        
+        // Base64를 Blob으로 변환
+        function base64ToBlob(base64) {
+            const parts = base64.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            
+            for (let i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            
+            return new Blob([uInt8Array], { type: contentType });
+        }
+        
+        // Blob 다운로드
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Chart.js 로드 후 차트 렌더링 및 변환
+        window.addEventListener('load', function() {
+            // 차트가 있는 경우 렌더링 대기
+            setTimeout(function() {
+                // Chart.js로 렌더링된 차트가 있으면 추가 대기
+                setTimeout(convertCanvasToImage, 3000);
+            }, 1000);
+            
+            // 수동 변환 버튼 추가
+            const btn = document.createElement('button');
+            btn.textContent = '📸 Canvas를 이미지로 변환';
+            btn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 10000; padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 10px rgba(0,0,0,0.3);';
+            btn.onclick = function() {
+                conversionComplete = false;
+                convertCanvasToImage();
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+'''
+        
+        # HTML 파일 저장
+        html_filename = f'지역경제동향_{year}년_{quarter}분기.html'
+        html_path = export_dir / html_filename
+        
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
+        # 플레이스홀더 이미지 생성 (차트가 없는 경우를 위해)
+        placeholder_info = _create_placeholder_image(images_dir / 'placeholder_chart.png')
+        
+        # 사용 안내 파일 생성
+        readme_path = export_dir / '사용안내.txt'
+        with open(readme_path, 'w', encoding='utf-8') as f:
+            f.write(f'''한글 프로그램 불러오기용 파일
+
+생성일: {datetime.now().strftime('%Y년 %m월 %d일 %H:%M:%S')}
+연도/분기: {year}년 {quarter}분기
+
+[사용 방법]
+
+1. 한글 프로그램에서:
+   - 파일 → 불러오기 → HTML 파일 선택
+   - "{html_filename}" 파일 선택
+   
+2. 차트 이미지 변환:
+   - HTML 파일을 브라우저에서 열기
+   - Canvas 차트가 자동으로 렌더링됨
+   - 브라우저 개발자 도구에서 Canvas를 이미지로 저장
+   - 저장한 이미지를 "images" 폴더에 해당 파일명으로 저장
+   
+3. 한글에서 다시 불러오기:
+   - 이미지가 모두 준비된 후 한글에서 HTML 불러오기
+   - 차트가 이미지로 표시됩니다
+
+[폴더 구조]
+{html_filename}  ← 한글에서 불러올 메인 파일
+images/          ← 차트 이미지 폴더
+  ├── page1_chart-manufacturing.png
+  ├── page2_chart-service.png
+  └── ...
+
+[주의사항]
+- HTML 파일과 images 폴더는 같은 위치에 있어야 합니다
+- 파일을 이동할 때는 HTML 파일과 images 폴더를 함께 이동하세요
+- 한글에서 불러온 후 레이아웃을 확인하고 필요시 조정하세요
+''')
+        
+        return jsonify({
+            'success': True,
+            'html': final_html,
+            'filename': html_filename,
+            'export_dir': export_dir_name,
+            'html_path': str(html_path.relative_to(BASE_DIR)),
+            'view_url': f'/exports/{export_dir_name}/{html_filename}',
+            'download_url': f'/download-export/{export_dir_name}',
+            'total_pages': len(pages),
+            'message': '한글 불러오기용 HTML이 생성되었습니다. 브라우저에서 열어 차트를 이미지로 변환한 후 한글에서 불러오세요.'
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+def _create_placeholder_image(image_path):
+    """플레이스홀더 이미지 생성"""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import os
+        
+        # 800x400 크기의 플레이스홀더 이미지 생성
+        img = Image.new('RGB', (800, 400), color='#f5f5f5')
+        draw = ImageDraw.Draw(img)
+        
+        # 테두리
+        draw.rectangle([(0, 0), (799, 399)], outline='#666', width=2)
+        
+        # 텍스트
+        try:
+            # 한글 폰트 시도 (시스템 폰트)
+            font = ImageFont.truetype('/System/Library/Fonts/AppleGothic.ttf', 24)
+        except:
+            try:
+                font = ImageFont.truetype('/usr/share/fonts/truetype/nanum/NanumGothic.ttf', 24)
+            except:
+                font = ImageFont.load_default()
+        
+        text = '📊 차트 영역\n\n브라우저에서 HTML을 열어\nCanvas를 이미지로 변환하세요'
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        position = ((800 - text_width) // 2, (400 - text_height) // 2)
+        
+        draw.text(position, text, fill='#666', font=font, align='center')
+        
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        img.save(str(image_path), 'PNG')
+        return True
+    except ImportError:
+        # PIL이 없으면 기본 이미지 생성 스킵
+        return False
+    except Exception as e:
+        print(f"[경고] 플레이스홀더 이미지 생성 실패: {e}")
+        return False
 
 
 @api_bp.route('/export-hwp-ready', methods=['POST'])

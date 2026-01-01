@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
+from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, DEBUG_FOLDER, EXPORT_FOLDER, BASE_DIR
 
 main_bp = Blueprint('main', __name__)
 
@@ -59,12 +59,75 @@ def download_file(filename):
 
 @main_bp.route('/view/<filename>')
 def view_file(filename):
-    """파일 직접 보기 (다운로드 없이)"""
+    """파일 직접 보기 (다운로드 없이) - uploads와 debug 폴더 모두 확인"""
+    # uploads 폴더 먼저 확인
     filepath = UPLOAD_FOLDER / filename
     if filepath.exists():
-        # HTML 파일은 text/html로 명시적으로 제공
         if filename.endswith('.html'):
             return send_file(str(filepath), mimetype='text/html')
         return send_file(str(filepath))
+    
+    # debug 폴더 확인
+    debug_filepath = DEBUG_FOLDER / filename
+    if debug_filepath.exists():
+        if filename.endswith('.html'):
+            return send_file(str(debug_filepath), mimetype='text/html')
+        return send_file(str(debug_filepath))
+    
     return "파일을 찾을 수 없습니다.", 404
+
+
+@main_bp.route('/debug/<filename>')
+def view_debug_file(filename):
+    """디버그 파일 직접 보기"""
+    filepath = DEBUG_FOLDER / filename
+    if filepath.exists():
+        if filename.endswith('.html'):
+            return send_file(str(filepath), mimetype='text/html')
+        return send_file(str(filepath))
+    return "디버그 파일을 찾을 수 없습니다.", 404
+
+
+@main_bp.route('/exports/<path:filepath>')
+def view_export_file(filepath):
+    """내보내기 파일 직접 보기 (한글 불러오기용 HTML)"""
+    file_path = EXPORT_FOLDER / filepath
+    if file_path.exists() and file_path.is_file():
+        if filepath.endswith('.html'):
+            return send_file(str(file_path), mimetype='text/html')
+        elif filepath.endswith('.png') or filepath.endswith('.jpg') or filepath.endswith('.jpeg'):
+            return send_file(str(file_path))
+        return send_file(str(file_path))
+    return "파일을 찾을 수 없습니다.", 404
+
+
+@main_bp.route('/download-export/<export_dir>')
+def download_export_zip(export_dir):
+    """내보내기 폴더를 ZIP으로 다운로드"""
+    import zipfile
+    import tempfile
+    import shutil
+    
+    export_path = EXPORT_FOLDER / export_dir
+    if not export_path.exists() or not export_path.is_dir():
+        return "내보내기 폴더를 찾을 수 없습니다.", 404
+    
+    try:
+        # 임시 ZIP 파일 생성
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        temp_zip.close()
+        
+        with zipfile.ZipFile(temp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in export_path.rglob('*'):
+                if file_path.is_file():
+                    arcname = file_path.relative_to(export_path)
+                    zipf.write(str(file_path), arcname=str(arcname))
+        
+        return send_file_with_korean_filename(
+            temp_zip.name,
+            f'{export_dir}.zip',
+            'application/zip'
+        )
+    except Exception as e:
+        return f"ZIP 생성 오류: {str(e)}", 500
 

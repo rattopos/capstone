@@ -1466,6 +1466,9 @@
                     <button class="btn btn-hwp" id="exportHwpBtn" style="display: none; background: linear-gradient(135deg, #2196f3, #1976d2); border-color: #1565c0;">
                         📋 한글 복붙용
                     </button>
+                    <button class="btn btn-hwp-import" id="exportHwpImportBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;">
+                        📄 한글 불러오기용
+                    </button>
                 </div>
             </div>
 
@@ -2017,6 +2020,7 @@
             pageIndicator: document.getElementById('pageIndicator'),
             exportBtn: document.getElementById('exportBtn'),
             exportHwpBtn: document.getElementById('exportHwpBtn'),
+            exportHwpImportBtn: document.getElementById('exportHwpImportBtn'),
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
             previewIframe: document.getElementById('previewIframe'),
@@ -2079,6 +2083,7 @@
             elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
             elements.exportBtn.addEventListener('click', exportFinalDocument);
             elements.exportHwpBtn.addEventListener('click', exportHwpReadyDocument);
+            elements.exportHwpImportBtn.addEventListener('click', exportHwpImportDocument);
             
             // Edit actions
             elements.editBtn.addEventListener('click', enterEditMode);
@@ -2263,6 +2268,7 @@
             // 내보내기 버튼 표시
             elements.exportBtn.style.display = 'inline-flex';
             elements.exportHwpBtn.style.display = 'inline-flex';
+            elements.exportHwpImportBtn.style.display = 'inline-flex';
             
             // 전체 보고서 배열 초기화 및 렌더링
             initializeAllReports();
@@ -3215,12 +3221,76 @@
             renderStatisticsReportList();
         }
 
+        // ===== 현재 미리보기 iframe 내용을 캐시에 동기화 =====
+        function syncCurrentPreviewToCache() {
+            if (state.currentGlobalIndex < 0 || state.currentGlobalIndex >= state.allReports.length) {
+                return;
+            }
+            
+            const report = state.allReports[state.currentGlobalIndex];
+            if (!report) return;
+            
+            try {
+                const iframe = elements.previewIframe;
+                if (iframe && iframe.contentDocument && iframe.contentDocument.documentElement) {
+                    // 현재 iframe의 HTML 내용을 캐시에 저장
+                    const currentHtml = iframe.contentDocument.documentElement.outerHTML;
+                    const cacheKey = `${report.type}_${report.id}`;
+                    state.htmlCache[cacheKey] = currentHtml;
+                    state.cachedHtml[report.type][report.id] = currentHtml;
+                }
+            } catch (e) {
+                console.warn('미리보기 동기화 실패:', e);
+            }
+        }
+        
+        // ===== 파일 저장 (저장 위치 선택 지원) =====
+        async function saveFileWithPicker(blob, filename) {
+            // File System Access API 지원 확인
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: 'HTML 파일',
+                            accept: { 'text/html': ['.html'] }
+                        }]
+                    });
+                    
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return true;
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        // 사용자가 취소함
+                        return false;
+                    }
+                    console.warn('File System Access API 오류, 기본 다운로드로 전환:', err);
+                }
+            }
+            
+            // 폴백: 기본 다운로드 (브라우저 설정에 따라 저장 위치 묻기)
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return true;
+        }
+        
         // ===== 최종 문서 내보내기 =====
         async function exportFinalDocument() {
             if (!state.allGenerated) {
                 showToast('먼저 모든 보고서를 생성하세요.', 'warning');
                 return;
             }
+            
+            // 현재 미리보기 내용을 캐시에 동기화
+            syncCurrentPreviewToCache();
             
             // 로딩 표시
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -3239,12 +3309,26 @@
                 // 모든 캐시된 HTML 수집 (순서대로)
                 const pages = [];
                 
+                // HTML 가져오기 헬퍼 함수 (htmlCache 우선, cachedHtml 폴백)
+                const getHtmlContent = (type, id) => {
+                    const cacheKey = `${type}_${id}`;
+                    // htmlCache 우선 확인 (편집된 내용 포함)
+                    if (state.htmlCache[cacheKey]) {
+                        return state.htmlCache[cacheKey];
+                    }
+                    // cachedHtml 폴백
+                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
+                        return state.cachedHtml[type][id];
+                    }
+                    return null;
+                };
+                
                 // 1. 요약 보고서
                 for (const report of state.summaryReports) {
-                    const key = `summary_${report.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('summary', report.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: report.name,
                             category: 'summary'
                         });
@@ -3253,10 +3337,10 @@
                 
                 // 2. 부문별 보고서
                 for (const report of state.sectoralReports) {
-                    const key = `sectoral_${report.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('sectoral', report.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: report.name,
                             category: 'sectoral'
                         });
@@ -3265,10 +3349,10 @@
                 
                 // 3. 시도별 보고서
                 for (const region of state.regionalReports) {
-                    const key = `regional_${region.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('regional', region.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: region.name,
                             category: 'regional'
                         });
@@ -3277,10 +3361,10 @@
                 
                 // 4. 통계표
                 for (const stat of state.statisticsReports) {
-                    const key = `statistics_${stat.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('statistics', stat.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: stat.name,
                             category: 'statistics'
                         });
@@ -3319,25 +3403,36 @@
                 loadingPercent.textContent = '100%';
                 
                 if (result.success) {
-                    loadingCurrent.textContent = '문서 생성 완료!';
+                    loadingCurrent.textContent = '저장 위치 선택 중...';
                     
-                    // 다운로드 또는 새 탭에서 열기
-                    setTimeout(() => {
-                        loadingOverlay.style.display = 'none';
+                    // 로딩 오버레이 숨기고 파일 저장 대화상자 표시
+                    loadingOverlay.style.display = 'none';
+                    
+                    // 파일 저장 (사용자가 위치 선택)
+                    const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
+                    const saved = await saveFileWithPicker(blob, result.filename);
+                    
+                    if (saved) {
+                        showToast(`✅ ${result.total_pages}페이지 문서가 저장되었습니다.`, 'success');
                         
-                        // 파일 다운로드
-                        const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = result.filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        
-                        showToast(`✅ ${result.total_pages}페이지 문서가 생성되었습니다.`, 'success');
-                    }, 500);
+                        // 작업 완료 후 업로드 폴더 정리
+                        setTimeout(async () => {
+                            try {
+                                const cleanupResponse = await fetch('/api/cleanup-uploads', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                const cleanupResult = await cleanupResponse.json();
+                                if (cleanupResult.success && cleanupResult.deleted_count > 0) {
+                                    console.log(`[정리] ${cleanupResult.deleted_count}개 파일 정리 완료`);
+                                }
+                            } catch (e) {
+                                console.warn('업로드 폴더 정리 실패:', e);
+                            }
+                        }, 1000);
+                    } else {
+                        showToast('저장이 취소되었습니다.', 'info');
+                    }
                 } else {
                     loadingOverlay.style.display = 'none';
                     showToast(result.error || '문서 생성 실패', 'error');
@@ -3356,6 +3451,9 @@
                 return;
             }
             
+            // 현재 미리보기 내용을 캐시에 동기화
+            syncCurrentPreviewToCache();
+            
             // 로딩 표시
             const loadingOverlay = document.getElementById('loadingOverlay');
             const loadingTitle = document.getElementById('loadingTitle');
@@ -3373,12 +3471,24 @@
                 // 모든 캐시된 HTML 수집 (순서대로)
                 const pages = [];
                 
+                // HTML 가져오기 헬퍼 함수 (htmlCache 우선, cachedHtml 폴백)
+                const getHtmlContent = (type, id) => {
+                    const cacheKey = `${type}_${id}`;
+                    if (state.htmlCache[cacheKey]) {
+                        return state.htmlCache[cacheKey];
+                    }
+                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
+                        return state.cachedHtml[type][id];
+                    }
+                    return null;
+                };
+                
                 // 1. 요약 보고서
                 for (const report of state.summaryReports) {
-                    const key = `summary_${report.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('summary', report.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: report.name,
                             category: 'summary'
                         });
@@ -3387,10 +3497,10 @@
                 
                 // 2. 부문별 보고서
                 for (const report of state.sectoralReports) {
-                    const key = `sectoral_${report.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('sectoral', report.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: report.name,
                             category: 'sectoral'
                         });
@@ -3399,10 +3509,10 @@
                 
                 // 3. 시도별 보고서
                 for (const region of state.regionalReports) {
-                    const key = `regional_${region.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('regional', region.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: region.name,
                             category: 'regional'
                         });
@@ -3411,10 +3521,10 @@
                 
                 // 4. 통계표
                 for (const stat of state.statisticsReports) {
-                    const key = `statistics_${stat.id}`;
-                    if (state.htmlCache[key]) {
+                    const html = getHtmlContent('statistics', stat.id);
+                    if (html) {
                         pages.push({
-                            html: state.htmlCache[key],
+                            html: html,
                             title: stat.name,
                             category: 'statistics'
                         });
@@ -3463,6 +3573,22 @@
                         window.open(result.view_url, '_blank');
                         
                         showToast(`✅ ${result.total_pages}페이지 한글 복붙용 문서가 생성되었습니다.\n새 탭에서 열립니다. 복사할 영역을 선택 후 Ctrl+C → 한글에서 Ctrl+V`, 'success');
+                        
+                        // 작업 완료 후 업로드 폴더 정리
+                        setTimeout(async () => {
+                            try {
+                                const cleanupResponse = await fetch('/api/cleanup-uploads', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                const cleanupResult = await cleanupResponse.json();
+                                if (cleanupResult.success && cleanupResult.deleted_count > 0) {
+                                    console.log(`[정리] ${cleanupResult.deleted_count}개 파일 정리 완료`);
+                                }
+                            } catch (e) {
+                                console.warn('업로드 폴더 정리 실패:', e);
+                            }
+                        }, 1000);
                     }, 500);
                 } else {
                     loadingOverlay.style.display = 'none';
@@ -3470,6 +3596,166 @@
                 }
             } catch (err) {
                 console.error('한글 복붙용 내보내기 오류:', err);
+                loadingOverlay.style.display = 'none';
+                showToast('문서 생성 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // ===== 한글 불러오기용 문서 내보내기 =====
+        async function exportHwpImportDocument() {
+            if (!state.allGenerated) {
+                showToast('먼저 모든 보고서를 생성하세요.', 'warning');
+                return;
+            }
+            
+            // 현재 미리보기 내용을 캐시에 동기화
+            syncCurrentPreviewToCache();
+            
+            // 로딩 표시
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingTitle = document.getElementById('loadingTitle');
+            const loadingProgress = document.getElementById('loadingProgress');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const loadingCurrent = document.getElementById('loadingCurrent');
+            
+            loadingOverlay.style.display = 'flex';
+            loadingTitle.textContent = '📄 한글 불러오기용 문서 생성 중...';
+            loadingCurrent.textContent = '페이지 변환 중';
+            loadingProgress.style.width = '0%';
+            loadingPercent.textContent = '0%';
+            
+            try {
+                // 모든 캐시된 HTML 수집 (순서대로)
+                const pages = [];
+                
+                // HTML 가져오기 헬퍼 함수
+                const getHtmlContent = (type, id) => {
+                    const cacheKey = `${type}_${id}`;
+                    return state.htmlCache[cacheKey] 
+                        || state.cachedHtml[type]?.[id] 
+                        || null;
+                };
+                
+                // 1. 요약 보고서
+                for (const report of state.summaryReports) {
+                    const html = getHtmlContent('summary', report.id);
+                    if (html) {
+                        pages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'summary'
+                        });
+                    }
+                }
+                
+                // 2. 부문별 보고서
+                for (const report of state.sectoralReports) {
+                    const html = getHtmlContent('sectoral', report.id);
+                    if (html) {
+                        pages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'sectoral'
+                        });
+                    }
+                }
+                
+                // 3. 시도별 보고서
+                for (const region of state.regionalReports) {
+                    const html = getHtmlContent('regional', region.id);
+                    if (html) {
+                        pages.push({
+                            html: html,
+                            title: region.name,
+                            category: 'regional'
+                        });
+                    }
+                }
+                
+                // 4. 통계표
+                for (const stat of state.statisticsReports) {
+                    const html = getHtmlContent('statistics', stat.id);
+                    if (html) {
+                        pages.push({
+                            html: html,
+                            title: stat.name,
+                            category: 'statistics'
+                        });
+                    }
+                }
+                
+                loadingCurrent.textContent = `${pages.length}개 페이지 변환 중`;
+                loadingProgress.style.width = '30%';
+                loadingPercent.textContent = '30%';
+                
+                if (pages.length === 0) {
+                    loadingOverlay.style.display = 'none';
+                    showToast('생성된 보고서가 없습니다. 먼저 보고서를 생성하세요.', 'error');
+                    return;
+                }
+                
+                // 연도/분기 가져오기
+                const year = parseInt(elements.yearSelect.value) || 2025;
+                const quarter = parseInt(elements.quarterSelect.value) || 2;
+                
+                // API 호출
+                const response = await fetch('/api/export-hwp-import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pages: pages,
+                        year: year,
+                        quarter: quarter
+                    })
+                });
+                
+                const result = await response.json();
+                
+                loadingProgress.style.width = '100%';
+                loadingPercent.textContent = '100%';
+                
+                if (result.success) {
+                    loadingCurrent.textContent = '문서 생성 완료!';
+                    
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        // 새 탭에서 열기 (차트 변환용)
+                        window.open(result.view_url, '_blank');
+                        
+                        // ZIP 다운로드 링크도 제공
+                        showToast(
+                            `✅ 한글 불러오기용 문서가 생성되었습니다.\n\n` +
+                            `1. 브라우저에서 HTML을 열어 Canvas를 이미지로 변환하세요\n` +
+                            `2. 변환된 이미지를 images 폴더에 저장하세요\n` +
+                            `3. 한글에서 파일 → 불러오기 → HTML 파일 선택\n\n` +
+                            `ZIP 다운로드: <a href="${result.download_url}" download>여기 클릭</a>`,
+                            'success',
+                            10000
+                        );
+                        
+                        // 작업 완료 후 업로드 폴더 정리
+                        setTimeout(async () => {
+                            try {
+                                const cleanupResponse = await fetch('/api/cleanup-uploads', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                const cleanupResult = await cleanupResponse.json();
+                                if (cleanupResult.success && cleanupResult.deleted_count > 0) {
+                                    console.log(`[정리] ${cleanupResult.deleted_count}개 파일 정리 완료`);
+                                }
+                            } catch (e) {
+                                console.warn('업로드 폴더 정리 실패:', e);
+                            }
+                        }, 1000);
+                    }, 500);
+                } else {
+                    loadingOverlay.style.display = 'none';
+                    showToast(result.error || '문서 생성 실패', 'error');
+                }
+            } catch (err) {
+                console.error('한글 불러오기용 내보내기 오류:', err);
                 loadingOverlay.style.display = 'none';
                 showToast('문서 생성 중 오류가 발생했습니다.', 'error');
             }

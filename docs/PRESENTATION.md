@@ -25,6 +25,7 @@
    - [6.5.9 GRDP 시트 관리](#659-grdp-시트-관리--new) ⭐ NEW
 7. [백엔드 구조와 워크플로우](#7-백엔드-구조와-워크플로우)
 8. [프론트엔드 구성요소와 대시보드 사용법](#8-프론트엔드-구성요소와-대시보드-사용법)
+   - [편집 내용 저장 및 최종 문서 반영 과정](#편집-내용-저장-및-최종-문서-반영-과정--핵심) ⭐ 핵심
 9. [보고서 페이지 유형 및 구조](#9-보고서-페이지-유형-및-구조)
 10. [예상 Q&A](#10-예상-qa)
 11. [심층 기술 질문 (까다로운 Q&A)](#11-심층-기술-질문-까다로운-qa--new) ⭐ NEW
@@ -3823,6 +3824,261 @@ def generate_preview():
 2. #cancelEditBtn 클릭: 변경사항 취소 후 일반 모드로 복귀
 ```
 
+##### 편집 내용 저장 및 최종 문서 반영 과정 ⭐ 핵심
+
+편집된 내용이 최종 HTML 보도자료에 반영되는 과정을 설명합니다.
+
+**1. 캐시 구조 (이중 캐시 시스템)**
+
+```javascript
+// dashboard.html - state 객체 내 캐시 구조
+const state = {
+    // 캐시 1: 타입별 중첩 구조 (보고서 선택/편집용)
+    cachedHtml: {
+        summary: {},    // { 'cover': '<html>...', 'toc': '<html>...' }
+        sectoral: {},   // { 'mining_manufacturing': '<html>...', ... }
+        regional: {},   // { 'seoul': '<html>...', 'busan': '<html>...' }
+        statistics: {}  // { 'stat_toc': '<html>...', ... }
+    },
+    
+    // 캐시 2: 플랫 키 구조 (최종 문서 생성용)
+    htmlCache: {}  // { 'summary_cover': '<html>...', 'sectoral_mining': '<html>...' }
+};
+```
+
+**2. 캐시 데이터 흐름 다이어그램**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           보고서 생성 및 편집 흐름                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [1] 보고서 생성 시                                                          │
+│  ┌──────────────┐     API 호출     ┌──────────────┐                         │
+│  │ 엑셀 업로드   │ ───────────────> │ Flask 서버    │                         │
+│  └──────────────┘                  │ (Generator)   │                         │
+│                                    └──────┬───────┘                         │
+│                                           │ HTML 응답                        │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │                    JavaScript State                           │          │
+│  │  ┌─────────────────────┐    ┌─────────────────────┐          │          │
+│  │  │ state.cachedHtml    │    │ state.htmlCache     │          │          │
+│  │  │ (타입별 중첩 구조)    │    │ (플랫 키 구조)       │          │          │
+│  │  │                     │    │                     │          │          │
+│  │  │ summary: {          │    │ 'summary_cover':    │          │          │
+│  │  │   'cover': HTML     │◄──►│    HTML             │          │          │
+│  │  │ }                   │    │ 'sectoral_mining':  │          │          │
+│  │  │ sectoral: {         │    │    HTML             │          │          │
+│  │  │   'mining': HTML    │    │ ...                 │          │          │
+│  │  │ }                   │    └─────────────────────┘          │          │
+│  │  └─────────────────────┘                                     │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                           │                                 │
+│  [2] 미리보기 표시                         ▼                                 │
+│  ┌──────────────────────────────────────────────────────────────┐           │
+│  │ #previewIframe                                               │           │
+│  │ ┌──────────────────────────────────────────────────────────┐ │           │
+│  │ │ iframe.srcdoc = state.cachedHtml[type][id]               │ │           │
+│  │ │                                                          │ │           │
+│  │ │ ┌────────────────────────────────────────────────────┐   │ │           │
+│  │ │ │ 보고서 HTML 내용 (실시간 렌더링)                      │   │ │           │
+│  │ │ │ - 표, 차트, 텍스트 등                               │   │ │           │
+│  │ │ └────────────────────────────────────────────────────┘   │ │           │
+│  │ └──────────────────────────────────────────────────────────┘ │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                                           │                                 │
+│  [3] 편집 모드에서 수정                     │ contentEditable                │
+│                                           ▼                                 │
+│  ┌──────────────────────────────────────────────────────────────┐           │
+│  │ 사용자 편집 (iframe 내 직접 수정)                              │           │
+│  │ - iframeDoc.body.contentEditable = 'true'                   │           │
+│  │ - 텍스트, 숫자 클릭하여 직접 수정                               │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                                           │                                 │
+│  [4] 저장 버튼 클릭 시                      │ saveEditedContent()            │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │ 편집된 HTML을 양쪽 캐시에 동시 저장                             │          │
+│  │                                                               │          │
+│  │ const newHtml = iframeDoc.documentElement.outerHTML;          │          │
+│  │                                                               │          │
+│  │ // 캐시 1 업데이트                                             │          │
+│  │ state.cachedHtml[type][report.id] = newHtml;                  │          │
+│  │                                                               │          │
+│  │ // 캐시 2 업데이트 (최종 문서 생성용)                           │          │
+│  │ state.htmlCache[`${type}_${report.id}`] = newHtml;            │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                                                             │
+│  [5] 최종 문서 생성 시 (📰 HTML 보도자료 버튼)                                │
+│                                           │                                 │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │ syncCurrentPreviewToCache()  ← 현재 미리보기 iframe 동기화     │          │
+│  │                                                               │          │
+│  │ // 현재 보고 있는 페이지의 편집 내용도 캐시에 반영               │          │
+│  │ const currentHtml = iframe.contentDocument.documentElement.   │          │
+│  │                     outerHTML;                                │          │
+│  │ state.htmlCache[cacheKey] = currentHtml;                      │          │
+│  │ state.cachedHtml[type][id] = currentHtml;                     │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                           │                                 │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │ exportFinalDocument() - 페이지 수집                           │          │
+│  │                                                               │          │
+│  │ // 헬퍼 함수: 두 캐시 모두 확인                                 │          │
+│  │ const getHtmlContent = (type, id) => {                        │          │
+│  │     const key = `${type}_${id}`;                              │          │
+│  │     return state.htmlCache[key]                               │          │
+│  │         || state.cachedHtml[type]?.[id]                       │          │
+│  │         || null;                                              │          │
+│  │ };                                                            │          │
+│  │                                                               │          │
+│  │ // 모든 보고서 순회하며 HTML 수집                               │          │
+│  │ for (const report of state.summaryReports) {                  │          │
+│  │     pages.push({ html: getHtmlContent('summary', report.id) });│          │
+│  │ }                                                             │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                           │                                 │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │ /api/export-final API 호출                                    │          │
+│  │                                                               │          │
+│  │ POST { pages: [...], year: 2025, quarter: 2 }                 │          │
+│  │                                                               │          │
+│  │ → Flask 서버에서 모든 페이지 HTML을 합쳐서 최종 문서 생성        │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                           │                                 │
+│                                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────────────┐          │
+│  │ saveFileWithPicker() - 파일 저장                              │          │
+│  │                                                               │          │
+│  │ // File System Access API 지원 시 (Chrome, Edge)              │          │
+│  │ const handle = await window.showSaveFilePicker({              │          │
+│  │     suggestedName: '지역경제동향_2025년_2분기.html',            │          │
+│  │     types: [{ accept: { 'text/html': ['.html'] } }]           │          │
+│  │ });                                                           │          │
+│  │                                                               │          │
+│  │ // 사용자가 선택한 위치에 파일 저장                             │          │
+│  │ const writable = await handle.createWritable();               │          │
+│  │ await writable.write(blob);                                   │          │
+│  │ await writable.close();                                       │          │
+│  └───────────────────────────────────────────────────────────────┘          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**3. 핵심 코드 설명**
+
+```javascript
+// 1. 보고서 생성 시 양쪽 캐시에 저장
+async function generateReportAsync(report, type) {
+    const response = await fetch('/api/generate-preview', { ... });
+    const data = await response.json();
+    
+    if (data.success) {
+        // 캐시 1: 타입별 중첩 구조 (미리보기용)
+        state.cachedHtml[type][report.id] = data.html;
+        
+        // 캐시 2: 플랫 키 구조 (최종 문서 생성용)
+        state.htmlCache[`${type}_${report.id}`] = data.html;
+    }
+}
+
+// 2. 편집 내용 저장 시 양쪽 캐시 업데이트
+function saveEditedContent() {
+    const iframeDoc = elements.previewIframe.contentDocument;
+    const newHtml = iframeDoc.documentElement.outerHTML;
+    
+    const { type, report } = currentEditingReport;
+    
+    // 양쪽 캐시 동시 업데이트 (편집 내용 반영)
+    state.cachedHtml[type][report.id] = newHtml;
+    state.htmlCache[`${type}_${report.id}`] = newHtml;
+}
+
+// 3. 최종 문서 생성 전 현재 미리보기 동기화
+function syncCurrentPreviewToCache() {
+    const report = state.allReports[state.currentGlobalIndex];
+    const iframe = elements.previewIframe;
+    
+    if (iframe?.contentDocument) {
+        const currentHtml = iframe.contentDocument.documentElement.outerHTML;
+        const cacheKey = `${report.type}_${report.id}`;
+        
+        // 현재 보고 있는 페이지도 캐시에 반영
+        state.htmlCache[cacheKey] = currentHtml;
+        state.cachedHtml[report.type][report.id] = currentHtml;
+    }
+}
+
+// 4. 최종 문서 생성 시 캐시에서 HTML 수집
+async function exportFinalDocument() {
+    // 현재 미리보기 동기화 (중요!)
+    syncCurrentPreviewToCache();
+    
+    const pages = [];
+    
+    // 두 캐시 모두 확인하여 HTML 수집
+    const getHtmlContent = (type, id) => {
+        const key = `${type}_${id}`;
+        return state.htmlCache[key] 
+            || state.cachedHtml[type]?.[id] 
+            || null;
+    };
+    
+    // 순서대로 모든 보고서 수집
+    for (const report of state.summaryReports) {
+        const html = getHtmlContent('summary', report.id);
+        if (html) pages.push({ html, title: report.name });
+    }
+    // ... sectoral, regional, statistics 동일
+    
+    // API 호출하여 최종 문서 생성
+    const response = await fetch('/api/export-final', {
+        body: JSON.stringify({ pages, year, quarter })
+    });
+}
+```
+
+**4. 캐시 동기화가 필요한 이유**
+
+| 상황 | 문제점 | 해결책 |
+|------|--------|--------|
+| 편집 후 저장 안 하고 다른 보고서로 이동 | 편집 내용 유실 가능 | `syncCurrentPreviewToCache()`로 현재 상태 자동 저장 |
+| htmlCache만 확인 시 | 일부 보고서 누락 가능 | `cachedHtml` 폴백으로 이중 확인 |
+| 저장 버튼 없이 바로 내보내기 | 최근 편집 내용 누락 | 내보내기 전 `syncCurrentPreviewToCache()` 자동 호출 |
+
+**5. 파일 저장 위치 선택 기능**
+
+```javascript
+async function saveFileWithPicker(blob, filename) {
+    // Chrome, Edge 등 Chromium 기반 브라우저
+    if ('showSaveFilePicker' in window) {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+                description: 'HTML 파일',
+                accept: { 'text/html': ['.html'] }
+            }]
+        });
+        
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+    }
+    
+    // 폴백: 기본 다운로드 (Firefox, Safari 등)
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    return true;
+}
+```
+
 **D. 로딩 오버레이 (Loading Overlay)** (`#loadingOverlay`)
 
 보고서 생성 중 표시되는 전체 화면 오버레이입니다.
@@ -4253,7 +4509,119 @@ STATISTICS_REPORTS = [
 ]
 ```
 
-### 9.9 보고서 생성 흐름
+### 9.9 보고서 템플릿 분류
+
+보고서 템플릿은 크게 **4개의 대분류**로 나뉘며, 각 카테고리 내에서 형태적 특성과 참조하는 시트 헤더 구조에 따라 세부적으로 분류됩니다.
+
+#### 9.9.1 대분류 (카테고리별)
+
+| 카테고리 | 설명 | 보고서 수 |
+|---------|------|----------|
+| **요약형** | 표지, 목차, 인포그래픽 등 보고서의 전반적인 구성 요소 | 9개 |
+| **부문별형** | 특정 경제 부문에 대한 상세 분석 보고서 | 10개 |
+| **시도별형** | 각 시도(17개) 및 참고 자료별 종합 현황 보고서 | 18개 |
+| **통계표형** | 통계 데이터를 표 형식으로 정리한 보고서 | 13개 |
+
+#### 9.9.2 부문별형 하위 분류 (형태적 특성별)
+
+부문별 보고서는 데이터 구조와 표시 방식에 따라 다음과 같이 분류됩니다:
+
+| 분류명 | 포함 보고서 | 주요 특징 |
+|--------|------------|----------|
+| **산업지표형** | 광공업생산, 서비스업생산 | 시도별 산업(품목)별 증감률과 기여도 분석 |
+| **소비지표형** | 소비동향 | 시도별 업종별 소매판매액 증감률과 기여도 |
+| **건설지표형** | 건설동향 | 시도별 건설 유형별 수주액 증감률 |
+| **무역지표형** | 수출, 수입 | 시도별 품목별 수출입액과 증감률, 기여율 |
+| **물가지표형** | 물가동향 | 시도별 품목별 물가 증감률 |
+| **고용지표형** | 고용률, 실업률 | 시도별 연령대별 고용률/실업률 |
+| **인구이동형** | 국내인구이동 | 시도별 연령대별 순인구이동 인구수 |
+
+#### 9.9.3 시트 헤더 구조별 분류
+
+각 템플릿이 참조하는 Excel 시트의 헤더 구조 유형에 따른 분류입니다:
+
+##### 유형 1: 시도-품목-가중치-증감률-기여율형
+
+**특징**: 품목(산업/업종)별 가중치가 있고, 증감률과 기여율이 모두 포함
+
+| 보고서 | 시트명 | 헤더 구조 예시 |
+|--------|--------|---------------|
+| 광공업생산 | `A 분석` | 시도, 산업코드, 산업명, 가중치, ..., 증감률, 기여율, 기여도 |
+| 소비동향 | `C 분석` | 시도, 업종코드, 업종명, 가중치, ..., 증감률, 기여율 |
+
+##### 유형 2: 시도-품목-가중치-증감률형
+
+**특징**: 품목별 가중치는 있으나 기여율 정보가 없거나 사용하지 않음
+
+| 보고서 | 시트명 | 헤더 구조 예시 |
+|--------|--------|---------------|
+| 서비스업생산 | `B 분석` | 시도, 산업코드, 산업명, 가중치, ..., 증감률 |
+| 건설동향 | `F'분석` | 시도, 건설유형코드, 건설유형명, 가중치, ..., 증감률 |
+| 물가동향 | `E(품목성질물가)분석` | 시도, 품목코드, 품목명, 가중치, ..., 증감률 |
+
+##### 유형 3: 시도-품목-증감률-금액-기여율형
+
+**특징**: 금액 정보가 포함되고, 기여율 계산이 가능한 구조
+
+| 보고서 | 시트명 | 헤더 구조 예시 |
+|--------|--------|---------------|
+| 수출 | `G 분석` | 시도, 품목코드, 품목명, ..., 증감률, 수출액(억달러), 기여율 |
+| 수입 | `H 분석` | 시도, 품목코드, 품목명, ..., 증감률, 수입액(억달러), 기여율 |
+
+##### 유형 4: 시도-연령대-비율형
+
+**특징**: 연령대별로 비율 지표를 보여주는 구조
+
+| 보고서 | 시트명 | 헤더 구조 예시 |
+|--------|--------|---------------|
+| 고용률 | `D(고용률)분석` | 시도, 연령대(계, 15-29세, 30-39세, ...), 고용률(%) |
+| 실업률 | `D(실업)분석` | 시도, 연령대(계, 15-29세, 30-39세, ...), 실업률(%) |
+
+##### 유형 5: 시도-연령대-순이동형
+
+**특징**: 연령대별 순인구이동 인구수를 보여주는 구조
+
+| 보고서 | 시트명 | 헤더 구조 예시 |
+|--------|--------|---------------|
+| 국내인구이동 | `I(순인구이동)집계` | 시도, 연령대(합계, 20~24세, 25~29세, ...), 순인구이동(명) |
+
+#### 9.9.4 분류 체계 요약
+
+```
+보고서 템플릿 분류 체계
+├── 요약형 (9개)
+│   ├── 표지형
+│   ├── 목차형
+│   ├── 인포그래픽형
+│   └── 요약본문형 (5종)
+│
+├── 부문별형 (10개)
+│   ├── 산업지표형 (광공업생산, 서비스업생산)
+│   ├── 소비지표형 (소비동향)
+│   ├── 건설지표형 (건설동향)
+│   ├── 무역지표형 (수출, 수입)
+│   ├── 물가지표형 (물가동향)
+│   ├── 고용지표형 (고용률, 실업률)
+│   └── 인구이동형 (국내인구이동)
+│
+├── 시도별형 (18개)
+│   ├── 시도별 현황형 (17개 시도)
+│   └── 참고자료형 (참고-GRDP)
+│
+└── 통계표형 (13개)
+    ├── 통계표 목차형
+    ├── 지수 통계표형 (10종)
+    └── 부록형
+```
+
+**시트 헤더 구조 유형 (5가지)**:
+1. 시도-품목-가중치-증감률-기여율형 (광공업생산, 소비동향)
+2. 시도-품목-가중치-증감률형 (서비스업생산, 건설동향, 물가동향)
+3. 시도-품목-증감률-금액-기여율형 (수출, 수입)
+4. 시도-연령대-비율형 (고용률, 실업률)
+5. 시도-연령대-순이동형 (국내인구이동)
+
+### 9.10 보고서 생성 흐름
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
