@@ -165,41 +165,57 @@
 
 ---
 
-#### 인포그래픽 지도 표시 방식 변경 - 마커에서 지역 채색으로
-- **시간**: (현재)
-- **문제 설명**: 인포그래픽 지도에서 지역을 동그란 마커로 표시하는 방식 대신, 지역 path 내부를 색상표에 따라 색칠하는 방식으로 변경 요청
+#### 인포그래픽 지도 위치 및 SVG 색칠 방식 구현
+- **시간**: 2026-01-02
+- **문제 설명**: 
+  1. 인포그래픽 6개 지도의 위치가 맞지 않음
+  2. 원형 마커 대신 지역 path를 색상표에 따라 직접 색칠하는 방식으로 변경 요청
 - **원인 분석**: 
-  - SVG 지도 파일의 각 path에 인라인 스타일 `fill:#878787`이 설정되어 있음
-  - JavaScript에서 `setAttribute('fill', fillColor)`로 설정해도 인라인 스타일의 CSS 우선순위가 높아 적용되지 않음
-  - 지역별 상태(증가/감소/보합)에 따른 시각적 구분이 명확하지 않았음
+  - SVG viewBox가 `"250 100 450 450"`으로 설정되어 지도 영역을 제대로 표시하지 못함
+  - SVG path의 transform 속성들이 x=400~575, y=175~540 범위에 있음
+  - path에 인라인 스타일 `fill:#878787;fill-opacity:1;...`이 복잡하게 설정되어 CSS 클래스 적용이 안됨
+  - 기존 `infographic_js_template.html`이 PNG 지도 + 원형 마커 오버레이 방식 사용
 - **에이전트 사고 과정**:
-  - 문제 인식: 사용자가 마커 대신 지역 채색 방식을 요청
-  - 코드 분석: 
-    - `infographic_template.html`의 `renderMap` 함수 확인
-    - SVG 파일 `infographic_map.svg` 구조 확인
-    - 각 지역 path에 이미 고유 ID가 있음 (jeju, busan, seoul 등)
-  - 문제 발견: 
-    - SVG의 각 path에 인라인 스타일 `style="fill:#878787..."`이 있음
-    - JavaScript의 `setAttribute('fill', ...)`는 인라인 스타일보다 우선순위가 낮음
-  - 해결 방안 고려:
-    1. SVG 파일에서 인라인 스타일 제거 → 다른 용도 사용 시 문제 가능
-    2. `path.style.fill = fillColor`로 인라인 스타일 직접 설정 → 안전하고 효과적
-  - 결정: 두 번째 방안 선택 + CSS 클래스 기반 색상 적용 병행
+  - 문제 인식: 사용자가 지도 위치 문제와 마커→path 색칠 방식 변경 요청
+  - SVG 분석:
+    - 각 path의 transform 속성 확인 (translate 좌표)
+    - x 범위: 약 400~575, y 범위: 약 175~540
+    - 현재 viewBox "250 100 450 450"이 지도를 제대로 포함하지 못함
+  - 두 가지 템플릿 존재 확인:
+    - `infographic_template.html`: SVG 로드 방식 (미완성)
+    - `infographic_js_template.html`: PNG + 마커 방식 (실제 사용)
+  - 해결 방안:
+    1. SVG viewBox를 지도 영역에 맞게 조정: `"340 130 280 360"`
+    2. SVG path의 인라인 스타일 단순화
+    3. `infographic_js_template.html`을 SVG 방식으로 완전 변경
+    4. JavaScript로 SVG 로드 및 path 색칠 로직 구현
 - **해결 방법**: 
-  1. CSS에서 마커 관련 스타일 제거, 지역 path 색상 클래스 추가
-     - `.increase`, `.decrease`, `.same` 클래스에 `!important`로 fill 색상 지정
-     - CPI용 `.above-avg`, `.below-avg`, `.national-avg` 클래스 추가
-  2. JavaScript `renderMap` 함수 수정
-     - `path.style.fill = fillColor`로 인라인 스타일 직접 설정
-     - 상태에 따른 CSS 클래스 추가 (시맨틱 + 스타일)
-  3. 불필요한 마커 위치 데이터(`REGION_POSITIONS`) 제거
+  1. `templates/infographic_map.svg` 수정:
+     - viewBox를 `"340 130 280 360"`으로 변경
+     - width/height를 200x260으로 변경
+     - 모든 path의 인라인 스타일 단순화: `fill:#CCCCCC;stroke:#ffffff;stroke-width:0.5;...`
+  2. `templates/infographic_js_template.html` 수정:
+     - PNG 이미지 + 마커 방식 → SVG path 색칠 방식으로 완전 변경
+     - CSS: `.region-marker` 클래스들을 `.korea-map-svg .region` 클래스로 변경
+     - HTML: `<img class="korea-map-img">` 제거, JavaScript로 SVG 동적 로드
+     - JavaScript: 
+       - `addRegionMarkers()` → `loadAndColorMaps()` 함수로 변경
+       - `REGION_POSITIONS` (좌표) → `REGION_ID_MAP` (지역명-ID 매핑)으로 변경
+       - SVG fetch 후 각 path에 데이터 기반 CSS 클래스 적용
+  3. `templates/infographic_template.html` CSS 수정:
+     - `.korea-map-wrapper` 크기를 100x130px로 조정
+     - flexbox로 중앙 정렬 추가
 - **관련 파일**: 
+  - `templates/infographic_map.svg` (수정)
+  - `templates/infographic_js_template.html` (수정 - 주요 변경)
   - `templates/infographic_template.html` (수정)
 - **상태**: ✅ 완료
 - **참고 사항**: 
-  - 지역별 색상이 path fill로 직접 적용되어 시각적으로 더 명확함
-  - 범례는 기존 그대로 유지 (증가=붉은색, 감소=푸른색)
-  - SVG 원본 파일은 수정하지 않고 런타임에 스타일 적용
+  - SVG viewBox 계산: path transform의 x/y 범위를 분석하여 적절한 영역 설정
+  - 색상 결정 로직:
+    - 일반 지표: 값 > 0 → increase(붉은색), 값 < 0 → decrease(푸른색), 값 = 0 → neutral(회색)
+    - 소비자물가: 전국평균 초과 → above-avg(보라), 미만 → below-avg(연보라), 동일 → avg(노랑)
+  - 수출 지표가 회색으로 표시되는 것은 데이터 추출 오류("없음" 값) 때문임
 
 ---
 

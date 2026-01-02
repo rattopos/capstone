@@ -164,59 +164,54 @@
         
         .korea-map-wrapper {
             position: relative;
-            width: 120px;
-            height: 155px;
+            width: 100px;
+            height: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .korea-map-svg {
             width: 100%;
             height: 100%;
-            max-width: 120px;
-            max-height: 155px;
+            max-width: 100px;
+            max-height: 130px;
         }
         
         .korea-map-svg .region {
-            fill: #E4E4E4;
-            stroke: var(--steel-blue);
-            stroke-width: 0.5;
+            stroke: #f9f9f9;
+            stroke-width: 0.3;
             transition: fill 0.3s ease;
         }
         
-        /* 지역 마커 */
-        .region-marker {
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.8;
-            border: 1px solid rgba(255,255,255,0.9);
+        /* 지역 색상 클래스 */
+        .korea-map-svg .region.increase {
+            fill: #F18D8D !important;
         }
         
-        .region-marker.increase {
-            background: #F18D8D;
+        .korea-map-svg .region.decrease {
+            fill: #7FBDE5 !important;
         }
         
-        .region-marker.decrease {
-            background: #7FBDE5;
-        }
-        
-        .region-marker.same {
-            background: #E4E4E4;
+        .korea-map-svg .region.same {
+            fill: #E4E4E4 !important;
         }
         
         /* 소비자물가 특수 색상 */
-        .region-marker.above-avg {
-            background: #C1A5C9;
+        .korea-map-svg .region.above-avg {
+            fill: #C1A5C9 !important;
         }
         
-        .region-marker.below-avg {
-            background: #D8D2DE;
+        .korea-map-svg .region.below-avg {
+            fill: #D8D2DE !important;
         }
         
-        .region-marker.national-avg {
-            background: #E4E4E4;
-            border-color: #E4E4E4;
+        .korea-map-svg .region.national-avg {
+            fill: #E4E4E4 !important;
+        }
+        
+        .korea-map-svg .region.no-data {
+            fill: #CCCCCC !important;
         }
         
         /* Ranking Section */
@@ -638,27 +633,6 @@
         // SVG 캐시
         let svgCache = null;
         
-        // PNG 지도 이미지 기준 17개 시도 좌표 (% 기준)
-        const REGION_POSITIONS = {
-            '서울': { x: 32, y: 20 },
-            '인천': { x: 23, y: 24 },
-            '경기': { x: 34, y: 28 },
-            '강원': { x: 58, y: 18 },
-            '충북': { x: 47, y: 37 },
-            '충남': { x: 28, y: 43 },
-            '세종': { x: 38, y: 42 },
-            '대전': { x: 40, y: 48 },
-            '전북': { x: 32, y: 58 },
-            '광주': { x: 27, y: 70 },
-            '전남': { x: 30, y: 80 },
-            '경북': { x: 62, y: 42 },
-            '대구': { x: 58, y: 55 },
-            '경남': { x: 52, y: 70 },
-            '울산': { x: 68, y: 60 },
-            '부산': { x: 64, y: 75 },
-            '제주': { x: 24, y: 97 }
-        };
-        
         // ========================================
         // 데이터 구조 (변수 - 쉽게 매핑 가능)
         // ========================================
@@ -848,6 +822,9 @@
                     if (id && id !== 'background' && id !== 'path1') {
                         path.classList.add('region');
                         
+                        // 기존 상태 클래스 제거
+                        path.classList.remove('increase', 'decrease', 'same', 'above-avg', 'below-avg', 'national-avg', 'no-data');
+                        
                         // 지역명 찾기
                         let regionName = null;
                         for (const [name, regionId] of Object.entries(REGION_ID_MAP)) {
@@ -859,6 +836,29 @@
                         
                         if (regionName && regionValueMap[regionName]) {
                             const regionData = regionValueMap[regionName];
+                            
+                            // 상태에 따른 클래스 추가
+                            if (indicatorKey === 'cpi') {
+                                // 소비자물가는 전국 평균 대비
+                                if (regionData.status === 'above') {
+                                    path.classList.add('above-avg');
+                                } else if (regionData.status === 'below') {
+                                    path.classList.add('below-avg');
+                                } else {
+                                    path.classList.add('national-avg');
+                                }
+                            } else {
+                                // 일반 지표는 증감 방향에 따라 색상
+                                if (regionData.status === 'up') {
+                                    path.classList.add('increase');
+                                } else if (regionData.status === 'down') {
+                                    path.classList.add('decrease');
+                                } else {
+                                    path.classList.add('same');
+                                }
+                            }
+                            
+                            // 인라인 스타일로도 색상 설정 (SVG 기본 스타일 오버라이드)
                             const fillColor = getValueBasedColor(
                                 regionData.value,
                                 regionData.status,
@@ -871,11 +871,11 @@
                                 minDownValue,
                                 maxDownValue
                             );
-                            
-                            path.setAttribute('fill', fillColor);
+                            path.style.fill = fillColor;
                         } else {
                             // 데이터가 없는 지역은 기본 회색
-                            path.setAttribute('fill', '#E4E4E4');
+                            path.classList.add('no-data');
+                            path.style.fill = '#CCCCCC';
                         }
                     }
                 });
@@ -1017,7 +1017,7 @@
         // ========================================
         window.InfographicAPI = {
             data: infographicData,
-            regionPositions: REGION_POSITIONS,
+            regionIdMap: REGION_ID_MAP,
             render: renderInfographic,
             renderMap: renderMap,
             updateNational: updateNational,

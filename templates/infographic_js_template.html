@@ -196,54 +196,57 @@
             align-items: center;
         }
         
-        /* PNG 지도 이미지 기반 방식 */
+        /* SVG 지도 기반 방식 */
         .korea-map-wrapper {
             position: relative;
             width: 130px;
             height: 170px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .korea-map-img {
+        .korea-map-svg {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            max-width: 130px;
+            max-height: 170px;
         }
         
-        /* 지역 마커 (PNG 지도 위에 오버레이) */
-        .region-marker {
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.75;
-            border: 1px solid rgba(255,255,255,0.8);
+        .korea-map-svg .region {
+            stroke: #ffffff;
+            stroke-width: 0.5;
+            transition: fill 0.3s ease;
         }
         
-        .region-marker.increase {
-            background: #ef5350;
+        /* 지역 색상 클래스 - 일반 지표용 */
+        .korea-map-svg .region.increase {
+            fill: #ef5350 !important;
         }
         
-        .region-marker.decrease {
-            background: #42a5f5;
+        .korea-map-svg .region.decrease {
+            fill: #42a5f5 !important;
         }
         
-        .region-marker.neutral {
-            background: #9e9e9e;
+        .korea-map-svg .region.neutral {
+            fill: #9e9e9e !important;
         }
         
         /* 소비자물가 특수 색상 */
-        .region-marker.above-avg {
-            background: #ab47bc;
+        .korea-map-svg .region.above-avg {
+            fill: #ab47bc !important;
         }
         
-        .region-marker.below-avg {
-            background: #ce93d8;
+        .korea-map-svg .region.below-avg {
+            fill: #ce93d8 !important;
         }
         
-        .region-marker.avg {
-            background: #fff59d;
-            border-color: #fbc02d;
+        .korea-map-svg .region.avg {
+            fill: #fff59d !important;
+        }
+        
+        .korea-map-svg .region.no-data {
+            fill: #CCCCCC !important;
         }
         
         /* 전국 수치 */
@@ -380,11 +383,10 @@
                         </div>
                     </div>
                     
-                    <!-- PNG 지도 + 색상 마커 -->
+                    <!-- SVG 지도 + 지역 색칠 -->
                     <div class="map-container">
                         <div class="korea-map-wrapper" data-indicator-idx="{{ loop.index0 }}">
-                            <img class="korea-map-img" src="/templates/infographic_map.png" alt="한국 지도">
-                            <!-- 지역 마커들은 JavaScript로 동적 생성 -->
+                            <!-- SVG 지도는 JavaScript로 동적 로드 및 색칠 -->
                         </div>
                         
                         <div class="nationwide-box">
@@ -420,39 +422,69 @@
         // 지역별 데이터 (Jinja2로 주입)
         const indicatorsData = {{ indicators | tojson }};
         
-        // PNG 지도 이미지 기준 17개 시도 좌표 (% 기준, 이미지 내 상대 위치)
-        // 제공된 인포그래픽_map.png 기준으로 조정된 좌표
-        const REGION_POSITIONS = {
-            '서울': { x: 32, y: 20 },
-            '인천': { x: 23, y: 24 },
-            '경기': { x: 34, y: 28 },
-            '강원': { x: 58, y: 18 },
-            '충북': { x: 47, y: 37 },
-            '충남': { x: 28, y: 43 },
-            '세종': { x: 38, y: 42 },
-            '대전': { x: 40, y: 48 },
-            '전북': { x: 32, y: 58 },
-            '광주': { x: 27, y: 70 },
-            '전남': { x: 30, y: 80 },
-            '경북': { x: 62, y: 42 },
-            '대구': { x: 58, y: 55 },
-            '경남': { x: 52, y: 70 },
-            '울산': { x: 68, y: 60 },
-            '부산': { x: 64, y: 75 },
-            '제주': { x: 24, y: 97 }
+        // SVG 지도 경로
+        const MAP_SVG_PATH = '/templates/infographic_map.svg';
+        
+        // 지역명 → SVG path ID 매핑
+        const REGION_ID_MAP = {
+            '서울': 'seoul',
+            '부산': 'busan',
+            '대구': 'daegu',
+            '인천': 'incheon',
+            '광주': 'gwangju',
+            '대전': 'daejeon',
+            '울산': 'ulsan',
+            '세종': 'sejong',
+            '경기': 'gyeonggi',
+            '강원': 'gangwon',
+            '충북': 'chungbuk',
+            '충남': 'chungnam',
+            '전북': 'jeonbuk',
+            '전남': 'jeonnam',
+            '경북': 'gyeongbuk',
+            '경남': 'gyeongnam',
+            '제주': 'jeju'
         };
         
-        // 지도에 마커 추가
-        function addRegionMarkers() {
+        // ID → 지역명 역매핑
+        const ID_REGION_MAP = {};
+        Object.entries(REGION_ID_MAP).forEach(([name, id]) => {
+            ID_REGION_MAP[id] = name;
+        });
+        
+        // SVG 캐시
+        let svgCache = null;
+        
+        // SVG 로드 및 지역 색칠
+        async function loadAndColorMaps() {
+            // SVG 로드
+            if (!svgCache) {
+                try {
+                    const response = await fetch(MAP_SVG_PATH);
+                    svgCache = await response.text();
+                } catch (error) {
+                    console.error('SVG 로드 실패:', error);
+                    return;
+                }
+            }
+            
+            // 각 지표별 지도 처리
             document.querySelectorAll('.korea-map-wrapper').forEach((wrapper, mapIdx) => {
                 const indicator = indicatorsData[mapIdx];
                 if (!indicator) return;
                 
-                const indicatorName = indicator.name;
-                const topRegions = indicator.top_regions.map(r => r.name);
-                const bottomRegions = indicator.bottom_regions.map(r => r.name);
+                // SVG 삽입
+                wrapper.innerHTML = svgCache;
+                const svg = wrapper.querySelector('svg');
+                if (!svg) return;
                 
-                // all_regions 데이터가 있으면 사용
+                svg.classList.add('korea-map-svg');
+                svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                
+                const indicatorName = indicator.name;
+                const nationwideValue = indicator.nationwide_change;
+                
+                // 지역별 값 맵 생성
                 let regionValues = {};
                 if (indicator.all_regions && indicator.all_regions.length > 0) {
                     indicator.all_regions.forEach(r => {
@@ -460,58 +492,57 @@
                     });
                 }
                 
-                const nationwideValue = indicator.nationwide_change;
-                
-                // 모든 지역에 마커 추가
-                Object.entries(REGION_POSITIONS).forEach(([regionName, pos]) => {
-                    const marker = document.createElement('div');
-                    marker.className = 'region-marker';
-                    marker.style.left = pos.x + '%';
-                    marker.style.top = pos.y + '%';
-                    marker.title = regionName;
+                // 각 path에 색상 적용
+                const paths = svg.querySelectorAll('path');
+                paths.forEach(path => {
+                    const id = path.id;
+                    if (!id || id === 'background' || id === 'path1') return;
+                    
+                    path.classList.add('region');
+                    
+                    // 지역명 찾기
+                    const regionName = ID_REGION_MAP[id];
+                    if (!regionName) {
+                        path.classList.add('no-data');
+                        return;
+                    }
+                    
+                    const regionValue = regionValues[regionName];
                     
                     // 색상 결정
                     if (indicatorName === '소비자물가') {
                         // 소비자물가: 전국 평균과 비교
-                        const regionValue = regionValues[regionName];
                         if (regionValue !== undefined) {
                             if (regionValue > nationwideValue) {
-                                marker.classList.add('above-avg');
+                                path.classList.add('above-avg');
                             } else if (regionValue < nationwideValue) {
-                                marker.classList.add('below-avg');
+                                path.classList.add('below-avg');
                             } else {
-                                marker.classList.add('avg');
+                                path.classList.add('avg');
                             }
                         } else {
-                            marker.classList.add('avg');
+                            path.classList.add('avg');
                         }
                     } else {
                         // 일반 지표: 값에 따라 증가/감소/보합 결정
-                        const regionValue = regionValues[regionName];
                         if (regionValue !== undefined) {
                             if (regionValue > 0) {
-                                marker.classList.add('increase');
+                                path.classList.add('increase');
                             } else if (regionValue < 0) {
-                                marker.classList.add('decrease');
+                                path.classList.add('decrease');
                             } else {
-                                marker.classList.add('neutral');
+                                path.classList.add('neutral');
                             }
-                        } else if (topRegions.includes(regionName)) {
-                            marker.classList.add('increase');
-                        } else if (bottomRegions.includes(regionName)) {
-                            marker.classList.add('decrease');
                         } else {
-                            marker.classList.add('neutral');
+                            path.classList.add('neutral');
                         }
                     }
-                    
-                    wrapper.appendChild(marker);
                 });
             });
         }
         
         // 초기화
-        document.addEventListener('DOMContentLoaded', addRegionMarkers);
+        document.addEventListener('DOMContentLoaded', loadAndColorMaps);
     </script>
 </body>
 </html>
