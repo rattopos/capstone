@@ -37,17 +37,25 @@ def extract_body_content(html_content):
     inline_style = "\n".join(style_matches) if style_matches else ""
     
     # body 내부에서 불필요한 래퍼 제거
-    # .page 컨테이너 내부 추출
-    page_match = re.search(r'<div[^>]*class="[^"]*page[^"]*"[^>]*>(.*)</div>\s*$', body_content, re.DOTALL | re.IGNORECASE)
-    if page_match:
-        inner_content = page_match.group(1).strip()
-    else:
-        # cover-container 패턴
-        cover_match = re.search(r'<div[^>]*class="[^"]*cover-container[^"]*"[^>]*>(.*)</div>\s*$', body_content, re.DOTALL | re.IGNORECASE)
-        if cover_match:
-            inner_content = cover_match.group(1).strip()
-        else:
-            inner_content = body_content.strip()
+    # 컨테이너 클래스 패턴 (page, cover-container, summary-container 등)
+    # page 클래스는 page-number, page-title 등 제외 (단독 또는 공백으로 구분된 경우만)
+    container_patterns = [
+        r'<div[^>]*class="page"[^>]*>(.*)</div>\s*$',  # class="page" 단독
+        r'<div[^>]*class="page\s[^"]*"[^>]*>(.*)</div>\s*$',  # class="page ..." 시작
+        r'<div[^>]*class="[^"]*\spage"[^>]*>(.*)</div>\s*$',  # class="... page" 끝
+        r'<div[^>]*class="[^"]*\spage\s[^"]*"[^>]*>(.*)</div>\s*$',  # class="... page ..." 중간
+        r'<div[^>]*class="[^"]*-container[^"]*"[^>]*>(.*)</div>\s*$',  # *-container 패턴
+    ]
+    
+    inner_content = None
+    for pattern in container_patterns:
+        match = re.search(pattern, body_content, re.DOTALL | re.IGNORECASE)
+        if match:
+            inner_content = match.group(1).strip()
+            break
+    
+    if inner_content is None:
+        inner_content = body_content.strip()
     
     # script 태그 제거 (나중에 별도로 추가)
     inner_content = re.sub(r'<script[^>]*>.*?</script>', '', inner_content, flags=re.DOTALL | re.IGNORECASE)

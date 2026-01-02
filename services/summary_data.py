@@ -391,7 +391,9 @@ def _get_default_sector_summary():
 def get_summary_table_data(excel_path):
     """요약 테이블 데이터 (기초자료 또는 집계 시트에서 전년동기비 계산)"""
     try:
+        print(f"[DEBUG] get_summary_table_data - excel_path: {excel_path}")
         xl = pd.ExcelFile(excel_path)
+        print(f"[DEBUG] 시트 목록: {xl.sheet_names[:5]}...")
         all_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
@@ -457,8 +459,8 @@ def get_summary_table_data(excel_path):
             },
             'exports': {
                 'sheet': 'G(수출)집계',
-                'region_col': 3, 'code_col': 7, 'total_code': '합계',
-                'curr_col': 56, 'prev_col': 52,
+                'region_col': 3, 'division_col': 4, 'total_code': '0',
+                'curr_col': 26, 'prev_col': 22,
                 'calc_type': 'growth_rate'
             },
             'price': {
@@ -727,9 +729,10 @@ def get_employment_population_data(excel_path, year, quarter):
             regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
             
-            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기
+            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기, col21=2024 2/4분기
             # 합계(분류단계 0) 행만 추출
             processed_regions = set()
+            region_data = {}  # 지역별 데이터 저장
             
             for i, row in df.iterrows():
                 region = str(row[4]).strip() if pd.notna(row[4]) else ''
@@ -738,10 +741,19 @@ def get_employment_population_data(excel_path, year, quarter):
                 # 합계 행 (분류단계 0)만 처리, 중복 지역 방지
                 if division == '0' and region in regions and region not in processed_regions:
                     try:
-                        # 2025 2/4분기 데이터 (열 25)
-                        value_float = safe_float(row[25], 0)
-                        value = int(value_float) if value_float is not None else 0
+                        # 2025 2/4분기 데이터 (열 25)와 2024 2/4분기 데이터 (열 21)
+                        curr_value = safe_float(row[25], 0)
+                        prev_value = safe_float(row[21], 0)
+                        value = int(curr_value) if curr_value is not None else 0
+                        
+                        # 전년동분기대비 증감률 계산 (천명 단위이므로 직접 비교)
+                        if prev_value is not None and prev_value != 0:
+                            change = round((curr_value - prev_value) / abs(prev_value) * 100, 1)
+                        else:
+                            change = 0.0
+                        
                         processed_regions.add(region)
+                        region_data[region] = {'value': value, 'change': change}
                         
                         if value > 0:
                             population['inflow_regions'].append({'name': region, 'value': value})
@@ -754,6 +766,23 @@ def get_employment_population_data(excel_path, year, quarter):
             population['outflow_regions'].sort(key=lambda x: x['value'], reverse=True)
             population['inflow_count'] = len(population['inflow_regions'])
             population['outflow_count'] = len(population['outflow_regions'])
+            
+            # chart_data 구성 - 지역 순서대로
+            for region in regions:
+                if region in region_data:
+                    data = region_data[region]
+                    population['chart_data'].append({
+                        'name': region,
+                        'value': data['value'],  # 순이동량 (천명)
+                        'change': data['change']  # 전년동분기대비 증감률 (%)
+                    })
+                else:
+                    population['chart_data'].append({
+                        'name': region,
+                        'value': 0,
+                        'change': 0.0
+                    })
+                    
         except Exception as e:
             print(f"인구이동 데이터 오류: {e}")
             import traceback
