@@ -874,8 +874,65 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
             # 기초자료 시트에서 직접 전년동기비 계산
             return _extract_chart_data_from_raw(xl, raw_config, regions, is_trade, is_employment)
         elif not use_raw:
-            # 분석 시트 사용
+            # 분석 시트 사용 - 먼저 유효한 데이터가 있는지 확인
             df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+            
+            # 분석 시트의 증감률 열이 모두 비어있는지 확인
+            change_col = config.get('change_col', 20)
+            has_valid_change = False
+            if change_col < len(df.columns):
+                region_col = config['region_col']
+                for _, row in df.iterrows():
+                    region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                    if region in regions:
+                        val = row[change_col] if change_col < len(row) else None
+                        if pd.notna(val) and val != '-' and val != '없음':
+                            try:
+                                float(val)
+                                has_valid_change = True
+                                break
+                            except (ValueError, TypeError):
+                                pass
+            
+            # 분석 시트에 유효한 증감률이 없으면 기초자료/집계 시트로 fallback
+            if not has_valid_change:
+                if raw_config.get('raw_sheet') in xl.sheet_names:
+                    print(f"[요약] {sheet_name} 분석 시트 비어있음 → 기초자료 시트에서 계산")
+                    return _extract_chart_data_from_raw(xl, raw_config, regions, is_trade, is_employment)
+                else:
+                    # 집계 시트에서 추출 시도
+                    aggregate_config = {
+                        'A 분석': {
+                            'aggregate_sheet': 'A(광공업생산)집계',
+                            'region_col': 4, 'code_col': 7, 'total_code': 'BCD',
+                            'curr_col': 26, 'prev_col': 22,
+                        },
+                        'B 분석': {
+                            'aggregate_sheet': 'B(서비스업생산)집계',
+                            'region_col': 3, 'code_col': 6, 'total_code': 'E~S',
+                            'curr_col': 25, 'prev_col': 21,
+                        },
+                        'C 분석': {
+                            'aggregate_sheet': 'C(소비)집계',
+                            'region_col': 2, 'code_col': 6, 'total_code': '총지수',
+                            'curr_col': 24, 'prev_col': 20,
+                        },
+                        'G 분석': {
+                            'aggregate_sheet': 'G(수출)집계',
+                            'region_col': 3, 'code_col': 4, 'total_code': '0',
+                            'curr_col': 26, 'prev_col': 22,
+                            'is_amount': True
+                        },
+                        'E(품목성질물가)분석': {
+                            'aggregate_sheet': 'E(지출목적물가)집계',
+                            'region_col': 2, 'code_col': 3, 'total_code': '0',
+                            'curr_col': 21, 'prev_col': 17,
+                        },
+                    }
+                    agg_config = aggregate_config.get(sheet_name)
+                    if agg_config and agg_config.get('aggregate_sheet') in xl.sheet_names:
+                        print(f"[요약] {sheet_name} 분석 시트 비어있음 → 집계 시트에서 계산")
+                        return _extract_chart_data_from_aggregate(xl, agg_config, regions, is_trade)
         else:
             return _get_default_chart_data()
         
@@ -1177,6 +1234,92 @@ def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employm
         }
     except Exception as e:
         print(f"기초자료 차트 데이터 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return _get_default_chart_data()
+
+
+def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
+    """집계 시트에서 차트 데이터 추출 및 전년동기비 계산"""
+    try:
+        df = pd.read_excel(xl, sheet_name=config['aggregate_sheet'], header=None)
+        
+        region_col = config['region_col']
+        code_col = config.get('code_col')
+        total_code = config['total_code']
+        curr_col = config['curr_col']
+        prev_col = config['prev_col']
+        is_amount = config.get('is_amount', False)
+        
+        nationwide = {'index': 100.0, 'change': 0.0, 'rate': 60.0, 'amount': 0}
+        increase_regions = []
+        decrease_regions = []
+        chart_data = []
+        
+        for i, row in df.iterrows():
+            try:
+                region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+                code = str(row[code_col]).strip() if code_col is not None and pd.notna(row[code_col]) else ''
+                
+                if code != total_code:
+                    continue
+                
+                # 현재 분기와 전년동기 값
+                curr_val = safe_float(row[curr_col], 0)
+                prev_val = safe_float(row[prev_col], 0)
+                
+                # 전년동기비 계산
+                if prev_val is not None and prev_val != 0:
+                    change = round((curr_val - prev_val) / prev_val * 100, 1)
+                else:
+                    change = 0.0
+                
+                data = {
+                    'name': region,
+                    'value': change,
+                    'index': round(curr_val, 1),
+                    'change': change,
+                    'rate': round(curr_val, 1)
+                }
+                
+                if is_trade or is_amount:
+                    # 금액 정규화
+                    amount = round(curr_val / 100, 1) if curr_val > 1000 else round(curr_val, 1)
+                    data['amount'] = amount
+                    data['amount_normalized'] = min(100, max(0, curr_val / 600))
+                
+                if region == '전국':
+                    nationwide['index'] = round(curr_val, 1)
+                    nationwide['change'] = change
+                    nationwide['rate'] = round(curr_val, 1)
+                    if is_trade or is_amount:
+                        nationwide['amount'] = data.get('amount', 0)
+                elif region in regions:
+                    if change >= 0:
+                        increase_regions.append(data)
+                    else:
+                        decrease_regions.append(data)
+                    chart_data.append(data)
+            except:
+                continue
+        
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': nationwide,
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_count': len(increase_regions),
+            'below_count': len(decrease_regions),
+            'chart_data': chart_data[:18]
+        }
+    except Exception as e:
+        print(f"집계 시트 차트 데이터 오류: {e}")
         import traceback
         traceback.print_exc()
         return _get_default_chart_data()
