@@ -766,9 +766,14 @@ class RegionalGenerator:
         # 총계 행
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "증가",
-                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}], 
-                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+            # 집계 시트에서 시도해봄
+            try:
+                summary_df = self.cache.get_sheet('G(수출)집계')
+                return self._extract_export_from_aggregation(summary_df, region)
+            except Exception:
+                return {"total_growth_rate": 0, "direction": "증가",
+                        "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                        "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
@@ -776,6 +781,14 @@ class RegionalGenerator:
         # 분석 시트의 기여도(열 26)가 비어있는지 확인
         items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2')]
         has_contribution = len(items) > 0 and not items[26].isna().all()
+        
+        # 분석 시트가 비어있으면 집계 시트에서 전체 데이터 추출
+        if growth_rate == 0.0 or not has_contribution:
+            try:
+                summary_df = self.cache.get_sheet('G(수출)집계')
+                return self._extract_export_from_aggregation(summary_df, region)
+            except Exception:
+                pass
         
         increase_items = []
         decrease_items = []
@@ -824,14 +837,84 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
+        
+        # 플레이스홀더 추가 (데이터가 부족한 경우)
+        if len(increase_items) == 0:
+            increase_items.append({"name": "", "growth_rate": 0, "placeholder": True})
+        if len(decrease_items) == 0:
+            decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
+        
+        return {
+            "total_growth_rate": growth_rate,
+            "direction": "증가" if growth_rate > 0 else "감소",
+            "increase_items": increase_items,
+            "decrease_items": decrease_items
+        }
+    
+    def _extract_export_from_aggregation(self, summary_df, region: str) -> Dict[str, Any]:
+        """집계 시트에서 수출 데이터 전체 추출 (총 증감률 + 품목)"""
+        # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=상품이름
+        # 데이터 컬럼: 22=2024.2/4, 26=2025.2/4
+        
+        # 총계 행 (분류단계 0)
+        total_row = summary_df[(summary_df[3] == region) & (summary_df[4].astype(str) == '0')]
+        if len(total_row) == 0:
+            return {"total_growth_rate": 0, "direction": "증가",
+                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+        
+        total_row = total_row.iloc[0]
+        curr_total = float(total_row[26]) if pd.notna(total_row[26]) else 0
+        prev_total = float(total_row[22]) if pd.notna(total_row[22]) else 0
+        
+        # 총 증감률 계산
+        if prev_total and prev_total != 0:
+            growth_rate = round(((curr_total - prev_total) / prev_total) * 100, 1)
         else:
-            # 분석 시트가 비어있으면 집계 시트에서 품목 추출
-            try:
-                summary_df = self.cache.get_sheet('G(수출)집계')
-                increase_items, decrease_items = self._extract_items_from_aggregation(
-                    summary_df, region, is_export=True)
-            except Exception:
-                pass
+            growth_rate = 0.0
+        
+        # 품목 데이터 추출
+        increase_items, decrease_items = self._extract_items_from_aggregation(
+            summary_df, region, is_export=True)
+        
+        # 플레이스홀더 추가 (데이터가 부족한 경우)
+        if len(increase_items) == 0:
+            increase_items.append({"name": "", "growth_rate": 0, "placeholder": True})
+        if len(decrease_items) == 0:
+            decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
+        
+        return {
+            "total_growth_rate": growth_rate,
+            "direction": "증가" if growth_rate > 0 else "감소",
+            "increase_items": increase_items,
+            "decrease_items": decrease_items
+        }
+    
+    def _extract_import_from_aggregation(self, summary_df, region: str) -> Dict[str, Any]:
+        """집계 시트에서 수입 데이터 전체 추출 (총 증감률 + 품목)"""
+        # 집계 시트 구조: 3=지역이름, 4=분류단계, 7=상품이름
+        # 데이터 컬럼: 22=2024.2/4, 26=2025.2/4
+        
+        # 총계 행 (분류단계 0)
+        total_row = summary_df[(summary_df[3] == region) & (summary_df[4].astype(str) == '0')]
+        if len(total_row) == 0:
+            return {"total_growth_rate": 0, "direction": "감소",
+                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}], 
+                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+        
+        total_row = total_row.iloc[0]
+        curr_total = float(total_row[26]) if pd.notna(total_row[26]) else 0
+        prev_total = float(total_row[22]) if pd.notna(total_row[22]) else 0
+        
+        # 총 증감률 계산
+        if prev_total and prev_total != 0:
+            growth_rate = round(((curr_total - prev_total) / prev_total) * 100, 1)
+        else:
+            growth_rate = 0.0
+        
+        # 품목 데이터 추출
+        increase_items, decrease_items = self._extract_items_from_aggregation(
+            summary_df, region, is_export=False)
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
@@ -911,9 +994,14 @@ class RegionalGenerator:
         # 총계 행
         total_row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
         if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "감소",
-                    "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}],
-                    "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+            # 집계 시트에서 시도해봄
+            try:
+                summary_df = self.cache.get_sheet('H(수입)집계')
+                return self._extract_import_from_aggregation(summary_df, region)
+            except Exception:
+                return {"total_growth_rate": 0, "direction": "감소",
+                        "increase_items": [{"name": "", "growth_rate": 0, "placeholder": True}],
+                        "decrease_items": [{"name": "", "growth_rate": 0, "placeholder": True}]}
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, sheet_key, '2025_2Q')
@@ -921,6 +1009,14 @@ class RegionalGenerator:
         # 분석 시트의 기여도(열 26)가 비어있는지 확인
         items = df[(df[region_col] == region) & (df[code_col].astype(str) == '2')]
         has_contribution = len(items) > 0 and not items[26].isna().all()
+        
+        # 분석 시트가 비어있으면 집계 시트에서 전체 데이터 추출
+        if growth_rate == 0.0 or not has_contribution:
+            try:
+                summary_df = self.cache.get_sheet('H(수입)집계')
+                return self._extract_import_from_aggregation(summary_df, region)
+            except Exception:
+                pass
         
         increase_items = []
         decrease_items = []
@@ -967,14 +1063,6 @@ class RegionalGenerator:
                     "growth_rate": rate,
                     "placeholder": is_placeholder
                 })
-        else:
-            # 분석 시트가 비어있으면 집계 시트에서 품목 추출
-            try:
-                summary_df = self.cache.get_sheet('H(수입)집계')
-                increase_items, decrease_items = self._extract_items_from_aggregation(
-                    summary_df, region, is_export=False)
-            except Exception:
-                pass
         
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_items) == 0:
