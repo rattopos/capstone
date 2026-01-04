@@ -153,9 +153,10 @@ def get_sido_age_data(summary_df):
             except (ValueError, TypeError):
                 pass
     
-    # 순위순 정렬
+    # ★ 순이동 크기순으로 정렬 (절대값 기준, 내림차순)
+    # 유입이든 유출이든 영향이 큰 연령대가 먼저 오도록
     for sido in sido_age_data:
-        sido_age_data[sido]['ages'].sort(key=lambda x: x['rank'])
+        sido_age_data[sido]['ages'].sort(key=lambda x: abs(x['value']), reverse=True)
     
     return sido_age_data
 
@@ -172,18 +173,38 @@ def get_regional_data(sido_data, sido_age_data):
         if pd.isna(net_migration):
             continue
         
-        # 상위 3개 연령대
-        ages = age_info.get('ages', [])[:3]
-        
-        region_info = {
-            'name': sido,
-            'net_migration': net_migration,
-            'ages': ages
-        }
+        all_ages = age_info.get('ages', [])
         
         if net_migration > 0:
+            # ★ 순유입 지역: 양수(유입)가 큰 순으로 정렬
+            # 유입에 기여한 연령대 (양수 값이 큰 순)
+            sorted_ages = sorted([a for a in all_ages if a['value'] > 0], 
+                                key=lambda x: x['value'], reverse=True)
+            # 양수가 없으면 절대값 큰 순
+            if not sorted_ages:
+                sorted_ages = sorted(all_ages, key=lambda x: abs(x['value']), reverse=True)
+            
+            region_info = {
+                'name': sido,
+                'net_migration': net_migration,
+                'ages': sorted_ages[:3]
+            }
             inflow_regions.append(region_info)
+            
         elif net_migration < 0:
+            # ★ 순유출 지역: 음수(유출)가 큰 순으로 정렬
+            # 유출에 기여한 연령대 (음수 값이 작은 순 = 절대값이 큰 음수)
+            sorted_ages = sorted([a for a in all_ages if a['value'] < 0], 
+                                key=lambda x: x['value'])
+            # 음수가 없으면 절대값 큰 순
+            if not sorted_ages:
+                sorted_ages = sorted(all_ages, key=lambda x: abs(x['value']), reverse=True)
+            
+            region_info = {
+                'name': sido,
+                'net_migration': net_migration,
+                'ages': sorted_ages[:3]
+            }
             outflow_regions.append(region_info)
     
     # 정렬 (유입은 높은 순, 유출은 낮은 순)

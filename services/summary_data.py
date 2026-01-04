@@ -47,30 +47,89 @@ def normalize_region_name(name):
 
 
 def get_summary_overview_data(excel_path, year, quarter):
-    """요약-지역경제동향 데이터 추출"""
+    """요약-지역경제동향 데이터 추출
+    
+    ★ 핵심 원칙: 모든 나레이션 데이터는 테이블(get_summary_table_data)에서 가져옴
+    - 테이블 데이터가 Single Source of Truth
+    - 데이터 불일치 원천 차단
+    """
     try:
-        xl = pd.ExcelFile(excel_path)
+        # ★ 테이블 데이터를 먼저 가져옴 (Single Source of Truth)
+        table_data = get_summary_table_data(excel_path)
         
-        mining_data = _extract_sector_summary(xl, 'A 분석')
-        service_data = _extract_sector_summary(xl, 'B 분석')
-        consumption_data = _extract_sector_summary(xl, 'C 분석')
-        export_data = _extract_sector_summary(xl, 'G 분석')
-        price_data = _extract_sector_summary(xl, 'E(품목성질물가)분석')
-        employment_data = _extract_sector_summary(xl, 'D(고용률)분석')
+        # ★ 테이블 데이터에서 나레이션용 구조로 변환
+        return _convert_table_to_narration(table_data)
         
-        return {
-            'production': {
-                'mining': mining_data,
-                'service': service_data
-            },
-            'consumption': consumption_data,
-            'exports': export_data,
-            'price': price_data,
-            'employment': employment_data
-        }
     except Exception as e:
         print(f"요약 데이터 추출 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return _get_default_summary_data()
+
+
+def _convert_table_to_narration(table_data):
+    """테이블 데이터를 나레이션용 구조로 변환
+    
+    테이블의 각 지표별 값을 증가/감소 지역으로 분류
+    """
+    nationwide = table_data.get('nationwide', {})
+    region_groups = table_data.get('region_groups', [])
+    
+    # 모든 지역 데이터를 flat list로 변환
+    all_regions = []
+    for group in region_groups:
+        for region in group.get('regions', []):
+            all_regions.append(region)
+    
+    def extract_sector_data(key, is_employment=False):
+        """특정 지표의 나레이션 데이터 추출"""
+        nationwide_val = nationwide.get(key, 0.0)
+        
+        increase_regions = []
+        decrease_regions = []
+        
+        for region in all_regions:
+            val = region.get(key, 0.0)
+            if val is None:
+                continue
+            
+            region_data = {'name': region['name'], 'value': val}
+            
+            if val > 0:
+                increase_regions.append(region_data)
+            elif val < 0:
+                decrease_regions.append(region_data)
+            else:
+                # 0인 경우: 고용률은 상승도 하락도 아님, 나머지는 감소 쪽
+                if not is_employment:
+                    decrease_regions.append(region_data)
+        
+        # 정렬
+        increase_regions.sort(key=lambda x: x['value'], reverse=True)
+        decrease_regions.sort(key=lambda x: x['value'])
+        
+        return {
+            'nationwide': round(nationwide_val, 1) if nationwide_val else 0.0,
+            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_count': len(increase_regions),
+            'below_count': len(decrease_regions)
+        }
+    
+    return {
+        'production': {
+            'mining': extract_sector_data('mining_production'),
+            'service': extract_sector_data('service_production')
+        },
+        'consumption': extract_sector_data('retail_sales'),
+        'exports': extract_sector_data('exports'),
+        'price': extract_sector_data('price'),
+        'employment': extract_sector_data('employment', is_employment=True)
+    }
 
 
 def _extract_sector_summary(xl, sheet_name):
@@ -133,8 +192,8 @@ def _extract_sector_summary(xl, sheet_name):
             },
             'G 분석': {
                 'aggregate_sheet': 'G(수출)집계',
-                'region_col': 3, 'code_col': 7, 'total_code': '합계',
-                'curr_col': 56, 'prev_col': 52,
+                'region_col': 3, 'code_col': 4, 'total_code': '0',  # division_col 사용
+                'curr_col': 26, 'prev_col': 22,  # 실제 열 위치
             },
             'E(품목성질물가)분석': {
                 'aggregate_sheet': 'E(품목성질물가)집계',

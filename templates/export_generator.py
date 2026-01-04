@@ -683,58 +683,103 @@ def _generate_summary_table_from_aggregation(summary_df, sido_data):
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
     """보도자료 데이터를 생성합니다.
     
+    ★ 핵심 원칙: 모든 나레이션 데이터는 테이블(summary_table)에서 가져옴
+    - 테이블을 먼저 생성하고, 나레이션은 테이블 데이터를 참조
+    - 데이터 불일치 원천 차단
+    
     Args:
         excel_path: 분석표 엑셀 파일 경로
-        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항, 향후 기초자료 직접 추출 지원 예정)
+        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항)
         year: 현재 연도 (선택사항)
         quarter: 현재 분기 (선택사항)
     """
-    # TODO: 향후 기초자료 직접 추출 지원
-    # if raw_excel_path and year and quarter:
-    #     from raw_data_extractor import RawDataExtractor
-    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
-    #     # 기초자료에서 수출 데이터 직접 추출
-    #     # return extract_from_raw_data(extractor, ...)
     analysis_df, reference_df, summary_df = load_data(excel_path)
-    
-    # 분석 시트 비어있는지 확인
     use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
     
-    # 시도별 데이터 추출
-    sido_data = get_sido_data_from_analysis(analysis_df, summary_df)
+    # ★ 1단계: 테이블 데이터를 먼저 생성 (이것이 Single Source of Truth)
+    summary_table = _generate_summary_table_from_aggregation(summary_df, {})
+    
+    # ★ 2단계: 테이블에서 시도별 증감률 추출 (나레이션용)
+    sido_data = {}
+    table_change_map = {}  # 시도명 -> 증감률 매핑
+    
+    for row in summary_table['rows']:
+        sido_raw = row['sido'].replace(' ', '')  # '서 울' -> '서울'
+        if not sido_raw:
+            # region_group이 '전 국'인 경우
+            if row.get('region_group') == '전 국':
+                sido_raw = '전국'
+            else:
+                continue
+        
+        # 테이블의 2025.2/4 증감률 (changes[3])
+        change_value = row['changes'][3] if len(row['changes']) > 3 else 0
+        table_change_map[sido_raw] = change_value
+        
+        sido_data[sido_raw] = {
+            'change': change_value,
+            'amount': row['amounts'][1] if len(row['amounts']) > 1 else 0  # 2025.2/4 수출액
+        }
+    
+    # ★ 3단계: 품목 데이터 추출
     sido_products_top, sido_products_bottom = get_sido_products_from_reference(
         reference_df, summary_df, use_aggregation_only)
     
-    # 전국 데이터
-    nationwide_data = get_nationwide_data(sido_data, sido_products_top, summary_df)
+    # ★ 4단계: 테이블 증감률 기준으로 증가/감소 지역 분류
+    increase_regions = []
+    decrease_regions = []
     
-    # 시도별 데이터
-    increase_regions, decrease_regions = get_regional_data(sido_data, sido_products_top, sido_products_bottom)
+    for sido in SIDO_ORDER:
+        if sido == '전국':
+            continue
+        
+        change = table_change_map.get(sido, 0)
+        if change is None or pd.isna(change):
+            continue
+        
+        if change > 0:
+            products = sido_products_top.get(sido, [])
+            increase_regions.append({
+                'region': sido,
+                'name': sido,
+                'change': change,  # 테이블에서 가져온 값
+                'products': products[:3]
+            })
+        elif change < 0:
+            products = sido_products_bottom.get(sido, [])
+            decrease_regions.append({
+                'region': sido,
+                'name': sido,
+                'change': change,  # 테이블에서 가져온 값
+                'products': products[:3]
+            })
+    
+    # 정렬
+    increase_regions.sort(key=lambda x: -x['change'])
+    decrease_regions.sort(key=lambda x: x['change'])
     
     # Top 3 지역
     top3_increase = increase_regions[:3]
     top3_decrease = decrease_regions[:3]
     
-    # 요약 박스
-    summary_box = generate_summary_box(nationwide_data, increase_regions, decrease_regions)
+    # ★ 5단계: 전국 데이터 (테이블에서 가져옴)
+    nationwide_change = table_change_map.get('전국', 0)
+    nationwide_amount = sido_data.get('전국', {}).get('amount', 0)
+    nationwide_products = sido_products_top.get('전국', [])[:3]
     
-    # 요약 테이블
-    summary_table = generate_summary_table(analysis_df, summary_df, sido_data, excel_path)
+    nationwide_data = {
+        'amount': nationwide_amount,
+        'change': nationwide_change,  # 테이블에서 가져온 값
+        'products': nationwide_products
+    }
+    
+    # ★ 6단계: 요약 박스 (테이블 데이터 기반)
+    summary_box = _generate_summary_box_from_table(
+        nationwide_data, increase_regions, decrease_regions)
     
     # 품목 텍스트 생성
-    decrease_products = []
-    for r in decrease_regions[:3]:
-        prods = r.get('products', [])
-        if prods:
-            decrease_products.append(prods[0]['name'])
-    decrease_products_text = ', '.join(decrease_products[:3]) if decrease_products else ""
-    
-    increase_products = []
-    for r in increase_regions[:3]:
-        prods = r.get('products', [])
-        if prods:
-            increase_products.append(prods[0]['name'])
-    increase_products_text = ', '.join(increase_products[:3]) if increase_products else ""
+    decrease_products = [r['products'][0]['name'] for r in decrease_regions[:3] if r.get('products')]
+    increase_products = [r['products'][0]['name'] for r in increase_regions[:3] if r.get('products')]
     
     return {
         'report_info': {
@@ -753,8 +798,79 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         'top3_increase_regions': top3_increase,
         'top3_decrease_regions': top3_decrease,
         'summary_table': summary_table,
-        'decrease_products_text': decrease_products_text,
-        'increase_products_text': increase_products_text
+        'decrease_products_text': ', '.join(decrease_products),
+        'increase_products_text': ', '.join(increase_products)
+    }
+
+
+def _generate_summary_box_from_table(nationwide_data, increase_regions, decrease_regions):
+    """테이블 데이터 기반으로 요약 박스 생성"""
+    increase_count = len(increase_regions)
+    decrease_count = len(decrease_regions)
+    
+    top_increase = increase_regions[:3]
+    top_decrease = decrease_regions[:3]
+    
+    # main_increase_regions
+    main_increase_regions = []
+    for r in top_increase:
+        products = r.get('products', [])
+        product_names = [p['name'] for p in products[:2]] if products else []
+        main_increase_regions.append({
+            'region': r['name'],
+            'products': product_names
+        })
+    
+    # 헤드라인
+    headline_regions = []
+    for r in top_increase[:3]:
+        products = r.get('products', [])
+        if products:
+            headline_regions.append(f"<span class='bold highlight'>{r['name']}</span>({products[0]['name']})")
+        else:
+            headline_regions.append(f"<span class='bold highlight'>{r['name']}</span>")
+    
+    headline = f"◆수출은 {', '.join(headline_regions)} 등 {increase_count}개 시도에서 전년동분기대비 증가"
+    
+    # 전국 요약
+    amount = nationwide_data.get('amount', 0)
+    change = nationwide_data.get('change', 0)
+    products = nationwide_data.get('products', [])
+    product_names = ", ".join([p['name'] for p in products[:3]]) if products else "기타"
+    
+    amount_str = f"{amount:,.1f}억달러" if amount else "-"
+    direction = "증가" if change >= 0 else "감소"
+    verb = "늘어" if change >= 0 else "줄어"
+    
+    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change):.1f}%</span> {direction}"
+    
+    # 시도 요약
+    def safe_change(r):
+        c = r.get('change', 0)
+        return f"{c:.1f}" if c is not None else "-"
+    
+    decrease_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_decrease])
+    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_increase])
+    
+    # 품목
+    decrease_products = [r['products'][0]['name'] for r in top_decrease if r.get('products')]
+    increase_products = [r['products'][0]['name'] for r in top_increase if r.get('products')]
+    
+    decrease_product_str = ", ".join(decrease_products[:3]) if decrease_products else ""
+    increase_product_str = ", ".join(increase_products[:3]) if increase_products else ""
+    
+    if change >= 0:
+        regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소하였으나, {increase_names}은 {increase_product_str} 등의 수출이 늘어 증가"
+    else:
+        regional_summary = f"{increase_names}은 {increase_product_str} 등의 수출이 늘었으나, {decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소"
+    
+    return {
+        'headline': headline,
+        'nationwide_summary': nationwide_summary,
+        'regional_summary': regional_summary,
+        'main_increase_regions': main_increase_regions,
+        'increase_count': increase_count,
+        'decrease_count': decrease_count
     }
 
 def render_template(data, template_path, output_path):
