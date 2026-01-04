@@ -28,6 +28,240 @@
 
 ### 2026-01-04
 
+#### 인포그래픽 지도 회색(보합/평균) 색상이 배경과 구분되지 않는 문제 해결
+- **시간**: 2026-01-04 19:00
+- **문제 설명**:
+  - 인포그래픽 지도에서 회색이어야 하는 부분(보합, 전국 평균)이 하얀색/투명처럼 보임
+  - 소비자물가의 '전국 평균' 지역과 일반 지표의 '보합' 지역이 배경과 구분되지 않음
+  - 지역 path 사이에 틈이 있어 배경색이 비침
+- **원인 분석**:
+  1. 회색 색상 `#DDDCDD`가 배경색 `#E8F0F2`와 너무 유사하여 하얀색처럼 보임
+  2. SVG의 stroke(지역 경계선)가 흰색(`#ffffff`)이고 path들 사이에 미세한 틈이 있음
+  3. 각 지역 path가 완전히 붙어있지 않아 틈 사이로 배경이 비침
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "지도에서 회색이어야 하는 부분이 하얀색 혹은 투명한 이유를 분석해서 해결해"라고 요청
+  - 정답 이미지와 비교: 정답에서는 지도가 완전히 채워져 있고 경계만 흰색 선으로 표시
+  - 코드 분석:
+    1. JavaScript의 색상 정의 확인: `neutral: '#DDDCDD'` - 연한 회색
+    2. CSS에서도 동일한 색상 사용 확인
+    3. SVG의 stroke가 `#ffffff`로 설정됨
+  - 테스트: 브라우저에서 실제 적용된 색상 확인
+    - 소비자물가에서 대구, 경기, 인천이 회색으로 색칠됨 확인
+    - 하지만 배경과 대비가 약해서 하얀색처럼 보임
+  - 해결책 고려:
+    1. 회색 색상을 더 진하게 변경 → 채택
+    2. SVG에 배경 레이어 추가하여 틈 메우기 → 채택
+    3. stroke 색상을 회색으로 변경 → 미채택 (정답과 다름)
+- **해결 방법**:
+  1. 회색 색상 변경: `#DDDCDD` → `#A8A8A8` (진한 회색)
+     - JavaScript COLORS 객체의 `neutral`, `avg` 값 변경
+     - CSS의 `.region-neutral`, `.region-avg`, `.legend-color.neutral`, `.legend-color.avg` 변경
+  2. SVG에 배경 레이어 추가:
+     - `<g id="layer-background">` 그룹 추가
+     - 17개 지역 path를 복제하여 배경 레이어에 배치
+     - 배경 레이어 색상을 `#A8A8A8`(회색)로 설정
+     - 전경 레이어(`layer-MC1`) 위에 색칠하면 틈 사이로 배경 회색이 보임
+- **관련 파일**:
+  - `templates/infographic_template.html` - 색상 정의 및 SVG 배경 레이어 추가
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 현재 데이터에서 일반 지표(광공업생산 등)의 '보합' 케이스는 발생하지 않음 (모든 값이 ±0.05% 범위 밖)
+  - 소비자물가에서 대구, 경기, 인천이 전국 평균(2.1%)과 동일하여 회색으로 표시됨
+
+---
+
+#### 인포그래픽 지도 all_regions 빈 배열 문제 해결
+- **시간**: 2026-01-04 18:00
+- **문제 설명**:
+  - 인포그래픽 지도가 모든 지표에서 회색으로만 표시됨 (색칠이 안됨)
+  - 상위/하위 데이터는 정상 표시되지만 지도만 색칠이 안되는 상황
+- **원인 분석**:
+  - `infographic_generator.py`의 `_get_default_indicator()` 함수에서 `'all_regions': []`로 빈 배열 반환
+  - 분석 시트에서 데이터를 읽지 못하면 기본값이 사용되는데, 이때 `all_regions`가 비어있어 지도 색칠 JavaScript 로직이 색칠할 지역 데이터가 없음
+  - 정적 테스트 파일(`debug/test_infographic.html`)도 이전 데이터로 하드코딩되어 있어 `"all_regions": []`인 상태
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "인포그래픽 지도 칠하는게 문제있어 확인해줘"라고 제보
+  - 디버그 로그 확인: 2026-01-04에 SVG 인라인 방식으로 수정했다는 기록 있음, 하지만 아직 문제 지속
+  - 코드 분석:
+    1. `infographic_template.html`의 JavaScript 색칠 로직 확인 → `allRegions` 배열을 순회하며 지역별 색상 적용
+    2. `infographic_generator.py`의 데이터 생성 로직 확인 → `_get_default_indicator`에서 `all_regions: []` 반환
+  - 테스트 실행: `generate_report_data()` 호출 시 모든 지표에서 `all_regions=17개`로 정상 반환되는 것 확인
+    - 이는 기본값에 `all_regions` 데이터가 추가되었음을 의미
+  - 정적 테스트 파일 확인: `grep`으로 `test_infographic.html`의 `indicatorsData` 확인 → `"all_regions": []` 하드코딩됨
+  - 해결책 결정:
+    1. `_get_default_indicator`에 17개 지역 전체 데이터 추가
+    2. 테스트 파일 재생성
+- **해결 방법**:
+  1. `templates/infographic_generator.py` 수정:
+     - `_get_default_indicator()` 함수에 `all_regions_defaults` 딕셔너리 추가
+     - 6개 지표별로 17개 지역 전체 데이터 포함 (2025년 2분기 기준)
+     - 반환값에 `'all_regions': all_regions` 추가
+  2. `debug/test_infographic.html` 재생성:
+     - 새로운 데이터로 테스트 파일 렌더링
+     - 모든 지표에서 `all_regions=17개` 확인
+- **관련 파일**:
+  - `templates/infographic_generator.py` (수정)
+  - `debug/test_infographic.html` (재생성)
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 색상 규칙:
+    - 일반 지표(광공업생산, 서비스업생산, 소매판매, 수출): 증가=핑크, 감소=파랑, 보합=회색
+    - 고용률: 상승=핑크, 하락=파랑, 보합=회색
+    - 소비자물가: 전국평균 초과=핑크, 미만=보라, 동일=회색
+  - 향후 실제 분석 시트에서 데이터를 정상적으로 읽으면 기본값 대신 실제 데이터 사용됨
+
+---
+
+#### 요약 섹션 정적 보도자료 엑셀 없이 생성 가능하도록 수정
+- **시간**: 2026-01-04 17:45
+- **문제 설명**:
+  - 프리뷰에서 요약 섹션의 목차 페이지가 생성되지 않음
+  - 표지, 일러두기, 목차는 엑셀 파일이 없어도 생성할 수 있어야 하는데 "엑셀 파일을 먼저 업로드하세요" 오류 발생
+- **원인 분석**:
+  - `routes/preview.py`의 `generate_summary_preview()` 함수에서 모든 요약 보도자료에 대해 엑셀 파일 존재를 필수로 요구
+  - 표지, 일러두기, 목차는 `generator: None`으로 설정되어 있고 스키마 기본값만으로 생성 가능한데도 엑셀 파일 체크가 앞에 있어서 실패
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "요약섹션에 있는 목차페이지가 생성이 안된다"고 제보
+  - API 테스트: `/api/generate-summary-preview`에 `report_id: 'toc'`로 요청 시 "엑셀 파일을 먼저 업로드하세요" 오류 확인
+  - 코드 분석: `generate_summary_preview()` 함수 80-82라인에서 모든 요청에 대해 `excel_path` 존재 여부 체크
+  - 해결책 결정: 정적 보도자료(cover, guide, toc)는 엑셀 파일 체크를 건너뛰도록 수정
+- **해결 방법**:
+  1. `routes/preview.py` 수정:
+     - `static_reports = ['cover', 'guide', 'toc']` 정의
+     - 정적 보도자료는 엑셀 파일 존재 체크를 건너뜀
+     - `organization` 값을 '국가데이터처'로 변경
+     - `department` 기본값을 '국가데이터처 경제통계국'으로 변경
+  2. 표지(`cover`) 처리 로직 추가
+- **관련 파일**:
+  - `routes/preview.py` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 표지, 일러두기, 목차는 엑셀 파일 없이도 API 호출 시 정상 생성됨
+  - 인포그래픽 및 요약 데이터 보도자료는 여전히 엑셀 파일 필요
+
+---
+
+#### 보도자료 찾을 수 없음 오류 및 목차 동적 생성 오류 해결
+- **시간**: 2026-01-04 17:10
+- **문제 설명**:
+  1. "보도자료를 찾을 수 없습니다" 오류가 발생
+  2. 목차 생성 시 동적 페이지 계산 관련 오류 계속 발생
+  3. 국내인구이동 보도자료 렌더링 시 `'dict object' has no attribute 'columns'` 오류
+- **원인 분석**:
+  1. `config/reports.py`에서 요약 보도자료의 generator로 `summary_regional_economy_generator.py`, `summary_production_generator.py` 등 5개 파일이 지정되어 있으나 실제로 존재하지 않음
+  2. `_get_toc_sections()` 함수가 동적으로 페이지 번호를 계산하면서 오류 발생
+  3. `domestic_migration_generator.py`의 `generate_summary_table()` 함수가 `columns` 속성을 반환하지 않아 템플릿에서 `summary_table.columns` 접근 시 오류
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "보도자료를 찾을 수 없다는 문제가 계속 일어나"라고 제보
+  - 터미널 로그 분석:
+    - `[PREVIEW] Generator 모듈을 로드할 수 없습니다: summary_regional_economy_generator.py` 등 오류 메시지 확인
+    - `[ERROR] 보도자료 생성 오류: 'dict object' has no attribute 'columns'` 오류 확인
+  - 파일 존재 확인:
+    - `templates/` 폴더에 `summary_*_generator.py` 파일들이 실제로 존재하지 않음
+    - `infographic_generator.py` 등 다른 generator 파일들은 존재
+  - 해결책 결정:
+    1. 목차: 동적 계산 대신 고정 페이지 번호로 템플릿 단순화 (사용자 요청)
+    2. Generator 오류: 존재하지 않는 generator 참조를 `None`으로 변경
+    3. 국내인구이동: `columns` 데이터 추가
+- **해결 방법**:
+  1. `config/reports.py` 수정:
+     - 요약 보도자료 5개의 generator를 `None`으로 변경 (summary_overview, summary_production, summary_consumption, summary_trade_price, summary_employment)
+  2. `templates/toc_template.html` 수정:
+     - Jinja2 변수 참조를 제거하고 고정 페이지 번호로 하드코딩
+     - 요약(1), 부문별(6~15), 시도별(16~48), 참고GRDP(50), 통계표(52), 부록(75) 고정
+  3. `routes/preview.py`, `routes/debug.py` 수정:
+     - `_get_toc_sections()` 호출 코드 제거/단순화
+  4. `templates/domestic_migration_generator.py` 수정:
+     - `generate_summary_table()` 함수에 `columns` 데이터 추가
+- **관련 파일**:
+  - `config/reports.py` (수정)
+  - `templates/toc_template.html` (수정)
+  - `templates/domestic_migration_generator.py` (수정)
+  - `routes/preview.py` (수정)
+  - `routes/debug.py` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 요약 보도자료들은 generator 없이 `services/summary_data.py`에서 직접 데이터를 가져옴
+  - 목차 페이지 번호 변경이 필요하면 `toc_template.html`을 직접 수정해야 함
+
+---
+
+#### 인포그래픽 지도 색칠 안되는 문제 해결 (srcdoc iframe에서 SVG fetch 실패)
+- **시간**: 2026-01-04 16:35
+- **문제 설명**:
+  - 인포그래픽 지도가 색칠되지 않음
+  - 디버그 모드(`/debug/test_infographic.html`)에서는 정상 작동하나, 메인 대시보드 미리보기에서는 지도가 회색으로만 표시됨
+- **원인 분석**:
+  - 메인 대시보드는 API에서 생성된 HTML을 iframe의 `srcdoc` 속성으로 렌더링
+  - `srcdoc` iframe의 origin은 `about:srcdoc`이 됨
+  - JavaScript에서 `fetch('/templates/infographic_map.svg')`를 호출할 때:
+    - 디버그 모드: Flask 서버가 `/templates/...` 경로를 정상 처리 → SVG 로드 성공
+    - 대시보드 srcdoc: 상대 경로가 제대로 해석되지 않거나 CORS 문제 발생 → SVG 로드 실패
+  - SVG 로드 실패 시 `svgTemplate`이 null이 되어 `colorMap()` 함수가 아무것도 하지 않음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "인포그래픽 색칠이 안돼요"라고 제보
+  - 초기 분석:
+    - `infographic_generator.py` 확인 → `all_regions` 데이터 정상 생성됨
+    - `infographic_template.html` 확인 → JavaScript에서 SVG를 fetch로 로드
+    - 디버그 모드에서 테스트 → 정상 작동 (색칠 완료)
+  - 원인 파악:
+    - 디버그와 대시보드의 차이점 분석
+    - 대시보드: `elements.previewIframe.srcdoc = displayHtml;` (srcdoc 사용)
+    - srcdoc iframe에서 fetch 경로 문제 발견
+  - 고려한 해결책:
+    1. SVG 파일을 JavaScript 변수로 인라인 포함 → fetch 불필요, 가장 안정적
+    2. 절대 URL 사용 (`http://localhost:5050/templates/...`) → 포트 하드코딩 문제
+    3. SVG를 Base64 인코딩 → 복잡하고 유지보수 어려움
+  - 선택한 접근: **SVG를 JavaScript 변수로 인라인 포함** (fetch 제거)
+    - 사용자가 "최소한의 수정"을 요청
+    - 템플릿 파일 하나만 수정하면 됨
+    - 서버 환경에 관계없이 항상 작동
+- **해결 방법**:
+  - `templates/infographic_template.html` 수정:
+    - `async function loadAndColorMaps()` → 동기 함수로 변경
+    - `fetch('/templates/infographic_map.svg')` 제거
+    - `const svgTemplate = \`<svg>...</svg>\`;` 형태로 SVG 인라인 포함
+    - SVG 내용은 `infographic_map.svg`에서 핵심 path들만 추출하여 경량화
+- **관련 파일**:
+  - `templates/infographic_template.html` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - srcdoc iframe에서 fetch, 상대 경로, 절대 경로 모두 주의 필요
+  - 인라인 SVG 방식은 파일 크기가 약간 증가하지만 안정성 확보
+  - 향후 지도 디자인 변경 시 `infographic_template.html`의 `svgTemplate` 변수 업데이트 필요
+
+---
+
+#### 목차 동적 계산 오류로 인한 하드코딩 전환 (정답 이미지 기준 고정 페이지)
+- **시간**: 2026-01-04 (오후)
+- **문제 설명**:
+  - 목차 페이지 번호를 누적 계산(동적)하는 방식이 자주 어긋나 사용자가 반복적으로 오류를 경험
+  - 사용자는 “정답 이미지의 항목/순서는 그대로 유지하되 페이지 번호는 고정값으로 적어달라”고 요청
+- **원인 분석**:
+  - `_get_toc_sections()`가 `PAGE_CONFIG` 등을 기반으로 누적 계산을 수행하면서, 실제 출력 페이지 구조(예: 통계표 2페이지 구성 등)와 설정/가정이 불일치할 때 페이지 번호가 틀어질 수 있음
+  - 또한 (1)/(2)처럼 페이지 단위로 항목을 분할 표시하여 정답 이미지(항목당 시작 페이지 1개 표기)와 형식이 달라짐
+- **에이전트 사고 과정**:
+  - 문제를 “계산식이 흔들리는 목차”로 보고, 요구사항을 “정답 이미지 항목 + 고정 페이지”로 재정의
+  - 고려한 해결책:
+    - 동적 계산 유지 + 계산 로직/페이지수 정합성 강화: 유연하지만 변경 범위가 커지고 유지비 증가
+    - 목차만 고정 매핑으로 전환: 변동 요인을 제거해 안정성 확보, 사용자 요구와 정확히 일치
+  - 선택한 접근: 사용자 요청(“하드코딩”)을 우선하여 **목차만 고정 매핑**으로 전환
+- **해결 방법**:
+  1. `config/reports.py`에 `TOC_FIXED_PAGES` 추가 (정답 이미지 기준)
+     - 요약: 1, 부문별: 6, 시도별: 16(각 시도 2p 기준 시작 페이지), 참고 GRDP: 50, 통계표: 52, 부록: 75
+     - 시도명은 목차 이미지처럼 “서 울” 형태로 보이도록 `display_name` 추가
+  2. `routes/preview.py`, `routes/debug.py`의 `_get_toc_sections()`를 누적 계산 → `TOC_FIXED_PAGES` 사용으로 교체
+     - (1)/(2) 분할 표기 제거, **항목당 시작 페이지 1개만** 표시
+  3. 스키마 기반 렌더링에서도 동일 결과가 나오도록 `templates/toc_schema.json`의 예시 데이터 및 키(`entries`) 정합성 보정
+- **관련 파일**:
+  - `config/reports.py`
+  - `routes/preview.py`
+  - `routes/debug.py`
+  - `templates/toc_schema.json`
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 향후 페이지 구성이 바뀌면 `TOC_FIXED_PAGES`만 갱신하면 됨
+
 #### 목차 빈 페이지 30개+ 문제 해결 및 페이지 단위 목록 변경
 - **시간**: 2026-01-04 (오후)
 - **문제 설명**: 
@@ -1182,14 +1416,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 18
-- 완료: 18
+- 총 항목: 24
+- 완료: 24
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-04 (목차 시도명 띄어쓰기 제거 및 표시 형식 수정)
+- 마지막 업데이트: 2026-01-04 (인포그래픽 지도 회색 색상 배경 대비 문제 해결)
 
 ---
 

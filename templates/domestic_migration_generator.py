@@ -36,6 +36,25 @@ def safe_float(value, default=0.0):
         return default
 
 
+def normalize_age_group(age_str):
+    """연령대 표기를 정규화합니다.
+    
+    예: '00~04세' → '0~4세', '05~09세' → '5~9세'
+    """
+    if not age_str or not isinstance(age_str, str):
+        return age_str
+    
+    import re
+    # '00~04세' 패턴 매칭
+    match = re.match(r'^(\d+)~(\d+)세$', age_str)
+    if match:
+        start = int(match.group(1))  # 앞의 0 제거
+        end = int(match.group(2))    # 앞의 0 제거
+        return f"{start}~{end}세"
+    
+    return age_str
+
+
 def load_data(excel_path):
     """엑셀 파일에서 데이터를 로드합니다."""
     xl = pd.ExcelFile(excel_path)
@@ -117,9 +136,11 @@ def get_sido_age_data(summary_df):
         if current_sido and is_age_row:
             try:
                 rank_num = int(rank) if pd.notna(rank) else i  # rank가 없으면 행 인덱스 사용
+                # 연령대 표기 정규화 (00~04세 → 0~4세)
+                normalized_age = normalize_age_group(age_group)
                 sido_age_data[current_sido]['ages'].append({
                     'rank': rank_num,
-                    'name': age_group,
+                    'name': normalized_age,
                     'value': net_migration
                 })
                 
@@ -237,7 +258,13 @@ def generate_summary_table(sido_data, sido_age_data):
             
             rows.append(row_data)
     
-    return {'rows': rows}
+    return {
+        'rows': rows,
+        'columns': {
+            'current_quarter': '2025.2/4',
+            'quarter_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4']
+        }
+    }
 
 class DomesticMigrationGenerator:
     """국내인구이동 보도자료 생성 클래스"""

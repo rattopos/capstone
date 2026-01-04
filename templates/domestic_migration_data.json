@@ -7,148 +7,148 @@
   "inflow_regions": [
     {
       "name": "경기",
-      "net_migration": 10426,
+      "net_migration": 10426.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": 2336
+          "value": 2336.0
         },
         {
           "rank": 2,
           "name": "15~19세",
-          "value": 1241
+          "value": 1241.0
         },
         {
           "rank": 3,
           "name": "80세이상",
-          "value": 1167
+          "value": 1167.0
         }
       ]
     },
     {
       "name": "인천",
-      "net_migration": 8050,
+      "net_migration": 8050.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": 1048
+          "value": 1048.0
         },
         {
           "rank": 2,
           "name": "35~39세",
-          "value": 841
+          "value": 841.0
         },
         {
           "rank": 3,
           "name": "40~44세",
-          "value": 773
+          "value": 773.0
         }
       ]
     },
     {
       "name": "충남",
-      "net_migration": 2132,
+      "net_migration": 2132.0,
       "ages": [
         {
           "rank": 1,
           "name": "60~64세",
-          "value": 497
+          "value": 497.0
         },
         {
           "rank": 2,
           "name": "55~59세",
-          "value": 467
+          "value": 467.0
         },
         {
           "rank": 3,
           "name": "50~54세",
-          "value": 323
+          "value": 323.0
         }
       ]
     },
     {
       "name": "충북",
-      "net_migration": 1645,
+      "net_migration": 1645.0,
       "ages": [
         {
           "rank": 1,
           "name": "60~64세",
-          "value": 289
+          "value": 289.0
         },
         {
           "rank": 2,
           "name": "55~59세",
-          "value": 272
+          "value": 272.0
         },
         {
           "rank": 3,
           "name": "45~49세",
-          "value": 243
+          "value": 243.0
         }
       ]
     },
     {
       "name": "전남",
-      "net_migration": 672,
+      "net_migration": 672.0,
       "ages": [
         {
           "rank": 1,
           "name": "55~59세",
-          "value": 437
+          "value": 437.0
         },
         {
           "rank": 2,
           "name": "50~54세",
-          "value": 388
+          "value": 388.0
         },
         {
           "rank": 3,
           "name": "60~64세",
-          "value": 360
+          "value": 360.0
         }
       ]
     },
     {
       "name": "대전",
-      "net_migration": 407,
+      "net_migration": 407.0,
       "ages": [
         {
           "rank": 1,
           "name": "45~49세",
-          "value": 125
+          "value": 125.0
         },
         {
           "rank": 2,
           "name": "30~34세",
-          "value": 92
+          "value": 92.0
         },
         {
           "rank": 3,
           "name": "80세이상",
-          "value": 77
+          "value": 77.0
         }
       ]
     },
     {
       "name": "세종",
-      "net_migration": 35,
+      "net_migration": 35.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": 197
+          "value": 197.0
         },
         {
           "rank": 2,
           "name": "25~29세",
-          "value": 157
+          "value": 157.0
         },
         {
           "rank": 3,
           "name": "35~39세",
-          "value": 95
+          "value": 95.0
         }
       ]
     }
@@ -156,211 +156,211 @@
   "outflow_regions": [
     {
       "name": "서울",
-      "net_migration": -10051,
+      "net_migration": -10051.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": -2193
+          "value": -2193.0
         },
         {
           "rank": 2,
           "name": "55~59세",
-          "value": -2129
+          "value": -2129.0
         },
         {
           "rank": 3,
           "name": "60~64세",
-          "value": -2120
+          "value": -2120.0
         }
       ]
     },
     {
       "name": "부산",
-      "net_migration": -3704,
+      "net_migration": -3704.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -1393
+          "value": -1393.0
         },
         {
           "rank": 2,
           "name": "30~34세",
-          "value": -495
+          "value": -495.0
         },
         {
           "rank": 3,
           "name": "45~49세",
-          "value": -216
+          "value": -216.0
         }
       ]
     },
     {
       "name": "광주",
-      "net_migration": -2854,
+      "net_migration": -2854.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -801
+          "value": -801.0
         },
         {
           "rank": 2,
           "name": "20~24세",
-          "value": -499
+          "value": -499.0
         },
         {
           "rank": 3,
           "name": "30~34세",
-          "value": -407
+          "value": -407.0
         }
       ]
     },
     {
       "name": "대구",
-      "net_migration": -2079,
+      "net_migration": -2079.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -864
+          "value": -864.0
         },
         {
           "rank": 2,
           "name": "20~24세",
-          "value": -550
+          "value": -550.0
         },
         {
           "rank": 3,
           "name": "60~64세",
-          "value": -190
+          "value": -190.0
         }
       ]
     },
     {
       "name": "울산",
-      "net_migration": -1280,
+      "net_migration": -1280.0,
       "ages": [
         {
           "rank": 1,
           "name": "20~24세",
-          "value": -283
+          "value": -283.0
         },
         {
           "rank": 2,
           "name": "60~64세",
-          "value": -190
+          "value": -190.0
         },
         {
           "rank": 3,
           "name": "15~19세",
-          "value": -178
+          "value": -178.0
         }
       ]
     },
     {
       "name": "전북",
-      "net_migration": -979,
+      "net_migration": -979.0,
       "ages": [
         {
           "rank": 1,
           "name": "20~24세",
-          "value": -564
+          "value": -564.0
         },
         {
           "rank": 2,
           "name": "25~29세",
-          "value": -536
+          "value": -536.0
         },
         {
           "rank": 3,
           "name": "30~34세",
-          "value": -223
+          "value": -223.0
         }
       ]
     },
     {
       "name": "제주",
-      "net_migration": -861,
+      "net_migration": -861.0,
       "ages": [
         {
           "rank": 1,
           "name": "20~24세",
-          "value": -270
+          "value": -270.0
         },
         {
           "rank": 1,
           "name": "20~24세",
-          "value": 5981
+          "value": 5981.0
         },
         {
           "rank": 1,
           "name": "60~64세",
-          "value": 701
+          "value": 701.0
         }
       ]
     },
     {
       "name": "경남",
-      "net_migration": -707,
+      "net_migration": -707.0,
       "ages": [
         {
           "rank": 1,
           "name": "20~24세",
-          "value": -1186
+          "value": -1186.0
         },
         {
           "rank": 2,
           "name": "25~29세",
-          "value": -529
+          "value": -529.0
         },
         {
           "rank": 3,
           "name": "15~19세",
-          "value": -399
+          "value": -399.0
         }
       ]
     },
     {
       "name": "강원",
-      "net_migration": -629,
+      "net_migration": -629.0,
       "ages": [
         {
           "rank": 1,
           "name": "20~24세",
-          "value": -582
+          "value": -582.0
         },
         {
           "rank": 2,
           "name": "25~29세",
-          "value": -318
+          "value": -318.0
         },
         {
           "rank": 3,
           "name": "30~34세",
-          "value": -170
+          "value": -170.0
         }
       ]
     },
     {
       "name": "경북",
-      "net_migration": -223,
+      "net_migration": -223.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -655
+          "value": -655.0
         },
         {
           "rank": 2,
           "name": "20~24세",
-          "value": -639
+          "value": -639.0
         },
         {
           "rank": 3,
           "name": "30~34세",
-          "value": -263
+          "value": -263.0
         }
       ]
     }
@@ -373,64 +373,64 @@
   "top3_inflow_regions": [
     {
       "name": "경기",
-      "net_migration": 10426,
+      "net_migration": 10426.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": 2336
+          "value": 2336.0
         },
         {
           "rank": 2,
           "name": "15~19세",
-          "value": 1241
+          "value": 1241.0
         },
         {
           "rank": 3,
           "name": "80세이상",
-          "value": 1167
+          "value": 1167.0
         }
       ]
     },
     {
       "name": "인천",
-      "net_migration": 8050,
+      "net_migration": 8050.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": 1048
+          "value": 1048.0
         },
         {
           "rank": 2,
           "name": "35~39세",
-          "value": 841
+          "value": 841.0
         },
         {
           "rank": 3,
           "name": "40~44세",
-          "value": 773
+          "value": 773.0
         }
       ]
     },
     {
       "name": "충남",
-      "net_migration": 2132,
+      "net_migration": 2132.0,
       "ages": [
         {
           "rank": 1,
           "name": "60~64세",
-          "value": 497
+          "value": 497.0
         },
         {
           "rank": 2,
           "name": "55~59세",
-          "value": 467
+          "value": 467.0
         },
         {
           "rank": 3,
           "name": "50~54세",
-          "value": 323
+          "value": 323.0
         }
       ]
     }
@@ -438,64 +438,64 @@
   "top3_outflow_regions": [
     {
       "name": "서울",
-      "net_migration": -10051,
+      "net_migration": -10051.0,
       "ages": [
         {
           "rank": 1,
           "name": "30~34세",
-          "value": -2193
+          "value": -2193.0
         },
         {
           "rank": 2,
           "name": "55~59세",
-          "value": -2129
+          "value": -2129.0
         },
         {
           "rank": 3,
           "name": "60~64세",
-          "value": -2120
+          "value": -2120.0
         }
       ]
     },
     {
       "name": "부산",
-      "net_migration": -3704,
+      "net_migration": -3704.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -1393
+          "value": -1393.0
         },
         {
           "rank": 2,
           "name": "30~34세",
-          "value": -495
+          "value": -495.0
         },
         {
           "rank": 3,
           "name": "45~49세",
-          "value": -216
+          "value": -216.0
         }
       ]
     },
     {
       "name": "광주",
-      "net_migration": -2854,
+      "net_migration": -2854.0,
       "ages": [
         {
           "rank": 1,
           "name": "25~29세",
-          "value": -801
+          "value": -801.0
         },
         {
           "rank": 2,
           "name": "20~24세",
-          "value": -499
+          "value": -499.0
         },
         {
           "rank": 3,
           "name": "30~34세",
-          "value": -407
+          "value": -407.0
         }
       ]
     }
@@ -503,8 +503,7 @@
   "summary_table": {
     "rows": [
       {
-        "region_group": "경인",
-        "sido": " 서 울 ",
+        "sido": "서 울",
         "net_migrations": [
           -10.951,
           -17.283,
@@ -512,11 +511,12 @@
           -10.051
         ],
         "age_20_29": 8.756,
-        "age_other": -18.807
+        "age_other": -18.807,
+        "region_group": "경인",
+        "rowspan": 3
       },
       {
-        "region_group": "",
-        "sido": " 인 천 ",
+        "sido": "인 천",
         "net_migrations": [
           4.911,
           5.262,
@@ -524,11 +524,11 @@
           8.05
         ],
         "age_20_29": 1.019,
-        "age_other": 7.031
+        "age_other": 7.031,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 경 기 ",
+        "sido": "경 기",
         "net_migrations": [
           14.631,
           18.47,
@@ -536,11 +536,11 @@
           10.426
         ],
         "age_20_29": 1.297,
-        "age_other": 9.129
+        "age_other": 9.129,
+        "region_group": null
       },
       {
-        "region_group": "충청",
-        "sido": " 대 전 ",
+        "sido": "대 전",
         "net_migrations": [
           -0.309,
           -0.885,
@@ -548,11 +548,12 @@
           0.407
         ],
         "age_20_29": 0.038,
-        "age_other": 0.369
+        "age_other": 0.369,
+        "region_group": "충청",
+        "rowspan": 4
       },
       {
-        "region_group": "",
-        "sido": " 세 종 ",
+        "sido": "세 종",
         "net_migrations": [
           0.186,
           0.165,
@@ -560,11 +561,11 @@
           0.035
         ],
         "age_20_29": 0.085,
-        "age_other": -0.05
+        "age_other": -0.05,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 충 북 ",
+        "sido": "충 북",
         "net_migrations": [
           0.994,
           1.868,
@@ -572,11 +573,11 @@
           1.645
         ],
         "age_20_29": -0.005,
-        "age_other": 1.65
+        "age_other": 1.65,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 충 남 ",
+        "sido": "충 남",
         "net_migrations": [
           3.664,
           4.117,
@@ -584,11 +585,11 @@
           2.132
         ],
         "age_20_29": -0.208,
-        "age_other": 2.34
+        "age_other": 2.34,
+        "region_group": null
       },
       {
-        "region_group": "호남",
-        "sido": " 광 주 ",
+        "sido": "광 주",
         "net_migrations": [
           -2.238,
           -1.565,
@@ -596,11 +597,12 @@
           -2.854
         ],
         "age_20_29": -1.3,
-        "age_other": -1.554
+        "age_other": -1.554,
+        "region_group": "호남",
+        "rowspan": 4
       },
       {
-        "region_group": "",
-        "sido": " 전 북 ",
+        "sido": "전 북",
         "net_migrations": [
           -0.881,
           -1.253,
@@ -608,11 +610,11 @@
           -0.979
         ],
         "age_20_29": -1.1,
-        "age_other": 0.121
+        "age_other": 0.121,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 전 남 ",
+        "sido": "전 남",
         "net_migrations": [
           0.269,
           -0.81,
@@ -620,11 +622,11 @@
           0.672
         ],
         "age_20_29": -0.997,
-        "age_other": 1.669
+        "age_other": 1.669,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 제 주 ",
+        "sido": "제 주",
         "net_migrations": [
           0.101,
           -0.514,
@@ -632,11 +634,11 @@
           -0.861
         ],
         "age_20_29": 0.9,
-        "age_other": -0.271
+        "age_other": -0.271,
+        "region_group": null
       },
       {
-        "region_group": "동북",
-        "sido": " 대 구 ",
+        "sido": "대 구",
         "net_migrations": [
           -1.249,
           -1.368,
@@ -644,11 +646,12 @@
           -2.079
         ],
         "age_20_29": -1.414,
-        "age_other": -0.665
+        "age_other": -0.665,
+        "region_group": "동북",
+        "rowspan": 3
       },
       {
-        "region_group": "",
-        "sido": " 경 북 ",
+        "sido": "경 북",
         "net_migrations": [
           -0.89,
           0.471,
@@ -656,11 +659,11 @@
           -0.223
         ],
         "age_20_29": -1.294,
-        "age_other": 1.071
+        "age_other": 1.071,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 강 원 ",
+        "sido": "강 원",
         "net_migrations": [
           0.467,
           0.053,
@@ -668,11 +671,11 @@
           -0.629
         ],
         "age_20_29": -0.9,
-        "age_other": 0.271
+        "age_other": 0.271,
+        "region_group": null
       },
       {
-        "region_group": "동남",
-        "sido": " 부 산 ",
+        "sido": "부 산",
         "net_migrations": [
           -3.842,
           -3.742,
@@ -680,11 +683,12 @@
           -3.704
         ],
         "age_20_29": -1.558,
-        "age_other": -2.146
+        "age_other": -2.146,
+        "region_group": "동남",
+        "rowspan": 3
       },
       {
-        "region_group": "",
-        "sido": " 울 산 ",
+        "sido": "울 산",
         "net_migrations": [
           -1.632,
           -0.893,
@@ -692,11 +696,11 @@
           -1.28
         ],
         "age_20_29": -0.283,
-        "age_other": -0.997
+        "age_other": -0.997,
+        "region_group": null
       },
       {
-        "region_group": "",
-        "sido": " 경 남 ",
+        "sido": "경 남",
         "net_migrations": [
           -3.231,
           -2.093,
@@ -704,8 +708,18 @@
           -0.707
         ],
         "age_20_29": -1.715,
-        "age_other": 1.008
+        "age_other": 1.008,
+        "region_group": null
       }
-    ]
+    ],
+    "columns": {
+      "current_quarter": "2025.2/4",
+      "quarter_columns": [
+        "2023.2/4",
+        "2024.2/4",
+        "2025.1/4",
+        "2025.2/4"
+      ]
+    }
   }
 }

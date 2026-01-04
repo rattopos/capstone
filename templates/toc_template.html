@@ -19,6 +19,15 @@
             background: #fff;
         }
         
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm 25mm;
+            margin: 0 auto;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        
         .toc-container {
             width: 100%;
             margin: 0 auto;
@@ -58,7 +67,7 @@
             text-decoration: underline;
         }
         
-        .toc-main .page {
+        .toc-main .page-num {
             font-weight: bold;
             min-width: 25px;
             text-align: right;
@@ -100,7 +109,7 @@
             font-size: 11pt;
         }
         
-        .toc-item .page {
+        .toc-item .page-num {
             min-width: 25px;
             text-align: right;
         }
@@ -117,7 +126,7 @@
             letter-spacing: normal;
         }
         
-        .toc-region-item .page {
+        .toc-region-item .page-num {
             min-width: 25px;
             text-align: right;
         }
@@ -147,113 +156,205 @@
             font-size: 11pt;
         }
         
+        .page-num {
+            min-width: 25px;
+            text-align: right;
+        }
+        
         @media print {
-            .toc-container {
+            .page {
                 width: 100%;
+                min-height: auto;
                 padding: 0;
+                margin: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="toc-container">
-        <h1 class="toc-title">목 차</h1>
-        
-        <!-- 요약 -->
-        <div class="toc-section">
-            <div class="toc-main">
-                <span class="title underline">□ 요약</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.summary.page }}</span>
-            </div>
-        </div>
-        
-        <!-- 본문 -->
-        <div class="toc-section">
-            <div class="toc-main">
-                <span class="title">□ 본문</span>
-            </div>
+    <div class="page">
+        <div class="toc-container">
+            <h1 class="toc-title">목 차</h1>
             
-            <!-- I. 부문별 지역경제동향 -->
-            <div class="toc-chapter">
-                <span class="title">Ⅰ. 부문별 지역경제동향</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.sector.page }}</span>
-            </div>
-            
-            <div class="toc-sub">
-                {% for item in sections.sector.entries %}
-                <div class="toc-item">
-                    <span class="title">{{ item.number }}. {{ item.name }}</span>
+            <!-- 요약 -->
+            <div class="toc-section">
+                <div class="toc-main">
+                    <span class="title underline">□ 요약</span>
                     <span class="toc-dots"></span>
-                    <span class="page">{{ item.page }}</span>
+                    <span class="page-num">1</span>
                 </div>
-                {% endfor %}
             </div>
             
-            <!-- II. 시도별 경제동향 -->
-            <div class="toc-chapter" style="margin-top: 10px;">
-                <span class="title">Ⅱ. 시도별 경제동향</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.region.page }}</span>
-            </div>
-            
-            <div class="toc-sub">
-                {% for item in sections.region.entries %}
-                <div class="toc-region-item">
-                    <span class="title">{{ item.number }}. {{ item.name }}</span>
+            <!-- 본문 -->
+            <div class="toc-section">
+                <div class="toc-main">
+                    <span class="title">□ 본문</span>
+                </div>
+                
+                <!-- I. 부문별 지역경제동향 -->
+                <div class="toc-chapter">
+                    <span class="title">Ⅰ. 부문별 지역경제동향</span>
                     <span class="toc-dots"></span>
-                    <span class="page">{{ item.page }}</span>
+                    <span class="page-num">6</span>
                 </div>
-                {% endfor %}
+                
+                <div class="toc-sub">
+                    <div class="toc-item">
+                        <span class="title">1. 생산</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">6</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">2. 소비</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">8</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">3. 건설</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">9</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">4. 수출입</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">10</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">5. 물가</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">12</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">6. 고용</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">13</span>
+                    </div>
+                    <div class="toc-item">
+                        <span class="title">7. 국내 인구이동</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">15</span>
+                    </div>
+                </div>
+                
+                <!-- II. 시도별 경제동향 -->
+                <div class="toc-chapter" style="margin-top: 10px;">
+                    <span class="title">Ⅱ. 시도별 경제동향</span>
+                    <span class="toc-dots"></span>
+                    <span class="page-num">16</span>
+                </div>
+                
+                <div class="toc-sub">
+                    <div class="toc-region-item">
+                        <span class="title">1. 서울</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">16</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">2. 부산</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">18</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">3. 대구</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">20</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">4. 인천</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">22</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">5. 광주</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">24</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">6. 대전</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">26</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">7. 울산</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">28</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">8. 세종</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">30</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">9. 경기</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">32</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">10. 강원</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">34</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">11. 충북</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">36</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">12. 충남</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">38</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">13. 전북</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">40</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">14. 전남</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">42</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">15. 경북</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">44</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">16. 경남</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">46</span>
+                    </div>
+                    <div class="toc-region-item">
+                        <span class="title">17. 제주</span>
+                        <span class="toc-dots"></span>
+                        <span class="page-num">48</span>
+                    </div>
+                </div>
+                
+                <!-- 참고 -->
+                <div class="toc-reference">
+                    <span class="title">&lt;참고&gt; 분기GRDP</span>
+                    <span class="toc-dots"></span>
+                    <span class="page-num">50</span>
+                </div>
             </div>
             
-            <!-- 참고 -->
-            {% if sections.reference %}
-            {% if sections.reference.entries %}
-            {% for entry in sections.reference.entries %}
-            <div class="toc-reference">
-                <span class="title">&lt;참고&gt; {{ entry.name }}</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ entry.page }}</span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <div class="toc-reference">
-                <span class="title">&lt;참고&gt; {{ sections.reference.name }}</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.reference.page }}</span>
-            </div>
-            {% endif %}
-            {% endif %}
-        </div>
-        
-        <!-- 통계표 -->
-        <div class="toc-section" style="margin-top: 15px;">
-            <div class="toc-main">
-                <span class="title">□ 통계표</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.statistics.page }}</span>
-            </div>
-            {% if sections.statistics.entries %}
-            <div class="toc-sub">
-                {% for item in sections.statistics.entries %}
-                <div class="toc-item">
-                    <span class="title">{{ item.number }}. {{ item.name }}</span>
+            <!-- 통계표 -->
+            <div class="toc-section" style="margin-top: 15px;">
+                <div class="toc-main">
+                    <span class="title">□ 통계표</span>
                     <span class="toc-dots"></span>
-                    <span class="page">{{ item.page }}</span>
+                    <span class="page-num">52</span>
                 </div>
-                {% endfor %}
             </div>
-            {% endif %}
-        </div>
-        
-        <!-- 부록 -->
-        <div class="toc-section">
-            <div class="toc-appendix">
-                <span class="title">◇ 부록</span>
-                <span class="toc-dots"></span>
-                <span class="page">{{ sections.appendix.page }}</span>
+            
+            <!-- 부록 -->
+            <div class="toc-section">
+                <div class="toc-appendix">
+                    <span class="title">◇ 부록</span>
+                    <span class="toc-dots"></span>
+                    <span class="page-num">75</span>
+                </div>
             </div>
         </div>
     </div>

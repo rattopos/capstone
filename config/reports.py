@@ -45,7 +45,7 @@ SUMMARY_REPORTS = [
         'id': 'summary_overview',
         'name': '요약-지역경제동향',
         'sheet': 'multiple',
-        'generator': 'summary_regional_economy_generator.py',
+        'generator': None,
         'template': 'summary_regional_economy_template.html',
         'icon': '📈',
         'category': 'summary'
@@ -54,7 +54,7 @@ SUMMARY_REPORTS = [
         'id': 'summary_production',
         'name': '요약-생산',
         'sheet': 'multiple',
-        'generator': 'summary_production_generator.py',
+        'generator': None,
         'template': 'summary_production_template.html',
         'icon': '🏭',
         'category': 'summary'
@@ -63,7 +63,7 @@ SUMMARY_REPORTS = [
         'id': 'summary_consumption',
         'name': '요약-소비건설',
         'sheet': 'multiple',
-        'generator': 'summary_consumption_construction_generator.py',
+        'generator': None,
         'template': 'summary_consumption_construction_template.html',
         'icon': '🛒',
         'category': 'summary'
@@ -72,7 +72,7 @@ SUMMARY_REPORTS = [
         'id': 'summary_trade_price',
         'name': '요약-수출물가',
         'sheet': 'multiple',
-        'generator': 'summary_export_price_generator.py',
+        'generator': None,
         'template': 'summary_export_price_template.html',
         'icon': '📦',
         'category': 'summary'
@@ -81,7 +81,7 @@ SUMMARY_REPORTS = [
         'id': 'summary_employment',
         'name': '요약-고용인구',
         'sheet': 'multiple',
-        'generator': 'summary_employment_generator.py',
+        'generator': None,
         'template': 'summary_employment_template.html',
         'icon': '👔',
         'category': 'summary'

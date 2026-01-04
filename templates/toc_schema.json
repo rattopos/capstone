@@ -28,14 +28,14 @@
         "sector": {
           "type": "object",
           "description": "부문별 지역경제동향 섹션",
-          "required": ["page", "items"],
+          "required": ["page", "entries"],
           "properties": {
             "page": {
               "type": "integer",
               "description": "섹션 시작 페이지",
               "example": 6
             },
-            "items": {
+            "entries": {
               "type": "array",
               "description": "부문별 항목 목록",
               "items": {
@@ -63,14 +63,14 @@
         "region": {
           "type": "object",
           "description": "시도별 경제동향 섹션",
-          "required": ["page", "items"],
+          "required": ["page", "entries"],
           "properties": {
             "page": {
               "type": "integer",
               "description": "섹션 시작 페이지",
               "example": 16
             },
-            "items": {
+            "entries": {
               "type": "array",
               "description": "시도별 항목 목록",
               "items": {
@@ -140,53 +140,44 @@
   
   "example": {
     "sections": {
-      "summary": {
-        "page": 1
-      },
+      "summary": { "page": 1 },
       "sector": {
         "page": 6,
-        "items": [
-          {"number": 1, "name": "생산", "page": 6},
-          {"number": 2, "name": "소비", "page": 8},
-          {"number": 3, "name": "건설", "page": 9},
-          {"number": 4, "name": "수출입", "page": 10},
-          {"number": 5, "name": "물가", "page": 12},
-          {"number": 6, "name": "고용", "page": 13},
-          {"number": 7, "name": "국내 인구이동", "page": 15}
+        "entries": [
+          { "number": 1, "name": "생산", "page": 6 },
+          { "number": 2, "name": "소비", "page": 8 },
+          { "number": 3, "name": "건설", "page": 9 },
+          { "number": 4, "name": "수출입", "page": 10 },
+          { "number": 5, "name": "물가", "page": 12 },
+          { "number": 6, "name": "고용", "page": 13 },
+          { "number": 7, "name": "국내 인구이동", "page": 15 }
         ]
       },
       "region": {
         "page": 16,
-        "items": [
-          {"number": 1, "name": "서 울", "page": 16},
-          {"number": 2, "name": "부 산", "page": 18},
-          {"number": 3, "name": "대 구", "page": 0},
-          {"number": 4, "name": "인 천", "page": 0},
-          {"number": 5, "name": "광 주", "page": 0},
-          {"number": 6, "name": "대 전", "page": 0},
-          {"number": 7, "name": "울 산", "page": 0},
-          {"number": 8, "name": "세 종", "page": 0},
-          {"number": 9, "name": "경 기", "page": 0},
-          {"number": 10, "name": "강 원", "page": 0},
-          {"number": 11, "name": "충 북", "page": 0},
-          {"number": 12, "name": "충 남", "page": 0},
-          {"number": 13, "name": "전 북", "page": 0},
-          {"number": 14, "name": "전 남", "page": 0},
-          {"number": 15, "name": "경 북", "page": 0},
-          {"number": 16, "name": "경 남", "page": 0},
-          {"number": 17, "name": "제 주", "page": 0}
+        "entries": [
+          { "number": 1, "name": "서 울", "page": 16 },
+          { "number": 2, "name": "부 산", "page": 18 },
+          { "number": 3, "name": "대 구", "page": 20 },
+          { "number": 4, "name": "인 천", "page": 22 },
+          { "number": 5, "name": "광 주", "page": 24 },
+          { "number": 6, "name": "대 전", "page": 26 },
+          { "number": 7, "name": "울 산", "page": 28 },
+          { "number": 8, "name": "세 종", "page": 30 },
+          { "number": 9, "name": "경 기", "page": 32 },
+          { "number": 10, "name": "강 원", "page": 34 },
+          { "number": 11, "name": "충 북", "page": 36 },
+          { "number": 12, "name": "충 남", "page": 38 },
+          { "number": 13, "name": "전 북", "page": 40 },
+          { "number": 14, "name": "전 남", "page": 42 },
+          { "number": 15, "name": "경 북", "page": 44 },
+          { "number": 16, "name": "경 남", "page": 46 },
+          { "number": 17, "name": "제 주", "page": 48 }
         ]
       },
-      "reference": {
-        "name": "분기GRDP",
-        "page": 0
-      },
-      "statistics": {
-        "page": 0
-      },
-      "appendix": {
-        "page": 0
-      }
+      "reference": { "name": "분기GRDP", "page": 50 },
+      "statistics": { "page": 52 },
+      "appendix": { "page": 75 }
     }
   }
 }

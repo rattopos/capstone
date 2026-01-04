@@ -1492,15 +1492,8 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
         
         # 템플릿별 데이터 제공 (preview.py와 동일)
         if report_id == 'toc':
-            try:
-                report_data['sections'] = _get_toc_sections()
-                print(f"[DEBUG] 목차 섹션 데이터 생성 완료")
-            except Exception as e:
-                import traceback
-                error_msg = f"목차 섹션 데이터 생성 오류: {str(e)}"
-                print(f"[DEBUG] {error_msg}")
-                traceback.print_exc()
-                return None, error_msg, []
+            # 목차는 고정된 HTML 템플릿 사용 (동적 계산 없음)
+            print(f"[DEBUG] 목차 템플릿 로드 (고정 페이지 번호)")
         elif report_id == 'guide':
             try:
                 report_data.update(_get_guide_data(year, quarter))

@@ -77,9 +77,13 @@ def generate_summary_preview():
     custom_data = data.get('custom_data', {})
     contact_info_input = data.get('contact_info', {})
     
+    # 표지, 일러두기, 목차는 엑셀 파일 없이도 생성 가능
+    static_reports = ['cover', 'guide', 'toc']
+    
     excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    if report_id not in static_reports:
+        if not excel_path or not Path(excel_path).exists():
+            return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
     
     report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
     if not report_config:
@@ -93,7 +97,7 @@ def generate_summary_preview():
             'report_info': {
                 'year': year,
                 'quarter': quarter,
-                'organization': '통계청',
+                'organization': '국가데이터처',
                 'department': '경제통계심의관'
             }
         }
@@ -139,16 +143,13 @@ def generate_summary_preview():
             return jsonify({'success': False, 'error': error_msg})
         
         # 템플릿별 기본 데이터 제공
-        if report_id == 'toc':
-            try:
-                report_data['sections'] = _get_toc_sections()
-                print(f"[PREVIEW] 목차 섹션 데이터 생성 완료")
-            except Exception as e:
-                import traceback
-                error_msg = f"목차 섹션 데이터 생성 오류: {str(e)}"
-                print(f"[PREVIEW] {error_msg}")
-                traceback.print_exc()
-                return jsonify({'success': False, 'error': error_msg})
+        if report_id == 'cover':
+            # 표지는 스키마에서 기본값 로드 (엑셀 파일 필요 없음)
+            print(f"[PREVIEW] 표지 템플릿 로드")
+        
+        elif report_id == 'toc':
+            # 목차는 고정된 HTML 템플릿 사용 (동적 계산 없음)
+            print(f"[PREVIEW] 목차 템플릿 로드 (고정 페이지 번호)")
         
         elif report_id == 'guide':
             try:
@@ -188,7 +189,7 @@ def generate_summary_preview():
             'distribution_datetime': contact_info_input.get('distribution_datetime', '2025. 8. 12.(화) 08:30')
         }
         report_data['contact_info'] = {
-            'department': contact_info_input.get('department', '통계청 경제통계국'),
+            'department': contact_info_input.get('department', '국가데이터처 경제통계국'),
             'division': contact_info_input.get('division', '소득통계과'),
             'manager_title': contact_info_input.get('manager_title', '과 장'),
             'manager_name': contact_info_input.get('manager_name', '정선경'),
