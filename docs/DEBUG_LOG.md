@@ -26,6 +26,86 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-02
+
+#### 방향성 대조 표현 규칙 수정 (증가-감소, 상승-하락, 유입-유출 등)
+- **시간**: 2026-01-02 14:00
+- **문제 설명**: 
+  - 템플릿과 스키마에서 방향성 관련 텍스트 매칭이 잘못되어 있음
+  - 예: 고용률에서 결과가 "상승"일 때 "상승하였으나...내려...상승"으로 잘못 생성됨
+  - 예: 인구이동에서 결과가 "순유입"일 때 "유입되었으나...유출되어...순유입"으로 잘못 생성됨
+  - 예: 수출/수입에서 전국 방향과 무관하게 고정 패턴 사용
+- **원인 분석**: 
+  - 템플릿에서 direction에 관계없이 고정된 패턴을 사용하고 있었음
+  - 스키마에서 increase_pattern, decrease_pattern이 결과 방향과 반대로 정의되어 있음
+  - Generator에서 전국 방향을 고려하지 않고 고정 패턴으로 regional_summary 생성
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "증가-감소, 늘어-줄어, 상승-하락, 유입-유출, 높음-낮음 매칭이 잘못된게 몇군데 있어요"라고 지적
+  - 핵심 원칙 발견: **결과와 반대되는 요인을 먼저 언급하고, 결과와 같은 방향의 요인을 나중에 언급**
+    - 예: 결과가 "증가"일 때 → "줄었으나...늘어...증가"
+    - 예: 결과가 "감소"일 때 → "늘었으나...줄어...감소"
+    - 예: 결과가 "상승"일 때 → "하락하였으나...올라...상승"
+    - 예: 결과가 "하락"일 때 → "상승하였으나...내려...하락"
+    - 예: 결과가 "순유입"일 때 → "유출되었으나...유입되어...순유입"
+    - 예: 결과가 "순유출"일 때 → "유입되었으나...유출되어...순유출"
+  - 영향 범위 분석:
+    1. regional_template.html: 고용률, 인구이동 섹션
+    2. regional_schema.json: 모든 패턴 정의
+    3. employment_rate_schema.json: regional_trend 규칙
+    4. consumption_schema.json: regional_trend 규칙 (when_increase 케이스 누락)
+    5. export_schema.json: regional_summary 템플릿
+    6. export_generator.py: regional_summary 생성 로직
+    7. import_generator.py: regional_summary 생성 로직
+  - 해결책 설계:
+    1. 템플릿: direction에 따라 조건 분기 처리
+    2. 스키마: increase_pattern, decrease_pattern 명확히 구분
+    3. Generator: 전국 방향에 따라 적절한 패턴 선택
+  - 시도한 방법들:
+    1. regional_template.html의 고용률 섹션: if-else로 direction 분기 처리 ✅
+    2. regional_template.html의 인구이동 섹션: if-else로 direction 분기 처리 ✅
+    3. regional_schema.json: 모든 패턴을 increase_pattern, decrease_pattern 쌍으로 재정의 ✅
+    4. employment_rate_schema.json: when_decrease 케이스 추가 ✅
+    5. consumption_schema.json: when_increase 케이스 추가 ✅
+    6. export_schema.json: when_increase, when_decrease 구조로 변경 ✅
+    7. export_generator.py: 전국 방향에 따라 조건 분기 ✅
+    8. import_generator.py: 전국 방향에 따라 조건 분기 ✅
+  - 최종 결정: 모든 지표에서 일관된 규칙 적용
+    - 결과가 양수 → 반대 요인 먼저(음수), 결과 방향 요인 나중(양수)
+    - 결과가 음수 → 반대 요인 먼저(양수), 결과 방향 요인 나중(음수)
+- **해결 방법**:
+  1. regional_template.html 수정:
+     - 고용률: direction == '상승'일 때 "하락하였으나...올라...상승", direction == '하락'일 때 "상승하였으나...내려...하락"
+     - 인구이동: direction == '순유입'일 때 "유출되었으나...유입되어...순유입", direction == '순유출'일 때 "유입되었으나...유출되어...순유출"
+  2. regional_schema.json 수정:
+     - 모든 섹션의 패턴을 increase_pattern, decrease_pattern 쌍으로 재정의
+     - 고용률: increase_pattern(하락하였으나...상승), decrease_pattern(상승하였으나...하락)
+     - 인구이동: inflow_pattern(유출되었으나...순유입), outflow_pattern(유입되었으나...순유출)
+  3. employment_rate_schema.json 수정:
+     - when_decrease 케이스 추가 (상승하였으나...하락)
+  4. consumption_schema.json 수정:
+     - when_increase 케이스 추가 (줄었으나...증가)
+  5. export_schema.json 수정:
+     - when_increase, when_decrease 구조로 변경
+  6. export_generator.py 수정:
+     - 전국 change_val >= 0일 때 "줄었으나...증가", change_val < 0일 때 "늘었으나...감소"
+  7. import_generator.py 수정:
+     - 전국 change_val < 0일 때 "늘었으나...감소", change_val >= 0일 때 "줄었으나...증가"
+- **관련 파일**:
+  - `templates/regional_template.html`
+  - `templates/regional_schema.json`
+  - `templates/employment_rate_schema.json`
+  - `templates/consumption_schema.json`
+  - `templates/export_schema.json`
+  - `templates/export_generator.py`
+  - `templates/import_generator.py`
+- **상태**: ✅ 완료
+- **참고 사항**:
+  - 이 규칙은 보도자료 작성의 핵심 원칙: "결과와 반대되는 요인을 먼저 언급하고, 결과와 같은 방향의 요인을 나중에 언급"
+  - 발표자료에 이 규칙의 중요성과 구현 과정을 상세히 추가함
+  - 모든 지표(생산, 소비, 물가, 고용, 인구이동, 수출입)에서 일관되게 적용
+
+---
+
 ### 2026-01-04
 
 #### 통계표 고용률/실업률/국내인구이동 절대값 추출 구현

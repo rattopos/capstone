@@ -86,10 +86,20 @@
       }
     },
     "regional_trend": {
+      "when_increase": {
+        "decrease_first": {
+          "regions": "감소율이 큰 3개 시도",
+          "expression": "줄었으나"
+        },
+        "increase_then": {
+          "regions": "증가율이 큰 3개 시도",
+          "expression": "늘어 증가"
+        }
+      },
       "when_decrease": {
         "increase_first": {
           "regions": "증가율이 큰 3개 시도",
-          "expression": "증가하였으나"
+          "expression": "늘었으나"
         },
         "decrease_then": {
           "regions": "감소율이 큰 3개 시도",

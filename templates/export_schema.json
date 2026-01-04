@@ -40,8 +40,14 @@
     },
     
     "regional_summary": {
-      "decrease_template": "{regions}은 {products} 등의 수출이 줄어 감소하였으나,",
-      "increase_template": "{regions}은 {products} 등의 수출이 늘어 {direction}"
+      "when_increase": {
+        "decrease_first_template": "{regions}은 {products} 등의 수출이 줄었으나,",
+        "increase_then_template": "{regions}은 {products} 등의 수출이 늘어 증가"
+      },
+      "when_decrease": {
+        "increase_first_template": "{regions}은 {products} 등의 수출이 늘었으나,",
+        "decrease_then_template": "{regions}은 {products} 등의 수출이 줄어 감소"
+      }
     }
   },
   

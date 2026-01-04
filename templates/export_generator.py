@@ -440,9 +440,10 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     # None 값 안전 처리
     amount_str = f"{amount:,.1f}억달러" if amount is not None else "-"
     change_val = change if change is not None else 0
-    change_str = f"{change_val:.1f}%"
+    direction = "증가" if change_val >= 0 else "감소"
+    verb = "늘어" if change_val >= 0 else "줄어"
     
-    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 늘어 전년동분기대비 <span class='bold'>{change_str}</span> 증가"
+    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change_val):.1f}%</span> {direction}"
     
     # 시도 요약 - None 값 안전 처리
     def safe_change(r):
@@ -474,7 +475,13 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     else:
         increase_product_str = ""
     
-    regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소하였으나, {increase_names}은 {increase_product_str} 등의 수출이 늘어 증가"
+    # 전국 방향에 따라 regional_summary 생성
+    if change_val >= 0:
+        # 전국이 증가일 때: "감소하였으나...증가"
+        regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수출이 줄었으나, {increase_names}은 {increase_product_str} 등의 수출이 늘어 증가"
+    else:
+        # 전국이 감소일 때: "증가하였으나...감소"
+        regional_summary = f"{increase_names}은 {increase_product_str} 등의 수출이 늘었으나, {decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소"
     
     return {
         'headline': headline,

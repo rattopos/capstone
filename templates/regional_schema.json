@@ -738,8 +738,8 @@
   "text_generation_rules": {
     "production_section": {
       "manufacturing": {
-        "increase_pattern": "(광공업 생산) {increase_industries} 등에서 늘었으나, {decrease_industries} 등에서 줄어 전년동분기대비 {rate}% 감소",
-        "decrease_pattern": "(광공업 생산) {decrease_industries} 등에서 줄었으나, {increase_industries} 등에서 늘어 전년동분기대비 {rate}% 증가"
+        "increase_pattern": "(광공업 생산) {decrease_industries} 등에서 줄었으나, {increase_industries} 등에서 늘어 전년동분기대비 {rate}% 증가",
+        "decrease_pattern": "(광공업 생산) {increase_industries} 등에서 늘었으나, {decrease_industries} 등에서 줄어 전년동분기대비 {rate}% 감소"
       },
       "service": {
         "increase_pattern": "(서비스업 생산) {decrease_industries} 등이 줄었으나, {increase_industries} 등이 늘어 전년동분기대비 {rate}% 증가",
@@ -748,29 +748,36 @@
     },
     "consumption_construction_section": {
       "retail": {
-        "pattern": "(소매판매) {items}이 늘었으나, {decrease_items}등이 줄어 전년동분기대비 {rate}% {direction}"
+        "increase_pattern": "(소매판매) {decrease_items}등이 줄었으나, {increase_items}이 늘어 전년동분기대비 {rate}% 증가",
+        "decrease_pattern": "(소매판매) {increase_items}이 늘었으나, {decrease_items}등이 줄어 전년동분기대비 {rate}% 감소"
       },
       "construction": {
-        "pattern": "(건설수주) {decrease_items}이 줄었으나, {increase_items}이 늘어 전년동분기대비 {rate}% {direction}"
+        "increase_pattern": "(건설수주) {decrease_items}이 줄었으나, {increase_items}이 늘어 전년동분기대비 {rate}% 증가",
+        "decrease_pattern": "(건설수주) {increase_items}이 늘었으나, {decrease_items}이 줄어 전년동분기대비 {rate}% 감소"
       }
     },
     "export_import_price_section": {
       "export": {
-        "pattern": "(수출) {decrease_items} 등이 줄었으나, {increase_items} 등이 늘어 전년동분기대비 {rate}% {direction}"
+        "increase_pattern": "(수출) {decrease_items} 등이 줄었으나, {increase_items} 등이 늘어 전년동분기대비 {rate}% 증가",
+        "decrease_pattern": "(수출) {increase_items} 등이 늘었으나, {decrease_items} 등이 줄어 전년동분기대비 {rate}% 감소"
       },
       "import": {
-        "pattern": "(수입) {increase_items} 등이 늘었으나, {decrease_items} 등이 줄어 전년동분기대비 {rate}% {direction}"
+        "increase_pattern": "(수입) {decrease_items} 등이 줄었으나, {increase_items} 등이 늘어 전년동분기대비 {rate}% 증가",
+        "decrease_pattern": "(수입) {increase_items} 등이 늘었으나, {decrease_items} 등이 줄어 전년동분기대비 {rate}% 감소"
       },
       "consumer_price": {
-        "pattern": "(소비자물가) {decrease_items}가 하락하였으나, {increase_items} 등이 올라 전년동분기대비 {rate}% {direction}"
+        "increase_pattern": "(소비자물가) {decrease_items}가 하락하였으나, {increase_items} 등이 올라 전년동분기대비 {rate}% 상승",
+        "decrease_pattern": "(소비자물가) {increase_items} 등이 상승하였으나, {decrease_items}가 내려 전년동분기대비 {rate}% 하락"
       }
     },
     "employment_migration_section": {
       "employment_rate": {
-        "pattern": "(고용률) {increase_groups}에서 상승하였으나, {decrease_groups} 등에서 내려 전년동분기대비 {rate}%p {direction}"
+        "increase_pattern": "(고용률) {decrease_groups} 등에서 하락하였으나, {increase_groups}에서 올라 전년동분기대비 {rate}%p 상승",
+        "decrease_pattern": "(고용률) {increase_groups}에서 상승하였으나, {decrease_groups} 등에서 내려 전년동분기대비 {rate}%p 하락"
       },
       "population_migration": {
-        "pattern": "(인구이동) 인구는 {inflow_groups} 등에서 유입되었으나, {outflow_groups} 등에서 유출되어 {count}명 {direction}"
+        "inflow_pattern": "(인구이동) 인구는 {outflow_groups} 등에서 유출되었으나, {inflow_groups} 등에서 유입되어 {count}명 순유입",
+        "outflow_pattern": "(인구이동) 인구는 {inflow_groups} 등에서 유입되었으나, {outflow_groups} 등에서 유출되어 {count}명 순유출"
       }
     }
   }
