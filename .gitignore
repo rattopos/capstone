@@ -25,6 +25,8 @@ env/
 # IDE
 .idea/
 .vscode/
+.cursor/
+.obsidian/
 *.swp
 *.swo
 .DS_Store
