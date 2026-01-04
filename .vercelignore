@@ -1,0 +1,31 @@
+# Python 가상환경
+VENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 업로드 및 임시 파일
+uploads/
+debug/
+exports/
+*.xlsx
+*.xls
+
+# 개발 파일
+.git/
+.gitignore
+.cursorrules
+
+# 문서 및 이미지 (필요시 포함 가능)
+docs/
+correct_answer/
+demo_videos/
+
+# 기타
+*.log
+.DS_Store
+*.pdf
+*.pptx
+

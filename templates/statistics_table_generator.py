@@ -541,15 +541,28 @@ class StatisticsTableGenerator:
             return str(value)
     
     def _create_empty_table_data(self) -> Dict[str, Any]:
-        """모든 연도/분기/지역에 기본값 '-'가 채워진 데이터 구조 생성 (2016년부터)"""
-        yearly_years = ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        """모든 연도/분기/지역에 기본값 '-'가 채워진 데이터 구조 생성
         
-        # 2016년 1분기부터 현재 분기까지 생성
+        원본 이미지 기준 범위:
+        - 연도별: 현재년도 제외 최근 8년 (예: 2025년 기준 → 2017~2024)
+        - 분기별: (현재년도-9)년 4분기부터 현재 분기까지 (예: 2016.4/4 ~ 2025.2/4p)
+        """
+        # 연도별: 현재년도 제외 최근 8년
+        yearly_start = self.current_year - 8  # 예: 2025 - 8 = 2017
+        yearly_end = self.current_year - 1    # 예: 2025 - 1 = 2024
+        yearly_years = [str(year) for year in range(yearly_start, yearly_end + 1)]
+        
+        # 분기별: (현재년도-9)년 4분기부터 현재 분기까지
         quarterly_keys = []
-        for year in range(2016, self.current_year + 1):
-            start_q = 1 if year > 2016 else 1
+        q_start_year = self.current_year - 9  # 예: 2025 - 9 = 2016
+        
+        # 시작: q_start_year의 4분기
+        quarterly_keys.append(f"{q_start_year}.4/4")
+        
+        # 그 다음 해부터 현재 분기까지
+        for year in range(q_start_year + 1, self.current_year + 1):
             end_q = self.current_quarter if year == self.current_year else 4
-            for quarter in range(start_q, end_q + 1):
+            for quarter in range(1, end_q + 1):
                 if year == self.current_year and quarter == self.current_quarter:
                     quarterly_keys.append(f"{year}.{quarter}/4p")
                 else:
@@ -886,19 +899,51 @@ class StatisticsTableGenerator:
         }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
-        """GRDP 데이터 생성 - grdp_historical_data.json 및 grdp_extracted.json에서 데이터 로드"""
+        """GRDP 데이터 생성 - grdp_historical_data.json 및 grdp_extracted.json에서 데이터 로드
+        
+        원본 이미지 기준 범위:
+        - 연도별: 현재년도 제외 최근 8년 (예: 2025년 기준 → 2017~2024)
+          - 마지막 2년에 'p' 표시 (2023p, 2024p)
+        - 분기별: (현재년도-8)년 3분기부터 현재 분기 이전까지
+          - GRDP는 1분기 늦게 발표되므로 현재 분기가 2/4이면 1/4까지만 표시
+          - 예: 2025년 2분기 기준 → 2017.3/4 ~ 2025.1/4p
+        """
         import json
         
-        yearly_years = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+        # 연도별: 현재년도 제외 최근 8년
+        yearly_start = self.current_year - 8  # 예: 2025 - 8 = 2017
+        yearly_end = self.current_year - 1    # 예: 2025 - 1 = 2024
+        yearly_years = []
+        for year in range(yearly_start, yearly_end + 1):
+            # 마지막 2년에 'p' 표시 (잠정치)
+            if year >= self.current_year - 2:
+                yearly_years.append(f"{year}p")
+            else:
+                yearly_years.append(str(year))
         
-        # 2017년 3/4분기부터 현재 분기까지 생성 (정답 이미지 기준)
+        # 분기별: (현재년도-8)년 3분기부터 현재 분기 이전까지
+        # GRDP는 1분기 늦게 발표됨
         quarterly_keys = []
-        for year in range(2017, self.current_year + 1):
-            start_q = 3 if year == 2017 else 1
-            end_q = self.current_quarter if year == self.current_year else 4
+        q_start_year = self.current_year - 8  # 예: 2025 - 8 = 2017
+        
+        # GRDP 최신 분기 계산 (현재 분기보다 1분기 이전)
+        if self.current_quarter == 1:
+            grdp_end_year = self.current_year - 1
+            grdp_end_quarter = 4
+        else:
+            grdp_end_year = self.current_year
+            grdp_end_quarter = self.current_quarter - 1
+        
+        for year in range(q_start_year, grdp_end_year + 1):
+            # 시작 분기: 첫 해는 3분기부터
+            start_q = 3 if year == q_start_year else 1
+            # 끝 분기
+            end_q = grdp_end_quarter if year == grdp_end_year else 4
+            
             for quarter in range(start_q, end_q + 1):
-                if year == self.current_year and quarter == self.current_quarter:
-                    quarterly_keys.append(f"{year}.{quarter}/4p")
+                # 마지막 2년의 분기에 'p' 표시
+                if year >= self.current_year - 2:
+                    quarterly_keys.append(f"{year}p.{quarter}/4")
                 else:
                     quarterly_keys.append(f"{year}.{quarter}/4")
         
@@ -918,21 +963,25 @@ class StatisticsTableGenerator:
                 with open(hist_json_path, 'r', encoding='utf-8') as f:
                     hist_data = json.load(f)
                 
-                # 연도별 데이터 로드
+                # 연도별 데이터 로드 ('p' 표시 키와 원본 키 매핑)
                 if 'yearly' in hist_data:
-                    for year_key, regions_data in hist_data['yearly'].items():
-                        if year_key in yearly:
-                            for region, value in regions_data.items():
+                    for display_key in yearly_years:
+                        # 'p' 제거하여 원본 키 생성
+                        source_key = display_key.rstrip('p')
+                        if source_key in hist_data['yearly']:
+                            for region, value in hist_data['yearly'][source_key].items():
                                 if region in self.ALL_REGIONS:
-                                    yearly[year_key][region] = value
+                                    yearly[display_key][region] = value
                 
-                # 분기별 데이터 로드
+                # 분기별 데이터 로드 ('p' 표시 키와 원본 키 매핑)
                 if 'quarterly' in hist_data:
-                    for qkey, regions_data in hist_data['quarterly'].items():
-                        if qkey in quarterly:
-                            for region, value in regions_data.items():
+                    for display_key in quarterly_keys:
+                        # '2023p.1/4' → '2023.1/4' 형태로 변환
+                        source_key = display_key.replace('p.', '.')
+                        if source_key in hist_data['quarterly']:
+                            for region, value in hist_data['quarterly'][source_key].items():
                                 if region in self.ALL_REGIONS:
-                                    quarterly[qkey][region] = value
+                                    quarterly[display_key][region] = value
                 
                 print(f"[통계표] GRDP 과거 데이터 로드 완료")
         except Exception as e:

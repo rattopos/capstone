@@ -185,6 +185,12 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
+    "docs/NOTION_UPLOAD_GUIDE.md",
+    "upload_to_notion.py",
+    "docs/VERCEL_DEPLOYMENT.md",
+    "api/index.py",
+    "api",
+    "vercel.json",
     "debug/test_summary_employment.html",
     "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_78686a49.xlsx",
     "uploads/grdp_기초자료_수집표_2025년_2분기_캡스톤_보완_a5cba55c.xlsx",
@@ -202,11 +208,6 @@
     "docs/PRESENTATION_PRINT_images/mermaid_12.png",
     "docs/PRESENTATION_PRINT_images",
     "docs/PRESENTATION_PRINT.html",
-    "scripts/md_to_print_html.py",
-    "scripts",
-    "uploads/grdp_2025년_2분기_실질_지역내총생산잠정_d1a99048.xlsx",
-    "uploads/grdp_기초자료_수집표_2025년_2분기_캡스톤_보완_add95e09.xlsx",
-    "uploads/분석표_25년_2분기_캡스톤_f72ee573.xlsx",
     "docs/presentation/rule_based_implementation.md",
     "docs/인포그래픽_색상_추론_과정.md",
     "docs/분류단계_가이드.md",
@@ -229,7 +230,6 @@
     "DEVELOPMENT_CHALLENGES.md",
     "PROJECT_STUDY_GUIDE.md",
     "REPORT_GENERATION_FIX.md",
-    "presentation/config_explanation.md",
-    "presentation/module_explanation.md"
+    "presentation/config_explanation.md"
   ]
 }

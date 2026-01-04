@@ -27,7 +27,7 @@
         }
         
         body {
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-family: '바탕', 'Batang', serif;
             font-size: 10pt;
             line-height: 1.4;
             color: #000;
@@ -38,7 +38,7 @@
             width: 210mm;
             height: 297mm;
             min-height: 297mm;
-            padding: 15mm;
+            padding: 15mm 12mm;
             margin: 0 auto 20mm auto;
             background: #fff;
             position: relative;
@@ -55,77 +55,81 @@
         }
         
         .page-title {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 20px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 12px;
+            text-decoration: underline;
         }
         
         .unit-label {
             float: right;
-            font-size: 10pt;
+            font-size: 9pt;
             font-weight: normal;
-            color: #333;
+            color: #000;
+            text-decoration: none;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5pt;
-            margin-bottom: 20px;
+            font-size: 9pt;
+            margin-bottom: 15px;
         }
         
         .data-table th,
         .data-table td {
-            border: 1px solid #999;
-            padding: 4px 3px;
+            border: none;
+            border-bottom: 1px solid #999;
+            padding: 3px 5px;
             text-align: right;
             vertical-align: middle;
         }
         
-        .data-table th {
-            background: #e8e8e8;
-            font-weight: bold;
-            text-align: center;
+        .data-table thead tr {
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #000;
         }
         
         .data-table thead th {
-            background: #d0d0d0;
+            background: #d8e8d8;
+            font-weight: normal;
+            text-align: center;
+            padding: 5px 3px;
+        }
+        
+        .data-table tbody tr:last-child td {
+            border-bottom: 2px solid #000;
         }
         
         .data-table .row-header {
-            text-align: center;
-            background: #f5f5f5;
+            text-align: left;
+            background: transparent;
             font-weight: normal;
-            width: 65px;
+            width: 60px;
+            padding-left: 8px;
         }
         
         .data-table .year-row {
-            background: #f9f9f9;
+            background: transparent;
         }
         
         .data-table .quarter-row {
-            background: #fff;
+            background: transparent;
         }
         
         .data-table .year-cell {
-            font-weight: bold;
+            font-weight: normal;
         }
         
         .data-table .quarter-cell {
             font-weight: normal;
-            font-size: 8pt;
+            font-size: 9pt;
         }
         
         .data-table .separator-row td {
-            border-top: 2px dotted #666;
-            height: 3px;
+            border-bottom: 1px dotted #666;
+            height: 8px;
             padding: 0;
-        }
-        
-        .data-table tbody tr:hover {
-            background: #f0f7ff;
         }
         
         .page-number {
@@ -168,7 +172,7 @@
             }
             .page {
                 margin: 0;
-                padding: 15mm;
+                padding: 15mm 12mm;
                 height: 297mm;
                 page-break-after: always;
                 page-break-inside: avoid;
@@ -180,6 +184,11 @@
             }
             .editable-placeholder {
                 background-color: #fff9c4;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .data-table thead th {
+                background: #d8e8d8 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
