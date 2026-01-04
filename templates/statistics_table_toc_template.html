@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>통계표 목차 - {{ year }}년 {{ quarter }}분기</title>
     <style>
-        @page {
-            size: A4;
-            margin: 15mm 20mm 20mm 20mm;
-        }
-        
         * {
             margin: 0;
             padding: 0;
@@ -25,23 +20,11 @@
         }
         
         .page {
-            width: 210mm;
-            height: 297mm;
-            min-height: 297mm;
-            padding: 15mm 20mm;
-            margin: 0 auto 20mm auto;
+            width: 100%;
+            padding: 0;
+            margin: 0;
             background: #fff;
             position: relative;
-            page-break-after: always;
-            page-break-inside: avoid;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border: 1px solid #ddd;
-        }
-        
-        .page:last-child {
-            page-break-after: auto;
-            margin-bottom: 0;
         }
         
         /* 헤더 영역 */
@@ -122,11 +105,11 @@
         
         .page-number {
             position: absolute;
-            bottom: 15mm;
+            bottom: 6mm;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 10pt;
+            font-size: 9pt;
         }
         
         @media print {
@@ -135,15 +118,7 @@
             }
             .page {
                 margin: 0;
-                padding: 15mm 20mm;
-                height: 297mm;
-                page-break-after: always;
-                page-break-inside: avoid;
-                box-shadow: none;
-                border: none;
-            }
-            .page:last-child {
-                page-break-after: auto;
+                padding: 0;
             }
         }
         
@@ -157,64 +132,64 @@
         </div>
         
         <ol class="toc-list">
+            {% if toc_entries %}
+            {% for entry in toc_entries %}
             <li>
-                <span class="toc-number">1.</span>
-                <span class="toc-title">광공업생산지수</span>
+                <span class="toc-number">{{ entry.number }}.</span>
+                <span class="toc-title">{{ entry.name }}</span>
                 <span class="toc-dots"></span>
             </li>
+            {% endfor %}
+            {% else %}
+            {# 페이지 단위 기본 목록 (각 통계표 2페이지) #}
+            {% set stat_items = [
+                ('광공업생산지수', 2),
+                ('서비스업생산지수', 2),
+                ('소매판매액지수', 2),
+                ('건설수주액', 2),
+                ('고용률', 2),
+                ('실업률', 2),
+                ('국내 인구이동', 2),
+                ('수출액', 2),
+                ('수입액', 2),
+                ('소비자물가지수', 2)
+            ] %}
+            {% set ns = namespace(num=1) %}
+            {% for name, pages in stat_items %}
+            {% for p in range(1, pages + 1) %}
             <li>
-                <span class="toc-number">2.</span>
-                <span class="toc-title">서비스업생산지수</span>
+                <span class="toc-number">{{ ns.num }}.</span>
+                <span class="toc-title">{{ name }} ({{ p }})</span>
                 <span class="toc-dots"></span>
             </li>
-            <li>
-                <span class="toc-number">3.</span>
-                <span class="toc-title">소매판매액지수</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">4.</span>
-                <span class="toc-title">건설수주액</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">5.</span>
-                <span class="toc-title">고용률</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">6.</span>
-                <span class="toc-title">실업률</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">7.</span>
-                <span class="toc-title">국내 인구이동</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">8.</span>
-                <span class="toc-title">수출액</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">9.</span>
-                <span class="toc-title">수입액</span>
-                <span class="toc-dots"></span>
-            </li>
-            <li>
-                <span class="toc-number">10.</span>
-                <span class="toc-title">소비자물가지수</span>
-                <span class="toc-dots"></span>
-            </li>
+            {% set ns.num = ns.num + 1 %}
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
         </ol>
         
         <ul class="toc-list toc-reference">
+            {% if grdp_entries %}
+            {% for entry in grdp_entries %}
             <li>
                 <span class="toc-number">&lt;참고&gt;</span>
-                <span class="toc-title">분기 지역내총생산(GRDP)</span>
+                <span class="toc-title">{{ entry.name }}</span>
                 <span class="toc-dots"></span>
             </li>
+            {% endfor %}
+            {% else %}
+            {# 페이지 단위 GRDP (2페이지) #}
+            <li>
+                <span class="toc-number">&lt;참고&gt;</span>
+                <span class="toc-title">분기 지역내총생산(GRDP) (1)</span>
+                <span class="toc-dots"></span>
+            </li>
+            <li>
+                <span class="toc-number">&lt;참고&gt;</span>
+                <span class="toc-title">분기 지역내총생산(GRDP) (2)</span>
+                <span class="toc-dots"></span>
+            </li>
+            {% endif %}
         </ul>
         
         <div class="page-number">- {{ page_number | default(21) }} -</div>

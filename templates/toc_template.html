@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>목차</title>
     <style>
-        @page {
-            size: A4;
-            margin: 20mm 15mm;
-        }
-        
         * {
             margin: 0;
             padding: 0;
@@ -25,10 +20,9 @@
         }
         
         .toc-container {
-            width: 210mm;
-            min-height: 297mm;
+            width: 100%;
             margin: 0 auto;
-            padding: 25mm 20mm;
+            padding: 0;
         }
         
         .toc-title {
@@ -120,7 +114,7 @@
         
         .toc-region-item .title {
             font-size: 11pt;
-            letter-spacing: 3px;
+            letter-spacing: normal;
         }
         
         .toc-region-item .page {
@@ -155,9 +149,8 @@
         
         @media print {
             .toc-container {
-                width: 210mm;
-                height: 297mm;
-                padding: 25mm 20mm;
+                width: 100%;
+                padding: 0;
             }
         }
     </style>
@@ -217,11 +210,21 @@
             
             <!-- 참고 -->
             {% if sections.reference %}
+            {% if sections.reference.entries %}
+            {% for entry in sections.reference.entries %}
+            <div class="toc-reference">
+                <span class="title">&lt;참고&gt; {{ entry.name }}</span>
+                <span class="toc-dots"></span>
+                <span class="page">{{ entry.page }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
             <div class="toc-reference">
                 <span class="title">&lt;참고&gt; {{ sections.reference.name }}</span>
                 <span class="toc-dots"></span>
                 <span class="page">{{ sections.reference.page }}</span>
             </div>
+            {% endif %}
             {% endif %}
         </div>
         
@@ -232,6 +235,17 @@
                 <span class="toc-dots"></span>
                 <span class="page">{{ sections.statistics.page }}</span>
             </div>
+            {% if sections.statistics.entries %}
+            <div class="toc-sub">
+                {% for item in sections.statistics.entries %}
+                <div class="toc-item">
+                    <span class="title">{{ item.number }}. {{ item.name }}</span>
+                    <span class="toc-dots"></span>
+                    <span class="page">{{ item.page }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
         
         <!-- 부록 -->

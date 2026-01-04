@@ -259,7 +259,10 @@ def generate_statistics_full_preview():
 
 
 def _get_toc_sections():
-    """목차 섹션 데이터 - 동적 페이지 번호 계산"""
+    """목차 섹션 데이터 - 페이지 단위로 동적 계산
+    
+    같은 항목이 여러 페이지인 경우 (1), (2) 등으로 구분
+    """
     
     # 현재 페이지 번호 (요약부터 1페이지 시작)
     current_page = 1
@@ -272,50 +275,109 @@ def _get_toc_sections():
     # 부문별 섹션 시작 페이지
     sector_page = current_page
     
-    # 부문별 각 항목의 시작 페이지 계산
-    sector_item_pages = {}
+    # 부문별 각 항목의 시작 페이지 계산 (페이지 단위)
+    sector_entries = []
     sector_config = PAGE_CONFIG['sector']
     sector_order = ['manufacturing', 'service', 'consumption', 'construction', 
                     'export', 'import', 'price', 'employment', 'unemployment', 'population']
     
+    # TOC_SECTOR_ITEMS 기반으로 통합 항목 처리
+    item_pages_map = {}  # start_from -> [페이지번호들]
     for sector_id in sector_order:
-        sector_item_pages[sector_id] = current_page
-        current_page += sector_config.get(sector_id, 2)
+        pages_count = sector_config.get(sector_id, 1)
+        if sector_id not in item_pages_map:
+            item_pages_map[sector_id] = []
+        for i in range(pages_count):
+            item_pages_map[sector_id].append(current_page + i)
+        current_page += pages_count
     
-    # 부문별 목차 항목 생성 (원본 이미지 기준 7개 항목)
-    sector_entries = []
+    # 부문별 목차 항목 생성 (페이지 단위)
+    entry_number = 1
     for item in TOC_SECTOR_ITEMS:
         start_from = item.get('start_from')
-        page = sector_item_pages.get(start_from, sector_page)
-        sector_entries.append({
-            'number': item['number'],
-            'name': item['name'],
-            'page': page
-        })
+        pages = item_pages_map.get(start_from, [])
+        
+        if len(pages) == 1:
+            # 1페이지짜리 항목
+            sector_entries.append({
+                'number': entry_number,
+                'name': item['name'],
+                'page': pages[0]
+            })
+            entry_number += 1
+        else:
+            # 여러 페이지인 경우 (1), (2) 등으로 구분
+            for idx, page in enumerate(pages, 1):
+                sector_entries.append({
+                    'number': entry_number,
+                    'name': f"{item['name']} ({idx})",
+                    'page': page
+                })
+                entry_number += 1
     
     # 시도별 섹션 시작 페이지
     region_page = current_page
     
-    # 시도별 목차 항목 생성
+    # 시도별 목차 항목 생성 (페이지 단위)
     region_entries = []
-    regional_pages = PAGE_CONFIG['regional']
-    for item in TOC_REGION_ITEMS:
-        region_entries.append({
-            'number': item['number'],
-            'name': item['name'],
-            'page': current_page
-        })
-        current_page += regional_pages
+    regional_pages = PAGE_CONFIG['regional']  # 각 시도당 페이지 수 (2)
+    entry_number = 1
     
-    # 참고 GRDP 페이지
+    for item in TOC_REGION_ITEMS:
+        if regional_pages == 1:
+            # 1페이지짜리 항목
+            region_entries.append({
+                'number': entry_number,
+                'name': item['name'],
+                'page': current_page
+            })
+            entry_number += 1
+            current_page += 1
+        else:
+            # 여러 페이지인 경우 (1), (2) 등으로 구분
+            for idx in range(1, regional_pages + 1):
+                region_entries.append({
+                    'number': entry_number,
+                    'name': f"{item['name']} ({idx})",
+                    'page': current_page
+                })
+                entry_number += 1
+                current_page += 1
+    
+    # 참고 GRDP 페이지 (2페이지인 경우 구분)
     reference_page = current_page
-    current_page += PAGE_CONFIG['reference_grdp']
+    grdp_pages = PAGE_CONFIG['reference_grdp']
+    reference_entries = []
+    if grdp_pages > 1:
+        for idx in range(1, grdp_pages + 1):
+            reference_entries.append({
+                'name': f'분기GRDP ({idx})',
+                'page': current_page
+            })
+            current_page += 1
+    else:
+        current_page += grdp_pages
     
     # 통계표 섹션 시작 페이지
     statistics_page = current_page
     stat_config = PAGE_CONFIG['statistics']
     current_page += stat_config['toc']
-    current_page += stat_config['per_table'] * stat_config['count']
+    
+    # 통계표 목차 항목 생성 (페이지 단위, 각 통계표 2페이지)
+    statistics_entries = []
+    stat_names = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
+                  '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수', 'GRDP']
+    entry_number = 1
+    for stat_name in stat_names:
+        pages_per_table = 2 if stat_name != 'GRDP' else 2  # 모든 통계표 2페이지
+        for idx in range(1, pages_per_table + 1):
+            statistics_entries.append({
+                'number': entry_number,
+                'name': f'{stat_name} ({idx})',
+                'page': current_page
+            })
+            entry_number += 1
+            current_page += 1
     
     # 부록 페이지
     appendix_page = current_page
@@ -330,8 +392,15 @@ def _get_toc_sections():
             'page': region_page,
             'entries': region_entries
         },
-        'reference': {'name': '분기GRDP', 'page': reference_page},
-        'statistics': {'page': statistics_page},
+        'reference': {
+            'name': '분기GRDP', 
+            'page': reference_page,
+            'entries': reference_entries if reference_entries else None
+        },
+        'statistics': {
+            'page': statistics_page,
+            'entries': statistics_entries
+        },
         'appendix': {'page': appendix_page}
     }
 

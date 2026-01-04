@@ -28,6 +28,99 @@
 
 ### 2026-01-04
 
+#### 목차 빈 페이지 30개+ 문제 해결 및 페이지 단위 목록 변경
+- **시간**: 2026-01-04 (오후)
+- **문제 설명**: 
+  - 대시보드 미리보기에서 목차가 빈 페이지를 30개 넘게 차지함
+  - 목록이 항목 기준으로 표시되어 있어 페이지 단위로 변경 필요
+  - 같은 항목이 두 페이지인 경우 구분이 없음
+  - 통계표 범위 확인 필요
+- **원인 분석**: 
+  - `toc_template.html`의 `.toc-container`에 `min-height: 297mm` 설정으로 인해 A4 페이지 컨테이너 안에서 추가 공간 차지
+  - `statistics_table_toc_template.html`의 `.page`에도 `min-height: 297mm` 설정
+  - `statistics_table_index_template.html`에도 동일한 문제 존재
+  - 각 템플릿의 `@page` 규칙이 상위 템플릿과 충돌
+- **에이전트 사고 과정**:
+  - 문제 인식: "목차가 빈 페이지를 30개 넘게 차지"라는 사용자 제보 확인
+  - 코드 분석 단계:
+    1. `routes/debug.py`의 `A4_FULL_REPORT_TEMPLATE` 구조 확인 → `.a4-page`가 297mm 높이로 설정
+    2. `toc_template.html` 확인 → `.toc-container`에 `min-height: 297mm` 설정 발견
+    3. `statistics_table_toc_template.html` 확인 → `.page`에 `min-height: 297mm` 설정 발견
+  - 원인 파악: 개별 템플릿의 CSS가 통합 출력 시 상위 A4 컨테이너와 충돌하여 빈 공간 발생
+  - 해결책 결정:
+    1. 모든 목차/통계표 템플릿에서 `min-height: 297mm`, `height: 297mm` 제거
+    2. `@page` 규칙 제거 (상위 템플릿에서 이미 정의됨)
+    3. 목차 구조를 페이지 단위로 변경
+  - 추가 요청 처리: 사용자가 요청한 "페이지 단위 목록" 및 "같은 항목 두 페이지면 1, 2로 구분" 구현
+- **해결 방법**: 
+  1. CSS 수정:
+     - `toc_template.html`: `.toc-container`에서 `min-height: 297mm` 제거, `@page` 규칙 제거
+     - `statistics_table_toc_template.html`: `.page`에서 `min-height/height` 제거, `@page` 규칙 제거
+     - `statistics_table_index_template.html`: 동일하게 수정
+  2. 목차 구조 페이지 단위로 변경:
+     - `routes/preview.py`, `routes/debug.py`의 `_get_toc_sections()` 함수 수정
+     - 시도별 보도자료가 2페이지인 경우: "서울 (1)", "서울 (2)"로 표시
+     - 통계표도 각 2페이지이므로: "광공업생산지수 (1)", "광공업생산지수 (2)"로 표시
+  3. `toc_template.html` 템플릿 업데이트:
+     - 참고 GRDP 여러 페이지 지원
+     - 통계표 entries 표시 지원
+  4. `statistics_table_toc_template.html` 템플릿 업데이트:
+     - 동적 페이지 단위 목록 생성 지원
+- **관련 파일**: 
+  - `templates/toc_template.html` (CSS 및 템플릿 구조 수정)
+  - `templates/statistics_table_toc_template.html` (CSS 및 템플릿 구조 수정)
+  - `templates/statistics_table_index_template.html` (CSS 수정)
+  - `routes/preview.py` (`_get_toc_sections()` 함수 수정)
+  - `routes/debug.py` (`_get_toc_sections()` 함수 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 통계표 범위 (2025년 2분기 기준):
+    - 연도별: 2017년 ~ 2024년 (8개년)
+    - 분기별: 2016년 4분기 ~ 2025년 2분기p (약 35개 분기)
+  - GRDP 범위 (1분기 늦게 발표):
+    - 연도별: 2017년 ~ 2024년 (마지막 2년에 'p' 표시)
+    - 분기별: 2017년 3분기 ~ 2025년 1분기p
+  - 통합 출력 시 개별 템플릿의 페이지 크기/여백 CSS는 상위 컨테이너와 충돌하므로 제거해야 함
+
+---
+
+#### 목차 시도명 띄어쓰기 제거 및 표시 형식 수정
+- **시간**: 2026-01-04 (현재)
+- **문제 설명**: 
+  - 목차에서 시도명이 "서 울", "부 산" 등으로 띄어쓰기가 포함되어 표시됨
+  - 정답 이미지에서는 "서울", "부산" 등으로 띄어쓰기 없이 표시되어야 함
+  - CSS의 letter-spacing으로 인해 띄어쓰기 없이도 간격이 생기는 문제
+- **원인 분석**: 
+  - `config/reports.py`의 `TOC_REGION_ITEMS`에서 시도명이 "서 울", "부 산" 등으로 띄어쓰기 포함되어 정의됨
+  - `templates/toc_template.html`의 CSS에서 `letter-spacing: 3px`로 설정되어 있어 띄어쓰기 없이도 간격이 생김
+  - 정답 이미지(`correct_answer/요약/목차.png`)에서는 시도명이 띄어쓰기 없이 표시됨
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "목차가 다음과 같이 잘못만들어집니다"라고 제보
+  - 정답 이미지 확인: `correct_answer/요약/목차.png` 파일 분석
+    - 시도별 항목이 "서울", "부산", "대구" 등으로 띄어쓰기 없이 표시됨
+    - 현재 코드는 "서 울", "부 산" 등으로 띄어쓰기 포함
+  - 코드 분석:
+    - `config/reports.py`의 `TOC_REGION_ITEMS` 확인 → 띄어쓰기 포함
+    - `templates/toc_template.html`의 CSS 확인 → `letter-spacing: 3px` 설정
+  - 해결책 결정:
+    1. `TOC_REGION_ITEMS`의 시도명에서 띄어쓰기 제거
+    2. CSS의 `letter-spacing`을 `normal`로 변경하여 정답 이미지와 일치하도록 수정
+- **해결 방법**: 
+  1. `config/reports.py` 수정:
+     - `TOC_REGION_ITEMS`의 모든 시도명에서 띄어쓰기 제거
+     - "서 울" → "서울", "부 산" → "부산" 등으로 변경
+  2. `templates/toc_template.html` 수정:
+     - `.toc-region-item .title`의 `letter-spacing: 3px` → `letter-spacing: normal`로 변경
+- **관련 파일**: 
+  - `config/reports.py` (수정)
+  - `templates/toc_template.html` (수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 정답 이미지 기준으로 시도명은 띄어쓰기 없이 표시되어야 함
+  - 목차 구조는 정답 이미지와 일치: 요약(1), 부문별(7개), 시도별(17개), 참고(1), 통계표(1), 부록(1)
+
+### 2026-01-04
+
 #### 발표자료 페이지 수 정확히 표기 및 정성적 판단 필요 부분 병기
 - **시간**: 2026-01-04
 - **문제 설명**: 
@@ -1089,14 +1182,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 17
-- 완료: 17
+- 총 항목: 18
+- 완료: 18
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-04 (목차 페이지 번호 동적 계산 기능)
+- 마지막 업데이트: 2026-01-04 (목차 시도명 띄어쓰기 제거 및 표시 형식 수정)
 
 ---
 
