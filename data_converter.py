@@ -939,7 +939,8 @@ class DataConverter:
                 'construction': construction_contrib,
                 'service': service_contrib,
                 'other': other_contrib,
-                'placeholder': False
+                'placeholder': False,
+                'needs_review': False
             }
             
             if region == '전국':
@@ -970,7 +971,8 @@ class DataConverter:
                     'service': national_data.get('service', 0.0),
                     'other': national_data.get('other', 0.0),
                 },
-                'placeholder': False
+                'placeholder': False,
+                'needs_review': False
             },
             'top_region': {
                 'name': top_region.get('region', '-'),
@@ -981,7 +983,8 @@ class DataConverter:
                     'service': top_region.get('service', 0.0),
                     'other': top_region.get('other', 0.0),
                 },
-                'placeholder': False
+                'placeholder': False,
+                'needs_review': False
             },
             'regional_data': regional_data,
             'chart_config': {
@@ -990,7 +993,9 @@ class DataConverter:
                     'max': 8,
                     'step': 2
                 }
-            }
+            },
+            'needs_review': False,
+            'data_missing': False
         }
     
     def _safe_float(self, val) -> float:
@@ -1009,7 +1014,7 @@ class DataConverter:
         return round(((current - prev) / total_prev) * 100, 1)
     
     def _get_placeholder_grdp(self) -> Dict:
-        """플레이스홀더 GRDP 데이터"""
+        """플레이스홀더 GRDP 데이터 (기본값 기여율 사용)"""
         regional_data = []
         region_groups = {
             '서울': '경인', '인천': '경인', '경기': '경인',
@@ -1019,17 +1024,51 @@ class DataConverter:
             '부산': '동남', '울산': '동남', '경남': '동남',
         }
         
+        # 기본 기여율 로드 시도
+        default_contributions = None
+        try:
+            default_contrib_path = Path(__file__).parent / 'templates' / 'default_contributions.json'
+            if default_contrib_path.exists():
+                with open(default_contrib_path, 'r', encoding='utf-8') as f:
+                    default_contributions = json.load(f)
+        except Exception as e:
+            print(f"[GRDP] 기본 기여율 로드 실패: {e}")
+        
         for region in self.REGIONS_ORDER:
-            regional_data.append({
-                'region': region,
-                'region_group': region_groups.get(region, ''),
-                'growth_rate': 0.0,
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0,
-                'placeholder': True
-            })
+            if default_contributions and region != '전국':
+                region_contrib = default_contributions.get('regional', {}).get(region, {})
+                regional_data.append({
+                    'region': region,
+                    'region_group': region_groups.get(region, ''),
+                    'growth_rate': region_contrib.get('growth_rate', 0.0),
+                    'manufacturing': region_contrib.get('manufacturing', 0.0),
+                    'construction': region_contrib.get('construction', 0.0),
+                    'service': region_contrib.get('service', 0.0),
+                    'other': region_contrib.get('other', 0.0),
+                    'placeholder': True,
+                    'needs_review': True
+                })
+            else:
+                regional_data.append({
+                    'region': region,
+                    'region_group': region_groups.get(region, ''),
+                    'growth_rate': 0.0,
+                    'manufacturing': 0.0,
+                    'construction': 0.0,
+                    'service': 0.0,
+                    'other': 0.0,
+                    'placeholder': True,
+                    'needs_review': True
+                })
+        
+        # 전국 기여율 기본값
+        national_growth = 0.0
+        national_contributions = {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
+        
+        if default_contributions:
+            national = default_contributions.get('national', {})
+            national_growth = national.get('growth_rate', 0.0)
+            national_contributions = national.get('contributions', national_contributions)
         
         return {
             'report_info': {
@@ -1038,15 +1077,11 @@ class DataConverter:
                 'page_number': 20
             },
             'national_summary': {
-                'growth_rate': 0.0,
-                'direction': '증가',
-                'contributions': {
-                    'manufacturing': 0.0,
-                    'construction': 0.0,
-                    'service': 0.0,
-                    'other': 0.0,
-                },
-                'placeholder': True
+                'growth_rate': national_growth,
+                'direction': '증가' if national_growth >= 0 else '감소',
+                'contributions': national_contributions,
+                'placeholder': True,
+                'needs_review': True
             },
             'top_region': {
                 'name': '-',
@@ -1057,7 +1092,8 @@ class DataConverter:
                     'service': 0.0,
                     'other': 0.0,
                 },
-                'placeholder': True
+                'placeholder': True,
+                'needs_review': True
             },
             'regional_data': regional_data,
             'chart_config': {
@@ -1066,7 +1102,9 @@ class DataConverter:
                     'max': 8,
                     'step': 2
                 }
-            }
+            },
+            'needs_review': True,
+            'data_missing': True
         }
     
     def save_grdp_json(self, output_path: str) -> Dict:

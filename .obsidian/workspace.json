@@ -185,6 +185,7 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
+    "docs/QA_PRACTICE_GUIDE.md",
     "templates/default_contributions.json",
     "QUICK_FIX.md",
     "vercel-requirements.txt",
@@ -197,7 +198,6 @@
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/WHEEL",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/REQUESTED",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/RECORD",
-    "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/INSTALLER",
     "VENV/lib/python3.13/site-packages/httpx-0.28.1.dist-info/licenses/LICENSE.md",
     "VENV/lib/python3.13/site-packages/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
     "docs/NOTION_UPLOAD_GUIDE.md",

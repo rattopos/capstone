@@ -83,7 +83,12 @@ from services.report_generator import (
     generate_statistics_report_html,
     generate_individual_statistics_html
 )
-from services.grdp_service import get_kosis_grdp_download_info, parse_kosis_grdp_file
+from services.grdp_service import (
+    get_kosis_grdp_download_info, 
+    parse_kosis_grdp_file,
+    get_default_grdp_data,
+    save_extracted_contributions
+)
 from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
 from data_converter import DataConverter
 import openpyxl
@@ -358,9 +363,10 @@ def upload_excel():
             }
         })
     
-    # ===== 프로세스 1: 기초자료 수집표 → 분석표 생성 =====
+    # ===== 프로세스 1: 기초자료 수집표 → 내부 분석표 생성 → 바로 보도자료 생성 =====
     print(f"\n{'='*50}")
     print(f"[프로세스 1] 기초자료 수집표 업로드: {filename}")
+    print(f"  → 내부 분석표 자동 생성 + 바로 보도자료 생성 가능")
     print(f"{'='*50}")
     
     try:
@@ -368,7 +374,62 @@ def upload_excel():
         year = converter.year
         quarter = converter.quarter
         
-        # 분석표 파일명 (다운로드 시 생성)
+        # 내부적으로 분석표 생성 (보도자료 생성에 사용)
+        analysis_output = str(UPLOAD_FOLDER / f"분석표_{year}년_{quarter}분기_자동생성.xlsx")
+        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
+        
+        print(f"[변환] 내부 분석표 생성 완료: {analysis_path}")
+        
+        # 수식 계산 전처리
+        processed_path, preprocess_success, preprocess_msg = preprocess_excel(analysis_path)
+        if preprocess_success:
+            print(f"[전처리] 성공: {preprocess_msg}")
+            analysis_path = processed_path
+        
+        # GRDP 데이터 추출 시도
+        has_grdp = False
+        grdp_data = None
+        grdp_sheet_found = None
+        needs_review = True  # 기여율 수정 필요 여부
+        
+        # 1. 기초자료에서 GRDP 추출 시도
+        try:
+            grdp_data = converter.extract_grdp_data()
+            if grdp_data and not grdp_data.get('national_summary', {}).get('placeholder', True):
+                has_grdp = True
+                needs_review = False
+                print(f"[GRDP] 기초자료에서 GRDP 추출 성공 - 전국: {grdp_data['national_summary']['growth_rate']}%")
+                # 추출된 기여율 저장
+                save_extracted_contributions(grdp_data)
+        except Exception as e:
+            print(f"[GRDP] 기초자료에서 GRDP 추출 실패: {e}")
+        
+        # 2. 분석표에서 GRDP 시트 확인
+        if not has_grdp:
+            try:
+                grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
+                wb = openpyxl.load_workbook(analysis_path, read_only=True, data_only=True)
+                
+                for sheet_name in grdp_sheet_names:
+                    if sheet_name in wb.sheetnames:
+                        has_grdp = True
+                        grdp_sheet_found = sheet_name
+                        grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
+                        if grdp_data:
+                            needs_review = grdp_data.get('needs_review', True)
+                            print(f"[GRDP] 분석표에서 GRDP 추출 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
+                        break
+                wb.close()
+            except Exception as e:
+                print(f"[경고] GRDP 시트 확인 실패: {e}")
+        
+        # 3. GRDP 데이터가 없으면 기본값 사용
+        if grdp_data is None:
+            grdp_data = get_default_grdp_data(year, quarter, use_default_contributions=True)
+            needs_review = True
+            print(f"[GRDP] 기본값 사용 (기여율 수정 필요)")
+        
+        # 분석표 파일명 (다운로드용)
         analysis_filename = f"분석표_{year}년_{quarter}분기_자동생성.xlsx"
         
         conversion_info = {
@@ -378,7 +439,7 @@ def upload_excel():
             'quarter': quarter
         }
         
-        print(f"[결과] 분석표 다운로드 준비 완료: {analysis_filename}")
+        print(f"[결과] 보도자료 생성 준비 완료")
         
     except Exception as e:
         import traceback
@@ -389,25 +450,46 @@ def upload_excel():
             'error': f'기초자료 처리 중 오류가 발생했습니다: {str(e)}'
         })
     
-    # 세션에 저장 (파일 수정 시간 포함)
+    # 세션에 저장 (분석표 경로 포함!)
     session['raw_excel_path'] = str(filepath)
+    session['excel_path'] = analysis_path  # 내부 생성된 분석표 경로
     session['year'] = year
     session['quarter'] = quarter
-    session['file_type'] = 'raw'
+    session['file_type'] = 'raw_with_analysis'  # 기초자료+내부분석표
+    
+    if grdp_data:
+        session['grdp_data'] = grdp_data
+        # JSON 파일로도 저장
+        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+        try:
+            with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[경고] GRDP JSON 저장 실패: {e}")
+    
     try:
         session['raw_file_mtime'] = Path(filepath).stat().st_mtime
     except OSError:
-        pass  # 파일 시간 확인 실패는 무시
+        pass
     
     return jsonify({
         'success': True,
         'filename': filename,
-        'file_type': 'raw',
+        'file_type': 'raw_with_analysis',  # 바로 보도자료 생성 가능
         'year': year,
         'quarter': quarter,
         'reports': REPORT_ORDER,
         'regional_reports': REGIONAL_REPORTS,
-        'conversion_info': conversion_info
+        'conversion_info': conversion_info,
+        'has_grdp': has_grdp,
+        'grdp_sheet': grdp_sheet_found,
+        'needs_grdp': not has_grdp,
+        'needs_review': needs_review,  # 기여율 수정 필요 여부
+        'preprocessing': {
+            'success': preprocess_success if 'preprocess_success' in dir() else True,
+            'message': preprocess_msg if 'preprocess_msg' in dir() else '분석표 생성 완료',
+            'method': get_recommended_method()
+        }
     })
 
 

@@ -97,7 +97,7 @@ class StatisticsTableGenerator:
             "기초자료_시작_행": 3,  # 데이터 시작 행 (전국 계)
             "기초자료_행_간격": 7,  # 각 지역별 7행 (계, 20-29세, 30-39세, 40-49세, 50-59세, 60-69세, 70세이상)
             "단위": "[%]",  # 절대값 (전년동기비 아님)
-            "총지수_식별": {"컬럼": 3, "값": "계"},
+            "총지수_식별": {"컬럼": 2, "값": "0"},  # 분류단계 컬럼, 값 "0"이 전체(계)
             "지역_컬럼": 1,
             "분류단계_컬럼": 2,
             "데이터_시작_행": 3,
@@ -130,10 +130,11 @@ class StatisticsTableGenerator:
         },
         "국내인구이동": {
             "기초자료_시트": "시도 간 이동",  # 기초자료 수집표에서 직접 읽기
-            "기초자료_시작_행": 5,  # 서울 순인구이동 수 행 (전국 없음)
+            "기초자료_시작_행": 5,  # 서울 순인구이동 수 행 (전국 없음, 행 5가 첫 순인구이동 수)
             "기초자료_행_간격": 3,  # 각 지역별 3행 (유입, 유출, 순이동)
+            "기초자료_최대_행": 54,  # 첫 번째 섹션만 읽기 (행 54 이후는 중복/변환 데이터)
             "단위": "[천 명]",  # 절대값 (순이동 수, 명->천명 변환)
-            "총지수_식별": {"컬럼": 2, "값": "순인구이동 수"},  # col2가 분류
+            "총지수_식별": {"컬럼": 2, "값": "순인구이동 수"},  # col2가 분류, 순인구이동 수 행만 필터
             "지역_컬럼": 1,
             "분류단계_컬럼": 2,
             "데이터_시작_행": 5,
@@ -559,7 +560,7 @@ class StatisticsTableGenerator:
             return str(value)
     
     def _extract_from_raw_sheet_absolute(self, table_name: str, config: dict) -> Dict[str, Any]:
-        """기초자료 수집표에서 절대값 데이터 직접 추출 (실업률 등)
+        """기초자료 수집표에서 절대값 데이터 직접 추출 (실업률, 고용률, 국내인구이동 등)
         
         기초자료 수집표의 특정 시트에서 절대값 데이터를 읽습니다.
         전년동기비 계산 없이 현재 값을 그대로 사용합니다.
@@ -567,9 +568,15 @@ class StatisticsTableGenerator:
         raw_sheet = config.get("기초자료_시트")
         start_row = config.get("기초자료_시작_행", 80)
         row_interval = config.get("기초자료_행_간격", 4)
+        max_row = config.get("기초자료_최대_행")  # 최대 행 번호 (None이면 무제한)
         region_mapping = config.get("지역_매핑", {})
         year_columns = config.get("연도_컬럼", {})
         quarter_start_col = config.get("분기_시작_컬럼", 16)
+        unit_conversion = config.get("단위_변환", 1.0)  # 단위 변환 (기본값: 변환 없음)
+        exclude_nation = config.get("전국_제외", False)  # 전국 데이터 제외 여부
+        region_col = config.get("지역_컬럼", 1)  # 지역명 컬럼 인덱스
+        category_col = config.get("분류단계_컬럼", 2)  # 분류 컬럼 인덱스
+        category_value = config.get("총지수_식별", {}).get("값", "계")  # 필터링할 분류 값
         
         # 데이터 구조 초기화
         data = self._create_empty_table_data()
@@ -606,8 +613,10 @@ class StatisticsTableGenerator:
             print(f"[통계표] 기초자료 시트 로드 실패: {raw_sheet} - {e}")
             return data
         
-        # 헤더 행에서 분기 컬럼 위치 파악 (행 79가 헤더)
-        header_row_idx = start_row - 1
+        # 헤더 행에서 분기 컬럼 위치 파악
+        header_row_idx = 2  # 대부분의 시트에서 헤더는 행 2
+        if start_row > 10:  # 실업률처럼 데이터가 아래에 있는 경우
+            header_row_idx = start_row - 1
         header_row = df.iloc[header_row_idx] if header_row_idx < len(df) else None
         
         quarter_col_map = {}
@@ -616,30 +625,82 @@ class StatisticsTableGenerator:
                 header = header_row.iloc[col_idx]
                 if pd.notna(header):
                     header_str = str(header).strip()
-                    # "2017  1/4" -> "2017.1/4" 형식으로 변환
-                    match = re.match(r'(\d{4})\s*(\d)/4', header_str)
+                    # "2017  1/4" 또는 "2017. 1/4" -> "2017.1/4" 형식으로 변환
+                    match = re.match(r'(\d{4})[\s.]*(\d)/4', header_str)
                     if match:
                         year = match.group(1)
                         q = match.group(2)
                         quarter_key = f"{year}.{q}/4"
                         quarter_col_map[quarter_key] = col_idx
         
-        # 지역별 데이터 추출 (계 행만)
+        # 지역별 데이터 행 찾기
         region_rows = []  # (행 인덱스, 지역명)
-        for i in range(start_row, min(start_row + row_interval * 18, len(df)), row_interval):
-            row = df.iloc[i]
-            region_raw = row.iloc[0]
-            category = row.iloc[1]
-            
-            if pd.isna(region_raw):
-                continue
-            
-            region_str = str(region_raw).strip()
-            region = region_mapping.get(region_str, region_str)
-            
-            # "계" 행만 처리
-            if pd.notna(category) and str(category).strip() == "계" and region in self.ALL_REGIONS:
-                region_rows.append((i, region))
+        
+        # 최대 행 번호 결정
+        end_row = min(start_row + row_interval * 20, len(df))
+        if max_row is not None:
+            end_row = min(end_row, max_row)
+        
+        # 행 간격이 있는 경우 (실업률, 국내인구이동 등)
+        if row_interval > 1:
+            for i in range(start_row, end_row, row_interval):
+                if i >= len(df):
+                    break
+                row = df.iloc[i]
+                
+                # 지역명 추출
+                region_raw = row.iloc[region_col] if region_col < len(row) else None
+                if pd.isna(region_raw):
+                    # 이전 행에서 지역명 찾기 (일부 시트에서 지역명이 병합된 경우)
+                    for j in range(i-1, max(i-row_interval, -1), -1):
+                        if j >= 0 and j < len(df):
+                            prev_region = df.iloc[j, region_col] if region_col < len(df.columns) else None
+                            if pd.notna(prev_region):
+                                region_raw = prev_region
+                                break
+                
+                if pd.isna(region_raw):
+                    continue
+                
+                region_str = str(region_raw).strip()
+                region = region_mapping.get(region_str, region_str)
+                
+                # 분류 값 체크 (있는 경우)
+                if category_col < len(row):
+                    category = row.iloc[category_col]
+                    if pd.notna(category) and str(category).strip() != category_value:
+                        continue
+                
+                if region in self.ALL_REGIONS:
+                    if exclude_nation and region == "전국":
+                        continue
+                    region_rows.append((i, region))
+        else:
+            # 행 간격이 없는 경우 (고용률 등) - 분류 컬럼으로 필터링
+            for i in range(start_row, min(end_row if max_row else start_row + 200, len(df))):
+                if i >= len(df):
+                    break
+                row = df.iloc[i]
+                
+                region_raw = row.iloc[region_col] if region_col < len(row) else None
+                category = row.iloc[category_col] if category_col < len(row) else None
+                
+                if pd.isna(region_raw):
+                    continue
+                
+                region_str = str(region_raw).strip()
+                region = region_mapping.get(region_str, region_str)
+                
+                # 분류 값 체크 (category_value, "계", "0" 중 하나와 일치해야 함)
+                category_str = str(category).strip() if pd.notna(category) else ""
+                valid_categories = [category_value, "계", "0"]
+                if category_str not in valid_categories:
+                    continue
+                
+                if region in self.ALL_REGIONS:
+                    if exclude_nation and region == "전국":
+                        continue
+                    region_rows.append((i, region))
         
         # 연도별 데이터 추출
         for row_idx, region in region_rows:
@@ -650,7 +711,8 @@ class StatisticsTableGenerator:
                     value = row.iloc[col_idx]
                     if pd.notna(value) and year in data['yearly']:
                         try:
-                            data['yearly'][year][region] = round(float(value), 1)
+                            converted = float(value) * unit_conversion
+                            data['yearly'][year][region] = round(converted, 1)
                         except (ValueError, TypeError):
                             pass
         
@@ -666,7 +728,8 @@ class StatisticsTableGenerator:
                     value = row.iloc[col_idx]
                     if pd.notna(value):
                         try:
-                            data['quarterly'][quarter_key][region] = round(float(value), 1)
+                            converted = float(value) * unit_conversion
+                            data['quarterly'][quarter_key][region] = round(converted, 1)
                         except (ValueError, TypeError):
                             pass
         

@@ -110,7 +110,7 @@
             font-weight: 600;
         }
         
-        /* 플레이스홀더 (편집 가능) */
+        /* 플레이스홀더 (편집 가능) - 수정 필요 표시 */
         .placeholder {
             background-color: #fff3cd;
             border: 1px dashed #ffc107;
@@ -129,6 +129,42 @@
         .placeholder:focus {
             outline: 2px solid #ffc107;
             background-color: #fff;
+        }
+        
+        /* 수정 필요 경고 배너 */
+        .needs-review-banner {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .needs-review-banner .icon {
+            font-size: 24px;
+        }
+        
+        .needs-review-banner .message {
+            flex: 1;
+        }
+        
+        .needs-review-banner .message strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .needs-review-banner .message span {
+            color: #856404;
+            font-size: 9pt;
+        }
+        
+        /* 플레이스홀더 셀 강조 */
+        .data-table td:has(.placeholder) {
+            background-color: #fff3cd !important;
         }
         
         /* 차트 섹션 */
@@ -324,6 +360,17 @@
             <span class="header-badge">참고</span>
             <span class="header-title">{{ report_info.year }}년 {{ report_info.quarter }}/4분기 실질 지역내총생산(GRDP)</span>
         </div>
+        
+        <!-- 수정 필요 경고 (기여율이 플레이스홀더인 경우) -->
+        {% if needs_review or national_summary.placeholder or data_missing %}
+        <div class="needs-review-banner">
+            <span class="icon">⚠️</span>
+            <div class="message">
+                <strong>기여율 데이터 수정 필요</strong>
+                <span>노란색으로 표시된 값들은 기본값(추정치)입니다. 실제 데이터로 수정해 주세요. 클릭하여 직접 편집할 수 있습니다.</span>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- 요약 섹션 -->
         <div class="summary-section">

@@ -457,12 +457,20 @@ def _parse_grdp_from_values(file_path, year, quarter, regions, region_groups):
         return None
 
 
-def get_default_grdp_data(year, quarter):
-    """기본 GRDP 데이터 (KOSIS 안내 정보 포함)"""
+def get_default_grdp_data(year, quarter, use_default_contributions=True):
+    """기본 GRDP 데이터 (기본 기여율 포함)
+    
+    Args:
+        year: 연도
+        quarter: 분기
+        use_default_contributions: True면 default_contributions.json의 기본값 사용
+    
+    Returns:
+        GRDP 데이터 딕셔너리 (placeholder 플래그 포함)
+    """
     regions = ['전국', '서울', '인천', '경기', '대전', '세종', '충북', '충남',
                '광주', '전북', '전남', '제주', '대구', '경북', '강원', '부산', '울산', '경남']
     
-    regional_data = []
     region_groups = {
         '서울': '경인', '인천': '경인', '경기': '경인',
         '대전': '충청', '세종': '충청', '충북': '충청', '충남': '충청',
@@ -471,17 +479,71 @@ def get_default_grdp_data(year, quarter):
         '부산': '동남', '울산': '동남', '경남': '동남'
     }
     
+    # 기본 기여율 로드
+    default_contributions = None
+    if use_default_contributions:
+        default_contributions = load_default_contributions()
+        
+        # extracted_contributions.json이 있으면 우선 사용
+        extracted_path = Path(__file__).parent.parent / 'templates' / 'extracted_contributions.json'
+        if extracted_path.exists():
+            try:
+                with open(extracted_path, 'r', encoding='utf-8') as f:
+                    extracted = json.load(f)
+                    # extracted가 placeholder가 아닌 경우에만 사용
+                    if extracted.get('national', {}).get('is_placeholder') == False:
+                        default_contributions = extracted
+                        print(f"[GRDP] 추출된 기여율 사용: {extracted_path}")
+            except:
+                pass
+    
+    regional_data = []
+    
     for region in regions:
-        regional_data.append({
-            'region': region,
-            'region_group': region_groups.get(region, ''),
-            'growth_rate': 0.0,
-            'manufacturing': 0.0,
-            'construction': 0.0,
-            'service': 0.0,
-            'other': 0.0,
-            'placeholder': True
-        })
+        if default_contributions and region != '전국':
+            region_contrib = default_contributions.get('regional', {}).get(region, {})
+            regional_data.append({
+                'region': region,
+                'region_group': region_groups.get(region, ''),
+                'growth_rate': region_contrib.get('growth_rate', 0.0),
+                'manufacturing': region_contrib.get('manufacturing', 0.0),
+                'construction': region_contrib.get('construction', 0.0),
+                'service': region_contrib.get('service', 0.0),
+                'other': region_contrib.get('other', 0.0),
+                'placeholder': region_contrib.get('is_placeholder', True),
+                'needs_review': region_contrib.get('is_placeholder', True)  # 수정 필요 표시
+            })
+        else:
+            regional_data.append({
+                'region': region,
+                'region_group': region_groups.get(region, ''),
+                'growth_rate': 0.0,
+                'manufacturing': 0.0,
+                'construction': 0.0,
+                'service': 0.0,
+                'other': 0.0,
+                'placeholder': True,
+                'needs_review': True
+            })
+    
+    # 전국 기여율 기본값
+    national_growth = 0.0
+    national_contributions = {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
+    national_placeholder = True
+    
+    if default_contributions:
+        national = default_contributions.get('national', {})
+        national_growth = national.get('growth_rate', 0.0)
+        national_contributions = national.get('contributions', national_contributions)
+        national_placeholder = national.get('is_placeholder', True)
+    
+    # 1위 지역 찾기
+    non_national = [r for r in regional_data if r['region'] != '전국']
+    if non_national:
+        top_region = max(non_national, key=lambda x: x['growth_rate'])
+    else:
+        top_region = {'region': '-', 'growth_rate': 0.0, 'manufacturing': 0.0, 
+                     'construction': 0.0, 'service': 0.0, 'other': 0.0, 'placeholder': True}
     
     kosis_info = get_kosis_grdp_download_info()
     
@@ -492,26 +554,23 @@ def get_default_grdp_data(year, quarter):
             'page_number': ''
         },
         'national_summary': {
-            'growth_rate': 0.0,
-            'direction': '증가',
-            'contributions': {
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0
-            },
-            'placeholder': True
+            'growth_rate': national_growth,
+            'direction': '증가' if national_growth >= 0 else '감소',
+            'contributions': national_contributions,
+            'placeholder': national_placeholder,
+            'needs_review': national_placeholder
         },
         'top_region': {
-            'name': '-',
-            'growth_rate': 0.0,
+            'name': top_region.get('region', '-'),
+            'growth_rate': top_region.get('growth_rate', 0.0),
             'contributions': {
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0
+                'manufacturing': top_region.get('manufacturing', 0.0),
+                'construction': top_region.get('construction', 0.0),
+                'service': top_region.get('service', 0.0),
+                'other': top_region.get('other', 0.0)
             },
-            'placeholder': True
+            'placeholder': top_region.get('placeholder', True),
+            'needs_review': top_region.get('placeholder', True)
         },
         'regional_data': regional_data,
         'chart_config': {
@@ -522,6 +581,7 @@ def get_default_grdp_data(year, quarter):
             }
         },
         'kosis_info': kosis_info,
-        'data_missing': True
+        'data_missing': national_placeholder,
+        'needs_review': national_placeholder  # 전체 데이터가 수정 필요한지 표시
     }
 
