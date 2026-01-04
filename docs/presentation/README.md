@@ -6,12 +6,28 @@
 
 ```
 presentation/
-├── README.md                    # 이 파일 (전체 가이드)
-├── presentation_structure.md    # 발표 구조 및 시간 배분
-├── key_cards_template.md        # 슬라이드별 핵심 카드 템플릿
-├── expected_qa.md              # 예상 Q&A 리스트
-└── practice_checklist.md        # 일주일간 연습 체크리스트
+├── README.md                       # 이 파일 (전체 가이드)
+├── presentation_structure.md       # 발표 구조 및 시간 배분
+├── rule_based_implementation.md    # ⭐ 규칙기반 구현 상세 (가장 중요!)
+├── module_explanation.md           # 모듈별 역할 및 구현 방법
+├── key_cards_template.md           # 슬라이드별 핵심 카드 템플릿
+├── expected_qa.md                  # 예상 Q&A 리스트
+├── tough_questions.md              # 까다로운 질문 대비
+├── challenges.md                   # 개발 과정의 도전과 해결
+├── config_explanation.md           # 설정 파일 설명
+├── day_by_day_guide.md            # 일별 발표 연습 가이드
+└── practice_checklist.md           # 일주일간 연습 체크리스트
 ```
+
+### ⭐ 핵심 문서: 규칙기반 구현
+
+**`rule_based_implementation.md`**는 발표의 가장 중요한 내용입니다.
+
+포함 내용:
+- 왜 규칙기반을 선택했는가? (LLM vs 규칙기반)
+- 3계층 구조 (Generator → Schema → Template)
+- 매핑 규칙, 계산 규칙, 정렬 규칙, 텍스트 생성 규칙
+- 코드 예시 및 발표 시나리오
 
 ## 사용 방법
 

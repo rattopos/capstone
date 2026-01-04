@@ -951,18 +951,25 @@ def generate_all_regional_reports():
 
 @api_bp.route('/export-final', methods=['POST'])
 def export_final_document():
-    """모든 보도자료를 PDF 출력용 HTML 문서로 합치기"""
+    """모든 보도자료를 HTML 문서로 합치기 (standalone 옵션 지원)"""
     try:
         data = request.get_json()
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
+        standalone = data.get('standalone', False)  # 완전한 standalone HTML 여부
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
         
         # 모든 페이지의 스타일 수집
         all_styles = set()
+        
+        # standalone 모드: 외부 의존성 없는 완전한 HTML
+        # 일반 모드: 외부 폰트 사용
+        font_style = ''
+        if not standalone:
+            font_style = "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');"
         
         final_html = f'''<!DOCTYPE html>
 <html lang="ko">
@@ -971,7 +978,7 @@ def export_final_document():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{year}년 {quarter}/4분기 지역경제동향</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        {font_style}
         
         * {{
             margin: 0;
@@ -985,7 +992,7 @@ def export_final_document():
         }}
         
         body {{
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', '나눔고딕', 'NanumGothic', sans-serif;
         }}
         
         /* PDF 출력용 페이지 스타일 */
@@ -1026,6 +1033,13 @@ def export_final_document():
             text-align: center;
             font-size: 9pt;
             color: #333;
+        }}
+        
+        /* 변환된 차트 이미지 스타일 */
+        img[data-converted-from="canvas"] {{
+            max-width: 100%;
+            height: auto;
+            display: block;
         }}
         
         /* 화면 미리보기용 */
@@ -1072,8 +1086,8 @@ def export_final_document():
                 page-break-after: auto;
             }}
             
-            /* 차트 색상 유지 */
-            canvas {{
+            /* 이미지 색상 유지 */
+            img {{
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }}
@@ -1102,14 +1116,69 @@ def export_final_document():
             font-weight: 600;
         }}
         
-        /* 차트 크기 조정 */
+        /* 차트 이미지 크기 조정 */
         .chart-container, .chart-wrapper {{
             max-width: 100%;
+            overflow: hidden;
         }}
         
-        canvas {{
-            max-width: 100% !important;
-            height: auto !important;
+        .chart-container img, .chart-wrapper img {{
+            max-width: 100%;
+            height: auto;
+        }}
+        
+        /* A4 최적화 - 이미지 리사이징 */
+        img {{
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }}
+        
+        /* A4 최적화 - 표 리사이징 */
+        table {{
+            width: 100%;
+            table-layout: fixed;
+            font-size: 8pt;
+            word-wrap: break-word;
+        }}
+        
+        th, td {{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: keep-all;
+        }}
+        
+        /* A4 최적화 - 콘텐츠 영역 */
+        .pdf-page-content {{
+            width: 180mm;
+            max-width: 180mm;
+        }}
+        
+        .pdf-page-content img {{
+            max-width: 180mm;
+            max-height: 240mm;
+        }}
+        
+        .pdf-page-content table {{
+            max-width: 180mm;
+        }}
+        
+        /* A4 최적화 - SVG 리사이징 */
+        svg {{
+            max-width: 100%;
+            height: auto;
+        }}
+        
+        /* 큰 요소 overflow 방지 */
+        .pdf-page-content > * {{
+            max-width: 100%;
+            overflow: hidden;
+        }}
+        
+        /* 그래프/차트 컨테이너 */
+        .chart-area, .graph-container {{
+            max-width: 100%;
+            overflow: hidden;
         }}
     </style>
 '''
@@ -1118,13 +1187,15 @@ def export_final_document():
         for idx, page in enumerate(pages):
             page_html = page.get('html', '')
             if '<style' in page_html:
-                import re
                 style_matches = re.findall(r'<style[^>]*>(.*?)</style>', page_html, re.DOTALL)
                 for style in style_matches:
                     # 중복 방지를 위해 hash 사용
                     style_hash = hash(style.strip())
                     if style_hash not in all_styles:
                         all_styles.add(style_hash)
+                        # standalone 모드에서는 외부 폰트 import 제거
+                        if standalone:
+                            style = re.sub(r'@import\s+url\([^)]+\);?', '', style)
                         final_html += f'    <style>/* Page {idx+1} styles */\n{style}\n    </style>\n'
         
         final_html += '''</head>
@@ -1138,14 +1209,16 @@ def export_final_document():
             # body 내용 추출
             body_content = page_html
             if '<body' in page_html.lower():
-                import re
                 body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
                 if body_match:
                     body_content = body_match.group(1)
             
-            # 내용에서 style 태그 제거 (이미 head에 추가됨)
-            import re
+            # 내용에서 style, script 태그 제거 (이미 head에 추가됨)
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
+            
+            # standalone 모드에서는 script 태그도 제거 (Chart.js 등 불필요)
+            if standalone:
+                body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
             
             # 페이지 래퍼 추가
             final_html += f'''
@@ -1158,7 +1231,20 @@ def export_final_document():
     </div>
 '''
         
-        final_html += '''
+        # standalone 모드에서는 최소한의 스크립트만 추가
+        if standalone:
+            final_html += '''
+    <script>
+        // 인쇄 전 준비
+        window.onbeforeprint = function() {
+            document.body.style.background = 'white';
+        };
+        console.log('이 HTML 파일은 오프라인에서도 사용 가능합니다.');
+        console.log('PDF 저장: Ctrl+P (또는 Cmd+P) → "PDF로 저장" 선택');
+    </script>
+'''
+        else:
+            final_html += '''
     <script>
         // 인쇄 전 준비
         window.onbeforeprint = function() {
@@ -1168,11 +1254,18 @@ def export_final_document():
         // Ctrl+P로 PDF 저장 안내
         console.log('PDF 저장: Ctrl+P (또는 Cmd+P) → "PDF로 저장" 선택');
     </script>
-</body>
+'''
+        
+        final_html += '''</body>
 </html>
 '''
         
-        output_filename = f'지역경제동향_{year}년_{quarter}분기_PDF용.html'
+        # 파일명 설정
+        if standalone:
+            output_filename = f'지역경제동향_{year}년_{quarter}분기.html'
+        else:
+            output_filename = f'지역경제동향_{year}년_{quarter}분기_PDF용.html'
+        
         output_path = UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -1183,9 +1276,209 @@ def export_final_document():
             'html': final_html,
             'filename': output_filename,
             'download_url': f'/uploads/{output_filename}',
-            'total_pages': len(pages)
+            'total_pages': len(pages),
+            'standalone': standalone
         })
         
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@api_bp.route('/export-xlsx', methods=['POST'])
+def export_xlsx_document():
+    """모든 보도자료를 XLSX 파일로 내보내기"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+        from openpyxl.utils.dataframe import dataframe_to_rows
+        from openpyxl.chart import BarChart, LineChart, Reference
+        from openpyxl.drawing.image import Image as XLImage
+        from bs4 import BeautifulSoup
+        import io
+        import base64
+        from PIL import Image as PILImage
+        
+        data = request.get_json()
+        pages = data.get('pages', [])
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 워크북 생성
+        wb = Workbook()
+        wb.remove(wb.active)  # 기본 시트 제거
+        
+        # 스타일 정의
+        header_font = Font(bold=True, size=11)
+        header_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        
+        image_counter = 0
+        
+        for idx, page in enumerate(pages, 1):
+            page_html = page.get('html', '')
+            page_title = page.get('title', f'페이지{idx}')
+            category = page.get('category', 'unknown')
+            
+            # 시트 이름 (최대 31자, 특수문자 제거)
+            sheet_name = re.sub(r'[\\/*?:\[\]]', '', page_title)[:31]
+            if sheet_name in [ws.title for ws in wb.worksheets]:
+                sheet_name = f"{sheet_name[:28]}_{idx}"
+            
+            ws = wb.create_sheet(title=sheet_name)
+            
+            # HTML 파싱
+            soup = BeautifulSoup(page_html, 'html.parser')
+            
+            current_row = 1
+            
+            # 제목 추가
+            ws.cell(row=current_row, column=1, value=page_title)
+            ws.cell(row=current_row, column=1).font = Font(bold=True, size=14)
+            ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=10)
+            current_row += 2
+            
+            # 표 추출 및 변환
+            tables = soup.find_all('table')
+            for table in tables:
+                # 표 제목 찾기 (이전 요소에서)
+                table_title = None
+                prev = table.find_previous(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div'])
+                if prev and prev.get_text(strip=True):
+                    table_title = prev.get_text(strip=True)[:100]
+                
+                if table_title:
+                    ws.cell(row=current_row, column=1, value=table_title)
+                    ws.cell(row=current_row, column=1).font = Font(bold=True, size=11)
+                    current_row += 1
+                
+                # 표 데이터 추출
+                rows = table.find_all('tr')
+                for row_idx, tr in enumerate(rows):
+                    cells = tr.find_all(['th', 'td'])
+                    for col_idx, cell in enumerate(cells, 1):
+                        cell_text = cell.get_text(strip=True)
+                        
+                        # 숫자 변환 시도
+                        try:
+                            if '.' in cell_text:
+                                cell_value = float(cell_text.replace(',', '').replace('%', ''))
+                            elif cell_text.replace(',', '').replace('-', '').isdigit():
+                                cell_value = int(cell_text.replace(',', ''))
+                            else:
+                                cell_value = cell_text
+                        except:
+                            cell_value = cell_text
+                        
+                        excel_cell = ws.cell(row=current_row, column=col_idx, value=cell_value)
+                        excel_cell.border = thin_border
+                        excel_cell.alignment = center_align
+                        
+                        # 헤더 스타일
+                        if cell.name == 'th' or row_idx == 0:
+                            excel_cell.font = header_font
+                            excel_cell.fill = header_fill
+                        
+                        # colspan 처리
+                        colspan = int(cell.get('colspan', 1))
+                        if colspan > 1:
+                            ws.merge_cells(
+                                start_row=current_row, start_column=col_idx,
+                                end_row=current_row, end_column=col_idx + colspan - 1
+                            )
+                    
+                    current_row += 1
+                
+                current_row += 2  # 표 간 간격
+            
+            # 인포그래픽/이미지 처리 (base64 이미지)
+            images = soup.find_all('img')
+            for img in images:
+                src = img.get('src', '')
+                if src.startswith('data:image'):
+                    try:
+                        # base64 이미지 추출
+                        match = re.match(r'data:image/([^;]+);base64,(.+)', src)
+                        if match:
+                            img_format = match.group(1)
+                            img_data = base64.b64decode(match.group(2))
+                            
+                            # 이미지를 임시 파일로 저장
+                            img_buffer = io.BytesIO(img_data)
+                            pil_img = PILImage.open(img_buffer)
+                            
+                            # PNG로 변환
+                            png_buffer = io.BytesIO()
+                            pil_img.save(png_buffer, format='PNG')
+                            png_buffer.seek(0)
+                            
+                            # 엑셀에 이미지 추가
+                            xl_img = XLImage(png_buffer)
+                            
+                            # 이미지 크기 조정 (최대 너비 500px)
+                            max_width = 500
+                            if xl_img.width > max_width:
+                                ratio = max_width / xl_img.width
+                                xl_img.width = max_width
+                                xl_img.height = int(xl_img.height * ratio)
+                            
+                            ws.add_image(xl_img, f'A{current_row}')
+                            image_counter += 1
+                            
+                            # 이미지 높이만큼 행 건너뛰기
+                            rows_needed = max(1, xl_img.height // 20)
+                            current_row += rows_needed + 2
+                    except Exception as e:
+                        print(f"이미지 처리 오류: {e}")
+                        continue
+            
+            # 열 너비 자동 조정
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+        
+        # 파일 저장
+        output_filename = f'지역경제동향_{year}년_{quarter}분기.xlsx'
+        output_path = UPLOAD_FOLDER / output_filename
+        
+        wb.save(output_path)
+        
+        # 파일을 바이트로 읽어서 base64로 인코딩
+        with open(output_path, 'rb') as f:
+            xlsx_data = base64.b64encode(f.read()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'filename': output_filename,
+            'download_url': f'/uploads/{output_filename}',
+            'total_pages': len(pages),
+            'xlsx_data': xlsx_data,
+            'image_count': image_counter
+        })
+        
+    except ImportError as e:
+        return jsonify({
+            'success': False, 
+            'error': f'필요한 라이브러리가 설치되지 않았습니다: {str(e)}. pip install openpyxl pillow beautifulsoup4'
+        })
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -1345,131 +1638,183 @@ def get_industry_weights():
 
 @api_bp.route('/export-hwp-import', methods=['POST'])
 def export_hwp_import():
-    """한글 프로그램 불러오기용 HTML 문서 생성 - 차트를 이미지로 변환"""
+    """한글 프로그램에서 열 수 있는 XML/HTML 문서 생성 - 차트는 이미지로 변환됨"""
     try:
-        import base64
-        import hashlib
         from datetime import datetime
         
         data = request.get_json()
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
+        doc_format = data.get('format', 'hwp-xml')  # hwp-xml 형식
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
         
-        # 출력 폴더 및 이미지 폴더 생성
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        export_dir_name = f'지역경제동향_{year}년_{quarter}분기_한글불러오기용_{timestamp}'
-        export_dir = EXPORT_FOLDER / export_dir_name
-        export_dir.mkdir(exist_ok=True, parents=True)
-        images_dir = export_dir / 'images'
-        images_dir.mkdir(exist_ok=True)
-        
-        # 한글 불러오기용 HTML 생성
-        final_html = f'''<!DOCTYPE html>
-<html lang="ko">
+        # 한글 호환 XML/HTML 생성 (모든 이미지가 이미 Base64로 포함됨)
+        final_html = f'''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko" xml:lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 불러오기용</title>
-    <style>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="generator" content="지역경제동향 보도자료 시스템" />
+    <title>{year}년 {quarter}/4분기 지역경제동향</title>
+    <style type="text/css">
+        /* 한글 호환 기본 스타일 */
         @page {{
-            size: A4;
-            margin: 15mm 20mm;
-        }}
-        
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            size: A4 portrait;
+            margin: 20mm 15mm 20mm 15mm;
         }}
         
         body {{
-            font-family: '맑은 고딕', 'Malgun Gothic', '돋움', 'Dotum', sans-serif;
+            font-family: '맑은 고딕', 'Malgun Gothic', '바탕', 'Batang', serif;
             font-size: 10pt;
-            line-height: 1.6;
-            color: #000;
-            background: #fff;
-            width: 210mm;
-            margin: 0 auto;
+            line-height: 160%;
+            color: #000000;
+            background-color: #ffffff;
+            margin: 0;
             padding: 0;
         }}
         
-        /* A4 페이지 단위 */
-        .hwp-page {{
-            width: 210mm;
-            min-height: 297mm;
-            padding: 15mm 20mm;
-            margin: 0;
-            background: #fff;
+        /* 페이지 컨테이너 */
+        .page-container {{
+            width: 180mm;
+            margin: 0 auto;
+            padding: 10mm 0;
             page-break-after: always;
-            page-break-inside: avoid;
         }}
         
-        .hwp-page:last-child {{
+        .page-container:last-child {{
             page-break-after: auto;
         }}
         
-        /* 표 스타일 (한글 호환) */
+        /* 제목 스타일 */
+        h1 {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #000000;
+            margin: 0 0 15px 0;
+            padding: 0;
+            line-height: 140%;
+        }}
+        
+        h2 {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 14pt;
+            font-weight: bold;
+            color: #000000;
+            margin: 20px 0 10px 0;
+            padding: 8px 10px;
+            background-color: #f0f0f0;
+            border-left: 4px solid #0066cc;
+        }}
+        
+        h3 {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 12pt;
+            font-weight: bold;
+            color: #000000;
+            margin: 15px 0 8px 0;
+        }}
+        
+        h4 {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000000;
+            margin: 10px 0 5px 0;
+        }}
+        
+        /* 문단 스타일 */
+        p {{
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 10pt;
+            margin: 5px 0;
+            line-height: 160%;
+            text-align: justify;
+        }}
+        
+        /* 표 스타일 - 한글 완벽 호환 */
         table {{
             border-collapse: collapse;
             width: 100%;
             margin: 10px 0;
             font-size: 9pt;
-            border: 1px solid #000;
-        }}
-        
-        th, td {{
-            border: 1px solid #000;
-            padding: 5px 8px;
-            text-align: center;
-            vertical-align: middle;
+            border: 1px solid #000000;
+            table-layout: fixed;
         }}
         
         th {{
+            border: 1px solid #000000;
+            padding: 6px 4px;
+            text-align: center;
+            vertical-align: middle;
             background-color: #d9d9d9;
             font-weight: bold;
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
         }}
         
-        /* 차트 이미지 스타일 */
-        .chart-image {{
-            display: block;
+        td {{
+            border: 1px solid #000000;
+            padding: 5px 4px;
+            text-align: center;
+            vertical-align: middle;
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+        }}
+        
+        /* 이미지 스타일 - 원본 비율 유지 */
+        img {{
             max-width: 100%;
             height: auto;
+            display: block;
             margin: 10px auto;
-            border: 1px solid #ddd;
         }}
         
-        /* 제목 스타일 */
-        h1, h2, h3, h4 {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            margin: 15px 0 10px 0;
+        .chart-image-converted, .svg-image-converted {{
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            display: block;
+            margin: 10px auto;
         }}
         
-        h1 {{ font-size: 16pt; font-weight: bold; }}
-        h2 {{ font-size: 14pt; font-weight: bold; }}
-        h3 {{ font-size: 12pt; font-weight: bold; }}
-        h4 {{ font-size: 11pt; font-weight: bold; }}
-        
-        p {{
-            margin: 5px 0;
-            line-height: 1.6;
+        /* 리스트 스타일 */
+        ul, ol {{
+            margin: 10px 0 10px 20px;
+            padding: 0;
         }}
         
-        /* 페이지 구분선 */
-        .page-divider {{
-            border-top: 2px solid #333;
-            margin: 20px 0;
-            padding-top: 20px;
+        li {{
+            margin: 3px 0;
+            line-height: 160%;
+        }}
+        
+        /* 페이지 번호 */
+        .page-number {{
+            text-align: center;
+            font-size: 9pt;
+            color: #666666;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #cccccc;
+        }}
+        
+        /* 인쇄 스타일 */
+        @media print {{
+            body {{
+                background-color: #ffffff;
+            }}
+            .page-container {{
+                page-break-after: always;
+            }}
         }}
     </style>
 </head>
 <body>
 '''
         
-        # 페이지 처리 (Canvas를 이미지 플레이스홀더로 대체)
+        # 각 페이지 처리
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
             page_title = page.get('title', f'페이지 {idx}')
@@ -1482,50 +1827,22 @@ def export_hwp_import():
                 if body_match:
                     body_content = body_match.group(1)
             
-            # 스타일, 스크립트, link, meta 태그 제거
+            # 불필요한 태그 제거
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
-            body_content = re.sub(r'<link[^>]*>', '', body_content)
-            body_content = re.sub(r'<meta[^>]*>', '', body_content)
+            body_content = re.sub(r'<link[^>]*/?>', '', body_content)
+            body_content = re.sub(r'<meta[^>]*/?>', '', body_content)
+            body_content = re.sub(r'<!DOCTYPE[^>]*>', '', body_content)
+            body_content = re.sub(r'<html[^>]*>', '', body_content)
+            body_content = re.sub(r'</html>', '', body_content)
+            body_content = re.sub(r'<head[^>]*>.*?</head>', '', body_content, flags=re.DOTALL)
             
-            # Canvas를 이미지 플레이스홀더로 대체
-            # Canvas ID나 클래스를 기반으로 이미지 경로 생성
-            canvas_pattern = r'<canvas[^>]*id=["\']([^"\']+)["\'][^>]*>.*?</canvas>'
-            canvas_matches = list(re.finditer(canvas_pattern, body_content, re.DOTALL))
+            # 남아있는 canvas 태그 제거 (이미 이미지로 변환되었어야 함)
+            body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', '', body_content, flags=re.DOTALL)
+            body_content = re.sub(r'<canvas[^>]*/?>',  '', body_content)
             
-            for match in reversed(canvas_matches):  # 역순으로 처리하여 인덱스 유지
-                canvas_id = match.group(1)
-                # 이미지 파일명 생성 (페이지 번호 + 캔버스 ID)
-                image_filename = f'page{idx}_{canvas_id}.png'
-                image_path = f'images/{image_filename}'
-                
-                # Canvas를 <img> 태그로 대체
-                img_tag = f'<img src="{image_path}" alt="차트: {canvas_id}" class="chart-image" style="max-width: 100%; height: auto;" />'
-                body_content = body_content[:match.start()] + img_tag + body_content[match.end():]
-            
-            # 이름 없는 Canvas도 처리
-            body_content = re.sub(
-                r'<canvas[^>]*>.*?</canvas>',
-                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
-                body_content,
-                flags=re.DOTALL
-            )
-            body_content = re.sub(
-                r'<canvas[^>]*/?>',
-                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
-                body_content
-            )
-            
-            # SVG도 이미지로 대체
-            body_content = re.sub(
-                r'<svg[^>]*>.*?</svg>',
-                '<img src="images/placeholder_chart.png" alt="차트" class="chart-image" style="max-width: 100%; height: auto;" />',
-                body_content,
-                flags=re.DOTALL
-            )
-            
-            # 표에 인라인 스타일 추가 (한글 호환성)
-            body_content = _add_table_inline_styles(body_content)
+            # 표에 인라인 스타일 강화 (한글 완벽 호환)
+            body_content = _add_hwp_compatible_styles(body_content)
             
             # 카테고리 한글명
             category_names = {
@@ -1539,207 +1856,118 @@ def export_hwp_import():
             # 페이지 래퍼 추가
             final_html += f'''
     <!-- 페이지 {idx}: {page_title} -->
-    <div class="hwp-page">
-        <h2 style="font-size: 14pt; font-weight: bold; margin-bottom: 15px; padding: 8px 12px; background-color: #e8e8e8; border-left: 4px solid #0066cc;">
-            [{category_name}] {page_title}
-        </h2>
+    <div class="page-container">
+        <h2>[{category_name}] {page_title}</h2>
         {body_content}
-        <div class="page-divider"></div>
-        <p style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">- {idx} / {len(pages)} -</p>
+        <p class="page-number">- {idx} / {len(pages)} -</p>
     </div>
 '''
         
-        # Canvas를 이미지로 변환하는 스크립트 추가 (Chart.js 포함)
         final_html += '''
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script>
-        // Chart.js가 로드될 때까지 대기
-        let chartInstances = {};
-        let conversionComplete = false;
-        
-        // Canvas를 이미지로 변환하는 함수
-        function convertCanvasToImage() {
-            if (conversionComplete) return;
-            
-            const canvases = document.querySelectorAll('canvas');
-            if (canvases.length === 0) {
-                console.log('변환할 Canvas가 없습니다.');
-                // Canvas가 없으면 이미 모두 이미지로 변환된 것으로 간주
-                conversionComplete = true;
-                return;
-            }
-            
-            console.log(`${canvases.length}개의 Canvas를 찾았습니다.`);
-            let convertedCount = 0;
-            
-            canvases.forEach(function(canvas, index) {
-                try {
-                    // Canvas가 실제로 그려졌는지 확인
-                    const ctx = canvas.getContext('2d');
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const isBlank = imageData.data.every(function(pixel) {
-                        return pixel === 0; // 투명 또는 검은색만 있으면 빈 Canvas
-                    });
-                    
-                    if (isBlank && canvas.width > 0 && canvas.height > 0) {
-                        console.log(`Canvas ${canvas.id || index}가 비어있습니다. 잠시 후 다시 시도합니다.`);
-                        return; // 아직 렌더링 중
-                    }
-                    
-                    // Canvas를 이미지로 변환 (Base64)
-                    const imageDataUrl = canvas.toDataURL('image/png', 1.0);
-                    
-                    // Base64를 Blob으로 변환
-                    const blob = base64ToBlob(imageDataUrl);
-                    
-                    // 다운로드 링크 생성
-                    const canvasId = canvas.id || `canvas_${index}`;
-                    const filename = `${canvasId}.png`;
-                    downloadBlob(blob, filename);
-                    
-                    // Canvas를 <img> 태그로 대체
-                    const img = document.createElement('img');
-                    img.src = imageDataUrl;
-                    img.className = 'chart-image';
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
-                    img.alt = `차트: ${canvasId}`;
-                    
-                    // 기존 Canvas의 부모 요소 찾기
-                    if (canvas.parentNode) {
-                        canvas.parentNode.replaceChild(img, canvas);
-                    }
-                    
-                    convertedCount++;
-                    console.log(`✓ ${canvasId} 변환 완료`);
-                } catch (e) {
-                    console.error(`Canvas 변환 오류 (${canvas.id || index}):`, e);
-                }
-            });
-            
-            if (convertedCount > 0) {
-                conversionComplete = true;
-                // 모든 변환 완료 후 안내
-                setTimeout(function() {
-                    alert(`Canvas 차트 ${convertedCount}개 변환 완료!\\n\\n변환된 이미지가 자동으로 다운로드되었습니다.\\n다운로드 폴더에서 images 폴더로 이동한 후 한글에서 HTML을 불러오세요.`);
-                }, 500);
-            }
-        }
-        
-        // Base64를 Blob으로 변환
-        function base64ToBlob(base64) {
-            const parts = base64.split(';base64,');
-            const contentType = parts[0].split(':')[1];
-            const raw = window.atob(parts[1]);
-            const rawLength = raw.length;
-            const uInt8Array = new Uint8Array(rawLength);
-            
-            for (let i = 0; i < rawLength; ++i) {
-                uInt8Array[i] = raw.charCodeAt(i);
-            }
-            
-            return new Blob([uInt8Array], { type: contentType });
-        }
-        
-        // Blob 다운로드
-        function downloadBlob(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        
-        // Chart.js 로드 후 차트 렌더링 및 변환
-        window.addEventListener('load', function() {
-            // 차트가 있는 경우 렌더링 대기
-            setTimeout(function() {
-                // Chart.js로 렌더링된 차트가 있으면 추가 대기
-                setTimeout(convertCanvasToImage, 3000);
-            }, 1000);
-            
-            // 수동 변환 버튼 추가
-            const btn = document.createElement('button');
-            btn.textContent = '📸 Canvas를 이미지로 변환';
-            btn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 10000; padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 10px rgba(0,0,0,0.3);';
-            btn.onclick = function() {
-                conversionComplete = false;
-                convertCanvasToImage();
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
 </body>
 </html>
 '''
         
-        # HTML 파일 저장
-        html_filename = f'지역경제동향_{year}년_{quarter}분기.html'
-        html_path = export_dir / html_filename
+        # 파일 저장
+        output_filename = f'지역경제동향_{year}년_{quarter}분기_한글용.html'
+        output_path = UPLOAD_FOLDER / output_filename
         
-        with open(html_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
-        
-        # 플레이스홀더 이미지 생성 (차트가 없는 경우를 위해)
-        placeholder_info = _create_placeholder_image(images_dir / 'placeholder_chart.png')
-        
-        # 사용 안내 파일 생성
-        readme_path = export_dir / '사용안내.txt'
-        with open(readme_path, 'w', encoding='utf-8') as f:
-            f.write(f'''한글 프로그램 불러오기용 파일
-
-생성일: {datetime.now().strftime('%Y년 %m월 %d일 %H:%M:%S')}
-연도/분기: {year}년 {quarter}분기
-
-[사용 방법]
-
-1. 한글 프로그램에서:
-   - 파일 → 불러오기 → HTML 파일 선택
-   - "{html_filename}" 파일 선택
-   
-2. 차트 이미지 변환:
-   - HTML 파일을 브라우저에서 열기
-   - Canvas 차트가 자동으로 렌더링됨
-   - 브라우저 개발자 도구에서 Canvas를 이미지로 저장
-   - 저장한 이미지를 "images" 폴더에 해당 파일명으로 저장
-   
-3. 한글에서 다시 불러오기:
-   - 이미지가 모두 준비된 후 한글에서 HTML 불러오기
-   - 차트가 이미지로 표시됩니다
-
-[폴더 구조]
-{html_filename}  ← 한글에서 불러올 메인 파일
-images/          ← 차트 이미지 폴더
-  ├── page1_chart-manufacturing.png
-  ├── page2_chart-service.png
-  └── ...
-
-[주의사항]
-- HTML 파일과 images 폴더는 같은 위치에 있어야 합니다
-- 파일을 이동할 때는 HTML 파일과 images 폴더를 함께 이동하세요
-- 한글에서 불러온 후 레이아웃을 확인하고 필요시 조정하세요
-''')
         
         return jsonify({
             'success': True,
             'html': final_html,
-            'filename': html_filename,
-            'export_dir': export_dir_name,
-            'html_path': str(html_path.relative_to(BASE_DIR)),
-            'view_url': f'/exports/{export_dir_name}/{html_filename}',
-            'download_url': f'/download-export/{export_dir_name}',
+            'filename': output_filename,
+            'download_url': f'/uploads/{output_filename}',
             'total_pages': len(pages),
-            'message': '한글 불러오기용 HTML이 생성되었습니다. 브라우저에서 열어 차트를 이미지로 변환한 후 한글에서 불러오세요.'
+            'message': '한글용 문서가 생성되었습니다. 한글에서 파일 → 불러오기로 열 수 있습니다.'
         })
         
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
+
+
+def _add_hwp_compatible_styles(html_content):
+    """한글 프로그램 완벽 호환을 위한 인라인 스타일 추가"""
+    
+    # table 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<table([^>]*)>',
+        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9pt; border: 1px solid #000000; table-layout: fixed;">',
+        html_content
+    )
+    
+    # th 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<th([^>]*)>',
+        r'<th\1 style="border: 1px solid #000000; padding: 6px 4px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
+        html_content
+    )
+    
+    # td 태그에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<td([^>]*)>',
+        r'<td\1 style="border: 1px solid #000000; padding: 5px 4px; text-align: center; vertical-align: middle; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
+        html_content
+    )
+    
+    # 제목 태그들에 인라인 스타일 추가
+    html_content = re.sub(
+        r'<h1([^>]*)>',
+        r'<h1\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 18pt; font-weight: bold; margin: 0 0 15px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h2([^>]*)>',
+        r'<h2\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 14pt; font-weight: bold; margin: 20px 0 10px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h3([^>]*)>',
+        r'<h3\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 12pt; font-weight: bold; margin: 15px 0 8px 0;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<h4([^>]*)>',
+        r'<h4\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0;">',
+        html_content
+    )
+    
+    # p 태그에 스타일 추가
+    html_content = re.sub(
+        r'<p([^>]*)>',
+        r'<p\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 10pt; margin: 5px 0; line-height: 160%;">',
+        html_content
+    )
+    
+    # img 태그에 스타일 추가 (원본 비율 유지)
+    html_content = re.sub(
+        r'<img([^>]*)>',
+        r'<img\1 style="max-width: 100%; height: auto; display: block; margin: 10px auto;">',
+        html_content
+    )
+    
+    # ul, ol 태그에 스타일 추가
+    html_content = re.sub(
+        r'<ul([^>]*)>',
+        r'<ul\1 style="margin: 10px 0 10px 20px; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<ol([^>]*)>',
+        r'<ol\1 style="margin: 10px 0 10px 20px; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
+        html_content
+    )
+    html_content = re.sub(
+        r'<li([^>]*)>',
+        r'<li\1 style="margin: 3px 0; line-height: 160%;">',
+        html_content
+    )
+    
+    return html_content
 
 
 def _create_placeholder_image(image_path):
@@ -1936,6 +2164,252 @@ def export_hwp_ready():
             'view_url': f'/view/{output_filename}',
             'download_url': f'/uploads/{output_filename}',
             'total_pages': len(pages)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@api_bp.route('/save-html-to-project', methods=['POST'])
+def save_html_to_project():
+    """HTML 보도자료를 프로젝트 메인 디렉토리에 저장"""
+    try:
+        from datetime import datetime
+        
+        data = request.get_json()
+        pages = data.get('pages', [])
+        year = data.get('year', session.get('year', 2025))
+        quarter = data.get('quarter', session.get('quarter', 2))
+        
+        if not pages:
+            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
+        
+        # 모든 페이지의 스타일 수집
+        all_styles = set()
+        
+        final_html = f'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{year}년 {quarter}/4분기 지역경제동향</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        html, body {{
+            width: 210mm;
+            background: white;
+        }}
+        
+        body {{
+            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+        }}
+        
+        /* PDF 출력용 페이지 스타일 */
+        .pdf-page {{
+            width: 210mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            padding: 12mm 15mm 15mm 15mm;
+            margin: 0 auto 5mm auto;
+            background: white;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+            page-break-inside: avoid;
+        }}
+        
+        .pdf-page:last-child {{
+            page-break-after: auto;
+            margin-bottom: 0;
+        }}
+        
+        .pdf-page-content {{
+            width: 100%;
+            height: calc(297mm - 32mm);
+            overflow: hidden;
+        }}
+        
+        .pdf-page-content > * {{
+            max-width: 100%;
+        }}
+        
+        /* 페이지 번호 */
+        .pdf-page-number {{
+            position: absolute;
+            bottom: 8mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9pt;
+            color: #333;
+        }}
+        
+        /* 화면 미리보기용 */
+        @media screen {{
+            body {{
+                background: #f0f0f0;
+                padding: 20px;
+            }}
+            
+            .pdf-page {{
+                box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+                border: 1px solid #ddd;
+            }}
+        }}
+        
+        /* 인쇄/PDF 저장용 */
+        @media print {{
+            html, body {{
+                width: 210mm;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }}
+            
+            body {{
+                padding: 0;
+                margin: 0;
+            }}
+            
+            .pdf-page {{
+                width: 210mm;
+                height: 297mm;
+                min-height: 297mm;
+                max-height: 297mm;
+                padding: 12mm 15mm 15mm 15mm;
+                margin: 0;
+                box-shadow: none;
+                border: none;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }}
+            
+            .pdf-page:last-child {{
+                page-break-after: auto;
+            }}
+            
+            /* 차트 색상 유지 */
+            canvas {{
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }}
+        }}
+        
+        @page {{
+            size: A4 portrait;
+            margin: 0;
+        }}
+        
+        /* 표 스타일 공통 */
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+        }}
+        
+        th, td {{
+            border: 1px solid #333;
+            padding: 4px 6px;
+            font-size: 9pt;
+            text-align: center;
+        }}
+        
+        th {{
+            background: #f5f5f5;
+            font-weight: 600;
+        }}
+        
+        /* 차트 크기 조정 */
+        .chart-container, .chart-wrapper {{
+            max-width: 100%;
+        }}
+        
+        canvas {{
+            max-width: 100% !important;
+            height: auto !important;
+        }}
+    </style>
+'''
+        
+        # 각 페이지에서 스타일 추출하여 추가
+        for idx, page in enumerate(pages):
+            page_html = page.get('html', '')
+            if '<style' in page_html:
+                style_matches = re.findall(r'<style[^>]*>(.*?)</style>', page_html, re.DOTALL)
+                for style in style_matches:
+                    # 중복 방지를 위해 hash 사용
+                    style_hash = hash(style.strip())
+                    if style_hash not in all_styles:
+                        all_styles.add(style_hash)
+                        final_html += f'    <style>/* Page {idx+1} styles */\n{style}\n    </style>\n'
+        
+        final_html += '''</head>
+<body>
+'''
+        
+        for idx, page in enumerate(pages, 1):
+            page_html = page.get('html', '')
+            page_title = page.get('title', f'페이지 {idx}')
+            
+            # body 내용 추출
+            body_content = page_html
+            if '<body' in page_html.lower():
+                body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
+                if body_match:
+                    body_content = body_match.group(1)
+            
+            # 내용에서 style 태그 제거 (이미 head에 추가됨)
+            body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
+            
+            # 페이지 래퍼 추가
+            final_html += f'''
+    <!-- Page {idx}: {page_title} -->
+    <div class="pdf-page" data-page="{idx}" data-title="{page_title}">
+        <div class="pdf-page-content">
+{body_content}
+        </div>
+        <div class="pdf-page-number">- {idx} -</div>
+    </div>
+'''
+        
+        final_html += '''
+    <script>
+        // 인쇄 전 준비
+        window.onbeforeprint = function() {
+            document.body.style.background = 'white';
+        };
+        
+        // Ctrl+P로 PDF 저장 안내
+        console.log('PDF 저장: Ctrl+P (또는 Cmd+P) → "PDF로 저장" 선택');
+    </script>
+</body>
+</html>
+'''
+        
+        # 프로젝트 메인 디렉토리에 저장
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_filename = f'지역경제동향_{year}년_{quarter}분기_{timestamp}.html'
+        output_path = BASE_DIR / output_filename
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
+        print(f"[HTML 저장] 프로젝트 메인 디렉토리에 저장됨: {output_path}")
+        
+        return jsonify({
+            'success': True,
+            'filename': output_filename,
+            'path': str(output_path),
+            'total_pages': len(pages),
+            'message': f'HTML 파일이 프로젝트 메인 디렉토리에 저장되었습니다: {output_filename}'
         })
         
     except Exception as e:

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅱ. 시도별 경제동향 - 서울</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-size: 10.5pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            background: #fff;
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* 대제목 헤더 */
+        .main-header {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 40px;
+            background: #e0e0e0;
+            margin-bottom: 18px;
+            letter-spacing: 3px;
+        }
+        
+        /* 지역 제목 */
+        .region-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        /* 섹션 제목 */
+        .section-title {
+            font-family: '돋움', 'Dotum', sans-serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 12px 0 8px 0;
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .section-title::before {
+            content: "□ ";
+        }
+        
+        /* 본문 항목 */
+        .item {
+            margin-bottom: 5px;
+            padding-left: 20px;
+            text-indent: -20px;
+            line-height: 1.5;
+        }
+        
+        .item::before {
+            content: "○ ";
+        }
+        
+        .item-label {
+            font-weight: bold;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase, .decrease {
+            font-weight: bold;
+        }
+        
+        /* 플레이스홀더 */
+        .placeholder {
+            background-color: #fff3cd;
+            border: 1px dashed #ffc107;
+            padding: 1px 4px;
+            border-radius: 2px;
+            color: #856404;
+            cursor: text;
+            display: inline-block;
+            min-width: 30px;
+        }
+        
+        /* 차트 컨테이너 */
+        .charts-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            gap: 15px;
+        }
+        
+        .chart-container {
+            flex: 1;
+            max-width: 48%;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-size: 9pt;
+            margin-bottom: 3px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 140px;
+            border: 1px solid #ddd;
+            padding: 8px;
+            background: #fff;
+        }
+        
+        .settings-toggle {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 1px 4px;
+            cursor: pointer;
+            font-size: 7pt;
+            border-radius: 2px;
+            z-index: 50;
+        }
+        
+        .chart-settings {
+            display: none;
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 6px;
+            border-radius: 3px;
+            z-index: 100;
+            font-size: 7pt;
+        }
+        
+        .chart-settings.visible {
+            display: block;
+        }
+        
+        .chart-settings label {
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .chart-settings input {
+            width: 50px;
+            margin-left: 3px;
+        }
+        
+        .chart-settings button {
+            margin-top: 3px;
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+        
+        /* 요약 테이블 */
+        .summary-table-container {
+            margin-top: 15px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            font-family: '돋움', 'Dotum', sans-serif;
+            margin-bottom: 5px;
+        }
+        
+        .table-subtitle {
+            text-align: right;
+            font-size: 8pt;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+        }
+        
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .summary-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
+        .summary-table thead tr:first-child th {
+            border-bottom: 1px dotted #999;
+        }
+        
+        .summary-table .period-col {
+            background-color: #f5f5f5;
+        }
+        
+        .page-number {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 15px;
+        }
+        
+        /* 인쇄 최적화 */
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .settings-toggle,
+            .chart-settings {
+                display: none !important;
+            }
+            
+            .chart-wrapper {
+                border: none;
+                background: white;
+            }
+            
+            .summary-table th {
+                background-color: #e6e0ec !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- 메인 헤더 (첫 페이지에만 표시) -->
+        
+        <div class="main-header">Ⅱ. 시도별 경제동향</div>
+        
+        
+        <!-- 지역 제목 -->
+        <div class="region-title">1. 서울</div>
+        
+        <!-- ===== 생산 섹션 ===== -->
+        <div class="section-title">생산</div>
+        
+        <div class="item">
+            <span class="item-label">(광공업 생산)</span>
+            
+            () 등에서 늘었으나, 전기·가스업, 총지수(-30.9%, -10.1%) 등에서 줄어 전년동분기대비 <span class="decrease">10.1% 감소</span>
+            
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(서비스업 생산)</span>
+            
+            전문·과학·기술, 수도, 하수 및 폐기물 처리, 원료 재생업(-5.7%, -5.2%) 등이 줄었으나, 부동산, 보건·사회복지(12.7%, 7.7%) 등이 늘어 전년동분기대비 <span class="increase">2.3% 증가</span>
+            
+        </div>
+        
+        <!-- 생산 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 광공업생산 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('manufacturing')">⚙</button>
+                    <div id="manufacturing-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="manufacturing-ymin" value="-12"></label>
+                        <label>Y축 최대: <input type="number" id="manufacturing-ymax" value="12"></label>
+                        <label>Y축 간격: <input type="number" id="manufacturing-ystep" value="4"></label>
+                        <button onclick="updateChart('manufacturing')">적용</button>
+                    </div>
+                    <canvas id="chart-manufacturing"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 서비스업생산 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('service')">⚙</button>
+                    <div id="service-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="service-ymin" value="0"></label>
+                        <label>Y축 최대: <input type="number" id="service-ymax" value="8"></label>
+                        <label>Y축 간격: <input type="number" id="service-ystep" value="2"></label>
+                        <button onclick="updateChart('service')">적용</button>
+                    </div>
+                    <canvas id="chart-service"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 소비.건설 섹션 ===== -->
+        <div class="section-title">소비.건설</div>
+        
+        <div class="item">
+            <span class="item-label">(소매판매)</span>
+            
+            
+            
+                
+                    승용차 및 연료소매점(7.1%)이 늘었으나, 면세점, 슈퍼마켓·잡화점·편의점(-16.0%, -4.3%)등이 줄어
+                
+                전년동분기대비 <span class="decrease">1.8% 감소</span>
+            
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(건설수주)</span>
+            
+            
+            
+                
+                    토목(-85.6%)이 줄었으나,
+                
+                
+                    건축(64.0%)이 늘어
+                
+                전년동분기대비 <span class="increase">29.2% 증가</span>
+            
+        </div>
+        
+        <!-- 소비.건설 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 소매판매 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('retail')">⚙</button>
+                    <div id="retail-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="retail-ymin" value="-8"></label>
+                        <label>Y축 최대: <input type="number" id="retail-ymax" value="0"></label>
+                        <label>Y축 간격: <input type="number" id="retail-ystep" value="2"></label>
+                        <button onclick="updateChart('retail')">적용</button>
+                    </div>
+                    <canvas id="chart-retail"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 건설수주 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('construction')">⚙</button>
+                    <div id="construction-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="construction-ymin" value="-60"></label>
+                        <label>Y축 최대: <input type="number" id="construction-ymax" value="150"></label>
+                        <label>Y축 간격: <input type="number" id="construction-ystep" value="30"></label>
+                        <button onclick="updateChart('construction')">적용</button>
+                    </div>
+                    <canvas id="chart-construction"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 수출입.물가 섹션 ===== -->
+        <div class="section-title">수출입·물가</div>
+        
+        <div class="item">
+            <span class="item-label">(수출)</span>
+            
+            
+            
+            차량 부품, 경유(-31.2%, -74.6%) 등이 줄었으나, 금, 기타 인조플라스틱 및 동 제품(199.4%, 21.3%) 등이 늘어 전년동분기대비 <span class="increase">1.6% 증가</span>
+            
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(수입)</span>
+            
+            선박, 기타 집적회로반도체 및 부품(74.9%, 33.6%) 등이 늘었으나, 원유, 가스(-17.8%, -26.5%) 등이 줄어 전년동분기대비 <span class="decrease">1.7% 감소</span>
+            
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(소비자물가)</span>
+            ()가 하락하였으나, 기타 상품 및 서비스, 식료품 · 비주류음료(3.7%, 3.0%) 등이 올라 전년동분기대비 <span class="increase">2.1% 상승</span>
+        </div>
+        
+        <!-- 수출입.물가 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 수출입 전년동분기대비 증감률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('exportImport')">⚙</button>
+                    <div id="exportImport-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="exportImport-ymin" value="-24"></label>
+                        <label>Y축 최대: <input type="number" id="exportImport-ymax" value="24"></label>
+                        <label>Y축 간격: <input type="number" id="exportImport-ystep" value="12"></label>
+                        <button onclick="updateChart('exportImport')">적용</button>
+                    </div>
+                    <canvas id="chart-exportImport"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 소비자물가 전년동분기대비 등락률(%) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('consumerPrice')">⚙</button>
+                    <div id="consumerPrice-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="consumerPrice-ymin" value="0"></label>
+                        <label>Y축 최대: <input type="number" id="consumerPrice-ymax" value="5"></label>
+                        <label>Y축 간격: <input type="number" id="consumerPrice-ystep" value="1"></label>
+                        <button onclick="updateChart('consumerPrice')">적용</button>
+                    </div>
+                    <canvas id="chart-consumerPrice"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 고용·인구이동 섹션 ===== -->
+        <div class="section-title">고용·인구이동</div>
+        
+        <div class="item">
+            <span class="item-label">(고용률)</span>
+            에서 상승하였으나,  등에서 내려 전년동분기대비 <span class="decrease">0.0%p 하락</span>
+        </div>
+        
+        <div class="item">
+            <span class="item-label">(인구이동)</span>
+            인구는 20~24세(5,238명), 25~29세(3,518명) 등에서 유입되었으나, 30~34세(2,193명), 55~59세(2,129명) 등에서 유출되어 <span class="decrease">10,051명 순유출</span>
+        </div>
+        
+        <!-- 고용·인구이동 차트 -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-title">&lt; 고용률 전년동분기대비 증감(%p) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('employmentRate')">⚙</button>
+                    <div id="employmentRate-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="employmentRate-ymin" value="-8"></label>
+                        <label>Y축 최대: <input type="number" id="employmentRate-ymax" value="8"></label>
+                        <label>Y축 간격: <input type="number" id="employmentRate-ystep" value="3"></label>
+                        <button onclick="updateChart('employmentRate')">적용</button>
+                    </div>
+                    <canvas id="chart-employmentRate"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">&lt; 인구순이동(천명) &gt;</div>
+                <div class="chart-wrapper">
+                    <button class="settings-toggle" onclick="toggleSettings('migration')">⚙</button>
+                    <div id="migration-settings" class="chart-settings">
+                        <label>Y축 최소: <input type="number" id="migration-ymin" value="-20"></label>
+                        <label>Y축 최대: <input type="number" id="migration-ymax" value="20"></label>
+                        <label>Y축 간격: <input type="number" id="migration-ystep" value="10"></label>
+                        <button onclick="updateChart('migration')">적용</button>
+                    </div>
+                    <canvas id="chart-migration"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 주요지표 요약 테이블 ===== -->
+        <div class="summary-table-container">
+            <div class="table-title">《 《 서울특별시 주요지표 》 》</div>
+            <div class="table-subtitle">[전년동분기대비, %]</div>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2"></th>
+                        <th rowspan="2">광공업<br>생산</th>
+                        <th rowspan="2">서비스업<br>생산</th>
+                        <th rowspan="2">소매<br>판매</th>
+                        <th rowspan="2">건설<br>수주</th>
+                        <th rowspan="2">수출</th>
+                        <th rowspan="2">수입</th>
+                        <th rowspan="2">소비자<br>물가</th>
+                        <th rowspan="2">고용률<br>(%p)</th>
+                        <th colspan="2">인구순이동<br>(천명)</th>
+                    </tr>
+                    <tr>
+                        <th>전체</th>
+                        <th>20-29</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td class="period-col">'23.2/4</td>
+                        <td>-9.7</td>
+                        <td>6.6</td>
+                        <td>-2.4</td>
+                        <td>-31.3</td>
+                        <td>-3.0</td>
+                        <td>-9.4</td>
+                        <td>3.7</td>
+                        <td>0.6</td>
+                        <td>-11.0</td>
+                        <td>11.1</td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="period-col">'24.2/4</td>
+                        <td>2.0</td>
+                        <td>1.6</td>
+                        <td>-7.6</td>
+                        <td>59.8</td>
+                        <td>2.4</td>
+                        <td>-4.2</td>
+                        <td>2.8</td>
+                        <td>0.7</td>
+                        <td>-17.3</td>
+                        <td>7.7</td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="period-col">'25.1/4</td>
+                        <td>-5.5</td>
+                        <td>1.1</td>
+                        <td>-3.4</td>
+                        <td>125.9</td>
+                        <td>5.2</td>
+                        <td>-2.0</td>
+                        <td>2.0</td>
+                        <td>-1.1</td>
+                        <td>6.1</td>
+                        <td>14.8</td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="period-col">'25.2/4</td>
+                        <td>-10.1</td>
+                        <td>2.3</td>
+                        <td>-1.8</td>
+                        <td>29.2</td>
+                        <td>1.6</td>
+                        <td>-1.7</td>
+                        <td>2.0</td>
+                        <td>-0.2</td>
+                        <td>-10.1</td>
+                        <td>8.8</td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-number">- 16 -</div>
+    </div>
+    
+    <script>
+        // 차트 인스턴스 저장
+        const chartInstances = {};
+        
+        // 차트 데이터 (Jinja2로 주입)
+        const chartData = {
+            manufacturing: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -8.7}, {"period": "\u002723.2/4", "value": -6.0}, {"period": "\u002723.3/4", "value": -0.5}, {"period": "\u002723.4/4", "value": 4.8}, {"period": "\u002724.1/4", "value": 5.3}, {"period": "\u002724.2/4", "value": 5.2}, {"period": "\u002724.3/4", "value": 2.4}, {"period": "\u002724.4/4", "value": 3.5}, {"period": "\u002725.1/4", "value": 2.0}, {"period": "\u002725.2/4", "value": 2.1}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": 4.6}, {"period": "\u002723.2/4", "value": -9.7}, {"period": "\u002723.3/4", "value": 0.9}, {"period": "\u002723.4/4", "value": -2.0}, {"period": "\u002724.1/4", "value": -3.4}, {"period": "\u002724.2/4", "value": 2.0}, {"period": "\u002724.3/4", "value": -3.5}, {"period": "\u002724.4/4", "value": -7.0}, {"period": "\u002725.1/4", "value": -5.5}, {"period": "\u002725.2/4", "value": -10.1}], "name": "\uc11c\uc6b8"}], "title": "\u003c \uad11\uacf5\uc5c5\uc0dd\uc0b0 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10\ub960(%) \u003e", "yAxisMax": 12, "yAxisMin": -12, "yAxisStep": 4},
+            service: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -4.9}, {"period": "\u002723.2/4", "value": 2.8}, {"period": "\u002723.3/4", "value": 2.6}, {"period": "\u002723.4/4", "value": 2.0}, {"period": "\u002724.1/4", "value": 2.1}, {"period": "\u002724.2/4", "value": 1.6}, {"period": "\u002724.3/4", "value": 0.2}, {"period": "\u002724.4/4", "value": 0.6}, {"period": "\u002725.1/4", "value": 0.4}, {"period": "\u002725.2/4", "value": 1.4}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": -5.1}, {"period": "\u002723.2/4", "value": 6.6}, {"period": "\u002723.3/4", "value": 5.4}, {"period": "\u002723.4/4", "value": 3.2}, {"period": "\u002724.1/4", "value": 2.9}, {"period": "\u002724.2/4", "value": 1.6}, {"period": "\u002724.3/4", "value": 0.2}, {"period": "\u002724.4/4", "value": 1.3}, {"period": "\u002725.1/4", "value": 1.1}, {"period": "\u002725.2/4", "value": 2.3}], "name": "\uc11c\uc6b8"}], "title": "\u003c \uc11c\ube44\uc2a4\uc5c5\uc0dd\uc0b0 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10\ub960(%) \u003e", "yAxisMax": 8, "yAxisMin": 0, "yAxisStep": 2},
+            retail: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -0.6}, {"period": "\u002723.2/4", "value": -0.4}, {"period": "\u002723.3/4", "value": -2.6}, {"period": "\u002723.4/4", "value": -1.2}, {"period": "\u002724.1/4", "value": -1.6}, {"period": "\u002724.2/4", "value": -3.1}, {"period": "\u002724.3/4", "value": -1.5}, {"period": "\u002724.4/4", "value": -2.0}, {"period": "\u002725.1/4", "value": -0.3}, {"period": "\u002725.2/4", "value": -0.2}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": 1.8}, {"period": "\u002723.2/4", "value": -2.4}, {"period": "\u002723.3/4", "value": -5.0}, {"period": "\u002723.4/4", "value": -3.8}, {"period": "\u002724.1/4", "value": -4.2}, {"period": "\u002724.2/4", "value": -7.6}, {"period": "\u002724.3/4", "value": -3.9}, {"period": "\u002724.4/4", "value": -3.9}, {"period": "\u002725.1/4", "value": -3.4}, {"period": "\u002725.2/4", "value": -1.8}], "name": "\uc11c\uc6b8"}], "title": "\u003c \uc18c\ub9e4\ud310\ub9e4 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10\ub960(%) \u003e", "yAxisMax": 0, "yAxisMin": -8, "yAxisStep": 2},
+            construction: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -79.3}, {"period": "\u002723.2/4", "value": -31.2}, {"period": "\u002723.3/4", "value": -43.2}, {"period": "\u002723.4/4", "value": 23.2}, {"period": "\u002724.1/4", "value": -10.4}, {"period": "\u002724.2/4", "value": 20.7}, {"period": "\u002724.3/4", "value": 26.8}, {"period": "\u002724.4/4", "value": 9.7}, {"period": "\u002725.1/4", "value": 1.1}, {"period": "\u002725.2/4", "value": -8.4}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": -89.2}, {"period": "\u002723.2/4", "value": -31.3}, {"period": "\u002723.3/4", "value": -44.0}, {"period": "\u002723.4/4", "value": 46.0}, {"period": "\u002724.1/4", "value": 58.9}, {"period": "\u002724.2/4", "value": 59.8}, {"period": "\u002724.3/4", "value": 75.7}, {"period": "\u002724.4/4", "value": 43.8}, {"period": "\u002725.1/4", "value": 125.9}, {"period": "\u002725.2/4", "value": 29.2}], "name": "\uc11c\uc6b8"}], "title": "\u003c \uac74\uc124\uc218\uc8fc \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10\ub960(%) \u003e", "yAxisMax": 150, "yAxisMin": -60, "yAxisStep": 30},
+            exportImport: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": 0.0}, {"period": "\u002723.2/4", "value": -12.0}, {"period": "\u002723.3/4", "value": -9.7}, {"period": "\u002723.4/4", "value": 5.7}, {"period": "\u002724.1/4", "value": 8.0}, {"period": "\u002724.2/4", "value": 10.1}, {"period": "\u002724.3/4", "value": 10.5}, {"period": "\u002724.4/4", "value": 4.2}, {"period": "\u002725.1/4", "value": -2.3}, {"period": "\u002725.2/4", "value": 2.1}], "name": "\uc218\ucd9c(\uc804\uad6d)"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": 0.0}, {"period": "\u002723.2/4", "value": -3.0}, {"period": "\u002723.3/4", "value": 1.0}, {"period": "\u002723.4/4", "value": 6.2}, {"period": "\u002724.1/4", "value": -2.8}, {"period": "\u002724.2/4", "value": 2.4}, {"period": "\u002724.3/4", "value": 6.2}, {"period": "\u002724.4/4", "value": 6.5}, {"period": "\u002725.1/4", "value": 5.2}, {"period": "\u002725.2/4", "value": 1.6}], "name": "\uc218\ucd9c(\uc11c\uc6b8)"}, {"color": "#1f77b4", "dashStyle": "dash", "data": [{"period": "\u002723.1/4", "value": 0.0}, {"period": "\u002723.2/4", "value": -13.2}, {"period": "\u002723.3/4", "value": -21.6}, {"period": "\u002723.4/4", "value": -10.7}, {"period": "\u002724.1/4", "value": -11.1}, {"period": "\u002724.2/4", "value": -1.4}, {"period": "\u002724.3/4", "value": 6.2}, {"period": "\u002724.4/4", "value": 0.9}, {"period": "\u002725.1/4", "value": -1.4}, {"period": "\u002725.2/4", "value": -1.7}], "name": "\uc218\uc785(\uc804\uad6d)"}, {"color": "#ff7f0e", "dashStyle": "dash", "data": [{"period": "\u002723.1/4", "value": 0.0}, {"period": "\u002723.2/4", "value": -9.4}, {"period": "\u002723.3/4", "value": -13.8}, {"period": "\u002723.4/4", "value": -4.3}, {"period": "\u002724.1/4", "value": -12.4}, {"period": "\u002724.2/4", "value": -4.2}, {"period": "\u002724.3/4", "value": 1.8}, {"period": "\u002724.4/4", "value": -3.9}, {"period": "\u002725.1/4", "value": -2.0}, {"period": "\u002725.2/4", "value": -1.7}], "name": "\uc218\uc785(\uc11c\uc6b8)"}], "title": "\u003c \uc218\ucd9c\uc785 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10\ub960(%) \u003e", "yAxisMax": 24, "yAxisMin": -24, "yAxisStep": 12},
+            consumerPrice: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -3.4}, {"period": "\u002723.2/4", "value": 3.3}, {"period": "\u002723.3/4", "value": 3.1}, {"period": "\u002723.4/4", "value": 3.4}, {"period": "\u002724.1/4", "value": 3.0}, {"period": "\u002724.2/4", "value": 2.7}, {"period": "\u002724.3/4", "value": 2.1}, {"period": "\u002724.4/4", "value": 1.6}, {"period": "\u002725.1/4", "value": 2.1}, {"period": "\u002725.2/4", "value": 2.1}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": -3.5}, {"period": "\u002723.2/4", "value": 3.7}, {"period": "\u002723.3/4", "value": 3.6}, {"period": "\u002723.4/4", "value": 3.8}, {"period": "\u002724.1/4", "value": 3.1}, {"period": "\u002724.2/4", "value": 2.8}, {"period": "\u002724.3/4", "value": 2.1}, {"period": "\u002724.4/4", "value": 1.6}, {"period": "\u002725.1/4", "value": 2.0}, {"period": "\u002725.2/4", "value": 2.0}], "name": "\uc11c\uc6b8"}], "title": "\u003c \uc18c\ube44\uc790\ubb3c\uac00 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \ub4f1\ub77d\ub960(%) \u003e", "yAxisMax": 5, "yAxisMin": 0, "yAxisStep": 1},
+            employmentRate: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -1.5}, {"period": "\u002723.2/4", "value": 0.5}, {"period": "\u002723.3/4", "value": 0.4}, {"period": "\u002723.4/4", "value": 0.4}, {"period": "\u002724.1/4", "value": 0.4}, {"period": "\u002724.2/4", "value": 0.1}, {"period": "\u002724.3/4", "value": 0.1}, {"period": "\u002724.4/4", "value": -0.1}, {"period": "\u002725.1/4", "value": 0.2}, {"period": "\u002725.2/4", "value": 0.2}], "name": "\uc804\uad6d"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": -1.4}, {"period": "\u002723.2/4", "value": 0.6}, {"period": "\u002723.3/4", "value": 0.4}, {"period": "\u002723.4/4", "value": 0.8}, {"period": "\u002724.1/4", "value": 1.2}, {"period": "\u002724.2/4", "value": 0.7}, {"period": "\u002724.3/4", "value": 0.6}, {"period": "\u002724.4/4", "value": 0.1}, {"period": "\u002725.1/4", "value": -1.1}, {"period": "\u002725.2/4", "value": -0.2}], "name": "\uc11c\uc6b8"}, {"color": "#2ca02c", "data": [{"period": "\u002723.1/4", "value": -0.4}, {"period": "\u002723.2/4", "value": -0.7}, {"period": "\u002723.3/4", "value": 0.6}, {"period": "\u002723.4/4", "value": 2.2}, {"period": "\u002724.1/4", "value": 2.5}, {"period": "\u002724.2/4", "value": -0.5}, {"period": "\u002724.3/4", "value": -1.9}, {"period": "\u002724.4/4", "value": -2.7}, {"period": "\u002725.1/4", "value": -5.1}, {"period": "\u002725.2/4", "value": -0.7}], "name": "\uc11c\uc6b8 20-29\uc138"}], "title": "\u003c \uace0\uc6a9\ub960 \uc804\ub144\ub3d9\ubd84\uae30\ub300\ube44 \uc99d\uac10(%p) \u003e", "yAxisMax": 8, "yAxisMin": -8, "yAxisStep": 3},
+            migration: {"series": [{"color": "#1f77b4", "data": [{"period": "\u002723.1/4", "value": -0.4}, {"period": "\u002723.2/4", "value": -11.0}, {"period": "\u002723.3/4", "value": -5.1}, {"period": "\u002723.4/4", "value": -14.8}, {"period": "\u002724.1/4", "value": 1.1}, {"period": "\u002724.2/4", "value": -17.3}, {"period": "\u002724.3/4", "value": -13.6}, {"period": "\u002724.4/4", "value": -15.0}, {"period": "\u002725.1/4", "value": 6.1}, {"period": "\u002725.2/4", "value": -10.1}], "name": "\uc11c\uc6b8"}, {"color": "#ff7f0e", "data": [{"period": "\u002723.1/4", "value": 18.2}, {"period": "\u002723.2/4", "value": 11.1}, {"period": "\u002723.3/4", "value": 10.9}, {"period": "\u002723.4/4", "value": 6.0}, {"period": "\u002724.1/4", "value": 16.5}, {"period": "\u002724.2/4", "value": 7.7}, {"period": "\u002724.3/4", "value": 7.4}, {"period": "\u002724.4/4", "value": 5.0}, {"period": "\u002725.1/4", "value": 14.8}, {"period": "\u002725.2/4", "value": 8.8}], "name": "\uc11c\uc6b8(20-29\uc138)"}], "title": "\u003c \uc778\uad6c\uc21c\uc774\ub3d9(\ucc9c\uba85) \u003e", "yAxisMax": 20, "yAxisMin": -20, "yAxisStep": 10}
+        };
+        
+        // 공통 차트 옵션 생성 함수
+        function createChartOptions(chartKey, data, labels) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 25,
+                            padding: 6,
+                            font: { size: 8 },
+                            usePointStyle: false
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            return context.dataIndex === context.dataset.data.length - 1;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        font: { size: 7, weight: 'bold' },
+                        formatter: function(value) {
+                            return value.toFixed(1);
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 7 },
+                            maxRotation: 0,
+                            callback: function(value, index) {
+                                const label = labels[index];
+                                if (label && label.includes('1/4')) {
+                                    return label.split('.')[0];
+                                }
+                                return '';
+                            }
+                        }
+                    },
+                    y: {
+                        min: data.yAxisMin,
+                        max: data.yAxisMax,
+                        ticks: {
+                            stepSize: data.yAxisStep,
+                            font: { size: 7 }
+                        },
+                        grid: { display: false }
+                    }
+                }
+            };
+        }
+        
+        // 차트 생성 함수
+        function createChart(chartKey, canvasId, data) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const labels = data.series[0].data.map(d => d.period);
+            
+            const datasets = data.series.map((series, index) => ({
+                label: series.name,
+                data: series.data.map(d => d.value),
+                borderColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
+                backgroundColor: 'transparent',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                tension: 0,
+                borderDash: series.dashStyle === 'dash' ? [4, 4] : series.dashStyle === 'dot' ? [2, 2] : []
+            }));
+            
+            chartInstances[chartKey] = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: createChartOptions(chartKey, data, labels),
+                plugins: [ChartDataLabels]
+            });
+        }
+        
+        // 차트 업데이트 함수
+        function updateChart(chartKey) {
+            const yMin = parseFloat(document.getElementById(`${chartKey}-ymin`).value);
+            const yMax = parseFloat(document.getElementById(`${chartKey}-ymax`).value);
+            const yStep = parseFloat(document.getElementById(`${chartKey}-ystep`).value);
+            
+            if (chartInstances[chartKey]) {
+                chartInstances[chartKey].options.scales.y.min = yMin;
+                chartInstances[chartKey].options.scales.y.max = yMax;
+                chartInstances[chartKey].options.scales.y.ticks.stepSize = yStep;
+                chartInstances[chartKey].update();
+            }
+            toggleSettings(chartKey);
+        }
+        
+        // 설정 패널 토글
+        function toggleSettings(chartKey) {
+            const panel = document.getElementById(`${chartKey}-settings`);
+            panel.classList.toggle('visible');
+        }
+        
+        // 페이지 로드 시 차트 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            createChart('manufacturing', 'chart-manufacturing', chartData.manufacturing);
+            createChart('service', 'chart-service', chartData.service);
+            createChart('retail', 'chart-retail', chartData.retail);
+            createChart('construction', 'chart-construction', chartData.construction);
+            createChart('exportImport', 'chart-exportImport', chartData.exportImport);
+            createChart('consumerPrice', 'chart-consumerPrice', chartData.consumerPrice);
+            createChart('employmentRate', 'chart-employmentRate', chartData.employmentRate);
+            createChart('migration', 'chart-migration', chartData.migration);
+        });
+    </script>
+</body>
+</html>

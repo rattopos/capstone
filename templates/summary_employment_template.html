@@ -123,20 +123,20 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">시도 간 순이동</span>
+                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">시도별 인구순이동</span>은
             </div>
             <div class="summary-sub">
                 {% for region in population.inflow_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ region.value|int }}천명){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ population.inflow_count }}개 시도는 <span class="increase">순유입</span>하였으나,
-                {% for region in population.outflow_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ region.value|int }}천명){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ population.outflow_count }}개 시도는 <span class="decrease">순유출</span>
+                <span class="highlight">{{ region.name }}</span>({{ "{:,}".format(region.value|int) }}명){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ population.inflow_count }}개 지역은 <span class="increase">순유입</span><br>
+                - {% for region in population.outflow_regions[:3] %}
+                <span class="highlight">{{ region.name }}</span>(-{{ "{:,}".format(region.value|int) }}명){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ population.outflow_count }}개 지역은 <span class="decrease">순유출</span>
             </div>
         </div>
         
         <div class="chart-container">
-            <div class="chart-title">&lt;시도별 순이동(천명) 및 전년동분기대비 증감률(%)&gt;</div>
+            <div class="chart-title">&lt; 시도별 인구 순이동(천명) &gt;</div>
             <div class="chart-canvas-wrapper">
                 <canvas id="populationChart"></canvas>
             </div>
@@ -260,10 +260,8 @@
             const ctx = document.getElementById(canvasId).getContext('2d');
             
             const labels = chartData.map(d => d.name);
-            const valueData = chartData.map(d => d.value);
-            const changeData = chartData.map(d => d.change);
-            
-            const changeRange = calculateYAxisRange(changeData);
+            // 값을 천명 단위로 변환 (명 → 천명)
+            const valueData = chartData.map(d => d.value / 1000);
             
             // 양수/음수에 따라 색상 결정
             const barColors = valueData.map(v => v >= 0 ? '#90caf9' : '#ef9a9a');
@@ -281,37 +279,12 @@
                             borderColor: barColors.map(c => c === '#90caf9' ? '#64b5f6' : '#ef5350'),
                             borderWidth: 1,
                             yAxisID: 'y',
-                            order: 2,
                             datalabels: {
                                 anchor: (context) => context.dataset.data[context.dataIndex] >= 0 ? 'end' : 'start',
                                 align: (context) => context.dataset.data[context.dataIndex] >= 0 ? 'top' : 'bottom',
                                 offset: -2,
                                 font: { size: 8 },
                                 color: '#333',
-                                formatter: (value) => Math.round(value)
-                            }
-                        },
-                        {
-                            type: 'line',
-                            label: '증감률',
-                            data: changeData,
-                            borderColor: 'transparent',
-                            backgroundColor: '#e65100',
-                            pointBackgroundColor: '#e65100',
-                            pointBorderColor: '#fff',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            borderWidth: 0,
-                            showLine: false,
-                            fill: false,
-                            yAxisID: 'y1',
-                            order: 1,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 2,
-                                font: { size: 8, weight: 'bold' },
-                                color: '#e65100',
                                 formatter: (value) => value.toFixed(1)
                             }
                         }
@@ -334,14 +307,6 @@
                             position: 'left',
                             ticks: { font: { size: 9 } },
                             grid: { color: '#e0e0e0' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            min: changeRange.min,
-                            max: changeRange.max,
-                            ticks: { font: { size: 9 }, color: '#e65100' },
-                            grid: { display: false }
                         }
                     }
                 },

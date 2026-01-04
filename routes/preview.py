@@ -9,7 +9,10 @@ from flask import Blueprint, request, jsonify, session
 from jinja2 import Template
 
 from config.settings import TEMPLATES_DIR
-from config.reports import REPORT_ORDER, SUMMARY_REPORTS, REGIONAL_REPORTS, STATISTICS_REPORTS
+from config.reports import (
+    REPORT_ORDER, SUMMARY_REPORTS, REGIONAL_REPORTS, STATISTICS_REPORTS,
+    PAGE_CONFIG, TOC_SECTOR_ITEMS, TOC_REGION_ITEMS
+)
 from utils.excel_utils import load_generator_module
 from services.report_generator import (
     generate_report_html,
@@ -256,49 +259,80 @@ def generate_statistics_full_preview():
 
 
 def _get_toc_sections():
-    """목차 섹션 데이터"""
+    """목차 섹션 데이터 - 동적 페이지 번호 계산"""
+    
+    # 현재 페이지 번호 (요약부터 1페이지 시작)
+    current_page = 1
+    
+    # 요약 섹션 시작 페이지
+    summary_page = current_page
+    summary_pages = sum(PAGE_CONFIG['summary'].values())
+    current_page += summary_pages
+    
+    # 부문별 섹션 시작 페이지
+    sector_page = current_page
+    
+    # 부문별 각 항목의 시작 페이지 계산
+    sector_item_pages = {}
+    sector_config = PAGE_CONFIG['sector']
+    sector_order = ['manufacturing', 'service', 'consumption', 'construction', 
+                    'export', 'import', 'price', 'employment', 'unemployment', 'population']
+    
+    for sector_id in sector_order:
+        sector_item_pages[sector_id] = current_page
+        current_page += sector_config.get(sector_id, 2)
+    
+    # 부문별 목차 항목 생성 (원본 이미지 기준 7개 항목)
+    sector_entries = []
+    for item in TOC_SECTOR_ITEMS:
+        start_from = item.get('start_from')
+        page = sector_item_pages.get(start_from, sector_page)
+        sector_entries.append({
+            'number': item['number'],
+            'name': item['name'],
+            'page': page
+        })
+    
+    # 시도별 섹션 시작 페이지
+    region_page = current_page
+    
+    # 시도별 목차 항목 생성
+    region_entries = []
+    regional_pages = PAGE_CONFIG['regional']
+    for item in TOC_REGION_ITEMS:
+        region_entries.append({
+            'number': item['number'],
+            'name': item['name'],
+            'page': current_page
+        })
+        current_page += regional_pages
+    
+    # 참고 GRDP 페이지
+    reference_page = current_page
+    current_page += PAGE_CONFIG['reference_grdp']
+    
+    # 통계표 섹션 시작 페이지
+    statistics_page = current_page
+    stat_config = PAGE_CONFIG['statistics']
+    current_page += stat_config['toc']
+    current_page += stat_config['per_table'] * stat_config['count']
+    
+    # 부록 페이지
+    appendix_page = current_page
+    
     return {
-        'summary': {'page': 1},
+        'summary': {'page': summary_page},
         'sector': {
-            'page': 5,
-            'entries': [
-                {'number': 1, 'name': '광공업생산', 'page': 5},
-                {'number': 2, 'name': '서비스업생산', 'page': 7},
-                {'number': 3, 'name': '소비동향', 'page': 9},
-                {'number': 4, 'name': '건설동향', 'page': 11},
-                {'number': 5, 'name': '수출', 'page': 13},
-                {'number': 6, 'name': '수입', 'page': 15},
-                {'number': 7, 'name': '물가동향', 'page': 17},
-                {'number': 8, 'name': '고용률', 'page': 19},
-                {'number': 9, 'name': '실업률', 'page': 21},
-                {'number': 10, 'name': '국내인구이동', 'page': 23},
-            ]
+            'page': sector_page,
+            'entries': sector_entries
         },
         'region': {
-            'page': 25,
-            'entries': [
-                {'number': 1, 'name': '서울특별시', 'page': 25},
-                {'number': 2, 'name': '부산광역시', 'page': 27},
-                {'number': 3, 'name': '대구광역시', 'page': 29},
-                {'number': 4, 'name': '인천광역시', 'page': 31},
-                {'number': 5, 'name': '광주광역시', 'page': 33},
-                {'number': 6, 'name': '대전광역시', 'page': 35},
-                {'number': 7, 'name': '울산광역시', 'page': 37},
-                {'number': 8, 'name': '세종특별자치시', 'page': 39},
-                {'number': 9, 'name': '경기도', 'page': 41},
-                {'number': 10, 'name': '강원특별자치도', 'page': 43},
-                {'number': 11, 'name': '충청북도', 'page': 45},
-                {'number': 12, 'name': '충청남도', 'page': 47},
-                {'number': 13, 'name': '전북특별자치도', 'page': 49},
-                {'number': 14, 'name': '전라남도', 'page': 51},
-                {'number': 15, 'name': '경상북도', 'page': 53},
-                {'number': 16, 'name': '경상남도', 'page': 55},
-                {'number': 17, 'name': '제주특별자치도', 'page': 57},
-            ]
+            'page': region_page,
+            'entries': region_entries
         },
-        'reference': {'name': '분기 지역내총생산(GRDP)', 'page': 59},
-        'statistics': {'page': 61},
-        'appendix': {'page': 75}
+        'reference': {'name': '분기GRDP', 'page': reference_page},
+        'statistics': {'page': statistics_page},
+        'appendix': {'page': appendix_page}
     }
 
 

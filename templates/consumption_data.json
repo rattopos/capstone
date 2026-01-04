@@ -1552,8 +1552,8 @@
       ]
     }
   ],
-  "increase_businesses_text": "총지수, 슈퍼마켓·잡화점·편의점, 승용차·연료소매점",
-  "decrease_businesses_text": "대형마트, 슈퍼마켓·잡화점·편의점, 면세점",
+  "increase_businesses_text": "슈퍼마켓·잡화점·편의점, 승용차·연료소매점, 면세점",
+  "decrease_businesses_text": "슈퍼마켓·잡화점·편의점, 대형마트, 면세점",
   "summary_table": {
     "base_year": 2020,
     "columns": {
