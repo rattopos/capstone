@@ -1,0 +1,39 @@
+# 지역경제동향 보도자료 생성 시스템 - Vercel 배포용 의존성
+# 서버리스 환경에 최적화된 버전 (xlwings, playwright 제외)
+
+# 웹 프레임워크
+Flask>=2.3.0
+Werkzeug>=2.3.0
+
+# 템플릿 엔진
+Jinja2>=3.1.0
+MarkupSafe>=2.1.0
+
+# 데이터 처리
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# HTML 파싱 및 이미지 처리
+beautifulsoup4>=4.12.0
+Pillow>=10.0.0
+
+# 날짜 처리
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# 기타 유틸리티
+six>=1.16.0
+et-xmlfile>=1.1.0
+
+# KOSIS API 수집
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# 엑셀 수식 계산 (서버 환경에서도 동작)
+formulas>=1.2.0
+
+# 참고: xlwings와 playwright는 서버리스 환경에서 작동하지 않으므로 제외
+# xlwings: 로컬 Excel 앱 필요 (서버 환경 불가)
+# playwright: 대용량 바이너리 필요 (서버리스 환경 부적합)
+

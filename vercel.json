@@ -12,14 +12,12 @@
       "dest": "api/index.py"
     }
   ],
-  "env": {
-    "PYTHON_VERSION": "3.10"
-  },
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
       "memory": 3008
     }
-  }
+  },
+  "installCommand": "pip install -r requirements.txt"
 }
 
