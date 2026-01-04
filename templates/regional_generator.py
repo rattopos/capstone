@@ -390,10 +390,130 @@ class RegionalGenerator:
                 '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
                 '2025_1Q', '2025_2Q']
         
-        return [
+        result = [
             {"period": q, "value": self._get_quarter_value(row, sheet_name, k)}
             for q, k in zip(quarters, keys)
         ]
+        
+        # 분석 시트가 비어있는지 확인 (모든 값이 0.0인 경우)
+        if all(item['value'] == 0.0 for item in result):
+            return []  # 빈 리스트 반환하여 집계 시트 fallback 유도
+        
+        return result
+    
+    def _get_chart_time_series_from_aggregation(self, agg_sheet_name: str, region: str,
+                                                 region_col: int, code_col: int, 
+                                                 total_code: str) -> List[Dict[str, Any]]:
+        """집계 시트에서 차트용 시계열 데이터 추출 (전년동기대비 증감률 계산)"""
+        try:
+            df = self.cache.get_sheet(agg_sheet_name)
+        except:
+            return []
+        
+        # 지역 + 총지수 행 찾기
+        row = df[(df[region_col] == region) & (df[code_col].astype(str) == total_code)]
+        if len(row) == 0:
+            return []
+        row = row.iloc[0]
+        
+        # 시트별 열 매핑 (마지막 열=2025.2Q로부터 역산)
+        # 각 시트의 마지막 열과 분기 구조가 다름
+        SHEET_QUARTER_CONFIGS = {
+            'A(광공업생산)집계': {
+                # 열 26=2025.2Q, 열 22=2024.2Q
+                '2022_1Q': 13, '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'B(서비스업생산)집계': {
+                # 열 25=2025.2Q, 열 21=2024.2Q
+                '2022_1Q': 12, '2022_2Q': 13, '2022_3Q': 14, '2022_4Q': 15,
+                '2023_1Q': 16, '2023_2Q': 17, '2023_3Q': 18, '2023_4Q': 19,
+                '2024_1Q': 20, '2024_2Q': 21, '2024_3Q': 22, '2024_4Q': 23,
+                '2025_1Q': 24, '2025_2Q': 25
+            },
+            'C(소비)집계': {
+                # 열 24=2025.2Q, 열 20=2024.2Q
+                '2022_1Q': 11, '2022_2Q': 12, '2022_3Q': 13, '2022_4Q': 14,
+                '2023_1Q': 15, '2023_2Q': 16, '2023_3Q': 17, '2023_4Q': 18,
+                '2024_1Q': 19, '2024_2Q': 20, '2024_3Q': 21, '2024_4Q': 22,
+                '2025_1Q': 23, '2025_2Q': 24
+            },
+            "F'(건설)집계": {
+                # 열 22=2025.2Q, 열 18=2024.2Q
+                '2022_1Q': 9, '2022_2Q': 10, '2022_3Q': 11, '2022_4Q': 12,
+                '2023_1Q': 13, '2023_2Q': 14, '2023_3Q': 15, '2023_4Q': 16,
+                '2024_1Q': 17, '2024_2Q': 18, '2024_3Q': 19, '2024_4Q': 20,
+                '2025_1Q': 21, '2025_2Q': 22
+            },
+            'G(수출)집계': {
+                # 열 26=2025.2Q, 열 22=2024.2Q (분기별 금액 데이터)
+                '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'H(수입)집계': {
+                # G(수출)집계와 동일 구조
+                '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'E(지출목적물가)집계': {
+                # 열 24=2025.2Q, 열 20=2024.2Q
+                '2022_1Q': 11, '2022_2Q': 12, '2022_3Q': 13, '2022_4Q': 14,
+                '2023_1Q': 15, '2023_2Q': 16, '2023_3Q': 17, '2023_4Q': 18,
+                '2024_1Q': 19, '2024_2Q': 20, '2024_3Q': 21, '2024_4Q': 22,
+                '2025_1Q': 23, '2025_2Q': 24
+            },
+        }
+        
+        # 기본 열 매핑 (A 집계 시트 기준)
+        AGG_QUARTER_COLS = SHEET_QUARTER_CONFIGS.get(agg_sheet_name, SHEET_QUARTER_CONFIGS['A(광공업생산)집계'])
+        
+        # 전년동기 매핑
+        PREV_YEAR_MAP = {
+            '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
+            '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
+            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q'
+        }
+        
+        quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4", 
+                    "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
+                    "'25.1/4", "'25.2/4"]
+        keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
+                '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
+                '2025_1Q', '2025_2Q']
+        
+        result = []
+        for q, k in zip(quarters, keys):
+            curr_col = AGG_QUARTER_COLS.get(k)
+            prev_key = PREV_YEAR_MAP.get(k)
+            prev_col = AGG_QUARTER_COLS.get(prev_key) if prev_key else None
+            
+            # 유효하지 않은 열 번호(-1) 처리
+            if curr_col == -1 or prev_col == -1:
+                result.append({"period": q, "value": 0.0})
+                continue
+            
+            if curr_col and prev_col and curr_col < len(row) and prev_col < len(row):
+                try:
+                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        change = 0.0
+                except (ValueError, TypeError):
+                    change = 0.0
+            else:
+                change = 0.0
+            
+            result.append({"period": q, "value": change})
+        
+        return result
     
     def _extract_top_industries(self, df: pd.DataFrame, region: str,
                                 region_col: int, name_col: int, 
@@ -436,17 +556,23 @@ class RegionalGenerator:
         return result
     
     def extract_manufacturing_data(self, region: str) -> Dict[str, Any]:
-        """광공업생산 데이터 추출"""
+        """광공업생산 데이터 추출 (집계 시트 fallback 포함)"""
         df = self.cache.get_sheet('A 분석')
         
         # 총지수 행
         total_row = df[(df[3] == region) & (df[6] == 'BCD')]
         if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "감소", 
-                    "increase_industries": [], "decrease_industries": []}
+            # 집계 시트에서 fallback
+            return self._extract_manufacturing_from_aggregation(region)
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, 'A 분석', '2025_2Q')
+        
+        # 분석 시트가 비어있으면 집계 시트에서 계산
+        if growth_rate == 0.0:
+            growth_rate = self._get_summary_value_from_aggregation(
+                'A(광공업생산)집계', region, 4, 7, 'BCD', '2025_2Q'
+            )
         
         # 중분류 데이터 (분류단계 2)
         industries = df[(df[3] == region) & (df[4].astype(str) == '2') & (pd.notna(df[28]))]
@@ -473,6 +599,10 @@ class RegionalGenerator:
                     "contribution": round(float(row[28]), 4)
                 })
         
+        # 기여도 데이터가 없으면 집계 시트에서 품목 추출
+        if len(increase_industries) == 0 and len(decrease_industries) == 0:
+            return self._extract_manufacturing_from_aggregation(region, growth_rate)
+        
         return {
             "total_growth_rate": growth_rate,
             "direction": "증가" if growth_rate > 0 else "감소",
@@ -480,18 +610,80 @@ class RegionalGenerator:
             "decrease_industries": decrease_industries
         }
     
+    def _extract_manufacturing_from_aggregation(self, region: str, total_growth_rate: float = None) -> Dict[str, Any]:
+        """광공업생산 집계 시트에서 데이터 추출"""
+        try:
+            df = self.cache.get_sheet('A(광공업생산)집계')
+        except:
+            return {"total_growth_rate": 0, "direction": "감소", 
+                    "increase_industries": [], "decrease_industries": []}
+        
+        # 총 증감률 계산 (전달되지 않은 경우)
+        if total_growth_rate is None:
+            total_growth_rate = self._get_summary_value_from_aggregation(
+                'A(광공업생산)집계', region, 4, 7, 'BCD', '2025_2Q'
+            )
+        
+        # 중분류 데이터 추출 (분류단계 1)
+        # A(광공업생산)집계: 열4=지역, 열5=분류단계, 열7=산업코드, 열8=산업이름
+        industries = df[(df[4] == region) & (df[5].astype(str) == '1')]
+        
+        increase_industries = []
+        decrease_industries = []
+        
+        if len(industries) > 0:
+            # 분기별 열 (2025.2Q=열26, 2024.2Q=열22)
+            curr_col, prev_col = 26, 22
+            
+            # 증감률 계산
+            for _, row in industries.iterrows():
+                try:
+                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        continue
+                    
+                    name = self._get_display_name(row.iloc[8], self.INDUSTRY_NAME_MAP)
+                    if not name:
+                        continue
+                    
+                    if change > 0:
+                        increase_industries.append({"name": name, "growth_rate": change})
+                    elif change < 0:
+                        decrease_industries.append({"name": name, "growth_rate": change})
+                except:
+                    continue
+            
+            # 정렬
+            increase_industries.sort(key=lambda x: -x['growth_rate'])
+            decrease_industries.sort(key=lambda x: x['growth_rate'])
+        
+        return {
+            "total_growth_rate": total_growth_rate,
+            "direction": "증가" if total_growth_rate > 0 else "감소",
+            "increase_industries": increase_industries[:2],
+            "decrease_industries": decrease_industries[:2]
+        }
+    
     def extract_service_data(self, region: str) -> Dict[str, Any]:
-        """서비스업생산 데이터 추출"""
+        """서비스업생산 데이터 추출 (집계 시트 fallback 포함)"""
         df = self.cache.get_sheet('B 분석')
         
         # 총지수 행
         total_row = df[(df[3] == region) & (df[6] == 'E~S')]
         if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "증가",
-                    "increase_industries": [], "decrease_industries": []}
+            return self._extract_service_from_aggregation(region)
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, 'B 분석', '2025_2Q')
+        
+        # 분석 시트가 비어있으면 집계 시트에서 계산
+        if growth_rate == 0.0:
+            growth_rate = self._get_summary_value_from_aggregation(
+                'B(서비스업생산)집계', region, 3, 6, 'E~S', '2025_2Q'
+            )
         
         # 중분류 데이터
         industries = df[(df[3] == region) & (df[4].astype(str) == '1')]
@@ -520,11 +712,72 @@ class RegionalGenerator:
                     "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
                 })
         
+        # 기여도 데이터가 없으면 집계 시트에서 품목 추출
+        if len(increase_industries) == 0 and len(decrease_industries) == 0:
+            return self._extract_service_from_aggregation(region, growth_rate)
+        
         return {
             "total_growth_rate": growth_rate,
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_industries": increase_industries,
             "decrease_industries": decrease_industries
+        }
+    
+    def _extract_service_from_aggregation(self, region: str, total_growth_rate: float = None) -> Dict[str, Any]:
+        """서비스업생산 집계 시트에서 데이터 추출"""
+        try:
+            df = self.cache.get_sheet('B(서비스업생산)집계')
+        except:
+            return {"total_growth_rate": 0, "direction": "증가", 
+                    "increase_industries": [], "decrease_industries": []}
+        
+        # 총 증감률 계산 (전달되지 않은 경우)
+        if total_growth_rate is None:
+            total_growth_rate = self._get_summary_value_from_aggregation(
+                'B(서비스업생산)집계', region, 3, 6, 'E~S', '2025_2Q'
+            )
+        
+        # 중분류 데이터 추출 (분류단계 1)
+        # B(서비스업생산)집계: 열3=지역, 열4=분류단계, 열6=산업코드, 열7=산업이름
+        industries = df[(df[3] == region) & (df[4].astype(str) == '1')]
+        
+        increase_industries = []
+        decrease_industries = []
+        
+        if len(industries) > 0:
+            # 분기별 열 (2025.2Q=열25, 2024.2Q=열21)
+            curr_col, prev_col = 25, 21
+            
+            # 증감률 계산
+            for _, row in industries.iterrows():
+                try:
+                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                    if prev_val != 0:
+                        change = round((curr_val - prev_val) / prev_val * 100, 1)
+                    else:
+                        continue
+                    
+                    name = self._get_display_name(row.iloc[7], self.INDUSTRY_NAME_MAP)
+                    if not name:
+                        continue
+                    
+                    if change > 0:
+                        increase_industries.append({"name": name, "growth_rate": change})
+                    elif change < 0:
+                        decrease_industries.append({"name": name, "growth_rate": change})
+                except:
+                    continue
+            
+            # 정렬
+            increase_industries.sort(key=lambda x: -x['growth_rate'])
+            decrease_industries.sort(key=lambda x: x['growth_rate'])
+        
+        return {
+            "total_growth_rate": total_growth_rate,
+            "direction": "증가" if total_growth_rate > 0 else "감소",
+            "increase_industries": increase_industries[:2],
+            "decrease_industries": decrease_industries[:2]
         }
     
     def extract_retail_data(self, region: str) -> Dict[str, Any]:
@@ -614,8 +867,8 @@ class RegionalGenerator:
         # 분석 시트 구조 (기존 로직)
         total_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
         if len(total_row) == 0:
-            return {"total_growth_rate": 0, "direction": "감소",
-                    "increase_categories": [], "decrease_categories": []}
+            # 분석 시트가 비어있으면 집계 시트로 fallback
+            return self._extract_retail_from_aggregation(region)
         
         total_row = total_row.iloc[0]
         growth_rate = self._get_quarter_value(total_row, 'C 분석', '2025_2Q')
@@ -644,11 +897,91 @@ class RegionalGenerator:
                     "growth_rate": round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
                 })
         
+        # 분석 시트에서 데이터가 비어있으면 집계 시트로 fallback
+        if growth_rate == 0.0 and len(increase_categories) == 0 and len(decrease_categories) == 0:
+            return self._extract_retail_from_aggregation(region)
+        
         return {
             "total_growth_rate": growth_rate,
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_categories": increase_categories,
             "decrease_categories": decrease_categories
+        }
+    
+    def _extract_retail_from_aggregation(self, region: str) -> Dict[str, Any]:
+        """소매판매 집계 시트에서 데이터 추출"""
+        try:
+            df = self.cache.get_sheet('C(소비)집계')
+        except:
+            return {"total_growth_rate": 0, "direction": "감소",
+                    "increase_categories": [], "decrease_categories": []}
+        
+        # 집계 시트 열 구조: 열2=지역이름, 열3=분류단계, 열5=업태코드, 열6=업태종류
+        region_col = 2
+        level_col = 3
+        name_col = 6
+        
+        # 총계 행 찾기 (분류단계 = 0, 업태코드 = A0)
+        total_row = df[(df[region_col] == region) & (df[level_col].astype(str) == '0') & (df[5] == 'A0')]
+        if len(total_row) == 0:
+            # 분류단계만으로 재시도
+            total_row = df[(df[region_col] == region) & (df[level_col].astype(str) == '0')]
+        if len(total_row) == 0:
+            return {"total_growth_rate": 0, "direction": "감소",
+                    "increase_categories": [], "decrease_categories": []}
+        
+        total_row = total_row.iloc[0]
+        
+        # 전년동기비 계산 (열20=2024_2Q, 열24=2025_2Q)
+        AGG_COLS = {
+            '2024_2Q': 20, '2025_2Q': 24
+        }
+        curr_col = AGG_COLS.get('2025_2Q')
+        prev_col = AGG_COLS.get('2024_2Q')
+        
+        curr_val = float(total_row.iloc[curr_col]) if pd.notna(total_row.iloc[curr_col]) else 0
+        prev_val = float(total_row.iloc[prev_col]) if pd.notna(total_row.iloc[prev_col]) else 0
+        
+        if prev_val != 0:
+            growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
+        else:
+            growth_rate = 0.0
+        
+        # 업태별 데이터 (분류단계 = 1)
+        items = df[(df[region_col] == region) & (df[level_col].astype(str) == '1')]
+        
+        increase_categories = []
+        decrease_categories = []
+        
+        for _, row in items.iterrows():
+            name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+            if not name or name == '-':
+                continue
+            
+            curr_v = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+            prev_v = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            
+            if prev_v != 0:
+                rate = round((curr_v - prev_v) / prev_v * 100, 1)
+            else:
+                rate = 0.0
+            
+            display_name = self._get_display_name(name, self.RETAIL_NAME_MAP)
+            
+            if rate > 0:
+                increase_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+            elif rate < 0:
+                decrease_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+        
+        # 정렬
+        increase_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
+        decrease_categories.sort(key=lambda x: x['growth_rate'])
+        
+        return {
+            "total_growth_rate": growth_rate,
+            "direction": "증가" if growth_rate > 0 else "감소",
+            "increase_categories": increase_categories[:2] if increase_categories else [],
+            "decrease_categories": decrease_categories[:2] if decrease_categories else []
         }
     
     def extract_construction_data(self, region: str) -> Dict[str, Any]:
@@ -710,9 +1043,8 @@ class RegionalGenerator:
             # 분석 시트 구조 (기존 로직)
             total_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
             if len(total_row) == 0:
-                return {"total_growth_rate": 0, "direction": "증가",
-                        "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}], 
-                        "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+                # 분석 시트가 비어있으면 집계 시트로 fallback
+                return self._extract_construction_from_aggregation(region)
             
             total_row = total_row.iloc[0]
             quarter_col = self.QUARTER_COLS["F'분석"]['2025_2Q']
@@ -740,6 +1072,10 @@ class RegionalGenerator:
                 elif rate < 0:
                     decrease_categories.append(category_info)
         
+        # 분석 시트에서 데이터가 비어있으면 집계 시트로 fallback
+        if growth_rate == 0.0 and len(increase_categories) == 0 and len(decrease_categories) == 0:
+            return self._extract_construction_from_aggregation(region)
+        
         # 플레이스홀더 추가 (데이터가 부족한 경우)
         if len(increase_categories) == 0:
             increase_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
@@ -751,6 +1087,87 @@ class RegionalGenerator:
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_categories": sorted([c for c in increase_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'], reverse=True)[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}],
             "decrease_categories": sorted([c for c in decrease_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'])[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}]
+        }
+    
+    def _extract_construction_from_aggregation(self, region: str) -> Dict[str, Any]:
+        """건설수주 집계 시트에서 데이터 추출"""
+        try:
+            df = self.cache.get_sheet("F'(건설)집계")
+        except:
+            return {"total_growth_rate": 0, "direction": "증가",
+                    "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}],
+                    "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+        
+        # 집계 시트 열 구조: 열1=지역이름, 열2=분류단계, 열4=공정이름
+        region_col = 1
+        level_col = 2
+        name_col = 4
+        
+        # 총계 행 찾기 (분류단계 = 0)
+        total_row = df[(df[region_col] == region) & (df[level_col].astype(str) == '0')]
+        if len(total_row) == 0:
+            return {"total_growth_rate": 0, "direction": "증가",
+                    "increase_categories": [{"name": "", "growth_rate": 0, "placeholder": True}],
+                    "decrease_categories": [{"name": "", "growth_rate": 0, "placeholder": True}]}
+        
+        total_row = total_row.iloc[0]
+        
+        # 전년동기비 계산 (열18=2024_2Q, 열22=2025_2Q)
+        AGG_COLS = {
+            '2024_2Q': 18, '2025_2Q': 22
+        }
+        curr_col = AGG_COLS.get('2025_2Q')
+        prev_col = AGG_COLS.get('2024_2Q')
+        
+        curr_val = float(total_row.iloc[curr_col]) if pd.notna(total_row.iloc[curr_col]) else 0
+        prev_val = float(total_row.iloc[prev_col]) if pd.notna(total_row.iloc[prev_col]) else 0
+        
+        if prev_val != 0:
+            growth_rate = round((curr_val - prev_val) / prev_val * 100, 1)
+        else:
+            growth_rate = 0.0
+        
+        # 건축/토목 분류 (분류단계 = 1)
+        items = df[(df[region_col] == region) & (df[level_col].astype(str) == '1')]
+        
+        increase_categories = []
+        decrease_categories = []
+        
+        for _, row in items.iterrows():
+            name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+            if not name or name == '-':
+                continue
+            
+            curr_v = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+            prev_v = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            
+            if prev_v != 0:
+                rate = round((curr_v - prev_v) / prev_v * 100, 1)
+            else:
+                rate = 0.0
+            
+            display_name = self._clean_name(name)
+            
+            if rate > 0:
+                increase_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+            elif rate < 0:
+                decrease_categories.append({"name": display_name, "growth_rate": rate, "placeholder": False})
+        
+        # 정렬
+        increase_categories.sort(key=lambda x: x['growth_rate'], reverse=True)
+        decrease_categories.sort(key=lambda x: x['growth_rate'])
+        
+        # 플레이스홀더 추가 (데이터가 부족한 경우)
+        if len(increase_categories) == 0:
+            increase_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
+        if len(decrease_categories) == 0:
+            decrease_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
+        
+        return {
+            "total_growth_rate": growth_rate,
+            "direction": "증가" if growth_rate > 0 else "감소",
+            "increase_categories": increase_categories[:2],
+            "decrease_categories": decrease_categories[:2]
         }
     
     def extract_export_data(self, region: str) -> Dict[str, Any]:
@@ -1231,37 +1648,74 @@ class RegionalGenerator:
         return increase_items, decrease_items
     
     def extract_employment_data(self, region: str) -> Dict[str, Any]:
-        """고용률 데이터 추출"""
-        df = self.cache.get_sheet('D(고용률)분석')
+        """고용률 데이터 추출 - 집계 시트에서 전년동기대비 증감(%p) 계산"""
+        try:
+            df = self.cache.get_sheet('D(고용률)집계')
+        except:
+            return {"total_change": 0, "direction": "하락",
+                    "increase_age_groups": [], "decrease_age_groups": []}
         
-        # 총계 행
-        total_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
+        # D(고용률)집계 시트 열 구조
+        # 열 1: 지역명, 열 2: 분류단계(0=총계, 1=세부), 열 3: 연령대명
+        # 열 8~21: 분기별 고용률 (2022.1Q ~ 2025.2Q)
+        EMP_QUARTER_COLS = {
+            '2022_1Q': 8, '2022_2Q': 9, '2022_3Q': 10, '2022_4Q': 11,
+            '2023_1Q': 12, '2023_2Q': 13, '2023_3Q': 14, '2023_4Q': 15,
+            '2024_1Q': 16, '2024_2Q': 17, '2024_3Q': 18, '2024_4Q': 19,
+            '2025_1Q': 20, '2025_2Q': 21
+        }
+        
+        curr_quarter = '2025_2Q'
+        prev_quarter = '2024_2Q'  # 전년 동분기
+        curr_col = EMP_QUARTER_COLS[curr_quarter]
+        prev_col = EMP_QUARTER_COLS[prev_quarter]
+        
+        # 총계 행 (분류단계 = 0)
+        total_row = df[(df[1] == region) & (df[2].astype(str) == '0')]
         if len(total_row) == 0:
             return {"total_change": 0, "direction": "하락",
                     "increase_age_groups": [], "decrease_age_groups": []}
         
         total_row = total_row.iloc[0]
-        quarter_col = self.QUARTER_COLS['D(고용률)분석']['2025_2Q']
-        total_change = round(float(total_row[quarter_col]) if pd.notna(total_row[quarter_col]) else 0, 1)
         
-        # 연령대별 데이터
-        age_groups = df[(df[2] == region) & (df[3].astype(str) == '1')]
+        # 전년동기대비 증감(%p) 계산
+        try:
+            curr_val = float(total_row.iloc[curr_col]) if pd.notna(total_row.iloc[curr_col]) else 0
+            prev_val = float(total_row.iloc[prev_col]) if pd.notna(total_row.iloc[prev_col]) else 0
+            total_change = round(curr_val - prev_val, 1)
+        except (ValueError, TypeError):
+            total_change = 0.0
+        
+        # 연령대별 데이터 (분류단계 = 1)
+        age_groups = df[(df[1] == region) & (df[2].astype(str) == '1')]
         
         increase_groups = []
         decrease_groups = []
         
         age_name_map = {
             "15 - 29세": "20대",
+            "15~29세": "20대",
             "30 - 39세": "30대",
+            "30~39세": "30대",
             "40 - 49세": "40대",
+            "40~49세": "40대",
             "50 - 59세": "50대",
-            "60세이상": "60대"
+            "50~59세": "50대",
+            "60세이상": "60대",
+            "60세 이상": "60대"
         }
         
         if len(age_groups) > 0:
             for _, row in age_groups.iterrows():
-                age_name = self._clean_name(row[5])
-                change = round(float(row[quarter_col]) if pd.notna(row[quarter_col]) else 0, 1)
+                age_name = self._clean_name(str(row.iloc[3]) if pd.notna(row.iloc[3]) else "")
+                
+                try:
+                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                    change = round(curr_val - prev_val, 1)
+                except (ValueError, TypeError):
+                    change = 0.0
+                
                 display_name = age_name_map.get(age_name, age_name)
                 
                 if change > 0:
@@ -1349,24 +1803,57 @@ class RegionalGenerator:
         }
     
     def _get_nationwide_chart_data(self, sheet_name: str, region_col: int, 
-                                   code_col: int, total_code: str) -> List[Dict[str, Any]]:
-        """전국 차트 데이터 추출 (캐싱)"""
+                                   code_col: int, total_code: str,
+                                   agg_sheet_name: str = None, agg_region_col: int = None,
+                                   agg_code_col: int = None, agg_total_code: str = None) -> List[Dict[str, Any]]:
+        """전국 차트 데이터 추출 (캐싱, 집계 시트 fallback 포함)"""
         cache_key = f"{sheet_name}_{total_code}"
         if cache_key not in self._nationwide_data:
             df = self.cache.get_sheet(sheet_name)
-            self._nationwide_data[cache_key] = self._get_chart_time_series(
+            data = self._get_chart_time_series(
                 df, '전국', region_col, code_col, total_code, sheet_name
             )
+            
+            # 분석 시트가 비어있으면 집계 시트에서 계산
+            if not data and agg_sheet_name:
+                data = self._get_chart_time_series_from_aggregation(
+                    agg_sheet_name, '전국',
+                    agg_region_col if agg_region_col is not None else 4,
+                    agg_code_col if agg_code_col is not None else 7,
+                    agg_total_code or total_code
+                )
+            
+            self._nationwide_data[cache_key] = data
         return self._nationwide_data[cache_key]
+    
+    def _get_chart_data_with_fallback(self, region: str, analysis_sheet: str, 
+                                      region_col: int, code_col: int, total_code: str,
+                                      agg_sheet: str, agg_region_col: int = 4,
+                                      agg_code_col: int = 7, agg_total_code: str = None) -> List[Dict[str, Any]]:
+        """차트 데이터 추출 (분석 시트 → 집계 시트 fallback)"""
+        try:
+            df = self.cache.get_sheet(analysis_sheet)
+            data = self._get_chart_time_series(df, region, region_col, code_col, total_code, analysis_sheet)
+            if data:
+                return data
+        except:
+            pass
+        
+        # 집계 시트에서 fallback
+        return self._get_chart_time_series_from_aggregation(
+            agg_sheet, region, agg_region_col, agg_code_col, agg_total_code or total_code
+        )
     
     def extract_chart_data(self, region: str) -> Dict[str, Any]:
         """차트 데이터 추출"""
         charts = {}
         
         # 1. 광공업생산 차트
-        df_mfg = self.cache.get_sheet('A 분석')
-        nationwide_mfg = self._get_nationwide_chart_data('A 분석', 3, 6, 'BCD')
-        region_mfg = self._get_chart_time_series(df_mfg, region, 3, 6, 'BCD', 'A 분석')
+        nationwide_mfg = self._get_nationwide_chart_data('A 분석', 3, 6, 'BCD',
+                                                         agg_sheet_name='A(광공업생산)집계',
+                                                         agg_region_col=4, agg_code_col=7, agg_total_code='BCD')
+        region_mfg = self._get_chart_data_with_fallback(region, 'A 분석', 3, 6, 'BCD',
+                                                         'A(광공업생산)집계', 4, 7, 'BCD')
         
         charts['manufacturing'] = {
             "title": "< 광공업생산 전년동분기대비 증감률(%) >",
@@ -1380,9 +1867,12 @@ class RegionalGenerator:
         }
         
         # 2. 서비스업생산 차트
-        df_svc = self.cache.get_sheet('B 분석')
-        nationwide_svc = self._get_nationwide_chart_data('B 분석', 3, 6, 'E~S')
-        region_svc = self._get_chart_time_series(df_svc, region, 3, 6, 'E~S', 'B 분석')
+        # B(서비스업생산)집계: 열3=지역, 열6=코드
+        nationwide_svc = self._get_nationwide_chart_data('B 분석', 3, 6, 'E~S',
+                                                         agg_sheet_name='B(서비스업생산)집계',
+                                                         agg_region_col=3, agg_code_col=6, agg_total_code='E~S')
+        region_svc = self._get_chart_data_with_fallback(region, 'B 분석', 3, 6, 'E~S',
+                                                         'B(서비스업생산)집계', 3, 6, 'E~S')
         
         charts['service'] = {
             "title": "< 서비스업생산 전년동분기대비 증감률(%) >",
@@ -1396,9 +1886,12 @@ class RegionalGenerator:
         }
         
         # 3. 소매판매 차트
-        df_retail = self.cache.get_sheet('C 분석')
-        nationwide_retail = self._get_nationwide_chart_data('C 분석', 3, 4, '0')
-        region_retail = self._get_chart_time_series(df_retail, region, 3, 4, '0', 'C 분석')
+        # C(소비)집계: 열2=지역, 열3=분류단계(0=총지수)
+        nationwide_retail = self._get_nationwide_chart_data('C 분석', 3, 4, '0',
+                                                            agg_sheet_name='C(소비)집계',
+                                                            agg_region_col=2, agg_code_col=3, agg_total_code='0')
+        region_retail = self._get_chart_data_with_fallback(region, 'C 분석', 3, 4, '0',
+                                                            'C(소비)집계', 2, 3, '0')
         
         charts['retail'] = {
             "title": "< 소매판매 전년동분기대비 증감률(%) >",
@@ -1412,9 +1905,12 @@ class RegionalGenerator:
         }
         
         # 4. 건설수주 차트
-        df_const = self.cache.get_sheet("F'분석")
-        nationwide_const = self._get_nationwide_chart_data("F'분석", 2, 3, '0')
-        region_const = self._get_chart_time_series(df_const, region, 2, 3, '0', "F'분석")
+        # F'(건설)집계: 열1=지역, 열3=분류코드(0=합계)
+        nationwide_const = self._get_nationwide_chart_data("F'분석", 2, 3, '0',
+                                                           agg_sheet_name="F'(건설)집계",
+                                                           agg_region_col=1, agg_code_col=3, agg_total_code='0')
+        region_const = self._get_chart_data_with_fallback(region, "F'분석", 2, 3, '0',
+                                                           "F'(건설)집계", 1, 3, '0')
         
         charts['construction'] = {
             "title": "< 건설수주 전년동분기대비 증감률(%) >",
@@ -1428,13 +1924,18 @@ class RegionalGenerator:
         }
         
         # 5. 수출입 차트 (4개 시리즈)
-        df_export = self.cache.get_sheet('G 분석')
-        df_import = self.cache.get_sheet('H 분석')
-        
-        nationwide_export = self._get_nationwide_chart_data('G 분석', 3, 4, '0')
-        region_export = self._get_chart_time_series(df_export, region, 3, 4, '0', 'G 분석')
-        nationwide_import = self._get_nationwide_chart_data('H 분석', 3, 4, '0')
-        region_import = self._get_chart_time_series(df_import, region, 3, 4, '0', 'H 분석')
+        # G(수출)집계: 열3=지역, 열4=분류단계('0'=합계)
+        # H(수입)집계: 열3=지역, 열4=분류단계('0'=합계)
+        nationwide_export = self._get_nationwide_chart_data('G 분석', 3, 4, '0',
+                                                            agg_sheet_name='G(수출)집계',
+                                                            agg_region_col=3, agg_code_col=4, agg_total_code='0')
+        region_export = self._get_chart_data_with_fallback(region, 'G 분석', 3, 4, '0',
+                                                            'G(수출)집계', 3, 4, '0')
+        nationwide_import = self._get_nationwide_chart_data('H 분석', 3, 4, '0',
+                                                            agg_sheet_name='H(수입)집계',
+                                                            agg_region_col=3, agg_code_col=4, agg_total_code='0')
+        region_import = self._get_chart_data_with_fallback(region, 'H 분석', 3, 4, '0',
+                                                            'H(수입)집계', 3, 4, '0')
         
         charts['export_import'] = {
             "title": "< 수출입 전년동분기대비 증감률(%) >",
@@ -1450,21 +1951,27 @@ class RegionalGenerator:
         }
         
         # 6. 소비자물가 차트
-        df_price = self.cache.get_sheet('E(지출목적물가) 분석')
-        
-        # 총지수 데이터 추출 (별도 처리 필요)
-        def get_price_series(df, region_name):
-            rows = df[(df[3] == region_name) & (df[4].astype(str) == '0') & (df[8] == '총지수')]
-            if len(rows) == 0:
-                return []
-            row = rows.iloc[0]
-            quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4",
-                        "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
-                        "'25.1/4", "'25.2/4"]
-            keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
-                    '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
-                    '2025_1Q', '2025_2Q']
-            return [{"period": q, "value": self._get_quarter_value(row, 'E(지출목적물가) 분석', k)} for q, k in zip(quarters, keys)]
+        def get_price_series(region_name):
+            """물가 데이터 추출 (분석 시트 → 집계 시트 fallback)"""
+            try:
+                df_price = self.cache.get_sheet('E(지출목적물가) 분석')
+                rows = df_price[(df_price[3] == region_name) & (df_price[4].astype(str) == '0') & (df_price[8] == '총지수')]
+                if len(rows) > 0:
+                    row = rows.iloc[0]
+                    quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4",
+                                "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
+                                "'25.1/4", "'25.2/4"]
+                    keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
+                            '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
+                            '2025_1Q', '2025_2Q']
+                    result = [{"period": q, "value": self._get_quarter_value(row, 'E(지출목적물가) 분석', k)} for q, k in zip(quarters, keys)]
+                    if any(item['value'] != 0.0 for item in result):
+                        return result
+            except:
+                pass
+            
+            # E(지출목적물가)집계: 열2=지역, 열3=분류단계(0=총지수)
+            return self._get_chart_time_series_from_aggregation('E(지출목적물가)집계', region_name, 2, 3, '0')
         
         charts['consumer_price'] = {
             "title": "< 소비자물가 전년동분기대비 등락률(%) >",
@@ -1472,29 +1979,70 @@ class RegionalGenerator:
             "yAxisMax": 5,
             "yAxisStep": 1,
             "series": [
-                {"name": "전국", "data": get_price_series(df_price, '전국'), "color": "#1f77b4"},
-                {"name": region, "data": get_price_series(df_price, region), "color": "#ff7f0e"}
+                {"name": "전국", "data": get_price_series('전국'), "color": "#1f77b4"},
+                {"name": region, "data": get_price_series(region), "color": "#ff7f0e"}
             ]
         }
         
-        # 7. 고용률 차트
-        df_emp = self.cache.get_sheet('D(고용률)분석')
-        
-        def get_emp_series(df, region_name, age_filter=None):
+        # 7. 고용률 차트 (집계 시트에서 전년동기대비 증감 계산)
+        def get_emp_series_from_aggregation(region_name, age_filter=None):
+            """고용률 집계 시트에서 전년동기대비 증감(%p) 계산"""
+            try:
+                df_emp_agg = self.cache.get_sheet('D(고용률)집계')
+            except:
+                return []
+            
+            # D(고용률)집계: 열1=지역, 열2=분류단계, 열3=산업이름
             if age_filter:
-                rows = df[(df[2] == region_name) & (df[5].astype(str).str.contains(age_filter, na=False))]
+                rows = df_emp_agg[(df_emp_agg[1] == region_name) & (df_emp_agg[3].astype(str).str.contains(age_filter, na=False))]
             else:
-                rows = df[(df[2] == region_name) & (df[3].astype(str) == '0')]
+                rows = df_emp_agg[(df_emp_agg[1] == region_name) & (df_emp_agg[2].astype(str) == '0')]
+            
             if len(rows) == 0:
                 return []
             row = rows.iloc[0]
+            
+            # 집계 시트 분기별 열 (열 21=2025.2Q, 열 17=2024.2Q)
+            # 열 4~21: 분기별 고용률 데이터 (총 18개 열)
+            EMP_QUARTER_COLS = {
+                '2022_1Q': 8, '2022_2Q': 9, '2022_3Q': 10, '2022_4Q': 11,
+                '2023_1Q': 12, '2023_2Q': 13, '2023_3Q': 14, '2023_4Q': 15,
+                '2024_1Q': 16, '2024_2Q': 17, '2024_3Q': 18, '2024_4Q': 19,
+                '2025_1Q': 20, '2025_2Q': 21
+            }
+            PREV_YEAR_MAP = {
+                '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
+                '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
+                '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q'
+            }
+            
             quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4",
                         "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
                         "'25.1/4", "'25.2/4"]
             keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
                     '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
                     '2025_1Q', '2025_2Q']
-            return [{"period": q, "value": self._get_quarter_value(row, 'D(고용률)분석', k)} for q, k in zip(quarters, keys)]
+            
+            result = []
+            for q, k in zip(quarters, keys):
+                curr_col = EMP_QUARTER_COLS.get(k)
+                prev_key = PREV_YEAR_MAP.get(k)
+                prev_col = EMP_QUARTER_COLS.get(prev_key) if prev_key else None
+                
+                if curr_col and prev_col and curr_col < len(row) and prev_col < len(row):
+                    try:
+                        curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+                        prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                        # 고용률은 %p 단위로 단순 차이 계산
+                        change = round(curr_val - prev_val, 1)
+                    except (ValueError, TypeError):
+                        change = 0.0
+                else:
+                    change = 0.0
+                
+                result.append({"period": q, "value": change})
+            
+            return result
         
         charts['employment_rate'] = {
             "title": "< 고용률 전년동분기대비 증감(%p) >",
@@ -1502,9 +2050,9 @@ class RegionalGenerator:
             "yAxisMax": 8,
             "yAxisStep": 3,
             "series": [
-                {"name": "전국", "data": get_emp_series(df_emp, '전국'), "color": "#1f77b4"},
-                {"name": region, "data": get_emp_series(df_emp, region), "color": "#ff7f0e"},
-                {"name": f"{region} 20-29세", "data": get_emp_series(df_emp, region, '15 - 29'), "color": "#2ca02c"}
+                {"name": "전국", "data": get_emp_series_from_aggregation('전국'), "color": "#1f77b4"},
+                {"name": region, "data": get_emp_series_from_aggregation(region), "color": "#ff7f0e"},
+                {"name": f"{region} 20-29세", "data": get_emp_series_from_aggregation(region, '15 - 29'), "color": "#2ca02c"}
             ]
         }
         
@@ -1569,8 +2117,123 @@ class RegionalGenerator:
         
         return charts
     
+    def _get_summary_value_from_aggregation(self, agg_sheet: str, region: str, 
+                                            region_col: int, code_col: int, 
+                                            total_code: str, quarter_key: str) -> float:
+        """집계 시트에서 요약 표용 전년동기대비 증감률 계산"""
+        # 시트별 분기 열 매핑 재사용
+        SHEET_QUARTER_CONFIGS = {
+            'A(광공업생산)집계': {
+                '2022_1Q': 13, '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'B(서비스업생산)집계': {
+                '2022_1Q': 12, '2022_2Q': 13, '2022_3Q': 14, '2022_4Q': 15,
+                '2023_1Q': 16, '2023_2Q': 17, '2023_3Q': 18, '2023_4Q': 19,
+                '2024_1Q': 20, '2024_2Q': 21, '2024_3Q': 22, '2024_4Q': 23,
+                '2025_1Q': 24, '2025_2Q': 25
+            },
+            'C(소비)집계': {
+                '2022_1Q': 11, '2022_2Q': 12, '2022_3Q': 13, '2022_4Q': 14,
+                '2023_1Q': 15, '2023_2Q': 16, '2023_3Q': 17, '2023_4Q': 18,
+                '2024_1Q': 19, '2024_2Q': 20, '2024_3Q': 21, '2024_4Q': 22,
+                '2025_1Q': 23, '2025_2Q': 24
+            },
+            "F'(건설)집계": {
+                '2022_1Q': 9, '2022_2Q': 10, '2022_3Q': 11, '2022_4Q': 12,
+                '2023_1Q': 13, '2023_2Q': 14, '2023_3Q': 15, '2023_4Q': 16,
+                '2024_1Q': 17, '2024_2Q': 18, '2024_3Q': 19, '2024_4Q': 20,
+                '2025_1Q': 21, '2025_2Q': 22
+            },
+            'G(수출)집계': {
+                '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'H(수입)집계': {
+                '2022_2Q': 14, '2022_3Q': 15, '2022_4Q': 16,
+                '2023_1Q': 17, '2023_2Q': 18, '2023_3Q': 19, '2023_4Q': 20,
+                '2024_1Q': 21, '2024_2Q': 22, '2024_3Q': 23, '2024_4Q': 24,
+                '2025_1Q': 25, '2025_2Q': 26
+            },
+            'E(지출목적물가)집계': {
+                '2022_1Q': 11, '2022_2Q': 12, '2022_3Q': 13, '2022_4Q': 14,
+                '2023_1Q': 15, '2023_2Q': 16, '2023_3Q': 17, '2023_4Q': 18,
+                '2024_1Q': 19, '2024_2Q': 20, '2024_3Q': 21, '2024_4Q': 22,
+                '2025_1Q': 23, '2025_2Q': 24
+            },
+        }
+        PREV_YEAR_MAP = {
+            '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
+            '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
+            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q'
+        }
+        
+        try:
+            df = self.cache.get_sheet(agg_sheet)
+            row = df[(df[region_col] == region) & (df[code_col].astype(str) == str(total_code))]
+            if len(row) == 0:
+                return 0.0
+            row = row.iloc[0]
+            
+            cols = SHEET_QUARTER_CONFIGS.get(agg_sheet, {})
+            curr_col = cols.get(quarter_key)
+            prev_key = PREV_YEAR_MAP.get(quarter_key)
+            prev_col = cols.get(prev_key) if prev_key else None
+            
+            if not curr_col or not prev_col or curr_col >= len(row) or prev_col >= len(row):
+                return 0.0
+            
+            curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+            prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            
+            if prev_val != 0:
+                return round((curr_val - prev_val) / prev_val * 100, 1)
+            return 0.0
+        except:
+            return 0.0
+    
+    def _get_employment_change_from_aggregation(self, region: str, quarter_key: str) -> float:
+        """고용률 집계 시트에서 전년동기대비 증감(%p) 계산"""
+        EMP_QUARTER_COLS = {
+            '2022_1Q': 8, '2022_2Q': 9, '2022_3Q': 10, '2022_4Q': 11,
+            '2023_1Q': 12, '2023_2Q': 13, '2023_3Q': 14, '2023_4Q': 15,
+            '2024_1Q': 16, '2024_2Q': 17, '2024_3Q': 18, '2024_4Q': 19,
+            '2025_1Q': 20, '2025_2Q': 21
+        }
+        PREV_YEAR_MAP = {
+            '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
+            '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
+            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q'
+        }
+        
+        try:
+            df = self.cache.get_sheet('D(고용률)집계')
+            row = df[(df[1] == region) & (df[2].astype(str) == '0')]
+            if len(row) == 0:
+                return 0.0
+            row = row.iloc[0]
+            
+            curr_col = EMP_QUARTER_COLS.get(quarter_key)
+            prev_key = PREV_YEAR_MAP.get(quarter_key)
+            prev_col = EMP_QUARTER_COLS.get(prev_key) if prev_key else None
+            
+            if not curr_col or not prev_col or curr_col >= len(row) or prev_col >= len(row):
+                return 0.0
+            
+            curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
+            prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            
+            # 고용률은 %p 단위로 단순 차이 계산
+            return round(curr_val - prev_val, 1)
+        except:
+            return 0.0
+    
     def extract_summary_table(self, region: str) -> Dict[str, Any]:
-        """주요지표 요약 테이블 데이터 추출"""
+        """주요지표 요약 테이블 데이터 추출 (집계 시트 fallback 포함)"""
         region_info = next((r for r in REGIONS if r.name == region), None)
         if not region_info:
             return {}
@@ -1583,76 +2246,92 @@ class RegionalGenerator:
         for period, q_key in zip(periods, quarter_keys):
             row_data = {"period": period}
             
-            # 광공업생산
+            # 광공업생산 (분석 시트 → 집계 시트 fallback)
             df = self.cache.get_sheet('A 분석')
             mfg_row = df[(df[3] == region) & (df[6] == 'BCD')]
             if len(mfg_row) > 0:
-                row_data['manufacturing'] = self._get_quarter_value(mfg_row.iloc[0], 'A 분석', q_key)
+                val = self._get_quarter_value(mfg_row.iloc[0], 'A 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('A(광공업생산)집계', region, 4, 7, 'BCD', q_key)
+                row_data['manufacturing'] = val
             else:
-                row_data['manufacturing'] = 0
+                row_data['manufacturing'] = self._get_summary_value_from_aggregation('A(광공업생산)집계', region, 4, 7, 'BCD', q_key)
             
             # 서비스업생산
             df = self.cache.get_sheet('B 분석')
             svc_row = df[(df[3] == region) & (df[6] == 'E~S')]
             if len(svc_row) > 0:
-                row_data['service'] = self._get_quarter_value(svc_row.iloc[0], 'B 분석', q_key)
+                val = self._get_quarter_value(svc_row.iloc[0], 'B 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('B(서비스업생산)집계', region, 3, 6, 'E~S', q_key)
+                row_data['service'] = val
             else:
-                row_data['service'] = 0
+                row_data['service'] = self._get_summary_value_from_aggregation('B(서비스업생산)집계', region, 3, 6, 'E~S', q_key)
             
             # 소매판매
             df = self.cache.get_sheet('C 분석')
             retail_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
             if len(retail_row) > 0:
-                row_data['retail'] = self._get_quarter_value(retail_row.iloc[0], 'C 분석', q_key)
+                val = self._get_quarter_value(retail_row.iloc[0], 'C 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('C(소비)집계', region, 2, 3, '0', q_key)
+                row_data['retail'] = val
             else:
-                row_data['retail'] = 0
+                row_data['retail'] = self._get_summary_value_from_aggregation('C(소비)집계', region, 2, 3, '0', q_key)
             
             # 건설수주
             df = self.cache.get_sheet("F'분석")
             const_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
             if len(const_row) > 0:
-                val = const_row.iloc[0][self.QUARTER_COLS["F'분석"][q_key]]
-                if pd.isna(val) or val == '없음' or val == '-':
-                    row_data['construction'] = 0
-                else:
-                    try:
-                        row_data['construction'] = round(float(val), 1)
-                    except (ValueError, TypeError):
-                        row_data['construction'] = 0
+                try:
+                    val = const_row.iloc[0][self.QUARTER_COLS["F'분석"][q_key]]
+                    if pd.isna(val) or val == '없음' or val == '-':
+                        val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', q_key)
+                    else:
+                        val = round(float(val), 1)
+                        if val == 0.0:
+                            val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', q_key)
+                except:
+                    val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', q_key)
+                row_data['construction'] = val
             else:
-                row_data['construction'] = 0
+                row_data['construction'] = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', q_key)
             
             # 수출
             df = self.cache.get_sheet('G 분석')
             exp_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
             if len(exp_row) > 0:
-                row_data['export'] = self._get_quarter_value(exp_row.iloc[0], 'G 분석', q_key)
+                val = self._get_quarter_value(exp_row.iloc[0], 'G 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('G(수출)집계', region, 3, 4, '0', q_key)
+                row_data['export'] = val
             else:
-                row_data['export'] = 0
+                row_data['export'] = self._get_summary_value_from_aggregation('G(수출)집계', region, 3, 4, '0', q_key)
             
             # 수입
             df = self.cache.get_sheet('H 분석')
             imp_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
             if len(imp_row) > 0:
-                row_data['import'] = self._get_quarter_value(imp_row.iloc[0], 'H 분석', q_key)
+                val = self._get_quarter_value(imp_row.iloc[0], 'H 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('H(수입)집계', region, 3, 4, '0', q_key)
+                row_data['import'] = val
             else:
-                row_data['import'] = 0
+                row_data['import'] = self._get_summary_value_from_aggregation('H(수입)집계', region, 3, 4, '0', q_key)
             
             # 소비자물가
             df = self.cache.get_sheet('E(지출목적물가) 분석')
             price_row = df[(df[3] == region) & (df[4].astype(str) == '0') & (df[8] == '총지수')]
             if len(price_row) > 0:
-                row_data['consumer_price'] = self._get_quarter_value(price_row.iloc[0], 'E(지출목적물가) 분석', q_key)
+                val = self._get_quarter_value(price_row.iloc[0], 'E(지출목적물가) 분석', q_key)
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('E(지출목적물가)집계', region, 2, 3, '0', q_key)
+                row_data['consumer_price'] = val
             else:
-                row_data['consumer_price'] = 0
+                row_data['consumer_price'] = self._get_summary_value_from_aggregation('E(지출목적물가)집계', region, 2, 3, '0', q_key)
             
-            # 고용률
-            df = self.cache.get_sheet('D(고용률)분석')
-            emp_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
-            if len(emp_row) > 0:
-                row_data['employment_rate'] = self._get_quarter_value(emp_row.iloc[0], 'D(고용률)분석', q_key)
-            else:
-                row_data['employment_rate'] = 0
+            # 고용률 (집계 시트에서 전년동기대비 증감 계산)
+            row_data['employment_rate'] = self._get_employment_change_from_aggregation(region, q_key)
             
             # 인구순이동 (천명 단위)
             df = self.cache.get_sheet('I(순인구이동)집계')

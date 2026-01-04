@@ -187,10 +187,9 @@ h3, .h3-title {
     border: 1px solid #000;
     padding: 3px 4px;
     text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     vertical-align: middle;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 테이블 헤더 - 연보라색 */
@@ -300,7 +299,8 @@ h3, .h3-title {
     border: 1px solid #000;
     padding: 2px 3px;
     text-align: right;
-    white-space: nowrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .statistics-table th {
