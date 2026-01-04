@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보도자료 생성 시스템 - 종합 이해 가이드</title>
+    <style>
+        /* 나눔고딕 폰트 */
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+        
+        /* A4 페이지 설정 */
+        @page {
+            size: A4 portrait;
+            margin: 20mm 15mm 20mm 20mm; /* 상 우 하 좌 - 좌철 여백 */
+        }
+        
+        /* 짝수 페이지 (뒷면) - 양면 인쇄 시 */
+        @page :left {
+            margin: 20mm 20mm 20mm 15mm; /* 좌철 기준 */
+        }
+        
+        @page :right {
+            margin: 20mm 15mm 20mm 20mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            font-size: 12pt;
+        }
+        
+        body {
+            font-family: 'Nanum Gothic', '나눔고딕', '맑은 고딕', sans-serif;
+            font-size: 12pt;
+            line-height: 1.7;
+            color: #000;
+            background: #fff;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* 제목 스타일 */
+        h1 {
+            font-size: 20pt;
+            font-weight: 800;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #333;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        
+        h2 {
+            font-size: 16pt;
+            font-weight: 700;
+            margin: 25px 0 15px 0;
+            padding: 8px 0 8px 12px;
+            border-left: 4px solid #333;
+            background: #f0f0f0;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        
+        h3 {
+            font-size: 14pt;
+            font-weight: 700;
+            margin: 20px 0 12px 0;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        
+        h4 {
+            font-size: 13pt;
+            font-weight: 700;
+            margin: 15px 0 10px 0;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        
+        h5, h6 {
+            font-size: 12pt;
+            font-weight: 700;
+            margin: 12px 0 8px 0;
+            page-break-after: avoid;
+        }
+        
+        /* 문단 */
+        p {
+            margin: 8px 0;
+            text-align: justify;
+            orphans: 3;
+            widows: 3;
+        }
+        
+        /* 표 스타일 - 쪼개지지 않도록 */
+        .table-container {
+            page-break-inside: avoid;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+            margin: 0;
+            table-layout: fixed;
+        }
+        
+        th, td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+            text-align: center;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        
+        th {
+            background: #e0e0e0;
+            font-weight: 700;
+        }
+        
+        /* 코드 블록 */
+        .code-block {
+            page-break-inside: avoid;
+            margin: 15px 0;
+        }
+        
+        pre {
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+        }
+        
+        .inline-code {
+            background: #e8e8e8;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10pt;
+        }
+        
+        /* 인용문 */
+        blockquote {
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-left: 4px solid #666;
+            background: #f8f8f8;
+            font-style: italic;
+            page-break-inside: avoid;
+        }
+        
+        blockquote p {
+            margin: 5px 0;
+        }
+        
+        /* 리스트 */
+        ul, ol {
+            margin: 10px 0 10px 25px;
+            padding: 0;
+        }
+        
+        li {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        
+        /* 수평선 */
+        hr {
+            border: none;
+            border-top: 1px solid #999;
+            margin: 20px 0;
+        }
+        
+        .page-break-suggestion {
+            page-break-after: auto;
+        }
+        
+        /* 링크 - 인쇄 시 URL 표시 안 함 */
+        a {
+            color: #333;
+            text-decoration: underline;
+        }
+        
+        /* 이미지 - 비율 유지 */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 15px auto;
+            page-break-inside: avoid;
+        }
+        
+        /* Mermaid 코드 블록 */
+        .mermaid-code-block {
+            page-break-inside: avoid;
+            margin: 15px 0;
+        }
+        
+        /* 강조 */
+        strong {
+            font-weight: 700;
+        }
+        
+        em {
+            font-style: italic;
+        }
+        
+        /* 화면 표시용 */
+        @media screen {
+            body {
+                padding: 30px;
+                max-width: 210mm;
+                margin: 0 auto;
+                background: #f0f0f0;
+                filter: none;
+                -webkit-filter: none;
+            }
+            
+            .page-wrapper {
+                background: #fff;
+                padding: 20mm 15mm;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            }
+        }
+        
+        /* 인쇄 스타일 */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                background: #fff;
+                -webkit-filter: grayscale(100%);
+                filter: grayscale(100%);
+            }
+            
+            .page-wrapper {
+                padding: 0;
+                box-shadow: none;
+            }
+            
+            /* 표와 차트가 페이지 사이에 쪼개지지 않도록 */
+            table, .table-container, .code-block, .mermaid-code-block, blockquote {
+                page-break-inside: avoid !important;
+            }
+            
+            /* 제목 뒤에 바로 페이지 나눔 방지 */
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid !important;
+            }
+            
+            /* 첫 번째 제목 앞에서 페이지 나눔 방지 */
+            h1:first-of-type {
+                page-break-before: avoid !important;
+            }
+            
+            /* URL 숨기기 */
+            a[href]:after {
+                content: none !important;
+            }
+            
+            /* 페이지 번호 - 좌철 양면 인쇄용 (왼쪽 페이지는 왼쪽, 오른쪽 페이지는 오른쪽) */
+            @page :left {
+                @bottom-left {
+                    content: counter(page);
+                    font-size: 9pt;
+                }
+            }
+            
+            @page :right {
+                @bottom-right {
+                    content: counter(page);
+                    font-size: 9pt;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <h1 id="지역경제동향-보도자료-생성-시스템---종합-이해-가이드" style="page-break-before: auto;">지역경제동향 보도자료 생성 시스템 - 종합 이해 가이드</h1>
+<blockquote><p>이 문서는 프로젝트의 모든 측면을 깊이 있게 이해하고, 어떤 질문에도 대비할 수 있도록 작성되었습니다.</p></blockquote>
+<hr class="page-break-suggestion">
+<h2 id="목차" style="page-break-before: auto;">목차</h2>
+<ol><li><a href="#1-프로젝트-개요">프로젝트 개요</a></li><li><a href="#2-시스템-아키텍처">시스템 아키텍처</a></li><li><a href="#3-기술-스택">기술 스택</a></li><li><a href="#4-데이터-플로우">데이터 플로우</a></li><li><a href="#5-프로젝트-구조">프로젝트 구조</a></li><li><a href="#6-핵심-컴포넌트-상세">핵심 컴포넌트 상세</a></li><li><a href="#7-보도자료-생성-프로세스">보도자료 생성 프로세스</a></li><li><a href="#8-api-엔드포인트">API 엔드포인트</a></li><li><a href="#9-데이터-구조-및-형식">데이터 구조 및 형식</a></li><li><a href="#10-주요-기능-상세">주요 기능 상세</a></li><li><a href="#11-설정-및-환경">설정 및 환경</a></li><li><a href="#12-배포-및-운영">배포 및 운영</a></li><li><a href="#13-문제-해결-가이드">문제 해결 가이드</a></li></ol>
+<hr class="page-break-suggestion">
+<h2 id="1-프로젝트-개요" style="page-break-before: auto;">1. 프로젝트 개요</h2>
+<h3 id="11-프로젝트-목적" style="">1.1 프로젝트 목적</h3>
+<p><strong>지역경제동향 보도자료 생성 시스템</strong>은 국가데이터처(구 통계청)에서 분기별로 발행하는 지역경제동향 보도자료를 자동으로 생성하는 웹 애플리케이션입니다.</p>
+<h3 id="12-핵심-가치" style="">1.2 핵심 가치</h3>
+<ul><li><strong>시간 절감</strong>: 보도자료 초안 작성 시간을 5일에서 약 3분으로 단축 (99.9% 절감)</li><li><strong>업무 효율화</strong>: 반복 작업 자동화로 해석 작업 시간 3배 확보 (2일 → 6일)</li><li><strong>정확성 향상</strong>: 수동 입력 오류 방지 및 데이터 일관성 보장</li><li><strong>실무자 만족도 향상</strong>: 단순 반복 작업 해방으로 업무 피로도 감소</li></ul>
+<h3 id="13-지원-보도자료-유형" style="">1.3 지원 보도자료 유형</h3>
+<h4 id="131-요약-보도자료-summary-reports" style="">1.3.1 요약 보도자료 (Summary Reports)</h4>
+<ul><li>표지 (Cover)</li><li>일러두기 (Guide)</li><li>목차 (Table of Contents)</li><li>인포그래픽 (Infographic)</li><li>요약-지역경제동향 (Summary Overview)</li><li>요약-생산 (Summary Production)</li><li>요약-소비건설 (Summary Consumption & Construction)</li><li>요약-수출물가 (Summary Export & Price)</li><li>요약-고용인구 (Summary Employment & Population)</li></ul>
+<h4 id="132-부문별-보도자료-sectoral-reports" style="">1.3.2 부문별 보도자료 (Sectoral Reports)</h4>
+<ul><li>광공업생산 (Manufacturing)</li><li>서비스업생산 (Service Industry)</li><li>소비동향 (Consumption)</li><li>건설동향 (Construction)</li><li>수출 (Export)</li><li>수입 (Import)</li><li>물가동향 (Price Trend)</li><li>고용률 (Employment Rate)</li><li>실업률 (Unemployment Rate)</li><li>국내인구이동 (Domestic Migration)</li></ul>
+<h4 id="133-시도별-보도자료-regional-reports" style="">1.3.3 시도별 보도자료 (Regional Reports)</h4>
+<ul><li>17개 시도별 개별 보도자료 (서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주)</li><li>참고_GRDP (Reference GRDP)</li></ul>
+<h4 id="134-통계표-보도자료-statistics-reports" style="">1.3.4 통계표 보도자료 (Statistics Reports)</h4>
+<ul><li>통계표 목차</li><li>개별 통계표 (광공업생산지수, 서비스업생산지수, 소매판매액지수, 건설수주액, 고용률, 실업률, 국내인구이동, 수출액, 수입액, 소비자물가지수)</li><li>통계표-참고-GRDP</li><li>부록-주요용어정의</li></ul>
+<h3 id="14-주요-사용자" style="">1.4 주요 사용자</h3>
+<ul><li><strong>실무팀</strong>: 담당 사무관 1명, 주무관 1명 (총 2명)</li><li><strong>작업 주기</strong>: 분기별 (1년에 4회)</li><li><strong>기존 작업 시간</strong>: 약 7일</li><li><strong>개선 후 작업 시간</strong>: 약 3분 (생성) + 편집/검토 시간</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="2-시스템-아키텍처" style="page-break-before: auto;">2. 시스템 아키텍처</h2>
+<h3 id="21-전체-구조" style="">2.1 전체 구조</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">┌─────────────────────────────────────────────────────────────┐
+│                    웹 브라우저 (클라이언트)                    │
+│  - dashboard.html (단일 페이지 애플리케이션)                  │
+│  - JavaScript (Fetch API, 상태 관리)                         │
+└───────────────────┬─────────────────────────────────────────┘
+                    │ HTTP/HTTPS
+┌───────────────────▼─────────────────────────────────────────┐
+│              Flask 웹 서버 (Python)                          │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  routes/        (라우팅 계층)                         │   │
+│  │  - main.py      (메인 페이지, 파일 서빙)               │   │
+│  │  - api.py       (REST API 엔드포인트)                 │   │
+│  │  - preview.py   (미리보기 엔드포인트)                  │   │
+│  │  - debug.py     (디버그 엔드포인트)                    │   │
+│  └──────────────┬───────────────────────────────────────┘   │
+│  ┌──────────────▼───────────────────────────────────────┐   │
+│  │  services/     (비즈니스 로직 계층)                    │   │
+│  │  - report_generator.py  (보도자료 생성)                │   │
+│  │  - excel_processor.py   (엑셀 전처리)                  │   │
+│  │  - grdp_service.py      (GRDP 데이터 처리)             │   │
+│  │  - summary_data.py      (요약 데이터 추출)              │   │
+│  └──────────────┬───────────────────────────────────────┘   │
+│  ┌──────────────▼───────────────────────────────────────┐   │
+│  │  templates/    (데이터 추출 및 템플릿)                  │   │
+│  │  - *_generator.py  (데이터 추출기)                     │   │
+│  │  - *_template.html (Jinja2 템플릿)                    │   │
+│  └──────────────┬───────────────────────────────────────┘   │
+│  ┌──────────────▼───────────────────────────────────────┐   │
+│  │  utils/        (유틸리티 함수)                         │   │
+│  │  - filters.py        (Jinja2 필터)                    │   │
+│  │  - excel_utils.py    (엑셀 처리)                      │   │
+│  │  - data_utils.py     (데이터 검증)                    │   │
+│  └──────────────────────────────────────────────────────┘   │
+└───────────────────┬─────────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────────────┐
+│              데이터 계층                                      │
+│  - uploads/      (업로드된 파일)                             │
+│  - templates/    (생성된 HTML)                              │
+│  - exports/      (내보내기 파일)                             │
+│  - Excel 파일    (기초자료 수집표 / 분석표)                   │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+</div>
+<h3 id="22-레이어-구조" style="">2.2 레이어 구조</h3>
+<ol><li><strong>프레젠테이션 레이어</strong> (dashboard.html)</li></ol>
+<ul><li>사용자 인터페이스</li><li>상태 관리 (JavaScript)</li><li>API 호출 및 응답 처리</li></ul>
+<ol><li><strong>라우팅 레이어</strong> (routes/)</li></ol>
+<ul><li>HTTP 요청 라우팅</li><li>세션 관리</li><li>파일 업로드/다운로드 처리</li></ul>
+<ol><li><strong>비즈니스 로직 레이어</strong> (services/)</li></ol>
+<ul><li>보도자료 생성 오케스트레이션</li><li>데이터 전처리</li><li>GRDP 데이터 처리</li></ul>
+<ol><li><strong>데이터 추출 레이어</strong> (templates/*_generator.py)</li></ol>
+<ul><li>엑셀 데이터 추출</li><li>데이터 변환 및 가공</li><li>템플릿 데이터 준비</li></ul>
+<ol><li><strong>템플릿 레이어</strong> (templates/*_template.html)</li></ol>
+<ul><li>Jinja2 템플릿</li><li>HTML 렌더링</li><li>데이터 바인딩</li></ul>
+<ol><li><strong>유틸리티 레이어</strong> (utils/)</li></ol>
+<ul><li>공통 함수</li><li>필터 및 헬퍼</li><li>데이터 검증</li></ul>
+<h3 id="23-데이터-흐름-패턴" style="">2.3 데이터 흐름 패턴</h3>
+<h4 id="패턴-1-파일-업로드--데이터-추출--html-생성" style="">패턴 1: 파일 업로드 → 데이터 추출 → HTML 생성</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">엑셀 파일 업로드
+    ↓
+파일 유형 감지 (기초자료 vs 분석표)
+    ↓
+데이터 전처리 (수식 계산 등)
+    ↓
+Generator를 통한 데이터 추출
+    ↓
+Jinja2 템플릿 렌더링
+    ↓
+HTML 반환</code></pre>
+</div>
+<h4 id="패턴-2-기초자료--분석표-변환--보도자료-생성" style="">패턴 2: 기초자료 → 분석표 변환 → 보도자료 생성</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">기초자료 수집표 업로드
+    ↓
+DataConverter를 통한 분석표 생성
+    ↓
+분석표 저장
+    ↓
+보도자료 생성 프로세스 실행</code></pre>
+</div>
+<hr class="page-break-suggestion">
+<h2 id="3-기술-스택" style="page-break-before: auto;">3. 기술 스택</h2>
+<h3 id="31-백엔드" style="">3.1 백엔드</h3>
+<ul><li><strong>Python 3.10+</strong>: 메인 프로그래밍 언어</li><li><strong>Flask 2.3.0+</strong>: 웹 프레임워크</li><li>Blueprint 기반 모듈화된 라우팅</li><li>세션 관리</li><li>파일 업로드/다운로드 처리</li><li><strong>Jinja2 3.1.0+</strong>: 템플릿 엔진</li><li>커스텀 필터 지원</li><li>템플릿 상속 및 포함</li><li><strong>Werkzeug 2.3.0+</strong>: WSGI 유틸리티 (Flask 의존성)</li></ul>
+<h3 id="32-데이터-처리" style="">3.2 데이터 처리</h3>
+<ul><li><strong>pandas 2.0.0+</strong>: 데이터 분석 및 처리</li><li>엑셀 파일 읽기/쓰기</li><li>DataFrame 조작</li><li>데이터 변환</li><li><strong>openpyxl 3.1.0+</strong>: 엑셀 파일 직접 조작</li><li>시트 읽기/쓰기</li><li>셀 수정</li><li>수식 처리</li><li><strong>numpy 1.24.0+</strong>: 수치 연산</li><li><strong>xlwings 0.30.0+</strong>: Excel 애플리케이션 연동 (수식 계산용, 선택사항)</li><li><strong>formulas 1.2.0+</strong>: 순수 Python 수식 계산 (선택사항)</li></ul>
+<h3 id="33-프론트엔드" style="">3.3 프론트엔드</h3>
+<ul><li><strong>HTML5/CSS3</strong>: 마크업 및 스타일링</li><li><strong>Vanilla JavaScript (ES6+)</strong>: 클라이언트 사이드 로직</li><li>Fetch API (비동기 통신)</li><li>DOM 조작</li><li>상태 관리</li><li><strong>반응형 디자인</strong>: CSS Grid, Flexbox</li></ul>
+<h3 id="34-기타-도구" style="">3.4 기타 도구</h3>
+<ul><li><strong>BeautifulSoup4 4.12.0+</strong>: HTML 파싱 및 조작</li><li><strong>Pillow 10.0.0+</strong>: 이미지 처리</li><li><strong>python-dateutil 2.8.0+</strong>: 날짜 처리</li><li><strong>requests 2.31.0+</strong>: HTTP 요청 (KOSIS API 등)</li><li><strong>python-dotenv 1.0.0+</strong>: 환경 변수 관리</li></ul>
+<h3 id="35-개발-도구" style="">3.5 개발 도구</h3>
+<ul><li><strong>Git</strong>: 버전 관리</li><li><strong>Playwright 1.40.0+</strong>: 데모 녹화 (선택사항)</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="4-데이터-플로우" style="page-break-before: auto;">4. 데이터 플로우</h2>
+<h3 id="41-전체-데이터-플로우도" style="">4.1 전체 데이터 플로우도</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">[기초자료 수집표] 또는 [분석표]
+        ↓
+    파일 업로드
+        ↓
+    파일 유형 감지
+        ├─→ 분석표 → 바로 보도자료 생성
+        └─→ 기초자료 → 분석표 변환 → 보도자료 생성
+        ↓
+    GRDP 데이터 확인
+        ├─→ 있음 → 보도자료 생성
+        ├─→ 없음 → GRDP 업로드 요청
+        └─→ 기본값 사용
+        ↓
+    보도자료별 데이터 추출
+        ├─→ Generator 실행
+        ├─→ 데이터 가공
+        └─→ 템플릿 데이터 준비
+        ↓
+    Jinja2 템플릿 렌더링
+        ↓
+    HTML 생성
+        ↓
+    브라우저에서 미리보기 / 최종 생성
+        ↓
+    내보내기 (PDF, XLSX, 한글용 HTML)</code></pre>
+</div>
+<h3 id="42-기초자료--분석표-변환-플로우" style="">4.2 기초자료 → 분석표 변환 플로우</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">기초자료 수집표 엑셀 파일
+        ↓
+DataConverter 초기화
+        ↓
+연도/분기 자동 감지
+        ↓
+분석표 템플릿 로드
+        ↓
+시트별 변환 처리:
+    ├─→ 시트 매핑 확인 (예: '광공업생산' → 'A(광공업생산)집계')
+    ├─→ 열 구조 분석
+    ├─→ 데이터 추출 및 변환
+    ├─→ 집계 시트에 데이터 복사
+    └─→ 메타데이터 보존
+        ↓
+가중치 처리 (광공업생산, 서비스업생산)
+        ↓
+분석 시트 수식 계산 (선택사항)
+        ↓
+분석표 엑셀 파일 저장</code></pre>
+</div>
+<h3 id="43-보도자료-생성-플로우" style="">4.3 보도자료 생성 플로우</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">보도자료 ID + 엑셀 파일 경로
+        ↓
+Generator 모듈 동적 로드
+        ├─→ 클래스 기반 Generator (대부분)
+        └─→ 함수 기반 Generator (고용률, 실업률)
+        ↓
+데이터 추출
+    ├─→ 엑셀 파일 읽기
+    ├─→ 특정 시트 접근
+    ├─→ 데이터 파싱
+    ├─→ 계산 및 가공
+    └─→ 딕셔너리 형태로 구조화
+        ↓
+커스텀 데이터 병합 (결측치 대체 등)
+        ↓
+결측치 검증
+        ↓
+Jinja2 템플릿 로드
+        ↓
+템플릿 렌더링 (데이터 바인딩)
+        ↓
+HTML 문자열 반환</code></pre>
+</div>
+<h3 id="44-grdp-데이터-처리-플로우" style="">4.4 GRDP 데이터 처리 플로우</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">GRDP 데이터 필요 시
+        ↓
+데이터 소스 우선순위:
+    1. 세션에 저장된 GRDP 데이터
+    2. JSON 파일 (grdp_extracted.json)
+    3. 기초자료에서 추출
+    4. 분석표의 GRDP 시트
+    5. 업로드된 KOSIS GRDP 파일
+    6. 기본값 (플레이스홀더)
+        ↓
+데이터 파싱 및 검증
+        ↓
+세션 및 JSON 파일에 저장
+        ↓
+보도자료 생성 시 사용</code></pre>
+</div>
+<hr class="page-break-suggestion">
+<h2 id="5-프로젝트-구조" style="page-break-before: auto;">5. 프로젝트 구조</h2>
+<h3 id="51-디렉토리-구조" style="">5.1 디렉토리 구조</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">capstone/
+├── app.py                          # Flask 애플리케이션 진입점
+├── dashboard.html                  # 메인 대시보드 UI (단일 파일)
+├── report_generator.py             # 통합 보도자료 생성기 (CLI용)
+├── data_converter.py               # 기초자료 → 분석표 변환기
+│
+├── config/                         # 설정 파일
+│   ├── __init__.py
+│   ├── settings.py                 # 기본 설정 (경로, 상수)
+│   └── reports.py                  # 보도자료 정의 및 순서
+│
+├── routes/                         # Flask 라우팅
+│   ├── __init__.py
+│   ├── main.py                     # 메인 페이지 라우트
+│   ├── api.py                      # REST API 엔드포인트
+│   ├── preview.py                  # 미리보기 라우트
+│   └── debug.py                    # 디버그 라우트
+│
+├── services/                       # 비즈니스 로직
+│   ├── __init__.py
+│   ├── report_generator.py         # 보도자료 생성 서비스
+│   ├── excel_processor.py          # 엑셀 전처리 서비스
+│   ├── grdp_service.py             # GRDP 데이터 처리 서비스
+│   └── summary_data.py             # 요약 데이터 추출 서비스
+│
+├── utils/                          # 유틸리티 함수
+│   ├── __init__.py
+│   ├── filters.py                  # Jinja2 커스텀 필터
+│   ├── excel_utils.py              # 엑셀 관련 유틸리티
+│   └── data_utils.py               # 데이터 검증 유틸리티
+│
+├── templates/                      # 템플릿 및 생성기
+│   ├── *_generator.py              # 데이터 추출기 (각 보도자료별)
+│   ├── *_template.html             # Jinja2 템플릿 (각 보도자료별)
+│   ├── *_schema.json               # 데이터 스키마 (일부 보도자료)
+│   └── grdp_extracted.json         # 추출된 GRDP 데이터 (런타임 생성)
+│
+├── uploads/                        # 업로드된 파일 저장소
+├── debug/                          # 디버그용 HTML 파일
+├── exports/                        # 내보내기 파일 (한글용 HTML 등)
+│
+├── docs/                           # 문서
+│   ├── PROJECT_COMPREHENSIVE_GUIDE.md  # 이 문서
+│   ├── DEBUG_LOG.md                # 디버그 로그
+│   ├── DEPLOYMENT_GUIDE.md         # 배포 가이드
+│   └── ...
+│
+├── correct_answer/                 # 참고용 정답 이미지
+├── requirements.txt                # Python 의존성
+└── README.md                       # 프로젝트 개요</code></pre>
+</div>
+<h3 id="52-주요-파일-역할" style="">5.2 주요 파일 역할</h3>
+<h4 id="521-애플리케이션-진입점" style="">5.2.1 애플리케이션 진입점</h4>
+<ul><li><strong>app.py</strong>: Flask 애플리케이션 팩토리 및 설정</li><li>Flask 인스턴스 생성</li><li>Blueprint 등록</li><li>필터 등록</li><li>서버 실행</li></ul>
+<h4 id="522-설정-파일" style="">5.2.2 설정 파일</h4>
+<ul><li><strong>config/settings.py</strong>: </li><li>BASE<em>DIR, TEMPLATES</em>DIR 등 경로 설정</li><li>UPLOAD<em>FOLDER, DEBUG</em>FOLDER, EXPORT_FOLDER</li><li>Flask 설정 (SECRET<em>KEY, MAX</em>CONTENT_LENGTH)</li><li>Vercel 환경 감지 및 디렉토리 설정</li></ul>
+<ul><li><strong>config/reports.py</strong>:</li><li>REPORT_ORDER: 전체 보도자료 순서</li><li>SUMMARY_REPORTS: 요약 보도자료 목록</li><li>SECTOR_REPORTS: 부문별 보도자료 목록</li><li>REGIONAL_REPORTS: 시도별 보도자료 목록</li><li>STATISTICS_REPORTS: 통계표 보도자료 목록</li><li>PAGE_CONFIG: 페이지 번호 설정</li><li>TOC<em>SECTOR</em>ITEMS, TOC<em>REGION</em>ITEMS: 목차 항목</li></ul>
+<h4 id="523-라우팅-파일" style="">5.2.3 라우팅 파일</h4>
+<ul><li><strong>routes/main.py</strong>: </li><li><code class="inline-code">/</code>: 대시보드 페이지</li><li><code class="inline-code">/uploads/<filename></code>: 업로드 파일 다운로드</li><li><code class="inline-code">/view/<filename></code>: 파일 직접 보기</li><li><code class="inline-code">/exports/<path:filepath></code>: 내보내기 파일 보기</li><li><code class="inline-code">/templates/<filename></code>: 템플릿 파일 서빙</li></ul>
+<ul><li><strong>routes/api.py</strong>:</li><li><code class="inline-code">/api/upload</code>: 파일 업로드</li><li><code class="inline-code">/api/generate-preview</code>: 미리보기 생성</li><li><code class="inline-code">/api/generate-all</code>: 전체 보도자료 생성</li><li><code class="inline-code">/api/upload-grdp</code>: GRDP 파일 업로드</li><li><code class="inline-code">/api/export-final</code>: 최종 문서 내보내기</li><li><code class="inline-code">/api/export-xlsx</code>: XLSX 형식 내보내기</li><li><code class="inline-code">/api/export-hwp-ready</code>: 한글 복붙용 HTML 생성</li></ul>
+<ul><li><strong>routes/preview.py</strong>: 미리보기 전용 라우트</li></ul>
+<ul><li><strong>routes/debug.py</strong>: 디버그용 라우트</li></ul>
+<h4 id="524-서비스-파일" style="">5.2.4 서비스 파일</h4>
+<ul><li><strong>services/report_generator.py</strong>:</li><li><code class="inline-code">generate<em>report</em>html()</code>: 개별 보도자료 HTML 생성</li><li><code class="inline-code">generate<em>regional</em>report_html()</code>: 시도별 보도자료 생성</li><li><code class="inline-code">generate<em>statistics</em>report_html()</code>: 통계표 보도자료 생성</li><li>Generator 모듈 로드 및 실행 오케스트레이션</li></ul>
+<ul><li><strong>services/excel_processor.py</strong>:</li><li><code class="inline-code">preprocess_excel()</code>: 엑셀 수식 계산</li><li><code class="inline-code"><em>try</em>openpyxl_calculation()</code>: openpyxl로 직접 계산</li><li><code class="inline-code"><em>try</em>formulas()</code>: formulas 라이브러리 사용</li><li><code class="inline-code"><em>try</em>xlwings()</code>: xlwings로 Excel 앱 사용</li></ul>
+<ul><li><strong>services/grdp_service.py</strong>:</li><li><code class="inline-code">parse<em>kosis</em>grdp_file()</code>: KOSIS GRDP 파일 파싱</li><li><code class="inline-code">get<em>default</em>grdp_data()</code>: 기본 GRDP 데이터 생성</li><li><code class="inline-code">save<em>extracted</em>contributions()</code>: 기여율 데이터 저장</li></ul>
+<ul><li><strong>services/summary_data.py</strong>:</li><li><code class="inline-code">get<em>summary</em>overview_data()</code>: 요약-지역경제동향 데이터</li><li><code class="inline-code">get<em>summary</em>production_data()</code>: 요약-생산 데이터</li><li>각종 요약 데이터 추출 함수</li></ul>
+<h4 id="525-유틸리티-파일" style="">5.2.5 유틸리티 파일</h4>
+<ul><li><strong>utils/filters.py</strong>:</li><li><code class="inline-code">is_missing()</code>: 결측치 확인 필터</li><li><code class="inline-code">format_value()</code>: 값 포맷팅 필터</li><li><code class="inline-code">register_filters()</code>: Flask에 필터 등록</li></ul>
+<ul><li><strong>utils/excel_utils.py</strong>:</li><li><code class="inline-code">load<em>generator</em>module()</code>: Generator 모듈 동적 로드</li><li><code class="inline-code">extract<em>year</em>quarter<em>from</em>excel()</code>: 연도/분기 추출</li><li><code class="inline-code">detect<em>file</em>type()</code>: 파일 유형 감지</li></ul>
+<ul><li><strong>utils/data_utils.py</strong>:</li><li><code class="inline-code">check<em>missing</em>data()</code>: 데이터 결측치 검증</li></ul>
+<h4 id="526-데이터-변환-파일" style="">5.2.6 데이터 변환 파일</h4>
+<ul><li><strong>data_converter.py</strong>:</li><li><code class="inline-code">DataConverter</code> 클래스: 기초자료 → 분석표 변환</li><li>시트 매핑 및 데이터 변환</li><li>가중치 처리</li><li>GRDP 데이터 추출</li></ul>
+<h3 id="53-템플릿-구조" style="">5.3 템플릿 구조</h3>
+<p>각 보도자료는 다음 파일들로 구성됩니다:</p>
+<ol><li><strong>Generator 파일</strong> (<code class="inline-code">*_generator.py</code>):</li></ol>
+<ul><li>데이터 추출 로직</li><li>엑셀 파일에서 데이터 읽기</li><li>데이터 가공 및 변환</li><li>딕셔너리 형태로 반환</li></ul>
+<ol><li><strong>Template 파일</strong> (<code class="inline-code">*_template.html</code>):</li></ol>
+<ul><li>Jinja2 템플릿</li><li>HTML 구조 정의</li><li>데이터 바인딩</li><li>스타일 포함</li></ul>
+<ol><li><strong>Schema 파일</strong> (<code class="inline-code">*_schema.json</code>, 선택사항):</li></ol>
+<ul><li>데이터 구조 정의</li><li>기본값 제공 (일러두기 등)</li></ul>
+<h2 id="6-핵심-컴포넌트-상세" style="page-break-before: auto;">6. 핵심 컴포넌트 상세</h2>
+<h3 id="61-flask-애플리케이션-apppy" style="">6.1 Flask 애플리케이션 (app.py)</h3>
+<p>Flask 애플리케이션의 진입점으로, 모든 설정과 Blueprint 등록을 담당합니다.</p>
+<p><strong>주요 기능:</strong></p>
+<ul><li>Flask 인스턴스 생성 및 설정</li><li>Blueprint 등록 (main, api, preview, debug)</li><li>Jinja2 커스텀 필터 등록</li><li>서버 실행 (포트 5050)</li></ul>
+<p><strong>설정 항목:</strong></p>
+<ul><li><code class="inline-code">SECRET_KEY</code>: 세션 암호화 키</li><li><code class="inline-code">UPLOAD_FOLDER</code>: 업로드 파일 저장 경로</li><li><code class="inline-code">MAX<em>CONTENT</em>LENGTH</code>: 최대 업로드 파일 크기 (50MB)</li><li><code class="inline-code">template<em>folder</code>: 템플릿 디렉토리 (BASE</em>DIR)</li><li><code class="inline-code">static<em>folder</code>: 정적 파일 디렉토리 (BASE</em>DIR)</li></ul>
+<h3 id="62-데이터-변환기-data_converterpy" style="">6.2 데이터 변환기 (data_converter.py)</h3>
+<p>기초자료 수집표를 분석표 형식으로 변환하는 핵심 모듈입니다.</p>
+<h4 id="621-dataconverter-클래스" style="">6.2.1 DataConverter 클래스</h4>
+<p><strong>초기화:</strong></p>
+<ul><li><code class="inline-code">raw<em>excel</em>path</code>: 기초자료 수집표 파일 경로</li><li><code class="inline-code">template_path</code>: 분석표 템플릿 경로 (기본값: 프로젝트 내 템플릿)</li><li><code class="inline-code">year</code>, <code class="inline-code">quarter</code>: 연도/분기 (자동 감지)</li></ul>
+<p><strong>주요 메서드:</strong></p>
+<ol><li><strong><code class="inline-code"><em>detect</em>year_quarter()</code></strong>: </li></ol>
+<ul><li>기초자료 헤더 또는 파일명에서 연도/분기 추출</li><li>여러 패턴 시도 후 기본값 사용</li></ul>
+<ol><li><strong><code class="inline-code">convert_all()</code></strong>:</li></ol>
+<ul><li>모든 시트를 분석표 형식으로 변환</li><li>시트 매핑: <code class="inline-code">SHEET_MAPPING</code> 딕셔너리 사용</li><li>가중치 설정 지원 (광공업생산, 서비스업생산)</li></ul>
+<ol><li><strong><code class="inline-code">convert_sheet()</code></strong>:</li></ol>
+<ul><li>개별 시트 변환</li><li>열 구조 분석 (<code class="inline-code">SHEET_STRUCTURE</code>)</li><li>데이터 추출 및 변환</li><li>집계 시트에 데이터 복사</li></ul>
+<ol><li><strong><code class="inline-code">extract<em>grdp</em>data()</code></strong>:</li></ol>
+<ul><li>기초자료에서 GRDP 데이터 추출</li><li>성장률 및 기여율 계산</li></ul>
+<p><strong>시트 매핑 구조:</strong></p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">SHEET_MAPPING = {
+    '광공업생산': 'A(광공업생산)집계',
+    '서비스업생산': 'B(서비스업생산)집계',
+    '소비(소매, 추가)': 'C(소비)집계',
+    # ... 기타 시트
+}</code></pre>
+</div>
+<p><strong>열 구조 정의:</strong></p>
+<p>각 집계 시트별로 다음 정보를 정의:</p>
+<ul><li><code class="inline-code">meta_start</code>: 메타데이터 시작 열 (1-based)</li><li><code class="inline-code">raw<em>meta</em>cols</code>: 기초자료에서 메타데이터 열 개수</li><li><code class="inline-code">year_start</code>: 연도 데이터 시작 열</li><li><code class="inline-code">quarter_start</code>: 분기 데이터 시작 열</li><li><code class="inline-code">weight_col</code>: 가중치 열 위치 (선택사항)</li></ul>
+<h3 id="63-보도자료-생성-서비스-servicesreport_generatorpy" style="">6.3 보도자료 생성 서비스 (services/report_generator.py)</h3>
+<p>보도자료 HTML 생성의 핵심 오케스트레이션을 담당합니다.</p>
+<h4 id="631-generate_report_html" style="">6.3.1 generate<em>report</em>html()</h4>
+<p><strong>파라미터:</strong></p>
+<ul><li><code class="inline-code">excel_path</code>: 엑셀 파일 경로</li><li><code class="inline-code">report_config</code>: 보도자료 설정 (id, name, generator, template 등)</li><li><code class="inline-code">year</code>, <code class="inline-code">quarter</code>: 연도/분기</li><li><code class="inline-code">custom_data</code>: 커스텀 데이터 (결측치 대체용)</li><li><code class="inline-code">raw<em>excel</em>path</code>: 기초자료 경로 (선택사항)</li></ul>
+<p><strong>처리 과정:</strong></p>
+<ol><li><strong>Generator 모듈 로드</strong>:</li></ol>
+<ul><li><code class="inline-code">load<em>generator</em>module()</code> 호출</li><li>동적 모듈 임포트</li></ul>
+<ol><li><strong>데이터 추출 방식 결정</strong>:</li></ol>
+<ul><li><code class="inline-code">generate<em>report</em>data()</code> 함수 우선</li><li><code class="inline-code">generate_report()</code> 함수 (레거시)</li><li>Generator 클래스 사용 (최후 수단)</li></ul>
+<ol><li><strong>데이터 후처리</strong>:</li></ol>
+<ul><li>Top3 지역 데이터 정규화</li><li>커스텀 데이터 병합</li><li>결측치 검증</li></ul>
+<ol><li><strong>템플릿 렌더링</strong>:</li></ol>
+<ul><li>Jinja2 템플릿 로드</li><li>필터 등록</li><li>HTML 생성</li></ul>
+<p><strong>반환값:</strong></p>
+<ul><li><code class="inline-code">(html<em>content, error, missing</em>fields)</code></li><li><code class="inline-code">html_content</code>: 생성된 HTML 문자열</li><li><code class="inline-code">error</code>: 오류 메시지 (성공 시 None)</li><li><code class="inline-code">missing_fields</code>: 결측치 필드 리스트</li></ul>
+<h4 id="632-generate_regional_report_html" style="">6.3.2 generate<em>regional</em>report_html()</h4>
+<p>시도별 보도자료 생성 전용 함수입니다.</p>
+<p><strong>특수 처리:</strong></p>
+<ul><li><code class="inline-code">RegionalGenerator</code> 클래스 사용</li><li>지역명을 파라미터로 전달</li><li>참고_GRDP의 경우 별도 처리</li></ul>
+<h4 id="633-generate_statistics_report_html" style="">6.3.3 generate<em>statistics</em>report_html()</h4>
+<p>통계표 보도자료 생성 함수입니다.</p>
+<p><strong>특수 처리:</strong></p>
+<ul><li><code class="inline-code">통계표Generator</code> 클래스 사용</li><li>여러 통계표를 하나의 HTML로 통합</li><li>페이지 번호 자동 계산</li></ul>
+<h3 id="64-엑셀-전처리-서비스-servicesexcel_processorpy" style="">6.4 엑셀 전처리 서비스 (services/excel_processor.py)</h3>
+<p>엑셀 파일의 수식을 계산하여 값을 채우는 전처리 서비스입니다.</p>
+<h4 id="641-preprocess_excel" style="">6.4.1 preprocess_excel()</h4>
+<p><strong>처리 우선순위:</strong></p>
+<ol><li><strong>openpyxl 직접 계산</strong> (가장 빠름):</li></ol>
+<ul><li>분석 시트의 수식이 집계 시트를 참조하는 경우</li><li><code class="inline-code">='시트이름'!셀주소</code> 패턴 파싱</li><li>백엔드에서 직접 값 매핑</li><li>수식 보존 (엑셀에서 열면 자동 계산)</li></ul>
+<ol><li><strong>formulas 라이브러리</strong> (순수 Python):</li></ol>
+<ul><li>복잡한 수식 지원</li><li>Excel 앱 불필요</li></ul>
+<ol><li><strong>xlwings</strong> (Fallback):</li></ol>
+<ul><li>Excel 앱 실행 필요</li><li>가장 느리지만 가장 정확</li></ul>
+<p><strong>반환값:</strong></p>
+<ul><li><code class="inline-code">(processed_path, success, message)</code></li><li><code class="inline-code">processed_path</code>: 처리된 파일 경로</li><li><code class="inline-code">success</code>: 성공 여부</li><li><code class="inline-code">message</code>: 처리 방법 설명</li></ul>
+<h4 id="642-check_available_methods" style="">6.4.2 check<em>available</em>methods()</h4>
+<p>사용 가능한 수식 계산 방법을 확인합니다.</p>
+<p><strong>확인 항목:</strong></p>
+<ul><li><code class="inline-code">xlwings</code>: xlwings 설치 여부</li><li><code class="inline-code">formulas</code>: formulas 설치 여부</li><li><code class="inline-code">openpyxl</code>: openpyxl 설치 여부</li><li><code class="inline-code">excel_installed</code>: Excel 앱 설치 여부 (Mac/Windows)</li></ul>
+<h3 id="65-grdp-서비스-servicesgrdp_servicepy" style="">6.5 GRDP 서비스 (services/grdp_service.py)</h3>
+<p>GRDP (분기 지역내총생산) 데이터 처리 전담 서비스입니다.</p>
+<h4 id="651-parse_kosis_grdp_file" style="">6.5.1 parse<em>kosis</em>grdp_file()</h4>
+<p>KOSIS에서 다운로드한 GRDP 엑셀 파일을 파싱합니다.</p>
+<p><strong>파싱 과정:</strong></p>
+<ol><li><strong>시트 확인</strong>:</li></ol>
+<ul><li>'성장률' 시트 존재 여부</li><li>'기여도' 시트 존재 여부</li></ul>
+<ol><li><strong>데이터 추출</strong>:</li></ol>
+<ul><li>시트별 데이터 추출 함수 호출</li><li>또는 실질금액에서 계산</li></ul>
+<ol><li><strong>데이터 구조화</strong>:</li></ol>
+<p>   ```python</p>
+<p>   {</p>
+<p>       'report_info': {'year': ..., 'quarter': ...},</p>
+<p>       'national_summary': {</p>
+<p>           'growth_rate': ...,</p>
+<p>           'direction': '증가' or '감소',</p>
+<p>           'contributions': {...}</p>
+<p>       },</p>
+<p>       'top_region': {...},</p>
+<p>       'regional_data': [...]</p>
+<p>   }</p>
+<p>   ```</p>
+<h4 id="652-get_default_grdp_data" style="">6.5.2 get<em>default</em>grdp_data()</h4>
+<p>기본 GRDP 데이터 (플레이스홀더)를 생성합니다.</p>
+<p><strong>용도:</strong></p>
+<ul><li>GRDP 데이터가 없을 때 임시 사용</li><li>사용자에게 기여율 수정 요청</li></ul>
+<h3 id="66-generator-패턴" style="">6.6 Generator 패턴</h3>
+<p>각 보도자료는 Generator 파일을 통해 데이터를 추출합니다.</p>
+<h4 id="661-클래스-기반-generator" style="">6.6.1 클래스 기반 Generator</h4>
+<p><strong>구조:</strong></p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">class MiningManufacturingGenerator:
+    def __init__(self, excel_path: str):
+        self.excel_path = excel_path
+        self.df = None
+    
+    def load_data(self):
+        # 엑셀 파일 로드
+        pass
+    
+    def extract_all_data(self) -&gt; dict:
+        # 모든 데이터 추출
+        return {
+            'report_info': {...},
+            'national_data': {...},
+            'regional_data': {...},
+            # ...
+        }</code></pre>
+</div>
+<p><strong>주요 메서드:</strong></p>
+<ul><li><code class="inline-code">load_data()</code>: 엑셀 파일 로드</li><li><code class="inline-code">extract<em>all</em>data()</code>: 전체 데이터 추출</li><li>개별 데이터 추출 메서드들</li></ul>
+<h4 id="662-함수-기반-generator-고용률-실업률" style="">6.6.2 함수 기반 Generator (고용률, 실업률)</h4>
+<p><strong>구조:</strong></p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">def load_data(excel_path: str):
+    # 데이터 로드
+    return df_analysis, df_index
+
+def get_nationwide_data(df_analysis, df_index):
+    # 전국 데이터 추출
+    return {...}
+
+def get_regional_data(df_analysis, df_index):
+    # 지역 데이터 추출
+    return {...}
+
+def get_summary_box_data(regional_data):
+    # 요약 박스 데이터
+    return {...}
+
+def get_table_data(df_analysis, df_index):
+    # 표 데이터
+    return [...]</code></pre>
+</div>
+<h4 id="663-generate_report_data-함수-패턴" style="">6.6.3 generate<em>report</em>data() 함수 패턴</h4>
+<p>일부 Generator는 <code class="inline-code">generate<em>report</em>data()</code> 함수를 제공합니다.</p>
+<p><strong>시그니처:</strong></p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">def generate_report_data(excel_path: str, raw_excel_path: str = None, 
+                        year: int = None, quarter: int = None) -&gt; dict:
+    # 데이터 추출 및 반환
+    return {...}</code></pre>
+</div>
+<h3 id="67-jinja2-템플릿" style="">6.7 Jinja2 템플릿</h3>
+<p>각 보도자료는 Jinja2 템플릿을 사용하여 HTML을 생성합니다.</p>
+<p><strong>템플릿 구조:</strong></p>
+<ul><li>HTML 구조 정의</li><li>Jinja2 문법으로 데이터 바인딩</li><li>인라인 CSS 스타일</li><li>Chart.js 등 JavaScript 라이브러리 사용 (일부)</li></ul>
+<p><strong>주요 Jinja2 기능 사용:</strong></p>
+<ul><li>변수: <code class="inline-code">{{ variable }}</code></li><li>제어문: <code class="inline-code">{% if %}</code>, <code class="inline-code">{% for %}</code>, <code class="inline-code">{% macro %}</code></li><li>필터: <code class="inline-code">{{ value | format<em>value }}</code>, <code class="inline-code">{{ value | is</em>missing }}</code></li><li>포함: <code class="inline-code">{% include 'partial.html' %}</code></li></ul>
+<p><strong>커스텀 필터:</strong></p>
+<ul><li><code class="inline-code">is_missing</code>: 결측치 확인</li><li><code class="inline-code">format_value</code>: 값 포맷팅 (결측치는 플레이스홀더)</li><li><code class="inline-code">editable</code>: 편집 가능한 값 표시</li></ul>
+<h3 id="68-대시보드-dashboardhtml" style="">6.8 대시보드 (dashboard.html)</h3>
+<p>단일 HTML 파일로 구현된 클라이언트 사이드 애플리케이션입니다.</p>
+<h4 id="681-상태-관리" style="">6.8.1 상태 관리</h4>
+<p>JavaScript 객체로 상태를 관리합니다:</p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-javascript">const state = {
+    fileUploaded: false,
+    allGenerated: false,
+    currentReportIndex: -1,
+    allReports: [],
+    reports: [],
+    summaryReports: [],
+    sectoralReports: [],
+    regionalReports: [],
+    statisticsReports: [],
+    // ...
+};</code></pre>
+</div>
+<h4 id="682-주요-기능" style="">6.8.2 주요 기능</h4>
+<ol><li><strong>파일 업로드</strong>:</li></ol>
+<ul><li>드래그 앤 드롭 지원</li><li>파일 선택 다이얼로그</li><li>업로드 진행 상태 표시</li></ul>
+<ol><li><strong>보도자료 미리보기</strong>:</li></ol>
+<ul><li>Fetch API로 <code class="inline-code">/api/generate-preview</code> 호출</li><li>iframe에 HTML 렌더링</li><li>이전/다음 네비게이션</li></ul>
+<ol><li><strong>결측치 처리</strong>:</li></ol>
+<ul><li>결측치 필드 리스트 표시</li><li>모달에서 값 입력</li><li>커스텀 데이터로 재생성</li></ul>
+<ol><li><strong>전체 생성</strong>:</li></ol>
+<ul><li>모든 보도자료 일괄 생성</li><li>진행 상태 표시</li><li>완료 후 알림</li></ul>
+<ol><li><strong>내보내기</strong>:</li></ol>
+<ul><li>PDF용 HTML 생성</li><li>XLSX 형식 내보내기</li><li>한글 복붙용 HTML 생성</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="7-보도자료-생성-프로세스" style="page-break-before: auto;">7. 보도자료 생성 프로세스</h2>
+<h3 id="71-전체-프로세스-개요" style="">7.1 전체 프로세스 개요</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">사용자 작업 흐름:
+1. 파일 업로드
+2. 파일 유형 감지 및 처리
+3. GRDP 데이터 확인
+4. 보도자료 미리보기 (개별 또는 전체)
+5. 결측치 확인 및 입력
+6. 검토 완료
+7. 전체 생성
+8. 내보내기</code></pre>
+</div>
+<h3 id="72-파일-업로드-프로세스" style="">7.2 파일 업로드 프로세스</h3>
+<h4 id="721-분석표-업로드-프로세스-2" style="">7.2.1 분석표 업로드 (프로세스 2)</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">분석표 엑셀 파일 업로드
+    ↓
+파일 유형 감지: 'analysis'
+    ↓
+수식 계산 전처리 (preprocess_excel)
+    ├─→ openpyxl 직접 계산 시도
+    ├─→ formulas 라이브러리 시도
+    └─→ xlwings 시도 (fallback)
+    ↓
+연도/분기 추출 (extract_year_quarter_from_excel)
+    ↓
+GRDP 시트 확인
+    ├─→ 있음: GRDP 데이터 추출 및 세션 저장
+    └─→ 없음: GRDP 업로드 요청 모달 표시
+    ↓
+세션에 저장:
+    - excel_path
+    - year, quarter
+    - file_type: 'analysis'
+    - grdp_data (있을 경우)
+    ↓
+대시보드 준비 완료</code></pre>
+</div>
+<h4 id="722-기초자료-업로드-프로세스-1" style="">7.2.2 기초자료 업로드 (프로세스 1)</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">기초자료 수집표 업로드
+    ↓
+파일 유형 감지: 'raw'
+    ↓
+DataConverter 초기화
+    ↓
+연도/분기 자동 감지
+    ↓
+분석표 자동 생성 (convert_all)
+    ├─→ 시트별 변환
+    ├─→ 가중치 처리
+    └─→ 분석표 저장
+    ↓
+수식 계산 전처리
+    ↓
+GRDP 데이터 추출 시도
+    ├─→ 기초자료에서 추출
+    ├─→ 분석표 GRDP 시트 확인
+    └─→ 없으면 기본값 사용
+    ↓
+세션에 저장:
+    - raw_excel_path
+    - excel_path (생성된 분석표)
+    - year, quarter
+    - file_type: 'raw_with_analysis'
+    - grdp_data
+    ↓
+대시보드 준비 완료 (바로 보도자료 생성 가능)</code></pre>
+</div>
+<h3 id="73-개별-보도자료-생성-프로세스" style="">7.3 개별 보도자료 생성 프로세스</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">보도자료 ID + 엑셀 경로
+    ↓
+Generator 모듈 동적 로드
+    ├─→ templates/{generator_name} 로드
+    └─→ importlib.util 사용
+    ↓
+데이터 추출 방식 결정
+    ├─→ generate_report_data() 함수
+    ├─→ generate_report() 함수 (레거시)
+    └─→ Generator 클래스 (최후)
+    ↓
+데이터 추출 실행
+    ├─→ 엑셀 파일 읽기
+    ├─→ 특정 시트 접근
+    ├─→ 데이터 파싱
+    ├─→ 계산 및 가공
+    └─→ 딕셔너리 형태 구조화
+    ↓
+데이터 후처리
+    ├─→ Top3 지역 정규화
+    ├─→ 커스텀 데이터 병합
+    └─→ 결측치 검증
+    ↓
+Jinja2 템플릿 렌더링
+    ├─→ 템플릿 파일 로드
+    ├─→ 필터 등록
+    ├─→ 데이터 바인딩
+    └─→ HTML 생성
+    ↓
+HTML 반환</code></pre>
+</div>
+<h3 id="74-요약-보도자료-생성-프로세스" style="">7.4 요약 보도자료 생성 프로세스</h3>
+<p>요약 보도자료는 특별한 처리가 필요합니다:</p>
+<ol><li><strong>표지, 일러두기</strong>: 스키마 파일 또는 기본값 사용</li><li><strong>목차</strong>: 동적 페이지 번호 계산 (<code class="inline-code"><em>get</em>toc_sections()</code>)</li><li><strong>인포그래픽</strong>: 여러 시트 데이터 통합</li><li><strong>요약 보도자료</strong>: <code class="inline-code">summary_data.py</code> 함수 사용</li></ol>
+<h3 id="75-시도별-보도자료-생성-프로세스" style="">7.5 시도별 보도자료 생성 프로세스</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">지역명 + 엑셀 경로
+    ↓
+RegionalGenerator 클래스 초기화
+    ↓
+지역별 데이터 추출
+    ├─→ 해당 지역 데이터 필터링
+    ├─→ 전국 데이터와 비교
+    └─→ 순위 및 변화율 계산
+    ↓
+템플릿 렌더링 (regional_template.html)
+    ↓
+HTML 반환</code></pre>
+</div>
+<h3 id="76-통계표-보도자료-생성-프로세스" style="">7.6 통계표 보도자료 생성 프로세스</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-text">통계표 ID + 엑셀 경로
+    ↓
+StatisticsTableGenerator 초기화
+    ↓
+TABLE_CONFIG에서 설정 확인
+    ↓
+데이터 추출
+    ├─→ 연도별 데이터
+    ├─→ 분기별 데이터
+    └─→ 지역별 데이터
+    ↓
+페이지 분할 (1페이지: 전국~세종, 2페이지: 경기~제주)
+    ↓
+템플릿 렌더링 (statistics_table_index_template.html)
+    ↓
+HTML 반환</code></pre>
+</div>
+<hr class="page-break-suggestion">
+<h2 id="8-api-엔드포인트" style="page-break-before: auto;">8. API 엔드포인트</h2>
+<h3 id="81-메인-페이지-라우트-routesmainpy" style="">8.1 메인 페이지 라우트 (routes/main.py)</h3>
+<div class="table-container" style="page-break-inside: avoid;"><table>
+<thead><tr>
+<th>메서드</th>
+<th>경로</th>
+<th>설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/</code></td>
+<td>대시보드 페이지</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/preview/infographic</code></td>
+<td>인포그래픽 미리보기</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/uploads/<filename></code></td>
+<td>업로드 파일 다운로드</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/view/<filename></code></td>
+<td>파일 직접 보기</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/debug/<filename></code></td>
+<td>디버그 파일 보기</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/exports/<path:filepath></code></td>
+<td>내보내기 파일 보기</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/templates/<filename></code></td>
+<td>템플릿 파일 서빙</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code class="inline-code">/download-export/<export_dir></code></td>
+<td>내보내기 ZIP 다운로드</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="82-api-라우트-routesapipy" style="">8.2 API 라우트 (routes/api.py)</h3>
+<h4 id="821-파일-업로드-및-관리" style="">8.2.1 파일 업로드 및 관리</h4>
+<p><strong>POST <code class="inline-code">/api/upload</code></strong></p>
+<ul><li>파일 업로드</li><li>파일 유형 자동 감지</li><li>분석표 생성 또는 GRDP 추출</li><li>응답: <code class="inline-code">{success, filename, file_type, year, quarter, reports, ...}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/upload-grdp</code></strong></p>
+<ul><li>GRDP 파일 업로드</li><li>KOSIS GRDP 파일 파싱</li><li>분석표에 GRDP 시트 추가</li><li>응답: <code class="inline-code">{success, message, national<em>growth</em>rate, ...}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/use-default-grdp</code></strong></p>
+<ul><li>기본 GRDP 데이터 사용</li><li>플레이스홀더 데이터 생성</li><li>응답: <code class="inline-code">{success, message, is_placeholder, ...}</code></li></ul>
+<p><strong>GET <code class="inline-code">/api/check-grdp</code></strong></p>
+<ul><li>GRDP 데이터 상태 확인</li><li>응답: <code class="inline-code">{success, has_grdp, source, ...}</code></li></ul>
+<h4 id="822-보도자료-생성" style="">8.2.2 보도자료 생성</h4>
+<p><strong>POST <code class="inline-code">/api/generate-preview</code></strong> (routes/preview.py)</p>
+<ul><li>개별 보도자료 미리보기 생성</li><li>요청: <code class="inline-code">{report<em>id, year, quarter, custom</em>data}</code></li><li>응답: <code class="inline-code">{success, html, missing<em>fields, report</em>id, report_name}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-all</code></strong></p>
+<ul><li>전체 보도자료 일괄 생성</li><li>요청: <code class="inline-code">{year, quarter, all<em>custom</em>data}</code></li><li>응답: <code class="inline-code">{success, generated, errors}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-all-regional</code></strong></p>
+<ul><li>시도별 보도자료 전체 생성</li><li>응답: <code class="inline-code">{success, generated, errors}</code></li></ul>
+<h4 id="823-보도자료-순서-관리" style="">8.2.3 보도자료 순서 관리</h4>
+<p><strong>GET <code class="inline-code">/api/report-order</code></strong></p>
+<ul><li>현재 보도자료 순서 반환</li><li>응답: <code class="inline-code">{reports, regional_reports}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/report-order</code></strong></p>
+<ul><li>보도자료 순서 업데이트</li><li>요청: <code class="inline-code">{order: [...]}</code></li></ul>
+<h4 id="824-세션-관리" style="">8.2.4 세션 관리</h4>
+<p><strong>GET <code class="inline-code">/api/session-info</code></strong></p>
+<ul><li>현재 세션 정보 반환</li><li>응답: <code class="inline-code">{excel<em>path, year, quarter, has</em>file}</code></li></ul>
+<h4 id="825-내보내기" style="">8.2.5 내보내기</h4>
+<p><strong>POST <code class="inline-code">/api/export-final</code></strong></p>
+<ul><li>최종 문서 HTML 생성 (PDF용)</li><li>요청: <code class="inline-code">{pages, year, quarter, standalone}</code></li><li>응답: <code class="inline-code">{success, html, filename, download<em>url, total</em>pages}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/export-xlsx</code></strong></p>
+<ul><li>XLSX 형식 내보내기</li><li>요청: <code class="inline-code">{pages, year, quarter}</code></li><li>응답: <code class="inline-code">{success, filename, download<em>url, xlsx</em>data, ...}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/export-hwp-ready</code></strong></p>
+<ul><li>한글 복붙용 HTML 생성</li><li>요청: <code class="inline-code">{pages, year, quarter}</code></li><li>응답: <code class="inline-code">{success, html, filename, view<em>url, download</em>url}</code></li></ul>
+<p><strong>POST <code class="inline-code">/api/save-html-to-project</code></strong></p>
+<ul><li>HTML을 프로젝트 메인 디렉토리에 저장</li><li>응답: <code class="inline-code">{success, filename, path, total_pages}</code></li></ul>
+<h4 id="826-기타" style="">8.2.6 기타</h4>
+<p><strong>GET <code class="inline-code">/api/download-analysis</code></strong></p>
+<ul><li>분석표 다운로드 (기초자료 업로드 시)</li><li>분석표 생성 및 수식 계산 후 다운로드</li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-analysis-with-weights</code></strong></p>
+<ul><li>가중치 설정 포함 분석표 생성</li></ul>
+<p><strong>POST <code class="inline-code">/api/cleanup-uploads</code></strong></p>
+<ul><li>업로드 폴더 정리</li></ul>
+<p><strong>GET <code class="inline-code">/api/get-industry-weights</code></strong></p>
+<ul><li>업종별 가중치 정보 추출</li></ul>
+<h3 id="83-미리보기-라우트-routespreviewpy" style="">8.3 미리보기 라우트 (routes/preview.py)</h3>
+<p><strong>POST <code class="inline-code">/api/generate-summary-preview</code></strong></p>
+<ul><li>요약 보도자료 미리보기</li><li>표지, 일러두기, 목차, 인포그래픽 등</li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-regional-preview</code></strong></p>
+<ul><li>시도별 보도자료 미리보기</li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-statistics-preview</code></strong></p>
+<ul><li>개별 통계표 미리보기</li></ul>
+<p><strong>POST <code class="inline-code">/api/generate-statistics-full-preview</code></strong></p>
+<ul><li>통계표 전체 미리보기</li></ul>
+<h2 id="9-데이터-구조-및-형식" style="page-break-before: auto;">9. 데이터 구조 및 형식</h2>
+<h3 id="91-보도자료-데이터-구조" style="">9.1 보도자료 데이터 구조</h3>
+<p>모든 보도자료는 공통된 기본 구조를 따릅니다:</p>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">{
+    'report_info': {
+        'year': int,           # 연도 (예: 2025)
+        'quarter': int,        # 분기 (1, 2, 3, 4)
+        'page_number': str,    # 페이지 번호 (선택사항)
+        'organization': str,   # 조직명 (예: '통계청')
+        'department': str      # 부서명 (예: '경제통계심의관')
+    },
+    # 보도자료별 특정 데이터...
+}</code></pre>
+</div>
+<h3 id="92-부문별-보도자료-데이터-구조" style="">9.2 부문별 보도자료 데이터 구조</h3>
+<h4 id="921-광공업생산--서비스업생산" style="">9.2.1 광공업생산 / 서비스업생산</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">{
+    'report_info': {...},
+    'national_data': {
+        'current_value': float,      # 현재값 (지수)
+        'previous_value': float,     # 전년동기값
+        'change': float,             # 증감률 (%)
+        'direction': str,            # '증가' or '감소'
+        'top_industries': [          # 상위 업종
+            {
+                'name': str,
+                'current_value': float,
+                'change': float
+            },
+            ...
+        ]
+    },
+    'regional_data': {
+        'increase_regions': [        # 증가 지역 (정렬됨)
+            {
+                'region': str,
+                'current_value': float,
+                'change': float,
+                'top_industries': [...]
+            },
+            ...
+        ],
+        'decrease_regions': [...],   # 감소 지역
+        'all_regions': [...]         # 전체 지역 (원본 순서)
+    },
+    'summary_table': {
+        'columns': {
+            'change_columns': [str], # 증감률 컬럼명
+            'rate_columns': [str]    # 지수 컬럼명
+        },
+        'regions': [
+            {
+                'region': str,
+                'values': {
+                    '2023.2/4': float,
+                    '2024.2/4': float,
+                    # ...
+                },
+                'changes': {
+                    '2023.2/4': float,
+                    '2024.2/4': float,
+                    # ...
+                }
+            },
+            ...
+        ]
+    },
+    'top3_increase_regions': [...],  # Top3 증가 지역
+    'top3_decrease_regions': [...]   # Top3 감소 지역
+}</code></pre>
+</div>
+<h4 id="922-고용률--실업률" style="">9.2.2 고용률 / 실업률</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">{
+    'report_info': {...},
+    'nationwide_data': {
+        'current_rate': float,       # 현재 고용률/실업률
+        'previous_rate': float,      # 전년동기
+        'change': float,             # 증감 (%p)
+        'direction': str,            # '증가' or '감소'
+        'age_groups': [              # 연령대별
+            {
+                'age_group': str,    # 예: '20-29세'
+                'current_rate': float,
+                'change': float
+            },
+            ...
+        ]
+    },
+    'regional_data': {
+        'increase_regions': [
+            {
+                'region': str,
+                'current_rate': float,
+                'change': float,
+                'top_age_groups': [...]
+            },
+            ...
+        ],
+        'decrease_regions': [...],
+        'all_regions': [...]
+    },
+    'summary_box': {
+        'total_regions': int,
+        'increase_count': int,
+        'decrease_count': int,
+        'unchanged_count': int
+    },
+    'summary_table': {
+        'columns': {...},
+        'regions': [...]
+    },
+    'top3_increase_regions': [...],
+    'top3_decrease_regions': [...]
+}</code></pre>
+</div>
+<h3 id="93-grdp-데이터-구조" style="">9.3 GRDP 데이터 구조</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">{
+    'report_info': {
+        'year': int,
+        'quarter': int,
+        'page_number': str
+    },
+    'national_summary': {
+        'growth_rate': float,        # 전국 성장률 (%)
+        'direction': str,            # '증가' or '감소'
+        'contributions': {
+            'manufacturing': float,  # 제조업 기여율
+            'construction': float,   # 건설업 기여율
+            'service': float,        # 서비스업 기여율
+            'other': float           # 기타 기여율
+        },
+        'placeholder': bool          # 플레이스홀더 여부
+    },
+    'top_region': {
+        'name': str,                 # 최고 성장 지역
+        'growth_rate': float,
+        'contributions': {...}
+    },
+    'regional_data': [
+        {
+            'region': str,
+            'region_group': str,     # 권역 (경인, 충청, 호남 등)
+            'growth_rate': float,
+            'manufacturing': float,
+            'construction': float,
+            'service': float,
+            'other': float,
+            'is_group_start': bool,  # 권역 시작 여부
+            'group_size': int,       # 권역 지역 수
+            'placeholder': bool
+        },
+        ...
+    ],
+    'source': str,                   # 데이터 소스
+    'kosis_info': {...}              # KOSIS 정보 (선택사항)
+}</code></pre>
+</div>
+<h3 id="94-요약-보도자료-데이터-구조" style="">9.4 요약 보도자료 데이터 구조</h3>
+<h4 id="941-요약-지역경제동향" style="">9.4.1 요약-지역경제동향</h4>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">{
+    'report_info': {...},
+    'summary': {
+        'production': {
+            'mining': {...},         # 광공업생산 요약
+            'service': {...}         # 서비스업생산 요약
+        },
+        'consumption': {...},        # 소비 요약
+        'exports': {...},            # 수출 요약
+        'price': {...},              # 물가 요약
+        'employment': {...}          # 고용 요약
+    },
+    'table_data': {
+        # 표 데이터
+    },
+    'page_number': int
+}</code></pre>
+</div>
+<h3 id="95-엑셀-파일-구조" style="">9.5 엑셀 파일 구조</h3>
+<h4 id="951-분석표-구조" style="">9.5.1 분석표 구조</h4>
+<p>분석표는 다음 시트들로 구성됩니다:</p>
+<p><strong>분석 시트:</strong></p>
+<ul><li><code class="inline-code">A 분석</code>: 광공업생산 분석</li><li><code class="inline-code">B 분석</code>: 서비스업생산 분석</li><li><code class="inline-code">C 분석</code>: 소비 분석</li><li><code class="inline-code">D(고용률)분석</code>: 고용률 분석</li><li><code class="inline-code">D(실업)분석</code>: 실업률 분석</li><li><code class="inline-code">E(품목성질물가)분석</code>: 물가 분석</li><li><code class="inline-code">G 분석</code>: 수출 분석</li><li><code class="inline-code">H 분석</code>: 수입 분석</li><li><code class="inline-code">I(순인구이동)집계</code>: 인구이동 집계</li></ul>
+<p><strong>집계 시트:</strong></p>
+<ul><li><code class="inline-code">A(광공업생산)집계</code>: 광공업생산 집계 데이터</li><li><code class="inline-code">B(서비스업생산)집계</code>: 서비스업생산 집계 데이터</li><li><code class="inline-code">C(소비)집계</code>: 소비 집계 데이터</li><li><code class="inline-code">D(고용률)집계</code>: 고용률 집계 데이터</li><li><code class="inline-code">D(실업)집계</code>: 실업률 집계 데이터</li><li><code class="inline-code">E(품목성질물가)집계</code>: 물가 집계 데이터</li><li><code class="inline-code">G(수출)집계</code>: 수출 집계 데이터</li><li><code class="inline-code">H(수입)집계</code>: 수입 집계 데이터</li><li><code class="inline-code">I(순인구이동)집계</code>: 인구이동 집계 데이터</li></ul>
+<p><strong>기타 시트:</strong></p>
+<ul><li><code class="inline-code">I GRDP</code> 또는 <code class="inline-code">GRDP</code>: GRDP 데이터 (선택사항)</li><li><code class="inline-code">본청</code>: 메타데이터</li><li><code class="inline-code">이용관련</code>: 이용 안내</li></ul>
+<h4 id="952-기초자료-수집표-구조" style="">9.5.2 기초자료 수집표 구조</h4>
+<p>기초자료 수집표는 다음과 같은 시트들로 구성됩니다:</p>
+<ul><li><code class="inline-code">광공업생산</code></li><li><code class="inline-code">서비스업생산</code></li><li><code class="inline-code">소비(소매, 추가)</code></li><li><code class="inline-code">고용률</code></li><li><code class="inline-code">실업자 수</code></li><li><code class="inline-code">품목성질별 물가</code></li><li><code class="inline-code">건설 (공표자료)</code></li><li><code class="inline-code">수출</code></li><li><code class="inline-code">수입</code></li><li><code class="inline-code">시도 간 이동</code></li><li><code class="inline-code">분기 GRDP</code> (선택사항)</li></ul>
+<h3 id="96-데이터-형식-규칙" style="">9.6 데이터 형식 규칙</h3>
+<h4 id="961-숫자-형식" style="">9.6.1 숫자 형식</h4>
+<ul><li><strong>지수</strong>: 소수점 첫째 자리 (예: 105.2)</li><li><strong>증감률</strong>: 소수점 첫째 자리, % 단위 (예: 2.5)</li><li><strong>고용률/실업률</strong>: 소수점 첫째 자리, % 단위 (예: 62.5)</li><li><strong>증감 (%p)</strong>: 소수점 첫째 자리, %p 단위 (예: 0.3)</li><li><strong>금액</strong>: 천 단위 구분 (예: 1,234,567)</li></ul>
+<h4 id="962-날짜-형식" style="">9.6.2 날짜 형식</h4>
+<ul><li><strong>연도/분기</strong>: "2025.2/4" 형식</li><li><strong>일자</strong>: "2025. 8. 12.(화)" 형식</li><li><strong>일시</strong>: "2025. 8. 12.(화) 12:00" 형식</li></ul>
+<h4 id="963-지역명-형식" style="">9.6.3 지역명 형식</h4>
+<ul><li><strong>정식 명칭</strong>: "서울특별시", "부산광역시" 등</li><li><strong>약칭</strong>: "서울", "부산", "경기" 등</li><li><strong>보도자료 표기</strong>: "서 울", "부 산", "경 기" (공백 포함)</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="10-주요-기능-상세" style="page-break-before: auto;">10. 주요 기능 상세</h2>
+<h3 id="101-파일-업로드-및-처리" style="">10.1 파일 업로드 및 처리</h3>
+<h4 id="1011-파일-업로드-기능" style="">10.1.1 파일 업로드 기능</h4>
+<p><strong>드래그 앤 드롭 지원:</strong></p>
+<ul><li>파일을 업로드 영역에 드래그하여 업로드</li><li>여러 파일 선택 시 첫 번째 파일만 처리</li></ul>
+<p><strong>파일 유형 감지:</strong></p>
+<ul><li>파일명 패턴 분석</li><li>시트명 분석</li><li>자동으로 'raw' 또는 'analysis' 판정</li></ul>
+<p><strong>업로드 진행 상태:</strong></p>
+<ul><li>단계별 진행 표시</li><li>파일 저장 → 유형 분석 → 처리 완료</li></ul>
+<h4 id="1012-파일-전처리" style="">10.1.2 파일 전처리</h4>
+<p><strong>수식 계산:</strong></p>
+<ul><li>분석 시트의 수식이 집계 시트를 참조하는 경우 처리</li><li>여러 방법 시도 (openpyxl → formulas → xlwings)</li></ul>
+<p><strong>데이터 검증:</strong></p>
+<ul><li>파일 무결성 확인</li><li>필수 시트 존재 여부 확인</li><li>데이터 형식 검증</li></ul>
+<h3 id="102-보도자료-미리보기" style="">10.2 보도자료 미리보기</h3>
+<h4 id="1021-실시간-미리보기" style="">10.2.1 실시간 미리보기</h4>
+<ul><li>보도자료 목록에서 클릭 시 즉시 미리보기 생성</li><li>iframe에 HTML 렌더링</li><li>새로고침 버튼으로 재생성</li></ul>
+<h4 id="1022-네비게이션" style="">10.2.2 네비게이션</h4>
+<ul><li>이전/다음 버튼으로 보도자료 이동</li><li>키보드 단축키 지원 (화살표 키)</li><li>현재 위치 표시</li></ul>
+<h4 id="1023-결측치-처리" style="">10.2.3 결측치 처리</h4>
+<ul><li>결측치 자동 감지</li><li>모달창에서 값 입력</li><li>커스텀 데이터로 재생성</li><li>건너뛰기 옵션</li></ul>
+<h3 id="103-보도자료-생성" style="">10.3 보도자료 생성</h3>
+<h4 id="1031-개별-생성" style="">10.3.1 개별 생성</h4>
+<ul><li>미리보기 시 자동 생성</li><li>요청 시 재생성</li><li>커스텀 데이터 반영</li></ul>
+<h4 id="1032-전체-생성" style="">10.3.2 전체 생성</h4>
+<ul><li>모든 보도자료 일괄 생성</li><li>진행 상태 표시</li><li>성공/실패 통계</li><li>완료 후 알림</li></ul>
+<h4 id="1033-배치-생성" style="">10.3.3 배치 생성</h4>
+<ul><li>시도별 보도자료 전체 생성</li><li>통계표 전체 생성</li><li>병렬 처리 가능 (향후 개선)</li></ul>
+<h3 id="104-내보내기-기능" style="">10.4 내보내기 기능</h3>
+<h4 id="1041-pdf용-html" style="">10.4.1 PDF용 HTML</h4>
+<ul><li>A4 크기 최적화</li><li>페이지 브레이크 설정</li><li>인쇄 스타일 적용</li><li>브라우저 인쇄 기능으로 PDF 저장</li></ul>
+<h4 id="1042-xlsx-형식" style="">10.4.2 XLSX 형식</h4>
+<ul><li>HTML을 엑셀 형식으로 변환</li><li>표 데이터 보존</li><li>이미지는 Base64 인코딩</li><li>여러 시트로 분리</li></ul>
+<h4 id="1043-한글-복붙용-html" style="">10.4.3 한글 복붙용 HTML</h4>
+<ul><li>한글 프로그램에서 열 수 있는 형식</li><li>인라인 스타일 적용</li><li>표 서식 보존</li><li>이미지는 Base64 인코딩</li><li>복사-붙여넣기 최적화</li></ul>
+<h3 id="105-검토-시스템" style="">10.5 검토 시스템</h3>
+<h4 id="1051-검토-상태-추적" style="">10.5.1 검토 상태 추적</h4>
+<ul><li>각 보도자료별 검토 완료 상태 저장</li><li>로컬 스토리지에 상태 저장</li><li>페이지 새로고침 시에도 유지</li></ul>
+<h4 id="1052-검토-완료-표시" style="">10.5.2 검토 완료 표시</h4>
+<ul><li>검토 완료 버튼 클릭 시 상태 변경</li><li>시각적 피드백 (체크 표시)</li><li>진행률 표시</li></ul>
+<h3 id="106-grdp-데이터-관리" style="">10.6 GRDP 데이터 관리</h3>
+<h4 id="1061-grdp-데이터-추출" style="">10.6.1 GRDP 데이터 추출</h4>
+<ul><li>기초자료에서 자동 추출</li><li>분석표 GRDP 시트에서 추출</li><li>KOSIS 파일 파싱</li></ul>
+<h4 id="1062-grdp-업로드" style="">10.6.2 GRDP 업로드</h4>
+<ul><li>KOSIS GRDP 파일 업로드</li><li>파일 파싱 및 검증</li><li>분석표에 GRDP 시트 추가</li></ul>
+<h4 id="1063-기본값-사용" style="">10.6.3 기본값 사용</h4>
+<ul><li>GRDP 데이터가 없을 때 플레이스홀더 생성</li><li>사용자에게 수정 안내</li><li>나중에 실제 데이터로 업데이트 가능</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="11-설정-및-환경" style="page-break-before: auto;">11. 설정 및 환경</h2>
+<h3 id="111-환경-변수" style="">11.1 환경 변수</h3>
+<p>현재 프로젝트는 환경 변수를 직접 사용하지 않지만, 향후 확장 가능:</p>
+<ul><li><code class="inline-code">FLASK_ENV</code>: Flask 환경 (development, production)</li><li><code class="inline-code">SECRET_KEY</code>: 세션 암호화 키 (현재는 코드에 하드코딩)</li><li><code class="inline-code">MAX<em>CONTENT</em>LENGTH</code>: 최대 업로드 크기</li><li><code class="inline-code">VERCEL</code>: Vercel 환경 감지</li></ul>
+<h3 id="112-경로-설정-configsettingspy" style="">11.2 경로 설정 (config/settings.py)</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">BASE_DIR = Path(__file__).parent.parent
+TEMPLATES_DIR = BASE_DIR / 'templates'
+UPLOAD_FOLDER = BASE_DIR / 'uploads'  # 로컬
+# 또는
+UPLOAD_FOLDER = Path('/tmp/uploads')  # Vercel</code></pre>
+</div>
+<h3 id="113-flask-설정" style="">11.3 Flask 설정</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-python">app.secret_key = SECRET_KEY
+app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH  # 50MB</code></pre>
+</div>
+<h3 id="114-보도자료-설정-configreportspy" style="">11.4 보도자료 설정 (config/reports.py)</h3>
+<p><strong>보도자료 순서:</strong></p>
+<ul><li><code class="inline-code">REPORT_ORDER</code>: 전체 보도자료 순서</li><li><code class="inline-code">SUMMARY_REPORTS</code>: 요약 보도자료 목록</li><li><code class="inline-code">SECTOR_REPORTS</code>: 부문별 보도자료 목록</li></ul>
+<p><strong>페이지 번호 설정:</strong></p>
+<ul><li><code class="inline-code">PAGE_CONFIG</code>: 섹션별 페이지 수</li><li>목차 생성 시 동적 계산</li></ul>
+<h3 id="115-개발-환경" style="">11.5 개발 환경</h3>
+<p><strong>로컬 개발:</strong></p>
+<ul><li>Python 3.10+</li><li>가상환경 권장</li><li>포트: 5050</li></ul>
+<p><strong>프로덕션 (Vercel):</strong></p>
+<ul><li>서버리스 함수</li><li><code class="inline-code">/tmp</code> 디렉토리만 쓰기 가능</li><li>환경 변수로 설정 관리</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="12-배포-및-운영" style="page-break-before: auto;">12. 배포 및 운영</h2>
+<h3 id="121-로컬-실행" style="">12.1 로컬 실행</h3>
+
+<div class="code-block" style="page-break-inside: avoid;">
+    <pre><code class="language-bash"># 가상환경 활성화
+source VENV/bin/activate
+
+# 서버 실행
+python app.py</code></pre>
+</div>
+<p><strong>접속:</strong></p>
+<ul><li>http://localhost:5050</li></ul>
+<h3 id="122-vercel-배포" style="">12.2 Vercel 배포</h3>
+<p><strong>배포 설정:</strong></p>
+<ul><li><code class="inline-code">vercel.json</code>: 라우팅 설정</li><li><code class="inline-code">vercel-requirements.txt</code>: 의존성 (선택사항)</li><li>환경 변수 설정 (Vercel 대시보드)</li></ul>
+<p><strong>주의사항:</strong></p>
+<ul><li><code class="inline-code">/tmp</code> 디렉토리만 쓰기 가능</li><li>세션 데이터는 메모리 저장 (서버리스 특성상 제한적)</li><li>파일 업로드 크기 제한 확인</li></ul>
+<h3 id="123-파일-관리" style="">12.3 파일 관리</h3>
+<p><strong>업로드 파일:</strong></p>
+<ul><li><code class="inline-code">uploads/</code>: 업로드된 엑셀 파일</li><li>자동 정리 기능 (세션 종료 시)</li></ul>
+<p><strong>생성 파일:</strong></p>
+<ul><li><code class="inline-code">templates/*_output.html</code>: 생성된 보도자료</li><li><code class="inline-code">exports/</code>: 내보내기 파일</li><li><code class="inline-code">debug/</code>: 디버그 파일</li></ul>
+<p><strong>로그:</strong></p>
+<ul><li>콘솔 출력 (stdout/stderr)</li><li>Vercel 로그 확인</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="13-문제-해결-가이드" style="page-break-before: auto;">13. 문제 해결 가이드</h2>
+<h3 id="131-일반적인-오류" style="">13.1 일반적인 오류</h3>
+<h4 id="파일-업로드-실패" style="">파일 업로드 실패</h4>
+<p><strong>원인:</strong></p>
+<ul><li>파일 크기 초과 (50MB 제한)</li><li>파일 형식 오류</li><li>디스크 공간 부족</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>파일 크기 확인</li><li><code class="inline-code">.xlsx</code> 또는 <code class="inline-code">.xls</code> 형식 확인</li><li>디스크 공간 확인</li><li>Vercel 환경: <code class="inline-code">/tmp</code> 디렉토리 확인</li></ul>
+<h4 id="generator-모듈-로드-실패" style="">Generator 모듈 로드 실패</h4>
+<p><strong>원인:</strong></p>
+<ul><li>Generator 파일 경로 오류</li><li>Python 문법 오류</li><li>모듈 의존성 문제</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>Generator 파일 존재 확인</li><li>Python 문법 검사</li><li>필요한 라이브러리 설치 확인</li></ul>
+<h4 id="데이터-추출-실패" style="">데이터 추출 실패</h4>
+<p><strong>원인:</strong></p>
+<ul><li>시트명 불일치</li><li>데이터 형식 오류</li><li>셀 위치 변경</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>엑셀 파일 시트명 확인</li><li>데이터 형식 검증</li><li>Generator 코드 확인 및 수정</li></ul>
+<h3 id="132-성능-문제" style="">13.2 성능 문제</h3>
+<h4 id="보도자료-생성-느림" style="">보도자료 생성 느림</h4>
+<p><strong>원인:</strong></p>
+<ul><li>대용량 엑셀 파일</li><li>복잡한 데이터 처리</li><li>네트워크 지연</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>파일 크기 최적화</li><li>데이터 캐싱 고려</li><li>병렬 처리 (향후 개선)</li></ul>
+<h4 id="메모리-부족" style="">메모리 부족</h4>
+<p><strong>원인:</strong></p>
+<ul><li>대용량 파일 처리</li><li>여러 파일 동시 처리</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>파일 크기 제한</li><li>순차 처리</li><li>메모리 효율적인 데이터 구조 사용</li></ul>
+<h3 id="133-데이터-문제" style="">13.3 데이터 문제</h3>
+<h4 id="결측치-발생" style="">결측치 발생</h4>
+<p><strong>원인:</strong></p>
+<ul><li>원본 데이터 누락</li><li>데이터 형식 불일치</li><li>셀 위치 오류</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>원본 엑셀 파일 확인</li><li>결측치 입력 모달 사용</li><li>Generator 코드 검증</li></ul>
+<h4 id="수식-계산-오류" style="">수식 계산 오류</h4>
+<p><strong>원인:</strong></p>
+<ul><li>수식 계산 라이브러리 부재</li><li>복잡한 수식</li><li>Excel 앱 미설치 (xlwings 사용 시)</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li><code class="inline-code">formulas</code> 라이브러리 설치</li><li>Excel 앱 설치 (xlwings 사용 시)</li><li>수식 단순화 고려</li></ul>
+<h3 id="134-템플릿-문제" style="">13.4 템플릿 문제</h3>
+<h4 id="html-렌더링-오류" style="">HTML 렌더링 오류</h4>
+<p><strong>원인:</strong></p>
+<ul><li>템플릿 문법 오류</li><li>데이터 형식 불일치</li><li>필터 함수 오류</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>Jinja2 문법 확인</li><li>데이터 구조 검증</li><li>필터 함수 테스트</li></ul>
+<h4 id="스타일-적용-안-됨" style="">스타일 적용 안 됨</h4>
+<p><strong>원인:</strong></p>
+<ul><li>CSS 경로 오류</li><li>인라인 스타일 누락</li><li>브라우저 호환성</li></ul>
+<p><strong>해결:</strong></p>
+<ul><li>CSS 파일 경로 확인</li><li>인라인 스타일 사용</li><li>브라우저 호환성 테스트</li></ul>
+<h3 id="135-디버깅-방법" style="">13.5 디버깅 방법</h3>
+<h4 id="로그-확인" style="">로그 확인</h4>
+<ul><li>콘솔 출력 확인</li><li>Flask 디버그 모드 활성화</li><li>Vercel 로그 확인</li></ul>
+<h4 id="단계별-테스트" style="">단계별 테스트</h4>
+<ol><li>파일 업로드 테스트</li><li>데이터 추출 테스트</li><li>템플릿 렌더링 테스트</li><li>전체 프로세스 테스트</li></ol>
+<h4 id="디버그-모드" style="">디버그 모드</h4>
+<ul><li><code class="inline-code">app.py</code>에서 <code class="inline-code">debug=True</code> 설정</li><li>자동 재로드 활성화</li><li>상세 오류 메시지 표시</li></ul>
+<hr class="page-break-suggestion">
+<h2 id="부록" style="page-break-before: auto;">부록</h2>
+<h3 id="a-용어-정리" style="">A. 용어 정리</h3>
+<ul><li><strong>기초자료 수집표</strong>: 원본 데이터가 담긴 엑셀 파일</li><li><strong>분석표</strong>: 기초자료를 변환하여 만든 분석용 엑셀 파일</li><li><strong>보도자료</strong>: 최종 생성되는 HTML 문서</li><li><strong>Generator</strong>: 데이터 추출 로직을 담은 Python 모듈</li><li><strong>Template</strong>: HTML 생성에 사용되는 Jinja2 템플릿</li><li><strong>GRDP</strong>: 분기 지역내총생산 (Gross Regional Domestic Product)</li></ul>
+<h3 id="b-참고-자료" style="">B. 참고 자료</h3>
+<ul><li>Flask 공식 문서: https://flask.palletsprojects.com/</li><li>Jinja2 문서: https://jinja.palletsprojects.com/</li><li>pandas 문서: https://pandas.pydata.org/</li><li>openpyxl 문서: https://openpyxl.readthedocs.io/</li></ul>
+<h3 id="c-변경-이력" style="">C. 변경 이력</h3>
+<ul><li>2025년: 프로젝트 초기 버전</li><li>주요 기능: 기초자료 → 분석표 변환, 보도자료 자동 생성</li></ul>
+<hr class="page-break-suggestion">
+<p><strong>문서 버전</strong>: 1.0  </p>
+<p><strong>최종 업데이트</strong>: 2025년  </p>
+<p><strong>작성자</strong>: 프로젝트 개발팀</p>
+    </div>
+</body>
+</html>

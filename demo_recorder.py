@@ -3,7 +3,7 @@
 """
 지역경제동향 보도자료 생성 시스템 - 데모 영상 자동 녹화 스크립트
 
-Playwright를 사용하여 전체 기능을 시연하고 영상으로 녹화합니다.
+시연 계획에 따라 주요 기능을 순차적으로 시연하고 영상으로 녹화합니다.
 SRT 자막 파일도 자동으로 생성됩니다.
 
 사용법:
@@ -29,7 +29,7 @@ from playwright.async_api import async_playwright
 # 서버 URL
 SERVER_URL = "http://localhost:5050"
 
-# 테스트 파일 경로
+# 테스트 파일 경로 (분석표 엑셀 파일)
 TEST_FILE = Path(__file__).parent / "기초자료 수집표_2025년 2분기_캡스톤_보완.xlsx"
 
 # 출력 디렉토리
@@ -39,134 +39,141 @@ OUTPUT_DIR = Path(__file__).parent / "demo_videos"
 VIDEO_WIDTH = 1920
 VIDEO_HEIGHT = 1080
 
-# 대기 시간 (초) - 각 액션 사이의 대기 시간
-ACTION_DELAY = 1.5  # 일반 액션
-SCENE_DELAY = 2.0   # 씬 전환
+# 대기 시간 (초)
+ACTION_DELAY = 1.5      # 일반 액션 사이 대기
+SCENE_DELAY = 2.0       # 씬 전환 대기
+LOAD_DELAY = 3.0        # 페이지 로딩 대기
+PREVIEW_DELAY = 4.0     # 미리보기 로딩 대기
+
 
 # ============================================================================
-# 자막 데이터 (Scene별)
+# 자막 데이터 (시연 순서별)
 # ============================================================================
 
 SUBTITLES = [
-    # ========== Scene 1: 시스템 소개 ==========
+    # ========== 1. 도입부 (30초) ==========
     {
         "text": "지역경제동향 보도자료 생성 시스템\n국가데이터처 캡스톤 프로젝트",
         "duration": 5.0
     },
     {
-        "text": "[핵심 요구사항]\n보도자료 생성 자동화 → 시간/인력 절약",
-        "duration": 5.0
-    },
-    
-    # ========== Scene 2: 기초자료 업로드 ==========
-    {
-        "text": "[요구사항 반영] 기초자료 → 분석표 자동화\nStep 1: 기초자료 수집표 업로드",
-        "duration": 3.0
-    },
-    {
-        "text": "드래그 앤 드롭으로 간편한 파일 업로드",
+        "text": "분석표 엑셀 파일을 업로드하면\n78페이지 보도자료를 자동으로 생성합니다",
         "duration": 5.0
     },
     {
-        "text": "연도/분기 자동 감지 → 2025년 2분기",
+        "text": "대시보드 레이아웃:\n좌측 사이드바, 우측 미리보기 영역",
         "duration": 4.0
     },
     
-    # ========== Scene 3: 가중치 설정 ==========
+    # ========== 2. 파일 업로드 (1분) ==========
     {
-        "text": "[기술적 차별화 #1] 가중치 조절 기능\n결측치 대체값 설정",
-        "duration": 3.0
+        "text": "Step 1: 분석표 엑셀 파일 업로드\n드래그 앤 드롭 또는 클릭으로 업로드",
+        "duration": 4.0
     },
     {
-        "text": "광공업/서비스업 가중치 개별 설정 가능",
+        "text": "파일 업로드 중...\n자동으로 연도/분기를 감지합니다",
+        "duration": 5.0
+    },
+    {
+        "text": "✅ 2025년 2분기 자동 감지 완료\n보도자료 항목 목록이 활성화되었습니다",
         "duration": 5.0
     },
     
-    # ========== Scene 4: 담당자 설정 ==========
+    # ========== 3. 요약 탭 보도자료 미리보기 (1분 30초) ==========
     {
-        "text": "[기술적 차별화 #2] 담당자 정보 설정\n보도자료에 자동 반영",
+        "text": "Step 2: 요약 탭 보도자료 미리보기\n9개 항목, 9페이지",
         "duration": 3.0
     },
     {
-        "text": "배포일시, 배포부서, 담당자 정보 입력",
+        "text": "표지 - 자동 생성된 제목과 기관명\n보도자료의 첫 페이지",
         "duration": 5.0
     },
-    
-    # ========== Scene 5: 분석표 다운로드 ==========
     {
-        "text": "[요구사항 반영] 기초자료 → 분석표 자동 변환\nStep 4: 분석표 다운로드",
-        "duration": 3.0
+        "text": "인포그래픽 - 시각화된 요약 정보\n지역별 경제 지표를 한눈에",
+        "duration": 5.0
     },
     {
-        "text": "수식 계산 포함된 분석표 엑셀 생성",
+        "text": "요약-지역경제동향 - 자동 생성된 요약 문장\n규칙기반 자연어 생성으로 정확하고 일관된 표현",
+        "duration": 5.0
+    },
+    {
+        "text": "검토 완료 체크 - 작업 진행 상태 관리\n각 항목별 검토 상태를 추적합니다",
         "duration": 4.0
     },
     
-    # ========== Scene 6: GRDP 설정 ==========
+    # ========== 4. 부문별 탭 보도자료 미리보기 (1분) ==========
     {
-        "text": "Step 5: GRDP 데이터 결합\nKOSIS 데이터 연동",
+        "text": "Step 3: 부문별 탭 보도자료 미리보기\n10개 항목, 20페이지",
         "duration": 3.0
     },
     {
-        "text": "GRDP 파일 업로드 또는 기본값 사용",
+        "text": "광공업생산 - 표, 그래프, 해설문 자동 생성\n증감률과 기여도를 자동으로 계산",
+        "duration": 5.0
+    },
+    {
+        "text": "고용동향 - 고용률/실업률 데이터 및 분석문\n규칙기반 자연어 생성으로 정확한 수치 표현",
         "duration": 5.0
     },
     
-    # ========== Scene 7: 보도자료 미리보기 ==========
+    # ========== 5. 시도별 탭 보도자료 미리보기 (1분) ==========
     {
-        "text": "[핵심 기능] 보도자료 미리보기\n실시간 렌더링",
+        "text": "Step 4: 시도별 탭 보도자료 미리보기\n17개 시도 + GRDP 참고, 36페이지",
         "duration": 3.0
     },
     {
-        "text": "부문별 보도자료: 광공업, 서비스업, 고용률, 물가 등",
-        "duration": 5.0
+        "text": "서울 - 서울 지역경제동향 미리보기\n각 시도별로 동일한 형식으로 생성",
+        "duration": 4.0
     },
     {
-        "text": "시도별 보도자료: 17개 시도 경제동향",
-        "duration": 5.0
-    },
-    {
-        "text": "[기술적 차별화 #3] 인포그래픽\n지역별 지도 시각화",
-        "duration": 5.0
-    },
-    {
-        "text": "[기술적 차별화 #4] 차트 크기 조절\n슬라이더로 실시간 조정",
+        "text": "경기 - 다른 지역도 동일 형식으로 생성\nGRDP 데이터 연동 확인",
         "duration": 4.0
     },
     
-    # ========== Scene 8: 검토 기능 ==========
+    # ========== 6. 통계표 탭 미리보기 (30초) ==========
     {
-        "text": "[기술적 차별화 #5] 검토 기능\n작업 진행 상태 관리",
+        "text": "Step 5: 통계표 탭 미리보기\n13개 항목, 13페이지",
         "duration": 3.0
     },
     {
-        "text": "검토완료 체크로 진행률 한눈에 파악",
+        "text": "광공업생산 통계표 - 자동 생성된 통계표\n엑셀 데이터를 표 형식으로 변환",
         "duration": 4.0
     },
     
-    # ========== Scene 9: 편집 기능 ==========
+    # ========== 7. 전체 생성 및 내보내기 (1분) ==========
     {
-        "text": "[기술적 차별화 #6] 편집 기능\n보도자료 내용 직접 수정",
+        "text": "Step 6: 전체 생성 및 내보내기\n50개 항목, 78페이지 일괄 생성",
         "duration": 3.0
     },
     {
-        "text": "미리보기 화면에서 바로 편집 가능",
+        "text": "전체 생성 버튼 클릭\n모든 보도자료를 한 번에 생성합니다",
+        "duration": 4.0
+    },
+    {
+        "text": "생성 진행 상황 표시\n약 5분 소요 (기존 1주일 → 5분, 99.8% 단축)",
+        "duration": 5.0
+    },
+    {
+        "text": "내보내기 - HTML 파일 다운로드\n한글(HWP) 복사-붙여넣기용 HTML 생성",
+        "duration": 4.0
+    },
+    
+    # ========== 8. 한글 복사-붙여넣기 시연 (30초) ==========
+    {
+        "text": "Step 7: 한글(HWP) 복사-붙여넣기\n생성된 HTML에서 내용을 복사하여 한글에 붙여넣기",
         "duration": 5.0
     },
     
-    # ========== Scene 10: 내보내기 ==========
+    # ========== 9. 마무리 (30초) ==========
     {
-        "text": "[핵심 기능] 보도자료 내보내기\n다양한 출력 형식 지원",
+        "text": "지역경제동향 보도자료 생성 완료!",
         "duration": 3.0
     },
     {
-        "text": "PDF용 HTML / 한글 복붙용 HTML\n즉시 활용 가능",
-        "duration": 5.0
+        "text": "✓ 분석표 업로드 → 자동 연도/분기 감지\n✓ 50개 항목 78페이지 자동 생성\n✓ 규칙기반 정확한 수치와 일관된 표현\n✓ HTML 내보내기 → 한글 복사-붙여넣기",
+        "duration": 8.0
     },
-    
-    # ========== 마무리 ==========
     {
-        "text": "지역경제동향 보도자료 생성 완료!\n\n✓ 기초자료 → 분석표 자동화\n✓ 보도자료 생성 시간 단축",
+        "text": "시간 절감 효과: 1주일 → 약 5분 (99.8% 단축)\n\n감사합니다!",
         "duration": 5.0
     }
 ]
@@ -282,21 +289,45 @@ class DemoRecorder:
             sub = SUBTITLES[self.subtitle_index]
             self.srt.add_subtitle(sub["text"], sub["duration"])
             self.subtitle_index += 1
-            print(f"[자막 {self.subtitle_index}] {sub['text'][:30]}...")
+            print(f"[자막 {self.subtitle_index}/{len(SUBTITLES)}] {sub['text'][:40]}...")
     
     async def wait(self, seconds: float = ACTION_DELAY):
-        """대기 (영상에서 액션 확인용)"""
+        """대기"""
         await asyncio.sleep(seconds)
     
     async def scene_transition(self):
         """씬 전환 대기"""
         await asyncio.sleep(SCENE_DELAY)
     
-    # ========== 데모 시나리오 ==========
+    async def wait_for_element(self, selector: str, timeout: int = 10000):
+        """요소가 나타날 때까지 대기"""
+        try:
+            await self.page.wait_for_selector(selector, timeout=timeout)
+            return True
+        except:
+            print(f"[경고] 요소를 찾을 수 없음: {selector}")
+            return False
+    
+    async def safe_click(self, selector: str, description: str = ""):
+        """안전하게 클릭"""
+        try:
+            element = self.page.locator(selector).first
+            if await element.is_visible(timeout=3000):
+                await element.click()
+                print(f"[클릭] {description or selector}")
+                return True
+            else:
+                print(f"[경고] 요소가 보이지 않음: {description or selector}")
+                return False
+        except Exception as e:
+            print(f"[경고] 클릭 실패: {description or selector} - {e}")
+            return False
+    
+    # ========== 시연 시나리오 ==========
     
     async def scene_1_intro(self):
-        """Scene 1: 시스템 소개"""
-        print("\n[Scene 1] 시스템 소개")
+        """Scene 1: 도입부 (30초)"""
+        print("\n[Scene 1] 도입부")
         
         # 메인 페이지 접속
         await self.page.goto(SERVER_URL)
@@ -306,309 +337,236 @@ class DemoRecorder:
         self.next_subtitle()  # 지역경제동향 보도자료 생성 시스템
         await self.wait(5)
         
-        self.next_subtitle()  # 보도자료 생성 자동화
+        self.next_subtitle()  # 분석표 엑셀 파일을 업로드하면...
         await self.wait(5)
+        
+        self.next_subtitle()  # 대시보드 레이아웃
+        await self.wait(4)
         
         await self.scene_transition()
     
     async def scene_2_upload(self):
-        """Scene 2: 기초자료 업로드"""
-        print("\n[Scene 2] 기초자료 업로드")
+        """Scene 2: 파일 업로드 (1분)"""
+        print("\n[Scene 2] 파일 업로드")
         
-        self.next_subtitle()  # Step 1: 기초자료 수집표 업로드
-        await self.wait(3)
+        self.next_subtitle()  # Step 1: 분석표 엑셀 파일 업로드
+        await self.wait(4)
         
         # 파일 업로드
         if TEST_FILE.exists():
-            self.next_subtitle()  # 파일을 드래그하거나 클릭하여 업로드
+            self.next_subtitle()  # 파일 업로드 중...
             
             # 파일 input 찾기
             file_input = self.page.locator('input[type="file"]')
-            await file_input.set_input_files(str(TEST_FILE))
+            if await file_input.is_visible():
+                await file_input.set_input_files(str(TEST_FILE))
+                print(f"[업로드] 파일 업로드: {TEST_FILE.name}")
+                await self.wait(5)
+            else:
+                print("[경고] 파일 input을 찾을 수 없음")
+                self.srt.add_gap(5)
+                self.subtitle_index += 1
             
+            self.next_subtitle()  # ✅ 2025년 2분기 자동 감지 완료
+            
+            # 업로드 완료 대기 (연도/분기 자동 감지)
+            await self.wait_for_element('.period-value:not(.waiting)', timeout=15000)
             await self.wait(5)
-            
-            self.next_subtitle()  # 연도/분기 자동 감지
-            await self.wait(4)
         else:
             print(f"[경고] 테스트 파일을 찾을 수 없음: {TEST_FILE}")
-            self.srt.add_gap(9)  # 자막 건너뛰기
+            self.srt.add_gap(14)
             self.subtitle_index += 2
         
         await self.scene_transition()
     
-    async def scene_3_weight_settings(self):
-        """Scene 3: 가중치 설정"""
-        print("\n[Scene 3] 가중치 설정")
+    async def scene_3_summary_preview(self):
+        """Scene 3: 요약 탭 보도자료 미리보기 (1분 30초)"""
+        print("\n[Scene 3] 요약 탭 보도자료 미리보기")
         
-        self.next_subtitle()  # Step 2: 가중치 결측치 설정
+        self.next_subtitle()  # Step 2: 요약 탭 보도자료 미리보기
         await self.wait(3)
         
-        # 가중치 설정 버튼 클릭
-        weight_btn = self.page.locator('#weightInfoBtn')
-        if await weight_btn.is_visible():
-            await weight_btn.click()
-            await self.wait(1)
-            
-            self.next_subtitle()  # 광공업/서비스업 가중치 기본값 설정
-            
-            # 값 입력 (기본값 유지 또는 변경)
-            mining_input = self.page.locator('#miningDefaultWeight')
-            if await mining_input.is_visible():
-                await mining_input.fill("1.0")
-                await self.wait(1)
-            
-            service_input = self.page.locator('#serviceDefaultWeight')
-            if await service_input.is_visible():
-                await service_input.fill("1.0")
-                await self.wait(1)
-            
-            # 저장 버튼 클릭
-            save_btn = self.page.locator('button:has-text("저장")')
-            if await save_btn.first.is_visible():
-                await save_btn.first.click()
-            
-            await self.wait(3)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
-        
-        await self.scene_transition()
-    
-    async def scene_4_contact_info(self):
-        """Scene 4: 담당자 정보 설정"""
-        print("\n[Scene 4] 담당자 정보 설정")
-        
-        self.next_subtitle()  # Step 3: 담당자 정보 설정
-        await self.wait(3)
-        
-        # 담당자 설정 버튼 클릭
-        contact_btn = self.page.locator('#contactInfoBtn')
-        if await contact_btn.is_visible():
-            await contact_btn.click()
-            await self.wait(1)
-            
-            self.next_subtitle()  # 배포일시, 배포부서, 담당자 정보 입력
-            
-            # 정보 입력
-            dept_input = self.page.locator('#releaseDepartment')
-            if await dept_input.is_visible():
-                await dept_input.fill("국가데이터처 통계분석과")
-                await self.wait(0.5)
-            
-            person_input = self.page.locator('#releasePerson')
-            if await person_input.is_visible():
-                await person_input.fill("김담당")
-                await self.wait(0.5)
-            
-            # 저장
-            save_btn = self.page.locator('button:has-text("저장")')
-            if await save_btn.first.is_visible():
-                await save_btn.first.click()
-            
-            await self.wait(3)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
-        
-        await self.scene_transition()
-    
-    async def scene_5_download_analysis(self):
-        """Scene 5: 분석표 다운로드"""
-        print("\n[Scene 5] 분석표 다운로드")
-        
-        self.next_subtitle()  # Step 4: 분석표 자동 생성
-        await self.wait(3)
-        
-        # 분석표 다운로드 버튼 클릭
-        download_btn = self.page.locator('#downloadAnalysisBtn')
-        if await download_btn.is_visible() and await download_btn.is_enabled():
-            self.next_subtitle()  # 기초자료 → 분석표 자동 변환
-            await download_btn.click()
-            await self.wait(4)
-        else:
-            self.srt.add_gap(4)
-            self.subtitle_index += 1
-        
-        await self.scene_transition()
-    
-    async def scene_6_grdp_settings(self):
-        """Scene 6: GRDP 설정"""
-        print("\n[Scene 6] GRDP 설정")
-        
-        self.next_subtitle()  # Step 5: GRDP 데이터 설정
-        await self.wait(3)
-        
-        # GRDP 모달이 자동으로 열리거나, 버튼 클릭
-        grdp_modal = self.page.locator('#grdpModal')
-        
-        # GRDP 설정 버튼 찾기 시도
-        grdp_btn = self.page.locator('button:has-text("GRDP")')
-        if await grdp_btn.first.is_visible():
-            await grdp_btn.first.click()
-            await self.wait(1)
-        
-        self.next_subtitle()  # KOSIS GRDP 파일 업로드 또는 기본값 사용
-        
-        # 기본값 사용 버튼 클릭
-        default_btn = self.page.locator('button:has-text("기본값")')
-        if await default_btn.first.is_visible():
-            await default_btn.first.click()
-            await self.wait(3)
-        
+        # 요약 탭으로 이동 (JavaScript 함수 호출)
+        await self.page.evaluate("""
+            if (typeof switchTab === 'function') {
+                switchTab('summary');
+            } else if (typeof selectGlobalReport === 'function') {
+                // 요약 탭의 첫 번째 항목 찾기
+                const summaryItems = document.querySelectorAll('.report-item');
+                for (let i = 0; i < summaryItems.length; i++) {
+                    const item = summaryItems[i];
+                    if (item.textContent.includes('표지') || item.textContent.includes('요약')) {
+                        selectGlobalReport(i);
+                        break;
+                    }
+                }
+            }
+        """)
         await self.wait(2)
-        await self.scene_transition()
-    
-    async def scene_7_preview(self):
-        """Scene 7: 보도자료 미리보기"""
-        print("\n[Scene 7] 보도자료 미리보기")
         
-        self.next_subtitle()  # Step 6: 보도자료 미리보기
-        await self.wait(3)
+        # 표지 클릭
+        self.next_subtitle()  # 표지
+        await self.safe_click('.report-item:has-text("표지"), .report-item:has-text("표지")', "표지")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(5)
         
-        # 부문별 탭 클릭
-        sectoral_tab = self.page.locator('[data-tab="sectoral"]')
-        if await sectoral_tab.is_visible():
-            await sectoral_tab.click()
-            await self.wait(1)
-            
-            self.next_subtitle()  # 부문별 보도자료
-            
-            # 첫 번째 보도자료 클릭
-            first_report = self.page.locator('.report-list .report-item').first
-            if await first_report.is_visible():
-                await first_report.click()
-                await self.wait(5)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
+        # 인포그래픽 클릭
+        self.next_subtitle()  # 인포그래픽
+        await self.safe_click('.report-item:has-text("인포그래픽")', "인포그래픽")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(5)
         
-        # 시도별 탭 클릭
-        regional_tab = self.page.locator('[data-tab="regional"]')
-        if await regional_tab.is_visible():
-            await regional_tab.click()
-            await self.wait(1)
-            
-            self.next_subtitle()  # 시도별 보도자료
-            
-            # 서울 클릭
-            seoul_report = self.page.locator('.report-item:has-text("서울")')
-            if await seoul_report.first.is_visible():
-                await seoul_report.first.click()
-                await self.wait(5)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
+        # 요약-지역경제동향 클릭
+        self.next_subtitle()  # 요약-지역경제동향
+        await self.safe_click('.report-item:has-text("요약-지역경제동향"), .report-item:has-text("지역경제동향")', "요약-지역경제동향")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(5)
         
-        # 인포그래픽/요약 탭
-        summary_tab = self.page.locator('[data-tab="summary"]')
-        if await summary_tab.is_visible():
-            await summary_tab.click()
-            await self.wait(1)
-            
-            self.next_subtitle()  # 인포그래픽
-            
-            # 인포그래픽 항목 찾기
-            infographic = self.page.locator('.report-item:has-text("인포그래픽")')
-            if await infographic.first.is_visible():
-                await infographic.first.click()
-                await self.wait(5)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
-        
-        # 차트 크기 조절 (슬라이더가 있다면)
-        self.next_subtitle()  # 차트 크기 조절 기능
-        chart_slider = self.page.locator('input[type="range"]')
-        if await chart_slider.first.is_visible():
-            await chart_slider.first.fill("80")
-            await self.wait(2)
-            await chart_slider.first.fill("100")
-            await self.wait(2)
-        else:
-            await self.wait(4)
+        # 검토 완료 체크
+        self.next_subtitle()  # 검토 완료 체크
+        await self.safe_click('#markReviewedBtn, button:has-text("검토완료")', "검토완료")
+        await self.wait(4)
         
         await self.scene_transition()
     
-    async def scene_8_review(self):
-        """Scene 8: 검토 기능"""
-        print("\n[Scene 8] 검토 기능")
+    async def scene_4_sectoral_preview(self):
+        """Scene 4: 부문별 탭 보도자료 미리보기 (1분)"""
+        print("\n[Scene 4] 부문별 탭 보도자료 미리보기")
         
-        self.next_subtitle()  # Step 7: 검토 기능
+        self.next_subtitle()  # Step 3: 부문별 탭 보도자료 미리보기
         await self.wait(3)
         
-        # 검토완료 버튼 클릭
-        review_btn = self.page.locator('#markReviewedBtn')
-        if await review_btn.is_visible():
-            self.next_subtitle()  # 검토완료 버튼
-            await review_btn.click()
+        # 부문별 탭으로 이동
+        await self.page.evaluate("""
+            if (typeof switchTab === 'function') {
+                switchTab('sectoral');
+            }
+        """)
+        await self.wait(2)
+        
+        # 광공업생산 클릭
+        self.next_subtitle()  # 광공업생산
+        await self.safe_click('.report-item:has-text("광공업생산")', "광공업생산")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(5)
+        
+        # 고용동향 클릭 (고용률 또는 실업률)
+        self.next_subtitle()  # 고용동향
+        await self.safe_click('.report-item:has-text("고용률"), .report-item:has-text("실업률")', "고용동향")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(5)
+        
+        await self.scene_transition()
+    
+    async def scene_5_regional_preview(self):
+        """Scene 5: 시도별 탭 보도자료 미리보기 (1분)"""
+        print("\n[Scene 5] 시도별 탭 보도자료 미리보기")
+        
+        self.next_subtitle()  # Step 4: 시도별 탭 보도자료 미리보기
+        await self.wait(3)
+        
+        # 시도별 탭으로 이동
+        await self.page.evaluate("""
+            if (typeof switchTab === 'function') {
+                switchTab('regional');
+            }
+        """)
+        await self.wait(2)
+        
+        # 서울 클릭
+        self.next_subtitle()  # 서울
+        await self.safe_click('.report-item:has-text("서울")', "서울")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(4)
+        
+        # 경기 클릭
+        self.next_subtitle()  # 경기
+        await self.safe_click('.report-item:has-text("경기")', "경기")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(4)
+        
+        await self.scene_transition()
+    
+    async def scene_6_statistics_preview(self):
+        """Scene 6: 통계표 탭 미리보기 (30초)"""
+        print("\n[Scene 6] 통계표 탭 미리보기")
+        
+        self.next_subtitle()  # Step 5: 통계표 탭 미리보기
+        await self.wait(3)
+        
+        # 통계표 탭으로 이동
+        await self.page.evaluate("""
+            if (typeof switchTab === 'function') {
+                switchTab('statistics');
+            }
+        """)
+        await self.wait(2)
+        
+        # 광공업생산 통계표 클릭
+        self.next_subtitle()  # 광공업생산 통계표
+        await self.safe_click('.report-item:has-text("통계표-광공업생산"), .report-item:has-text("광공업생산지수")', "광공업생산 통계표")
+        await self.wait(PREVIEW_DELAY)
+        await self.wait(4)
+        
+        await self.scene_transition()
+    
+    async def scene_7_generate_and_export(self):
+        """Scene 7: 전체 생성 및 내보내기 (1분)"""
+        print("\n[Scene 7] 전체 생성 및 내보내기")
+        
+        self.next_subtitle()  # Step 6: 전체 생성 및 내보내기
+        await self.wait(3)
+        
+        # 전체 생성 버튼 클릭
+        self.next_subtitle()  # 전체 생성 버튼 클릭
+        generate_btn = self.page.locator('#generateAllBtn, button:has-text("전체 생성"), button:has-text("일괄 생성")')
+        if await generate_btn.first.is_visible():
+            await generate_btn.first.click()
+            print("[클릭] 전체 생성 버튼")
             await self.wait(4)
         else:
+            print("[경고] 전체 생성 버튼을 찾을 수 없음")
+            self.srt.add_gap(4)
+            self.subtitle_index += 1
+        
+        self.next_subtitle()  # 생성 진행 상황 표시
+        # 생성 진행 대기 (최대 30초)
+        await self.wait(5)
+        
+        # 내보내기 버튼 클릭
+        self.next_subtitle()  # 내보내기
+        export_btn = self.page.locator('#exportBtn, button:has-text("내보내기"), button:has-text("다운로드")')
+        if await export_btn.first.is_visible():
+            await export_btn.first.click()
+            print("[클릭] 내보내기 버튼")
+            await self.wait(4)
+        else:
+            print("[경고] 내보내기 버튼을 찾을 수 없음")
             self.srt.add_gap(4)
             self.subtitle_index += 1
         
         await self.scene_transition()
     
-    async def scene_9_edit(self):
-        """Scene 9: 편집 기능"""
-        print("\n[Scene 9] 편집 기능")
+    async def scene_8_hwp_copy_paste(self):
+        """Scene 8: 한글 복사-붙여넣기 시연 (30초)"""
+        print("\n[Scene 8] 한글 복사-붙여넣기 시연")
         
-        self.next_subtitle()  # Step 8: 편집 기능
-        await self.wait(3)
-        
-        # 편집 버튼 클릭
-        edit_btn = self.page.locator('#editBtn')
-        if await edit_btn.is_visible():
-            self.next_subtitle()  # 보도자료 내용 직접 수정 가능
-            await edit_btn.click()
-            await self.wait(2)
-            
-            # 편집 영역에 내용 수정 시뮬레이션
-            edit_area = self.page.locator('#editableContent, .editable-content, [contenteditable="true"]')
-            if await edit_area.first.is_visible():
-                await edit_area.first.click()
-                await self.wait(1)
-            
-            # 저장 또는 취소
-            cancel_btn = self.page.locator('#cancelEditBtn')
-            if await cancel_btn.is_visible():
-                await cancel_btn.click()
-            
-            await self.wait(2)
-        else:
-            self.srt.add_gap(5)
-            self.subtitle_index += 1
+        self.next_subtitle()  # Step 7: 한글(HWP) 복사-붙여넣기
+        await self.wait(5)
         
         await self.scene_transition()
     
-    async def scene_10_export(self):
-        """Scene 10: 내보내기"""
-        print("\n[Scene 10] 내보내기")
-        
-        self.next_subtitle()  # Step 9: 보도자료 내보내기
-        await self.wait(3)
-        
-        self.next_subtitle()  # PDF용 HTML / 한글 복붙용 HTML
-        
-        # PDF용 내보내기 버튼
-        export_btn = self.page.locator('#exportBtn')
-        if await export_btn.is_visible():
-            await export_btn.click()
-            await self.wait(3)
-        
-        # 한글 복붙용 내보내기 버튼
-        hwp_btn = self.page.locator('#exportHwpBtn')
-        if await hwp_btn.is_visible():
-            await hwp_btn.click()
-            await self.wait(2)
-        
-        await self.scene_transition()
-    
-    async def scene_finale(self):
-        """마무리"""
-        print("\n[Finale] 마무리")
+    async def scene_9_finale(self):
+        """Scene 9: 마무리 (30초)"""
+        print("\n[Scene 9] 마무리")
         
         self.next_subtitle()  # 지역경제동향 보도자료 생성 완료!
+        await self.wait(3)
+        
+        self.next_subtitle()  # ✓ 분석표 업로드 → 자동 연도/분기 감지...
+        await self.wait(8)
+        
+        self.next_subtitle()  # 시간 절감 효과: 1주일 → 약 5분...
         await self.wait(5)
     
     async def record(self):
@@ -626,22 +584,20 @@ class DemoRecorder:
         # 각 씬 실행
         await self.scene_1_intro()
         await self.scene_2_upload()
-        await self.scene_3_weight_settings()
-        await self.scene_4_contact_info()
-        await self.scene_5_download_analysis()
-        await self.scene_6_grdp_settings()
-        await self.scene_7_preview()
-        await self.scene_8_review()
-        await self.scene_9_edit()
-        await self.scene_10_export()
-        await self.scene_finale()
+        await self.scene_3_summary_preview()
+        await self.scene_4_sectoral_preview()
+        await self.scene_5_regional_preview()
+        await self.scene_6_statistics_preview()
+        await self.scene_7_generate_and_export()
+        await self.scene_8_hwp_copy_paste()
+        await self.scene_9_finale()
         
         # 마지막 대기
         await self.wait(3)
         
         elapsed = time.time() - self.start_time
         print("=" * 60)
-        print(f"녹화 완료! 총 {elapsed:.1f}초")
+        print(f"녹화 완료! 총 {elapsed:.1f}초 ({elapsed/60:.1f}분)")
         print("=" * 60)
 
 
@@ -664,6 +620,8 @@ async def main():
             
             print(f"\n[완료] 영상 파일 위치: {OUTPUT_DIR}")
             print(f"[완료] 자막 파일: {srt_path}")
+            print("\n[참고] Playwright가 생성한 영상 파일은 .webm 형식입니다.")
+            print("      필요시 FFmpeg로 MP4로 변환할 수 있습니다.")
             
         except Exception as e:
             print(f"[오류] 녹화 중 오류 발생: {e}")

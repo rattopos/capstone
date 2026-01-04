@@ -1657,7 +1657,7 @@ class RegionalGenerator:
                     "increase_age_groups": [], "decrease_age_groups": []}
         
         # D(고용률)집계 시트 열 구조
-        # 열 1: 지역명, 열 2: 분류단계(0=총계, 1=세부), 열 3: 연령대명
+        # 열 1: 지역명, 열 3: 연령대명('계'=총계, '15 - 29세' 등=세부)
         # 열 8~21: 분기별 고용률 (2022.1Q ~ 2025.2Q)
         EMP_QUARTER_COLS = {
             '2022_1Q': 8, '2022_2Q': 9, '2022_3Q': 10, '2022_4Q': 11,
@@ -1671,8 +1671,8 @@ class RegionalGenerator:
         curr_col = EMP_QUARTER_COLS[curr_quarter]
         prev_col = EMP_QUARTER_COLS[prev_quarter]
         
-        # 총계 행 (분류단계 = 0)
-        total_row = df[(df[1] == region) & (df[2].astype(str) == '0')]
+        # 총계 행 (연령대명 = '계')
+        total_row = df[(df[1] == region) & (df[3].astype(str).str.strip() == '계')]
         if len(total_row) == 0:
             return {"total_change": 0, "direction": "하락",
                     "increase_age_groups": [], "decrease_age_groups": []}
@@ -1684,11 +1684,11 @@ class RegionalGenerator:
             curr_val = float(total_row.iloc[curr_col]) if pd.notna(total_row.iloc[curr_col]) else 0
             prev_val = float(total_row.iloc[prev_col]) if pd.notna(total_row.iloc[prev_col]) else 0
             total_change = round(curr_val - prev_val, 1)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, IndexError):
             total_change = 0.0
         
-        # 연령대별 데이터 (분류단계 = 1)
-        age_groups = df[(df[1] == region) & (df[2].astype(str) == '1')]
+        # 연령대별 데이터 (연령대명이 '계'가 아닌 행들)
+        age_groups = df[(df[1] == region) & (df[3].astype(str).str.strip() != '계')]
         
         increase_groups = []
         decrease_groups = []
@@ -1710,11 +1710,14 @@ class RegionalGenerator:
             for _, row in age_groups.iterrows():
                 age_name = self._clean_name(str(row.iloc[3]) if pd.notna(row.iloc[3]) else "")
                 
+                if not age_name or age_name == '계':
+                    continue
+                
                 try:
-                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
-                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+                    curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) and curr_col < len(row) else 0
+                    prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) and prev_col < len(row) else 0
                     change = round(curr_val - prev_val, 1)
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, IndexError):
                     change = 0.0
                 
                 display_name = age_name_map.get(age_name, age_name)
@@ -2110,11 +2113,11 @@ class RegionalGenerator:
             except:
                 return []
             
-            # D(고용률)집계: 열1=지역, 열2=분류단계, 열3=산업이름
+            # D(고용률)집계: 열1=지역, 열3=연령대명('계'=총계)
             if age_filter:
                 rows = df_emp_agg[(df_emp_agg[1] == region_name) & (df_emp_agg[3].astype(str).str.contains(age_filter, na=False))]
             else:
-                rows = df_emp_agg[(df_emp_agg[1] == region_name) & (df_emp_agg[2].astype(str) == '0')]
+                rows = df_emp_agg[(df_emp_agg[1] == region_name) & (df_emp_agg[3].astype(str).str.strip() == '계')]
             
             if len(rows) == 0:
                 return []
@@ -2330,7 +2333,7 @@ class RegionalGenerator:
         
         try:
             df = self.cache.get_sheet('D(고용률)집계')
-            row = df[(df[1] == region) & (df[2].astype(str) == '0')]
+            row = df[(df[1] == region) & (df[3].astype(str).str.strip() == '계')]
             if len(row) == 0:
                 return 0.0
             row = row.iloc[0]

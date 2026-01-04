@@ -58,20 +58,9 @@
             gap: 10px;
         }
         
-        .logo-icon {
-            width: 50px;
-            height: 50px;
-        }
-        
-        .logo-text {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--kostat-navy);
-        }
-        
-        .logo-subtext {
-            font-size: 11px;
-            color: var(--medium-gray);
+        .logo-img {
+            height: 45px;
+            width: auto;
         }
         
         .title-section {
@@ -139,12 +128,12 @@
         }
         
         /* Card themes - 색상표 기준 */
-        .card.mining .card-header { background: linear-gradient(135deg, #F18D8D 0%, #e76f51 100%); }
-        .card.service .card-header { background: linear-gradient(135deg, #7FBDE5 0%, #5fb3d6 100%); }
-        .card.retail .card-header { background: linear-gradient(135deg, #F18D8D 0%, #e76f51 100%); }
-        .card.export .card-header { background: linear-gradient(135deg, #7FBDE5 0%, #5fb3d6 100%); }
-        .card.employment .card-header { background: linear-gradient(135deg, #F18D8D 0%, #e89b4b 100%); }
-        .card.cpi .card-header { background: linear-gradient(135deg, #C1A5C9 0%, #8a6ba8 100%); }
+        .card.mining .card-header { background: linear-gradient(135deg, #D7A3A0 0%, #c58d8a 100%); } /* Salmon Pink */
+        .card.service .card-header { background: linear-gradient(135deg, #89BEDE 0%, #6ba8d1 100%); } /* Sky Blue */
+        .card.retail .card-header { background: linear-gradient(135deg, #D7A3A0 0%, #c58d8a 100%); } /* Salmon Pink */
+        .card.export .card-header { background: linear-gradient(135deg, #89BEDE 0%, #6ba8d1 100%); } /* Sky Blue */
+        .card.employment .card-header { background: linear-gradient(135deg, #D7A3A0 0%, #c58d8a 100%); } /* Salmon Pink */
+        .card.cpi .card-header { background: linear-gradient(135deg, #BCADCC 0%, #9d8fb0 100%); } /* Lavender */
         
         /* Card Content */
         .card-content {
@@ -186,28 +175,28 @@
         
         /* 지역 색상 클래스 */
         .korea-map-svg .region.increase {
-            fill: #F18D8D !important;
+            fill: #D7A3A0 !important; /* Salmon Pink - 증가/상승 */
         }
         
         .korea-map-svg .region.decrease {
-            fill: #7FBDE5 !important;
+            fill: #89BEDE !important; /* Sky Blue - 감소/하락 */
         }
         
         .korea-map-svg .region.same {
-            fill: #E4E4E4 !important;
+            fill: #DDDCDD !important; /* Light Gray - 보합 */
         }
         
         /* 소비자물가 특수 색상 */
         .korea-map-svg .region.above-avg {
-            fill: #C1A5C9 !important;
+            fill: #D7A3A0 !important; /* Salmon Pink - 전국 평균 초과 */
         }
         
         .korea-map-svg .region.below-avg {
-            fill: #D8D2DE !important;
+            fill: #BCADCC !important; /* Lavender - 전국 평균 미만 */
         }
         
         .korea-map-svg .region.national-avg {
-            fill: #E4E4E4 !important;
+            fill: #DDDCDD !important; /* Light Gray - 전국 평균 수준 */
         }
         
         .korea-map-svg .region.no-data {
@@ -242,12 +231,12 @@
         
         .ranking-label.top {
             background: #ffebee;
-            color: #F18D8D;
+            color: #D7A3A0; /* Salmon Pink */
         }
         
         .ranking-label.bottom {
             background: #e3f2fd;
-            color: #7FBDE5;
+            color: #89BEDE; /* Sky Blue */
         }
         
         .ranking-item {
@@ -270,17 +259,17 @@
             color: var(--dark-gray);
         }
         
-        .region-value.increase { color: #F18D8D; }
-        .region-value.decrease { color: #7FBDE5; }
+        .region-value.increase { color: #D7A3A0; } /* Salmon Pink */
+        .region-value.decrease { color: #89BEDE; } /* Sky Blue */
         
         .arrow {
             font-size: 10px;
             font-weight: 700;
         }
         
-        .arrow.up { color: #F18D8D; }
-        .arrow.down { color: #7FBDE5; }
-        .arrow.same { color: #E4E4E4; }
+        .arrow.up { color: #D7A3A0; } /* Salmon Pink */
+        .arrow.down { color: #89BEDE; } /* Sky Blue */
+        .arrow.same { color: #DDDCDD; } /* Light Gray */
         
         /* National Average */
         .national-avg {
@@ -301,8 +290,8 @@
             color: var(--dark-gray);
         }
         
-        .national-value.increase { color: #F18D8D; }
-        .national-value.decrease { color: #7FBDE5; }
+        .national-value.increase { color: #D7A3A0; } /* Salmon Pink */
+        .national-value.decrease { color: #89BEDE; } /* Sky Blue */
         
         /* Legend */
         .legend {
@@ -325,12 +314,12 @@
             border-radius: 2px;
         }
         
-        .legend-color.increase { background: #F18D8D; }
-        .legend-color.decrease { background: #7FBDE5; }
-        .legend-color.same { background: #E4E4E4; }
-        .legend-color.above-avg { background: #C1A5C9; }
-        .legend-color.below-avg { background: #D8D2DE; }
-        .legend-color.national-avg { background: #E4E4E4; }
+        .legend-color.increase { background: #D7A3A0; } /* Salmon Pink */
+        .legend-color.decrease { background: #89BEDE; } /* Sky Blue */
+        .legend-color.same { background: #DDDCDD; } /* Light Gray */
+        .legend-color.above-avg { background: #D7A3A0; } /* Salmon Pink - 전국 평균 초과 */
+        .legend-color.below-avg { background: #BCADCC; } /* Lavender - 전국 평균 미만 */
+        .legend-color.national-avg { background: #DDDCDD; } /* Light Gray - 전국 평균 수준 */
     </style>
 </head>
 <body>
@@ -338,14 +327,7 @@
         <!-- Header -->
         <div class="header">
             <div class="logo">
-                <svg class="logo-icon" viewBox="0 0 50 50">
-                    <circle cx="25" cy="25" r="23" fill="none" stroke="#164194" stroke-width="3"/>
-                    <path d="M15 25 Q25 15 35 25 Q25 35 15 25" fill="#164194"/>
-                </svg>
-                <div>
-                    <div class="logo-text" id="organization-name">국가데이터처</div>
-                    <div class="logo-subtext">Ministry of Data and Statistics</div>
-                </div>
+                <img src="logo_mods.png" alt="국가데이터처" class="logo-img">
             </div>
             <div class="title-section">
                 <div class="period" id="report-period">2025년 2/4분기</div>
@@ -702,26 +684,26 @@
         function getValueBasedColor(value, status, indicatorKey, minValue, maxValue, nationalValue, minUpValue, maxUpValue, minDownValue, maxDownValue) {
             // 수치가 없거나 상태가 없으면 기본 회색
             if (value === null || value === undefined || !status) {
-                return '#E4E4E4';
+                return '#DDDCDD'; /* Light Gray */
             }
             
             if (indicatorKey === 'cpi') {
-                // 소비자물가는 전국 평균 대비
+                // 소비자물가는 전국 평균 대비 (3색 체계)
                 if (status === 'above') {
-                    return '#C1A5C9'; // 평균 초과: 보라색 계열
+                    return '#D7A3A0'; /* Salmon Pink - 전국 평균 초과 */
                 } else if (status === 'below') {
-                    return '#D8D2DE'; // 평균 미만: 회보라색 계열
+                    return '#BCADCC'; /* Lavender - 전국 평균 미만 */
                 } else {
-                    return '#E4E4E4'; // 전국 평균: 회색
+                    return '#DDDCDD'; /* Light Gray - 전국 평균 수준 */
                 }
             } else {
-                // 일반 지표는 증감 방향에 따라 고정 색상
+                // 일반 지표는 증감 방향에 따라 고정 색상 (2색 체계)
                 if (status === 'up') {
-                    return '#F18D8D'; // 상승: 붉은색 계열
+                    return '#D7A3A0'; /* Salmon Pink - 증가/상승 */
                 } else if (status === 'down') {
-                    return '#7FBDE5'; // 하락: 푸른색 계열
+                    return '#89BEDE'; /* Sky Blue - 감소/하락 */
                 } else {
-                    return '#E4E4E4'; // 보합: 회색
+                    return '#DDDCDD'; /* Light Gray - 보합 */
                 }
             }
         }
@@ -873,7 +855,7 @@
                         } else {
                             // 데이터가 없는 지역은 기본 회색
                             path.classList.add('no-data');
-                            path.style.fill = '#CCCCCC';
+                            path.style.fill = '#DDDCDD'; /* Light Gray */
                         }
                     }
                 });

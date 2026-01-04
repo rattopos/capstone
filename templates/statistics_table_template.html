@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4;
-            margin: 15mm 15mm 20mm 15mm;
+            margin: 12mm 12mm 15mm 12mm;
         }
         
         * {
@@ -18,8 +18,8 @@
         
         body {
             font-family: '바탕', 'Batang', 'Times New Roman', serif;
-            font-size: 10pt;
-            line-height: 1.4;
+            font-size: 8pt;
+            line-height: 1.2;
             color: #000;
             background: #fff;
         }
@@ -28,7 +28,7 @@
             width: 210mm;
             height: 297mm;
             min-height: 297mm;
-            padding: 15mm;
+            padding: 12mm 15mm 18mm 15mm;
             margin: 0 auto 20mm auto;
             background: #fff;
             page-break-after: always;
@@ -36,6 +36,7 @@
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border: 1px solid #ddd;
+            position: relative;
         }
         
         .page:last-child {
@@ -113,41 +114,47 @@
         /* 데이터 테이블 페이지 스타일 */
         .table-page .page-title {
             font-family: '돋움', 'Dotum', sans-serif;
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: bold;
-            margin-bottom: 10px;
-            padding-bottom: 3px;
+            margin-bottom: 5px;
+            padding-bottom: 2px;
             text-decoration: underline;
         }
         
         .unit-label {
             float: right;
-            font-size: 9pt;
+            font-size: 8pt;
             font-weight: normal;
             color: #000;
+            text-decoration: none;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 15px;
+            font-size: 7.5pt;
+            margin-bottom: 0;
+            table-layout: fixed;
         }
         
         .data-table th,
         .data-table td {
-            border: 1px solid #000;
-            padding: 2px 4px;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            padding: 1px 2px;
             text-align: right;
             vertical-align: middle;
-            word-break: break-word;
-            overflow-wrap: break-word;
+            word-break: keep-all;
+            overflow: hidden;
+            height: 14px;
+            line-height: 1.1;
         }
         
         .data-table th {
             background: #fff;
             font-weight: normal;
             text-align: center;
+            border-bottom: 1px solid #000;
         }
         
         .data-table thead th {
@@ -159,7 +166,8 @@
             text-align: center;
             background: #fff;
             font-weight: normal;
-            width: 60px;
+            width: 50px;
+            border-right: 1px solid #ccc;
         }
         
         .data-table .year-row {
@@ -176,17 +184,18 @@
         
         .data-table .quarter-cell {
             font-weight: normal;
-            font-size: 9pt;
+            font-size: 7.5pt;
         }
         
         .data-table .separator-row td {
-            border-top: 1px dotted #666;
-            height: 1px;
+            border-top: 1px dotted #999;
+            border-bottom: none;
+            height: 0;
             padding: 0;
         }
         
         .data-table tbody tr:hover {
-            background: #f5f5f5;
+            background: #f9f9f9;
         }
         
         /* 양수/음수 색상 */
@@ -208,11 +217,16 @@
         /* 페이지 번호 */
         .page-number {
             position: absolute;
-            bottom: 10mm;
+            bottom: 8mm;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 10pt;
+            font-size: 9pt;
+        }
+        
+        .table-content {
+            height: calc(100% - 25px);
+            overflow: hidden;
         }
         
         /* 부록 스타일 */
@@ -344,7 +358,7 @@
             
             .page {
                 margin: 0;
-                padding: 15mm;
+                padding: 12mm 15mm 18mm 15mm;
                 height: 297mm;
                 page-break-after: always;
                 page-break-inside: avoid;

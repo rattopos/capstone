@@ -45,22 +45,9 @@
             gap: 10px;
         }
         
-        .logo-icon {
-            width: 40px;
+        .logo-img {
             height: 40px;
-            background: #1e88e5;
-            border-radius: 50%;
-        }
-        
-        .logo-text {
-            font-size: 14pt;
-            font-weight: 700;
-            color: #1e88e5;
-        }
-        
-        .logo-sub {
-            font-size: 8pt;
-            color: #666;
+            width: auto;
         }
         
         .main-title {
@@ -176,11 +163,11 @@
         }
         
         .ranking-value.increase {
-            color: #e53935;
+            color: #D7A3A0; /* Salmon Pink */
         }
         
         .ranking-value.decrease {
-            color: #1e88e5;
+            color: #89BEDE; /* Sky Blue */
         }
         
         .arrow {
@@ -219,30 +206,30 @@
             transition: fill 0.3s ease;
         }
         
-        /* 지역 색상 클래스 - 일반 지표용 */
+        /* 지역 색상 클래스 - 일반 지표용 (2색 체계) */
         .korea-map-svg .region.increase {
-            fill: #ef5350 !important;
+            fill: #D7A3A0 !important; /* Salmon Pink - 증가/상승 */
         }
         
         .korea-map-svg .region.decrease {
-            fill: #42a5f5 !important;
+            fill: #89BEDE !important; /* Sky Blue - 감소/하락 */
         }
         
         .korea-map-svg .region.neutral {
-            fill: #9e9e9e !important;
+            fill: #DDDCDD !important; /* Light Gray - 보합 */
         }
         
-        /* 소비자물가 특수 색상 */
+        /* 소비자물가 특수 색상 (3색 체계) */
         .korea-map-svg .region.above-avg {
-            fill: #ab47bc !important;
+            fill: #D7A3A0 !important; /* Salmon Pink - 전국 평균 초과 */
         }
         
         .korea-map-svg .region.below-avg {
-            fill: #ce93d8 !important;
+            fill: #BCADCC !important; /* Lavender - 전국 평균 미만 */
         }
         
         .korea-map-svg .region.avg {
-            fill: #fff59d !important;
+            fill: #DDDCDD !important; /* Light Gray - 전국 평균 수준 */
         }
         
         .korea-map-svg .region.no-data {
@@ -338,11 +325,7 @@
         <!-- 헤더 -->
         <div class="header">
             <div class="logo">
-                <div class="logo-icon"></div>
-                <div>
-                    <div class="logo-text">국가데이터처</div>
-                    <div class="logo-sub">Ministry of Data and Statistics</div>
-                </div>
+                <img src="/templates/logo_mods.png" alt="국가데이터처" class="logo-img">
             </div>
             <div class="main-title">
                 <div class="year-quarter">2025년 2/4분기</div>

@@ -239,8 +239,64 @@ def generate_summary_table(sido_data, sido_age_data):
     
     return {'rows': rows}
 
+class DomesticMigrationGenerator:
+    """국내인구이동 보도자료 생성 클래스"""
+    
+    def __init__(self, excel_path: str):
+        """
+        초기화
+        
+        Args:
+            excel_path: 엑셀 파일 경로
+        """
+        self.excel_path = excel_path
+        self.summary_df = None
+        self.reference_df = None
+        self.sido_data = None
+        self.sido_age_data = None
+    
+    def load_data(self):
+        """엑셀 파일에서 데이터를 로드합니다."""
+        self.summary_df, self.reference_df = load_data(self.excel_path)
+    
+    def extract_all_data(self) -> dict:
+        """모든 데이터 추출"""
+        self.load_data()
+        
+        # 시도별 데이터 추출
+        self.sido_data = get_sido_data(self.summary_df)
+        self.sido_age_data = get_sido_age_data(self.summary_df)
+        
+        # 시도별 분류
+        inflow_regions, outflow_regions = get_regional_data(self.sido_data, self.sido_age_data)
+        
+        # Top 3 지역
+        top3_inflow = inflow_regions[:3]
+        top3_outflow = outflow_regions[:3]
+        
+        # 요약 박스
+        summary_box = generate_summary_box(inflow_regions, outflow_regions)
+        
+        # 요약 테이블
+        summary_table = generate_summary_table(self.sido_data, self.sido_age_data)
+        
+        return {
+            'report_info': {
+                'main_section_number': '7',
+                'main_section_title': '국내 인구이동',
+                'page_number': '- 15 -'
+            },
+            'inflow_regions': inflow_regions,
+            'outflow_regions': outflow_regions,
+            'summary_box': summary_box,
+            'top3_inflow_regions': top3_inflow,
+            'top3_outflow_regions': top3_outflow,
+            'summary_table': summary_table
+        }
+
+
 def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=None):
-    """보도자료 데이터를 생성합니다.
+    """보도자료 데이터를 생성합니다. (하위 호환성 유지)
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -248,44 +304,8 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         year: 현재 연도 (선택사항)
         quarter: 현재 분기 (선택사항)
     """
-    # TODO: 향후 기초자료 직접 추출 지원
-    # if raw_excel_path and year and quarter:
-    #     from raw_data_extractor import RawDataExtractor
-    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
-    #     # 기초자료에서 국내인구이동 데이터 직접 추출
-    #     # return extract_from_raw_data(extractor, ...)
-    summary_df, reference_df = load_data(excel_path)
-    
-    # 시도별 데이터 추출
-    sido_data = get_sido_data(summary_df)
-    sido_age_data = get_sido_age_data(summary_df)
-    
-    # 시도별 분류
-    inflow_regions, outflow_regions = get_regional_data(sido_data, sido_age_data)
-    
-    # Top 3 지역
-    top3_inflow = inflow_regions[:3]
-    top3_outflow = outflow_regions[:3]
-    
-    # 요약 박스
-    summary_box = generate_summary_box(inflow_regions, outflow_regions)
-    
-    # 요약 테이블
-    summary_table = generate_summary_table(sido_data, sido_age_data)
-    
-    return {
-        'report_info': {
-            'main_section_number': '7',
-            'main_section_title': '국내 인구이동',
-            'page_number': '- 15 -'
-        },
-        'inflow_regions': inflow_regions,
-        'outflow_regions': outflow_regions,
-        'summary_box': summary_box,
-        'top3_inflow_regions': top3_inflow,
-        'top3_outflow_regions': top3_outflow,
-        'summary_table': summary_table
-    }
+    generator = DomesticMigrationGenerator(excel_path)
+    return generator.extract_all_data()
 
 def render_template(data, template_path, output_path):
     """Jinja2 템플릿을 렌더링합니다."""

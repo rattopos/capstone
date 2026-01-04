@@ -566,7 +566,7 @@ if __name__ == '__main__':
         sys.exit(1)
     
     excel_path = sys.argv[1]
-    template_path = sys.argv[2] if len(sys.argv) > 2 else Path(__file__).parent / 'infographic_js_template.html'
+    template_path = sys.argv[2] if len(sys.argv) > 2 else Path(__file__).parent / 'infographic_template.html'
     output_path = sys.argv[3] if len(sys.argv) > 3 else Path(__file__).parent / 'infographic_output.html'
     
     generator = 인포그래픽Generator(excel_path)
