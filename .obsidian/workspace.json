@@ -185,6 +185,7 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
+    "docs/QA_QUESTIONS_FOR_AI.txt",
     "docs/QA_PRACTICE_GUIDE.md",
     "templates/default_contributions.json",
     "QUICK_FIX.md",
@@ -229,7 +230,6 @@
     "docs/배포_사용자_가이드.md",
     "VENV/lib/python3.13/site-packages/xlwings/pro/README.md",
     "docs/GLOSSARY.md",
-    "PROJECT_PROGRESS.md",
-    "PRESENTATION.md"
+    "PROJECT_PROGRESS.md"
   ]
 }
