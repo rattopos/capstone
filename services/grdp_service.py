@@ -3,7 +3,68 @@
 GRDP 관련 서비스 함수
 """
 
+import json
 import pandas as pd
+from pathlib import Path
+
+
+# 기본 기여율 JSON 경로
+DEFAULT_CONTRIBUTIONS_PATH = Path(__file__).parent.parent / 'templates' / 'default_contributions.json'
+
+
+def load_default_contributions():
+    """기본 기여율 데이터 로드"""
+    try:
+        if DEFAULT_CONTRIBUTIONS_PATH.exists():
+            with open(DEFAULT_CONTRIBUTIONS_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"[GRDP] 기본 기여율 로드 실패: {e}")
+    return None
+
+
+def save_extracted_contributions(grdp_data):
+    """추출된 기여율을 JSON으로 저장 (향후 기본값으로 사용)"""
+    try:
+        if not grdp_data or grdp_data.get('data_missing'):
+            return False
+        
+        contributions_data = {
+            "_comment": "분석표/KOSIS에서 추출한 실제 기여율 데이터",
+            "_last_updated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+            "_source": grdp_data.get('source', 'unknown'),
+            
+            "national": {
+                "growth_rate": grdp_data.get('national_summary', {}).get('growth_rate', 0.0),
+                "contributions": grdp_data.get('national_summary', {}).get('contributions', {}),
+                "is_placeholder": False
+            },
+            
+            "regional": {}
+        }
+        
+        for region_data in grdp_data.get('regional_data', []):
+            region = region_data.get('region')
+            if region and region != '전국':
+                contributions_data['regional'][region] = {
+                    "growth_rate": region_data.get('growth_rate', 0.0),
+                    "manufacturing": region_data.get('manufacturing', 0.0),
+                    "construction": region_data.get('construction', 0.0),
+                    "service": region_data.get('service', 0.0),
+                    "other": region_data.get('other', 0.0),
+                    "is_placeholder": region_data.get('placeholder', False)
+                }
+        
+        # 저장 경로
+        save_path = Path(__file__).parent.parent / 'templates' / 'extracted_contributions.json'
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(contributions_data, f, ensure_ascii=False, indent=2)
+        
+        print(f"[GRDP] 기여율 데이터 저장 완료: {save_path}")
+        return True
+    except Exception as e:
+        print(f"[GRDP] 기여율 저장 실패: {e}")
+        return False
 
 
 def get_kosis_grdp_download_info():

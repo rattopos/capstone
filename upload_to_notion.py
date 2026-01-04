@@ -194,11 +194,21 @@ def markdown_to_notion_blocks(markdown_text: str) -> List[Dict]:
                 if re.match(r'\[.*?\]\(.*?\)', part):
                     match = re.match(r'\[(.*?)\]\((.*?)\)', part)
                     if match:
-                        rich_text.append({
-                            "type": "text",
-                            "text": {"content": match.group(1)},
-                            "annotations": {"link": {"url": match.group(2)}}
-                        })
+                        link_text = match.group(1)
+                        link_url = match.group(2)
+                        
+                        # 상대 경로 링크는 텍스트로만 표시 (노션 API 제한)
+                        if link_url.startswith('./') or link_url.startswith('../') or not link_url.startswith('http'):
+                            rich_text.append({
+                                "type": "text",
+                                "text": {"content": f"{link_text} (링크: {link_url})"}
+                            })
+                        else:
+                            rich_text.append({
+                                "type": "text",
+                                "text": {"content": link_text},
+                                "annotations": {"link": {"url": link_url}}
+                            })
                 elif part:
                     rich_text.append({"type": "text", "text": {"content": part}})
             
@@ -310,24 +320,127 @@ def main():
             print("\n❌ 토큰이 입력되지 않았습니다. 종료합니다.\n")
             return
     
-    # 페이지 ID 입력 받기 (환경 변수에 없으면)
-    notion_page_id = NOTION_PAGE_ID
-    if not notion_page_id:
-        print("\n📝 노션 페이지 ID가 필요합니다.")
-        print("   페이지 URL에서 32자리 hex 문자열을 추출하세요.")
-        print("   예: https://www.notion.so/My-Page-abc123... → abc123...\n")
-        notion_page_id = input("노션 페이지 ID를 입력하세요: ").strip()
-        if not notion_page_id:
-            print("\n❌ 페이지 ID가 입력되지 않았습니다. 종료합니다.\n")
-            return
-    
-    # 노션 클라이언트 초기화
+    # 노션 클라이언트 초기화 (페이지 검색 전에 필요)
     try:
         notion = Client(auth=notion_token)
     except Exception as e:
         print(f"\n❌ 노션 클라이언트 초기화 실패: {e}")
         print("   토큰을 확인하세요.\n")
         return
+    
+    # 페이지 ID 찾기 또는 생성
+    notion_page_id = NOTION_PAGE_ID
+    if not notion_page_id:
+        print("\n🔍 노션 페이지를 찾는 중...")
+        
+        # 검색으로 "캡스톤" 또는 "프로젝트" 관련 페이지 찾기
+        try:
+            search_results = notion.search(
+                query="캡스톤 프로젝트",
+                filter={"property": "object", "value": "page"},
+                page_size=10
+            )
+            
+            pages = search_results.get("results", [])
+            
+            if pages:
+                print(f"\n📄 찾은 페이지 ({len(pages)}개):")
+                for i, page in enumerate(pages, 1):
+                    title = "제목 없음"
+                    if 'properties' in page:
+                        title_prop = page['properties'].get('title', {})
+                        if 'title' in title_prop and title_prop['title']:
+                            title = title_prop['title'][0].get('plain_text', '제목 없음')
+                    elif 'properties' in page.get('properties', {}):
+                        # 다른 형식의 제목 속성 확인
+                        for prop_name, prop_value in page['properties'].items():
+                            if prop_value.get('type') == 'title' and prop_value.get('title'):
+                                title = prop_value['title'][0].get('plain_text', '제목 없음')
+                                break
+                    
+                    page_id_short = page['id'][:8] + "..."
+                    print(f"   {i}. {title} ({page_id_short})")
+                
+                print(f"   {len(pages) + 1}. 새 페이지 생성")
+                print(f"   0. 페이지 ID 직접 입력")
+                
+                choice = input("\n선택하세요 (번호, 기본: 1): ").strip() or "1"
+                
+                if choice == "0":
+                    notion_page_id = input("페이지 ID를 입력하세요: ").strip()
+                elif choice.isdigit() and 1 <= int(choice) <= len(pages):
+                    notion_page_id = pages[int(choice) - 1]['id']
+                    selected_title = "제목 없음"
+                    selected_page = pages[int(choice) - 1]
+                    if 'properties' in selected_page:
+                        title_prop = selected_page['properties'].get('title', {})
+                        if 'title' in title_prop and title_prop['title']:
+                            selected_title = title_prop['title'][0].get('plain_text', '제목 없음')
+                    print(f"✅ 선택된 페이지: {selected_title}")
+                elif choice.isdigit() and int(choice) == len(pages) + 1:
+                    # 새 페이지 생성
+                    print("\n📝 새 페이지를 생성합니다...")
+                    parent_database_id = None
+                    
+                    # 데이터베이스 찾기 시도
+                    try:
+                        db_search = notion.search(
+                            filter={"property": "object", "value": "database"},
+                            page_size=5
+                        )
+                        databases = db_search.get("results", [])
+                        if databases:
+                            print("   사용 가능한 데이터베이스:")
+                            for i, db in enumerate(databases, 1):
+                                db_title = db.get('title', [{}])[0].get('plain_text', '제목 없음') if db.get('title') else '제목 없음'
+                                print(f"   {i}. {db_title}")
+                            print(f"   {len(databases) + 1}. 워크스페이스 루트에 생성")
+                            
+                            db_choice = input("   선택 (기본: 워크스페이스 루트): ").strip()
+                            if db_choice.isdigit() and 1 <= int(db_choice) <= len(databases):
+                                parent_database_id = databases[int(db_choice) - 1]['id']
+                    except:
+                        pass
+                    
+                    # 새 페이지 생성
+                    new_page = notion.pages.create(
+                        parent={"type": "workspace"} if not parent_database_id else {"database_id": parent_database_id},
+                        properties={
+                            "title": {
+                                "title": [
+                                    {"text": {"content": "📊 지역경제동향 보도자료 자동 생성 시스템"}}
+                                ]
+                            }
+                        } if not parent_database_id else {}
+                    )
+                    notion_page_id = new_page['id']
+                    print(f"✅ 새 페이지 생성 완료: {notion_page_id[:8]}...")
+                else:
+                    print("❌ 잘못된 선택입니다.")
+                    return
+            else:
+                # 페이지를 찾지 못했으면 새로 생성
+                print("   관련 페이지를 찾지 못했습니다. 새 페이지를 생성합니다...")
+                new_page = notion.pages.create(
+                    parent={"type": "workspace"},
+                    properties={
+                        "title": {
+                            "title": [
+                                {"text": {"content": "📊 지역경제동향 보도자료 자동 생성 시스템"}}
+                            ]
+                        }
+                    }
+                )
+                notion_page_id = new_page['id']
+                print(f"✅ 새 페이지 생성 완료: {notion_page_id[:8]}...")
+                
+        except Exception as e:
+            print(f"❌ 페이지 검색 실패: {e}")
+            print("   페이지 ID를 직접 입력하세요.")
+            notion_page_id = input("노션 페이지 ID를 입력하세요: ").strip()
+            if not notion_page_id:
+                print("\n❌ 페이지 ID가 입력되지 않았습니다. 종료합니다.\n")
+                return
     
     # 부모 페이지 확인
     try:

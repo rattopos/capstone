@@ -93,38 +93,56 @@ class StatisticsTableGenerator:
             "계산방식": "growth_rate"
         },
         "고용률": {
-            "집계_시트": "D(고용률)집계",
-            "단위": "[전년동기비, %p]",
+            "기초자료_시트": "고용률",  # 기초자료 수집표에서 직접 읽기 (고용률(%) 절대값)
+            "기초자료_시작_행": 3,  # 데이터 시작 행 (전국 계)
+            "기초자료_행_간격": 7,  # 각 지역별 7행 (계, 20-29세, 30-39세, 40-49세, 50-59세, 60-69세, 70세이상)
+            "단위": "[%]",  # 절대값 (전년동기비 아님)
             "총지수_식별": {"컬럼": 3, "값": "계"},
             "지역_컬럼": 1,
             "분류단계_컬럼": 2,
             "데이터_시작_행": 3,
-            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
-            "분기_시작_컬럼": 12,
-            "계산방식": "difference"  # %p 단위
+            "연도_컬럼": {"2017": 8, "2018": 9, "2019": 10, "2020": 11, "2021": 12, "2022": 13, "2023": 14, "2024": 15},
+            "분기_시작_컬럼": 17,  # 분기별 데이터 시작 컬럼 (2013 1/4)
+            "계산방식": "absolute",  # 절대값 (전년동기비 계산 없음)
+            "기초자료_사용": True  # 기초자료 수집표에서 직접 읽기 플래그
         },
         "실업률": {
-            "집계_시트": "D(실업)집계",
-            "단위": "[전년동기비, %p]",
+            "기초자료_시트": "실업자 수",  # 기초자료 수집표에서 직접 읽기 (실업률(%) 절대값)
+            "기초자료_시작_행": 80,  # 실업률(%) 데이터 시작 행
+            "기초자료_행_간격": 4,  # 각 지역별 4행 (계, 15-29세, 30-59세, 60세이상)
+            "단위": "[%]",  # 절대값 (전년동기비 아님)
             "총지수_식별": {"컬럼": 1, "값": "계"},
             "지역_컬럼": 0,
             "분류단계_컬럼": 1,
-            "데이터_시작_행": 3,
-            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
-            "분기_시작_컬럼": 12,
-            "계산방식": "difference_rate",
-            "지역_매핑": True  # 서울특별시->서울 등 매핑 필요
+            "데이터_시작_행": 80,
+            "연도_컬럼": {"2017": 7, "2018": 8, "2019": 9, "2020": 10, "2021": 11, "2022": 12, "2023": 13, "2024": 14},
+            "분기_시작_컬럼": 16,  # 분기별 데이터 시작 컬럼
+            "계산방식": "absolute",  # 절대값 (전년동기비 계산 없음)
+            "기초자료_사용": True,  # 기초자료 수집표에서 직접 읽기 플래그
+            "지역_매핑": {  # 기초자료 시트의 지역명 -> 표준 지역명
+                "서울특별시": "서울", "부산광역시": "부산", "대구광역시": "대구",
+                "인천광역시": "인천", "광주광역시": "광주", "대전광역시": "대전",
+                "울산광역시": "울산", "세종특별자치시": "세종", "경기도": "경기",
+                "강원도": "강원", "충청북도": "충북", "충청남도": "충남",
+                "전라북도": "전북", "전라남도": "전남", "경상북도": "경북",
+                "경상남도": "경남", "제주도": "제주"
+            }
         },
         "국내인구이동": {
-            "집계_시트": "I(순인구이동)집계",
-            "단위": "[전년동기비, %]",
+            "기초자료_시트": "시도 간 이동",  # 기초자료 수집표에서 직접 읽기
+            "기초자료_시작_행": 5,  # 서울 순인구이동 수 행 (전국 없음)
+            "기초자료_행_간격": 3,  # 각 지역별 3행 (유입, 유출, 순이동)
+            "단위": "[천 명]",  # 절대값 (순이동 수, 명->천명 변환)
             "총지수_식별": {"컬럼": 2, "값": "순인구이동 수"},  # col2가 분류
             "지역_컬럼": 1,
             "분류단계_컬럼": 2,
-            "데이터_시작_행": 3,
-            "연도_컬럼": {"2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 9, "2023": 10, "2024": 11},
-            "분기_시작_컬럼": 12,
-            "계산방식": "growth_rate"
+            "데이터_시작_행": 5,
+            "연도_컬럼": {"2017": 10, "2018": 11, "2019": 12, "2020": 13, "2021": 14, "2022": 15, "2023": 16, "2024": 17},
+            "분기_시작_컬럼": 19,  # 분기별 데이터 시작 컬럼 (2010 1/4)
+            "계산방식": "absolute",  # 절대값 (전년동기비 계산 없음)
+            "기초자료_사용": True,  # 기초자료 수집표에서 직접 읽기 플래그
+            "단위_변환": 0.001,  # 명 -> 천명 변환 (1000으로 나누기)
+            "전국_제외": True  # 전국 데이터 없음
         },
         "수출액": {
             "집계_시트": "G(수출)집계",
@@ -540,6 +558,121 @@ class StatisticsTableGenerator:
         except (ValueError, TypeError):
             return str(value)
     
+    def _extract_from_raw_sheet_absolute(self, table_name: str, config: dict) -> Dict[str, Any]:
+        """기초자료 수집표에서 절대값 데이터 직접 추출 (실업률 등)
+        
+        기초자료 수집표의 특정 시트에서 절대값 데이터를 읽습니다.
+        전년동기비 계산 없이 현재 값을 그대로 사용합니다.
+        """
+        raw_sheet = config.get("기초자료_시트")
+        start_row = config.get("기초자료_시작_행", 80)
+        row_interval = config.get("기초자료_행_간격", 4)
+        region_mapping = config.get("지역_매핑", {})
+        year_columns = config.get("연도_컬럼", {})
+        quarter_start_col = config.get("분기_시작_컬럼", 16)
+        
+        # 데이터 구조 초기화
+        data = self._create_empty_table_data()
+        
+        # 기초자료 수집표 경로 찾기
+        raw_file_path = None
+        if self.raw_extractor and hasattr(self.raw_extractor, 'excel_path'):
+            raw_file_path = self.raw_extractor.excel_path
+        
+        if not raw_file_path:
+            # 업로드된 파일에서 기초자료 찾기
+            import glob
+            uploads_dir = Path(self.excel_path).parent.parent / "uploads"
+            if uploads_dir.exists():
+                raw_files = list(uploads_dir.glob("*기초자료*수집표*.xlsx"))
+                if raw_files:
+                    raw_file_path = str(raw_files[0])
+            
+            # 현재 디렉토리에서도 검색
+            if not raw_file_path:
+                current_dir = Path(self.excel_path).parent
+                raw_files = list(current_dir.glob("*기초자료*수집표*.xlsx"))
+                if raw_files:
+                    raw_file_path = str(raw_files[0])
+        
+        if not raw_file_path:
+            print(f"[통계표] 기초자료 수집표를 찾을 수 없음: {table_name}")
+            return data
+        
+        try:
+            df = pd.read_excel(raw_file_path, sheet_name=raw_sheet, header=None)
+            print(f"[통계표] 기초자료에서 절대값 추출: {table_name} (시트: {raw_sheet}, 파일: {raw_file_path})")
+        except Exception as e:
+            print(f"[통계표] 기초자료 시트 로드 실패: {raw_sheet} - {e}")
+            return data
+        
+        # 헤더 행에서 분기 컬럼 위치 파악 (행 79가 헤더)
+        header_row_idx = start_row - 1
+        header_row = df.iloc[header_row_idx] if header_row_idx < len(df) else None
+        
+        quarter_col_map = {}
+        if header_row is not None:
+            for col_idx in range(quarter_start_col, len(header_row)):
+                header = header_row.iloc[col_idx]
+                if pd.notna(header):
+                    header_str = str(header).strip()
+                    # "2017  1/4" -> "2017.1/4" 형식으로 변환
+                    match = re.match(r'(\d{4})\s*(\d)/4', header_str)
+                    if match:
+                        year = match.group(1)
+                        q = match.group(2)
+                        quarter_key = f"{year}.{q}/4"
+                        quarter_col_map[quarter_key] = col_idx
+        
+        # 지역별 데이터 추출 (계 행만)
+        region_rows = []  # (행 인덱스, 지역명)
+        for i in range(start_row, min(start_row + row_interval * 18, len(df)), row_interval):
+            row = df.iloc[i]
+            region_raw = row.iloc[0]
+            category = row.iloc[1]
+            
+            if pd.isna(region_raw):
+                continue
+            
+            region_str = str(region_raw).strip()
+            region = region_mapping.get(region_str, region_str)
+            
+            # "계" 행만 처리
+            if pd.notna(category) and str(category).strip() == "계" and region in self.ALL_REGIONS:
+                region_rows.append((i, region))
+        
+        # 연도별 데이터 추출
+        for row_idx, region in region_rows:
+            row = df.iloc[row_idx]
+            
+            for year, col_idx in year_columns.items():
+                if col_idx < len(row):
+                    value = row.iloc[col_idx]
+                    if pd.notna(value) and year in data['yearly']:
+                        try:
+                            data['yearly'][year][region] = round(float(value), 1)
+                        except (ValueError, TypeError):
+                            pass
+        
+        # 분기별 데이터 추출
+        for row_idx, region in region_rows:
+            row = df.iloc[row_idx]
+            
+            for quarter_key in data['quarterly_keys']:
+                quarter_clean = quarter_key.rstrip('p')
+                col_idx = quarter_col_map.get(quarter_clean)
+                
+                if col_idx is not None and col_idx < len(row):
+                    value = row.iloc[col_idx]
+                    if pd.notna(value):
+                        try:
+                            data['quarterly'][quarter_key][region] = round(float(value), 1)
+                        except (ValueError, TypeError):
+                            pass
+        
+        print(f"[통계표] 기초자료 절대값 추출 완료: {table_name} - 지역 {len(region_rows)}개")
+        return data
+    
     def _create_empty_table_data(self) -> Dict[str, Any]:
         """모든 연도/분기/지역에 기본값 '-'가 채워진 데이터 구조 생성
         
@@ -596,6 +729,10 @@ class StatisticsTableGenerator:
         config = self.TABLE_CONFIG.get(table_name)
         if not config:
             raise ValueError(f"알 수 없는 통계표: {table_name}")
+        
+        # 기초자료에서 직접 읽는 특별 케이스 (실업률 등)
+        if config.get("기초자료_사용") and config.get("기초자료_시트"):
+            return self._extract_from_raw_sheet_absolute(table_name, config)
         
         # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
         data = self._create_empty_table_data()
@@ -766,7 +903,14 @@ class StatisticsTableGenerator:
                 if curr_col is not None and curr_col < len(row):
                     curr_val = row.iloc[curr_col]
                     
-                    if prev_col is not None and prev_col < len(row):
+                    if calculation_method == "absolute":
+                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
+                        if not pd.isna(curr_val):
+                            try:
+                                data["yearly"][year][region] = round(float(curr_val), 1)
+                            except (ValueError, TypeError):
+                                pass
+                    elif prev_col is not None and prev_col < len(row):
                         prev_val = row.iloc[prev_col]
                         
                         if calculation_method == "difference":
@@ -777,7 +921,7 @@ class StatisticsTableGenerator:
                         if result is not None:
                             data["yearly"][year][region] = round(result, 1)
             
-            # 분기별 데이터 (전년동기비 계산)
+            # 분기별 데이터 (전년동기비 계산 또는 절대값)
             for quarter_key in data["quarterly_keys"]:
                 # 이미 값이 있으면 스킵 (JSON에서 로드됨)
                 if data["quarterly"].get(quarter_key, {}).get(region, "-") != "-":
@@ -797,7 +941,14 @@ class StatisticsTableGenerator:
                 if curr_col is not None and curr_col < len(row):
                     curr_val = row.iloc[curr_col]
                     
-                    if prev_col is not None and prev_col < len(row):
+                    if calculation_method == "absolute":
+                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
+                        if not pd.isna(curr_val):
+                            try:
+                                data["quarterly"][quarter_key][region] = round(float(curr_val), 1)
+                            except (ValueError, TypeError):
+                                pass
+                    elif prev_col is not None and prev_col < len(row):
                         prev_val = row.iloc[prev_col]
                         
                         if calculation_method == "difference":

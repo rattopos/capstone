@@ -185,6 +185,12 @@
   },
   "active": "052c1d18456e74b5",
   "lastOpenFiles": [
+    "templates/default_contributions.json",
+    "QUICK_FIX.md",
+    "vercel-requirements.txt",
+    "docs/VERCEL_TROUBLESHOOTING.md",
+    "requirements-vercel.txt",
+    "__pycache__/upload_to_notion.cpython-313.pyc",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/licenses/LICENSE",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/top_level.txt",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/licenses",
@@ -192,10 +198,6 @@
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/REQUESTED",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/RECORD",
     "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/INSTALLER",
-    "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info/METADATA",
-    "VENV/lib/python3.13/site-packages/notion_client-2.7.0.dist-info",
-    "VENV/lib/python3.13/site-packages/notion_client/__pycache__/typing.cpython-313.pyc",
-    "VENV/lib/python3.13/site-packages/notion_client/__pycache__/logging.cpython-313.pyc",
     "VENV/lib/python3.13/site-packages/httpx-0.28.1.dist-info/licenses/LICENSE.md",
     "VENV/lib/python3.13/site-packages/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
     "docs/NOTION_UPLOAD_GUIDE.md",
@@ -228,8 +230,6 @@
     "VENV/lib/python3.13/site-packages/xlwings/pro/README.md",
     "docs/GLOSSARY.md",
     "PROJECT_PROGRESS.md",
-    "PRESENTATION.md",
-    "AI_DEVELOPMENT_HISTORY.md",
-    "DEVELOPMENT_CHALLENGES.md"
+    "PRESENTATION.md"
   ]
 }
