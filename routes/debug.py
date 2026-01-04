@@ -1436,11 +1436,18 @@ def _generate_summary_pages(excel_path, year, quarter):
 
 
 def _generate_single_summary(excel_path, report_config, year, quarter):
-    """단일 요약 보도자료 생성"""
+    """단일 요약 보도자료 생성 (preview.py와 동일한 로직 사용)"""
     try:
         template_name = report_config['template']
         generator_name = report_config.get('generator')
         report_id = report_config['id']
+        
+        # 템플릿 파일 존재 확인
+        template_path = TEMPLATES_DIR / template_name
+        if not template_path.exists():
+            error_msg = f"템플릿 파일을 찾을 수 없습니다: {template_name}"
+            print(f"[DEBUG] {error_msg}")
+            return None, error_msg, []
         
         report_data = {
             'report_info': {
@@ -1451,36 +1458,110 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
             }
         }
         
+        # Generator를 통한 데이터 생성 (인포그래픽 등)
         if generator_name:
-            module = load_generator_module(generator_name)
-            if module and hasattr(module, 'generate_report_data'):
-                try:
-                    generated_data = module.generate_report_data(excel_path)
-                    report_data.update(generated_data)
-                except Exception as e:
-                    print(f"[DEBUG] Generator 오류 ({generator_name}): {e}")
+            try:
+                module = load_generator_module(generator_name)
+                if module is None:
+                    error_msg = f"Generator 모듈을 로드할 수 없습니다: {generator_name}"
+                    print(f"[DEBUG] {error_msg}")
+                    return None, error_msg, []
+                
+                if hasattr(module, 'generate_report_data'):
+                    try:
+                        generated_data = module.generate_report_data(excel_path)
+                        if generated_data:
+                            report_data.update(generated_data)
+                            print(f"[DEBUG] Generator 데이터 생성 성공: {generator_name}")
+                        else:
+                            print(f"[DEBUG] Generator가 빈 데이터를 반환했습니다: {generator_name}")
+                    except Exception as e:
+                        import traceback
+                        error_msg = f"Generator 데이터 생성 오류 ({generator_name}): {str(e)}"
+                        print(f"[DEBUG] {error_msg}")
+                        traceback.print_exc()
+                        return None, error_msg, []
+                else:
+                    print(f"[DEBUG] Generator에 generate_report_data 함수가 없습니다: {generator_name}")
+            except Exception as e:
+                import traceback
+                error_msg = f"Generator 모듈 로드 오류 ({generator_name}): {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         
-        # 템플릿별 데이터
+        # 템플릿별 데이터 제공 (preview.py와 동일)
         if report_id == 'toc':
-            report_data['sections'] = _get_toc_sections()
+            try:
+                report_data['sections'] = _get_toc_sections()
+                print(f"[DEBUG] 목차 섹션 데이터 생성 완료")
+            except Exception as e:
+                import traceback
+                error_msg = f"목차 섹션 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'guide':
-            report_data.update(_get_guide_data(year, quarter))
+            try:
+                report_data.update(_get_guide_data(year, quarter))
+                print(f"[DEBUG] 일러두기 데이터 생성 완료")
+            except Exception as e:
+                import traceback
+                error_msg = f"일러두기 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'summary_overview':
-            report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
-            report_data['table_data'] = get_summary_table_data(excel_path)
-            report_data['page_number'] = 1
+            try:
+                report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
+                report_data['table_data'] = get_summary_table_data(excel_path)
+                report_data['page_number'] = 1
+            except Exception as e:
+                import traceback
+                error_msg = f"요약-지역경제동향 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'summary_production':
-            report_data.update(get_production_summary_data(excel_path, year, quarter))
-            report_data['page_number'] = 2
+            try:
+                report_data.update(get_production_summary_data(excel_path, year, quarter))
+                report_data['page_number'] = 2
+            except Exception as e:
+                import traceback
+                error_msg = f"요약-생산 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'summary_consumption':
-            report_data.update(get_consumption_construction_data(excel_path, year, quarter))
-            report_data['page_number'] = 3
+            try:
+                report_data.update(get_consumption_construction_data(excel_path, year, quarter))
+                report_data['page_number'] = 3
+            except Exception as e:
+                import traceback
+                error_msg = f"요약-소비건설 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'summary_trade_price':
-            report_data.update(get_trade_price_data(excel_path, year, quarter))
-            report_data['page_number'] = 4
+            try:
+                report_data.update(get_trade_price_data(excel_path, year, quarter))
+                report_data['page_number'] = 4
+            except Exception as e:
+                import traceback
+                error_msg = f"요약-수출물가 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         elif report_id == 'summary_employment':
-            report_data.update(get_employment_population_data(excel_path, year, quarter))
-            report_data['page_number'] = 5
+            try:
+                report_data.update(get_employment_population_data(excel_path, year, quarter))
+                report_data['page_number'] = 5
+            except Exception as e:
+                import traceback
+                error_msg = f"요약-고용인구 데이터 생성 오류: {str(e)}"
+                print(f"[DEBUG] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         
         # 기본 연락처 정보
         report_data['release_info'] = {
@@ -1498,17 +1579,27 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
             'staff_phone': '042-481-2226'
         }
         
-        template_path = TEMPLATES_DIR / template_name
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template = Template(f.read())
-        
-        html_content = template.render(**report_data)
-        return html_content, None, []
+        # 템플릿 렌더링
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = Template(f.read())
+            
+            html_content = template.render(**report_data)
+            print(f"[DEBUG] {report_id} 템플릿 렌더링 완료: {template_name}")
+            return html_content, None, []
+        except Exception as e:
+            import traceback
+            error_msg = f"템플릿 렌더링 오류 ({template_name}): {str(e)}"
+            print(f"[DEBUG] {error_msg}")
+            traceback.print_exc()
+            return None, error_msg, []
         
     except Exception as e:
         import traceback
+        error_msg = f"보도자료 생성 오류 ({report_config.get('name', 'unknown')}): {str(e)}"
+        print(f"[DEBUG] {error_msg}")
         traceback.print_exc()
-        return None, str(e), []
+        return None, error_msg, []
 
 
 def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):

@@ -99,17 +99,67 @@ def generate_summary_preview():
         }
         
         if generator_name:
-            module = load_generator_module(generator_name)
-            if module and hasattr(module, 'generate_report_data'):
-                generated_data = module.generate_report_data(excel_path)
-                report_data.update(generated_data)
+            try:
+                module = load_generator_module(generator_name)
+                if module is None:
+                    error_msg = f"Generator 모듈을 로드할 수 없습니다: {generator_name}"
+                    print(f"[PREVIEW] {error_msg}")
+                    return jsonify({'success': False, 'error': error_msg})
+                
+                if hasattr(module, 'generate_report_data'):
+                    try:
+                        generated_data = module.generate_report_data(excel_path)
+                        if generated_data:
+                            report_data.update(generated_data)
+                            print(f"[PREVIEW] Generator 데이터 생성 성공: {generator_name}")
+                        else:
+                            print(f"[PREVIEW] Generator가 빈 데이터를 반환했습니다: {generator_name}")
+                    except Exception as e:
+                        import traceback
+                        error_msg = f"Generator 데이터 생성 오류 ({generator_name}): {str(e)}"
+                        print(f"[PREVIEW] {error_msg}")
+                        traceback.print_exc()
+                        return jsonify({'success': False, 'error': error_msg})
+                else:
+                    error_msg = f"Generator에 generate_report_data 함수가 없습니다: {generator_name}"
+                    print(f"[PREVIEW] {error_msg}")
+                    return jsonify({'success': False, 'error': error_msg})
+            except Exception as e:
+                import traceback
+                error_msg = f"Generator 모듈 로드 오류 ({generator_name}): {str(e)}"
+                print(f"[PREVIEW] {error_msg}")
+                traceback.print_exc()
+                return jsonify({'success': False, 'error': error_msg})
+        
+        # 템플릿 파일 존재 확인
+        template_path = TEMPLATES_DIR / template_name
+        if not template_path.exists():
+            error_msg = f"템플릿 파일을 찾을 수 없습니다: {template_name}"
+            print(f"[PREVIEW] {error_msg}")
+            return jsonify({'success': False, 'error': error_msg})
         
         # 템플릿별 기본 데이터 제공
         if report_id == 'toc':
-            report_data['sections'] = _get_toc_sections()
+            try:
+                report_data['sections'] = _get_toc_sections()
+                print(f"[PREVIEW] 목차 섹션 데이터 생성 완료")
+            except Exception as e:
+                import traceback
+                error_msg = f"목차 섹션 데이터 생성 오류: {str(e)}"
+                print(f"[PREVIEW] {error_msg}")
+                traceback.print_exc()
+                return jsonify({'success': False, 'error': error_msg})
         
         elif report_id == 'guide':
-            report_data.update(_get_guide_data(year, quarter, contact_info_input))
+            try:
+                report_data.update(_get_guide_data(year, quarter, contact_info_input))
+                print(f"[PREVIEW] 일러두기 데이터 생성 완료")
+            except Exception as e:
+                import traceback
+                error_msg = f"일러두기 데이터 생성 오류: {str(e)}"
+                print(f"[PREVIEW] {error_msg}")
+                traceback.print_exc()
+                return jsonify({'success': False, 'error': error_msg})
         
         elif report_id == 'summary_overview':
             report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
@@ -152,19 +202,27 @@ def generate_summary_preview():
             for key, value in custom_data.items():
                 report_data[key] = value
         
-        template_path = TEMPLATES_DIR / template_name
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template = Template(f.read())
-        
-        html_content = template.render(**report_data)
-        
-        return jsonify({
-            'success': True,
-            'html': html_content,
-            'missing_fields': [],
-            'report_id': report_id,
-            'report_name': report_config['name']
-        })
+        # 템플릿 렌더링
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = Template(f.read())
+            
+            html_content = template.render(**report_data)
+            print(f"[PREVIEW] {report_id} 템플릿 렌더링 완료: {template_name}")
+            
+            return jsonify({
+                'success': True,
+                'html': html_content,
+                'missing_fields': [],
+                'report_id': report_id,
+                'report_name': report_config['name']
+            })
+        except Exception as e:
+            import traceback
+            error_msg = f"템플릿 렌더링 오류 ({template_name}): {str(e)}"
+            print(f"[PREVIEW] {error_msg}")
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': error_msg})
         
     except Exception as e:
         import traceback
