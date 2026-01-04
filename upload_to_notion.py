@@ -216,7 +216,7 @@ def markdown_to_notion_blocks(markdown_text: str) -> List[Dict]:
     return blocks
 
 
-def upload_document_to_notion(notion: Client, parent_page_id: str, doc_info: Dict) -> Optional[str]:
+def upload_document_to_notion(notion, parent_page_id: str, doc_info: Dict) -> Optional[str]:
     """단일 문서를 노션에 업로드"""
     file_path = DOCS_DIR / doc_info["file"]
     
@@ -300,34 +300,48 @@ def main():
         print("   다음 명령어로 설치하세요: pip install notion-client\n")
         return
     
-    if not NOTION_TOKEN:
-        print("\n❌ NOTION_TOKEN이 설정되지 않았습니다.")
-        print("   다음 중 하나를 선택하세요:")
-        print("   1. 환경 변수 설정: export NOTION_TOKEN='your_token'")
-        print("   2. 이 스크립트의 NOTION_TOKEN 변수에 직접 입력\n")
-        return
+    # 토큰 입력 받기 (환경 변수에 없으면)
+    notion_token = NOTION_TOKEN
+    if not notion_token:
+        print("\n📝 노션 Integration Token이 필요합니다.")
+        print("   https://www.notion.so/my-integrations 에서 생성하세요.\n")
+        notion_token = input("노션 Integration Token을 입력하세요: ").strip()
+        if not notion_token:
+            print("\n❌ 토큰이 입력되지 않았습니다. 종료합니다.\n")
+            return
     
-    if not NOTION_PAGE_ID:
-        print("\n❌ NOTION_PAGE_ID가 설정되지 않았습니다.")
-        print("   노션 페이지 URL에서 페이지 ID를 추출하여 설정하세요.")
-        print("   예: https://www.notion.so/My-Page-abc123def456... → abc123def456...\n")
-        return
+    # 페이지 ID 입력 받기 (환경 변수에 없으면)
+    notion_page_id = NOTION_PAGE_ID
+    if not notion_page_id:
+        print("\n📝 노션 페이지 ID가 필요합니다.")
+        print("   페이지 URL에서 32자리 hex 문자열을 추출하세요.")
+        print("   예: https://www.notion.so/My-Page-abc123... → abc123...\n")
+        notion_page_id = input("노션 페이지 ID를 입력하세요: ").strip()
+        if not notion_page_id:
+            print("\n❌ 페이지 ID가 입력되지 않았습니다. 종료합니다.\n")
+            return
     
     # 노션 클라이언트 초기화
     try:
-        notion = Client(auth=NOTION_TOKEN)
+        notion = Client(auth=notion_token)
     except Exception as e:
         print(f"\n❌ 노션 클라이언트 초기화 실패: {e}")
-        print("   NOTION_TOKEN을 확인하세요.\n")
+        print("   토큰을 확인하세요.\n")
         return
     
     # 부모 페이지 확인
     try:
-        parent_page = notion.pages.retrieve(NOTION_PAGE_ID)
-        print(f"\n📌 부모 페이지: {parent_page.get('properties', {}).get('title', {}).get('title', [{}])[0].get('plain_text', 'Unknown')}")
+        parent_page = notion.pages.retrieve(notion_page_id)
+        page_title = "Unknown"
+        if 'properties' in parent_page:
+            title_prop = parent_page['properties'].get('title', {})
+            if 'title' in title_prop and title_prop['title']:
+                page_title = title_prop['title'][0].get('plain_text', 'Unknown')
+        print(f"\n📌 부모 페이지: {page_title}")
     except Exception as e:
         print(f"\n❌ 부모 페이지 접근 실패: {e}")
-        print("   NOTION_PAGE_ID와 Integration 권한을 확인하세요.\n")
+        print("   페이지 ID와 Integration 권한을 확인하세요.")
+        print("   Integration이 페이지에 연결되어 있는지 확인하세요.\n")
         return
     
     print(f"\n🚀 총 {len(DOCUMENTS)}개 문서 업로드 시작...\n")
@@ -337,7 +351,7 @@ def main():
     failed = []
     
     for doc_info in DOCUMENTS:
-        page_id = upload_document_to_notion(notion, NOTION_PAGE_ID, doc_info)
+        page_id = upload_document_to_notion(notion, notion_page_id, doc_info)
         if page_id:
             uploaded.append(doc_info["title"])
         else:

@@ -1913,6 +1913,8 @@
             allGenerated: false,
             currentReportIndex: -1,
             currentGlobalIndex: -1,  // 전체 보도자료 통합 인덱스
+            currentPageInReport: 0,  // 현재 보도자료 내 페이지 인덱스
+            totalPagesInReport: 1,   // 현재 보도자료의 총 페이지 수
             allReports: [],  // 모든 보도자료 통합 배열
             fileType: null,  // 'raw' (기초자료 수집표)
             analysisFilename: null,  // 생성된 분석표 파일명
@@ -2543,7 +2545,7 @@
             }
         }
 
-        function displayCachedReport(type, report) {
+        function displayCachedReport(type, report, pageIndex = 0) {
             const html = state.cachedHtml[type][report.id];
             
             if (html) {
@@ -2552,17 +2554,49 @@
                     exitEditMode();
                 }
                 
+                // HTML에서 페이지(.page) 요소들 추출
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const pages = doc.querySelectorAll('.page');
+                
+                state.totalPagesInReport = Math.max(1, pages.length);
+                state.currentPageInReport = Math.min(pageIndex, state.totalPagesInReport - 1);
+                
+                let displayHtml = html;
+                
+                // 페이지가 여러 개인 경우 현재 페이지만 표시
+                if (pages.length > 1) {
+                    const currentPage = pages[state.currentPageInReport];
+                    if (currentPage) {
+                        // 원본 HTML의 head 유지하고 body는 현재 페이지만
+                        const headContent = doc.head.innerHTML;
+                        displayHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>${headContent}</head>
+<body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #f5f5f5;">
+${currentPage.outerHTML}
+</body>
+</html>`;
+                    }
+                }
+                
                 elements.previewPlaceholder.style.display = 'none';
                 elements.editContainer.style.display = 'none';
                 elements.previewIframe.style.display = 'block';
-                elements.previewIframe.srcdoc = html;
-                elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}</span>`;
+                elements.previewIframe.srcdoc = displayHtml;
+                
+                // 제목에 페이지 정보 표시
+                const pageInfo = state.totalPagesInReport > 1 ? ` (${state.currentPageInReport + 1}/${state.totalPagesInReport})` : '';
+                elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}${pageInfo}</span>`;
                 
                 // 편집/검토 버튼 표시
                 elements.editBtn.style.display = 'inline-flex';
                 elements.saveEditBtn.style.display = 'none';
                 elements.cancelEditBtn.style.display = 'none';
                 elements.markReviewedBtn.style.display = 'block';
+                
+                updateNavigationButtons();
+                updatePageIndicator();
             } else {
                 showToast('보도자료를 찾을 수 없습니다.', 'error');
             }
@@ -2674,7 +2708,7 @@
         }
 
         // 전체 보도자료 선택 함수
-        function selectGlobalReport(globalIndex) {
+        function selectGlobalReport(globalIndex, pageIndex = 0) {
             if (!state.allGenerated) {
                 showToast('보도자료 생성 중입니다. 잠시만 기다려주세요.', 'info');
                 return;
@@ -2692,7 +2726,20 @@
             state.currentStatisticsIndex = report.type === 'statistics' ? report.originalIndex : -1;
             state.currentTab = report.type;
             
-            displayCachedReport(report.type, report);
+            // pageIndex가 -1이면 마지막 페이지로 이동
+            let targetPage = pageIndex;
+            if (pageIndex === -1) {
+                const html = state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id];
+                if (html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    targetPage = Math.max(0, doc.querySelectorAll('.page').length - 1);
+                } else {
+                    targetPage = 0;
+                }
+            }
+            
+            displayCachedReport(report.type, report, targetPage);
             renderAllReportsList();
             updateNavigationButtons();
             updatePageIndicator();
@@ -2706,21 +2753,71 @@
 
         // ===== 네비게이션 =====
         function navigateReport(direction) {
-            const newIndex = state.currentGlobalIndex + direction;
-            if (newIndex >= 0 && newIndex < state.allReports.length) {
-                selectGlobalReport(newIndex);
+            if (direction > 0) {
+                // 다음 페이지/보도자료
+                if (state.currentPageInReport < state.totalPagesInReport - 1) {
+                    // 같은 보도자료 내 다음 페이지
+                    const report = state.allReports[state.currentGlobalIndex];
+                    displayCachedReport(report.type, report, state.currentPageInReport + 1);
+                } else {
+                    // 다음 보도자료의 첫 페이지
+                    const newIndex = state.currentGlobalIndex + 1;
+                    if (newIndex < state.allReports.length) {
+                        selectGlobalReport(newIndex, 0);
+                    }
+                }
+            } else {
+                // 이전 페이지/보도자료
+                if (state.currentPageInReport > 0) {
+                    // 같은 보도자료 내 이전 페이지
+                    const report = state.allReports[state.currentGlobalIndex];
+                    displayCachedReport(report.type, report, state.currentPageInReport - 1);
+                } else {
+                    // 이전 보도자료의 마지막 페이지
+                    const newIndex = state.currentGlobalIndex - 1;
+                    if (newIndex >= 0) {
+                        selectGlobalReport(newIndex, -1);  // -1은 마지막 페이지를 의미
+                    }
+                }
             }
         }
 
         function updateNavigationButtons() {
-            elements.prevBtn.disabled = state.currentGlobalIndex <= 0;
-            elements.nextBtn.disabled = state.currentGlobalIndex >= state.allReports.length - 1;
+            // 첫 보도자료의 첫 페이지이면 이전 버튼 비활성화
+            const isFirstPage = state.currentGlobalIndex <= 0 && state.currentPageInReport <= 0;
+            // 마지막 보도자료의 마지막 페이지이면 다음 버튼 비활성화
+            const isLastPage = state.currentGlobalIndex >= state.allReports.length - 1 && 
+                              state.currentPageInReport >= state.totalPagesInReport - 1;
+            
+            elements.prevBtn.disabled = isFirstPage;
+            elements.nextBtn.disabled = isLastPage;
         }
 
         function updatePageIndicator() {
-            const current = state.currentGlobalIndex + 1;
-            const total = state.allReports.length;
-            elements.pageIndicator.textContent = `${current > 0 ? current : 0} / ${total}`;
+            // 전체 페이지 번호 계산 (모든 보도자료의 모든 페이지)
+            let totalPages = 0;
+            let currentPage = 0;
+            
+            for (let i = 0; i < state.allReports.length; i++) {
+                const report = state.allReports[i];
+                const html = state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id];
+                let pageCount = 1;
+                
+                if (html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    pageCount = Math.max(1, doc.querySelectorAll('.page').length);
+                }
+                
+                if (i < state.currentGlobalIndex) {
+                    currentPage += pageCount;
+                } else if (i === state.currentGlobalIndex) {
+                    currentPage += state.currentPageInReport + 1;
+                }
+                totalPages += pageCount;
+            }
+            
+            elements.pageIndicator.textContent = `${currentPage > 0 ? currentPage : 0} / ${totalPages}`;
         }
 
         // ===== 검토 완료 =====
