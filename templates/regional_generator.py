@@ -10,6 +10,7 @@ Jinja2 템플릿을 사용하여 HTML 보도자료를 생성합니다.
 
 import pandas as pd
 import json
+import math
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
@@ -1844,6 +1845,123 @@ class RegionalGenerator:
             agg_sheet, region, agg_region_col, agg_code_col, agg_total_code or total_code
         )
     
+    def _calculate_y_axis_range(self, series_list: List[Dict[str, Any]], margin_ratio: float = 0.15) -> Dict[str, float]:
+        """
+        시리즈 데이터에서 Y축 범위와 스텝을 동적으로 계산
+        
+        Args:
+            series_list: [{"data": [{"period": "...", "value": float}, ...], ...}, ...]
+            margin_ratio: 최소/최대값에서 여유를 줄 비율 (기본 15%)
+        
+        Returns:
+            {"yAxisMin": float, "yAxisMax": float, "yAxisStep": float}
+        """
+        all_values = []
+        for series in series_list:
+            if series.get('data'):
+                for point in series['data']:
+                    if point.get('value') is not None:
+                        all_values.append(point['value'])
+        
+        if not all_values:
+            return {"yAxisMin": -10, "yAxisMax": 10, "yAxisStep": 5}
+        
+        data_min = min(all_values)
+        data_max = max(all_values)
+        data_range = data_max - data_min
+        
+        # 범위가 너무 작으면 최소 범위 설정
+        if data_range < 1:
+            data_range = max(abs(data_max), abs(data_min), 1) * 2
+        
+        # 여유 추가
+        margin = data_range * margin_ratio
+        
+        # 0을 포함해야 하는 경우 처리
+        if data_min >= 0:
+            raw_min = 0
+            raw_max = data_max + margin
+        elif data_max <= 0:
+            raw_min = data_min - margin
+            raw_max = 0
+        else:
+            # 양수와 음수 모두 있는 경우
+            raw_min = data_min - margin
+            raw_max = data_max + margin
+        
+        # 깔끔한 숫자로 반올림
+        def round_to_nice(value, direction='up'):
+            """깔끔한 숫자로 반올림 (1, 2, 5, 10의 배수)"""
+            if value == 0:
+                return 0
+            
+            abs_val = abs(value)
+            magnitude = 10 ** int(math.floor(math.log10(abs_val)))
+            normalized = abs_val / magnitude
+            
+            nice_numbers = [1, 2, 2.5, 5, 10]
+            
+            if direction == 'up':
+                for nice in nice_numbers:
+                    if normalized <= nice:
+                        result = nice * magnitude
+                        break
+                else:
+                    result = 10 * magnitude
+            else:  # down
+                for nice in reversed(nice_numbers):
+                    if normalized >= nice:
+                        result = nice * magnitude
+                        break
+                else:
+                    result = magnitude / 10
+            
+            return result if value >= 0 else -result
+        
+        # Y축 범위 설정
+        if raw_min >= 0:
+            y_min = 0
+            y_max = round_to_nice(raw_max, 'up')
+        elif raw_max <= 0:
+            y_min = -round_to_nice(abs(raw_min), 'up')
+            y_max = 0
+        else:
+            # 양쪽으로 대칭 또는 비대칭 처리
+            abs_max = max(abs(raw_min), abs(raw_max))
+            nice_abs = round_to_nice(abs_max, 'up')
+            
+            # 한쪽이 훨씬 큰 경우 비대칭 허용
+            if abs(raw_max) > abs(raw_min) * 3:
+                y_min = -round_to_nice(abs(raw_min), 'up')
+                y_max = round_to_nice(raw_max, 'up')
+            elif abs(raw_min) > abs(raw_max) * 3:
+                y_min = -round_to_nice(abs(raw_min), 'up')
+                y_max = round_to_nice(raw_max, 'up')
+            else:
+                # 대칭으로 설정
+                y_min = -nice_abs
+                y_max = nice_abs
+        
+        # 스텝 계산 (4-6개의 구간으로 나눔)
+        y_range = y_max - y_min
+        target_steps = 4
+        raw_step = y_range / target_steps
+        y_step = round_to_nice(raw_step, 'up')
+        
+        # 스텝이 너무 크거나 작으면 조정
+        if y_step > 0:
+            num_steps = y_range / y_step
+            if num_steps < 3:
+                y_step = y_step / 2
+            elif num_steps > 8:
+                y_step = y_step * 2
+        
+        return {
+            "yAxisMin": y_min,
+            "yAxisMax": y_max,
+            "yAxisStep": y_step if y_step > 0 else 1
+        }
+    
     def extract_chart_data(self, region: str) -> Dict[str, Any]:
         """차트 데이터 추출"""
         charts = {}
@@ -1855,15 +1973,15 @@ class RegionalGenerator:
         region_mfg = self._get_chart_data_with_fallback(region, 'A 분석', 3, 6, 'BCD',
                                                          'A(광공업생산)집계', 4, 7, 'BCD')
         
+        mfg_series = [
+            {"name": "전국", "data": nationwide_mfg, "color": "#1f77b4"},
+            {"name": region, "data": region_mfg, "color": "#ff7f0e"}
+        ]
+        mfg_axis = self._calculate_y_axis_range(mfg_series)
         charts['manufacturing'] = {
             "title": "< 광공업생산 전년동분기대비 증감률(%) >",
-            "yAxisMin": -12,
-            "yAxisMax": 12,
-            "yAxisStep": 4,
-            "series": [
-                {"name": "전국", "data": nationwide_mfg, "color": "#1f77b4"},
-                {"name": region, "data": region_mfg, "color": "#ff7f0e"}
-            ]
+            **mfg_axis,
+            "series": mfg_series
         }
         
         # 2. 서비스업생산 차트
@@ -1874,15 +1992,15 @@ class RegionalGenerator:
         region_svc = self._get_chart_data_with_fallback(region, 'B 분석', 3, 6, 'E~S',
                                                          'B(서비스업생산)집계', 3, 6, 'E~S')
         
+        svc_series = [
+            {"name": "전국", "data": nationwide_svc, "color": "#1f77b4"},
+            {"name": region, "data": region_svc, "color": "#ff7f0e"}
+        ]
+        svc_axis = self._calculate_y_axis_range(svc_series)
         charts['service'] = {
             "title": "< 서비스업생산 전년동분기대비 증감률(%) >",
-            "yAxisMin": 0,
-            "yAxisMax": 8,
-            "yAxisStep": 2,
-            "series": [
-                {"name": "전국", "data": nationwide_svc, "color": "#1f77b4"},
-                {"name": region, "data": region_svc, "color": "#ff7f0e"}
-            ]
+            **svc_axis,
+            "series": svc_series
         }
         
         # 3. 소매판매 차트
@@ -1893,15 +2011,15 @@ class RegionalGenerator:
         region_retail = self._get_chart_data_with_fallback(region, 'C 분석', 3, 4, '0',
                                                             'C(소비)집계', 2, 3, '0')
         
+        retail_series = [
+            {"name": "전국", "data": nationwide_retail, "color": "#1f77b4"},
+            {"name": region, "data": region_retail, "color": "#ff7f0e"}
+        ]
+        retail_axis = self._calculate_y_axis_range(retail_series)
         charts['retail'] = {
             "title": "< 소매판매 전년동분기대비 증감률(%) >",
-            "yAxisMin": -8,
-            "yAxisMax": 0,
-            "yAxisStep": 2,
-            "series": [
-                {"name": "전국", "data": nationwide_retail, "color": "#1f77b4"},
-                {"name": region, "data": region_retail, "color": "#ff7f0e"}
-            ]
+            **retail_axis,
+            "series": retail_series
         }
         
         # 4. 건설수주 차트
@@ -1912,15 +2030,15 @@ class RegionalGenerator:
         region_const = self._get_chart_data_with_fallback(region, "F'분석", 2, 3, '0',
                                                            "F'(건설)집계", 1, 3, '0')
         
+        const_series = [
+            {"name": "전국", "data": nationwide_const, "color": "#1f77b4"},
+            {"name": region, "data": region_const, "color": "#ff7f0e"}
+        ]
+        const_axis = self._calculate_y_axis_range(const_series)
         charts['construction'] = {
             "title": "< 건설수주 전년동분기대비 증감률(%) >",
-            "yAxisMin": -60,
-            "yAxisMax": 150,
-            "yAxisStep": 30,
-            "series": [
-                {"name": "전국", "data": nationwide_const, "color": "#1f77b4"},
-                {"name": region, "data": region_const, "color": "#ff7f0e"}
-            ]
+            **const_axis,
+            "series": const_series
         }
         
         # 5. 수출입 차트 (4개 시리즈)
@@ -1937,17 +2055,17 @@ class RegionalGenerator:
         region_import = self._get_chart_data_with_fallback(region, 'H 분석', 3, 4, '0',
                                                             'H(수입)집계', 3, 4, '0')
         
+        export_import_series = [
+            {"name": f"수출(전국)", "data": nationwide_export, "color": "#1f77b4"},
+            {"name": f"수출({region})", "data": region_export, "color": "#ff7f0e"},
+            {"name": f"수입(전국)", "data": nationwide_import, "color": "#1f77b4", "dashStyle": "dash"},
+            {"name": f"수입({region})", "data": region_import, "color": "#ff7f0e", "dashStyle": "dash"}
+        ]
+        export_import_axis = self._calculate_y_axis_range(export_import_series)
         charts['export_import'] = {
             "title": "< 수출입 전년동분기대비 증감률(%) >",
-            "yAxisMin": -24,
-            "yAxisMax": 24,
-            "yAxisStep": 12,
-            "series": [
-                {"name": f"수출(전국)", "data": nationwide_export, "color": "#1f77b4"},
-                {"name": f"수출({region})", "data": region_export, "color": "#ff7f0e"},
-                {"name": f"수입(전국)", "data": nationwide_import, "color": "#1f77b4", "dashStyle": "dash"},
-                {"name": f"수입({region})", "data": region_import, "color": "#ff7f0e", "dashStyle": "dash"}
-            ]
+            **export_import_axis,
+            "series": export_import_series
         }
         
         # 6. 소비자물가 차트
@@ -1973,15 +2091,15 @@ class RegionalGenerator:
             # E(지출목적물가)집계: 열2=지역, 열3=분류단계(0=총지수)
             return self._get_chart_time_series_from_aggregation('E(지출목적물가)집계', region_name, 2, 3, '0')
         
+        price_series = [
+            {"name": "전국", "data": get_price_series('전국'), "color": "#1f77b4"},
+            {"name": region, "data": get_price_series(region), "color": "#ff7f0e"}
+        ]
+        price_axis = self._calculate_y_axis_range(price_series)
         charts['consumer_price'] = {
             "title": "< 소비자물가 전년동분기대비 등락률(%) >",
-            "yAxisMin": 0,
-            "yAxisMax": 5,
-            "yAxisStep": 1,
-            "series": [
-                {"name": "전국", "data": get_price_series('전국'), "color": "#1f77b4"},
-                {"name": region, "data": get_price_series(region), "color": "#ff7f0e"}
-            ]
+            **price_axis,
+            "series": price_series
         }
         
         # 7. 고용률 차트 (집계 시트에서 전년동기대비 증감 계산)
@@ -2044,16 +2162,16 @@ class RegionalGenerator:
             
             return result
         
+        emp_series = [
+            {"name": "전국", "data": get_emp_series_from_aggregation('전국'), "color": "#1f77b4"},
+            {"name": region, "data": get_emp_series_from_aggregation(region), "color": "#ff7f0e"},
+            {"name": f"{region} 20-29세", "data": get_emp_series_from_aggregation(region, '15 - 29'), "color": "#2ca02c"}
+        ]
+        emp_axis = self._calculate_y_axis_range(emp_series)
         charts['employment_rate'] = {
             "title": "< 고용률 전년동분기대비 증감(%p) >",
-            "yAxisMin": -8,
-            "yAxisMax": 8,
-            "yAxisStep": 3,
-            "series": [
-                {"name": "전국", "data": get_emp_series_from_aggregation('전국'), "color": "#1f77b4"},
-                {"name": region, "data": get_emp_series_from_aggregation(region), "color": "#ff7f0e"},
-                {"name": f"{region} 20-29세", "data": get_emp_series_from_aggregation(region, '15 - 29'), "color": "#2ca02c"}
-            ]
+            **emp_axis,
+            "series": emp_series
         }
         
         # 8. 인구순이동 차트
@@ -2104,15 +2222,15 @@ class RegionalGenerator:
                     result.append({"period": q, "value": val})
                 return result
         
+        mig_series = [
+            {"name": region, "data": get_mig_series(df_mig, region), "color": "#1f77b4"},
+            {"name": f"{region}(20-29세)", "data": get_mig_series(df_mig, region, '20-29'), "color": "#ff7f0e"}
+        ]
+        mig_axis = self._calculate_y_axis_range(mig_series)
         charts['population_migration'] = {
             "title": "< 인구순이동(천명) >",
-            "yAxisMin": -20,
-            "yAxisMax": 20,
-            "yAxisStep": 10,
-            "series": [
-                {"name": region, "data": get_mig_series(df_mig, region), "color": "#1f77b4"},
-                {"name": f"{region}(20-29세)", "data": get_mig_series(df_mig, region, '20-29'), "color": "#ff7f0e"}
-            ]
+            **mig_axis,
+            "series": mig_series
         }
         
         return charts
