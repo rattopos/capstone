@@ -1323,8 +1323,8 @@
                     <div class="upload-icon">📄</div>
                     <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
                     <p class="upload-hint" style="line-height: 1.4;">
-                        <span style="color: var(--warning);">기초자료 수집표</span> → 분석표 생성<br>
-                        <span style="color: var(--success);">분석표</span> → 보도자료 생성
+                        <span style="color: var(--success);">기초자료 수집표</span> → 보도자료 직접 생성<br>
+                        <span style="color: var(--text-muted);">(차트/인포그래픽 제외, 표 기반)</span>
                     </p>
                     <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
                 </div>
@@ -1337,9 +1337,9 @@
                 <div class="conversion-info" id="conversionInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 10px; border: 1px solid var(--border);">
                     <div style="font-size: 0.85rem; font-weight: 600; color: var(--success); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                         <span>✨</span>
-                        <span>기초자료 → 분석표 변환 완료</span>
+                        <span>기초자료 업로드 완료</span>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;" id="conversionDetails"></div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;" id="conversionDetails">보도자료 생성 준비 완료</div>
                     
                     <!-- GRDP 추출 결과 -->
                     <div class="grdp-info" id="grdpInfo" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
@@ -1375,45 +1375,21 @@
                         </div>
                     </div>
                     
-                    <!-- 분석표 다운로드 버튼 (기초자료 업로드 시에만 표시) -->
-                    <button id="downloadAnalysisBtn" onclick="downloadAnalysisFile()" disabled style="
-                        display: none;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 0.5rem;
-                        width: 100%;
-                        margin-top: 1rem;
-                        padding: 0.75rem 1rem;
-                        background: linear-gradient(135deg, #22c55e, #16a34a);
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        font-size: 0.9rem;
-                        font-weight: 700;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                        opacity: 0.5;
-                        box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
-                    ">
+                    <!-- 보도자료 생성 안내 -->
+                    <div id="reportGenerationHint" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--success);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+                            <strong style="color: var(--success);">🎉 보도자료 생성 준비 완료</strong><br>
+                            우측 미리보기에서 보도자료를 확인하고 편집할 수 있습니다.<br>
+                            <span style="color: var(--text-muted); font-size: 0.7rem;">※ 차트/인포그래픽 제외, 표 기반 보도자료</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 분석표 다운로드 버튼 (더 이상 사용하지 않음 - 숨김) -->
+                    <button id="downloadAnalysisBtn" onclick="downloadAnalysisFile()" disabled style="display: none;">
                         <span id="downloadAnalysisIcon">⏳</span>
                         <span id="downloadAnalysisText">분석표 생성 중...</span>
                     </button>
-                    
-                    <!-- 가중치 정보 안내 (기초자료 업로드 시에만 표시) -->
-                    <div id="weightInfoHint" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
-                            <strong style="color: var(--text-secondary);">💡 가중치 처리 안내</strong><br>
-                            상단의 <strong>⚖️ 가중치 설정</strong> 버튼에서 미리 설정할 수 있습니다.
-                        </div>
-                    </div>
-                    
-                    <!-- 보도자료 생성 안내 (분석표 업로드 시에만 표시) -->
-                    <div id="reportGenerationHint" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--success);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
-                            <strong style="color: var(--success);">🎉 보도자료 생성 준비 완료</strong><br>
-                            우측 미리보기에서 보도자료를 확인하고 편집할 수 있습니다.
-                        </div>
-                    </div>
+                    <div id="weightInfoHint" style="display: none;"></div>
                 </div>
             </div>
 
@@ -1428,8 +1404,8 @@
                         <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
                         <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">파일을 업로드하세요</div>
                         <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
-                            • <strong>기초자료 수집표</strong>: 분석표 생성<br>
-                            • <strong>분석표</strong>: 보도자료 생성
+                            • <strong>기초자료 수집표</strong>: 보도자료 바로 생성<br>
+                            <span style="font-size: 0.65rem; color: var(--text-muted);">※ 차트/인포그래픽 제외, 표 기반 출력</span>
                         </div>
                     </div>
                 </div>
@@ -1466,8 +1442,11 @@
                     <button class="btn btn-success" id="exportXlsxBtn" style="display: none; background: linear-gradient(135deg, #217346, #1e6b3e); border-color: #1a5c35; color: white;">
                         📊 xlsx
                     </button>
-                    <button class="btn btn-hwp-import" id="exportHwpImportBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;">
-                        📄 xml
+                    <button class="btn btn-hwp-import" id="exportHwpImportBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="한글 불러오기용 XML">
+                        📄 한글 XML
+                    </button>
+                    <button class="btn btn-hwp-copy" id="exportHwpCopyBtn" style="display: none; background: linear-gradient(135deg, #e91e63, #c2185b); border-color: #ad1457; color: white;" title="한글 복붙용 HTML">
+                        📋 한글 복붙
                     </button>
                     <button class="btn btn-save-project" id="saveHtmlToProjectBtn" style="display: none; background: linear-gradient(135deg, #00897b, #00695c); border-color: #004d40; color: white;">
                         💾 HTML 저장
@@ -2022,6 +2001,7 @@
             exportBtn: document.getElementById('exportBtn'),
             exportXlsxBtn: document.getElementById('exportXlsxBtn'),
             exportHwpImportBtn: document.getElementById('exportHwpImportBtn'),
+            exportHwpCopyBtn: document.getElementById('exportHwpCopyBtn'),
             saveHtmlToProjectBtn: document.getElementById('saveHtmlToProjectBtn'),
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
@@ -2084,6 +2064,7 @@
             elements.exportBtn.addEventListener('click', exportFinalDocument);
             elements.exportXlsxBtn.addEventListener('click', exportXlsxDocument);
             elements.exportHwpImportBtn.addEventListener('click', exportHwpImportDocument);
+            elements.exportHwpCopyBtn.addEventListener('click', exportHwpCopyDocument);
             elements.saveHtmlToProjectBtn.addEventListener('click', saveHtmlToProject);
             
             // Edit actions
@@ -2287,6 +2268,13 @@
                 elements.exportHwpImportBtn.style.opacity = '1';
                 elements.exportHwpImportBtn.style.cursor = 'pointer';
                 console.log('[출력] 한글용 XML 출력 버튼 활성화');
+            }
+            if (elements.exportHwpCopyBtn) {
+                elements.exportHwpCopyBtn.style.display = 'inline-flex';
+                elements.exportHwpCopyBtn.disabled = false;
+                elements.exportHwpCopyBtn.style.opacity = '1';
+                elements.exportHwpCopyBtn.style.cursor = 'pointer';
+                console.log('[출력] 한글 복붙용 HTML 출력 버튼 활성화');
             }
             if (elements.saveHtmlToProjectBtn) {
                 elements.saveHtmlToProjectBtn.style.display = 'inline-flex';
@@ -2973,8 +2961,20 @@ ${currentPage.outerHTML}
                     updateUploadStep(2, 'completed', fileTypeText);
                     
                     // ===== 프로세스별 처리 =====
-                    if (data.file_type === 'raw') {
-                        // [프로세스 1] 기초자료 → 분석표 생성
+                    if (data.file_type === 'raw_with_analysis') {
+                        // [새 프로세스] 기초자료 → 바로 보도자료 생성
+                        updateUploadStep(3, 'completed', '데이터 처리 완료');
+                        document.getElementById('uploadModalSubtitle').textContent = '보도자료 생성 준비 중...';
+                        await new Promise(r => setTimeout(r, 300));
+                        
+                        if (data.has_grdp) {
+                            updateUploadStep(4, 'completed', 'GRDP 포함됨');
+                        } else {
+                            updateUploadStep(4, 'completed', 'GRDP 기본값 적용');
+                        }
+                        
+                    } else if (data.file_type === 'raw') {
+                        // [기존 프로세스] 기초자료 → 분석표 생성 (호환성 유지)
                         updateUploadStep(3, 'active');
                         document.getElementById('uploadModalSubtitle').textContent = '분석표 생성 준비 중...';
                         await new Promise(r => setTimeout(r, 500));
@@ -3022,8 +3022,8 @@ ${currentPage.outerHTML}
                     elements.uploadFilename.style.display = 'block';
                     elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
                     
-                    if (data.file_type === 'raw') {
-                        elements.uploadZone.querySelector('.upload-text').textContent = '기초자료 → 분석표 변환 완료!';
+                    if (data.file_type === 'raw_with_analysis' || data.file_type === 'raw') {
+                        elements.uploadZone.querySelector('.upload-text').textContent = '기초자료 → 보도자료 생성 준비 완료!';
                     } else {
                         elements.uploadZone.querySelector('.upload-text').textContent = '분석표 업로드 완료!';
                     }
@@ -3042,35 +3042,66 @@ ${currentPage.outerHTML}
                     
                     const grdpMissing = document.getElementById('grdpMissing');
                     
-                    // ===== 프로세스 1: 기초자료 → 분석표 생성 =====
-                    if (data.file_type === 'raw' && data.conversion_info) {
+                    // ===== 프로세스 1: 기초자료 → 보도자료 바로 생성 (새로운 워크플로우) =====
+                    if ((data.file_type === 'raw_with_analysis' || data.file_type === 'raw') && data.conversion_info) {
                         conversionInfo.style.display = 'block';
-                        conversionDetails.textContent = `📁 ${data.conversion_info.original_file}`;
+                        conversionDetails.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--success);">✅</span>
+                                <span>기초자료 처리 완료: ${data.conversion_info.original_file || data.filename}</span>
+                            </div>
+                        `;
                         
-                        // GRDP 정보 숨김 (분석표 생성 프로세스에서는 불필요)
-                        grdpInfo.style.display = 'none';
-                        grdpMissing.style.display = 'none';
+                        // UI 상태 업데이트 (보도자료 생성 모드로 바로 전환)
+                        updateUIForFileType('raw_direct');
                         
-                        // 분석표 다운로드 버튼 활성화
-                        state.analysisFilename = data.conversion_info.analysis_file;
-                        state.analysisReady = false;
-                        updateAnalysisButton(false, '분석표 생성 중...');
-                        
-                        // UI 상태 업데이트 (기초자료 모드)
-                        updateUIForFileType('raw');
-                        
-                        // 분석표 생성 (백그라운드)
-                        generateAnalysisInBackground();
+                        // GRDP 정보 표시 (있으면)
+                        if (data.has_grdp && data.conversion_info.grdp_extracted) {
+                            grdpInfo.style.display = 'block';
+                            const grdpInfoHtml = `
+                                <div style="font-size: 0.75rem; font-weight: 600; color: var(--accent-primary); margin-bottom: 0.25rem;">
+                                    📊 GRDP 데이터 포함
+                                </div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                    전국 성장률: ${data.conversion_info.national_growth_rate || '-'}%
+                                </div>
+                            `;
+                            grdpInfo.innerHTML = grdpInfoHtml;
+                            grdpMissing.style.display = 'none';
+                        } else if (data.needs_review) {
+                            grdpInfo.style.display = 'none';
+                            grdpMissing.style.display = 'block';
+                            grdpMissing.innerHTML = `
+                                <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
+                                    ⚠️ GRDP 데이터 확인 필요
+                                </div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                    기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
+                                </div>
+                            `;
+                        } else {
+                            grdpInfo.style.display = 'none';
+                            grdpMissing.style.display = 'none';
+                        }
                         
                         // 안내 메시지
                         document.getElementById('uploadModalSubtitle').textContent = 
-                            '분석표를 다운로드하세요. 지역경제동향 생성은 분석표 업로드 후 가능합니다.';
+                            '보도자료를 바로 생성할 수 있습니다!';
                         
-                        // 모달 닫기 (3초 후)
-                        hideUploadModal(3000);
+                        // 모달 닫기 (2초 후)
+                        hideUploadModal(2000);
                         
                         // 토스트 안내
-                        showToast('💡 분석표를 다운로드한 후, 비공개 자료 추가 후 다시 업로드하세요.', 'info', 5000);
+                        showToast('🎉 보도자료 생성 준비 완료! 미리보기에서 확인하세요.', 'success', 3000);
+                        
+                        // 보도자료 목록 활성화 및 첫 번째 보도자료 선택
+                        setTimeout(() => {
+                            buildReportList(data.reports, data.regional_reports);
+                            // 첫 번째 보도자료 자동 선택
+                            if (state.allReports.length > 0) {
+                                selectReportByGlobalIndex(0);
+                            }
+                        }, 500);
                         
                     // ===== 프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성 =====
                     } else if (data.file_type === 'analysis') {
@@ -4351,6 +4382,162 @@ ${currentPage.outerHTML}
             }
         }
 
+        // ===== 한글(HWP) 복붙용 HTML 내보내기 =====
+        async function exportHwpCopyDocument() {
+            if (!state.allGenerated) {
+                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
+                return;
+            }
+            
+            // 버튼 비활성화
+            if (elements.exportHwpCopyBtn) {
+                elements.exportHwpCopyBtn.disabled = true;
+                elements.exportHwpCopyBtn.style.opacity = '0.6';
+                elements.exportHwpCopyBtn.style.cursor = 'not-allowed';
+            }
+            
+            // 현재 미리보기 내용을 캐시에 동기화
+            syncCurrentPreviewToCache();
+            
+            // 로딩 표시
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingTitle = document.getElementById('loadingTitle');
+            const loadingCurrent = document.getElementById('loadingCurrent');
+            
+            loadingOverlay.style.display = 'flex';
+            loadingTitle.textContent = '📋 한글 복붙용 HTML 생성 중...';
+            loadingCurrent.textContent = '페이지 수집 중';
+            
+            try {
+                // 모든 캐시된 HTML 수집 (순서대로)
+                const pages = [];
+                
+                // HTML 가져오기 헬퍼 함수
+                const getHtmlContent = (type, id) => {
+                    const cacheKey = `${type}_${id}`;
+                    if (state.htmlCache[cacheKey]) {
+                        return state.htmlCache[cacheKey];
+                    }
+                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
+                        return state.cachedHtml[type][id];
+                    }
+                    return null;
+                };
+                
+                // 요약 보도자료
+                for (const report of state.summaryReports || []) {
+                    const html = getHtmlContent('summary', report.id);
+                    if (html) {
+                        pages.push({
+                            id: report.id,
+                            title: report.name,
+                            category: 'summary',
+                            html: html
+                        });
+                    }
+                }
+                
+                // 부문별 보도자료
+                for (const report of state.sectoralReports || []) {
+                    const html = getHtmlContent('sectoral', report.id);
+                    if (html) {
+                        pages.push({
+                            id: report.id,
+                            title: report.name,
+                            category: 'sectoral',
+                            html: html
+                        });
+                    }
+                }
+                
+                // 시도별 보도자료
+                for (const report of state.regionalReports || []) {
+                    const html = getHtmlContent('regional', report.id);
+                    if (html) {
+                        pages.push({
+                            id: report.id,
+                            title: report.name,
+                            category: 'regional',
+                            html: html
+                        });
+                    }
+                }
+                
+                // 통계표
+                for (const report of state.statisticsReports || []) {
+                    const html = getHtmlContent('statistics', report.id);
+                    if (html) {
+                        pages.push({
+                            id: report.id,
+                            title: report.name,
+                            category: 'statistics',
+                            html: html
+                        });
+                    }
+                }
+                
+                if (pages.length === 0) {
+                    loadingOverlay.style.display = 'none';
+                    showToast('생성된 보도자료가 없습니다.', 'warning');
+                    return;
+                }
+                
+                console.log(`[출력] API 호출: /api/export-hwp-ready (${pages.length}개 페이지)`);
+                const response = await fetch('/api/export-hwp-ready', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pages: pages,
+                        year: state.year,
+                        quarter: state.quarter
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('[출력] 한글 복붙용 HTML 생성 성공:', result.filename);
+                    
+                    loadingTitle.textContent = '✅ 생성 완료!';
+                    loadingCurrent.textContent = '브라우저에서 열기 준비 중...';
+                    
+                    // 1초 후 새 탭에서 열기 (복사 기능 내장)
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        // 새 탭에서 열기
+                        if (result.view_url) {
+                            window.open(result.view_url, '_blank');
+                            showToast('📋 한글 복붙용 HTML이 새 탭에서 열렸습니다. "전체 복사" 버튼을 클릭하세요!', 'success', 5000);
+                        } else {
+                            showToast(`📋 파일 생성 완료: ${result.filename}`, 'success');
+                        }
+                    }, 1000);
+                } else {
+                    loadingOverlay.style.display = 'none';
+                    const errorMsg = result.error || '문서 생성 실패';
+                    console.error('[출력] 한글 복붙용 HTML 생성 실패:', errorMsg);
+                    showToast(`문서 생성 실패: ${errorMsg}`, 'error');
+                }
+            } catch (err) {
+                console.error('[출력] 한글 복붙용 HTML 내보내기 오류:', err);
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+                showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
+            } finally {
+                // 버튼 다시 활성화
+                if (elements.exportHwpCopyBtn) {
+                    elements.exportHwpCopyBtn.disabled = false;
+                    elements.exportHwpCopyBtn.style.opacity = '1';
+                    elements.exportHwpCopyBtn.style.cursor = 'pointer';
+                }
+            }
+        }
+
         // ===== 프로젝트 메인 디렉토리에 HTML 저장 =====
         async function saveHtmlToProject() {
             if (!state.allGenerated) {
@@ -4690,8 +4877,34 @@ ${currentPage.outerHTML}
             const reportGenerationHint = document.getElementById('reportGenerationHint');
             const downloadAnalysisBtn = document.getElementById('downloadAnalysisBtn');
             
-            if (fileType === 'raw') {
-                // ===== 기초자료 업로드 → 분석표 다운로드 안내 =====
+            if (fileType === 'raw_direct' || fileType === 'raw_with_analysis') {
+                // ===== 기초자료 업로드 → 바로 보도자료 생성 모드 (새로운 워크플로우) =====
+                reportListSection.style.opacity = '1';
+                
+                // 분석표 다운로드 버튼 숨기기
+                if (downloadAnalysisBtn) downloadAnalysisBtn.style.display = 'none';
+                
+                // 미리보기 영역 안내 변경
+                if (previewPlaceholder) {
+                    previewPlaceholder.style.display = 'flex';
+                    previewPlaceholder.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+                            <div style="font-size: 1.2rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem;">보도자료 생성 준비 완료!</div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; max-width: 400px; margin: 0 auto;">
+                                <p style="margin-bottom: 0.5rem;">좌측 목록에서 <strong style="color: var(--success);">보도자료를 선택</strong>하세요.</p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">※ 표 기반 보도자료 (차트/인포그래픽 제외)</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 힌트 표시 상태
+                if (weightInfoHint) weightInfoHint.style.display = 'none';
+                if (reportGenerationHint) reportGenerationHint.style.display = 'block';
+                
+            } else if (fileType === 'raw') {
+                // ===== 기존 방식: 기초자료 업로드 → 분석표 다운로드 안내 (호환성 유지) =====
                 reportListSection.style.opacity = '0.6';
                 allReportsList.innerHTML = `
                     <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">

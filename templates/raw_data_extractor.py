@@ -812,4 +812,730 @@ class RawDataExtractor:
                     result[result_key] = growth_data
         
         return result
+    
+    # ========== 보도자료 데이터 추출 메서드 ==========
+    
+    def extract_mining_manufacturing_report_data(self) -> Dict[str, Any]:
+        """광공업생산 보도자료 데이터 추출
+        
+        Returns:
+            보도자료 템플릿에서 사용할 데이터 딕셔너리
+        """
+        sheet_name = '광공업생산'
+        
+        # 기본 정보
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '광공업생산지수',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'table_data': [],
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        # 전년동분기비 증감률 추출 (분류단계 0 = 전체)
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
+        )
+        
+        # 전년동기비 증감률 추출
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
+        )
+        
+        # 현재 분기 데이터
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, {})
+        
+        if not current_data:
+            # p 없이 다시 시도
+            current_quarter_key = f"{self.current_year}.{self.current_quarter}/4"
+            current_data = quarterly_growth.get(current_quarter_key, {})
+        
+        # 전국 데이터
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'trend': '확대' if national_rate > 0 else ('축소' if national_rate < 0 else '유지'),
+        }
+        
+        # 지역별 데이터 처리
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        # 증가/감소 지역 분류
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        
+        # 테이블 데이터 (지역별 연도/분기 데이터)
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_service_industry_report_data(self) -> Dict[str, Any]:
+        """서비스업생산 보도자료 데이터 추출"""
+        sheet_name = '서비스업생산'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '서비스업생산지수',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        # 전년동분기비 증감률 추출
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
+        )
+        
+        # 현재 분기 데이터
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+        }
+        
+        # 지역별 처리
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_consumption_report_data(self) -> Dict[str, Any]:
+        """소비동향 보도자료 데이터 추출"""
+        sheet_name = '소비(소매, 추가)'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '소매판매액지수',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_construction_report_data(self) -> Dict[str, Any]:
+        """건설동향 보도자료 데이터 추출"""
+        sheet_name = '건설 (공표자료)'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '건설수주',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_export_report_data(self) -> Dict[str, Any]:
+        """수출 보도자료 데이터 추출"""
+        sheet_name = '수출'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '수출액',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='계'
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='계'
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_import_report_data(self) -> Dict[str, Any]:
+        """수입 보도자료 데이터 추출"""
+        sheet_name = '수입'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '수입액',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='계'
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=1,
+            classification_column=2,
+            classification_value='계'
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_price_report_data(self) -> Dict[str, Any]:
+        """물가동향 보도자료 데이터 추출"""
+        sheet_name = '품목성질별 물가'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '소비자물가지수',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_growth = self.extract_quarterly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_growth = self.extract_yearly_growth_rate(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_growth.get(current_quarter_key, 
+                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_rate = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'growth_rate': national_rate,
+            'direction': '상승' if national_rate > 0 else ('하락' if national_rate < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            rate = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'growth_rate': rate,
+                'direction': '상승' if rate > 0 else ('하락' if rate < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+                                  key=lambda x: x['growth_rate'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+                                  key=lambda x: x['growth_rate'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_growth
+        report_data['quarterly_data'] = quarterly_growth
+        
+        return report_data
+    
+    def extract_employment_rate_report_data(self) -> Dict[str, Any]:
+        """고용률 보도자료 데이터 추출 (전년동기비 %p 차이)"""
+        sheet_name = '고용률'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '고용률',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        # 고용률은 %p 차이 계산
+        quarterly_diff = self.extract_quarterly_difference(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_diff = self.extract_yearly_difference(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_diff.get(current_quarter_key, 
+                       quarterly_diff.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_diff = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'change': national_diff,
+            'direction': '상승' if national_diff > 0 else ('하락' if national_diff < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            diff = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'change': diff,
+                'direction': '상승' if diff > 0 else ('하락' if diff < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['change'] > 0], 
+                                  key=lambda x: x['change'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['change'] < 0], 
+                                  key=lambda x: x['change'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_diff
+        report_data['quarterly_data'] = quarterly_diff
+        
+        return report_data
+    
+    def extract_unemployment_report_data(self) -> Dict[str, Any]:
+        """실업률 보도자료 데이터 추출 (전년동기비 %p 차이)"""
+        sheet_name = '실업자 수'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '실업률',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        quarterly_diff = self.extract_quarterly_difference(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_diff = self.extract_yearly_difference(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_diff.get(current_quarter_key, 
+                       quarterly_diff.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        
+        national_diff = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'change': national_diff,
+            'direction': '상승' if national_diff > 0 else ('하락' if national_diff < 0 else '보합'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            diff = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'change': diff,
+                'direction': '상승' if diff > 0 else ('하락' if diff < 0 else '보합'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['change'] > 0], 
+                                  key=lambda x: x['change'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['change'] < 0], 
+                                  key=lambda x: x['change'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_diff
+        report_data['quarterly_data'] = quarterly_diff
+        
+        return report_data
+    
+    def extract_population_migration_report_data(self) -> Dict[str, Any]:
+        """국내인구이동 보도자료 데이터 추출"""
+        sheet_name = '시도 간 이동'
+        
+        report_data = {
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'title': '국내 인구이동',
+            },
+            'national_summary': {},
+            'regional_data': {},
+            'top3_increase_regions': [],
+            'top3_decrease_regions': [],
+        }
+        
+        # 순이동은 원지수 그대로 사용
+        quarterly_data = self.extract_all_quarters(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        yearly_data = self.extract_yearly_data(
+            sheet_name,
+            start_year=2020,
+            region_column=0,
+        )
+        
+        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
+        current_data = quarterly_data.get(current_quarter_key, 
+                       quarterly_data.get(f"{self.current_year} {self.current_quarter}/4", {}))
+        
+        national_value = current_data.get('전국', 0.0)
+        report_data['national_summary'] = {
+            'value': national_value,
+            'direction': '순유입' if national_value > 0 else ('순유출' if national_value < 0 else '균형'),
+        }
+        
+        regional_list = []
+        for region in self.ALL_REGIONS:
+            if region == '전국':
+                continue
+            value = current_data.get(region, 0.0)
+            regional_list.append({
+                'region': region,
+                'value': value,
+                'direction': '순유입' if value > 0 else ('순유출' if value < 0 else '균형'),
+            })
+        
+        increase_regions = sorted([r for r in regional_list if r['value'] > 0], 
+                                  key=lambda x: x['value'], reverse=True)
+        decrease_regions = sorted([r for r in regional_list if r['value'] < 0], 
+                                  key=lambda x: x['value'])
+        
+        report_data['top3_increase_regions'] = increase_regions[:3]
+        report_data['top3_decrease_regions'] = decrease_regions[:3]
+        report_data['regional_data'] = {
+            'all': regional_list,
+            'increase_regions': increase_regions,
+            'decrease_regions': decrease_regions,
+        }
+        report_data['yearly_data'] = yearly_data
+        report_data['quarterly_data'] = quarterly_data
+        
+        return report_data
+    
+    def extract_all_report_data(self) -> Dict[str, Dict[str, Any]]:
+        """모든 부문별 보도자료 데이터 추출
+        
+        Returns:
+            {
+                'manufacturing': {...},
+                'service': {...},
+                'consumption': {...},
+                ...
+            }
+        """
+        return {
+            'manufacturing': self.extract_mining_manufacturing_report_data(),
+            'service': self.extract_service_industry_report_data(),
+            'consumption': self.extract_consumption_report_data(),
+            'construction': self.extract_construction_report_data(),
+            'export': self.extract_export_report_data(),
+            'import': self.extract_import_report_data(),
+            'price': self.extract_price_report_data(),
+            'employment': self.extract_employment_rate_report_data(),
+            'unemployment': self.extract_unemployment_report_data(),
+            'population': self.extract_population_migration_report_data(),
+        }
 

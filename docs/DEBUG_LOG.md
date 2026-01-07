@@ -26,6 +26,70 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-07
+
+#### 기초자료에서 직접 보도자료 생성 워크플로우 구현
+- **시간**: 2026-01-07
+- **문제 설명**: 
+  - 사용자가 기초자료 수집표를 업로드하면 분석표를 거치지 않고 바로 보도자료를 생성할 수 있도록 요청
+  - 인포그래픽과 차트는 제외하고 표 기반 보도자료만 생성
+  - 출력은 한글(HWP) 불러오기용 XML과 복붙용 HTML 두 가지 형식 지원
+- **원인 분석**: 
+  - 기존 워크플로우: 기초자료 → 분석표 다운로드 → 비공개자료 추가 → 분석표 업로드 → 보도자료 생성
+  - 실무에서 비공개자료가 없는 경우가 많아 불필요한 단계가 존재
+  - 차트와 인포그래픽은 복잡한 렌더링이 필요하고 HWP 호환성이 떨어짐
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "분석표를 안 거치고 바로 보도자료를 생성"하고 "인포그래픽이나 차트는 제외"하며 "한글에서 불러올 수 있는 형식"으로 출력하길 원함
+  - 기존 코드 분석:
+    1. `templates/raw_data_extractor.py` - RawDataExtractor 클래스가 이미 존재
+    2. `config/reports.py` - 인포그래픽 항목이 SUMMARY_REPORTS에 포함
+    3. `templates/regional_template.html`, `templates/reference_grdp_template.html` - Chart.js 차트 코드 포함
+    4. `routes/api.py` - 업로드 시 file_type='raw'이면 분석표 다운로드 안내
+    5. `dashboard.html` - 분석표 다운로드 버튼 및 관련 UI 존재
+  - 해결책 설계:
+    1. RawDataExtractor 확장: 기초자료에서 직접 각 부문별 데이터 추출 메서드 추가
+    2. 인포그래픽 제거: config/reports.py에서 infographic 항목 삭제
+    3. 차트 제거: 템플릿에서 Chart.js 관련 코드 완전 삭제
+    4. API 수정: 기초자료 업로드 시 file_type='raw_with_analysis' 반환하여 바로 보도자료 생성 가능
+    5. 대시보드 UI 수정: 분석표 다운로드 버튼 제거, 바로 보도자료 생성 안내
+    6. 내보내기 통합: 한글 XML + 한글 복붙용 HTML 두 가지 버튼 제공
+  - 구현 순서:
+    1. RawDataExtractor 클래스 확장 ✅
+    2. 인포그래픽 항목 제거 ✅
+    3. 차트 HTML/JS 코드 제거 ✅
+    4. API 업로드 로직 수정 ✅
+    5. 대시보드 UI 수정 ✅
+    6. 내보내기 버튼 추가 ✅
+- **해결 방법**: 
+  1. `templates/raw_data_extractor.py`: RawDataExtractor 클래스에 각 부문별 데이터 추출 메서드 추가
+  2. `config/reports.py`: SUMMARY_REPORTS에서 infographic 항목 제거
+  3. `templates/regional_template.html`: Chart.js 스크립트, 차트 컨테이너, 차트 JavaScript 코드 완전 제거
+  4. `templates/reference_grdp_template.html`: Chart.js 및 GRDP 차트 관련 코드 제거
+  5. `routes/api.py`: 기초자료 업로드 시 file_type='raw_with_analysis' 반환, 분석표 다운로드 단계 생략
+  6. `dashboard.html`:
+     - 업로드 존 힌트 텍스트 수정 ("기초자료 → 보도자료 생성")
+     - 분석표 다운로드 버튼 숨김 처리
+     - file_type='raw_with_analysis' 처리 로직 추가
+     - updateUIForFileType('raw_direct') 케이스 추가
+     - 한글 복붙용 HTML 내보내기 버튼 추가 (exportHwpCopyBtn)
+     - exportHwpCopyDocument() 함수 추가
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (확장)
+  - `config/reports.py` (수정)
+  - `templates/regional_template.html` (차트 제거)
+  - `templates/reference_grdp_template.html` (차트 제거)
+  - `routes/api.py` (수정)
+  - `dashboard.html` (UI 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 기존 분석표 직접 업로드 워크플로우는 호환성을 위해 유지
+  - 한글 내보내기는 두 가지 방식 제공:
+    - 한글 XML: `/api/export-hwp-import` - 한글에서 직접 불러오기 가능
+    - 한글 복붙: `/api/export-hwp-ready` - 브라우저에서 복사하여 한글에 붙여넣기
+  - 차트가 필요한 경우 별도로 이미지를 삽입해야 함
+
+---
+
 ### 2026-01-04
 
 #### 인포그래픽 지도 회색(보합/평균) 색상이 배경과 구분되지 않는 문제 해결
@@ -1416,14 +1480,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 24
-- 완료: 24
+- 총 항목: 25
+- 완료: 25
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-04 (인포그래픽 지도 회색 색상 배경 대비 문제 해결)
+- 마지막 업데이트: 2026-01-07 (기초자료에서 직접 보도자료 생성 워크플로우 구현)
 
 ---
 

@@ -21,6 +21,63 @@ from .grdp_service import (
 )
 
 
+def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
+    """기초자료에서 직접 보도자료 데이터 추출 (RawDataExtractor 사용)
+    
+    Args:
+        raw_excel_path: 기초자료 엑셀 파일 경로
+        report_id: 보도자료 ID
+        year: 연도
+        quarter: 분기
+        
+    Returns:
+        추출된 데이터 딕셔너리 또는 None
+    """
+    try:
+        from templates.raw_data_extractor import RawDataExtractor
+        
+        extractor = RawDataExtractor(raw_excel_path, year, quarter)
+        
+        # 보도자료 ID에 따라 적절한 데이터 추출 메서드 호출
+        data = None
+        
+        if report_id == 'manufacturing':
+            data = extractor.extract_mining_manufacturing_report_data()
+        elif report_id == 'service':
+            data = extractor.extract_service_industry_report_data()
+        elif report_id == 'consumption':
+            data = extractor.extract_consumption_report_data()
+        elif report_id == 'construction':
+            data = extractor.extract_construction_report_data()
+        elif report_id == 'export':
+            data = extractor.extract_export_report_data()
+        elif report_id == 'import':
+            data = extractor.extract_import_report_data()
+        elif report_id == 'price':
+            data = extractor.extract_price_report_data()
+        elif report_id == 'employment':
+            data = extractor.extract_employment_rate_report_data()
+        elif report_id == 'unemployment':
+            data = extractor.extract_unemployment_report_data()
+        elif report_id == 'population':
+            data = extractor.extract_population_migration_report_data()
+        
+        if data:
+            # 연도/분기 정보 추가
+            if 'report_info' not in data:
+                data['report_info'] = {}
+            data['report_info']['year'] = year
+            data['report_info']['quarter'] = quarter
+            
+        return data
+        
+    except Exception as e:
+        import traceback
+        print(f"[WARNING] 기초자료 직접 추출 실패 ({report_id}): {e}")
+        traceback.print_exc()
+        return None
+
+
 def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
     """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)"""
     try:
@@ -72,8 +129,18 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         return None, f"스키마 기반 보도자료 생성 오류: {str(e)}", []
 
 
-def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
-    """보도자료 HTML 생성"""
+def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None, file_type=None):
+    """보도자료 HTML 생성
+    
+    Args:
+        excel_path: 엑셀 파일 경로 (분석표 또는 기초자료)
+        report_config: 보도자료 설정
+        year: 연도
+        quarter: 분기
+        custom_data: 사용자 정의 데이터
+        raw_excel_path: 기초자료 파일 경로 (옵션)
+        file_type: 파일 유형 ('raw_direct', 'analysis', 'raw_with_analysis')
+    """
     try:
         # 파일 존재 및 접근 가능 여부 확인
         excel_path_obj = Path(excel_path)
@@ -95,8 +162,28 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"\n[DEBUG] ========== {report_name} 보도자료 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
+        print(f"[DEBUG] File Type: {file_type}")
         if raw_excel_path:
             print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
+        
+        # raw_direct 모드: RawDataExtractor를 사용하여 기초자료에서 직접 데이터 추출
+        if file_type == 'raw_direct' and raw_excel_path:
+            raw_data = _extract_data_from_raw(raw_excel_path, report_id, year, quarter)
+            if raw_data:
+                print(f"[DEBUG] 기초자료 직접 추출 성공: {list(raw_data.keys())}")
+                # 템플릿 렌더링
+                template_path = TEMPLATES_DIR / template_name
+                if template_path.exists():
+                    with open(template_path, 'r', encoding='utf-8') as f:
+                        template_content = f.read()
+                    
+                    template = Template(template_content)
+                    template.globals['is_missing'] = is_missing
+                    template.globals['format_value'] = format_value
+                    
+                    html_content = template.render(**raw_data)
+                    missing_fields = check_missing_data(raw_data)
+                    return html_content, None, missing_fields
         
         # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
         if generator_name is None:

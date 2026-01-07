@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ⅱ. 시도별 경제동향 - {{ report_info.region }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         * {
             margin: 0;
@@ -106,79 +104,6 @@
             min-width: 30px;
         }
         
-        /* 차트 컨테이너 */
-        .charts-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            gap: 15px;
-        }
-        
-        .chart-container {
-            flex: 1;
-            max-width: 48%;
-        }
-        
-        .chart-title {
-            text-align: center;
-            font-size: 9pt;
-            margin-bottom: 3px;
-        }
-        
-        .chart-wrapper {
-            position: relative;
-            height: 140px;
-            border: 1px solid #ddd;
-            padding: 8px;
-            background: #fff;
-        }
-        
-        .settings-toggle {
-            position: absolute;
-            top: 3px;
-            right: 3px;
-            background: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 1px 4px;
-            cursor: pointer;
-            font-size: 7pt;
-            border-radius: 2px;
-            z-index: 50;
-        }
-        
-        .chart-settings {
-            display: none;
-            position: absolute;
-            top: 3px;
-            right: 3px;
-            background: white;
-            border: 1px solid #ccc;
-            padding: 6px;
-            border-radius: 3px;
-            z-index: 100;
-            font-size: 7pt;
-        }
-        
-        .chart-settings.visible {
-            display: block;
-        }
-        
-        .chart-settings label {
-            display: block;
-            margin-bottom: 2px;
-        }
-        
-        .chart-settings input {
-            width: 50px;
-            margin-left: 3px;
-        }
-        
-        .chart-settings button {
-            margin-top: 3px;
-            padding: 1px 6px;
-            cursor: pointer;
-        }
-        
         /* 요약 테이블 */
         .summary-table-container {
             margin-top: 15px;
@@ -247,16 +172,6 @@
                 box-shadow: none;
             }
             
-            .settings-toggle,
-            .chart-settings {
-                display: none !important;
-            }
-            
-            .chart-wrapper {
-                border: none;
-                background: white;
-            }
-            
             .summary-table th {
                 background-color: #e6e0ec !important;
                 -webkit-print-color-adjust: exact;
@@ -298,36 +213,6 @@
             {% else %}
                 {% if svc_inc | length > 0 %}{{ svc_inc | map(attribute='name') | join(', ') }}({% for i in svc_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘었으나, {% endif %}{% if svc_dec | length > 0 %}{{ svc_dec | map(attribute='name') | join(', ') }}({% for i in svc_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(production.service.total_growth_rate | abs) }}% 감소</span>
             {% endif %}
-        </div>
-        
-        <!-- 생산 차트 -->
-        <div class="charts-row">
-            <div class="chart-container">
-                <div class="chart-title">&lt; 광공업생산 전년동분기대비 증감률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('manufacturing')">⚙</button>
-                    <div id="manufacturing-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="manufacturing-ymin" value="{{ charts.manufacturing.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="manufacturing-ymax" value="{{ charts.manufacturing.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="manufacturing-ystep" value="{{ charts.manufacturing.yAxisStep }}"></label>
-                        <button onclick="updateChart('manufacturing')">적용</button>
-                    </div>
-                    <canvas id="chart-manufacturing"></canvas>
-                </div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">&lt; 서비스업생산 전년동분기대비 증감률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('service')">⚙</button>
-                    <div id="service-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="service-ymin" value="{{ charts.service.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="service-ymax" value="{{ charts.service.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="service-ystep" value="{{ charts.service.yAxisStep }}"></label>
-                        <button onclick="updateChart('service')">적용</button>
-                    </div>
-                    <canvas id="chart-service"></canvas>
-                </div>
-            </div>
         </div>
         
         <!-- ===== 소비.건설 섹션 ===== -->
@@ -381,36 +266,6 @@
             {% endif %}
         </div>
         
-        <!-- 소비.건설 차트 -->
-        <div class="charts-row">
-            <div class="chart-container">
-                <div class="chart-title">&lt; 소매판매 전년동분기대비 증감률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('retail')">⚙</button>
-                    <div id="retail-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="retail-ymin" value="{{ charts.retail.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="retail-ymax" value="{{ charts.retail.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="retail-ystep" value="{{ charts.retail.yAxisStep }}"></label>
-                        <button onclick="updateChart('retail')">적용</button>
-                    </div>
-                    <canvas id="chart-retail"></canvas>
-                </div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">&lt; 건설수주 전년동분기대비 증감률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('construction')">⚙</button>
-                    <div id="construction-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="construction-ymin" value="{{ charts.construction.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="construction-ymax" value="{{ charts.construction.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="construction-ystep" value="{{ charts.construction.yAxisStep }}"></label>
-                        <button onclick="updateChart('construction')">적용</button>
-                    </div>
-                    <canvas id="chart-construction"></canvas>
-                </div>
-            </div>
-        </div>
-        
         <!-- ===== 수출입.물가 섹션 ===== -->
         <div class="section-title">수출입·물가</div>
         
@@ -445,36 +300,6 @@
             {% if cp_dec | length > 0 %}{{ cp_dec | map(attribute='name') | join(', ') }}({% for i in cp_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})가 하락하였으나, {% endif %}{% if cp_inc | length > 0 %}{{ cp_inc | map(attribute='name') | join(', ') }}({% for i in cp_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 올라 {% endif %}전년동분기대비 <span class="{% if export_import_price.consumer_price.direction == '상승' %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(export_import_price.consumer_price.total_growth_rate) }}% {{ export_import_price.consumer_price.direction }}</span>
         </div>
         
-        <!-- 수출입.물가 차트 -->
-        <div class="charts-row">
-            <div class="chart-container">
-                <div class="chart-title">&lt; 수출입 전년동분기대비 증감률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('exportImport')">⚙</button>
-                    <div id="exportImport-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="exportImport-ymin" value="{{ charts.export_import.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="exportImport-ymax" value="{{ charts.export_import.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="exportImport-ystep" value="{{ charts.export_import.yAxisStep }}"></label>
-                        <button onclick="updateChart('exportImport')">적용</button>
-                    </div>
-                    <canvas id="chart-exportImport"></canvas>
-                </div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">&lt; 소비자물가 전년동분기대비 등락률(%) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('consumerPrice')">⚙</button>
-                    <div id="consumerPrice-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="consumerPrice-ymin" value="{{ charts.consumer_price.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="consumerPrice-ymax" value="{{ charts.consumer_price.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="consumerPrice-ystep" value="{{ charts.consumer_price.yAxisStep }}"></label>
-                        <button onclick="updateChart('consumerPrice')">적용</button>
-                    </div>
-                    <canvas id="chart-consumerPrice"></canvas>
-                </div>
-            </div>
-        </div>
-        
         <!-- ===== 고용·인구이동 섹션 ===== -->
         <div class="section-title">고용·인구이동</div>
         
@@ -498,36 +323,6 @@
             {% else %}
                 인구는 {% if mig_in | length > 0 %}{% for g in mig_in %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유입되었으나, {% endif %}{% if mig_out | length > 0 %}{% for g in mig_out %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유출되어 {% endif %}<span class="decrease">{{ "{:,}".format(employment_migration.population_migration.net_migration | abs) }}명 순유출</span>
             {% endif %}
-        </div>
-        
-        <!-- 고용·인구이동 차트 -->
-        <div class="charts-row">
-            <div class="chart-container">
-                <div class="chart-title">&lt; 고용률 전년동분기대비 증감(%p) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('employmentRate')">⚙</button>
-                    <div id="employmentRate-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="employmentRate-ymin" value="{{ charts.employment_rate.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="employmentRate-ymax" value="{{ charts.employment_rate.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="employmentRate-ystep" value="{{ charts.employment_rate.yAxisStep }}"></label>
-                        <button onclick="updateChart('employmentRate')">적용</button>
-                    </div>
-                    <canvas id="chart-employmentRate"></canvas>
-                </div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">&lt; 인구순이동(천명) &gt;</div>
-                <div class="chart-wrapper">
-                    <button class="settings-toggle" onclick="toggleSettings('migration')">⚙</button>
-                    <div id="migration-settings" class="chart-settings">
-                        <label>Y축 최소: <input type="number" id="migration-ymin" value="{{ charts.population_migration.yAxisMin }}"></label>
-                        <label>Y축 최대: <input type="number" id="migration-ymax" value="{{ charts.population_migration.yAxisMax }}"></label>
-                        <label>Y축 간격: <input type="number" id="migration-ystep" value="{{ charts.population_migration.yAxisStep }}"></label>
-                        <button onclick="updateChart('migration')">적용</button>
-                    </div>
-                    <canvas id="chart-migration"></canvas>
-                </div>
-            </div>
         </div>
         
         <!-- ===== 주요지표 요약 테이블 ===== -->
@@ -575,135 +370,5 @@
         
         <div class="page-number">- {{ page_number | default(16) }} -</div>
     </div>
-    
-    <script>
-        // 차트 인스턴스 저장
-        const chartInstances = {};
-        
-        // 차트 데이터 (Jinja2로 주입)
-        const chartData = {
-            manufacturing: {{ charts.manufacturing | tojson }},
-            service: {{ charts.service | tojson }},
-            retail: {{ charts.retail | tojson }},
-            construction: {{ charts.construction | tojson }},
-            exportImport: {{ charts.export_import | tojson }},
-            consumerPrice: {{ charts.consumer_price | tojson }},
-            employmentRate: {{ charts.employment_rate | tojson }},
-            migration: {{ charts.population_migration | tojson }}
-        };
-        
-        // 공통 차트 옵션 생성 함수
-        function createChartOptions(chartKey, data, labels) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            boxWidth: 25,
-                            padding: 6,
-                            font: { size: 8 },
-                            usePointStyle: false
-                        }
-                    },
-                    datalabels: {
-                        display: function(context) {
-                            return context.dataIndex === context.dataset.data.length - 1;
-                        },
-                        anchor: 'end',
-                        align: 'top',
-                        font: { size: 7, weight: 'bold' },
-                        formatter: function(value) {
-                            return value.toFixed(1);
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            font: { size: 7 },
-                            maxRotation: 0,
-                            callback: function(value, index) {
-                                const label = labels[index];
-                                if (label && label.includes('1/4')) {
-                                    return label.split('.')[0];
-                                }
-                                return '';
-                            }
-                        }
-                    },
-                    y: {
-                        min: data.yAxisMin,
-                        max: data.yAxisMax,
-                        ticks: {
-                            stepSize: data.yAxisStep,
-                            font: { size: 7 }
-                        },
-                        grid: { display: false }
-                    }
-                }
-            };
-        }
-        
-        // 차트 생성 함수
-        function createChart(chartKey, canvasId, data) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const labels = data.series[0].data.map(d => d.period);
-            
-            const datasets = data.series.map((series, index) => ({
-                label: series.name,
-                data: series.data.map(d => d.value),
-                borderColor: series.color || ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][index],
-                backgroundColor: 'transparent',
-                borderWidth: 1.5,
-                pointRadius: 0,
-                pointHoverRadius: 0,
-                tension: 0,
-                borderDash: series.dashStyle === 'dash' ? [4, 4] : series.dashStyle === 'dot' ? [2, 2] : []
-            }));
-            
-            chartInstances[chartKey] = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets },
-                options: createChartOptions(chartKey, data, labels),
-                plugins: [ChartDataLabels]
-            });
-        }
-        
-        // 차트 업데이트 함수
-        function updateChart(chartKey) {
-            const yMin = parseFloat(document.getElementById(`${chartKey}-ymin`).value);
-            const yMax = parseFloat(document.getElementById(`${chartKey}-ymax`).value);
-            const yStep = parseFloat(document.getElementById(`${chartKey}-ystep`).value);
-            
-            if (chartInstances[chartKey]) {
-                chartInstances[chartKey].options.scales.y.min = yMin;
-                chartInstances[chartKey].options.scales.y.max = yMax;
-                chartInstances[chartKey].options.scales.y.ticks.stepSize = yStep;
-                chartInstances[chartKey].update();
-            }
-            toggleSettings(chartKey);
-        }
-        
-        // 설정 패널 토글
-        function toggleSettings(chartKey) {
-            const panel = document.getElementById(`${chartKey}-settings`);
-            panel.classList.toggle('visible');
-        }
-        
-        // 페이지 로드 시 차트 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            createChart('manufacturing', 'chart-manufacturing', chartData.manufacturing);
-            createChart('service', 'chart-service', chartData.service);
-            createChart('retail', 'chart-retail', chartData.retail);
-            createChart('construction', 'chart-construction', chartData.construction);
-            createChart('exportImport', 'chart-exportImport', chartData.exportImport);
-            createChart('consumerPrice', 'chart-consumerPrice', chartData.consumerPrice);
-            createChart('employmentRate', 'chart-employmentRate', chartData.employmentRate);
-            createChart('migration', 'chart-migration', chartData.migration);
-        });
-    </script>
 </body>
 </html>
