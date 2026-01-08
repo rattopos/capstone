@@ -5,13 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ⅰ. 부문별 지역경제동향 - 수출</title>
     
-    {# 결측치 플레이스홀더 매크로 #}
+    {# 결측치 N/A 출력 매크로 #}
     {% macro val(value, format="%.1f", suffix="") %}
         {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
-            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
+            <span class="na-value">N/A</span>{{ suffix }}
         {%- else -%}
             {{ format|format(value) }}{{ suffix }}
         {%- endif -%}
+    {% endmacro %}
+    
+    {# 안전한 숫자 포맷팅 매크로 #}
+    {% macro safe_num(value, format="%.1f") %}
+        {%- if value is none or value == '' or value == '-' -%}N/A{%- else -%}{{ format|format(value) }}{%- endif -%}
     {% endmacro %}
     
     <style>
@@ -235,19 +240,29 @@
         <!-- 요약 박스 -->
         <div class="summary-box">
             <div class="headline">◆ 수출은 
+                {% if summary_box.main_increase_regions %}
                 {% for region in summary_box.main_increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.products | join(', ') }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.products | join(', ') if region.products else '' }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
-                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                등 <span class="highlight">{% if summary_box.increase_count is none %}N/A{% else %}{{ summary_box.increase_count }}{% endif %}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                {% else %}
+                전년동분기대비 변동
+                {% endif %}
             </div>
-            <div class="nationwide">□ 전국 수출({{ "%.1f"|format(nationwide_data.amount) }}억달러)은 {{ nationwide_data.products | map(attribute='name') | join(', ') }} 등의 수출이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% 증가</span></div>
+            <div class="nationwide">□ 전국 수출({% if nationwide_data.amount is none %}N/A{% else %}{{ "%.1f"|format(nationwide_data.amount) }}{% endif %}억달러)은 
+                {% if nationwide_data.products %}{{ nationwide_data.products | map(attribute='name') | join(', ') }} 등의 수출이 {% if nationwide_data.change is not none and nationwide_data.change > 0 %}늘어{% else %}줄어{% endif %}{% endif %} 
+                전년동분기대비 <span class="{% if nationwide_data.change is not none and nationwide_data.change >= 0 %}increase{% else %}decrease{% endif %}">{% if nationwide_data.change is none %}N/A{% else %}{{ "%.1f"|format(nationwide_data.change|abs) }}{% endif %}% {% if nationwide_data.change is none %}{% elif nationwide_data.change >= 0 %}증가{% else %}감소{% endif %}</span></div>
             <div class="regional">○ 
+                {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ decrease_products_text }} 등의 수출이 줄어 <span class="decrease">감소</span>하였으나, 
+                <span class="highlight">{{ region.region }}</span>({{ safe_num(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {{ decrease_products_text if decrease_products_text else 'N/A' }} 등의 수출이 줄어 <span class="decrease">감소</span>하였으나, 
+                {% endif %}
+                {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ increase_products_text }} 등의 수출이 늘어 <span class="increase">증가</span>
+                <span class="highlight">{{ region.region }}</span>({{ safe_num(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {{ increase_products_text if increase_products_text else 'N/A' }} 등의 수출이 늘어 <span class="increase">증가</span>
+                {% endif %}
             </div>
         </div>
         
@@ -256,33 +271,46 @@
             <div class="title">&lt; 주요 증감지역 및 품목 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.change) }}%): 
+            <div class="item">·전 국(  {{ safe_num(nationwide_data.change) }}%): 
+                {% if nationwide_data.products %}
                 {% for prod in nationwide_data.products[:3] %}
-                {{ prod.name }}({{ "%.1f"|format(prod.change) }}%){% if not loop.last %}, {% endif %}
+                {{ prod.name if prod.name else 'N/A' }}({{ safe_num(prod.change) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}N/A
+                {% endif %}
             </div>
             
             <div class="separator"></div>
             
             <!-- 증가 지역 Top 3 -->
+            {% if top3_increase_regions %}
             {% for region in top3_increase_regions %}
-            <div class="item">·{{ region.name }}( {{ "%.1f"|format(region.change) }}%): 
+            <div class="item">·{{ region.name if region.name else (region.region if region.region else 'N/A') }}( {% if region.change is not none %}{{ safe_num(region.change) }}{% elif region.growth_rate is not none %}{{ safe_num(region.growth_rate) }}{% else %}N/A{% endif %}%): 
+                {% if region.products %}
                 {% for prod in region.products %}
                 {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}N/A
+                {% endif %}
             </div>
             {% endfor %}
+            {% endif %}
             
             <div class="separator"></div>
             
             <!-- 감소 지역 Top 3 -->
+            {% if top3_decrease_regions %}
             {% for region in top3_decrease_regions %}
-            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
+            <div class="item">·{{ region.name if region.name else (region.region if region.region else 'N/A') }}({% if region.change is not none %}{{ safe_num(region.change) }}{% elif region.growth_rate is not none %}{{ safe_num(region.growth_rate) }}{% else %}N/A{% endif %}%): 
+                {% if region.products %}
                 {% for prod in region.products %}
                 {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}N/A
+                {% endif %}
             </div>
             {% endfor %}
+            {% endif %}
         </div>
         
         <!-- 데이터 테이블 -->

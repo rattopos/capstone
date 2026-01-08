@@ -16,8 +16,7 @@ from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .grdp_service import (
     get_kosis_grdp_download_info,
-    parse_kosis_grdp_file,
-    get_default_grdp_data
+    parse_kosis_grdp_file
 )
 
 
@@ -69,6 +68,9 @@ def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
             data['report_info']['year'] = year
             data['report_info']['quarter'] = quarter
             
+            # 템플릿 호환성을 위한 기본값 추가
+            data = _ensure_template_compatibility(data, report_id)
+            
         return data
         
     except Exception as e:
@@ -76,6 +78,236 @@ def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
         print(f"[WARNING] 기초자료 직접 추출 실패 ({report_id}): {e}")
         traceback.print_exc()
         return None
+
+
+def _generate_default_summary_table(data, report_id):
+    """부문별 보도자료용 기본 summary_table 생성
+    
+    각 템플릿이 기대하는 구조에 맞게 기본값 생성
+    """
+    report_info = data.get('report_info', {})
+    year = report_info.get('year', 2025)
+    quarter = report_info.get('quarter', 2)
+    
+    # 기본 컬럼 생성
+    prev_quarters = [
+        f"{year-1}.{quarter}/4",
+        f"{year}.{quarter-3 if quarter > 3 else quarter + 1}/4",
+        f"{year}.{quarter-2 if quarter > 2 else quarter + 2}/4",
+        f"{year}.{quarter-1 if quarter > 1 else quarter + 3}/4",
+    ]
+    current_quarter = f"{year}.{quarter}/4"
+    
+    columns = {
+        'growth_rate_columns': [prev_quarters[0], prev_quarters[1], prev_quarters[2], current_quarter],
+        'index_columns': [prev_quarters[3], current_quarter],
+        # 실업률 템플릿용
+        'change_columns': [f"{year-2}.{quarter}/4", f"{year-1}.{quarter}/4", f"{year}.{quarter-1 if quarter > 1 else quarter+3}/4", current_quarter],
+        'rate_columns': [f"{year-1}.{quarter}/4", current_quarter],
+        # 인구이동 템플릿용
+        'quarter_columns': [f"{year-2}.{quarter}/4", f"{year-1}.{quarter}/4", f"{year}.{quarter-1 if quarter > 1 else quarter+3}/4", current_quarter],
+        'amount_columns': [f"{year-1}.{quarter}/4", current_quarter],
+    }
+    
+    # 지역별 데이터 생성
+    regional_data = data.get('regional_data', {})
+    all_regions = regional_data.get('all', [])
+    national_summary = data.get('national_summary', {})
+    
+    # 지역 그룹화
+    REGION_GROUPS = {
+        '수도권': ['서울', '인천', '경기'],
+        '동남권': ['부산', '울산', '경남'],
+        '대경권': ['대구', '경북'],
+        '호남권': ['광주', '전북', '전남'],
+        '충청권': ['대전', '세종', '충북', '충남'],
+        '강원제주': ['강원', '제주'],
+    }
+    
+    region_display = {
+        '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+        '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+        '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+        '경북': '경 북', '경남': '경 남', '제주': '제 주'
+    }
+    
+    regions = []
+    
+    # 전국 행 추가 (템플릿 형식: growth_rates, indices 배열)
+    national_growth_rate = national_summary.get('growth_rate', None)
+    regions.append({
+        'region': '전 국',
+        'group': None,
+        'growth_rates': [national_growth_rate, national_growth_rate, national_growth_rate, national_growth_rate],
+        'indices': [None, None],  # 원지수는 데이터에서 추출해야 함
+    })
+    
+    # 지역 그룹별 행 추가
+    region_data_map = {r.get('region'): r for r in all_regions}
+    
+    for group_name, group_regions in REGION_GROUPS.items():
+        for i, region_name in enumerate(group_regions):
+            region = region_data_map.get(region_name, {})
+            growth_rate = region.get('growth_rate', None)
+            
+            row = {
+                'region': region_display.get(region_name, region_name),
+                'growth_rates': [growth_rate, growth_rate, growth_rate, growth_rate],
+                'indices': [None, None],  # 원지수는 데이터에서 추출해야 함
+            }
+            if i == 0:
+                row['group'] = group_name
+                row['rowspan'] = len(group_regions)
+            else:
+                row['group'] = None
+            regions.append(row)
+    
+    return {
+        'base_year': 2020,
+        'columns': columns,
+        'regions': regions,
+        'rows': regions,  # 일부 템플릿은 rows를 사용
+        'title': '주요 경제지표',
+        'nationwide': {
+            'growth_rate': national_summary.get('growth_rate', None),
+            'change': national_summary.get('growth_rate', None),
+        },
+    }
+
+
+def _ensure_template_compatibility(data, report_id):
+    """기초자료에서 추출한 데이터에 템플릿 호환성을 위한 기본값 추가
+    
+    템플릿에서 사용하는 키가 없으면 기본값을 추가합니다.
+    데이터가 없는 경우 N/A로 표시할 수 있도록 None 값을 유지합니다.
+    """
+    if not data:
+        return data
+    
+    # summary_box 기본값 (부문별 템플릿용)
+    if 'summary_box' not in data:
+        regional_data = data.get('regional_data', {})
+        increase_regions = regional_data.get('increase_regions', [])
+        decrease_regions = regional_data.get('decrease_regions', [])
+        
+        data['summary_box'] = {
+            'main_increase_regions': increase_regions[:3] if increase_regions else [],
+            'main_decrease_regions': decrease_regions[:3] if decrease_regions else [],
+            'region_count': len(increase_regions),
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+            'main_items': [],  # 물가동향용
+            'headline': '',  # 인구이동용
+            'inflow_summary': '',
+            'outflow_summary': '',
+        }
+    
+    # nationwide_data 기본값 - 공통 속성
+    national_summary = data.get('national_summary', {})
+    growth_rate = national_summary.get('growth_rate', None)
+    
+    if 'nationwide_data' not in data:
+        data['nationwide_data'] = {}
+    
+    nwd = data['nationwide_data']
+    
+    # 공통 속성 (결측치는 None 유지)
+    nwd.setdefault('production_index', None)
+    nwd.setdefault('sales_index', None)
+    nwd.setdefault('index', None)
+    nwd.setdefault('growth_rate', growth_rate)
+    nwd.setdefault('change', growth_rate)
+    nwd.setdefault('employment_rate', None)
+    nwd.setdefault('rate', None)
+    nwd.setdefault('main_industries', [])
+    nwd.setdefault('main_businesses', [])
+    nwd.setdefault('main_age_groups', [])
+    nwd.setdefault('categories', [])
+    
+    # 수출/수입용 속성
+    nwd.setdefault('amount', None)
+    nwd.setdefault('increase_products', [])
+    nwd.setdefault('decrease_products', [])
+    nwd.setdefault('products', [])  # 전국 주요 품목
+    
+    # 건설동향용 속성
+    nwd.setdefault('civil_growth', None)
+    nwd.setdefault('building_growth', None)
+    nwd.setdefault('top_types', [])
+    
+    # 고용률/실업률용 속성
+    nwd.setdefault('top_age_groups', [])
+    nwd.setdefault('age_groups', [])
+    nwd.setdefault('main_age_groups', [])
+    
+    # 물가동향용 속성
+    nwd.setdefault('low_regions', [])
+    nwd.setdefault('high_regions', [])
+    
+    # summary_table 기본값 (모든 부문별에 필요)
+    if 'summary_table' not in data:
+        data['summary_table'] = _generate_default_summary_table(data, report_id)
+    
+    # 보도자료 유형별 추가 기본값
+    if report_id == 'export' or report_id == 'import':
+        # 수출/수입 전용 속성
+        if 'increase_regions' not in data:
+            data['increase_regions'] = data.get('regional_data', {}).get('increase_regions', [])
+        if 'decrease_regions' not in data:
+            data['decrease_regions'] = data.get('regional_data', {}).get('decrease_regions', [])
+        
+        # regional_data의 각 지역 항목에 'change' 속성 추가 (growth_rate 사용)
+        regional = data.get('regional_data', {})
+        for key in ['increase_regions', 'decrease_regions', 'all']:
+            if key in regional:
+                for item in regional[key]:
+                    if 'change' not in item and 'growth_rate' in item:
+                        item['change'] = item['growth_rate']
+                    if 'products' not in item:
+                        item['products'] = []
+        
+        # top3_increase_regions, top3_decrease_regions에도 적용
+        for region_list in [data.get('top3_increase_regions', []), data.get('top3_decrease_regions', [])]:
+            for item in region_list:
+                if 'change' not in item and 'growth_rate' in item:
+                    item['change'] = item['growth_rate']
+                if 'products' not in item:
+                    item['products'] = []
+    
+    if report_id == 'price':
+        # 물가동향 전용 속성
+        if 'above_regions' not in data:
+            data['above_regions'] = data.get('regional_data', {}).get('increase_regions', [])
+        if 'below_regions' not in data:
+            data['below_regions'] = data.get('regional_data', {}).get('decrease_regions', [])
+    
+    if report_id == 'population':
+        # 인구이동 전용 속성
+        if 'inflow_regions' not in data:
+            data['inflow_regions'] = data.get('regional_data', {}).get('increase_regions', [])
+        if 'outflow_regions' not in data:
+            data['outflow_regions'] = data.get('regional_data', {}).get('decrease_regions', [])
+    
+    if report_id in ('employment', 'unemployment'):
+        # 고용률/실업률 지역 데이터에 필수 속성 추가
+        regional = data.get('regional_data', {})
+        for key in ['increase_regions', 'decrease_regions', 'all']:
+            if key in regional:
+                for item in regional[key]:
+                    if 'change' not in item and 'growth_rate' in item:
+                        item['change'] = item['growth_rate']
+                    if 'age_groups' not in item:
+                        item['age_groups'] = []
+        
+        # top3_increase_regions, top3_decrease_regions에도 적용
+        for region_list in [data.get('top3_increase_regions', []), data.get('top3_decrease_regions', [])]:
+            for item in region_list:
+                if 'change' not in item and 'growth_rate' in item:
+                    item['change'] = item['growth_rate']
+                if 'age_groups' not in item:
+                    item['age_groups'] = []
+    
+    return data
 
 
 def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
@@ -171,6 +403,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             raw_data = _extract_data_from_raw(raw_excel_path, report_id, year, quarter)
             if raw_data:
                 print(f"[DEBUG] 기초자료 직접 추출 성공: {list(raw_data.keys())}")
+                # 템플릿 호환성을 위한 기본값 추가
+                raw_data = _ensure_template_compatibility(raw_data, report_id)
+                
                 # 템플릿 렌더링
                 template_path = TEMPLATES_DIR / template_name
                 if template_path.exists():
@@ -182,7 +417,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     template.globals['format_value'] = format_value
                     
                     html_content = template.render(**raw_data)
-                    missing_fields = check_missing_data(raw_data)
+                    missing_fields = check_missing_data(raw_data, report_id)
                     return html_content, None, missing_fields
         
         # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
@@ -357,19 +592,65 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         return None, error_msg, []
 
 
-def generate_regional_report_html(excel_path, region_name, is_reference=False):
-    """시도별 보도자료 HTML 생성"""
+def generate_regional_report_html(excel_path, region_name, is_reference=False, 
+                                   raw_excel_path=None, year=2025, quarter=2):
+    """시도별 보도자료 HTML 생성
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        region_name: 지역명 (예: '서울', '부산' 등)
+        is_reference: 참고_GRDP 여부
+        raw_excel_path: 기초자료 엑셀 파일 경로 (옵션)
+        year: 연도
+        quarter: 분기
+    """
     try:
         # 파일 존재 확인
         excel_path_obj = Path(excel_path)
         if not excel_path_obj.exists() or not excel_path_obj.is_file():
-            error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
-            print(f"[ERROR] {error_msg}")
-            return None, error_msg
+            # 분석표가 없으면 기초자료 경로 사용
+            if raw_excel_path and Path(raw_excel_path).exists():
+                excel_path = raw_excel_path
+            else:
+                error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
+                print(f"[ERROR] {error_msg}")
+                return None, error_msg
         
         if region_name == '참고_GRDP' or is_reference:
             return generate_grdp_reference_html(excel_path)
         
+        # 기초자료에서 직접 추출 시도
+        if raw_excel_path and Path(raw_excel_path).exists():
+            try:
+                from templates.raw_data_extractor import RawDataExtractor
+                
+                print(f"[시도별] 기초자료에서 직접 데이터 추출 시도: {region_name}")
+                extractor = RawDataExtractor(raw_excel_path, year, quarter)
+                regional_data = extractor.extract_regional_data(region_name)
+                
+                if regional_data:
+                    # 업종별 상위/하위 데이터 추가
+                    regional_data['manufacturing_industries'] = extractor.extract_regional_top_industries(
+                        region_name, '광공업생산', 3)
+                    regional_data['service_industries'] = extractor.extract_regional_top_industries(
+                        region_name, '서비스업생산', 3)
+                    
+                    # 템플릿 렌더링
+                    template_path = TEMPLATES_DIR / 'regional_template.html'
+                    if template_path.exists():
+                        with open(template_path, 'r', encoding='utf-8') as f:
+                            from jinja2 import Template
+                            template = Template(f.read())
+                        
+                        html_content = template.render(**regional_data)
+                        print(f"[시도별] 기초자료 직접 추출 성공: {region_name}")
+                        return html_content, None
+            except Exception as e:
+                import traceback
+                print(f"[시도별] 기초자료 직접 추출 실패, 분석표로 fallback: {e}")
+                traceback.print_exc()
+        
+        # 분석표에서 데이터 추출 (기존 방식)
         generator_path = TEMPLATES_DIR / 'regional_generator.py'
         if not generator_path.exists():
             return None, f"시도별 Generator를 찾을 수 없습니다"
@@ -391,6 +672,55 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
+
+
+def _generate_na_grdp_data(year, quarter):
+    """N/A GRDP 데이터 생성 (모든 값이 None - GRDP 파일이 없을 때 사용)"""
+    regions = ['전국', '서울', '인천', '경기', '대전', '세종', '충북', '충남',
+               '광주', '전북', '전남', '제주', '대구', '경북', '강원', '부산', '울산', '경남']
+    
+    region_groups = {
+        '서울': '경인', '인천': '경인', '경기': '경인',
+        '대전': '충청', '세종': '충청', '충북': '충청', '충남': '충청',
+        '광주': '호남', '전북': '호남', '전남': '호남', '제주': '호남',
+        '대구': '동북', '경북': '동북', '강원': '동북',
+        '부산': '동남', '울산': '동남', '경남': '동남'
+    }
+    
+    regional_data = []
+    for region in regions:
+        regional_data.append({
+            'region': region,
+            'region_group': region_groups.get(region, ''),
+            'growth_rate': None,  # N/A
+            'manufacturing': None,
+            'construction': None,
+            'service': None,
+            'other': None,
+            'is_na': True,
+            'placeholder': True
+        })
+    
+    return {
+        'report_info': {
+            'year': year,
+            'quarter': quarter,
+        },
+        'national_summary': {
+            'growth_rate': None,  # N/A
+            'contributions': {
+                'manufacturing': None,
+                'construction': None,
+                'service': None,
+                'other': None,
+            },
+            'is_na': True,
+            'placeholder': True
+        },
+        'regional_data': regional_data,
+        'is_na': True,
+        'needs_grdp_upload': True
+    }
 
 
 def generate_grdp_reference_html(excel_path, session_data=None):
@@ -460,9 +790,9 @@ def generate_grdp_reference_html(excel_path, session_data=None):
                 if hasattr(module, 'generate_report_data'):
                     grdp_data = module.generate_report_data(excel_path, year, quarter, use_sample=True)
         
-        # 6. 기본 데이터 사용
+        # 6. GRDP 데이터 없으면 N/A로 표시 (기본값 사용 안 함)
         if grdp_data is None:
-            grdp_data = get_default_grdp_data(year, quarter)
+            grdp_data = _generate_na_grdp_data(year, quarter)
         
         # 7. 권역 그룹 정렬 및 플래그 추가 (is_group_start, group_size)
         if 'regional_data' in grdp_data:
@@ -548,14 +878,14 @@ def _add_grdp_group_flags(regional_data):
         # 기존 데이터에서 해당 지역 찾기
         item = region_map.get(region)
         if item is None:
-            # 없으면 플레이스홀더 생성
+            # 없으면 플레이스홀더 생성 (결측치는 None으로 표시)
             item = {
                 'region': region,
-                'growth_rate': 0.0,
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0,
+                'growth_rate': None,
+                'manufacturing': None,
+                'construction': None,
+                'service': None,
+                'other': None,
                 'placeholder': True
             }
         else:

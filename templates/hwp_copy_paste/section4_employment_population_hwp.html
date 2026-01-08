@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>부문별 지역경제동향 - 고용/인구이동 - 한글 복붙용</title>
+    <style>
+        body { font-family: '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 10.5pt; line-height: 1.6; margin: 0; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        td, th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; text-align: center; }
+        .section-title { font-size: 13pt; font-weight: bold; margin: 15px 0 10px; }
+        .subsection-title { font-size: 11pt; font-weight: bold; margin: 12px 0 8px; }
+        .summary-box { border: 1px dotted #555; padding: 10px 15px; margin-bottom: 12px; }
+        .detail-box { border: 1px dotted #555; padding: 10px 15px; margin-bottom: 15px; }
+        .item { margin-bottom: 4px; padding-left: 12px; text-indent: -12px; }
+        .bold { font-weight: bold; }
+        .purple-bg { background-color: #e6e0ec; }
+        .yellow-bg { background-color: #fef9e7; }
+        .gray-bg { background-color: #f5f5f5; }
+        .table-title { text-align: center; font-weight: bold; margin: 15px 0 8px; font-size: 11pt; }
+        .footnote { font-size: 9pt; margin-top: 5px; }
+        .page-num { text-align: center; margin-top: 15px; }
+        .separator { border-top: 1px dotted #888; margin: 5px 0; }
+        .center { text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- ===== 6. 고용 동향 ===== -->
+<div class="section-title">6. 고용 동향</div>
+
+<!-- 가. 고용률 -->
+<div class="subsection-title">가. 고용률</div>
+
+<div class="summary-box">
+    <div class="item">◆ 고용률은 <span class="bold">{{고용_상승지역1}}</span>, <span class="bold">{{고용_상승지역2}}</span>, <span class="bold">{{고용_상승지역3}}</span> 등 <span class="bold">{{고용_상승개수}}개</span> 시도에서 전년동분기대비 <span class="bold">상승</span></div>
+    <div class="item">□ 전국 고용률은 <span class="bold">{{고용_전국률}}%</span>로, {{고용_상승연령대}} 등의 고용률이 올라 전년동분기대비 <span class="bold">{{고용_전국증감률}}%p 상승</span></div>
+    <div class="item">○ <span class="bold">{{고용_하락지역1}}</span>({{고용_하락율1}}%p), <span class="bold">{{고용_하락지역2}}</span>({{고용_하락율2}}%p), <span class="bold">{{고용_하락지역3}}</span>({{고용_하락율3}}%p) 등의 고용률은 <span class="bold">하락</span>하였으나, <span class="bold">{{고용_상승지역1}}</span>({{고용_상승율1}}%p), <span class="bold">{{고용_상승지역2}}</span>({{고용_상승율2}}%p), <span class="bold">{{고용_상승지역3}}</span>({{고용_상승율3}}%p) 등의 고용률은 <span class="bold">상승</span></div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
+    <div class="item">·전 국( {{고용_전국증감률}}%p): {{고용_전국연령1}}({{고용_전국연령1율}}%p), {{고용_전국연령2}}({{고용_전국연령2율}}%p), {{고용_전국연령3}}({{고용_전국연령3율}}%p)</div>
+    <div class="separator"></div>
+    <div class="item">·{{고용_상위1지역}}( {{고용_상위1율}}%p): {{고용_상위1연령}}</div>
+    <div class="item">·{{고용_상위2지역}}( {{고용_상위2율}}%p): {{고용_상위2연령}}</div>
+    <div class="item">·{{고용_상위3지역}}( {{고용_상위3율}}%p): {{고용_상위3연령}}</div>
+    <div class="separator"></div>
+    <div class="item">·{{고용_하위1지역}}({{고용_하위1율}}%p): {{고용_하위1연령}}</div>
+    <div class="item">·{{고용_하위2지역}}({{고용_하위2율}}%p): {{고용_하위2연령}}</div>
+    <div class="item">·{{고용_하위3지역}}({{고용_하위3율}}%p): {{고용_하위3연령}}</div>
+</div>
+
+<!-- 고용률 및 증감 표 -->
+<div class="table-title">《 고용률<sup>1)</sup> 및 증감 》</div>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2"></th>
+            <th class="purple-bg" colspan="4">전년동분기대비 증감(%p)</th>
+            <th class="purple-bg" colspan="3">고용률(%)</th>
+        </tr>
+        <tr>
+            <th class="purple-bg">{{년도_2분기전}}</th>
+            <th class="purple-bg">{{년도_1분기전}}</th>
+            <th class="purple-bg">{{년도_직전분기}}</th>
+            <th class="purple-bg">{{년도_현재분기}}</th>
+            <th class="purple-bg">{{년도_1분기전}}</th>
+            <th class="purple-bg">{{년도_현재분기}}</th>
+            <th class="purple-bg">20-29세</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="gray-bg" colspan="2">전 국</td><td>{{고용전국_2분기전}}</td><td>{{고용전국_1분기전}}</td><td>{{고용전국_직전분기}}</td><td>{{고용전국_현재분기}}</td><td class="yellow-bg">{{고용전국_율1}}</td><td class="yellow-bg">{{고용전국_율2}}</td><td class="yellow-bg">{{고용전국_2029}}</td></tr>
+        <!-- 이하 17개 시도 동일 구조 -->
+    </tbody>
+</table>
+<div class="footnote">1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100<br>자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사</div>
+
+<div class="page-num">- 13 -</div>
+
+<br><br>
+
+<!-- 나. 실업률 -->
+<div class="subsection-title">나. 실업률</div>
+
+<div class="summary-box">
+    <div class="item">◆ 실업률은 <span class="bold">{{실업_하락지역1}}</span>, <span class="bold">{{실업_하락지역2}}</span>, <span class="bold">{{실업_하락지역3}}</span> 등 <span class="bold">{{실업_하락개수}}개</span> 시도에서 전년동분기대비 <span class="bold">하락</span></div>
+    <div class="item">□ 전국 실업률은 <span class="bold">{{실업_전국률}}%</span>로, {{실업_하락연령대}} 연령대에서 실업률이 내려 전년동분기대비 <span class="bold">{{실업_전국증감률}}%p 하락</span></div>
+    <div class="item">○ <span class="bold">{{실업_상승지역1}}</span>({{실업_상승율1}}%p), <span class="bold">{{실업_상승지역2}}</span>({{실업_상승율2}}%p), <span class="bold">{{실업_상승지역3}}</span>({{실업_상승율3}}%p) 등의 실업률은 <span class="bold">상승</span>하였으나, <span class="bold">{{실업_하락지역1}}</span>({{실업_하락율1}}%p), <span class="bold">{{실업_하락지역2}}</span>({{실업_하락율2}}%p), <span class="bold">{{실업_하락지역3}}</span>({{실업_하락율3}}%p) 등의 실업률은 <span class="bold">하락</span></div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 등락지역 및 연령별 실업률 &gt;</div>
+    <div class="item">·전 국( {{실업_전국증감률}}%p): {{실업_전국연령1}}({{실업_전국연령1율}}%p), {{실업_전국연령2}}({{실업_전국연령2율}}%p)</div>
+    <div class="separator"></div>
+    <div class="item">·{{실업_상위1지역}}( {{실업_상위1율}}%p): {{실업_상위1연령}}</div>
+    <div class="item">·{{실업_상위2지역}}( {{실업_상위2율}}%p): {{실업_상위2연령}}</div>
+    <div class="item">·{{실업_상위3지역}}( {{실업_상위3율}}%p): {{실업_상위3연령}}</div>
+    <div class="separator"></div>
+    <div class="item">·{{실업_하위1지역}}({{실업_하위1율}}%p): {{실업_하위1연령}}</div>
+    <div class="item">·{{실업_하위2지역}}({{실업_하위2율}}%p): {{실업_하위2연령}}</div>
+    <div class="item">·{{실업_하위3지역}}({{실업_하위3율}}%p): {{실업_하위3연령}}</div>
+</div>
+
+<!-- 실업률 및 증감 표 -->
+<div class="table-title">《 실업률<sup>1)</sup> 및 증감 》</div>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2"></th>
+            <th class="purple-bg" colspan="4">전년동분기대비 증감(%p)</th>
+            <th class="purple-bg" colspan="3">실업률(%)</th>
+        </tr>
+        <tr>
+            <th class="purple-bg">{{년도_2분기전}}</th>
+            <th class="purple-bg">{{년도_1분기전}}</th>
+            <th class="purple-bg">{{년도_직전분기}}</th>
+            <th class="purple-bg">{{년도_현재분기}}</th>
+            <th class="purple-bg">{{년도_1분기전}}</th>
+            <th class="purple-bg">{{년도_현재분기}}</th>
+            <th class="purple-bg">15-29세</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="gray-bg" colspan="2">전 국</td><td>{{실업전국_2분기전}}</td><td>{{실업전국_1분기전}}</td><td>{{실업전국_직전분기}}</td><td>{{실업전국_현재분기}}</td><td class="yellow-bg">{{실업전국_율1}}</td><td class="yellow-bg">{{실업전국_율2}}</td><td class="yellow-bg">{{실업전국_1529}}</td></tr>
+        <!-- 이하 17개 시도 동일 구조 -->
+    </tbody>
+</table>
+<div class="footnote">1) 실업률(%) = (실업자수 ÷ 경제활동인구) × 100<br>자료: 국가데이터처 국가통계포털(KOSIS), 경제활동인구조사</div>
+
+<div class="page-num">- 14 -</div>
+
+<br><br>
+
+<!-- ===== 7. 국내 인구이동 ===== -->
+<div class="section-title">7. 국내 인구이동</div>
+
+<div class="summary-box">
+    <div class="item">◆ 국내 인구이동은 <span class="bold">{{인구_유입지역1}}</span>, <span class="bold">{{인구_유입지역2}}</span> 등 <span class="bold">{{인구_유입개수}}개</span> 시도 인구 <span class="bold">순유입</span>, <span class="bold">{{인구_유출지역1}}</span>, <span class="bold">{{인구_유출지역2}}</span> 등 <span class="bold">{{인구_유출개수}}개</span> 시도 인구 <span class="bold">순유출</span></div>
+    <div class="item">□ 국내 인구 <span class="bold">순유입지역</span>은 <span class="bold">{{인구_순유입1}}</span>({{인구_순유입1명}}명), <span class="bold">{{인구_순유입2}}</span>({{인구_순유입2명}}명), <span class="bold">{{인구_순유입3}}</span>({{인구_순유입3명}}명) 등 {{인구_유입개수}}개 시도임</div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 유입지역 및 연령별 유입인구 &gt;</div>
+    <div class="item">·{{인구_유입상위1지역}}( {{인구_유입상위1명}}명): {{인구_유입상위1연령}}</div>
+    <div class="item">·{{인구_유입상위2지역}}( {{인구_유입상위2명}}명): {{인구_유입상위2연령}}</div>
+    <div class="item">·{{인구_유입상위3지역}}( {{인구_유입상위3명}}명): {{인구_유입상위3연령}}</div>
+</div>
+
+<div class="summary-box">
+    <div class="item">□ 국내 인구 <span class="bold">순유출지역</span>은 <span class="bold">{{인구_순유출1}}</span>({{인구_순유출1명}}명), <span class="bold">{{인구_순유출2}}</span>({{인구_순유출2명}}명), <span class="bold">{{인구_순유출3}}</span>({{인구_순유출3명}}명) 등 {{인구_유출개수}}개 시도임</div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 유출지역 및 연령별 유출인구 &gt;</div>
+    <div class="item">·{{인구_유출상위1지역}}({{인구_유출상위1명}}명): {{인구_유출상위1연령}}</div>
+    <div class="item">·{{인구_유출상위2지역}}( {{인구_유출상위2명}}명): {{인구_유출상위2연령}}</div>
+    <div class="item">·{{인구_유출상위3지역}}( {{인구_유출상위3명}}명): {{인구_유출상위3연령}}</div>
+</div>
+
+<!-- 국내 인구 순이동 표 -->
+<div class="table-title">《 국내 인구 순이동<sup>1)</sup> 》</div>
+<p style="text-align: right; font-size: 9pt;">[천명]</p>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2"></th>
+            <th class="purple-bg" colspan="4">순이동</th>
+            <th class="purple-bg" colspan="2">연령별</th>
+        </tr>
+        <tr>
+            <th class="purple-bg">{{년도_2분기전}}</th>
+            <th class="purple-bg">{{년도_1분기전}}</th>
+            <th class="purple-bg">{{년도_직전분기}}</th>
+            <th class="purple-bg">{{년도_현재분기}}</th>
+            <th class="purple-bg">20-29세</th>
+            <th class="purple-bg">그 외<sup>2)</sup></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="gray-bg" rowspan="3">경인</td><td>서 울</td><td>{{인구서울_2분기전}}</td><td>{{인구서울_1분기전}}</td><td>{{인구서울_직전분기}}</td><td>{{인구서울_현재분기}}</td><td class="yellow-bg">{{인구서울_2029}}</td><td class="yellow-bg">{{인구서울_기타}}</td></tr>
+        <tr><td>인 천</td><td>{{인구인천_2분기전}}</td><td>{{인구인천_1분기전}}</td><td>{{인구인천_직전분기}}</td><td>{{인구인천_현재분기}}</td><td class="yellow-bg">{{인구인천_2029}}</td><td class="yellow-bg">{{인구인천_기타}}</td></tr>
+        <tr><td>경 기</td><td>{{인구경기_2분기전}}</td><td>{{인구경기_1분기전}}</td><td>{{인구경기_직전분기}}</td><td>{{인구경기_현재분기}}</td><td class="yellow-bg">{{인구경기_2029}}</td><td class="yellow-bg">{{인구경기_기타}}</td></tr>
+        <!-- 이하 충청, 호남, 동북, 동남 동일 구조 -->
+    </tbody>
+</table>
+<div class="footnote">1) 순이동 = 전입자 수 - 전출자 수 (전국 순이동 = 0)<br>2) 그 외: 0~19세 및 30세 이상 연령층<br>자료: 국가데이터처 국가통계포털(KOSIS), 국내인구이동통계</div>
+
+<div class="page-num">- 15 -</div>
+
+</body>
+</html>
+

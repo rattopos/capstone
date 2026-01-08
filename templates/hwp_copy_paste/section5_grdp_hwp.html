@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>참고 GRDP - 한글 복붙용</title>
+    <style>
+        body { font-family: '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 10.5pt; line-height: 1.6; margin: 0; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        td, th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; text-align: center; }
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .section-title .highlight {
+            background-color: #ffc107;
+            padding: 2px 8px;
+            margin-right: 10px;
+        }
+        .summary-box { border: 1px solid #000; padding: 10px 15px; margin-bottom: 15px; }
+        .item { margin-bottom: 6px; padding-left: 20px; text-indent: -20px; }
+        .bold { font-weight: bold; }
+        .purple-bg { background-color: #e6e0ec; }
+        .yellow-bg { background-color: #fef9e7; }
+        .gray-bg { background-color: #f5f5f5; }
+        .table-title { text-align: center; font-weight: bold; margin: 15px 0 8px; font-size: 11pt; }
+        .footnote { font-size: 9pt; margin-top: 5px; }
+        .page-num { text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<!-- ========== 참고: 분기 GRDP ========== -->
+<div class="section-title"><span class="highlight">참고</span> {{연도}}년 {{분기}}/4분기 실질 지역내총생산(GRDP)</div>
+
+<div class="summary-box">
+    <div class="item">□ 전국 GRDP는 전년동분기대비 {{GRDP_전국증감률}}% 증가하였으며, 산업별 기여도는 서비스업({{GRDP_서비스업기여도}}%p), 광·제조업({{GRDP_제조업기여도}}%p), 기타({{GRDP_기타기여도}}%p), 건설업({{GRDP_건설업기여도}}%p) 순임</div>
+    <div class="item">○ 17개 시도 중 <span class="bold">{{GRDP_최고지역}}</span>의 성장률({{GRDP_최고율}}%)이 가장 높고, 산업별 기여도는 광·제조업({{GRDP_최고제조업}}%p), 서비스업({{GRDP_최고서비스업}}%p), 기타({{GRDP_최고기타}}%p), 건설업({{GRDP_최고건설업}}%p) 순임</div>
+</div>
+
+<!-- 시도별 전년동기비 성장률 및 기여도 표 -->
+<div class="table-title">&lt; 시도별 전년동기비 성장률 및 기여도 &gt;</div>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2"></th>
+            <th class="purple-bg" rowspan="2">성장률(%)</th>
+            <th class="purple-bg" colspan="4">기여도(%p)</th>
+        </tr>
+        <tr>
+            <th class="purple-bg">광업, 제조업</th>
+            <th class="purple-bg">건설업</th>
+            <th class="purple-bg">서비스업</th>
+            <th class="purple-bg">기타</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="gray-bg" colspan="2">전 국</td>
+            <td>{{GRDP전국_성장률}}</td>
+            <td>{{GRDP전국_제조업}}</td>
+            <td>{{GRDP전국_건설업}}</td>
+            <td>{{GRDP전국_서비스업}}</td>
+            <td>{{GRDP전국_기타}}</td>
+        </tr>
+        <tr>
+            <td class="gray-bg" rowspan="3">경인</td>
+            <td>서 울</td>
+            <td>{{GRDP서울_성장률}}</td>
+            <td>{{GRDP서울_제조업}}</td>
+            <td>{{GRDP서울_건설업}}</td>
+            <td>{{GRDP서울_서비스업}}</td>
+            <td>{{GRDP서울_기타}}</td>
+        </tr>
+        <tr>
+            <td>인 천</td>
+            <td>{{GRDP인천_성장률}}</td>
+            <td>{{GRDP인천_제조업}}</td>
+            <td>{{GRDP인천_건설업}}</td>
+            <td>{{GRDP인천_서비스업}}</td>
+            <td>{{GRDP인천_기타}}</td>
+        </tr>
+        <tr>
+            <td>경 기</td>
+            <td>{{GRDP경기_성장률}}</td>
+            <td>{{GRDP경기_제조업}}</td>
+            <td>{{GRDP경기_건설업}}</td>
+            <td>{{GRDP경기_서비스업}}</td>
+            <td>{{GRDP경기_기타}}</td>
+        </tr>
+        <tr>
+            <td class="gray-bg" rowspan="4">충청</td>
+            <td>대 전</td>
+            <td>{{GRDP대전_성장률}}</td>
+            <td>{{GRDP대전_제조업}}</td>
+            <td>{{GRDP대전_건설업}}</td>
+            <td>{{GRDP대전_서비스업}}</td>
+            <td>{{GRDP대전_기타}}</td>
+        </tr>
+        <tr>
+            <td>세 종</td>
+            <td>{{GRDP세종_성장률}}</td>
+            <td>{{GRDP세종_제조업}}</td>
+            <td>{{GRDP세종_건설업}}</td>
+            <td>{{GRDP세종_서비스업}}</td>
+            <td>{{GRDP세종_기타}}</td>
+        </tr>
+        <tr>
+            <td>충 북</td>
+            <td>{{GRDP충북_성장률}}</td>
+            <td>{{GRDP충북_제조업}}</td>
+            <td>{{GRDP충북_건설업}}</td>
+            <td>{{GRDP충북_서비스업}}</td>
+            <td>{{GRDP충북_기타}}</td>
+        </tr>
+        <tr>
+            <td>충 남</td>
+            <td>{{GRDP충남_성장률}}</td>
+            <td>{{GRDP충남_제조업}}</td>
+            <td>{{GRDP충남_건설업}}</td>
+            <td>{{GRDP충남_서비스업}}</td>
+            <td>{{GRDP충남_기타}}</td>
+        </tr>
+        <tr>
+            <td class="gray-bg" rowspan="4">호남</td>
+            <td>광 주</td>
+            <td>{{GRDP광주_성장률}}</td>
+            <td>{{GRDP광주_제조업}}</td>
+            <td>{{GRDP광주_건설업}}</td>
+            <td>{{GRDP광주_서비스업}}</td>
+            <td>{{GRDP광주_기타}}</td>
+        </tr>
+        <tr>
+            <td>전 북</td>
+            <td>{{GRDP전북_성장률}}</td>
+            <td>{{GRDP전북_제조업}}</td>
+            <td>{{GRDP전북_건설업}}</td>
+            <td>{{GRDP전북_서비스업}}</td>
+            <td>{{GRDP전북_기타}}</td>
+        </tr>
+        <tr>
+            <td>전 남</td>
+            <td>{{GRDP전남_성장률}}</td>
+            <td>{{GRDP전남_제조업}}</td>
+            <td>{{GRDP전남_건설업}}</td>
+            <td>{{GRDP전남_서비스업}}</td>
+            <td>{{GRDP전남_기타}}</td>
+        </tr>
+        <tr>
+            <td>제 주</td>
+            <td>{{GRDP제주_성장률}}</td>
+            <td>{{GRDP제주_제조업}}</td>
+            <td>{{GRDP제주_건설업}}</td>
+            <td>{{GRDP제주_서비스업}}</td>
+            <td>{{GRDP제주_기타}}</td>
+        </tr>
+        <tr>
+            <td class="gray-bg" rowspan="3">동북</td>
+            <td>대 구</td>
+            <td>{{GRDP대구_성장률}}</td>
+            <td>{{GRDP대구_제조업}}</td>
+            <td>{{GRDP대구_건설업}}</td>
+            <td>{{GRDP대구_서비스업}}</td>
+            <td>{{GRDP대구_기타}}</td>
+        </tr>
+        <tr>
+            <td>경 북</td>
+            <td>{{GRDP경북_성장률}}</td>
+            <td>{{GRDP경북_제조업}}</td>
+            <td>{{GRDP경북_건설업}}</td>
+            <td>{{GRDP경북_서비스업}}</td>
+            <td>{{GRDP경북_기타}}</td>
+        </tr>
+        <tr>
+            <td>강 원</td>
+            <td>{{GRDP강원_성장률}}</td>
+            <td>{{GRDP강원_제조업}}</td>
+            <td>{{GRDP강원_건설업}}</td>
+            <td>{{GRDP강원_서비스업}}</td>
+            <td>{{GRDP강원_기타}}</td>
+        </tr>
+        <tr>
+            <td class="gray-bg" rowspan="3">동남</td>
+            <td>부 산</td>
+            <td>{{GRDP부산_성장률}}</td>
+            <td>{{GRDP부산_제조업}}</td>
+            <td>{{GRDP부산_건설업}}</td>
+            <td>{{GRDP부산_서비스업}}</td>
+            <td>{{GRDP부산_기타}}</td>
+        </tr>
+        <tr>
+            <td>울 산</td>
+            <td>{{GRDP울산_성장률}}</td>
+            <td>{{GRDP울산_제조업}}</td>
+            <td>{{GRDP울산_건설업}}</td>
+            <td>{{GRDP울산_서비스업}}</td>
+            <td>{{GRDP울산_기타}}</td>
+        </tr>
+        <tr>
+            <td>경 남</td>
+            <td>{{GRDP경남_성장률}}</td>
+            <td>{{GRDP경남_제조업}}</td>
+            <td>{{GRDP경남_건설업}}</td>
+            <td>{{GRDP경남_서비스업}}</td>
+            <td>{{GRDP경남_기타}}</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="footnote">* 기타: 농림어업, 전기·가스업, 순생산물세</div>
+
+<div class="page-num">- 20 -</div>
+
+</body>
+</html>
+

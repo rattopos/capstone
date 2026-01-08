@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보도자료 생성 시스템 효과 평가 설문</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            background: #f0f4f8;
+        }
+        
+        .survey-container {
+            max-width: 210mm;
+            margin: 20px auto;
+            padding: 15mm 20mm;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* 헤더 */
+        .survey-header {
+            text-align: center;
+            border-bottom: 3px double #1a365d;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .survey-header h1 {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .survey-header .subtitle {
+            font-size: 12pt;
+            color: #4a5568;
+            font-weight: 400;
+        }
+        
+        /* 안내문 */
+        .survey-intro {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+        }
+        
+        .survey-intro h3 {
+            font-size: 11pt;
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .survey-intro h3::before {
+            content: "📋";
+        }
+        
+        .survey-intro p {
+            font-size: 10pt;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .survey-intro ul {
+            font-size: 10pt;
+            color: #4a5568;
+            margin-left: 20px;
+        }
+        
+        .survey-intro ul li {
+            margin-bottom: 4px;
+        }
+        
+        /* 응답자 정보 */
+        .respondent-info {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+        }
+        
+        .respondent-info h3 {
+            font-size: 11pt;
+            color: #1a365d;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-item label {
+            font-size: 10pt;
+            color: #4a5568;
+            min-width: 90px;
+        }
+        
+        .info-item input {
+            flex: 1;
+            border: none;
+            border-bottom: 1px solid #a0aec0;
+            padding: 4px 8px;
+            font-size: 10pt;
+            min-width: 120px;
+            background: transparent;
+            font-family: inherit;
+        }
+        
+        .info-item input:focus {
+            outline: none;
+            border-bottom-color: #3182ce;
+        }
+        
+        /* 섹션 */
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #1a365d;
+            background: linear-gradient(to right, #edf2f7, transparent);
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3182ce;
+        }
+        
+        /* 평가 척도 안내 */
+        .scale-guide {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            border-radius: 4px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+        
+        .scale-guide strong {
+            color: #2b6cb0;
+        }
+        
+        .scale-items {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 9pt;
+            color: #4a5568;
+        }
+        
+        .scale-items span {
+            text-align: center;
+            flex: 1;
+        }
+        
+        /* 질문 테이블 */
+        .question-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .question-table th {
+            background: #2d3748;
+            color: white;
+            font-weight: 500;
+            padding: 10px 8px;
+            font-size: 10pt;
+            text-align: center;
+            border: 1px solid #1a202c;
+        }
+        
+        .question-table th:first-child {
+            text-align: left;
+            width: 50%;
+        }
+        
+        .question-table th.score {
+            width: 10%;
+        }
+        
+        .question-table td {
+            padding: 12px 8px;
+            border: 1px solid #cbd5e0;
+            font-size: 10pt;
+            vertical-align: middle;
+        }
+        
+        .question-table td:first-child {
+            text-align: left;
+        }
+        
+        .question-table td:not(:first-child) {
+            text-align: center;
+        }
+        
+        .question-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        
+        .question-table tr:hover {
+            background: #edf2f7;
+        }
+        
+        .question-num {
+            display: inline-block;
+            background: #3182ce;
+            color: white;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 9pt;
+            margin-right: 8px;
+        }
+        
+        .radio-check {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #a0aec0;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .radio-check:hover {
+            border-color: #3182ce;
+        }
+        
+        .radio-check.checked {
+            border-color: #3182ce;
+            background: #3182ce;
+        }
+        
+        .radio-check.checked::after {
+            content: "✓";
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* 서술형 질문 */
+        .open-question {
+            margin-bottom: 20px;
+        }
+        
+        .open-question .question-text {
+            font-size: 10pt;
+            color: #2d3748;
+            margin-bottom: 10px;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .open-question .question-text::before {
+            content: attr(data-num);
+            position: absolute;
+            left: 0;
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 9pt;
+        }
+        
+        .answer-box {
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            min-height: 80px;
+            padding: 10px;
+            font-size: 10pt;
+            font-family: inherit;
+            width: 100%;
+            resize: vertical;
+        }
+        
+        .answer-box:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+        
+        /* 버튼 영역 */
+        .button-area {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            font-size: 11pt;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2c5282;
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+        
+        .btn-reset {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #4a5568;
+        }
+        
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        
+        /* 완료 상태 표시 */
+        .completion-status {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 10pt;
+        }
+        
+        .completion-status.incomplete {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .completion-status.complete {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        
+        /* 푸터 */
+        .survey-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .survey-footer p {
+            font-size: 10pt;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .survey-footer .org-name {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #1a365d;
+        }
+        
+        /* 인쇄 스타일 */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background: white;
+            }
+            
+            .survey-container {
+                padding: 10mm 15mm;
+                box-shadow: none;
+                margin: 0;
+            }
+            
+            .button-area {
+                display: none;
+            }
+            
+            .completion-status {
+                display: none;
+            }
+            
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+        }
+        
+        /* 알림 토스트 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: #2d3748;
+            color: white;
+            border-radius: 8px;
+            font-size: 10pt;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast.success {
+            background: #38a169;
+        }
+        
+        .toast.error {
+            background: #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <!-- 헤더 -->
+        <header class="survey-header">
+            <h1>지역경제동향 보도자료 생성 시스템</h1>
+            <p class="subtitle">업무 효과 및 만족도 평가 설문</p>
+        </header>
+        
+        <!-- 안내문 -->
+        <div class="survey-intro">
+            <h3>설문 안내</h3>
+            <p>
+                본 설문은 <strong>「지역경제동향 보도자료 생성 시스템」</strong>의 도입 효과를 평가하고, 
+                향후 시스템 개선에 반영하기 위해 실시합니다.
+            </p>
+            <ul>
+                <li>소요 시간: 약 5~10분</li>
+                <li>응답 내용은 통계 목적으로만 활용되며, 개인정보는 수집하지 않습니다.</li>
+                <li>각 문항에 대해 솔직하게 응답해 주시기 바랍니다.</li>
+                <li><strong>응답 완료 후 [응답 저장] 버튼을 클릭하여 파일을 저장해 주세요.</strong></li>
+            </ul>
+        </div>
+        
+        <!-- 완료 상태 -->
+        <div id="completionStatus" class="completion-status incomplete">
+            ⚠️ 응답하지 않은 문항이 있습니다. (0/22 완료)
+        </div>
+        
+        <!-- 응답자 정보 -->
+        <div class="respondent-info">
+            <h3>Ⅰ. 응답자 정보 (선택사항)</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>소속 부서</label>
+                    <input type="text" id="info_dept" placeholder="예: 지역통계과">
+                </div>
+                <div class="info-item">
+                    <label>직급</label>
+                    <input type="text" id="info_position" placeholder="예: 주무관">
+                </div>
+                <div class="info-item">
+                    <label>시스템 사용 횟수</label>
+                    <input type="number" id="info_usage" min="1" placeholder="예: 3">
+                </div>
+                <div class="info-item">
+                    <label>작성일</label>
+                    <input type="date" id="info_date">
+                </div>
+            </div>
+        </div>
+        
+        <!-- 섹션 1: 시간 절감 효과 -->
+        <section class="section">
+            <h2 class="section-title">Ⅱ. 시간 절감 효과</h2>
+            
+            <div class="scale-guide">
+                <strong>※ 평가 척도 안내</strong>
+                <div class="scale-items">
+                    <span>① 전혀<br>그렇지 않다</span>
+                    <span>② 그렇지<br>않다</span>
+                    <span>③ 보통<br>이다</span>
+                    <span>④ 그렇다</span>
+                    <span>⑤ 매우<br>그렇다</span>
+                </div>
+            </div>
+            
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th>평가 항목</th>
+                        <th class="score">①</th>
+                        <th class="score">②</th>
+                        <th class="score">③</th>
+                        <th class="score">④</th>
+                        <th class="score">⑤</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-question="q1">
+                        <td><span class="question-num">1</span>시스템 사용 후 보도자료 초안 작성 시간이 단축되었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q2">
+                        <td><span class="question-num">2</span>데이터 입력 및 정리에 소요되는 시간이 줄었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q3">
+                        <td><span class="question-num">3</span>반복적인 복사-붙여넣기 작업이 감소하였다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q4">
+                        <td><span class="question-num">4</span>절약된 시간을 데이터 해석 및 분석에 활용할 수 있게 되었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- 섹션 2: 업무 피로도 감소 -->
+        <section class="section">
+            <h2 class="section-title">Ⅲ. 업무 피로도 감소</h2>
+            
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th>평가 항목</th>
+                        <th class="score">①</th>
+                        <th class="score">②</th>
+                        <th class="score">③</th>
+                        <th class="score">④</th>
+                        <th class="score">⑤</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-question="q5">
+                        <td><span class="question-num">5</span>단순 반복 작업으로 인한 정신적 피로가 줄었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q6">
+                        <td><span class="question-num">6</span>수동 타이핑으로 인한 신체적 피로(손목, 눈 등)가 감소하였다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q7">
+                        <td><span class="question-num">7</span>데이터 입력 실수에 대한 긴장감과 스트레스가 줄었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q8">
+                        <td><span class="question-num">8</span>야근 또는 추가 근무 필요성이 감소하였다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q9">
+                        <td><span class="question-num">9</span>보도자료 작성 업무에 대한 부담감이 줄었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- 섹션 3: 업무 품질 향상 -->
+        <section class="section">
+            <h2 class="section-title">Ⅳ. 업무 품질 향상</h2>
+            
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th>평가 항목</th>
+                        <th class="score">①</th>
+                        <th class="score">②</th>
+                        <th class="score">③</th>
+                        <th class="score">④</th>
+                        <th class="score">⑤</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-question="q10">
+                        <td><span class="question-num">10</span>데이터 입력 오류가 감소하였다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q11">
+                        <td><span class="question-num">11</span>보도자료의 형식 일관성이 향상되었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q12">
+                        <td><span class="question-num">12</span>더 깊이 있는 데이터 분석과 해석이 가능해졌다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q13">
+                        <td><span class="question-num">13</span>보도자료 품질에 대한 자신감이 높아졌다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- 섹션 4: 시스템 사용성 -->
+        <section class="section">
+            <h2 class="section-title">Ⅴ. 시스템 사용성</h2>
+            
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th>평가 항목</th>
+                        <th class="score">①</th>
+                        <th class="score">②</th>
+                        <th class="score">③</th>
+                        <th class="score">④</th>
+                        <th class="score">⑤</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-question="q14">
+                        <td><span class="question-num">14</span>시스템 조작 방법을 쉽게 익힐 수 있었다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q15">
+                        <td><span class="question-num">15</span>파일 업로드 및 보도자료 생성 과정이 직관적이다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q16">
+                        <td><span class="question-num">16</span>결측치 처리 기능이 유용하다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q17">
+                        <td><span class="question-num">17</span>미리보기 기능이 검토 작업에 도움이 된다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q18">
+                        <td><span class="question-num">18</span>생성된 결과물을 한글(HWP)에 옮기기 편리하다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- 섹션 5: 전반적 만족도 -->
+        <section class="section">
+            <h2 class="section-title">Ⅵ. 전반적 만족도</h2>
+            
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th>평가 항목</th>
+                        <th class="score">①</th>
+                        <th class="score">②</th>
+                        <th class="score">③</th>
+                        <th class="score">④</th>
+                        <th class="score">⑤</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-question="q19">
+                        <td><span class="question-num">19</span>전반적으로 시스템 도입에 만족한다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q20">
+                        <td><span class="question-num">20</span>이 시스템을 다른 업무 담당자에게 추천하고 싶다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q21">
+                        <td><span class="question-num">21</span>시스템 도입 전보다 업무 만족도가 높아졌다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                    <tr data-question="q22">
+                        <td><span class="question-num">22</span>유사한 업무에도 이러한 자동화 시스템이 도입되면 좋겠다.</td>
+                        <td><span class="radio-check" data-value="1"></span></td>
+                        <td><span class="radio-check" data-value="2"></span></td>
+                        <td><span class="radio-check" data-value="3"></span></td>
+                        <td><span class="radio-check" data-value="4"></span></td>
+                        <td><span class="radio-check" data-value="5"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- 섹션 6: 서술형 질문 -->
+        <section class="section">
+            <h2 class="section-title">Ⅶ. 의견 및 제언 (서술형)</h2>
+            
+            <div class="open-question">
+                <p class="question-text" data-num="23">시스템 사용 후 가장 크게 개선되었다고 느끼는 점은 무엇입니까?</p>
+                <textarea class="answer-box" id="q23" placeholder="자유롭게 작성해 주세요"></textarea>
+            </div>
+            
+            <div class="open-question">
+                <p class="question-text" data-num="24">시스템에서 불편하거나 개선이 필요하다고 생각되는 점이 있다면 작성해 주세요.</p>
+                <textarea class="answer-box" id="q24" placeholder="자유롭게 작성해 주세요"></textarea>
+            </div>
+            
+            <div class="open-question">
+                <p class="question-text" data-num="25">추가되었으면 하는 기능이나 기타 의견이 있으시면 작성해 주세요.</p>
+                <textarea class="answer-box" id="q25" placeholder="자유롭게 작성해 주세요"></textarea>
+            </div>
+        </section>
+        
+        <!-- 버튼 영역 -->
+        <div class="button-area">
+            <button class="btn btn-primary" id="btnSave" onclick="saveResponse()">
+                📥 응답 저장 (CSV)
+            </button>
+            <button class="btn btn-reset" onclick="resetForm()">
+                🔄 초기화
+            </button>
+        </div>
+        
+        <!-- 푸터 -->
+        <footer class="survey-footer">
+            <p>설문에 응해 주셔서 감사합니다.</p>
+            <p>귀하의 소중한 의견은 시스템 개선에 적극 반영하겠습니다.</p>
+            <p class="org-name">국가데이터처 지역통계과</p>
+        </footer>
+    </div>
+    
+    <!-- 토스트 -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // 응답 데이터 저장소
+        const responses = {};
+        const TOTAL_QUESTIONS = 22;
+        
+        // 오늘 날짜 설정
+        document.getElementById('info_date').valueAsDate = new Date();
+        
+        // 라디오 버튼 클릭 이벤트
+        document.querySelectorAll('.radio-check').forEach(radio => {
+            radio.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const questionId = row.dataset.question;
+                const value = parseInt(this.dataset.value);
+                
+                // 같은 행의 다른 체크 해제
+                row.querySelectorAll('.radio-check').forEach(r => r.classList.remove('checked'));
+                this.classList.add('checked');
+                
+                // 응답 저장
+                responses[questionId] = value;
+                updateCompletionStatus();
+            });
+        });
+        
+        // 완료 상태 업데이트
+        function updateCompletionStatus() {
+            const answered = Object.keys(responses).length;
+            const statusEl = document.getElementById('completionStatus');
+            
+            if (answered >= TOTAL_QUESTIONS) {
+                statusEl.className = 'completion-status complete';
+                statusEl.innerHTML = `✅ 모든 문항 응답 완료! (${answered}/${TOTAL_QUESTIONS})`;
+            } else {
+                statusEl.className = 'completion-status incomplete';
+                statusEl.innerHTML = `⚠️ 응답하지 않은 문항이 있습니다. (${answered}/${TOTAL_QUESTIONS} 완료)`;
+            }
+        }
+        
+        // 토스트 표시
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 응답 저장 (CSV)
+        function saveResponse() {
+            const answered = Object.keys(responses).length;
+            
+            if (answered < TOTAL_QUESTIONS) {
+                if (!confirm(`${TOTAL_QUESTIONS - answered}개 문항이 미응답 상태입니다.\n그래도 저장하시겠습니까?`)) {
+                    return;
+                }
+            }
+            
+            // 응답자 정보
+            const dept = document.getElementById('info_dept').value || '';
+            const position = document.getElementById('info_position').value || '';
+            const usage = document.getElementById('info_usage').value || '';
+            const date = document.getElementById('info_date').value || '';
+            
+            // 서술형 응답
+            const q23 = document.getElementById('q23').value.replace(/"/g, '""');
+            const q24 = document.getElementById('q24').value.replace(/"/g, '""');
+            const q25 = document.getElementById('q25').value.replace(/"/g, '""');
+            
+            // CSV 헤더
+            const headers = [
+                '응답ID', '작성일', '소속부서', '직급', '사용횟수',
+                'Q1_초안작성시간단축', 'Q2_데이터입력시간감소', 'Q3_복붙작업감소', 'Q4_분석시간확보',
+                'Q5_정신적피로감소', 'Q6_신체적피로감소', 'Q7_실수스트레스감소', 'Q8_야근감소', 'Q9_업무부담감소',
+                'Q10_입력오류감소', 'Q11_형식일관성', 'Q12_심층분석가능', 'Q13_품질자신감',
+                'Q14_조작용이성', 'Q15_직관성', 'Q16_결측치처리', 'Q17_미리보기기능', 'Q18_한글복붙편의',
+                'Q19_전반만족도', 'Q20_타인추천', 'Q21_업무만족도향상', 'Q22_확대도입희망',
+                'Q23_개선점', 'Q24_불편사항', 'Q25_추가의견'
+            ];
+            
+            // 응답 ID 생성 (날짜 + 랜덤)
+            const responseId = `R${date.replace(/-/g, '')}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+            
+            // 데이터 행
+            const row = [
+                responseId, date, dept, position, usage,
+                responses.q1 || '', responses.q2 || '', responses.q3 || '', responses.q4 || '',
+                responses.q5 || '', responses.q6 || '', responses.q7 || '', responses.q8 || '', responses.q9 || '',
+                responses.q10 || '', responses.q11 || '', responses.q12 || '', responses.q13 || '',
+                responses.q14 || '', responses.q15 || '', responses.q16 || '', responses.q17 || '', responses.q18 || '',
+                responses.q19 || '', responses.q20 || '', responses.q21 || '', responses.q22 || '',
+                `"${q23}"`, `"${q24}"`, `"${q25}"`
+            ];
+            
+            // BOM 추가 (엑셀 한글 호환)
+            const BOM = '\uFEFF';
+            const csvContent = BOM + headers.join(',') + '\n' + row.join(',');
+            
+            // 파일 다운로드
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const fileName = `설문응답_${responseId}.csv`;
+            
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            
+            showToast(`✅ 응답이 저장되었습니다: ${fileName}`, 'success');
+        }
+        
+        // 폼 초기화
+        function resetForm() {
+            if (!confirm('모든 응답을 초기화하시겠습니까?')) return;
+            
+            // 라디오 초기화
+            document.querySelectorAll('.radio-check').forEach(r => r.classList.remove('checked'));
+            
+            // 입력 필드 초기화
+            document.getElementById('info_dept').value = '';
+            document.getElementById('info_position').value = '';
+            document.getElementById('info_usage').value = '';
+            document.getElementById('info_date').valueAsDate = new Date();
+            document.getElementById('q23').value = '';
+            document.getElementById('q24').value = '';
+            document.getElementById('q25').value = '';
+            
+            // 응답 데이터 초기화
+            for (let key in responses) {
+                delete responses[key];
+            }
+            
+            updateCompletionStatus();
+            showToast('🔄 응답이 초기화되었습니다.', 'success');
+        }
+        
+        // 초기 상태 업데이트
+        updateCompletionStatus();
+    </script>
+</body>
+</html>

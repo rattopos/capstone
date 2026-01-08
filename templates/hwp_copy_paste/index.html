@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>한글 복붙용 템플릿 - 지역경제동향</title>
+    <style>
+        body {
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 12pt;
+            line-height: 1.8;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #1976D2;
+            border-bottom: 3px solid #1976D2;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: #fff;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 14pt;
+        }
+        .section p {
+            color: #666;
+            font-size: 10pt;
+            margin: 10px 0;
+        }
+        .section a {
+            display: inline-block;
+            background: #1976D2;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .section a:hover {
+            background: #1565C0;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 30px 0;
+        }
+        .note h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .note ul {
+            margin-bottom: 0;
+        }
+        .badge {
+            display: inline-block;
+            background: #28a745;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            margin-left: 10px;
+        }
+        .badge.chart-excluded {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📊 한글 복붙용 템플릿<br><small style="font-size: 14pt;">지역경제동향 보도자료</small></h1>
+
+<div class="note">
+    <h3>📌 사용 안내</h3>
+    <ul>
+        <li>각 템플릿 HTML 파일을 브라우저에서 열고, <strong>Ctrl+A</strong>로 전체 선택 후 <strong>Ctrl+C</strong>로 복사합니다.</li>
+        <li>한글(HWP) 문서에서 <strong>Ctrl+V</strong>로 붙여넣기 합니다.</li>
+        <li><code>{{변수명}}</code> 형식의 플레이스홀더는 실제 데이터로 교체해주세요.</li>
+        <li>차트와 인포그래픽(지도)은 별도로 삽입해야 합니다. <span class="badge chart-excluded">차트 제외</span></li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>1. 표지</h2>
+    <p>보도자료 표지 - 국가데이터처 로고, 제목, 담당부서 정보</p>
+    <a href="cover_hwp.html" target="_blank">표지 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>2. 일러두기</h2>
+    <p>보도자료 소개, 통계부문별 담당자 연락처 표</p>
+    <a href="guide_hwp.html" target="_blank">일러두기 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>3. 목차</h2>
+    <p>전체 보도자료 목차</p>
+    <a href="toc_hwp.html" target="_blank">목차 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>4. 요약 <span class="badge">표 포함</span></h2>
+    <p>주요 지역경제 지표 요약 (생산, 소비, 수출, 물가, 고용)</p>
+    <a href="summary_hwp.html" target="_blank">요약 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>5. 부문별 지역경제동향 - 생산 <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>광공업생산, 서비스업생산 (텍스트 + 데이터 표)</p>
+    <a href="section1_production_hwp.html" target="_blank">생산 동향 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>6. 부문별 지역경제동향 - 소비/건설 <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>소비 동향, 건설 동향 (텍스트 + 데이터 표)</p>
+    <a href="section2_consumption_construction_hwp.html" target="_blank">소비/건설 동향 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>7. 부문별 지역경제동향 - 수출입/물가 <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>수출, 수입, 물가 동향 (텍스트 + 데이터 표)</p>
+    <a href="section3_trade_price_hwp.html" target="_blank">수출입/물가 동향 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>8. 부문별 지역경제동향 - 고용/인구이동 <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>고용률, 실업률, 국내 인구이동 (텍스트 + 데이터 표)</p>
+    <a href="section4_employment_population_hwp.html" target="_blank">고용/인구이동 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>9. 참고: GRDP <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>분기 실질 지역내총생산(GRDP) 성장률 및 기여도</p>
+    <a href="section5_grdp_hwp.html" target="_blank">GRDP 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>10. 시도별 경제동향 <span class="badge">표 포함</span> <span class="badge chart-excluded">차트 제외</span></h2>
+    <p>서울, 부산, 대구 등 17개 시도별 경제동향 (텍스트 + 주요지표 표)</p>
+    <a href="section6_regional_hwp.html" target="_blank">시도별 경제동향 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>11. 통계표</h2>
+    <p>광공업생산지수, 서비스업생산지수, GRDP 등 상세 통계표</p>
+    <a href="statistics_table_hwp.html" target="_blank">통계표 열기 →</a>
+</div>
+
+<div class="section">
+    <h2>12. 부록: 주요 용어 정의</h2>
+    <p>불변지수, 광공업생산지수, 서비스업생산지수, 지역분류, 한국표준산업분류 등</p>
+    <a href="appendix_hwp.html" target="_blank">부록 열기 →</a>
+</div>
+
+<div class="note">
+    <h3>⚠️ 제외된 콘텐츠</h3>
+    <ul>
+        <li><strong>인포그래픽(지도)</strong>: 4페이지의 지역별 지표 시각화 지도는 별도로 삽입 필요</li>
+        <li><strong>차트(막대/꺾은선 그래프)</strong>: 생산, 소비, 건설, 수출입, 물가, 고용, 인구이동 관련 차트는 별도로 삽입 필요</li>
+    </ul>
+</div>
+
+<p style="text-align: center; color: #999; margin-top: 40px;">
+    © 국가데이터처 (Ministry of Data and Statistics)<br>
+    캡스톤 프로젝트 - 한글 복붙용 템플릿
+</p>
+
+</body>
+</html>
+

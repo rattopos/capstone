@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>요약 - 한글 복붙용</title>
+    <style>
+        body {
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 11pt;
+            line-height: 1.7;
+            margin: 0;
+            padding: 20px;
+        }
+        table { border-collapse: collapse; width: 100%; }
+        td, th {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .title {
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #1976D2;
+            padding-bottom: 8px;
+        }
+        .title .blue { color: #1976D2; }
+        .section-box {
+            border: 1px solid #000;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+        .item { margin-bottom: 8px; padding-left: 20px; text-indent: -20px; }
+        .sub-item { margin-left: 20px; padding-left: 20px; text-indent: -20px; }
+        .bold { font-weight: bold; }
+        .gray-bg { background-color: #e8e8e8; }
+        .light-gray { background-color: #f5f5f5; }
+        .table-title { text-align: center; font-weight: bold; margin: 20px 0 10px; }
+        .right-note { text-align: right; font-size: 9pt; margin-bottom: 3px; }
+        .page-num { text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<!-- ========== 요약 ========== -->
+<div class="title">{{연도}}년 {{분기}}/4분기 지역경제동향<span class="blue">[요약]</span></div>
+
+<div class="section-box">
+    <div class="item">□ <span class="bold">생산</span>(광공업)은 <span class="bold">{{생산_증가지역1}}</span>({{생산_증가율1}}%), <span class="bold">{{생산_증가지역2}}</span>({{생산_증가율2}}%) 등 {{생산_증가개수}}개 시도에서 전년동분기대비 증가, <span class="bold">{{생산_감소지역1}}</span>({{생산_감소율1}}%), <span class="bold">{{생산_감소지역2}}</span>({{생산_감소율2}}%) 등 {{생산_감소개수}}개 시도는 감소[전국: {{생산_전국}}%]</div>
+    <div class="sub-item">○ 서비스업은 <span class="bold">{{서비스_증가지역1}}</span>({{서비스_증가율1}}%), <span class="bold">{{서비스_증가지역2}}</span>({{서비스_증가율2}}%) 등 {{서비스_증가개수}}개 시도에서 전년동분기대비 증가, <span class="bold">{{서비스_감소지역1}}</span>({{서비스_감소율1}}%), <span class="bold">{{서비스_감소지역2}}</span>({{서비스_감소율2}}%) 등 {{서비스_감소개수}}개 시도는 감소[전국: {{서비스_전국}}%]</div>
+</div>
+
+<div class="section-box">
+    <div class="item">□ <span class="bold">소비</span>(소매판매)는 <span class="bold">{{소비_증가지역1}}</span>({{소비_증가율1}}%), <span class="bold">{{소비_증가지역2}}</span>({{소비_증가율2}}%) 등 {{소비_증가개수}}개 시도에서 전년동분기대비 증가, <span class="bold">{{소비_감소지역1}}</span>({{소비_감소율1}}%), <span class="bold">{{소비_감소지역2}}</span>({{소비_감소율2}}%) 등 {{소비_감소개수}}개 시도는 감소[전국: {{소비_전국}}%]</div>
+</div>
+
+<div class="section-box">
+    <div class="item">□ <span class="bold">수출</span>(통관기준)은 <span class="bold">{{수출_증가지역1}}</span>({{수출_증가율1}}%), <span class="bold">{{수출_증가지역2}}</span>({{수출_증가율2}}%) 등 {{수출_증가개수}}개 시도에서 전년동분기대비 증가, <span class="bold">{{수출_감소지역1}}</span>({{수출_감소율1}}%), <span class="bold">{{수출_감소지역2}}</span>({{수출_감소율2}}%) 등 {{수출_감소개수}}개 시도는 감소[전국: {{수출_전국}}%]</div>
+</div>
+
+<div class="section-box">
+    <div class="item">□ <span class="bold">물가</span>(소비자물가)는 <span class="bold">{{물가_지역1}}</span>({{물가_율1}}%), <span class="bold">{{물가_지역2}}</span>({{물가_율2}}%) 등 모든 시도에서 전년동분기대비 상승 [전국: {{물가_전국}}%]</div>
+</div>
+
+<div class="section-box">
+    <div class="item">□ <span class="bold">고용</span>(고용률)은 <span class="bold">{{고용_증가지역1}}</span>({{고용_증가율1}}%p), <span class="bold">{{고용_증가지역2}}</span>({{고용_증가율2}}%p) 등 {{고용_증가개수}}개 시도에서 전년동분기대비 상승, <span class="bold">{{고용_감소지역1}}</span>({{고용_감소율1}}%p), <span class="bold">{{고용_감소지역2}}</span>({{고용_감소율2}}%p)등 {{고용_감소개수}}개 시도는 하락[전국: {{고용_전국}}%p]</div>
+</div>
+
+<br>
+
+<!-- 주요 지역경제 지표 표 -->
+<div class="table-title">&lt;{{연도}}년 {{분기}}/4분기 주요 지역경제 지표&gt;</div>
+<div class="right-note">(전년동분기비, %)</div>
+
+<table>
+    <thead>
+        <tr>
+            <th class="gray-bg" colspan="2" rowspan="2"></th>
+            <th class="gray-bg">광공업생산</th>
+            <th class="gray-bg">서비스업생산</th>
+            <th class="gray-bg">소매판매</th>
+            <th class="gray-bg">수출</th>
+            <th class="gray-bg">소비자물가</th>
+            <th class="gray-bg">고용률(%p)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="light-gray" colspan="2">전 국</td>
+            <td>{{전국_광공업}}</td>
+            <td>{{전국_서비스업}}</td>
+            <td>{{전국_소매판매}}</td>
+            <td>{{전국_수출}}</td>
+            <td>{{전국_소비자물가}}</td>
+            <td>{{전국_고용률}}</td>
+        </tr>
+        <tr>
+            <td class="light-gray" rowspan="3">경인</td>
+            <td>서 울</td>
+            <td>{{서울_광공업}}</td>
+            <td>{{서울_서비스업}}</td>
+            <td>{{서울_소매판매}}</td>
+            <td>{{서울_수출}}</td>
+            <td>{{서울_소비자물가}}</td>
+            <td>{{서울_고용률}}</td>
+        </tr>
+        <tr>
+            <td>인 천</td>
+            <td>{{인천_광공업}}</td>
+            <td>{{인천_서비스업}}</td>
+            <td>{{인천_소매판매}}</td>
+            <td>{{인천_수출}}</td>
+            <td>{{인천_소비자물가}}</td>
+            <td>{{인천_고용률}}</td>
+        </tr>
+        <tr>
+            <td>경 기</td>
+            <td>{{경기_광공업}}</td>
+            <td>{{경기_서비스업}}</td>
+            <td>{{경기_소매판매}}</td>
+            <td>{{경기_수출}}</td>
+            <td>{{경기_소비자물가}}</td>
+            <td>{{경기_고용률}}</td>
+        </tr>
+        <tr>
+            <td class="light-gray" rowspan="4">충청</td>
+            <td>대 전</td>
+            <td>{{대전_광공업}}</td>
+            <td>{{대전_서비스업}}</td>
+            <td>{{대전_소매판매}}</td>
+            <td>{{대전_수출}}</td>
+            <td>{{대전_소비자물가}}</td>
+            <td>{{대전_고용률}}</td>
+        </tr>
+        <tr>
+            <td>세 종</td>
+            <td>{{세종_광공업}}</td>
+            <td>{{세종_서비스업}}</td>
+            <td>{{세종_소매판매}}</td>
+            <td>{{세종_수출}}</td>
+            <td>{{세종_소비자물가}}</td>
+            <td>{{세종_고용률}}</td>
+        </tr>
+        <tr>
+            <td>충 북</td>
+            <td>{{충북_광공업}}</td>
+            <td>{{충북_서비스업}}</td>
+            <td>{{충북_소매판매}}</td>
+            <td>{{충북_수출}}</td>
+            <td>{{충북_소비자물가}}</td>
+            <td>{{충북_고용률}}</td>
+        </tr>
+        <tr>
+            <td>충 남</td>
+            <td>{{충남_광공업}}</td>
+            <td>{{충남_서비스업}}</td>
+            <td>{{충남_소매판매}}</td>
+            <td>{{충남_수출}}</td>
+            <td>{{충남_소비자물가}}</td>
+            <td>{{충남_고용률}}</td>
+        </tr>
+        <tr>
+            <td class="light-gray" rowspan="4">호남</td>
+            <td>광 주</td>
+            <td>{{광주_광공업}}</td>
+            <td>{{광주_서비스업}}</td>
+            <td>{{광주_소매판매}}</td>
+            <td>{{광주_수출}}</td>
+            <td>{{광주_소비자물가}}</td>
+            <td>{{광주_고용률}}</td>
+        </tr>
+        <tr>
+            <td>전 북</td>
+            <td>{{전북_광공업}}</td>
+            <td>{{전북_서비스업}}</td>
+            <td>{{전북_소매판매}}</td>
+            <td>{{전북_수출}}</td>
+            <td>{{전북_소비자물가}}</td>
+            <td>{{전북_고용률}}</td>
+        </tr>
+        <tr>
+            <td>전 남</td>
+            <td>{{전남_광공업}}</td>
+            <td>{{전남_서비스업}}</td>
+            <td>{{전남_소매판매}}</td>
+            <td>{{전남_수출}}</td>
+            <td>{{전남_소비자물가}}</td>
+            <td>{{전남_고용률}}</td>
+        </tr>
+        <tr>
+            <td>제 주</td>
+            <td>{{제주_광공업}}</td>
+            <td>{{제주_서비스업}}</td>
+            <td>{{제주_소매판매}}</td>
+            <td>{{제주_수출}}</td>
+            <td>{{제주_소비자물가}}</td>
+            <td>{{제주_고용률}}</td>
+        </tr>
+        <tr>
+            <td class="light-gray" rowspan="3">동북</td>
+            <td>대 구</td>
+            <td>{{대구_광공업}}</td>
+            <td>{{대구_서비스업}}</td>
+            <td>{{대구_소매판매}}</td>
+            <td>{{대구_수출}}</td>
+            <td>{{대구_소비자물가}}</td>
+            <td>{{대구_고용률}}</td>
+        </tr>
+        <tr>
+            <td>경 북</td>
+            <td>{{경북_광공업}}</td>
+            <td>{{경북_서비스업}}</td>
+            <td>{{경북_소매판매}}</td>
+            <td>{{경북_수출}}</td>
+            <td>{{경북_소비자물가}}</td>
+            <td>{{경북_고용률}}</td>
+        </tr>
+        <tr>
+            <td>강 원</td>
+            <td>{{강원_광공업}}</td>
+            <td>{{강원_서비스업}}</td>
+            <td>{{강원_소매판매}}</td>
+            <td>{{강원_수출}}</td>
+            <td>{{강원_소비자물가}}</td>
+            <td>{{강원_고용률}}</td>
+        </tr>
+        <tr>
+            <td class="light-gray" rowspan="3">동남</td>
+            <td>부 산</td>
+            <td>{{부산_광공업}}</td>
+            <td>{{부산_서비스업}}</td>
+            <td>{{부산_소매판매}}</td>
+            <td>{{부산_수출}}</td>
+            <td>{{부산_소비자물가}}</td>
+            <td>{{부산_고용률}}</td>
+        </tr>
+        <tr>
+            <td>울 산</td>
+            <td>{{울산_광공업}}</td>
+            <td>{{울산_서비스업}}</td>
+            <td>{{울산_소매판매}}</td>
+            <td>{{울산_수출}}</td>
+            <td>{{울산_소비자물가}}</td>
+            <td>{{울산_고용률}}</td>
+        </tr>
+        <tr>
+            <td>경 남</td>
+            <td>{{경남_광공업}}</td>
+            <td>{{경남_서비스업}}</td>
+            <td>{{경남_소매판매}}</td>
+            <td>{{경남_수출}}</td>
+            <td>{{경남_소비자물가}}</td>
+            <td>{{경남_고용률}}</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="page-num">- 1 -</div>
+
+</body>
+</html>
+

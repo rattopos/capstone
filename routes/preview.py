@@ -42,17 +42,23 @@ def generate_preview():
     custom_data = data.get('custom_data', {})
     
     excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
+    raw_excel_path = session.get('raw_excel_path')
+    file_type = session.get('file_type', 'analysis')
+    
+    # 기초자료 또는 분석표 중 하나는 있어야 함
+    if not excel_path and not raw_excel_path:
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    
+    # 분석표 경로가 없으면 기초자료 경로 사용
+    if not excel_path or not Path(excel_path).exists():
+        excel_path = raw_excel_path
     
     report_config = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
     if not report_config:
         return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'})
     
-    raw_excel_path = session.get('raw_excel_path')
-    
     html_content, error, missing_fields = generate_report_html(
-        excel_path, report_config, year, quarter, custom_data, raw_excel_path
+        excel_path, report_config, year, quarter, custom_data, raw_excel_path, file_type
     )
     
     if error:
@@ -238,10 +244,19 @@ def generate_regional_preview():
     """시도별 보도자료 미리보기 생성"""
     data = request.get_json()
     region_id = data.get('region_id')
+    year = data.get('year', session.get('year', 2025))
+    quarter = data.get('quarter', session.get('quarter', 2))
     
     excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
+    raw_excel_path = session.get('raw_excel_path')
+    
+    # 기초자료 또는 분석표 중 하나는 있어야 함
+    if not excel_path and not raw_excel_path:
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    
+    # 분석표 경로가 없으면 기초자료 경로 사용
+    if not excel_path or not Path(excel_path).exists():
+        excel_path = raw_excel_path
     
     region_config = next((r for r in REGIONAL_REPORTS if r['id'] == region_id), None)
     if not region_config:
@@ -249,7 +264,14 @@ def generate_regional_preview():
     
     is_reference = region_config.get('is_reference', False)
     
-    html_content, error = generate_regional_report_html(excel_path, region_config['name'], is_reference)
+    html_content, error = generate_regional_report_html(
+        excel_path, 
+        region_config['name'], 
+        is_reference,
+        raw_excel_path=raw_excel_path,
+        year=year,
+        quarter=quarter
+    )
     
     if error:
         return jsonify({'success': False, 'error': error})

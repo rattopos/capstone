@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>부문별 지역경제동향 - 소비/건설 - 한글 복붙용</title>
+    <style>
+        body {
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        table { border-collapse: collapse; width: 100%; }
+        td, th {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .section-title { font-size: 13pt; font-weight: bold; margin: 15px 0 10px; }
+        .summary-box {
+            border: 1px dotted #555;
+            padding: 10px 15px;
+            margin-bottom: 12px;
+        }
+        .detail-box {
+            border: 1px dotted #555;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+        .item { margin-bottom: 4px; padding-left: 12px; text-indent: -12px; }
+        .bold { font-weight: bold; }
+        .purple-bg { background-color: #e6e0ec; }
+        .yellow-bg { background-color: #fef9e7; }
+        .gray-bg { background-color: #f5f5f5; }
+        .table-title { text-align: center; font-weight: bold; margin: 15px 0 8px; font-size: 11pt; }
+        .footnote { font-size: 9pt; margin-top: 5px; }
+        .page-num { text-align: center; margin-top: 15px; }
+        .separator { border-top: 1px dotted #888; margin: 5px 0; }
+        .center { text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- ===== 2. 소비 동향 ===== -->
+<div class="section-title">2. 소비 동향</div>
+
+<div class="summary-box">
+    <div class="item">◆ 소매판매는 <span class="bold">{{소비_감소지역1}}</span>({{소비_업태1}}), <span class="bold">{{소비_감소지역2}}</span>({{소비_업태2}}), <span class="bold">{{소비_감소지역3}}</span>({{소비_업태3}}) 등 <span class="bold">{{소비_감소개수}}개</span> 시도에서 전년동분기대비 <span class="bold">감소</span></div>
+    <div class="item">□ 전국 소매판매({{소비_전국지수}})는 {{소비_감소요인}} 등의 판매가 줄어 전년동분기대비 <span class="bold">{{소비_전국증감률}}% 감소</span></div>
+    <div class="item">○ <span class="bold">{{소비_증가지역1}}</span>({{소비_증가율1}}%), <span class="bold">{{소비_증가지역2}}</span>({{소비_증가율2}}%), <span class="bold">{{소비_증가지역3}}</span>({{소비_증가율3}}%)은 {{소비_증가요인}} 등의 판매가 늘어 <span class="bold">증가</span>하였으나, <span class="bold">{{소비_감소지역1}}</span>({{소비_감소율1}}%), <span class="bold">{{소비_감소지역2}}</span>({{소비_감소율2}}%), <span class="bold">{{소비_감소지역3}}</span>({{소비_감소율3}}%)은 {{소비_감소요인2}} 등의 판매가 줄어 <span class="bold">감소</span></div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 증감지역 및 업태 &gt;</div>
+    <div class="item">·전 국( {{소비_전국증감률}}%): {{소비_전국업태1}}({{소비_전국업태1율}}%), {{소비_전국업태2}}({{소비_전국업태2율}}%), {{소비_전국업태3}}({{소비_전국업태3율}}%)</div>
+    <div class="separator"></div>
+    <div class="item">·{{소비_상위1지역}}( {{소비_상위1율}}%): {{소비_상위1업태}}</div>
+    <div class="item">·{{소비_상위2지역}}( {{소비_상위2율}}%): {{소비_상위2업태}}</div>
+    <div class="item">·{{소비_상위3지역}}( {{소비_상위3율}}%): {{소비_상위3업태}}</div>
+    <div class="separator"></div>
+    <div class="item">·{{소비_하위1지역}}( {{소비_하위1율}}%): {{소비_하위1업태}}</div>
+    <div class="item">·{{소비_하위2지역}}( {{소비_하위2율}}%): {{소비_하위2업태}}</div>
+    <div class="item">·{{소비_하위3지역}}( {{소비_하위3율}}%): {{소비_하위3업태}}</div>
+</div>
+
+<!-- 소매판매액지수 및 증감률 표 -->
+<div class="table-title">《 소매판매액지수 및 증감률 》</div>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2" style="width: 60px;"></th>
+            <th class="purple-bg" colspan="4">전년동분기대비 증감률(%)</th>
+            <th class="purple-bg" colspan="2">소매판매액지수(2020=100)</th>
+        </tr>
+        <tr>
+            <th class="purple-bg" style="width: 60px;">{{년도_2분기전}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_1분기전}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_직전분기}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_현재분기}}<sup>p</sup></th>
+            <th class="purple-bg" style="width: 70px;">{{년도_1분기전}}</th>
+            <th class="purple-bg" style="width: 70px;">{{년도_현재분기}}<sup>p</sup></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="gray-bg" colspan="2">전 국</td><td>{{소비전국_2분기전}}</td><td>{{소비전국_1분기전}}</td><td>{{소비전국_직전분기}}</td><td>{{소비전국_현재분기}}</td><td class="yellow-bg">{{소비전국_지수1}}</td><td class="yellow-bg">{{소비전국_지수2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">경인</td><td>서 울</td><td>{{소비서울_2분기전}}</td><td>{{소비서울_1분기전}}</td><td>{{소비서울_직전분기}}</td><td>{{소비서울_현재분기}}</td><td class="yellow-bg">{{소비서울_지수1}}</td><td class="yellow-bg">{{소비서울_지수2}}</td></tr>
+        <tr><td>인 천</td><td>{{소비인천_2분기전}}</td><td>{{소비인천_1분기전}}</td><td>{{소비인천_직전분기}}</td><td>{{소비인천_현재분기}}</td><td class="yellow-bg">{{소비인천_지수1}}</td><td class="yellow-bg">{{소비인천_지수2}}</td></tr>
+        <tr><td>경 기</td><td>{{소비경기_2분기전}}</td><td>{{소비경기_1분기전}}</td><td>{{소비경기_직전분기}}</td><td>{{소비경기_현재분기}}</td><td class="yellow-bg">{{소비경기_지수1}}</td><td class="yellow-bg">{{소비경기_지수2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="4">충청</td><td>대 전</td><td>{{소비대전_2분기전}}</td><td>{{소비대전_1분기전}}</td><td>{{소비대전_직전분기}}</td><td>{{소비대전_현재분기}}</td><td class="yellow-bg">{{소비대전_지수1}}</td><td class="yellow-bg">{{소비대전_지수2}}</td></tr>
+        <tr><td>세 종</td><td>{{소비세종_2분기전}}</td><td>{{소비세종_1분기전}}</td><td>{{소비세종_직전분기}}</td><td>{{소비세종_현재분기}}</td><td class="yellow-bg">{{소비세종_지수1}}</td><td class="yellow-bg">{{소비세종_지수2}}</td></tr>
+        <tr><td>충 북</td><td>{{소비충북_2분기전}}</td><td>{{소비충북_1분기전}}</td><td>{{소비충북_직전분기}}</td><td>{{소비충북_현재분기}}</td><td class="yellow-bg">{{소비충북_지수1}}</td><td class="yellow-bg">{{소비충북_지수2}}</td></tr>
+        <tr><td>충 남</td><td>{{소비충남_2분기전}}</td><td>{{소비충남_1분기전}}</td><td>{{소비충남_직전분기}}</td><td>{{소비충남_현재분기}}</td><td class="yellow-bg">{{소비충남_지수1}}</td><td class="yellow-bg">{{소비충남_지수2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="4">호남</td><td>광 주</td><td>{{소비광주_2분기전}}</td><td>{{소비광주_1분기전}}</td><td>{{소비광주_직전분기}}</td><td>{{소비광주_현재분기}}</td><td class="yellow-bg">{{소비광주_지수1}}</td><td class="yellow-bg">{{소비광주_지수2}}</td></tr>
+        <tr><td>전 북</td><td>{{소비전북_2분기전}}</td><td>{{소비전북_1분기전}}</td><td>{{소비전북_직전분기}}</td><td>{{소비전북_현재분기}}</td><td class="yellow-bg">{{소비전북_지수1}}</td><td class="yellow-bg">{{소비전북_지수2}}</td></tr>
+        <tr><td>전 남</td><td>{{소비전남_2분기전}}</td><td>{{소비전남_1분기전}}</td><td>{{소비전남_직전분기}}</td><td>{{소비전남_현재분기}}</td><td class="yellow-bg">{{소비전남_지수1}}</td><td class="yellow-bg">{{소비전남_지수2}}</td></tr>
+        <tr><td>제 주</td><td>{{소비제주_2분기전}}</td><td>{{소비제주_1분기전}}</td><td>{{소비제주_직전분기}}</td><td>{{소비제주_현재분기}}</td><td class="yellow-bg">{{소비제주_지수1}}</td><td class="yellow-bg">{{소비제주_지수2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">동북</td><td>대 구</td><td>{{소비대구_2분기전}}</td><td>{{소비대구_1분기전}}</td><td>{{소비대구_직전분기}}</td><td>{{소비대구_현재분기}}</td><td class="yellow-bg">{{소비대구_지수1}}</td><td class="yellow-bg">{{소비대구_지수2}}</td></tr>
+        <tr><td>경 북</td><td>{{소비경북_2분기전}}</td><td>{{소비경북_1분기전}}</td><td>{{소비경북_직전분기}}</td><td>{{소비경북_현재분기}}</td><td class="yellow-bg">{{소비경북_지수1}}</td><td class="yellow-bg">{{소비경북_지수2}}</td></tr>
+        <tr><td>강 원</td><td>{{소비강원_2분기전}}</td><td>{{소비강원_1분기전}}</td><td>{{소비강원_직전분기}}</td><td>{{소비강원_현재분기}}</td><td class="yellow-bg">{{소비강원_지수1}}</td><td class="yellow-bg">{{소비강원_지수2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">동남</td><td>부 산</td><td>{{소비부산_2분기전}}</td><td>{{소비부산_1분기전}}</td><td>{{소비부산_직전분기}}</td><td>{{소비부산_현재분기}}</td><td class="yellow-bg">{{소비부산_지수1}}</td><td class="yellow-bg">{{소비부산_지수2}}</td></tr>
+        <tr><td>울 산</td><td>{{소비울산_2분기전}}</td><td>{{소비울산_1분기전}}</td><td>{{소비울산_직전분기}}</td><td>{{소비울산_현재분기}}</td><td class="yellow-bg">{{소비울산_지수1}}</td><td class="yellow-bg">{{소비울산_지수2}}</td></tr>
+        <tr><td>경 남</td><td>{{소비경남_2분기전}}</td><td>{{소비경남_1분기전}}</td><td>{{소비경남_직전분기}}</td><td>{{소비경남_현재분기}}</td><td class="yellow-bg">{{소비경남_지수1}}</td><td class="yellow-bg">{{소비경남_지수2}}</td></tr>
+    </tbody>
+</table>
+<div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사</div>
+
+<div class="page-num">- 8 -</div>
+
+<br><br>
+
+<!-- ===== 3. 건설 동향 ===== -->
+<div class="section-title">3. 건설 동향</div>
+
+<div class="summary-box">
+    <div class="item">◆ 건설수주는 <span class="bold">{{건설_감소지역1}}</span>({{건설_공종1}}), <span class="bold">{{건설_감소지역2}}</span>({{건설_공종2}}), <span class="bold">{{건설_감소지역3}}</span>({{건설_공종3}}) 등 <span class="bold">{{건설_감소개수}}개</span> 시도에서 전년동분기대비 <span class="bold">감소</span></div>
+    <div class="item">□ 전국 건설수주({{건설_전국금액}}조원)는 {{건설_감소요인}} 등 토목 수주가 줄어 전년동분기대비 <span class="bold">{{건설_전국증감률}}% 감소</span></div>
+    <div class="item">○ <span class="bold">{{건설_증가지역1}}</span>({{건설_증가율1}}%), <span class="bold">{{건설_증가지역2}}</span>({{건설_증가율2}}%), <span class="bold">{{건설_증가지역3}}</span>({{건설_증가율3}}%)은 {{건설_증가요인}} 등의 수주가 늘어 <span class="bold">증가</span>하였으나, <span class="bold">{{건설_감소지역1}}</span>({{건설_감소율1}}%), <span class="bold">{{건설_감소지역2}}</span>({{건설_감소율2}}%), <span class="bold">{{건설_감소지역3}}</span>({{건설_감소율3}}%)는 {{건설_감소요인2}} 등의 수주가 줄어 <span class="bold">감소</span></div>
+</div>
+
+<div class="detail-box">
+    <div class="center" style="margin-bottom: 8px;">&lt; 주요 증감지역 및 공종 &gt;</div>
+    <div class="item">·전 국( {{건설_전국증감률}}%): 토목({{건설_전국토목율}}%) ⇒ {{건설_전국토목내용}}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;건축({{건설_전국건축율}}%) ⇒ {{건설_전국건축내용}}</div>
+    <div class="separator"></div>
+    <div class="item">·{{건설_상위1지역}}( {{건설_상위1율}}%): 토목({{건설_상위1토목}}%) ⇒ {{건설_상위1토목내용}}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;건축({{건설_상위1건축}}%) ⇒ {{건설_상위1건축내용}}</div>
+    <div class="item">·{{건설_상위2지역}}( {{건설_상위2율}}%): 토목({{건설_상위2토목}}%) ⇒ {{건설_상위2토목내용}}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;건축({{건설_상위2건축}}%) ⇒ {{건설_상위2건축내용}}</div>
+    <div class="separator"></div>
+    <div class="item">·{{건설_하위1지역}}( {{건설_하위1율}}%): 토목({{건설_하위1토목}}%) ⇒ {{건설_하위1토목내용}}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;건축({{건설_하위1건축}}%) ⇒ {{건설_하위1건축내용}}</div>
+    <div class="item">·{{건설_하위2지역}}( {{건설_하위2율}}%): 건축({{건설_하위2건축}}%) ⇒ {{건설_하위2건축내용}}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;토목({{건설_하위2토목}}%) ⇒ {{건설_하위2토목내용}}</div>
+</div>
+
+<!-- 건설수주액 및 증감률 표 -->
+<div class="table-title">《 건설수주액 및 증감률 》</div>
+<table>
+    <thead>
+        <tr>
+            <th class="purple-bg" rowspan="2" colspan="2" style="width: 60px;"></th>
+            <th class="purple-bg" colspan="4">전년동분기대비 증감률(%)</th>
+            <th class="purple-bg" colspan="2">건설수주액(백억원)</th>
+        </tr>
+        <tr>
+            <th class="purple-bg" style="width: 60px;">{{년도_2분기전}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_1분기전}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_직전분기}}</th>
+            <th class="purple-bg" style="width: 60px;">{{년도_현재분기}}<sup>p</sup></th>
+            <th class="purple-bg" style="width: 70px;">{{년도_1분기전}}</th>
+            <th class="purple-bg" style="width: 70px;">{{년도_현재분기}}<sup>p</sup></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="gray-bg" colspan="2">전 국</td><td>{{건설전국_2분기전}}</td><td>{{건설전국_1분기전}}</td><td>{{건설전국_직전분기}}</td><td>{{건설전국_현재분기}}</td><td class="yellow-bg">{{건설전국_금액1}}</td><td class="yellow-bg">{{건설전국_금액2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">경인</td><td>서 울</td><td>{{건설서울_2분기전}}</td><td>{{건설서울_1분기전}}</td><td>{{건설서울_직전분기}}</td><td>{{건설서울_현재분기}}</td><td class="yellow-bg">{{건설서울_금액1}}</td><td class="yellow-bg">{{건설서울_금액2}}</td></tr>
+        <tr><td>인 천</td><td>{{건설인천_2분기전}}</td><td>{{건설인천_1분기전}}</td><td>{{건설인천_직전분기}}</td><td>{{건설인천_현재분기}}</td><td class="yellow-bg">{{건설인천_금액1}}</td><td class="yellow-bg">{{건설인천_금액2}}</td></tr>
+        <tr><td>경 기</td><td>{{건설경기_2분기전}}</td><td>{{건설경기_1분기전}}</td><td>{{건설경기_직전분기}}</td><td>{{건설경기_현재분기}}</td><td class="yellow-bg">{{건설경기_금액1}}</td><td class="yellow-bg">{{건설경기_금액2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="4">충청</td><td>대 전</td><td>{{건설대전_2분기전}}</td><td>{{건설대전_1분기전}}</td><td>{{건설대전_직전분기}}</td><td>{{건설대전_현재분기}}</td><td class="yellow-bg">{{건설대전_금액1}}</td><td class="yellow-bg">{{건설대전_금액2}}</td></tr>
+        <tr><td>세 종</td><td>{{건설세종_2분기전}}</td><td>{{건설세종_1분기전}}</td><td>{{건설세종_직전분기}}</td><td>{{건설세종_현재분기}}</td><td class="yellow-bg">{{건설세종_금액1}}</td><td class="yellow-bg">{{건설세종_금액2}}</td></tr>
+        <tr><td>충 북</td><td>{{건설충북_2분기전}}</td><td>{{건설충북_1분기전}}</td><td>{{건설충북_직전분기}}</td><td>{{건설충북_현재분기}}</td><td class="yellow-bg">{{건설충북_금액1}}</td><td class="yellow-bg">{{건설충북_금액2}}</td></tr>
+        <tr><td>충 남</td><td>{{건설충남_2분기전}}</td><td>{{건설충남_1분기전}}</td><td>{{건설충남_직전분기}}</td><td>{{건설충남_현재분기}}</td><td class="yellow-bg">{{건설충남_금액1}}</td><td class="yellow-bg">{{건설충남_금액2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="4">호남</td><td>광 주</td><td>{{건설광주_2분기전}}</td><td>{{건설광주_1분기전}}</td><td>{{건설광주_직전분기}}</td><td>{{건설광주_현재분기}}</td><td class="yellow-bg">{{건설광주_금액1}}</td><td class="yellow-bg">{{건설광주_금액2}}</td></tr>
+        <tr><td>전 북</td><td>{{건설전북_2분기전}}</td><td>{{건설전북_1분기전}}</td><td>{{건설전북_직전분기}}</td><td>{{건설전북_현재분기}}</td><td class="yellow-bg">{{건설전북_금액1}}</td><td class="yellow-bg">{{건설전북_금액2}}</td></tr>
+        <tr><td>전 남</td><td>{{건설전남_2분기전}}</td><td>{{건설전남_1분기전}}</td><td>{{건설전남_직전분기}}</td><td>{{건설전남_현재분기}}</td><td class="yellow-bg">{{건설전남_금액1}}</td><td class="yellow-bg">{{건설전남_금액2}}</td></tr>
+        <tr><td>제 주</td><td>{{건설제주_2분기전}}</td><td>{{건설제주_1분기전}}</td><td>{{건설제주_직전분기}}</td><td>{{건설제주_현재분기}}</td><td class="yellow-bg">{{건설제주_금액1}}</td><td class="yellow-bg">{{건설제주_금액2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">동북</td><td>대 구</td><td>{{건설대구_2분기전}}</td><td>{{건설대구_1분기전}}</td><td>{{건설대구_직전분기}}</td><td>{{건설대구_현재분기}}</td><td class="yellow-bg">{{건설대구_금액1}}</td><td class="yellow-bg">{{건설대구_금액2}}</td></tr>
+        <tr><td>경 북</td><td>{{건설경북_2분기전}}</td><td>{{건설경북_1분기전}}</td><td>{{건설경북_직전분기}}</td><td>{{건설경북_현재분기}}</td><td class="yellow-bg">{{건설경북_금액1}}</td><td class="yellow-bg">{{건설경북_금액2}}</td></tr>
+        <tr><td>강 원</td><td>{{건설강원_2분기전}}</td><td>{{건설강원_1분기전}}</td><td>{{건설강원_직전분기}}</td><td>{{건설강원_현재분기}}</td><td class="yellow-bg">{{건설강원_금액1}}</td><td class="yellow-bg">{{건설강원_금액2}}</td></tr>
+        <tr><td class="gray-bg" rowspan="3">동남</td><td>부 산</td><td>{{건설부산_2분기전}}</td><td>{{건설부산_1분기전}}</td><td>{{건설부산_직전분기}}</td><td>{{건설부산_현재분기}}</td><td class="yellow-bg">{{건설부산_금액1}}</td><td class="yellow-bg">{{건설부산_금액2}}</td></tr>
+        <tr><td>울 산</td><td>{{건설울산_2분기전}}</td><td>{{건설울산_1분기전}}</td><td>{{건설울산_직전분기}}</td><td>{{건설울산_현재분기}}</td><td class="yellow-bg">{{건설울산_금액1}}</td><td class="yellow-bg">{{건설울산_금액2}}</td></tr>
+        <tr><td>경 남</td><td>{{건설경남_2분기전}}</td><td>{{건설경남_1분기전}}</td><td>{{건설경남_직전분기}}</td><td>{{건설경남_현재분기}}</td><td class="yellow-bg">{{건설경남_금액1}}</td><td class="yellow-bg">{{건설경남_금액2}}</td></tr>
+    </tbody>
+</table>
+<div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 건설경기동향조사</div>
+
+<div class="page-num">- 9 -</div>
+
+</body>
+</html>
+

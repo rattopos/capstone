@@ -26,7 +26,773 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-08
+
+#### 전면 재검토 및 리팩토링: 물가동향/실업률/국내이동 보고서 생성 문제 해결
+- **시간**: 2026-01-08 (새벽)
+- **문제 설명**: 
+  - 물가동향, 실업률, 국내이동 보고서가 생성되지 않음
+  - 하드코딩된 기본값(0.0, 100.0)이 결측치 대신 사용됨
+  - 일관성 없는 데이터 추출 로직
+- **원인 분석**: 
+  1. **실업률**: 지역명이 전체 이름(서울특별시, 부산광역시 등)으로 되어 있어 매칭 안됨
+  2. **국내이동**: 시트 구조가 다름 (지역코드/지역이름/분류단계 구조, 순인구이동 수 행만 추출 필요)
+  3. **물가동향**: summary_table 생성 로직 없음
+  4. **결측치 처리**: 0.0 기본값 대신 None을 사용해야 함
+- **에이전트 사고 과정**:
+  - 1단계: 기초자료 수집표의 모든 시트 구조 분석
+  - 2단계: 각 보고서별 데이터 추출 함수 분석
+  - 3단계: 시트 구조에 맞게 함수 수정
+  - 4단계: 결측치 처리 로직 일관성 확보 (0.0 → None)
+  - 5단계: 하드코딩된 값 제거
+- **해결 방법**: 
+  1. **지역명 매핑 딕셔너리 추가**: `REGION_FULL_TO_SHORT` (서울특별시→서울 등)
+  2. **물가동향에 summary_table 생성 함수 추가**: `_generate_price_summary_table()`
+  3. **실업률 함수 완전 재작성**: `extract_unemployment_report_data()`
+     - 지역명 매핑 적용
+     - '계' 행 필터링
+     - `_generate_unemployment_summary_table()` 추가
+  4. **국내이동 함수 완전 재작성**: `extract_population_migration_report_data()`
+     - 지역이름(col1) 사용
+     - '순인구이동 수' 행만 필터링
+     - `_generate_population_summary_table()` 추가
+     - `_generate_region_rows()` 공통 함수 추가
+  5. **결측치 처리 일관성**:
+     - `.get(region, 0.0)` → `.get(region, None)` 변경
+     - direction 조건문에 `is not None` 체크 추가
+     - 템플릿에서 `val()` 매크로가 None을 N/A로 표시
+  6. **하드코딩 제거**:
+     - `100.0` (indices) → `None`
+     - `0.0` (기본값) → `None`
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (대폭 수정)
+  - `services/report_generator.py` (기본값 수정)
+- **상태**: ✅ 완료
+- **테스트 결과**:
+  - 물가동향: 전국 2.1%, summary_table 18개 행 ✓
+  - 실업률: 전국 -0.1%p, summary_table 18개 행 ✓
+  - 국내이동: 순유입 7개 지역, summary_table 17개 행 ✓
+  - 모든 부문별 보고서 HTML 생성 성공 (10종):
+    - 광공업생산 8,222자, 서비스업생산 7,655자, 소비동향 7,718자
+    - 건설동향 32,829자, 수출 7,751자, 수입 7,564자
+    - 물가동향 28,561자, 고용률 9,603자, 실업률 9,186자
+    - 국내인구이동 28,939자
+  - 모든 시도별 보고서 HTML 생성 성공 (17개 시도):
+    - 각 ~10,800자, N/A 0개
+
+---
+
 ### 2026-01-07
+
+#### 시도별 보도자료의 summary_table 행 데이터가 표시되지 않는 문제 해결
+- **시간**: 2026-01-07 (밤)
+- **문제 설명**: 
+  - 대시보드 미리보기에서 시도별 보도자료(예: 서울)의 하단 테이블이 헤더만 표시되고 행 데이터가 표시되지 않음
+  - 템플릿은 `summary_table.rows` 배열을 기대하지만, `_extract_regional_summary_table` 함수가 딕셔너리를 반환
+- **원인 분석**: 
+  - `_extract_regional_summary_table` 함수가 각 지표별로 딕셔너리를 반환하는 구조
+  - 템플릿은 `rows` 배열을 기대하며, 각 행은 `period`, `manufacturing`, `service`, `retail` 등의 필드를 가져야 함
+  - 여러 분기(2023.2/4, 2024.2/4, 2025.1/4, 2025.2/4p)의 데이터를 행으로 만들어야 함
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "대시보드 미리보기에선 안나와요"라고 제보
+  - 초기 분석:
+    1. `regional_template.html` 확인: `summary_table.rows` 배열 순회
+    2. 각 행의 필드 확인: `period`, `manufacturing`, `service`, `retail`, `construction`, `export`, `import`, `consumer_price`, `employment_rate`, `migration_total`, `migration_20_29`
+    3. `_extract_regional_summary_table` 확인: 딕셔너리 반환
+  - 해결책 결정:
+    1. `_extract_regional_summary_table` 함수를 템플릿 형식에 맞게 수정
+    2. 여러 분기의 데이터를 추출하여 `rows` 배열 생성
+    3. 각 지표별로 `extract_quarterly_growth_rate`, `extract_quarterly_difference`, `extract_all_quarters` 사용
+  - 구현:
+    - 여러 분기 라벨 생성: `2023.2/4`, `2024.2/4`, `2025.1/4`, `2025.2/4p`
+    - 각 분기별로 모든 지표 데이터 추출
+    - 키 형식 변환: `extract_all_quarters`는 `"2023 2/4"` 형식 사용
+    - 인구순이동은 `classification_value=None`으로 설정 (분류 단계 필터링 안함)
+- **해결 방법**: 
+  1. `_extract_regional_summary_table` 함수를 템플릿 형식에 맞게 완전히 재작성:
+     - 반환 형식을 딕셔너리에서 `{'title': ..., 'rows': [...]}` 형식으로 변경
+     - 여러 분기의 데이터를 추출하여 각각 행으로 생성
+     - 각 지표별로 적절한 extract 함수 사용 (`growth_rate`, `difference`, `absolute`)
+  2. 키 형식 변환 로직 추가:
+     - `extract_quarterly_growth_rate`: `"2023.2/4"` 형식 그대로 사용
+     - `extract_quarterly_difference`: `"2023.2/4"` 형식 그대로 사용
+     - `extract_all_quarters`: `"2023.2/4"` → `"2023 2/4"` 변환
+  3. 인구순이동 데이터 추출 수정:
+     - `classification_value='0'` → `None`으로 변경 (분류 단계 필터링 안함)
+     - `extract_all_quarters`에서 `classification_column=None` 사용
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (`_extract_regional_summary_table` 함수 완전 재작성)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 템플릿 형식: `summary_table.rows = [{period, manufacturing, service, ...}, ...]`
+  - 각 분기별로 실제 데이터 추출 (2023.2/4, 2024.2/4, 2025.1/4, 2025.2/4p)
+  - 인구순이동 값은 `extract_all_quarters`가 반환하는 값을 그대로 사용 (이미 적절한 단위)
+
+---
+
+#### 통계표를 제외한 대부분의 표에서 헤더만 표시되고 행 데이터가 안 보이는 문제 해결
+- **시간**: 2026-01-07 (밤)
+- **문제 설명**: 
+  - 통계표를 제외한 대부분의 표에서 헤더만 표시되고 행 데이터가 표시되지 않음
+  - 소비동향, 광공업생산, 서비스업생산, 수출 등 부문별 보도자료의 표가 비어있음
+- **원인 분석**: 
+  - 템플릿은 `summary_table.regions` 또는 `summary_table.rows` 배열을 순회하며 행을 렌더링
+  - 각 행은 `growth_rates`, `indices` 배열 형식을 기대
+  - `_generate_default_summary_table` 함수가 잘못된 형식(`growth_rate_1`, `index_1` 등 개별 필드)으로 데이터 생성
+  - `raw_data_extractor.py`에서 일부 보도자료(광공업생산, 서비스업생산, 수출)에 대해 `summary_table` 생성 함수가 없음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "통계표를 제외한 대부분의 표가 헤더만 뜨고 나머지 행이 안보여요"라고 제보
+  - 초기 분석:
+    1. 템플릿 코드 확인: `summary_table.regions` 또는 `summary_table.rows` 순회
+    2. 템플릿이 기대하는 형식: `row.growth_rates` (배열), `row.indices` (배열)
+    3. `_generate_default_summary_table` 확인: `growth_rate_1`, `index_1` 등 개별 필드 사용
+    4. `raw_data_extractor.py` 확인: 소비동향은 `_generate_consumption_summary_table` 있음, 다른 보도자료는 없음
+  - 해결책 결정:
+    1. `_generate_default_summary_table` 함수 수정: 템플릿 형식에 맞게 `growth_rates`, `indices` 배열로 변경
+    2. 광공업생산/서비스업생산에 `_generate_production_summary_table` 함수 추가
+    3. 수출에 `_generate_export_import_summary_table` 함수 추가
+  - 구현:
+    - `_generate_default_summary_table`: 개별 필드 → 배열 형식으로 변경
+    - `_generate_production_summary_table`: 광공업생산/서비스업생산용 테이블 생성 함수 추가
+    - `_generate_export_import_summary_table`: 수출/수입용 테이블 생성 함수 추가
+- **해결 방법**: 
+  1. `services/report_generator.py`의 `_generate_default_summary_table` 함수 수정:
+     - `growth_rate_1`, `growth_rate_2` 등 → `growth_rates` 배열로 변경
+     - `index_1`, `index_2` → `indices` 배열로 변경
+     - 지역 표시 형식도 템플릿에 맞게 수정 (띄어쓰기 포함)
+  2. `templates/raw_data_extractor.py`에 함수 추가:
+     - `_generate_production_summary_table()`: 광공업생산/서비스업생산용
+     - `_generate_export_import_summary_table()`: 수출용
+  3. `extract_mining_manufacturing_report_data()`, `extract_service_industry_report_data()`, `extract_export_report_data()`에 `summary_table` 생성 로직 추가
+- **관련 파일**: 
+  - `services/report_generator.py` (1곳 수정)
+  - `templates/raw_data_extractor.py` (3곳 수정, 2개 함수 추가)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 템플릿 형식: `row.growth_rates = [rate1, rate2, rate3, rate4]`, `row.indices = [idx1, idx2]`
+  - 수입은 이미 `summary_table` 생성 로직이 있어서 문제 없음
+  - 물가, 고용률, 실업률 등은 템플릿이 다른 형식을 사용할 수 있으므로 별도 확인 필요
+
+---
+
+#### GRDP 모달창이 다른 모달창에 의해 가려지는 문제 해결
+- **시간**: 2026-01-07 (밤)
+- **문제 설명**: 
+  - GRDP 입력 모달창이 가중치 경고 모달창에 의해 가려지거나 억제되는 문제
+  - 두 모달이 동시에 표시될 때 GRDP 모달이 뒤에 가려져 사용자가 접근할 수 없음
+- **원인 분석**: 
+  - GRDP 모달과 가중치 경고 모달이 모두 `upload-modal-overlay` 클래스를 사용
+  - 두 모달의 z-index가 동일하게 1003으로 설정되어 있음
+  - DOM 순서에 따라 나중에 렌더링된 모달이 위에 표시됨
+  - 가중치 경고 모달이 먼저 표시되고 GRDP 모달이 나중에 표시되면, 가중치 경고 모달이 위에 있어 GRDP 모달이 가려짐
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "GRDP 입력 모달창이 다른 모달창에 의해 suppress 되는 것 같다"고 제보
+  - 초기 분석:
+    1. dashboard.html에서 모달 관련 코드 검색
+    2. GRDP 모달과 가중치 경고 모달 모두 `upload-modal-overlay` 클래스 사용 확인
+    3. CSS에서 z-index 값 확인: 1003으로 동일
+  - 해결책 분석:
+    1. GRDP 모달의 z-index를 더 높게 설정 (1004) → 채택
+    2. GRDP 모달 표시 시 가중치 경고 모달 자동 닫기 → 채택
+    3. 모달 스택 관리 시스템 구축 → 과도한 복잡도로 미채택
+  - 구현 결정:
+    - GRDP 모달에 인라인 스타일로 `z-index: 1004` 추가
+    - `showGrdpModal()` 함수에서 가중치 경고 모달이 열려있으면 먼저 닫기
+- **해결 방법**: 
+  1. GRDP 모달 HTML에 인라인 스타일 추가:
+     - `<div class="upload-modal-overlay" id="grdpModal" style="z-index: 1004;">`
+  2. `showGrdpModal()` 함수 수정:
+     - 가중치 경고 모달이 열려있으면 `hideWeightWarningModal()` 호출하여 먼저 닫기
+- **관련 파일**: 
+  - `dashboard.html` (2곳 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - z-index 우선순위: GRDP 모달(1004) > 가중치 경고 모달(1003) > 토스트(1001)
+  - GRDP 모달이 표시될 때 가중치 경고 모달이 자동으로 닫히므로 사용자 경험 개선
+
+---
+
+#### 소비동향/건설동향 및 시도별 보도자료 데이터 누락 문제 해결
+- **시간**: 2026-01-07 (밤)
+- **문제 설명**: 
+  - 소비동향 페이지에서 모든 데이터가 0으로 표시됨 (전국 0.0%, 지역 수 0개)
+  - 시도별(세종) 페이지에서 건설수주 데이터가 비어있고, 표 데이터도 누락
+  - 대부분의 시도별 페이지에서 소비/건설 관련 데이터가 표시되지 않음
+- **원인 분석**: 
+  - `raw_data_extractor.py`의 데이터 추출 함수에서 `region_column` 값이 잘못 설정됨
+  - RAW_SHEET_QUARTER_COLS 설정에는 소비/건설 시트의 region_col이 1로 정의되어 있음
+  - 하지만 `extract_consumption_report_data()`와 `extract_construction_report_data()` 함수에서 `region_column=0`을 사용
+  - 또한 분류단계(`classification_value`) 필터링이 누락되어 합계 행이 아닌 다른 행을 읽음
+  - 시도별 데이터 추출에서도 동일하게 분류단계 값이 None으로 전달되어 필터링 안됨
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 소비동향과 세종 시도별 페이지 스크린샷을 제공, 데이터가 모두 비어있음
+  - 초기 분석:
+    1. 디버그 로그 확인 → 유사한 문제가 이전에 있었으나 이번 문제와 다름
+    2. `raw_data_extractor.py`의 소비동향/건설동향 추출 함수 확인
+    3. RAW_SHEET_QUARTER_COLS 설정 확인: 소비/건설 시트의 region_col=1
+    4. 실제 함수에서 region_column=0 사용 → 원인 발견
+  - 추가 분석:
+    - 시도별 데이터 추출의 `_extract_regional_indicator` 호출 확인
+    - 소비/건설에 대해 `level_value=None` 전달 → 분류단계 필터링 안됨
+    - 합계 행(level='0')이 아닌 다른 행을 읽게 됨
+  - 해결책 결정:
+    1. 소비동향 함수: region_column 수정 + classification_value='0' 추가
+    2. 건설동향 함수: 동일하게 수정
+    3. 시도별 데이터: level_value를 '0'으로 변경
+    4. 차트 데이터 및 요약 테이블에도 동일 적용
+  - 테스트 결과:
+    - 소비동향: 전국 -0.2%, 증가 11개 지역, 감소 6개 지역 ✅
+    - 건설동향: 전국 -8.4%, 증가 5개, 감소 12개 ✅
+    - 세종: 소매판매 2.8%, 건설수주 -67.5% ✅
+- **해결 방법**: 
+  1. `extract_consumption_report_data()` 수정:
+     - `region_column=0` → `region_column=region_col` (설정에서 가져옴)
+     - `classification_column`, `classification_value='0'` 추가
+     - 템플릿에 필요한 데이터 구조 완성 (summary_box, nationwide_data, summary_table)
+     - `_generate_consumption_summary_table()` 함수 추가
+  2. `extract_construction_report_data()` 수정:
+     - `region_column=0` → `region_column=region_col`
+     - `classification_column`, `classification_value='0'` 추가
+     - 템플릿 호환 데이터 구조 추가
+  3. `extract_regional_data()` 수정:
+     - 소비/건설 지표에 대해 `level_value=None` → `'0'`으로 변경
+  4. `_extract_regional_chart_data()` 수정:
+     - retail, construction에 대해 level_value를 '0'으로 변경
+  5. `_extract_regional_summary_table()` 수정:
+     - retail, construction, population에 대해 level_value를 '0'으로 변경
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (5곳 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - RAW_SHEET_QUARTER_COLS의 설정값을 함수에서 직접 참조하도록 개선
+  - 기초자료 시트의 분류단계 '0'이 합계 행을 의미함
+  - 업태별/공정별 상세 데이터는 가중치가 필요하여 빈 배열로 반환
+
+---
+
+#### 수입 보도자료 기여도 계산을 분석표 공식으로 정확화
+- **시간**: 2026-01-07 (밤, 후속 작업)
+- **문제 설명**: 
+  - 사용자가 "분석표의 엑셀 함수를 보고 필요한 정보는 원수치와 가중치만으로 전부 계산해주세요"라고 요청
+  - 기존 구현에서 기여도를 단순 금액 변화량으로 계산했으나, 분석표 공식과 완전히 일치하는지 확인 필요
+- **원인 분석**: 
+  - 분석표의 기여도 계산 공식: **기여도(%p) = (품목 금액 변화량 / 전체 전년동분기 금액) × 100**
+  - 기존 구현: `contribution = curr_val - prev_val` (금액 변화량, 백만달러 단위)
+  - 순위 정렬에는 문제없으나, 정확한 기여도(%p) 값이 필요한 경우 단위가 다름
+- **에이전트 사고 과정**:
+  - 분석표 스키마 확인: `mining_manufacturing_schema.json`에서 컬럼 구조 파악
+    - 가중치: 열 8
+    - 증감: 열 22 (전년동기비 증감률)
+    - 증감×가중치: 열 23
+    - 기여율: 열 26
+    - 기여도: 열 28
+  - 수입/수출은 가중치가 없는 금액 기반 데이터임을 확인
+  - 기초자료 수집표 분석:
+    - 광공업생산 시트: 가중치 컬럼(열 3) 존재
+    - 수입 시트: 가중치 컬럼 없음 (금액 기반)
+  - 분석표 기여도 계산 방식 검증:
+    - 방법1: (품목 변화량 / 전체 전년동분기 금액) × 100 = %p 단위
+    - 방법2: 품목 변화량 자체 = 백만달러 단위
+    - 방법3: (품목 변화량 / 전체 변화량) × 100 = % 비중
+  - 검증 결과: 방법1이 분석표의 기여도 계산 공식
+    - 원유 예: (-3679.6 / 157044.3) × 100 = -2.34%p
+- **해결 방법**: 
+  - `templates/raw_data_extractor.py`의 `extract_import_report_data()` 수정:
+    1. 품목 데이터에 `amount_change` 필드 추가 (원본 금액 변화량)
+    2. 전국 품목에 `contribution_pct` 필드 추가: (품목 변화량 / 전체 전년동분기 금액) × 100
+    3. 지역별 품목에도 동일한 기여도(%p) 계산 적용
+    4. 순위 정렬은 기존대로 금액 변화량 기준 유지 (결과 동일)
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (extract_import_report_data 함수 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 기여도(%p) 값은 `contribution_pct` 필드에 저장됨
+  - 현재 템플릿에서는 기여도 값이 직접 표시되지 않고 순위 정렬에만 사용됨
+  - 향후 기여도 표시가 필요할 경우 `contribution_pct` 필드 활용 가능
+  - 테스트 결과:
+    - 원유: 증감률=-16.4%, 기여도=-2.34%p ✅
+    - 석탄: 증감률=-32.6%, 기여도=-0.80%p ✅
+    - 나프타: 증감률=-20.7%, 기여도=-0.63%p ✅
+
+---
+
+#### 수입 보도자료 품목/수입액/테이블 데이터 누락 문제 해결
+- **시간**: 2026-01-07 (밤)
+- **문제 설명**: 
+  - 수입 보도자료에서 품목명이 모두 "N/A"로 표시됨
+  - 요약 박스에서 지역명 옆의 괄호 안 값이 비어있음 (충남(), 전남(), 경북())
+  - 수입액 및 증감률 테이블이 완전히 비어있음 (헤더만 표시)
+  - 전국 수입액이 0.0억달러로 표시됨
+- **원인 분석**: 
+  - `raw_data_extractor.py`의 `extract_import_report_data()` 함수가 불완전하게 구현되어 있었음
+  - 지역별 증감률만 추출하고, 품목(products), 수입액(amount), summary_table(rows) 데이터를 전혀 추출하지 않음
+  - `_ensure_template_compatibility()` 함수에서 기본값으로 빈 배열 `products: []`를 추가했으나 실제 데이터가 없어 템플릿에서 N/A로 표시
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 수입 보도자료 스크린샷을 제공, 품목 N/A, 빈 괄호, 빈 테이블 확인
+  - 초기 분석:
+    1. `import_template.html` 확인 → 템플릿은 정상, 데이터 문제로 판단
+    2. `import_generator.py` 확인 → 분석표용 generator, 기초자료 직접 추출과 무관
+    3. `raw_data_extractor.py`의 `extract_import_report_data()` 확인 → 핵심 데이터 누락 발견
+  - 원인 파악:
+    - 기존 함수는 `extract_quarterly_growth_rate()`만 호출하여 지역별 증감률만 추출
+    - 템플릿이 필요로 하는 데이터:
+      - `nationwide_data.amount`: 전국 수입액 (억달러)
+      - `nationwide_data.products`: 전국 주요 품목 (증가/감소 기여 품목)
+      - `regional_data.increase_regions/decrease_regions`: 지역별 증감률 + 품목
+      - `summary_box.main_decrease_regions`: 감소 지역과 품목
+      - `summary_table.rows`: 테이블 행 데이터 (지역별 분기 증감률, 수입액)
+  - 해결책 설계:
+    1. 수입 시트에서 합계 행(level='0')의 수입액과 증감률 추출
+    2. 품목 행(level='2')에서 기여도 기준 상위/하위 품목 추출
+    3. 테이블용 4개 분기 증감률 계산 (전년동기비)
+    4. 모든 데이터를 템플릿 구조에 맞게 조합
+  - 구현:
+    1. `table_q_pairs` 리스트로 4개 분기 컬럼 정의
+    2. `region_data` 딕셔너리에 지역별 합계/품목 데이터 수집
+    3. 품목 기여도(금액 변화량) 계산하여 증가/감소 품목 분류
+    4. `summary_box`, `summary_table` 구조 생성
+- **해결 방법**: 
+  - `templates/raw_data_extractor.py`의 `extract_import_report_data()` 함수 완전 재작성:
+    1. 시트 구조 정보(region_col, level_col, name_col, 분기 컬럼) 활용
+    2. 합계 행(level='0')에서 지역별 수입액, 증감률 추출
+    3. 품목 행(level='2')에서 기여도 기반 상위/하위 품목 추출
+    4. 테이블용 4개 분기 전년동기비 증감률 계산
+    5. 템플릿 구조에 맞는 데이터 구조 생성:
+       - `nationwide_data`: amount, change, products
+       - `regional_data`: increase_regions, decrease_regions (각 지역에 products 포함)
+       - `summary_box`: main_decrease_regions (품목 포함)
+       - `summary_table`: columns, rows (18개 지역)
+       - `increase_products_text`, `decrease_products_text`
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (extract_import_report_data 함수 재작성)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 수출 보도자료(`extract_export_report_data`)도 동일한 문제가 있을 수 있음
+  - 테스트 결과:
+    - 전국 수입액: 15433.2억달러 ✅
+    - 전국 증감률: -1.7% ✅
+    - 품목: 원유(-16.4%), 석탄(-32.6%), 나프타(-20.7%) ✅
+    - 테이블: 18개 지역 데이터 정상 표시 ✅
+    - N/A 발생 횟수: 0 ✅
+
+---
+
+#### 기초자료 업로드 시 보도자료 생성 오류 (check_missing_data 및 템플릿 호환성)
+- **시간**: 2026-01-07 (저녁)
+- **문제 설명**: 
+  - 기초자료 업로드 시 보도자료 생성이 안되고 요약 섹션만 표시됨
+  - 오류 메시지: `check_missing_data() missing 1 required positional argument: 'report_id'`
+  - 추가 오류: `'dict object' has no attribute 'change'`, `'change_columns'`, `'quarter_columns'`, `'age_groups'` 등
+- **원인 분석**:
+  1. `report_generator.py`의 368번 라인에서 `check_missing_data(raw_data)` 호출 시 `report_id` 인자 누락
+  2. 기초자료 추출 후 `_ensure_template_compatibility()` 함수가 호출되지 않아 템플릿 호환성 문제 발생
+  3. `_generate_default_summary_table()`에서 `change_columns`, `quarter_columns` 등 누락
+  4. 수출/수입, 고용률/실업률 템플릿에서 필요한 `change`, `products`, `age_groups` 속성 누락
+- **에이전트 사고 과정**:
+  - 터미널 로그에서 `TypeError: check_missing_data() missing 1 required positional argument: 'report_id'` 확인
+  - `utils/data_utils.py`의 함수 시그니처 확인: `def check_missing_data(data, report_id)`
+  - 기초자료 추출 후 `_ensure_template_compatibility`가 호출되지 않는 것을 발견
+  - 각 템플릿에서 사용하는 필드들을 grep으로 확인 (change, change_columns, quarter_columns, age_groups 등)
+  - `_generate_default_summary_table`에 누락된 컬럼 추가
+  - 수출/수입 및 고용률/실업률 관련 데이터 변환 로직 추가
+- **해결 방법**: 
+  1. `report_generator.py`:
+     - `check_missing_data(raw_data)` → `check_missing_data(raw_data, report_id)` 수정
+     - 기초자료 추출 후 `_ensure_template_compatibility(raw_data, report_id)` 호출 추가
+     - `_generate_default_summary_table()`에 `change_columns`, `quarter_columns`, `rate_columns`, `amount_columns` 추가
+     - `_ensure_template_compatibility()`에서:
+       - `nationwide_data.products`, `nationwide_data.main_age_groups` 추가
+       - 수출/수입 지역 데이터에 `change`, `products` 속성 추가
+       - 고용률/실업률 지역 데이터에 `change`, `age_groups` 속성 추가
+- **관련 파일**: 
+  - `services/report_generator.py`
+- **상태**: 완료
+
+---
+
+#### GRDP 기본값 사용 제거 및 N/A 표시
+- **시간**: 2026-01-07 (저녁)
+- **문제 설명**: 
+  - GRDP 데이터가 없을 때 기본값(0%)을 사용하고 있음
+  - 사용자 요청: GRDP 없으면 기본값 사용하지 말고 N/A로 표시하거나 파일 업로드 요청
+- **해결 방법**: 
+  1. `routes/api.py`:
+     - GRDP 추출 실패 시 `get_default_grdp_data()` 호출 제거
+     - `_generate_na_grdp_data()` 함수 추가 (모든 값이 None)
+     - `/use-default-grdp` API를 N/A 진행으로 변경
+  2. `services/report_generator.py`:
+     - `get_default_grdp_data` import 제거
+     - `_generate_na_grdp_data()` 함수 추가
+     - GRDP 없으면 N/A 데이터 생성
+  3. `dashboard.html`:
+     - "GRDP 없이 진행 (기본값 사용)" → "GRDP 없이 진행 (N/A로 표시)" 텍스트 변경
+     - `useDefaultGrdp()` 함수를 N/A 진행으로 수정
+     - 토스트 메시지 업데이트
+- **관련 파일**: 
+  - `routes/api.py`
+  - `services/report_generator.py`
+  - `dashboard.html`
+- **상태**: 완료
+- **참고 사항**: 
+  - GRDP 파일은 KOSIS에서 별도 다운로드하여 업로드해야 함
+  - GRDP 모달창에서 KOSIS 페이지 링크 제공
+
+---
+
+#### 보도자료 생성 오류 - summary_box undefined 및 abs() Undefined
+- **시간**: 2026-01-07 (저녁)
+- **문제 설명**: 
+  - 부문별 보도자료 생성 시 `'summary_box' is undefined` 오류 발생
+  - 시도별 보도자료 생성 시 `bad operand type for abs(): 'Undefined'` 오류
+  - 시도별 보도자료 생성 시 `'dict object' has no attribute 'total_growth_rate'` 오류
+  - 데이터가 없을 때 0으로 채워지는 문제 (사용자 요청: 0 대신 N/A 표시)
+- **원인 분석**: 
+  1. `raw_data_extractor.py`에서 부문별 보도자료 데이터 추출 시 `summary_box` 키가 생성되지 않음
+  2. 시도별 보도자료에서 `_extract_regional_indicator()` 반환 형식이 템플릿 기대 형식과 불일치
+     - 반환: `{'value': 값, 'direction': 방향}`
+     - 기대: `{'total_growth_rate': 값, 'direction': 방향, 'increase_industries': [], ...}`
+  3. 템플릿이 기대하는 구조(`export_import_price`, `consumption_construction`, `employment_migration`)와 추출 데이터 구조(`production`) 불일치
+  4. None 값이 abs() 함수에 전달되어 TypeError 발생
+- **에이전트 사고 과정**:
+  - 터미널 로그 분석: 3가지 유형의 오류 식별
+    1. `'summary_box' is undefined` - 부문별 템플릿에서 사용
+    2. `bad operand type for abs(): 'Undefined'` - 시도별 템플릿 abs() 필터
+    3. `'dict object' has no attribute 'total_growth_rate'` - 시도별 템플릿 속성 접근
+  - 접근 방법 결정:
+    1. `raw_data_extractor.py`의 각 추출 함수에 `summary_box` 추가
+    2. `report_generator.py`에 `_ensure_template_compatibility()` 함수 추가하여 기본값 보장
+    3. 시도별 데이터에 `_to_template_format()` 변환 함수 추가
+    4. None 값을 0.0으로 변환하되 `direction='N/A'`로 표시
+  - 0 대신 N/A 표시 요구사항:
+    - 데이터가 없으면 값은 0.0 (abs() 호환), direction은 'N/A'
+    - `is_missing` 플래그 추가하여 템플릿에서 조건부 표시 가능
+- **해결 방법**: 
+  1. `raw_data_extractor.py`:
+     - `extract_mining_manufacturing_report_data()`: `summary_box`, `nationwide_data` 추가
+     - `extract_service_industry_report_data()`: `summary_box`, `nationwide_data` 추가
+     - `_to_template_format()`: 템플릿 형식 변환 함수 신규 추가
+     - `extract_regional_data()`: 템플릿 기대 구조로 재구성
+       - `production`, `consumption_construction`, `export_import_price`, `employment_migration` 섹션
+     - None 값 반환을 0.0으로 변환, `is_missing` 플래그 추가
+  2. `report_generator.py`:
+     - `_ensure_template_compatibility()` 함수 추가
+     - 기초자료 추출 후 템플릿 호환성 보장
+  3. `utils/filters.py`:
+     - `safe_abs()`: None 안전한 절대값 필터
+     - `safe_format()`: None 안전한 포맷팅 필터
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (4곳 수정)
+  - `services/report_generator.py` (2곳 수정)
+  - `utils/filters.py` (2개 필터 추가)
+- **상태**: 완료
+- **참고 사항**: 
+  - 가중치 데이터가 없는 기초자료에서는 품목별/업종별 상세 데이터가 빈 배열로 반환됨
+  - 추후 가중치 시트가 추가되면 해당 데이터도 추출 가능
+
+---
+
+#### 업로드 후 미리보기 미생성 문제 해결
+- **시간**: 2026-01-07 (저녁)
+- **문제 설명**: 
+  - 기초자료 수집표 업로드는 성공하지만 미리보기가 생성되지 않음
+  - 서버에서 200 응답이 반환되었지만 프론트엔드에서 미리보기가 표시되지 않음
+- **원인 분석**: 
+  - `selectReportByGlobalIndex(0)` 함수가 호출되었으나 해당 함수가 정의되어 있지 않음
+  - 실제 존재하는 함수명은 `selectGlobalReport`였으나 이 함수도 `state.allGenerated`가 true일 때만 동작
+  - 업로드 완료 후 `generateAllReports()` 함수가 호출되지 않아 미리보기가 생성되지 않음
+- **에이전트 사고 과정**:
+  - 터미널 로그 분석: 업로드 성공 (200 응답), 가중치 경고 15건 표시
+  - 대시보드 JavaScript 코드 분석:
+    1. `uploadFile()` 함수에서 업로드 완료 후 `selectReportByGlobalIndex(0)` 호출
+    2. grep 검색 결과 `selectReportByGlobalIndex` 함수가 정의되어 있지 않음
+    3. 비슷한 함수 `selectGlobalReport` 발견
+    4. `selectGlobalReport`는 `state.allGenerated`가 true일 때만 동작
+    5. `generateAllReports()` 함수가 `state.allGenerated = true`를 설정함
+  - 근본 원인: 업로드 후 `generateAllReports()`가 호출되지 않아 미리보기 미생성
+- **해결 방법**: 
+  - `dashboard.html` 수정 (3곳):
+    1. raw_with_analysis/raw 타입 업로드 완료 시: `selectReportByGlobalIndex(0)` → `await generateAllReports()`
+    2. raw_direct 타입 가중치 문제 없을 때: `selectReportByGlobalIndex(0)` → `generateAllReports()`
+    3. `proceedAfterWeightWarning()` 함수: `selectReportByGlobalIndex(0)` → `generateAllReports()`
+- **관련 파일**: 
+  - `dashboard.html` (3곳 수정)
+- **상태**: 완료
+- **참고 사항**: 
+  - 가중치 경고 모달에서 "진행하기" 클릭 시 미리보기 생성 시작
+  - 미리보기 생성 완료 후 첫 번째 보도자료가 자동 선택됨
+
+---
+
+#### 한글 내보내기 기능 완전 재구현 및 불필요한 API 정리
+- **시간**: 2026-01-07 (저녁)
+- **문제 설명**: 
+  - 대시보드에서 접근하지 않는 사용하지 않는 API 엔드포인트들이 존재
+  - 한글 복붙용 HTML이 제대로 구현되지 않음
+  - 한글에서 불러오기로 열 수 있는 HTML 파일 기능 개선 필요
+- **원인 분석**: 
+  - 레거시 API들이 대시보드에서 호출되지 않지만 코드에 남아있음
+  - 기존 한글 내보내기 함수들의 인라인 스타일이 한글 호환성에 최적화되지 않음
+  - 스타일 적용 함수가 중복으로 존재 (`_add_hwp_compatible_styles`, `_add_table_inline_styles`)
+- **에이전트 사고 과정**:
+  - 대시보드에서 실제 호출하는 API 분석: `fetch('/api/...')` 패턴 검색
+  - 사용되는 API: `/api/upload`, `/api/export-final`, `/api/export-xlsx`, `/api/export-hwp-import`, `/api/export-hwp-ready`, `/api/save-html-to-project`, `/api/use-default-grdp`, `/api/upload-grdp`, `/api/cleanup-uploads`, `/api/report-order`
+  - 사용되지 않는 API 식별: `/api/check-grdp`, `/api/session-info`, `/api/generate-all`, `/api/generate-all-regional`, `/api/render-chart-image`, `/api/validate-weights`, `/api/get-industry-weights`
+  - 한글 내보내기 개선 전략:
+    1. 모든 HTML 요소에 완전한 인라인 스타일 적용 (한글은 CSS 클래스 무시)
+    2. 표 테두리를 명확하게 처리 (border: 1px solid #000000)
+    3. 글꼴, 여백, 줄간격 등 한글 호환 스타일 적용
+    4. 복붙용 HTML에 "전체 복사" 버튼과 Clipboard API 지원 추가
+- **해결 방법**: 
+  1. **불필요한 API 제거** (routes/api.py):
+     - `/api/check-grdp` (GRDP 상태 확인 - 미사용)
+     - `/api/session-info` (세션 정보 조회 - 미사용)
+     - `/api/generate-all` (일괄 생성 - 대시보드에서 개별 생성 사용)
+     - `/api/generate-all-regional` (시도별 일괄 생성 - 미사용)
+     - `/api/render-chart-image` (차트 이미지 렌더링 - 미사용)
+     - `/api/validate-weights` (가중치 검증 - 미사용)
+     - `/api/get-industry-weights` (업종별 가중치 조회 - 미사용)
+  2. **한글 불러오기용 HTML 재구현** (`export_hwp_import()`):
+     - 완전한 인라인 스타일 적용
+     - `_apply_hwp_inline_styles()` 함수 신규 작성
+     - 한글에서 [파일 → 불러오기]로 열 수 있는 형식
+     - exports 폴더에도 저장
+  3. **한글 복붙용 HTML 재구현** (`export_hwp_ready()`):
+     - 브라우저에서 열어 "전체 복사" 버튼으로 복사
+     - 툴바 UI 추가 (고정 상단)
+     - "전체 선택" 버튼 추가
+     - Clipboard API 지원 (document.execCommand 폴백)
+     - 키보드 단축키 지원 (Ctrl+A)
+  4. **중복 함수 제거**:
+     - `_add_hwp_compatible_styles()` → `_apply_hwp_inline_styles()`로 통합
+     - `_add_table_inline_styles()` 제거
+- **관련 파일**: 
+  - `routes/api.py` (약 250줄 제거, 함수 재구현)
+- **상태**: 완료
+- **참고 사항**: 
+  - 한글 복붙용 HTML: 브라우저에서 열어 "전체 복사" 클릭 → 한글에서 Ctrl+V
+  - 한글 불러오기용 HTML: 한글에서 [파일 → 불러오기] → HTML 문서 선택 → 파일 열기
+  - exports 폴더에도 자동 저장됨
+
+---
+
+#### 투트랙 아키텍처 분리 (트랙 1: 기초자료, 트랙 2: 분석표)
+- **시간**: 2026-01-07 (오후)
+- **문제 설명**: 
+  - 분석표 처리와 기초자료 직접 처리 로직이 혼재되어 코드 복잡도가 높음
+  - 향후 기능 수정 시 버그나 충돌 가능성이 있음
+  - 두 워크플로우를 명확히 분리하여 유지보수성 향상 필요
+- **원인 분석**: 
+  - 기존에는 `upload_excel()` 함수 내에서 `file_type`에 따라 분기 처리
+  - 분석표 관련 코드와 기초자료 코드가 섞여 있어 의존성 파악이 어려움
+  - 분석표 다운로드 기능 제거 후에도 관련 코드가 남아있어 혼란
+- **에이전트 사고 과정**:
+  - 사용자 요구사항: "투트랙으로 분리해서 버그나 충돌 방지"
+  - 분리 전략 수립:
+    1. 트랙 1: 기초자료 직접 처리 (`raw_direct`) - 주 워크플로우
+    2. 트랙 2: 분석표 업로드 처리 (`analysis`) - 레거시/폴백
+  - 구현 방법:
+    - 독립된 핸들러 함수 생성: `_handle_raw_data_upload()`, `_handle_analysis_upload()`
+    - 세션 변수 분리: `raw_excel_path`(트랙1) vs `analysis_excel_path`(트랙2)
+    - 레거시 API에 명확한 주석 추가
+    - 대시보드 UI에서 트랙별 분기 정리
+- **해결 방법**: 
+  - `routes/api.py` 리팩토링:
+    - `_handle_raw_data_upload()`: 트랙 1 전용 핸들러 (기초자료 → 보도자료)
+    - `_handle_analysis_upload()`: 트랙 2 전용 핸들러 (분석표 → 보도자료)
+    - `upload_excel()`: 라우터 역할만 수행 (파일 유형 감지 후 트랙 분기)
+    - 레거시 API 섹션 구분 및 주석 추가
+  - `dashboard.html` 수정:
+    - 트랙별 UI 분기 로직 정리
+    - 레거시 모드 표시 ("분석표 업로드 완료! (레거시 모드)")
+- **관련 파일**: 
+  - `routes/api.py` (핸들러 분리 및 레거시 섹션 구분)
+  - `dashboard.html` (트랙별 UI 분기)
+- **상태**: 완료
+- **참고 사항**: 
+  - 트랙 1 (raw_direct)이 기본 워크플로우, 트랙 2 (analysis)는 폴백
+  - 분석표 관련 API (`/download-analysis`, `/generate-analysis-with-weights`)는 레거시로 유지
+  - 향후 트랙 2를 완전히 제거하려면 해당 API와 `_handle_analysis_upload()` 함수 삭제
+  - 세션 변수 정리: `raw_excel_path`(트랙1), `analysis_excel_path`(트랙2), `excel_path`(공통)
+
+---
+
+#### 분석표 다운로드 기능 제거 (UI 단순화)
+- **시간**: 2026-01-07 (오후)
+- **문제 설명**: 
+  - 분석표 다운로드 기능이 더 이상 필요하지 않음
+  - 기초자료에서 직접 보도자료를 생성하는 워크플로우로 변경됨
+  - 분석표 업로드 폴백은 유지하되, 다운로드 버튼만 제거 필요
+- **원인 분석**: 
+  - 기존 워크플로우: 기초자료 → 분석표 다운로드 → 분석표 업로드 → 보도자료 생성
+  - 새 워크플로우: 기초자료 → 바로 보도자료 생성
+  - 분석표 다운로드 버튼과 관련 함수들이 더 이상 사용되지 않음
+- **에이전트 사고 과정**:
+  - 의존성 분석: `detect_file_type()`은 여전히 필요 (분석표 폴백 지원)
+  - 속도 개선 효과 분석: 약 0.1~0.3초 절약 (openpyxl 파일 읽기 제거 시)
+  - 실제 속도 개선보다 코드 단순화가 더 큰 이점
+  - 사용자 요청: 분석표 업로드는 폴백으로 유지, 다운로드만 제거
+- **해결 방법**: 
+  - `dashboard.html`에서 분석표 다운로드 버튼 HTML 제거
+  - `updateAnalysisButton()` 함수 제거
+  - `generateAnalysisInBackground()` 함수 제거
+  - `downloadAnalysisFile()` 함수 제거
+  - `updateUIForFileType()`에서 `downloadAnalysisBtn` 참조 제거
+  - `fileType === 'raw'` 케이스를 `raw_direct`와 동일하게 처리
+  - 관련 안내 문구 정리
+- **관련 파일**: 
+  - `dashboard.html` (약 150줄 제거/수정)
+- **상태**: 완료
+- **참고 사항**: 
+  - 분석표 업로드(`file_type === 'analysis'`) 경로는 폴백으로 유지됨
+  - `routes/api.py`의 `/api/download-analysis` 엔드포인트는 그대로 유지 (호출되지 않음)
+  - 향후 필요시 백엔드 API도 정리 가능
+
+---
+
+#### 가중치 누락 경고 모달 기능 구현
+- **시간**: 2026-01-07 (오후)
+- **문제 설명**: 
+  - 기초자료 수집표 업로드 시 가중치 정보가 누락되어 있으면 일부 보도자료 내용이 제대로 생성되지 않음
+  - 사용자에게 가중치 누락 여부를 알리고 선택지를 제공할 필요가 있음
+    1. 결측치를 N/A로 두고 진행 후 나중에 한글에서 직접 편집
+    2. 작업 취소 후 기초자료 수집표를 수정하여 재업로드
+- **원인 분석**: 
+  - 가중치 정보는 비공개 통계 자료로, 실무자가 직접 입력해야 함
+  - 가중치가 누락되면 기여율 계산 및 일부 분석 결과에 영향
+  - 현재 시스템은 가중치 누락을 감지하지 않고 그냥 진행함
+- **에이전트 사고 과정**:
+  - 사용자 요구사항 분석: 경고 모달 + 2가지 선택지 분기 필요
+  - 구현 위치 결정:
+    1. API에서 가중치 검증 로직 추가 (`validate_weights_in_raw_data` 함수)
+    2. 업로드 API 응답에 `weight_validation` 필드 추가
+    3. 프론트엔드에 경고 모달 UI 추가 (`weightWarningModal`)
+    4. 업로드 후 분기 처리 로직 구현
+  - 검증 대상 결정: 광공업생산, 서비스업생산 시트의 가중치 열 (D열, 0-based index 3)
+  - 모달 디자인: 누락 상세 정보 표시 + 두 가지 버튼 (진행/취소)
+- **해결 방법**: 
+  - `routes/api.py`에 `validate_weights_in_raw_data()` 함수 추가
+  - `routes/api.py`에 `/api/validate-weights` 엔드포인트 추가
+  - 업로드 API(`/api/upload`)에서 가중치 검증 결과를 `weight_validation` 필드로 반환
+  - `dashboard.html`에 가중치 경고 모달 HTML 추가
+  - `dashboard.html`에 모달 관련 JavaScript 함수 추가:
+    - `showWeightWarningModal(weightValidation)`: 모달 표시 및 상세 정보 렌더링
+    - `hideWeightWarningModal()`: 모달 닫기
+    - `resetUploadState()`: 취소 시 업로드 상태 초기화
+    - `proceedAfterWeightWarning()`: 계속 진행 시 보도자료 생성
+  - 업로드 성공 후 `data.weight_validation.has_missing_weights` 체크하여 모달 표시
+- **관련 파일**: 
+  - `routes/api.py` (가중치 검증 함수 및 API 추가)
+  - `dashboard.html` (경고 모달 UI 및 분기 로직)
+- **상태**: 완료
+- **참고 사항**: 
+  - 현재는 전국 데이터의 가중치만 검증 (지역별 가중치는 별도 검증 가능)
+  - 향후 가중치 직접 편집 기능 추가 가능
+  - 모달에서 "진행하기" 선택 시 `state.continueWithMissingWeights = true` 설정
+
+---
+
+#### 분석표 다운로드 기능 제거 (UI 단순화)
+- **시간**: 2026-01-07 (오후)
+- **문제 설명**: 
+  - 분석표 다운로드 기능이 더 이상 필요하지 않음
+  - 기초자료에서 직접 보도자료를 생성하는 워크플로우로 변경됨
+  - 분석표 업로드 폴백은 유지하되, 다운로드 버튼만 제거 필요
+- **원인 분석**: 
+  - 기존 워크플로우: 기초자료 → 분석표 다운로드 → 분석표 업로드 → 보도자료 생성
+  - 새 워크플로우: 기초자료 → 바로 보도자료 생성
+  - 분석표 다운로드 버튼과 관련 함수들이 더 이상 사용되지 않음
+- **에이전트 사고 과정**:
+  - 의존성 분석: `detect_file_type()`은 여전히 필요 (분석표 폴백 지원)
+  - 속도 개선 효과 분석: 약 0.1~0.3초 절약 (openpyxl 파일 읽기 제거 시)
+  - 실제 속도 개선보다 코드 단순화가 더 큰 이점
+  - 사용자 요청: 분석표 업로드는 폴백으로 유지, 다운로드만 제거
+- **해결 방법**: 
+  - `dashboard.html`에서 분석표 다운로드 버튼 HTML 제거
+  - `updateAnalysisButton()` 함수 제거
+  - `generateAnalysisInBackground()` 함수 제거
+  - `downloadAnalysisFile()` 함수 제거
+  - `updateUIForFileType()`에서 `downloadAnalysisBtn` 참조 제거
+  - `fileType === 'raw'` 케이스를 `raw_direct`와 동일하게 처리
+  - 관련 안내 문구 정리
+- **관련 파일**: 
+  - `dashboard.html` (약 150줄 제거/수정)
+- **상태**: 완료
+- **참고 사항**: 
+  - 분석표 업로드(`file_type === 'analysis'`) 경로는 폴백으로 유지됨
+  - `routes/api.py`의 `/api/download-analysis` 엔드포인트는 그대로 유지 (호출되지 않음)
+  - 향후 필요시 백엔드 API도 정리 가능
+
+---
+
+#### 기초자료에서 수출/수입/물가/고용률 데이터 추출 오류 수정
+- **시간**: 2026-01-07 15:00
+- **문제 설명**: 
+  - 부문별 및 시도별 보도자료에서 수출, 수입, 물가, 고용률 데이터가 0으로 나오는 문제
+  - 기초자료 수집표에서 직접 데이터를 추출할 때 일부 지표가 올바르게 추출되지 않음
+- **원인 분석**: 
+  - `raw_data_extractor.py`에서 `classification_value` 설정이 실제 시트 구조와 불일치
+  - 수출/수입 시트: level='계'가 아니라 level='0'이 합계 행임
+  - 고용률 시트: region_column=0이 아니라 region_column=1, level='0'이 합계 행
+  - 물가 시트: level='총지수'가 아니라 level='0'이 합계 행
+- **에이전트 사고 과정**:
+  - 문제 인식: 서울 데이터 테스트에서 수출/수입/물가/고용률이 모두 0.0으로 반환됨
+  - 시트 구조 분석:
+    1. 수출 시트: Row 2의 헤더 확인, Row 159에서 서울 합계 행 발견, level='0' (not '계')
+    2. 수입 시트: Row 188에서 서울 합계 행 발견, level='0'
+    3. 고용률 시트: region_col=1, level_col=2, Row 9에서 서울 합계 행 발견 (level='0', name='계')
+    4. 물가 시트: region_col=0, level_col=1, Row 29에서 서울 합계 행 발견 (level='0', name='총지수')
+  - 해결책 선택: 각 시트별 classification_value를 실제 값에 맞게 수정
+- **해결 방법**: 
+  - `raw_data_extractor.py`의 여러 메서드에서 `classification_value` 수정:
+    - 수출/수입: '계' → '0'
+    - 물가: classification_column=1, classification_value='0' 추가
+    - 고용률: region_column=1, classification_column=2, classification_value='0'으로 수정
+  - 시도별 데이터 추출 관련 메서드들도 동일하게 수정
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py`
+- **상태**: 완료
+- **참고 사항**: 
+  - 테스트 결과 모든 지표가 정상적으로 추출됨
+  - 서울 데이터 테스트 결과: 광공업생산(-8.3%), 수출(1.6%), 물가(2.0%), 고용률(-0.2%p)
+
+---
+
+#### 부문별 템플릿 None값 처리: default 값 제거 및 N/A 출력으로 변경
+- **시간**: 2026-01-07 15:20 (초기), 15:45 (N/A 방식으로 전면 수정)
+- **문제 설명**: 
+  - 광공업생산 템플릿: `list object has no element 0` 오류
+  - 수입 템플릿: `must be real number, not NoneType` 오류
+  - **사용자 요청**: "절대로 default값을 넣지말고 오류가 나면 무조건 N/A를 출력하세요. 왜냐하면 단 하나의 임의 값도 존재해선 안됩니다."
+- **원인 분석**: 
+  - Jinja2 템플릿에서 `|default(0, true)` 사용 시 임의의 기본값이 출력됨
+  - 데이터가 없을 때 0 또는 빈 문자열 대신 명확하게 "N/A"를 표시해야 함
+- **에이전트 사고 과정**:
+  - 초기 접근: `|default(0, true)` 사용 → 사용자 피드백으로 임의 값 사용 불가 확인
+  - 수정 접근: 모든 `|default()` 제거, 대신 조건문으로 N/A 출력
+  - 해결책:
+    1. `safe_num` 매크로 추가: None이면 N/A 출력, 아니면 포맷팅
+    2. 모든 `|default(0, true)` → `safe_num()` 또는 조건문으로 교체
+    3. 빈 배열은 `{% if list %}` 조건문 후 `{% else %}N/A{% endif %}`
+- **해결 방법**: 
+  - `safe_num` 매크로 추가:
+    ```jinja2
+    {% macro safe_num(value, format="%.1f") %}
+        {%- if value is none or value == '' or value == '-' -%}N/A{%- else -%}{{ format|format(value) }}{%- endif -%}
+    {% endmacro %}
+    ```
+  - 모든 숫자 출력에서 `|default(0, true)` 대신 `safe_num()` 또는 조건문 사용
+  - 모든 문자열 출력에서 `|default('', true)` 대신 `if else 'N/A'` 패턴 사용
+- **관련 파일**: 
+  - `templates/mining_manufacturing_template.html`
+  - `templates/import_template.html`
+  - `templates/export_template.html`
+- **상태**: 완료
+- **참고 사항**: 
+  - 임의의 기본값(0, 100.0 등)은 데이터 무결성을 해칠 수 있음
+  - N/A는 데이터가 없음을 명확하게 표시
+  - 테스트 결과: 모든 템플릿 정상 렌더링 확인
+
+---
 
 #### 기초자료에서 직접 보도자료 생성 워크플로우 구현
 - **시간**: 2026-01-07
@@ -1480,14 +2246,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 25
-- 완료: 25
+- 총 항목: 32
+- 완료: 32
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-07 (기초자료에서 직접 보도자료 생성 워크플로우 구현)
+- 마지막 업데이트: 2026-01-07 (시도별 보도자료의 summary_table 행 데이터가 표시되지 않는 문제 해결)
 
 ---
 

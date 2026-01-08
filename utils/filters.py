@@ -40,10 +40,33 @@ def editable(value, format_str="%.1f"):
         return f'<span class="editable-placeholder" contenteditable="true">[  ]</span>'
 
 
+def safe_abs(value):
+    """안전한 절대값 (None이면 N/A 반환)"""
+    if is_missing(value):
+        return None
+    try:
+        return abs(float(value))
+    except (ValueError, TypeError):
+        return None
+
+
+def safe_format(value, format_str="%.1f", default="N/A"):
+    """안전한 포맷팅 (None이면 N/A 반환)"""
+    if is_missing(value):
+        return default
+    try:
+        return format_str % float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def register_filters(app):
     """Flask 앱에 Jinja2 필터 등록"""
     app.jinja_env.filters['is_missing'] = is_missing
     app.jinja_env.filters['format_value'] = format_value
     app.jinja_env.filters['editable'] = editable
+    app.jinja_env.filters['safe_abs'] = safe_abs
+    app.jinja_env.filters['safe_format'] = safe_format
     app.jinja_env.globals['is_missing'] = is_missing
+    app.jinja_env.globals['safe_abs'] = safe_abs
 

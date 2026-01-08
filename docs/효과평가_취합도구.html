@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설문 결과 취합 및 분석 도구</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 헤더 */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 24pt;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 11pt;
+            opacity: 0.9;
+        }
+        
+        /* 카드 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .card-title {
+            font-size: 14pt;
+            font-weight: 600;
+            color: #1a365d;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 업로드 영역 */
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: #f7fafc;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background: #ebf4ff;
+        }
+        
+        .upload-area .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area h3 {
+            font-size: 13pt;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .upload-area p {
+            font-size: 10pt;
+            color: #718096;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        /* 파일 목록 */
+        .file-list {
+            margin-top: 20px;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .file-item .file-name {
+            font-size: 10pt;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .file-item .file-status {
+            font-size: 9pt;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        
+        .file-item .file-status.success {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        
+        .file-item .file-status.error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .file-item .btn-remove {
+            background: none;
+            border: none;
+            color: #a0aec0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .file-item .btn-remove:hover {
+            color: #e53e3e;
+        }
+        
+        /* 버튼 */
+        .btn {
+            padding: 12px 25px;
+            font-size: 11pt;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        /* 통계 결과 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-box .label {
+            font-size: 10pt;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .stat-box .value {
+            font-size: 28pt;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-box .value.score {
+            color: #48bb78;
+        }
+        
+        .stat-box .sub {
+            font-size: 9pt;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        /* 상세 결과 테이블 */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        
+        .result-table th {
+            background: #2d3748;
+            color: white;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        .result-table th:not(:first-child) {
+            text-align: center;
+        }
+        
+        .result-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .result-table td:not(:first-child) {
+            text-align: center;
+        }
+        
+        .result-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .result-table .category-header {
+            background: #edf2f7;
+            font-weight: 600;
+            color: #1a365d;
+        }
+        
+        .score-bar {
+            display: inline-block;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            width: 100px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .score-bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #667eea, #48bb78);
+        }
+        
+        /* 서술형 응답 */
+        .text-responses {
+            margin-top: 20px;
+        }
+        
+        .text-response-item {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .text-response-item .respondent {
+            font-size: 9pt;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .text-response-item .content {
+            font-size: 10pt;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        
+        /* 탭 */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            font-size: 11pt;
+            color: #4a5568;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 인쇄 스타일 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .upload-area, .button-group, .tabs {
+                display: none;
+            }
+            
+            .tab-content {
+                display: block !important;
+            }
+            
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
+        
+        /* 숨김 클래스 */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* 로딩 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>📊 설문 결과 취합 및 분석 도구</h1>
+            <p>개별 응답 CSV 파일을 업로드하면 자동으로 통계를 계산합니다</p>
+        </header>
+        
+        <!-- 파일 업로드 -->
+        <div class="card">
+            <h2 class="card-title">📁 응답 파일 업로드</h2>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="icon">📤</div>
+                <h3>CSV 파일을 드래그하거나 클릭하여 업로드</h3>
+                <p>설문 응답 CSV 파일을 여러 개 선택할 수 있습니다</p>
+            </div>
+            <input type="file" id="fileInput" accept=".csv" multiple>
+            
+            <div class="file-list" id="fileList"></div>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" id="btnAnalyze" onclick="analyzeData()" disabled>
+                    📈 분석 실행
+                </button>
+                <button class="btn btn-outline" onclick="clearFiles()">
+                    🗑️ 파일 초기화
+                </button>
+            </div>
+        </div>
+        
+        <!-- 분석 결과 -->
+        <div class="card hidden" id="resultsCard">
+            <h2 class="card-title">📈 분석 결과</h2>
+            
+            <!-- 요약 통계 -->
+            <div class="stats-grid" id="summaryStats"></div>
+            
+            <!-- 탭 -->
+            <div class="tabs">
+                <div class="tab active" data-tab="overview">📋 항목별 결과</div>
+                <div class="tab" data-tab="category">📊 영역별 평균</div>
+                <div class="tab" data-tab="text">💬 서술형 응답</div>
+                <div class="tab" data-tab="raw">📄 원본 데이터</div>
+            </div>
+            
+            <!-- 항목별 결과 -->
+            <div class="tab-content active" id="tab-overview">
+                <table class="result-table" id="overviewTable"></table>
+            </div>
+            
+            <!-- 영역별 평균 -->
+            <div class="tab-content" id="tab-category">
+                <table class="result-table" id="categoryTable"></table>
+            </div>
+            
+            <!-- 서술형 응답 -->
+            <div class="tab-content" id="tab-text">
+                <div id="textResponses"></div>
+            </div>
+            
+            <!-- 원본 데이터 -->
+            <div class="tab-content" id="tab-raw">
+                <div style="overflow-x: auto;">
+                    <table class="result-table" id="rawTable"></table>
+                </div>
+            </div>
+            
+            <!-- 내보내기 버튼 -->
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="exportSummary()">
+                    📥 요약 보고서 다운로드 (CSV)
+                </button>
+                <button class="btn btn-outline" onclick="exportMerged()">
+                    📥 통합 데이터 다운로드 (CSV)
+                </button>
+                <button class="btn btn-outline" onclick="window.print()">
+                    🖨️ 인쇄
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 데이터 저장
+        let uploadedFiles = [];
+        let allResponses = [];
+        
+        // 질문 정의
+        const questions = {
+            'Q1_초안작성시간단축': { num: 1, text: '보도자료 초안 작성 시간 단축', category: '시간절감' },
+            'Q2_데이터입력시간감소': { num: 2, text: '데이터 입력 및 정리 시간 감소', category: '시간절감' },
+            'Q3_복붙작업감소': { num: 3, text: '반복적 복사-붙여넣기 작업 감소', category: '시간절감' },
+            'Q4_분석시간확보': { num: 4, text: '데이터 해석 및 분석 시간 확보', category: '시간절감' },
+            'Q5_정신적피로감소': { num: 5, text: '단순 반복 작업으로 인한 정신적 피로 감소', category: '피로도감소' },
+            'Q6_신체적피로감소': { num: 6, text: '수동 타이핑으로 인한 신체적 피로 감소', category: '피로도감소' },
+            'Q7_실수스트레스감소': { num: 7, text: '데이터 입력 실수에 대한 스트레스 감소', category: '피로도감소' },
+            'Q8_야근감소': { num: 8, text: '야근 또는 추가 근무 필요성 감소', category: '피로도감소' },
+            'Q9_업무부담감소': { num: 9, text: '보도자료 작성 업무 부담감 감소', category: '피로도감소' },
+            'Q10_입력오류감소': { num: 10, text: '데이터 입력 오류 감소', category: '품질향상' },
+            'Q11_형식일관성': { num: 11, text: '보도자료 형식 일관성 향상', category: '품질향상' },
+            'Q12_심층분석가능': { num: 12, text: '심층 데이터 분석 가능', category: '품질향상' },
+            'Q13_품질자신감': { num: 13, text: '보도자료 품질에 대한 자신감 향상', category: '품질향상' },
+            'Q14_조작용이성': { num: 14, text: '시스템 조작 용이성', category: '사용성' },
+            'Q15_직관성': { num: 15, text: '파일 업로드 및 생성 과정 직관성', category: '사용성' },
+            'Q16_결측치처리': { num: 16, text: '결측치 처리 기능 유용성', category: '사용성' },
+            'Q17_미리보기기능': { num: 17, text: '미리보기 기능 도움', category: '사용성' },
+            'Q18_한글복붙편의': { num: 18, text: '한글(HWP) 복사-붙여넣기 편의성', category: '사용성' },
+            'Q19_전반만족도': { num: 19, text: '전반적 시스템 만족도', category: '만족도' },
+            'Q20_타인추천': { num: 20, text: '타인 추천 의사', category: '만족도' },
+            'Q21_업무만족도향상': { num: 21, text: '업무 만족도 향상', category: '만족도' },
+            'Q22_확대도입희망': { num: 22, text: '유사 업무 자동화 확대 희망', category: '만족도' }
+        };
+        
+        const categories = {
+            '시간절감': { name: 'Ⅱ. 시간 절감 효과', color: '#3182ce' },
+            '피로도감소': { name: 'Ⅲ. 업무 피로도 감소', color: '#48bb78' },
+            '품질향상': { name: 'Ⅳ. 업무 품질 향상', color: '#ed8936' },
+            '사용성': { name: 'Ⅴ. 시스템 사용성', color: '#9f7aea' },
+            '만족도': { name: 'Ⅵ. 전반적 만족도', color: '#e53e3e' }
+        };
+        
+        // 파일 업로드 이벤트
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        // 파일 처리
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.name.endsWith('.csv')) {
+                    readCSVFile(file);
+                }
+            });
+        }
+        
+        // CSV 파일 읽기
+        function readCSVFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    const data = parseCSV(content);
+                    
+                    if (data && data.length > 0) {
+                        uploadedFiles.push({
+                            name: file.name,
+                            data: data[0], // 첫 번째 데이터 행
+                            status: 'success'
+                        });
+                    } else {
+                        uploadedFiles.push({
+                            name: file.name,
+                            data: null,
+                            status: 'error',
+                            error: '데이터 없음'
+                        });
+                    }
+                    
+                    updateFileList();
+                } catch (err) {
+                    uploadedFiles.push({
+                        name: file.name,
+                        data: null,
+                        status: 'error',
+                        error: err.message
+                    });
+                    updateFileList();
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+        
+        // CSV 파싱
+        function parseCSV(content) {
+            // BOM 제거
+            if (content.charCodeAt(0) === 0xFEFF) {
+                content = content.slice(1);
+            }
+            
+            const lines = content.split('\n').filter(line => line.trim());
+            if (lines.length < 2) return null;
+            
+            const headers = parseCSVLine(lines[0]);
+            const result = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = values[index] || '';
+                });
+                result.push(obj);
+            }
+            
+            return result;
+        }
+        
+        // CSV 라인 파싱 (따옴표 처리)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result;
+        }
+        
+        // 파일 목록 업데이트
+        function updateFileList() {
+            const listEl = document.getElementById('fileList');
+            listEl.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-item">
+                    <span class="file-name">📄 ${file.name}</span>
+                    <span class="file-status ${file.status}">${file.status === 'success' ? '✓ 로드 완료' : '✗ ' + file.error}</span>
+                    <button class="btn-remove" onclick="removeFile(${index})">✕</button>
+                </div>
+            `).join('');
+            
+            const validFiles = uploadedFiles.filter(f => f.status === 'success').length;
+            document.getElementById('btnAnalyze').disabled = validFiles === 0;
+        }
+        
+        // 파일 제거
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+        }
+        
+        // 파일 초기화
+        function clearFiles() {
+            uploadedFiles = [];
+            allResponses = [];
+            updateFileList();
+            document.getElementById('resultsCard').classList.add('hidden');
+        }
+        
+        // 데이터 분석
+        function analyzeData() {
+            allResponses = uploadedFiles
+                .filter(f => f.status === 'success')
+                .map(f => f.data);
+            
+            if (allResponses.length === 0) {
+                alert('분석할 데이터가 없습니다.');
+                return;
+            }
+            
+            renderSummaryStats();
+            renderOverviewTable();
+            renderCategoryTable();
+            renderTextResponses();
+            renderRawTable();
+            
+            document.getElementById('resultsCard').classList.remove('hidden');
+        }
+        
+        // 통계 계산
+        function calculateStats(key) {
+            const values = allResponses
+                .map(r => parseFloat(r[key]))
+                .filter(v => !isNaN(v) && v > 0);
+            
+            if (values.length === 0) return { avg: 0, min: 0, max: 0, count: 0 };
+            
+            return {
+                avg: values.reduce((a, b) => a + b, 0) / values.length,
+                min: Math.min(...values),
+                max: Math.max(...values),
+                count: values.length
+            };
+        }
+        
+        // 요약 통계 렌더링
+        function renderSummaryStats() {
+            const totalResponses = allResponses.length;
+            
+            // 전체 평균 점수
+            let totalSum = 0;
+            let totalCount = 0;
+            Object.keys(questions).forEach(key => {
+                const stats = calculateStats(key);
+                totalSum += stats.avg * stats.count;
+                totalCount += stats.count;
+            });
+            const overallAvg = totalCount > 0 ? totalSum / totalCount : 0;
+            
+            // 만족도 평균
+            const satisfactionKeys = Object.keys(questions).filter(k => questions[k].category === '만족도');
+            let satSum = 0;
+            let satCount = 0;
+            satisfactionKeys.forEach(key => {
+                const stats = calculateStats(key);
+                satSum += stats.avg * stats.count;
+                satCount += stats.count;
+            });
+            const satisfactionAvg = satCount > 0 ? satSum / satCount : 0;
+            
+            // 피로도 감소 평균
+            const fatigueKeys = Object.keys(questions).filter(k => questions[k].category === '피로도감소');
+            let fatSum = 0;
+            let fatCount = 0;
+            fatigueKeys.forEach(key => {
+                const stats = calculateStats(key);
+                fatSum += stats.avg * stats.count;
+                fatCount += stats.count;
+            });
+            const fatigueAvg = fatCount > 0 ? fatSum / fatCount : 0;
+            
+            document.getElementById('summaryStats').innerHTML = `
+                <div class="stat-box">
+                    <div class="label">총 응답 수</div>
+                    <div class="value">${totalResponses}</div>
+                    <div class="sub">명</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">전체 평균 점수</div>
+                    <div class="value score">${overallAvg.toFixed(2)}</div>
+                    <div class="sub">/ 5.00점</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">전반적 만족도</div>
+                    <div class="value score">${satisfactionAvg.toFixed(2)}</div>
+                    <div class="sub">/ 5.00점</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">피로도 감소 평가</div>
+                    <div class="value score">${fatigueAvg.toFixed(2)}</div>
+                    <div class="sub">/ 5.00점</div>
+                </div>
+            `;
+        }
+        
+        // 항목별 결과 테이블
+        function renderOverviewTable() {
+            let html = `
+                <thead>
+                    <tr>
+                        <th>문항</th>
+                        <th>평균</th>
+                        <th>분포</th>
+                        <th>최소</th>
+                        <th>최대</th>
+                        <th>응답수</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            let currentCategory = '';
+            Object.entries(questions)
+                .sort((a, b) => a[1].num - b[1].num)
+                .forEach(([key, q]) => {
+                    if (q.category !== currentCategory) {
+                        currentCategory = q.category;
+                        html += `<tr class="category-header"><td colspan="6">${categories[currentCategory].name}</td></tr>`;
+                    }
+                    
+                    const stats = calculateStats(key);
+                    const barWidth = (stats.avg / 5) * 100;
+                    
+                    html += `
+                        <tr>
+                            <td>${q.num}. ${q.text}</td>
+                            <td><strong>${stats.avg.toFixed(2)}</strong></td>
+                            <td>
+                                <span class="score-bar"><span class="fill" style="width: ${barWidth}%"></span></span>
+                            </td>
+                            <td>${stats.min || '-'}</td>
+                            <td>${stats.max || '-'}</td>
+                            <td>${stats.count}</td>
+                        </tr>
+                    `;
+                });
+            
+            html += '</tbody>';
+            document.getElementById('overviewTable').innerHTML = html;
+        }
+        
+        // 영역별 평균 테이블
+        function renderCategoryTable() {
+            let html = `
+                <thead>
+                    <tr>
+                        <th>평가 영역</th>
+                        <th>포함 문항</th>
+                        <th>평균 점수</th>
+                        <th>분포</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            Object.entries(categories).forEach(([catKey, cat]) => {
+                const catQuestions = Object.entries(questions).filter(([k, q]) => q.category === catKey);
+                const questionNums = catQuestions.map(([k, q]) => q.num).join(', ');
+                
+                let sum = 0;
+                let count = 0;
+                catQuestions.forEach(([key]) => {
+                    const stats = calculateStats(key);
+                    sum += stats.avg * stats.count;
+                    count += stats.count;
+                });
+                const avg = count > 0 ? sum / count : 0;
+                const barWidth = (avg / 5) * 100;
+                
+                html += `
+                    <tr>
+                        <td><strong>${cat.name}</strong></td>
+                        <td>Q${questionNums}</td>
+                        <td><strong style="color: ${cat.color}">${avg.toFixed(2)}</strong></td>
+                        <td>
+                            <span class="score-bar"><span class="fill" style="width: ${barWidth}%; background: ${cat.color}"></span></span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody>';
+            document.getElementById('categoryTable').innerHTML = html;
+        }
+        
+        // 서술형 응답 렌더링
+        function renderTextResponses() {
+            const textQuestions = [
+                { key: 'Q23_개선점', title: '📌 Q23. 가장 크게 개선되었다고 느끼는 점' },
+                { key: 'Q24_불편사항', title: '📌 Q24. 불편하거나 개선이 필요한 점' },
+                { key: 'Q25_추가의견', title: '📌 Q25. 추가 기능 및 기타 의견' }
+            ];
+            
+            let html = '';
+            
+            textQuestions.forEach(tq => {
+                const responses = allResponses
+                    .map((r, i) => ({ 
+                        id: r['응답ID'] || `응답자 ${i + 1}`,
+                        content: r[tq.key]?.replace(/^"|"$/g, '') || ''
+                    }))
+                    .filter(r => r.content.trim());
+                
+                html += `<h3 style="margin: 20px 0 15px; color: #1a365d;">${tq.title}</h3>`;
+                
+                if (responses.length === 0) {
+                    html += '<p style="color: #718096; padding: 10px;">응답 없음</p>';
+                } else {
+                    responses.forEach(r => {
+                        html += `
+                            <div class="text-response-item">
+                                <div class="respondent">${r.id}</div>
+                                <div class="content">${r.content}</div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+            
+            document.getElementById('textResponses').innerHTML = html;
+        }
+        
+        // 원본 데이터 테이블
+        function renderRawTable() {
+            if (allResponses.length === 0) return;
+            
+            const headers = Object.keys(allResponses[0]);
+            
+            let html = `
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+            `;
+            
+            allResponses.forEach(r => {
+                html += `<tr>${headers.map(h => `<td>${r[h] || ''}</td>`).join('')}</tr>`;
+            });
+            
+            html += '</tbody>';
+            document.getElementById('rawTable').innerHTML = html;
+        }
+        
+        // 요약 보고서 내보내기
+        function exportSummary() {
+            const BOM = '\uFEFF';
+            let csv = BOM;
+            
+            // 기본 정보
+            csv += '지역경제동향 보도자료 생성 시스템 - 효과 평가 결과 요약\n';
+            csv += `분석일시,${new Date().toLocaleString('ko-KR')}\n`;
+            csv += `총 응답수,${allResponses.length}\n\n`;
+            
+            // 영역별 평균
+            csv += '영역,포함문항,평균점수\n';
+            Object.entries(categories).forEach(([catKey, cat]) => {
+                const catQuestions = Object.entries(questions).filter(([k, q]) => q.category === catKey);
+                const questionNums = catQuestions.map(([k, q]) => q.num).join(' ');
+                
+                let sum = 0;
+                let count = 0;
+                catQuestions.forEach(([key]) => {
+                    const stats = calculateStats(key);
+                    sum += stats.avg * stats.count;
+                    count += stats.count;
+                });
+                const avg = count > 0 ? sum / count : 0;
+                
+                csv += `${cat.name},Q${questionNums},${avg.toFixed(2)}\n`;
+            });
+            
+            csv += '\n문항별 상세 결과\n';
+            csv += '번호,문항,평균,최소,최대,응답수\n';
+            
+            Object.entries(questions)
+                .sort((a, b) => a[1].num - b[1].num)
+                .forEach(([key, q]) => {
+                    const stats = calculateStats(key);
+                    csv += `${q.num},"${q.text}",${stats.avg.toFixed(2)},${stats.min},${stats.max},${stats.count}\n`;
+                });
+            
+            downloadCSV(csv, `설문분석결과_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+        
+        // 통합 데이터 내보내기
+        function exportMerged() {
+            if (allResponses.length === 0) return;
+            
+            const BOM = '\uFEFF';
+            const headers = Object.keys(allResponses[0]);
+            
+            let csv = BOM + headers.join(',') + '\n';
+            allResponses.forEach(r => {
+                csv += headers.map(h => {
+                    const val = r[h] || '';
+                    return val.includes(',') ? `"${val}"` : val;
+                }).join(',') + '\n';
+            });
+            
+            downloadCSV(csv, `설문응답_통합_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+        
+        // CSV 다운로드
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+        
+        // 탭 전환
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(`tab-${this.dataset.tab}`).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
+

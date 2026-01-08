@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>표지 - 한글 복붙용</title>
+    <style>
+        body {
+            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #000;
+            padding: 5px 10px;
+            vertical-align: middle;
+        }
+        .no-border { border: none; }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .title-main {
+            font-size: 28pt;
+            font-weight: bold;
+            color: #1976D2;
+            text-align: center;
+            padding: 60px 0;
+        }
+        .header-table td { border: none; padding: 5px 0; }
+        .gray-bg { background-color: #f5f5f5; }
+    </style>
+</head>
+<body>
+
+<!-- ========== 표지 ========== -->
+<table style="width: 100%; border: 1px solid #000; margin-bottom: 20px;">
+    <tr>
+        <td class="no-border" style="width: 30%;">
+            <strong style="color: #1976D2;">국가데이터처</strong>
+        </td>
+        <td class="no-border center" style="width: 40%;">
+            <strong>보도자료</strong>
+        </td>
+        <td class="no-border right" style="width: 30%;">
+            <span style="color: #1976D2;">광복 80</span>
+        </td>
+    </tr>
+    <tr>
+        <td class="no-border center" colspan="3" style="padding-top: 10px;">
+            <span style="margin-right: 30px;"><strong>보도시점</strong> {{보도시점}}</span>
+            <span><strong>배포</strong> {{배포일시}}</span>
+        </td>
+    </tr>
+</table>
+
+<!-- 메인 타이틀 -->
+<table style="width: 100%; border: 1px solid #000; margin-bottom: 400px;">
+    <tr>
+        <td class="center" style="padding: 60px 40px; border: none;">
+            <div class="title-main">
+                {{연도}}년 {{분기}}/4분기<br>
+                지역경제동향
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- 하단 담당부서 정보 -->
+<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <tr>
+        <td class="gray-bg center" style="width: 80px;" rowspan="2">담당 부서</td>
+        <td style="width: 180px;" rowspan="2">{{담당부서명}}<br>{{담당과명}}</td>
+        <td class="center" style="width: 60px;">책임자</td>
+        <td class="center" style="width: 60px;">{{책임자직급}}</td>
+        <td>{{책임자성명}} ({{책임자전화번호}})</td>
+    </tr>
+    <tr>
+        <td class="center">담당자</td>
+        <td class="center">{{담당자직급}}</td>
+        <td>{{담당자성명}} ({{담당자전화번호}})</td>
+    </tr>
+</table>
+
+<p style="text-align: center; font-size: 10pt; color: #666;">
+    <span style="color: #e53935;">대한민국 정책브리핑</span> &nbsp;&nbsp;
+    <span style="border: 1px solid #666; padding: 2px 8px;">OPEN 공공누리</span>
+</p>
+
+</body>
+</html>
+

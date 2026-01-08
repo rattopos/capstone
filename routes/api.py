@@ -246,128 +246,18 @@ def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
         print(f"  → {calculated_count}개 셀 값으로 변환")
 
 
-@api_bp.route('/upload', methods=['POST'])
-def upload_excel():
-    """엑셀 파일 업로드
+# ============================================================================
+# 트랙 1: 기초자료 직접 처리 (주 워크플로우)
+# ============================================================================
+
+def _handle_raw_data_upload(filepath: Path, filename: str):
+    """[트랙 1] 기초자료 수집표 → 직접 보도자료 생성
     
-    프로세스 1: 기초자료 수집표 → 분석표 생성
-    프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성
+    기초자료에서 RawDataExtractor를 사용하여 직접 데이터를 추출합니다.
+    분석표를 거치지 않으므로 처리 속도가 빠릅니다.
     """
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': '파일이 없습니다'})
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'success': False, 'error': '파일이 선택되지 않았습니다'})
-    
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다'})
-    
-    # 새 파일 업로드 전 이전 파일 정리 (현재 세션 파일 제외)
-    cleanup_upload_folder(keep_current_files=False)
-    
-    # 한글 파일명 보존하면서 안전한 파일명 생성
-    filename = safe_filename(file.filename)
-    filepath = Path(UPLOAD_FOLDER) / filename
-    file.save(str(filepath))
-    
-    # 저장된 파일 크기 확인 (데이터 유실 방지)
-    saved_size = filepath.stat().st_size
-    print(f"[업로드] 파일 저장 완료: {filename} ({saved_size:,} bytes)")
-    
-    # 파일 유형 자동 감지
-    file_type = detect_file_type(str(filepath))
-    
-    # ===== 프로세스 2: 분석표 업로드 → GRDP 결합 → 지역경제동향 생성 =====
-    if file_type == 'analysis':
-        print(f"\n{'='*50}")
-        print(f"[프로세스 2] 분석표 업로드: {filename}")
-        print(f"{'='*50}")
-        
-        # 수식 계산 전처리 (분석 시트의 수식을 계산)
-        print(f"[전처리] 엑셀 수식 계산 시작...")
-        processed_path, preprocess_success, preprocess_msg = preprocess_excel(str(filepath))
-        
-        if preprocess_success:
-            print(f"[전처리] 성공: {preprocess_msg}")
-            # 전처리된 파일 경로 사용
-            filepath = Path(processed_path)
-        else:
-            print(f"[전처리] {preprocess_msg} - generator fallback 로직 사용")
-        
-        # 연도/분기 추출
-        year, quarter = extract_year_quarter_from_excel(str(filepath))
-        
-        # GRDP 시트 존재 여부 확인 및 데이터 추출
-        has_grdp = False
-        grdp_data = None
-        grdp_sheet_found = None
-        
-        try:
-            grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
-            wb = openpyxl.load_workbook(str(filepath), read_only=True, data_only=True)
-            
-            for sheet_name in grdp_sheet_names:
-                if sheet_name in wb.sheetnames:
-                    has_grdp = True
-                    grdp_sheet_found = sheet_name
-                    print(f"[GRDP] 시트 발견: {sheet_name}")
-                    
-                    # GRDP 시트에서 데이터 추출
-                    grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
-                    if grdp_data:
-                        print(f"[GRDP] 데이터 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
-                    break
-            wb.close()
-        except Exception as e:
-            print(f"[경고] GRDP 시트 확인 실패: {e}")
-        
-        # 세션에 저장 (파일 수정 시간 포함)
-        session['excel_path'] = str(filepath)
-        session['year'] = year
-        session['quarter'] = quarter
-        session['file_type'] = 'analysis'
-        try:
-            session['excel_file_mtime'] = Path(filepath).stat().st_mtime
-        except OSError:
-            pass  # 파일 시간 확인 실패는 무시
-        
-        if grdp_data:
-            session['grdp_data'] = grdp_data
-            # JSON 파일로도 저장
-            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-            try:
-                with open(grdp_json_path, 'w', encoding='utf-8') as f:
-                    json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-            except Exception as e:
-                print(f"[경고] GRDP JSON 저장 실패: {e}")
-        
-        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보도자료 생성' if has_grdp else 'GRDP 모달 표시'}")
-        
-        return jsonify({
-            'success': True,
-            'filename': filename,
-            'file_type': 'analysis',
-            'year': year,
-            'quarter': quarter,
-            'reports': REPORT_ORDER,
-            'regional_reports': REGIONAL_REPORTS,
-            'needs_grdp': not has_grdp,
-            'has_grdp': has_grdp,
-            'grdp_sheet': grdp_sheet_found,
-            'conversion_info': None,
-            'preprocessing': {
-                'success': preprocess_success,
-                'message': preprocess_msg,
-                'method': get_recommended_method()
-            }
-        })
-    
-    # ===== 프로세스: 기초자료 수집표 → 직접 보도자료 생성 =====
-    # 분석표를 거치지 않고 기초자료에서 직접 보도자료 데이터 추출
     print(f"\n{'='*50}")
-    print(f"[직접 생성] 기초자료 수집표 업로드: {filename}")
-    print(f"  → 분석표 없이 직접 보도자료 생성")
+    print(f"[트랙 1] 기초자료 직접 처리: {filename}")
     print(f"{'='*50}")
     
     try:
@@ -378,35 +268,38 @@ def upload_excel():
         year, quarter = extract_year_quarter_from_raw(str(filepath))
         print(f"[정보] 감지된 연도/분기: {year}년 {quarter}분기")
         
-        # RawDataExtractor로 데이터 준비 (보도자료 생성 시 사용)
+        # RawDataExtractor 준비
         extractor = RawDataExtractor(str(filepath), year, quarter)
         
         # GRDP 데이터 추출 시도
         has_grdp = False
         grdp_data = None
         grdp_sheet_found = None
-        needs_review = True  # 기여율 수정 필요 여부
+        needs_review = True
         
-        # 1. 기초자료에서 GRDP 추출 시도 (DataConverter 사용 - GRDP만)
         try:
             converter = DataConverter(str(filepath))
             grdp_data = converter.extract_grdp_data()
             if grdp_data and not grdp_data.get('national_summary', {}).get('placeholder', True):
                 has_grdp = True
                 needs_review = False
-                print(f"[GRDP] 기초자료에서 GRDP 추출 성공 - 전국: {grdp_data['national_summary']['growth_rate']}%")
-                # 추출된 기여율 저장
+                print(f"[GRDP] 추출 성공 - 전국: {grdp_data['national_summary']['growth_rate']}%")
                 save_extracted_contributions(grdp_data)
         except Exception as e:
-            print(f"[GRDP] 기초자료에서 GRDP 추출 실패: {e}")
+            print(f"[GRDP] 추출 실패: {e}")
         
-        # 2. GRDP 데이터가 없으면 기본값 사용
         if grdp_data is None:
-            grdp_data = get_default_grdp_data(year, quarter, use_default_contributions=True)
+            # 기본값 사용 안 함 - GRDP 없으면 N/A로 표시
+            has_grdp = False
             needs_review = True
-            print(f"[GRDP] 기본값 사용 (기여율 수정 필요)")
+            print(f"[GRDP] 데이터 없음 - 별도 파일 업로드 필요")
         
-        print(f"[결과] 보도자료 직접 생성 준비 완료")
+        # 가중치 검증
+        weight_validation = validate_weights_in_raw_data(str(filepath))
+        if weight_validation['has_missing_weights']:
+            print(f"[가중치 경고] 누락: {weight_validation['total_missing']}건")
+        
+        print(f"[결과] 보도자료 생성 준비 완료")
         
     except Exception as e:
         import traceback
@@ -417,16 +310,15 @@ def upload_excel():
             'error': f'기초자료 처리 중 오류가 발생했습니다: {str(e)}'
         })
     
-    # 세션에 저장 (기초자료 직접 사용)
+    # 세션에 저장 (트랙 1 전용)
     session['raw_excel_path'] = str(filepath)
-    session['excel_path'] = str(filepath)  # 기초자료를 직접 사용
+    session['excel_path'] = str(filepath)
     session['year'] = year
     session['quarter'] = quarter
-    session['file_type'] = 'raw_direct'  # 기초자료 직접 사용 모드
+    session['file_type'] = 'raw_direct'
     
     if grdp_data:
         session['grdp_data'] = grdp_data
-        # JSON 파일로도 저장
         grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
         try:
             with open(grdp_json_path, 'w', encoding='utf-8') as f:
@@ -442,22 +334,160 @@ def upload_excel():
     return jsonify({
         'success': True,
         'filename': filename,
-        'file_type': 'raw_direct',  # 기초자료 직접 사용 모드
+        'file_type': 'raw_direct',
         'year': year,
         'quarter': quarter,
         'reports': REPORT_ORDER,
         'regional_reports': REGIONAL_REPORTS,
-        'conversion_info': None,  # 분석표 변환 정보 없음
+        'conversion_info': None,
         'has_grdp': has_grdp,
         'grdp_sheet': grdp_sheet_found,
         'needs_grdp': not has_grdp,
-        'needs_review': needs_review,  # 기여율 수정 필요 여부
+        'needs_review': needs_review,
+        'weight_validation': weight_validation,
         'preprocessing': {
             'success': True,
-            'message': '기초자료 직접 사용 모드',
+            'message': '기초자료 직접 처리',
             'method': 'raw_direct'
         }
     })
+
+
+# ============================================================================
+# 트랙 2: 분석표 처리 (레거시/폴백)
+# ============================================================================
+
+def _handle_analysis_upload(filepath: Path, filename: str):
+    """[트랙 2] 분석표 업로드 → 보도자료 생성 (레거시/폴백)
+    
+    이미 생성된 분석표를 업로드하여 보도자료를 생성합니다.
+    기존 워크플로우와의 호환성을 위해 유지됩니다.
+    """
+    print(f"\n{'='*50}")
+    print(f"[트랙 2] 분석표 업로드 (레거시): {filename}")
+    print(f"{'='*50}")
+    
+    # 수식 계산 전처리
+    print(f"[전처리] 엑셀 수식 계산 시작...")
+    processed_path, preprocess_success, preprocess_msg = preprocess_excel(str(filepath))
+    
+    if preprocess_success:
+        print(f"[전처리] 성공: {preprocess_msg}")
+        filepath = Path(processed_path)
+    else:
+        print(f"[전처리] {preprocess_msg} - fallback 사용")
+    
+    # 연도/분기 추출
+    year, quarter = extract_year_quarter_from_excel(str(filepath))
+    
+    # GRDP 시트 확인
+    has_grdp = False
+    grdp_data = None
+    grdp_sheet_found = None
+    
+    try:
+        grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
+        wb = openpyxl.load_workbook(str(filepath), read_only=True, data_only=True)
+        
+        for sheet_name in grdp_sheet_names:
+            if sheet_name in wb.sheetnames:
+                has_grdp = True
+                grdp_sheet_found = sheet_name
+                print(f"[GRDP] 시트 발견: {sheet_name}")
+                
+                grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
+                if grdp_data:
+                    print(f"[GRDP] 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
+                break
+        wb.close()
+    except Exception as e:
+        print(f"[경고] GRDP 시트 확인 실패: {e}")
+    
+    # 세션에 저장 (트랙 2 전용)
+    session['analysis_excel_path'] = str(filepath)
+    session['excel_path'] = str(filepath)
+    session['year'] = year
+    session['quarter'] = quarter
+    session['file_type'] = 'analysis'
+    
+    try:
+        session['excel_file_mtime'] = Path(filepath).stat().st_mtime
+    except OSError:
+        pass
+    
+    if grdp_data:
+        session['grdp_data'] = grdp_data
+        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+        try:
+            with open(grdp_json_path, 'w', encoding='utf-8') as f:
+                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[경고] GRDP JSON 저장 실패: {e}")
+    
+    print(f"[결과] GRDP {'있음' if has_grdp else '없음'}")
+    
+    return jsonify({
+        'success': True,
+        'filename': filename,
+        'file_type': 'analysis',
+        'year': year,
+        'quarter': quarter,
+        'reports': REPORT_ORDER,
+        'regional_reports': REGIONAL_REPORTS,
+        'needs_grdp': not has_grdp,
+        'has_grdp': has_grdp,
+        'grdp_sheet': grdp_sheet_found,
+        'conversion_info': None,
+        'preprocessing': {
+            'success': preprocess_success,
+            'message': preprocess_msg,
+            'method': get_recommended_method()
+        }
+    })
+
+
+# ============================================================================
+# 업로드 라우터 (트랙 분기)
+# ============================================================================
+
+@api_bp.route('/upload', methods=['POST'])
+def upload_excel():
+    """엑셀 파일 업로드 - 트랙 자동 분기
+    
+    파일 유형을 감지하여 적절한 트랙으로 분기합니다:
+    - 트랙 1 (raw_direct): 기초자료 → 직접 보도자료 생성
+    - 트랙 2 (analysis): 분석표 → 보도자료 생성 (레거시)
+    """
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': '파일이 없습니다'})
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': '파일이 선택되지 않았습니다'})
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다'})
+    
+    # 새 파일 업로드 전 이전 파일 정리
+    cleanup_upload_folder(keep_current_files=False)
+    
+    # 파일 저장
+    filename = safe_filename(file.filename)
+    filepath = Path(UPLOAD_FOLDER) / filename
+    file.save(str(filepath))
+    
+    saved_size = filepath.stat().st_size
+    print(f"[업로드] 파일 저장: {filename} ({saved_size:,} bytes)")
+    
+    # 파일 유형 감지 및 트랙 분기
+    file_type = detect_file_type(str(filepath))
+    
+    if file_type == 'analysis':
+        # 트랙 2: 분석표 처리 (레거시)
+        return _handle_analysis_upload(filepath, filename)
+    else:
+        # 트랙 1: 기초자료 직접 처리 (기본)
+        return _handle_raw_data_upload(filepath, filename)
 
 
 def _extract_grdp_from_analysis_sheet(ws, year, quarter):
@@ -543,34 +573,6 @@ def _extract_grdp_from_analysis_sheet(ws, year, quarter):
     except Exception as e:
         print(f"[GRDP] 시트 데이터 추출 오류: {e}")
         return None
-
-
-@api_bp.route('/check-grdp', methods=['GET'])
-def check_grdp_status():
-    """GRDP 데이터 상태 확인"""
-    grdp_data = session.get('grdp_data')
-    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-    
-    if grdp_data:
-        return jsonify({
-            'success': True,
-            'has_grdp': True,
-            'source': grdp_data.get('source', 'session'),
-            'national_growth_rate': grdp_data.get('national_summary', {}).get('growth_rate', 0)
-        })
-    elif grdp_json_path.exists():
-        return jsonify({
-            'success': True,
-            'has_grdp': True,
-            'source': 'json_file'
-        })
-    else:
-        kosis_info = get_kosis_grdp_download_info()
-        return jsonify({
-            'success': True,
-            'has_grdp': False,
-            'kosis_info': kosis_info
-        })
 
 
 @api_bp.route('/upload-grdp', methods=['POST'])
@@ -674,14 +676,13 @@ def _add_grdp_sheet_to_analysis(analysis_path: str, grdp_file_path: str, year: i
 
 @api_bp.route('/use-default-grdp', methods=['POST'])
 def use_default_grdp():
-    """GRDP 파일이 없을 때 기본값(placeholder) 사용"""
-    from services.grdp_service import get_default_grdp_data
+    """GRDP 파일이 없을 때 N/A로 진행 (기본값 사용 안 함)"""
     
     year = session.get('year', 2025)
     quarter = session.get('quarter', 2)
     
-    # 기본 GRDP 데이터 생성 (placeholder)
-    grdp_data = get_default_grdp_data(year, quarter)
+    # N/A 데이터 생성 (모든 값이 None)
+    grdp_data = _generate_na_grdp_data(year, quarter)
     
     # 세션에 저장
     session['grdp_data'] = grdp_data
@@ -691,28 +692,65 @@ def use_default_grdp():
     with open(grdp_json_path, 'w', encoding='utf-8') as f:
         json.dump(grdp_data, f, ensure_ascii=False, indent=2)
     
-    # 분석표에 플레이스홀더 GRDP 시트 추가 (분석표가 업로드된 경우)
-    analysis_path = session.get('excel_path')
-    grdp_sheet_added = False
-    
-    if analysis_path and Path(analysis_path).exists():
-        try:
-            grdp_sheet_added = _add_placeholder_grdp_sheet(analysis_path, grdp_data)
-            if grdp_sheet_added:
-                print(f"[GRDP] 분석표에 플레이스홀더 GRDP 시트 추가 완료")
-        except Exception as e:
-            print(f"[GRDP] 분석표에 GRDP 시트 추가 실패: {e}")
-    
-    print(f"[GRDP] 기본값 사용 - {year}년 {quarter}분기")
+    print(f"[GRDP] N/A로 진행 - {year}년 {quarter}분기 (별도 GRDP 파일 업로드 필요)")
     
     return jsonify({
         'success': True,
-        'message': 'GRDP 기본값이 설정되었습니다. 나중에 실제 데이터로 업데이트할 수 있습니다.',
+        'message': 'GRDP 데이터가 없습니다. 참고_GRDP 페이지는 N/A로 표시됩니다. KOSIS에서 데이터를 다운로드하여 업로드해주세요.',
+        'is_na': True,
         'is_placeholder': True,
-        'national_growth_rate': 0.0,
-        'kosis_info': grdp_data.get('kosis_info', {}),
-        'grdp_sheet_added': grdp_sheet_added
+        'national_growth_rate': None,
+        'needs_grdp_upload': True
     })
+
+
+def _generate_na_grdp_data(year, quarter):
+    """N/A GRDP 데이터 생성 (모든 값이 None)"""
+    regions = ['전국', '서울', '인천', '경기', '대전', '세종', '충북', '충남',
+               '광주', '전북', '전남', '제주', '대구', '경북', '강원', '부산', '울산', '경남']
+    
+    region_groups = {
+        '서울': '경인', '인천': '경인', '경기': '경인',
+        '대전': '충청', '세종': '충청', '충북': '충청', '충남': '충청',
+        '광주': '호남', '전북': '호남', '전남': '호남', '제주': '호남',
+        '대구': '동북', '경북': '동북', '강원': '동북',
+        '부산': '동남', '울산': '동남', '경남': '동남'
+    }
+    
+    regional_data = []
+    for region in regions:
+        regional_data.append({
+            'region': region,
+            'region_group': region_groups.get(region, ''),
+            'growth_rate': None,  # N/A
+            'manufacturing': None,
+            'construction': None,
+            'service': None,
+            'other': None,
+            'is_na': True,
+            'placeholder': True
+        })
+    
+    return {
+        'report_info': {
+            'year': year,
+            'quarter': quarter,
+        },
+        'national_summary': {
+            'growth_rate': None,  # N/A
+            'contributions': {
+                'manufacturing': None,
+                'construction': None,
+                'service': None,
+                'other': None,
+            },
+            'is_na': True,
+            'placeholder': True
+        },
+        'regional_data': regional_data,
+        'is_na': True,
+        'needs_grdp_upload': True
+    }
 
 
 def _add_placeholder_grdp_sheet(analysis_path: str, grdp_data: dict) -> bool:
@@ -769,9 +807,19 @@ def _add_placeholder_grdp_sheet(analysis_path: str, grdp_data: dict) -> bool:
         return False
 
 
+# ============================================================================
+# 레거시 API: 분석표 관련 (트랙 2 전용)
+# 주의: 이 API들은 레거시 워크플로우 지원을 위해 유지됩니다.
+# 새로운 기능 개발 시 트랙 1 (raw_direct)을 사용하세요.
+# ============================================================================
+
 @api_bp.route('/download-analysis', methods=['GET'])
 def download_analysis():
-    """분석표 다운로드 (다운로드 시점에 생성 + 수식 계산)"""
+    """[레거시] 분석표 다운로드 (다운로드 시점에 생성 + 수식 계산)
+    
+    주의: 이 API는 레거시 워크플로우 지원을 위해 유지됩니다.
+    트랙 1 (raw_direct)에서는 사용되지 않습니다.
+    """
     import time
     import zipfile
     
@@ -845,7 +893,11 @@ def download_analysis():
 
 @api_bp.route('/generate-analysis-with-weights', methods=['POST'])
 def generate_analysis_with_weights():
-    """가중치 설정을 포함하여 분석표 생성 + 다운로드"""
+    """[레거시] 가중치 설정을 포함하여 분석표 생성 + 다운로드
+    
+    주의: 이 API는 레거시 워크플로우 지원을 위해 유지됩니다.
+    트랙 1 (raw_direct)에서는 사용되지 않습니다.
+    """
     import time
     
     data = request.get_json()
@@ -908,94 +960,6 @@ def update_report_order():
         reports_module.REPORT_ORDER = sorted(reports_module.REPORT_ORDER, key=lambda x: order_map.get(x['id'], 999))
     
     return jsonify({'success': True, 'reports': reports_module.REPORT_ORDER})
-
-
-@api_bp.route('/session-info', methods=['GET'])
-def get_session_info():
-    """현재 세션 정보 반환"""
-    return jsonify({
-        'excel_path': session.get('excel_path'),
-        'year': session.get('year'),
-        'quarter': session.get('quarter'),
-        'has_file': bool(session.get('excel_path'))
-    })
-
-
-@api_bp.route('/generate-all', methods=['POST'])
-def generate_all_reports():
-    """모든 보도자료 일괄 생성"""
-    data = request.get_json()
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
-    all_custom_data = data.get('all_custom_data', {})
-    
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
-    generated_reports = []
-    errors = []
-    
-    for report_config in REPORT_ORDER:
-        custom_data = all_custom_data.get(report_config['id'], {})
-        raw_excel_path = session.get('raw_excel_path')
-        
-        html_content, error, _ = generate_report_html(
-            excel_path, report_config, year, quarter, custom_data, raw_excel_path
-        )
-        
-        if error:
-            errors.append({'report_id': report_config['id'], 'error': error})
-        else:
-            output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            generated_reports.append({
-                'report_id': report_config['id'],
-                'name': report_config['name'],
-                'path': str(output_path)
-            })
-    
-    return jsonify({
-        'success': len(errors) == 0,
-        'generated': generated_reports,
-        'errors': errors
-    })
-
-
-@api_bp.route('/generate-all-regional', methods=['POST'])
-def generate_all_regional_reports():
-    """시도별 보도자료 전체 생성"""
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
-    generated_reports = []
-    errors = []
-    
-    output_dir = TEMPLATES_DIR / 'regional_output'
-    output_dir.mkdir(exist_ok=True)
-    
-    for region_config in REGIONAL_REPORTS:
-        html_content, error = generate_regional_report_html(excel_path, region_config['name'])
-        
-        if error:
-            errors.append({'region_id': region_config['id'], 'error': error})
-        else:
-            output_path = output_dir / f"{region_config['name']}_output.html"
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            generated_reports.append({
-                'region_id': region_config['id'],
-                'name': region_config['name'],
-                'path': str(output_path)
-            })
-    
-    return jsonify({
-        'success': len(errors) == 0,
-        'generated': generated_reports,
-        'errors': errors
-    })
 
 
 @api_bp.route('/export-final', methods=['POST'])
@@ -1551,316 +1515,141 @@ def cleanup_uploads():
         })
 
 
-@api_bp.route('/render-chart-image', methods=['POST'])
-def render_chart_image():
-    """차트/인포그래픽을 이미지로 렌더링"""
-    try:
-        data = request.get_json()
-        image_data = data.get('image_data', '')
-        filename = data.get('filename', 'chart.png')
-        
-        if not image_data:
-            return jsonify({'success': False, 'error': '이미지 데이터가 없습니다.'})
-        
-        match = re.match(r'data:([^;]+);base64,(.+)', image_data)
-        if match:
-            mimetype = match.group(1)
-            img_data = base64.b64decode(match.group(2))
-            
-            img_path = UPLOAD_FOLDER / filename
-            with open(img_path, 'wb') as f:
-                f.write(img_data)
-            
-            return jsonify({
-                'success': True,
-                'filename': filename,
-                'path': str(img_path),
-                'url': f'/uploads/{filename}'
-            })
-        else:
-            return jsonify({'success': False, 'error': '잘못된 이미지 데이터 형식입니다.'})
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@api_bp.route('/get-industry-weights', methods=['GET'])
-def get_industry_weights():
-    """기초자료에서 업종별 가중치 정보 추출"""
+def validate_weights_in_raw_data(filepath: str) -> dict:
+    """기초자료 수집표에서 가중치 누락 여부 검증
+    
+    Returns:
+        {
+            'has_missing_weights': bool,
+            'missing_details': [
+                {'sheet': '시트명', 'missing_count': int, 'total_count': int, 'missing_industries': [...]}
+            ],
+            'total_missing': int,
+            'affected_reports': ['광공업생산', '서비스업생산']
+        }
+    """
     import pandas as pd
     
-    sheet_type = request.args.get('sheet_type', '광공업생산')
-    raw_excel_path = session.get('raw_excel_path')
-    
-    if not raw_excel_path or not Path(raw_excel_path).exists():
-        return jsonify({
-            'success': False, 
-            'error': '기초자료 파일을 찾을 수 없습니다. 먼저 파일을 업로드하세요.'
-        })
+    result = {
+        'has_missing_weights': False,
+        'missing_details': [],
+        'total_missing': 0,
+        'affected_reports': []
+    }
     
     try:
-        xl = pd.ExcelFile(raw_excel_path)
+        xl = pd.ExcelFile(filepath)
         
-        # 시트 매핑
-        sheet_mapping = {
-            '광공업생산': '광공업생산',
-            '서비스업생산': '서비스업생산'
+        # 가중치가 필요한 시트 및 열 위치 (0-based)
+        weight_sheets = {
+            '광공업생산': {
+                'weight_col': 3,  # D열 (가중치)
+                'region_col': 1,  # B열 (지역명)
+                'level_col': 2,   # C열 (분류단계)
+                'name_col': 5,    # F열 (산업이름)
+                'header_row': 2,  # 헤더 행
+                'affected_report': '광공업생산'
+            },
+            '서비스업생산': {
+                'weight_col': 3,  # D열 (가중치)
+                'region_col': 1,  # B열 (지역명)
+                'level_col': 2,   # C열 (분류단계)
+                'name_col': 5,    # F열 (산업이름)
+                'header_row': 2,  # 헤더 행
+                'affected_report': '서비스업생산'
+            }
         }
         
-        sheet_name = sheet_mapping.get(sheet_type)
-        if not sheet_name or sheet_name not in xl.sheet_names:
-            return jsonify({
-                'success': False,
-                'error': f'시트를 찾을 수 없습니다: {sheet_type}'
-            })
-        
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
-        
-        # 업종별 정보 추출 (열 구조에 따라 다름)
-        industries = []
-        
-        if sheet_type == '광공업생산':
-            # 광공업생산 시트: 열 4=업종명, 열 8=가중치 (또는 해당 열 확인 필요)
-            name_col = 4  # 업종명 열
-            weight_col = 8  # 가중치 열
+        for sheet_name, config in weight_sheets.items():
+            if sheet_name not in xl.sheet_names:
+                continue
             
-            for i, row in df.iterrows():
-                if i < 3:  # 헤더 행 건너뛰기
-                    continue
-                    
-                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
-                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
-                    continue
-                    
-                weight = None
-                if weight_col < len(row) and pd.notna(row[weight_col]):
-                    try:
-                        weight = float(row[weight_col])
-                    except (ValueError, TypeError):
-                        pass
-                
-                industries.append({
-                    'row': i + 1,
-                    'name': name,
-                    'weight': weight
-                })
-                
-        elif sheet_type == '서비스업생산':
-            # 서비스업생산 시트: 열 4=업종명, 열 8=가중치
-            name_col = 4  # 업종명 열
-            weight_col = 8  # 가중치 열
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
             
-            for i, row in df.iterrows():
-                if i < 3:  # 헤더 행 건너뛰기
-                    continue
-                    
-                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
-                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
-                    continue
-                    
-                weight = None
-                if weight_col < len(row) and pd.notna(row[weight_col]):
-                    try:
-                        weight = float(row[weight_col])
-                    except (ValueError, TypeError):
-                        pass
+            # 헤더 행 이후부터 데이터 확인
+            missing_industries = []
+            total_industries = 0
+            
+            for i in range(config['header_row'] + 1, len(df)):
+                row = df.iloc[i]
                 
-                industries.append({
-                    'row': i + 1,
-                    'name': name,
-                    'weight': weight
+                # 지역이 있는 행만 확인 (빈 행 제외)
+                region = str(row.iloc[config['region_col']]).strip() if pd.notna(row.iloc[config['region_col']]) else ''
+                if not region or region in ['nan', 'NaN', '']:
+                    continue
+                
+                # 분류단계 확인 (산업 행인지)
+                level = row.iloc[config['level_col']] if config['level_col'] < len(row) else None
+                
+                # 산업 이름이 있는 행
+                industry_name = str(row.iloc[config['name_col']]).strip() if config['name_col'] < len(row) and pd.notna(row.iloc[config['name_col']]) else ''
+                if not industry_name or industry_name in ['nan', 'NaN', '']:
+                    continue
+                
+                total_industries += 1
+                
+                # 가중치 확인
+                weight = row.iloc[config['weight_col']] if config['weight_col'] < len(row) else None
+                if pd.isna(weight) or weight == '' or weight == 0:
+                    # 전국 데이터의 0이 아닌 경우만 누락으로 처리
+                    if region == '전국' and pd.isna(weight):
+                        missing_industries.append({
+                            'row': i + 1,  # 엑셀 행 번호 (1-based)
+                            'region': region,
+                            'industry': industry_name,
+                            'level': str(level) if pd.notna(level) else ''
+                        })
+            
+            if missing_industries:
+                result['missing_details'].append({
+                    'sheet': sheet_name,
+                    'missing_count': len(missing_industries),
+                    'total_count': total_industries,
+                    'missing_industries': missing_industries[:10]  # 최대 10개만 반환
                 })
+                result['affected_reports'].append(config['affected_report'])
+                result['total_missing'] += len(missing_industries)
         
-        return jsonify({
-            'success': True,
-            'sheet_type': sheet_type,
-            'industries': industries[:100]  # 최대 100개
-        })
+        result['has_missing_weights'] = result['total_missing'] > 0
         
     except Exception as e:
+        print(f"[가중치 검증] 오류: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
+    
+    return result
 
 
 @api_bp.route('/export-hwp-import', methods=['POST'])
 def export_hwp_import():
-    """한글 프로그램에서 열 수 있는 XML/HTML 문서 생성 - 차트는 이미지로 변환됨"""
+    """한글(HWP)에서 불러오기로 열 수 있는 HTML 문서 생성
+    
+    한글 프로그램에서 [파일 → 불러오기] 또는 [Ctrl+O]로 열 수 있는 HTML 형식입니다.
+    - 완전한 인라인 스타일 적용 (한글 호환성 극대화)
+    - 표 테두리, 글꼴, 여백 등이 한글에서 정확하게 렌더링됩니다.
+    """
     try:
-        from datetime import datetime
-        
         data = request.get_json()
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
-        doc_format = data.get('format', 'hwp-xml')  # hwp-xml 형식
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
         
-        # 한글 호환 XML/HTML 생성 (모든 이미지가 이미 Base64로 포함됨)
-        final_html = f'''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="ko" xml:lang="ko">
+        # 한글에서 완벽하게 인식되는 HTML 구조
+        final_html = f'''<!DOCTYPE html>
+<html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="generator" content="지역경제동향 보도자료 시스템" />
-    <title>{year}년 {quarter}/4분기 지역경제동향</title>
-    <style type="text/css">
-        /* 한글 호환 기본 스타일 */
-        @page {{
-            size: A4 portrait;
-            margin: 20mm 15mm 20mm 15mm;
-        }}
-        
-        body {{
-            font-family: '맑은 고딕', 'Malgun Gothic', '바탕', 'Batang', serif;
-            font-size: 10pt;
-            line-height: 160%;
-            color: #000000;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }}
-        
-        /* 페이지 컨테이너 */
-        .page-container {{
-            width: 180mm;
-            margin: 0 auto;
-            padding: 10mm 0;
-            page-break-after: always;
-        }}
-        
-        .page-container:last-child {{
-            page-break-after: auto;
-        }}
-        
-        /* 제목 스타일 */
-        h1 {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            font-size: 18pt;
-            font-weight: bold;
-            color: #000000;
-            margin: 0 0 15px 0;
-            padding: 0;
-            line-height: 140%;
-        }}
-        
-        h2 {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            font-size: 14pt;
-            font-weight: bold;
-            color: #000000;
-            margin: 20px 0 10px 0;
-            padding: 8px 10px;
-            background-color: #f0f0f0;
-            border-left: 4px solid #0066cc;
-        }}
-        
-        h3 {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            font-size: 12pt;
-            font-weight: bold;
-            color: #000000;
-            margin: 15px 0 8px 0;
-        }}
-        
-        h4 {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            font-size: 11pt;
-            font-weight: bold;
-            color: #000000;
-            margin: 10px 0 5px 0;
-        }}
-        
-        /* 문단 스타일 */
-        p {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-            font-size: 10pt;
-            margin: 5px 0;
-            line-height: 160%;
-            text-align: justify;
-        }}
-        
-        /* 표 스타일 - 한글 완벽 호환 */
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-            margin: 10px 0;
-            font-size: 9pt;
-            border: 1px solid #000000;
-            table-layout: fixed;
-        }}
-        
-        th {{
-            border: 1px solid #000000;
-            padding: 6px 4px;
-            text-align: center;
-            vertical-align: middle;
-            background-color: #d9d9d9;
-            font-weight: bold;
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-        }}
-        
-        td {{
-            border: 1px solid #000000;
-            padding: 5px 4px;
-            text-align: center;
-            vertical-align: middle;
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-        }}
-        
-        /* 이미지 스타일 - 원본 비율 유지 */
-        img {{
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 10px auto;
-        }}
-        
-        .chart-image-converted, .svg-image-converted {{
-            max-width: 100%;
-            width: auto;
-            height: auto;
-            display: block;
-            margin: 10px auto;
-        }}
-        
-        /* 리스트 스타일 */
-        ul, ol {{
-            margin: 10px 0 10px 20px;
-            padding: 0;
-        }}
-        
-        li {{
-            margin: 3px 0;
-            line-height: 160%;
-        }}
-        
-        /* 페이지 번호 */
-        .page-number {{
-            text-align: center;
-            font-size: 9pt;
-            color: #666666;
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #cccccc;
-        }}
-        
-        /* 인쇄 스타일 */
-        @media print {{
-            body {{
-                background-color: #ffffff;
-            }}
-            .page-container {{
-                page-break-after: always;
-            }}
-        }}
-    </style>
+<meta charset="UTF-8">
+<title>{year}년 {quarter}/4분기 지역경제동향</title>
 </head>
-<body>
+<body style="font-family: '맑은 고딕', Malgun Gothic, sans-serif; font-size: 10pt; line-height: 160%; margin: 20mm 15mm; color: #000000;">
+
+<h1 style="font-size: 18pt; font-weight: bold; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+{year}년 {quarter}/4분기 지역경제동향
+</h1>
+
 '''
         
         # 각 페이지 처리
@@ -1886,12 +1675,13 @@ def export_hwp_import():
             body_content = re.sub(r'</html>', '', body_content)
             body_content = re.sub(r'<head[^>]*>.*?</head>', '', body_content, flags=re.DOTALL)
             
-            # 남아있는 canvas 태그 제거 (이미 이미지로 변환되었어야 함)
+            # canvas, svg 태그 제거 (한글에서 지원 안됨)
             body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<canvas[^>]*/?>',  '', body_content)
+            body_content = re.sub(r'<svg[^>]*>.*?</svg>', '', body_content, flags=re.DOTALL)
             
-            # 표에 인라인 스타일 강화 (한글 완벽 호환)
-            body_content = _add_hwp_compatible_styles(body_content)
+            # 한글 완벽 호환 인라인 스타일 적용
+            body_content = _apply_hwp_inline_styles(body_content)
             
             # 카테고리 한글명
             category_names = {
@@ -1902,35 +1692,49 @@ def export_hwp_import():
             }
             category_name = category_names.get(category, '')
             
-            # 페이지 래퍼 추가
+            # 페이지 구분
+            page_break = 'page-break-after: always;' if idx < len(pages) else ''
             final_html += f'''
-    <!-- 페이지 {idx}: {page_title} -->
-    <div class="page-container">
-        <h2>[{category_name}] {page_title}</h2>
-        {body_content}
-        <p class="page-number">- {idx} / {len(pages)} -</p>
+<!-- 페이지 {idx}: {page_title} -->
+<div style="margin-bottom: 30px; {page_break}">
+    <h2 style="font-size: 14pt; font-weight: bold; background-color: #e8e8e8; padding: 8px 12px; margin: 20px 0 15px 0; border-left: 4px solid #0066cc;">
+        [{category_name}] {page_title}
+    </h2>
+    <div style="font-size: 10pt; line-height: 160%;">
+{body_content}
     </div>
+</div>
 '''
         
+        # 문서 끝
         final_html += '''
+<p style="text-align: center; font-size: 9pt; color: #666; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 15px;">
+    ※ 이 문서는 지역경제동향 보도자료 시스템에서 생성되었습니다.
+</p>
+
 </body>
 </html>
 '''
         
         # 파일 저장
-        output_filename = f'지역경제동향_{year}년_{quarter}분기_한글용.html'
+        output_filename = f'지역경제동향_{year}년_{quarter}분기_한글불러오기용.html'
         output_path = UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
         
+        # exports 폴더에도 저장
+        exports_path = EXPORT_FOLDER / output_filename
+        EXPORT_FOLDER.mkdir(exist_ok=True)
+        with open(exports_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
         return jsonify({
             'success': True,
-            'html': final_html,
             'filename': output_filename,
             'download_url': f'/uploads/{output_filename}',
             'total_pages': len(pages),
-            'message': '한글용 문서가 생성되었습니다. 한글에서 파일 → 불러오기로 열 수 있습니다.'
+            'message': f'한글 불러오기용 HTML이 생성되었습니다.\n\n사용법:\n1. 다운로드된 파일을 저장합니다\n2. 한글(HWP)에서 [파일 → 불러오기] 또는 Ctrl+O\n3. 파일 형식을 "HTML 문서"로 선택\n4. 저장된 파일을 엽니다'
         })
         
     except Exception as e:
@@ -1939,82 +1743,147 @@ def export_hwp_import():
         return jsonify({'success': False, 'error': str(e)})
 
 
-def _add_hwp_compatible_styles(html_content):
-    """한글 프로그램 완벽 호환을 위한 인라인 스타일 추가"""
+def _apply_hwp_inline_styles(html_content):
+    """한글 프로그램에서 완벽하게 렌더링되는 인라인 스타일 적용
     
-    # table 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<table([^>]*)>',
-        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9pt; border: 1px solid #000000; table-layout: fixed;">',
-        html_content
-    )
+    한글(HWP)의 HTML 불러오기 기능은 CSS 클래스를 무시하고
+    인라인 스타일만 인식하므로, 모든 스타일을 인라인으로 변환합니다.
+    """
     
-    # th 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<th([^>]*)>',
-        r'<th\1 style="border: 1px solid #000000; padding: 6px 4px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
-        html_content
-    )
+    # 기존 style 속성 제거 후 새로운 인라인 스타일 적용
     
-    # td 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<td([^>]*)>',
-        r'<td\1 style="border: 1px solid #000000; padding: 5px 4px; text-align: center; vertical-align: middle; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
-        html_content
-    )
+    # table 태그 처리
+    def replace_table(match):
+        attrs = match.group(1) if match.group(1) else ''
+        # 기존 style 제거
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        attrs = re.sub(r"style='[^']*'", '', attrs)
+        return f'<table{attrs} style="border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9pt; border: 2px solid #000000;">'
     
-    # 제목 태그들에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<h1([^>]*)>',
-        r'<h1\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 18pt; font-weight: bold; margin: 0 0 15px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h2([^>]*)>',
-        r'<h2\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 14pt; font-weight: bold; margin: 20px 0 10px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h3([^>]*)>',
-        r'<h3\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 12pt; font-weight: bold; margin: 15px 0 8px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h4([^>]*)>',
-        r'<h4\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0;">',
-        html_content
-    )
+    html_content = re.sub(r'<table([^>]*)>', replace_table, html_content)
     
-    # p 태그에 스타일 추가
-    html_content = re.sub(
-        r'<p([^>]*)>',
-        r'<p\1 style="font-family: 맑은 고딕, Malgun Gothic, sans-serif; font-size: 10pt; margin: 5px 0; line-height: 160%;">',
-        html_content
-    )
+    # th 태그 처리
+    def replace_th(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        attrs = re.sub(r"style='[^']*'", '', attrs)
+        return f'<th{attrs} style="border: 1px solid #000000; padding: 6px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold; font-size: 9pt;">'
     
-    # img 태그에 스타일 추가 (원본 비율 유지)
-    html_content = re.sub(
-        r'<img([^>]*)>',
-        r'<img\1 style="max-width: 100%; height: auto; display: block; margin: 10px auto;">',
-        html_content
-    )
+    html_content = re.sub(r'<th([^>]*)>', replace_th, html_content)
     
-    # ul, ol 태그에 스타일 추가
-    html_content = re.sub(
-        r'<ul([^>]*)>',
-        r'<ul\1 style="margin: 10px 0 10px 20px; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<ol([^>]*)>',
-        r'<ol\1 style="margin: 10px 0 10px 20px; font-family: 맑은 고딕, Malgun Gothic, sans-serif;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<li([^>]*)>',
-        r'<li\1 style="margin: 3px 0; line-height: 160%;">',
-        html_content
-    )
+    # td 태그 처리
+    def replace_td(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        attrs = re.sub(r"style='[^']*'", '', attrs)
+        return f'<td{attrs} style="border: 1px solid #000000; padding: 5px 6px; text-align: center; vertical-align: middle; font-size: 9pt;">'
+    
+    html_content = re.sub(r'<td([^>]*)>', replace_td, html_content)
+    
+    # tr 태그 처리 (테두리 확실히)
+    def replace_tr(match):
+        attrs = match.group(1) if match.group(1) else ''
+        return f'<tr{attrs}>'
+    
+    html_content = re.sub(r'<tr([^>]*)>', replace_tr, html_content)
+    
+    # thead 태그 처리
+    def replace_thead(match):
+        attrs = match.group(1) if match.group(1) else ''
+        return f'<thead{attrs} style="background-color: #d9d9d9; font-weight: bold;">'
+    
+    html_content = re.sub(r'<thead([^>]*)>', replace_thead, html_content)
+    
+    # h1~h4 태그 처리
+    def replace_h1(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        return f'<h1{attrs} style="font-size: 18pt; font-weight: bold; margin: 15px 0 10px 0; color: #000000;">'
+    
+    def replace_h2(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        return f'<h2{attrs} style="font-size: 14pt; font-weight: bold; margin: 12px 0 8px 0; color: #000000;">'
+    
+    def replace_h3(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        return f'<h3{attrs} style="font-size: 12pt; font-weight: bold; margin: 10px 0 6px 0; color: #000000;">'
+    
+    def replace_h4(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        return f'<h4{attrs} style="font-size: 11pt; font-weight: bold; margin: 8px 0 5px 0; color: #000000;">'
+    
+    html_content = re.sub(r'<h1([^>]*)>', replace_h1, html_content)
+    html_content = re.sub(r'<h2([^>]*)>', replace_h2, html_content)
+    html_content = re.sub(r'<h3([^>]*)>', replace_h3, html_content)
+    html_content = re.sub(r'<h4([^>]*)>', replace_h4, html_content)
+    
+    # p 태그 처리
+    def replace_p(match):
+        attrs = match.group(1) if match.group(1) else ''
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        return f'<p{attrs} style="font-size: 10pt; margin: 5px 0; line-height: 160%; text-align: justify;">'
+    
+    html_content = re.sub(r'<p([^>]*)>', replace_p, html_content)
+    
+    # img 태그 처리 (Base64 이미지 지원)
+    def replace_img(match):
+        attrs = match.group(1) if match.group(1) else ''
+        # src 속성 유지
+        src_match = re.search(r'src="([^"]*)"', attrs)
+        src = src_match.group(0) if src_match else ''
+        # 다른 속성들
+        other_attrs = re.sub(r'src="[^"]*"', '', attrs)
+        other_attrs = re.sub(r'style="[^"]*"', '', other_attrs)
+        return f'<img {src} {other_attrs} style="max-width: 100%; height: auto; display: block; margin: 10px auto;">'
+    
+    html_content = re.sub(r'<img([^>]*)/?>', replace_img, html_content)
+    
+    # ul, ol, li 태그 처리
+    def replace_ul(match):
+        attrs = match.group(1) if match.group(1) else ''
+        return f'<ul{attrs} style="margin: 10px 0 10px 25px; padding: 0;">'
+    
+    def replace_ol(match):
+        attrs = match.group(1) if match.group(1) else ''
+        return f'<ol{attrs} style="margin: 10px 0 10px 25px; padding: 0;">'
+    
+    def replace_li(match):
+        attrs = match.group(1) if match.group(1) else ''
+        return f'<li{attrs} style="margin: 3px 0; line-height: 160%;">'
+    
+    html_content = re.sub(r'<ul([^>]*)>', replace_ul, html_content)
+    html_content = re.sub(r'<ol([^>]*)>', replace_ol, html_content)
+    html_content = re.sub(r'<li([^>]*)>', replace_li, html_content)
+    
+    # div 태그 처리 (기본 레이아웃)
+    def replace_div(match):
+        attrs = match.group(1) if match.group(1) else ''
+        # 기존 style이 있으면 유지하면서 기본 스타일 추가
+        if 'style=' in attrs:
+            return match.group(0)  # 기존 스타일 유지
+        return f'<div{attrs} style="margin: 5px 0;">'
+    
+    html_content = re.sub(r'<div([^>]*)>', replace_div, html_content)
+    
+    # span 태그 처리
+    def replace_span(match):
+        attrs = match.group(1) if match.group(1) else ''
+        if 'style=' in attrs:
+            return match.group(0)
+        return f'<span{attrs}>'
+    
+    html_content = re.sub(r'<span([^>]*)>', replace_span, html_content)
+    
+    # strong, b 태그 처리
+    html_content = re.sub(r'<strong([^>]*)>', r'<strong\1 style="font-weight: bold;">', html_content)
+    html_content = re.sub(r'<b([^>]*)>', r'<b\1 style="font-weight: bold;">', html_content)
+    
+    # em, i 태그 처리
+    html_content = re.sub(r'<em([^>]*)>', r'<em\1 style="font-style: italic;">', html_content)
+    html_content = re.sub(r'<i([^>]*)>', r'<i\1 style="font-style: italic;">', html_content)
     
     return html_content
 
@@ -2059,9 +1928,18 @@ def _create_placeholder_image(image_path):
     except Exception as e:
         print(f"[경고] 플레이스홀더 이미지 생성 실패: {e}")
         return False
+
+
 @api_bp.route('/export-hwp-ready', methods=['POST'])
 def export_hwp_ready():
-    """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
+    """한글(HWP) 복붙용 HTML 문서 생성 - 브라우저에서 열어 전체 복사 후 한글에 붙여넣기
+    
+    사용법:
+    1. 생성된 HTML 파일을 브라우저에서 엽니다
+    2. '전체 복사' 버튼 클릭 또는 Ctrl+A → Ctrl+C
+    3. 한글(HWP)에서 Ctrl+V로 붙여넣기
+    4. 표, 글꼴, 서식이 유지됩니다
+    """
     try:
         data = request.get_json()
         pages = data.get('pages', [])
@@ -2071,7 +1949,7 @@ def export_hwp_ready():
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
         
-        # 한글 복붙에 최적화된 HTML 생성 (인라인 스타일 사용)
+        # 한글 복붙에 최적화된 HTML 생성
         final_html = f'''<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -2079,37 +1957,88 @@ def export_hwp_ready():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 복붙용</title>
     <style>
-        /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
+        /* 화면 표시용 (복사 시 인라인 스타일이 적용됨) */
+        * {{ box-sizing: border-box; }}
         body {{
             font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
             font-size: 10pt;
             line-height: 1.6;
             color: #000;
-            background: #fff;
+            background: #f5f5f5;
             padding: 20px;
-            max-width: 210mm;
-            margin: 0 auto;
+            margin: 0;
         }}
-        .copy-btn {{
+        
+        #hwp-content {{
+            max-width: 210mm;
+            margin: 60px auto 20px auto;
+            background: white;
+            padding: 20mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }}
+        
+        /* 도구 버튼 */
+        .toolbar {{
             position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0066cc;
-            color: white;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
             padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }}
+        
+        .toolbar-title {{
+            color: white;
+            font-size: 14pt;
+            font-weight: bold;
+        }}
+        
+        .toolbar-buttons {{
+            display: flex;
+            gap: 10px;
+        }}
+        
+        .copy-btn {{
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
-            font-size: 12pt;
+            font-size: 11pt;
+            font-weight: bold;
             cursor: pointer;
-            z-index: 9999;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: background 0.2s;
         }}
-        .copy-btn:hover {{ background: #0055aa; }}
-        @media print {{ .copy-btn {{ display: none; }} }}
+        
+        .copy-btn:hover {{ background: #219a52; }}
+        
+        .help-text {{
+            color: rgba(255,255,255,0.9);
+            font-size: 9pt;
+            margin-left: 15px;
+        }}
+        
+        @media print {{ 
+            .toolbar {{ display: none; }}
+            body {{ background: white; padding: 0; }}
+            #hwp-content {{ box-shadow: none; margin: 0; }}
+        }}
     </style>
 </head>
 <body>
-    <button class="copy-btn" onclick="copyAll()">📋 전체 복사 (클릭)</button>
+    <div class="toolbar">
+        <span class="toolbar-title">📋 한글 복붙용 문서</span>
+        <div class="toolbar-buttons">
+            <button class="copy-btn" onclick="copyAll()">📋 전체 복사</button>
+            <button class="copy-btn" style="background: #3498db;" onclick="selectAll()">✓ 전체 선택</button>
+            <span class="help-text">복사 후 한글(HWP)에서 Ctrl+V</span>
+        </div>
+    </div>
     
     <div id="hwp-content">
 '''
@@ -2126,22 +2055,24 @@ def export_hwp_ready():
                 if body_match:
                     body_content = body_match.group(1)
             
-            # 한글 복붙에 불필요한 요소 제거
+            # 불필요한 요소 제거
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
-            body_content = re.sub(r'<link[^>]*>', '', body_content)
-            body_content = re.sub(r'<meta[^>]*>', '', body_content)
+            body_content = re.sub(r'<link[^>]*/?>', '', body_content)
+            body_content = re.sub(r'<meta[^>]*/?>', '', body_content)
+            body_content = re.sub(r'<!DOCTYPE[^>]*>', '', body_content)
+            body_content = re.sub(r'<html[^>]*>', '', body_content)
+            body_content = re.sub(r'</html>', '', body_content)
+            body_content = re.sub(r'<head[^>]*>.*?</head>', '', body_content, flags=re.DOTALL)
             
-            # canvas를 차트 플레이스홀더로 대체 (인라인 스타일)
-            chart_placeholder = '<div style="border: 2px dashed #666; padding: 15px; text-align: center; background: #f5f5f5; margin: 10px 0;">📊 [차트 영역 - 별도 이미지 삽입]</div>'
+            # canvas, svg → 플레이스홀더
+            chart_placeholder = '<p style="border: 2px dashed #888; padding: 20px; text-align: center; background: #f9f9f9; margin: 15px 0; color: #666;">📊 [차트 영역] 별도 이미지로 삽입하세요</p>'
             body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', chart_placeholder, body_content, flags=re.DOTALL)
             body_content = re.sub(r'<canvas[^>]*/?>',  chart_placeholder, body_content)
-            
-            # SVG 제거 (복잡한 차트)
             body_content = re.sub(r'<svg[^>]*>.*?</svg>', chart_placeholder, body_content, flags=re.DOTALL)
             
-            # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식)
-            body_content = _add_table_inline_styles(body_content)
+            # 인라인 스타일 적용 (한글 복붙 호환)
+            body_content = _apply_hwp_inline_styles(body_content)
             
             # 카테고리 한글명
             category_names = {
@@ -2152,25 +2083,38 @@ def export_hwp_ready():
             }
             category_name = category_names.get(category, '')
             
-            # 페이지 구분 (인라인 스타일로)
+            # 페이지 구분
             final_html += f'''
         <!-- 페이지 {idx}: {page_title} -->
-        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; page-break-after: always;">
-            <h2 style="font-family: '맑은 고딕', sans-serif; font-size: 14pt; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; padding: 8px 12px; background-color: #e8e8e8; border-left: 4px solid #0066cc;">
-                [{category_name}] {page_title}
+        <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+            <h2 style="font-size: 13pt; font-weight: bold; color: #1a5276; margin: 0 0 12px 0; padding: 8px 12px; background-color: #eef4f8; border-left: 4px solid #2980b9;">
+                {category_name} | {page_title}
             </h2>
-            <div style="font-family: '맑은 고딕', sans-serif; font-size: 10pt; line-height: 1.6;">
+            <div style="font-size: 10pt; line-height: 170%;">
 {body_content}
             </div>
-            <p style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">- {idx} / {len(pages)} -</p>
         </div>
 '''
         
-        final_html += '''
+        # 문서 끝 및 스크립트
+        final_html += f'''
+        <p style="text-align: center; font-size: 9pt; color: #888; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd;">
+            {year}년 {quarter}/4분기 지역경제동향 | 총 {len(pages)}페이지
+        </p>
     </div>
     
     <script>
-        function copyAll() {
+        function selectAll() {{
+            const content = document.getElementById('hwp-content');
+            const range = document.createRange();
+            range.selectNodeContents(content);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            alert('전체 선택 완료!\\n\\nCtrl+C로 복사한 후,\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.');
+        }}
+        
+        function copyAll() {{
             const content = document.getElementById('hwp-content');
             const range = document.createRange();
             range.selectNodeContents(content);
@@ -2178,23 +2122,44 @@ def export_hwp_ready():
             selection.removeAllRanges();
             selection.addRange(range);
             
-            try {
-                document.execCommand('copy');
-                alert('복사 완료!\\n\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.\\n※ 표와 서식이 유지됩니다.');
-            } catch (e) {
-                alert('자동 복사 실패.\\nCtrl+A로 전체 선택 후 Ctrl+C로 복사하세요.');
-            }
+            try {{
+                const success = document.execCommand('copy');
+                if (success) {{
+                    alert('✅ 복사 완료!\\n\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.\\n\\n※ 표 테두리, 글꼴, 서식이 유지됩니다.');
+                }} else {{
+                    throw new Error('copy failed');
+                }}
+            }} catch (e) {{
+                // Clipboard API 시도
+                if (navigator.clipboard && window.ClipboardItem) {{
+                    const html = content.innerHTML;
+                    const blob = new Blob([html], {{ type: 'text/html' }});
+                    navigator.clipboard.write([new ClipboardItem({{ 'text/html': blob }})]).then(() => {{
+                        alert('✅ 복사 완료! (Clipboard API)\\n\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.');
+                    }}).catch(() => {{
+                        alert('⚠️ 자동 복사 실패\\n\\n1. Ctrl+A로 전체 선택\\n2. Ctrl+C로 복사\\n3. 한글에서 Ctrl+V');
+                    }});
+                }} else {{
+                    alert('⚠️ 자동 복사 실패\\n\\n1. Ctrl+A로 전체 선택\\n2. Ctrl+C로 복사\\n3. 한글에서 Ctrl+V');
+                }}
+            }}
             
             selection.removeAllRanges();
-        }
+        }}
         
-        // 단축키 지원
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'a') {
+        // 키보드 단축키
+        document.addEventListener('keydown', function(e) {{
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {{
                 e.preventDefault();
-                copyAll();
-            }
-        });
+                selectAll();
+            }}
+        }});
+        
+        // 페이지 로드 시 안내
+        window.onload = function() {{
+            console.log('한글 복붙용 HTML 로드 완료');
+            console.log('사용법: 전체 복사 버튼 클릭 → 한글에서 Ctrl+V');
+        }};
     </script>
 </body>
 </html>
@@ -2206,13 +2171,19 @@ def export_hwp_ready():
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
         
+        # exports 폴더에도 저장
+        exports_path = EXPORT_FOLDER / output_filename
+        EXPORT_FOLDER.mkdir(exist_ok=True)
+        with open(exports_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+        
         return jsonify({
             'success': True,
-            'html': final_html,
             'filename': output_filename,
-            'view_url': f'/view/{output_filename}',
+            'view_url': f'/uploads/{output_filename}',
             'download_url': f'/uploads/{output_filename}',
-            'total_pages': len(pages)
+            'total_pages': len(pages),
+            'message': f'한글 복붙용 HTML이 생성되었습니다.\\n\\n사용법:\\n1. 다운로드된 파일을 브라우저에서 엽니다\\n2. "전체 복사" 버튼을 클릭합니다\\n3. 한글(HWP)에서 Ctrl+V로 붙여넣기\\n\\n※ 표 테두리, 글꼴, 서식이 유지됩니다.'
         })
         
     except Exception as e:
@@ -2465,76 +2436,4 @@ def save_html_to_project():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
-
-
-def _add_table_inline_styles(html_content):
-    """표에 인라인 스타일 추가 (한글 복붙 최적화)"""
-    # table 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<table([^>]*)>',
-        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-family: \'맑은 고딕\', sans-serif; font-size: 9pt;">',
-        html_content
-    )
-    
-    # th 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<th([^>]*)>',
-        r'<th\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold;">',
-        html_content
-    )
-    
-    # td 태그에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<td([^>]*)>',
-        r'<td\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle;">',
-        html_content
-    )
-    
-    # 제목 태그들에 인라인 스타일 추가
-    html_content = re.sub(
-        r'<h1([^>]*)>',
-        r'<h1\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 16pt; font-weight: bold; margin: 15px 0 10px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h2([^>]*)>',
-        r'<h2\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h3([^>]*)>',
-        r'<h3\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 12pt; font-weight: bold; margin: 10px 0 8px 0;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<h4([^>]*)>',
-        r'<h4\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0;">',
-        html_content
-    )
-    
-    # p 태그에 스타일 추가
-    html_content = re.sub(
-        r'<p([^>]*)>',
-        r'<p\1 style="font-family: \'맑은 고딕\', sans-serif; margin: 5px 0; line-height: 1.6;">',
-        html_content
-    )
-    
-    # ul, ol 태그에 스타일 추가
-    html_content = re.sub(
-        r'<ul([^>]*)>',
-        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<ol([^>]*)>',
-        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
-        html_content
-    )
-    html_content = re.sub(
-        r'<li([^>]*)>',
-        r'<li\1 style="margin: 3px 0;">',
-        html_content
-    )
-    
-    return html_content
 

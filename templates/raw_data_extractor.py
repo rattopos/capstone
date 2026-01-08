@@ -25,7 +25,72 @@ class RawDataExtractor:
         "실업률": "실업자 수",
         "수출액": "수출",
         "수입액": "수입",
-        "국내인구이동": "시도 간 이동"
+        "국내인구이동": "시도 간 이동",
+        "물가": "품목성질별 물가"
+    }
+    
+    # 기초자료 시트별 분기 열 매핑 (2025년 2분기 기준)
+    RAW_SHEET_QUARTER_COLS = {
+        "광공업생산": {
+            'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
+            '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
+            '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
+            '2025_1Q': 63, '2025_2Q': 64
+        },
+        "서비스업생산": {
+            'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
+            '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
+            '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
+            '2025_1Q': 63, '2025_2Q': 64
+        },
+        "소비(소매, 추가)": {
+            'region_col': 1, 'level_col': 2, 'name_col': 4, 'header_row': 2,
+            '2023_1Q': 54, '2023_2Q': 55, '2023_3Q': 56, '2023_4Q': 57,
+            '2024_1Q': 58, '2024_2Q': 59, '2024_3Q': 60, '2024_4Q': 61,
+            '2025_1Q': 62, '2025_2Q': 63
+        },
+        "건설 (공표자료)": {
+            'region_col': 1, 'level_col': 2, 'name_col': 4, 'header_row': 2,
+            '2023_1Q': 58, '2023_2Q': 59, '2023_3Q': 60, '2023_4Q': 61,
+            '2024_1Q': 62, '2024_2Q': 63, '2024_3Q': 64, '2024_4Q': 65,
+            '2025_1Q': 66, '2025_2Q': 67
+        },
+        "수출": {
+            'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2, 'total_code': '계',
+            '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
+            '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
+            '2025_1Q': 67, '2025_2Q': 68
+        },
+        "수입": {
+            'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2, 'total_code': '계',
+            '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
+            '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
+            '2025_1Q': 67, '2025_2Q': 68
+        },
+        "품목성질별 물가": {
+            'region_col': 0, 'level_col': 1, 'name_col': 3, 'header_row': 2, 'total_code': '총지수',
+            '2023_1Q': 47, '2023_2Q': 48, '2023_3Q': 49, '2023_4Q': 50,
+            '2024_1Q': 51, '2024_2Q': 52, '2024_3Q': 53, '2024_4Q': 54,
+            '2025_1Q': 55, '2025_2Q': 56
+        },
+        "고용률": {
+            'region_col': 1, 'level_col': 2, 'name_col': 3, 'header_row': 2, 'total_code': '계',
+            '2023_1Q': 57, '2023_2Q': 58, '2023_3Q': 59, '2023_4Q': 60,
+            '2024_1Q': 61, '2024_2Q': 62, '2024_3Q': 63, '2024_4Q': 64,
+            '2025_1Q': 65, '2025_2Q': 66
+        },
+        "실업자 수": {
+            'region_col': 0, 'level_col': 1, 'name_col': 1, 'header_row': 2, 'total_code': '계',
+            '2023_1Q': 52, '2023_2Q': 53, '2023_3Q': 54, '2023_4Q': 55,
+            '2024_1Q': 56, '2024_2Q': 57, '2024_3Q': 58, '2024_4Q': 59,
+            '2025_1Q': 60, '2025_2Q': 61
+        },
+        "시도 간 이동": {
+            'region_col': 1, 'level_col': 2, 'name_col': 1, 'header_row': 2,
+            '2023_1Q': 71, '2023_2Q': 72, '2023_3Q': 73, '2023_4Q': 74,
+            '2024_1Q': 75, '2024_2Q': 76, '2024_3Q': 77, '2024_4Q': 78,
+            '2025_1Q': 79, '2025_2Q': 80
+        },
     }
     
     # 유효한 지역 목록
@@ -33,6 +98,28 @@ class RawDataExtractor:
         '전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
         '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
     ]
+    
+    # 지역명 전체 이름 → 단축명 매핑 (실업자 수 시트 등에서 사용)
+    REGION_FULL_TO_SHORT = {
+        '전국': '전국',
+        '서울특별시': '서울', '서울': '서울',
+        '부산광역시': '부산', '부산': '부산',
+        '대구광역시': '대구', '대구': '대구',
+        '인천광역시': '인천', '인천': '인천',
+        '광주광역시': '광주', '광주': '광주',
+        '대전광역시': '대전', '대전': '대전',
+        '울산광역시': '울산', '울산': '울산',
+        '세종특별자치시': '세종', '세종': '세종',
+        '경기도': '경기', '경기': '경기',
+        '강원특별자치도': '강원', '강원도': '강원', '강원': '강원',
+        '충청북도': '충북', '충북': '충북',
+        '충청남도': '충남', '충남': '충남',
+        '전북특별자치도': '전북', '전라북도': '전북', '전북': '전북',
+        '전라남도': '전남', '전남': '전남',
+        '경상북도': '경북', '경북': '경북',
+        '경상남도': '경남', '경남': '경남',
+        '제주특별자치도': '제주', '제주': '제주',
+    }
     
     def __init__(self, raw_excel_path: str, current_year: int, current_quarter: int):
         """
@@ -835,6 +922,8 @@ class RawDataExtractor:
             'table_data': [],
             'top3_increase_regions': [],
             'top3_decrease_regions': [],
+            'summary_box': {},  # 템플릿에서 사용하는 요약 박스 데이터
+            'nationwide_data': {},  # 전국 데이터
         }
         
         # 전년동분기비 증감률 추출 (분류단계 0 = 전체)
@@ -864,12 +953,19 @@ class RawDataExtractor:
             current_quarter_key = f"{self.current_year}.{self.current_quarter}/4"
             current_data = quarterly_growth.get(current_quarter_key, {})
         
-        # 전국 데이터
-        national_rate = current_data.get('전국', 0.0)
+        # 전국 데이터 (결측치는 None 유지)
+        national_rate = current_data.get('전국', None)
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'direction': '증가' if national_rate is not None and national_rate > 0 else ('감소' if national_rate is not None and national_rate < 0 else ('보합' if national_rate == 0 else 'N/A')),
             'trend': '확대' if national_rate > 0 else ('축소' if national_rate < 0 else '유지'),
+        }
+        
+        # nationwide_data (템플릿 호환성)
+        report_data['nationwide_data'] = {
+            'production_index': 100.0,  # 기준값
+            'growth_rate': national_rate if national_rate is not None else 0.0,
+            'main_industries': [],  # 가중치 필요하여 N/A
         }
         
         # 지역별 데이터 처리
@@ -877,17 +973,20 @@ class RawDataExtractor:
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
+            if rate is None:
+                continue
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
+                'industries': [],  # 가중치 필요
             })
         
         # 증가/감소 지역 분류
-        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+        increase_regions = sorted([r for r in regional_list if r.get('growth_rate') and r['growth_rate'] > 0], 
                                   key=lambda x: x['growth_rate'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r.get('growth_rate') and r['growth_rate'] < 0], 
                                   key=lambda x: x['growth_rate'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -898,9 +997,22 @@ class RawDataExtractor:
             'decrease_regions': decrease_regions,
         }
         
+        # summary_box (템플릿에서 사용)
+        report_data['summary_box'] = {
+            'main_increase_regions': increase_regions[:3],
+            'main_decrease_regions': decrease_regions[:3],
+            'region_count': len(increase_regions),
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+        }
+        
         # 테이블 데이터 (지역별 연도/분기 데이터)
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
+        
+        # summary_table 생성
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        report_data['summary_table'] = self._generate_production_summary_table(sheet_name, config, quarterly_growth, yearly_growth)
         
         return report_data
     
@@ -918,6 +1030,8 @@ class RawDataExtractor:
             'regional_data': {},
             'top3_increase_regions': [],
             'top3_decrease_regions': [],
+            'summary_box': {},
+            'nationwide_data': {},
         }
         
         # 전년동분기비 증감률 추출
@@ -942,10 +1056,17 @@ class RawDataExtractor:
         current_data = quarterly_growth.get(current_quarter_key, 
                        quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_rate = current_data.get('전국', 0.0)
+        national_rate = current_data.get('전국', None)
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'direction': '증가' if national_rate is not None and national_rate > 0 else ('감소' if national_rate is not None and national_rate < 0 else ('보합' if national_rate == 0 else 'N/A')),
+        }
+        
+        # nationwide_data (템플릿 호환성)
+        report_data['nationwide_data'] = {
+            'production_index': 100.0,
+            'growth_rate': national_rate if national_rate is not None else 0.0,
+            'main_industries': [],
         }
         
         # 지역별 처리
@@ -953,16 +1074,19 @@ class RawDataExtractor:
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
+            if rate is None:
+                continue
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
+                'industries': [],
             })
         
-        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+        increase_regions = sorted([r for r in regional_list if r.get('growth_rate') and r['growth_rate'] > 0], 
                                   key=lambda x: x['growth_rate'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r.get('growth_rate') and r['growth_rate'] < 0], 
                                   key=lambda x: x['growth_rate'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -972,14 +1096,151 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
+        
+        # summary_box
+        report_data['summary_box'] = {
+            'main_increase_regions': increase_regions[:3],
+            'main_decrease_regions': decrease_regions[:3],
+            'region_count': len(increase_regions),
+        }
+        
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
         
+        # summary_table 생성
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        report_data['summary_table'] = self._generate_production_summary_table(sheet_name, config, quarterly_growth, yearly_growth)
+        
         return report_data
     
+    def _generate_production_summary_table(self, sheet_name: str, config: Dict, 
+                                          quarterly_growth: Dict, yearly_growth: Dict) -> Dict[str, Any]:
+        """광공업생산/서비스업생산 요약 테이블 데이터 생성"""
+        # 테이블용 분기 컬럼들: 4개 분기의 전년동기비 증감률
+        def get_quarter_key(year, q):
+            return f"{year}_{q}Q"
+        
+        table_q_pairs = []
+        # 1. 전년동분기
+        table_q_pairs.append((
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            get_quarter_key(self.current_year - 2, self.current_quarter),
+            f"{self.current_year - 1}.{self.current_quarter}/4"
+        ))
+        # 2. 2분기 전
+        q2 = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        y2 = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        table_q_pairs.append((
+            get_quarter_key(y2, q2),
+            get_quarter_key(y2 - 1, q2),
+            f"{y2}.{q2}/4"
+        ))
+        # 3. 직전 분기
+        q3 = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        y3 = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        table_q_pairs.append((
+            get_quarter_key(y3, q3),
+            get_quarter_key(y3 - 1, q3),
+            f"{y3}.{q3}/4"
+        ))
+        # 4. 현재 분기
+        table_q_pairs.append((
+            get_quarter_key(self.current_year, self.current_quarter),
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            f"{self.current_year}.{self.current_quarter}/4p"
+        ))
+        
+        # 지역별 데이터 추출
+        region_data = {}
+        for _, _, label in table_q_pairs:
+            quarter_data = quarterly_growth.get(label, {})
+            for region in self.ALL_REGIONS:
+                if region not in region_data:
+                    region_data[region] = {'growth_rates': [], 'indices': []}
+                rate = quarter_data.get(region, None)
+                region_data[region]['growth_rates'].append(rate)
+        
+        # 지수 데이터는 기준값 100.0 사용 (실제 지수 데이터는 별도 계산 필요)
+        for region in self.ALL_REGIONS:
+            if region in region_data:
+                region_data[region]['indices'] = [100.0, 100.0]
+        
+        # 테이블 행 생성
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "수도권": ["서울", "인천", "경기"],
+            "동남권": ["부산", "울산", "경남"],
+            "대경권": ["대구", "경북"],
+            "호남권": ["광주", "전북", "전남"],
+            "충청권": ["대전", "세종", "충북", "충남"],
+            "강원제주": ["강원", "제주"]
+        }
+        
+        # 전국 행
+        national = region_data.get('전국', {'growth_rates': [None]*4, 'indices': [100.0, 100.0]})
+        rows.append({
+            'region': '전 국',
+            'group': None,
+            'growth_rates': national['growth_rates'][:4],
+            'indices': national['indices'][:2],
+        })
+        
+        # 권역별 시도
+        for group_name in ['수도권', '동남권', '대경권', '호남권', '충청권', '강원제주']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {'growth_rates': [None]*4, 'indices': [100.0, 100.0]})
+                
+                row_data = {
+                    'region': region_display.get(sido, sido),
+                    'growth_rates': sido_data['growth_rates'][:4],
+                    'indices': sido_data['indices'][:2],
+                }
+                
+                if idx == 0:
+                    row_data['group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['group'] = None
+                
+                rows.append(row_data)
+        
+        return {
+            'base_year': 2020,
+            'columns': {
+                'growth_rate_columns': [label for _, _, label in table_q_pairs],
+                'index_columns': [
+                    f"{self.current_year}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4",
+                    f"{self.current_year}.{self.current_quarter}/4"
+                ],
+            },
+            'regions': rows,
+        }
+    
     def extract_consumption_report_data(self) -> Dict[str, Any]:
-        """소비동향 보도자료 데이터 추출"""
+        """소비동향 보도자료 데이터 추출 (소매판매액지수)
+        
+        소비동향 템플릿에서 필요한 데이터 구조:
+        - summary_box: 요약 박스
+        - nationwide_data: 전국 데이터 (sales_index, growth_rate, main_businesses)
+        - regional_data: 지역별 데이터
+        - top3_increase_regions, top3_decrease_regions
+        - summary_table: 지역별 테이블 데이터
+        """
         sheet_name = '소비(소매, 추가)'
+        
+        # 시트 설정 가져오기
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        name_col = config.get('name_col', 4)
         
         report_data = {
             'report_info': {
@@ -991,39 +1252,62 @@ class RawDataExtractor:
             'regional_data': {},
             'top3_increase_regions': [],
             'top3_decrease_regions': [],
+            'summary_box': {},
+            'nationwide_data': {},
+            'summary_table': {},
+            'increase_businesses_text': '',
+            'decrease_businesses_text': '',
         }
         
+        # 분류단계가 0인 합계 행만 추출
         quarterly_growth = self.extract_quarterly_growth_rate(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=region_col,
+            classification_column=level_col,
+            classification_value='0'
         )
         
         yearly_growth = self.extract_yearly_growth_rate(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=region_col,
+            classification_column=level_col,
+            classification_value='0'
         )
         
         current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
         current_data = quarterly_growth.get(current_quarter_key, 
                        quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_rate = current_data.get('전국', 0.0)
+        national_rate = current_data.get('전국', None)
+        direction = '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합')
+        
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'direction': direction,
         }
         
+        # nationwide_data (템플릿 호환성)
+        report_data['nationwide_data'] = {
+            'sales_index': 100.0,  # 기준값
+            'growth_rate': national_rate if national_rate is not None else 0.0,
+            'main_businesses': [],  # 가중치 필요하여 빈 배열 (업태별 데이터)
+        }
+        
+        # 지역별 데이터 추출
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
+            if rate is None:
+                rate = 0.0
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
+                'businesses': [],  # 가중치 필요
             })
         
         increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
@@ -1038,14 +1322,203 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
+        
+        # summary_box (템플릿에서 사용)
+        main_decrease_regions = []
+        for r in decrease_regions[:3]:
+            main_decrease_regions.append({
+                'region': r['region'],
+                'main_business': '',  # 가중치 필요
+            })
+        
+        report_data['summary_box'] = {
+            'main_decrease_regions': main_decrease_regions,
+            'main_increase_regions': increase_regions[:3],
+            'region_count': len(decrease_regions),
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+        }
+        
+        # summary_table (지역별 테이블 데이터)
+        report_data['summary_table'] = self._generate_consumption_summary_table(sheet_name, config)
+        
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
         
         return report_data
     
+    def _generate_consumption_summary_table(self, sheet_name: str, config: Dict) -> Dict[str, Any]:
+        """소비동향 요약 테이블 데이터 생성"""
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return self._get_empty_consumption_table()
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        
+        # 컬럼 정보
+        current_q_key = f"{self.current_year}_{self.current_quarter}Q"
+        prev_year_q_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        
+        # 테이블용 분기 컬럼들: 4개 분기의 전년동기비 증감률 계산
+        def get_quarter_key(year, q):
+            return f"{year}_{q}Q"
+        
+        table_q_pairs = []
+        # 1. 전년동분기 (2024.2/4)
+        table_q_pairs.append((
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            get_quarter_key(self.current_year - 2, self.current_quarter),
+            f"{self.current_year - 1}.{self.current_quarter}/4"
+        ))
+        # 2. 2분기 전
+        q2 = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        y2 = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        table_q_pairs.append((
+            get_quarter_key(y2, q2),
+            get_quarter_key(y2 - 1, q2),
+            f"{y2}.{q2}/4"
+        ))
+        # 3. 직전 분기
+        q3 = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        y3 = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        table_q_pairs.append((
+            get_quarter_key(y3, q3),
+            get_quarter_key(y3 - 1, q3),
+            f"{y3}.{q3}/4"
+        ))
+        # 4. 현재 분기
+        table_q_pairs.append((
+            current_q_key,
+            prev_year_q_key,
+            f"{self.current_year}.{self.current_quarter}/4p"
+        ))
+        
+        # 지역별 데이터 추출
+        region_data = {}
+        for i in range(3, len(df)):
+            row = df.iloc[i]
+            region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+            level = str(row[level_col]).strip() if pd.notna(row[level_col]) else ''
+            
+            if region not in self.ALL_REGIONS or level != '0':
+                continue
+            
+            if region not in region_data:
+                region_data[region] = {
+                    'growth_rates': [],
+                    'indices': [],
+                }
+            
+            # 4개 분기 증감률 계산
+            for curr_key, prev_key, _ in table_q_pairs:
+                curr_col = config.get(curr_key)
+                prev_col = config.get(prev_key)
+                
+                if curr_col and prev_col:
+                    try:
+                        curr_v = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0.0
+                        prev_v = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0.0
+                        if prev_v != 0:
+                            change = ((curr_v - prev_v) / prev_v) * 100
+                        else:
+                            change = 0.0
+                        region_data[region]['growth_rates'].append(round(change, 1))
+                    except:
+                        region_data[region]['growth_rates'].append(None)
+                else:
+                    region_data[region]['growth_rates'].append(None)
+            
+            # 지수 데이터 (직전 분기, 현재 분기)
+            for q_key in [table_q_pairs[2][0], table_q_pairs[3][0]]:
+                col = config.get(q_key)
+                if col:
+                    try:
+                        idx_val = float(row.iloc[col]) if pd.notna(row.iloc[col]) else None
+                        region_data[region]['indices'].append(idx_val)
+                    except:
+                        region_data[region]['indices'].append(None)
+                else:
+                    region_data[region]['indices'].append(None)
+        
+        # 테이블 행 생성
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "수도권": ["서울", "인천", "경기"],
+            "동남권": ["부산", "울산", "경남"],
+            "대경권": ["대구", "경북"],
+            "호남권": ["광주", "전북", "전남"],
+            "충청권": ["대전", "세종", "충북", "충남"],
+            "강원제주": ["강원", "제주"]
+        }
+        
+        # 전국 행
+        national = region_data.get('전국', {'growth_rates': [None]*4, 'indices': [None]*2})
+        rows.append({
+            'region': '전 국',
+            'group': None,
+            'growth_rates': national['growth_rates'][:4],
+            'indices': national['indices'][:2],
+        })
+        
+        # 권역별 시도
+        for group_name in ['수도권', '동남권', '대경권', '호남권', '충청권', '강원제주']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {'growth_rates': [None]*4, 'indices': [None]*2})
+                
+                row_data = {
+                    'region': region_display.get(sido, sido),
+                    'growth_rates': sido_data['growth_rates'][:4],
+                    'indices': sido_data['indices'][:2],
+                }
+                
+                if idx == 0:
+                    row_data['group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['group'] = None
+                
+                rows.append(row_data)
+        
+        return {
+            'base_year': 2020,
+            'columns': {
+                'growth_rate_columns': [label for _, _, label in table_q_pairs],
+                'index_columns': [
+                    f"{self.current_year}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4",
+                    f"{self.current_year}.{self.current_quarter}/4"
+                ],
+            },
+            'regions': rows,
+        }
+    
+    def _get_empty_consumption_table(self) -> Dict[str, Any]:
+        """빈 소비동향 테이블 반환"""
+        return {
+            'base_year': 2020,
+            'columns': {
+                'growth_rate_columns': [],
+                'index_columns': [],
+            },
+            'regions': [],
+        }
+    
     def extract_construction_report_data(self) -> Dict[str, Any]:
         """건설동향 보도자료 데이터 추출"""
         sheet_name = '건설 (공표자료)'
+        
+        # 시트 설정 가져오기
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
         
         report_data = {
             'report_info': {
@@ -1057,39 +1530,58 @@ class RawDataExtractor:
             'regional_data': {},
             'top3_increase_regions': [],
             'top3_decrease_regions': [],
+            'summary_box': {},
+            'nationwide_data': {},
         }
         
+        # 분류단계가 0인 합계 행만 추출
         quarterly_growth = self.extract_quarterly_growth_rate(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=region_col,
+            classification_column=level_col,
+            classification_value='0'
         )
         
         yearly_growth = self.extract_yearly_growth_rate(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=region_col,
+            classification_column=level_col,
+            classification_value='0'
         )
         
         current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
         current_data = quarterly_growth.get(current_quarter_key, 
                        quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_rate = current_data.get('전국', 0.0)
+        national_rate = current_data.get('전국', None)
+        direction = '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합')
+        
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'direction': direction,
+        }
+        
+        # nationwide_data (템플릿 호환성)
+        report_data['nationwide_data'] = {
+            'amount': 0.0,  # 금액은 별도 계산 필요
+            'growth_rate': national_rate if national_rate is not None else 0.0,
+            'main_categories': [],  # 가중치 필요
         }
         
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
+            if rate is None:
+                rate = 0.0
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
+                'categories': [],  # 가중치 필요
             })
         
         increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
@@ -1104,6 +1596,15 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
+        
+        # summary_box (템플릿에서 사용)
+        report_data['summary_box'] = {
+            'main_increase_regions': increase_regions[:3],
+            'main_decrease_regions': decrease_regions[:3],
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+        }
+        
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
         
@@ -1125,12 +1626,13 @@ class RawDataExtractor:
             'top3_decrease_regions': [],
         }
         
+        # 수출 시트: level='0'이 합계 행
         quarterly_growth = self.extract_quarterly_growth_rate(
             sheet_name,
             start_year=2020,
             region_column=1,
             classification_column=2,
-            classification_value='계'
+            classification_value='0'
         )
         
         yearly_growth = self.extract_yearly_growth_rate(
@@ -1138,28 +1640,28 @@ class RawDataExtractor:
             start_year=2020,
             region_column=1,
             classification_column=2,
-            classification_value='계'
+            classification_value='0'
         )
         
         current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
         current_data = quarterly_growth.get(current_quarter_key, 
                        quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_rate = current_data.get('전국', 0.0)
+        national_rate = current_data.get('전국', None)
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'direction': '증가' if national_rate is not None and national_rate > 0 else ('감소' if national_rate is not None and national_rate < 0 else ('보합' if national_rate == 0 else 'N/A')),
         }
         
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
             })
         
         increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
@@ -1177,10 +1679,121 @@ class RawDataExtractor:
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
         
+        # summary_table 생성 (수입과 동일한 구조)
+        report_data['summary_table'] = self._generate_export_import_summary_table(sheet_name, quarterly_growth)
+        
         return report_data
     
+    def _generate_export_import_summary_table(self, sheet_name: str, quarterly_growth: Dict) -> Dict[str, Any]:
+        """수출/수입 요약 테이블 데이터 생성"""
+        # 테이블용 분기 컬럼들: 4개 분기의 전년동기비 증감률
+        def get_quarter_key(year, q):
+            return f"{year}_{q}Q"
+        
+        table_q_pairs = []
+        # 1. 전년동분기
+        table_q_pairs.append((
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            get_quarter_key(self.current_year - 2, self.current_quarter),
+            f"{self.current_year - 1}.{self.current_quarter}/4"
+        ))
+        # 2. 2분기 전
+        q2 = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        y2 = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        table_q_pairs.append((
+            get_quarter_key(y2, q2),
+            get_quarter_key(y2 - 1, q2),
+            f"{y2}.{q2}/4"
+        ))
+        # 3. 직전 분기
+        q3 = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        y3 = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        table_q_pairs.append((
+            get_quarter_key(y3, q3),
+            get_quarter_key(y3 - 1, q3),
+            f"{y3}.{q3}/4"
+        ))
+        # 4. 현재 분기
+        table_q_pairs.append((
+            get_quarter_key(self.current_year, self.current_quarter),
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            f"{self.current_year}.{self.current_quarter}/4p"
+        ))
+        
+        # 지역별 데이터 추출
+        region_data = {}
+        for _, _, label in table_q_pairs:
+            quarter_data = quarterly_growth.get(label, {})
+            for region in self.ALL_REGIONS:
+                if region not in region_data:
+                    region_data[region] = {'changes': [], 'amounts': []}
+                rate = quarter_data.get(region, None)
+                region_data[region]['changes'].append(rate)
+        
+        # 수입액은 별도 계산 필요 (현재는 None)
+        for region in self.ALL_REGIONS:
+            if region in region_data:
+                region_data[region]['amounts'] = [None, None]
+        
+        # 테이블 행 생성
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "경인": ["서울", "인천", "경기"],
+            "충청": ["대전", "세종", "충북", "충남"],
+            "호남": ["광주", "전북", "전남", "제주"],
+            "동북": ["대구", "경북", "강원"],
+            "동남": ["부산", "울산", "경남"]
+        }
+        
+        # 전국 행
+        national = region_data.get('전국', {'changes': [None]*4, 'amounts': [None, None]})
+        rows.append({
+            'region_group': None,
+            'sido': '전 국',
+            'changes': national['changes'][:4],
+            'amounts': national['amounts'][:2],
+        })
+        
+        # 권역별 시도
+        for group_name in ['경인', '충청', '호남', '동북', '동남']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {'changes': [None]*4, 'amounts': [None, None]})
+                
+                row_data = {
+                    'sido': region_display.get(sido, sido),
+                    'changes': sido_data['changes'][:4],
+                    'amounts': sido_data['amounts'][:2],
+                }
+                
+                if idx == 0:
+                    row_data['region_group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['region_group'] = None
+                
+                rows.append(row_data)
+        
+        return {
+            'rows': rows,
+            'columns': {
+                'growth_rate_columns': [label for _, _, label in table_q_pairs],
+                'amount_columns': [
+                    f"{self.current_year - 1}.{self.current_quarter}/4",
+                    f"{self.current_year}.{self.current_quarter}/4"
+                ],
+            },
+        }
+    
     def extract_import_report_data(self) -> Dict[str, Any]:
-        """수입 보도자료 데이터 추출"""
+        """수입 보도자료 데이터 추출 (품목, 수입액, summary_table 포함)"""
         sheet_name = '수입'
         
         report_data = {
@@ -1191,50 +1804,236 @@ class RawDataExtractor:
             },
             'national_summary': {},
             'regional_data': {},
+            'nationwide_data': {},
             'top3_increase_regions': [],
             'top3_decrease_regions': [],
+            'summary_box': {},
+            'summary_table': {},
+            'increase_products_text': '',
+            'decrease_products_text': '',
         }
         
-        quarterly_growth = self.extract_quarterly_growth_rate(
-            sheet_name,
-            start_year=2020,
-            region_column=1,
-            classification_column=2,
-            classification_value='계'
-        )
+        # 시트 로드
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            print(f"[WARNING] 수입 시트를 찾을 수 없습니다")
+            return report_data
         
-        yearly_growth = self.extract_yearly_growth_rate(
-            sheet_name,
-            start_year=2020,
-            region_column=1,
-            classification_column=2,
-            classification_value='계'
-        )
+        # 시트 구조 정보
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        name_col = config.get('name_col', 5)
         
-        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
-        current_data = quarterly_growth.get(current_quarter_key, 
-                       quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        # 현재 분기와 전년동분기 컬럼 찾기
+        current_q_key = f"{self.current_year}_{self.current_quarter}Q"
+        prev_year_q_key = f"{self.current_year - 1}_{self.current_quarter}Q"
         
-        national_rate = current_data.get('전국', 0.0)
+        current_col = config.get(current_q_key)
+        prev_col = config.get(prev_year_q_key)
+        
+        if current_col is None or prev_col is None:
+            print(f"[WARNING] 분기 컬럼을 찾을 수 없습니다: {current_q_key}, {prev_year_q_key}")
+            return report_data
+        
+        # 테이블용 분기 컬럼들: 4개 분기의 전년동기비 증감률 계산
+        # 2025년 2분기 기준: 2024.2/4, 2025.3/4, 2025.1/4, 2025.2/4p
+        # 각각의 전년동기비를 계산
+        def get_quarter_key(year, q):
+            return f"{year}_{q}Q"
+        
+        # 컬럼 순서: 전전년동분기, 전분기(3/4), 직전분기(1/4), 현재분기
+        # 하지만 실제로는 config에 있는 분기만 사용 가능
+        table_q_pairs = []
+        
+        # 1. 전년동분기 (2024.2/4)
+        table_q_pairs.append((
+            get_quarter_key(self.current_year - 1, self.current_quarter),
+            get_quarter_key(self.current_year - 2, self.current_quarter),
+            f"{self.current_year - 1}.{self.current_quarter}/4"
+        ))
+        
+        # 2. 2분기 전 (2024.3/4 또는 2024.4/4)
+        q2 = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        y2 = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        table_q_pairs.append((
+            get_quarter_key(y2, q2),
+            get_quarter_key(y2 - 1, q2),
+            f"{y2}.{q2}/4"
+        ))
+        
+        # 3. 직전 분기 (2025.1/4)
+        q3 = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        y3 = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        table_q_pairs.append((
+            get_quarter_key(y3, q3),
+            get_quarter_key(y3 - 1, q3),
+            f"{y3}.{q3}/4"
+        ))
+        
+        # 4. 현재 분기 (2025.2/4p)
+        table_q_pairs.append((
+            current_q_key,
+            prev_year_q_key,
+            f"{self.current_year}.{self.current_quarter}/4p"
+        ))
+        
+        # 지역별, 품목별 데이터 추출
+        region_data = {}  # {region: {total_curr, total_prev, products: [...]}}
+        
+        for i in range(3, len(df)):
+            row = df.iloc[i]
+            region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+            level = str(row[level_col]).strip() if pd.notna(row[level_col]) else ''
+            product_name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+            
+            if region not in self.ALL_REGIONS:
+                continue
+            
+            # 현재 분기와 전년동분기 값 가져오기
+            try:
+                curr_val = float(row[current_col]) if pd.notna(row[current_col]) else 0.0
+                prev_val = float(row[prev_col]) if pd.notna(row[prev_col]) else 0.0
+            except (ValueError, TypeError):
+                curr_val, prev_val = 0.0, 0.0
+            
+            if region not in region_data:
+                region_data[region] = {
+                    'total_curr': 0.0,
+                    'total_prev': 0.0,
+                    'products': [],
+                    'table_changes': [],
+                    'table_amounts': [],
+                }
+            
+            # 합계 행 (level='0')
+            if level == '0':
+                region_data[region]['total_curr'] = curr_val
+                region_data[region]['total_prev'] = prev_val
+                
+                # 테이블용 증감률 데이터 추출
+                for curr_key, prev_key, _ in table_q_pairs:
+                    curr_col_idx = config.get(curr_key)
+                    prev_col_idx = config.get(prev_key)
+                    
+                    if curr_col_idx and prev_col_idx:
+                        try:
+                            curr_v = float(row[curr_col_idx]) if pd.notna(row[curr_col_idx]) else 0.0
+                            prev_v = float(row[prev_col_idx]) if pd.notna(row[prev_col_idx]) else 0.0
+                            if prev_v != 0:
+                                change = ((curr_v - prev_v) / prev_v) * 100
+                            else:
+                                change = 0.0
+                            region_data[region]['table_changes'].append(round(change, 1))
+                        except:
+                            region_data[region]['table_changes'].append(None)
+                    else:
+                        region_data[region]['table_changes'].append(None)
+                
+                # 수입액 (백만달러 -> 억달러)
+                region_data[region]['table_amounts'] = [
+                    round(prev_val / 10, 1) if prev_val else None,
+                    round(curr_val / 10, 1) if curr_val else None,
+                ]
+            
+            # 품목 데이터 (level='2')
+            elif level == '2' and product_name:
+                if prev_val != 0:
+                    change = ((curr_val - prev_val) / prev_val) * 100
+                else:
+                    change = 0.0 if curr_val == 0 else 100.0
+                
+                # 기여도 = 금액 변화량 (정렬용, 나중에 %p로 변환)
+                amount_change = curr_val - prev_val
+                
+                region_data[region]['products'].append({
+                    'name': product_name,
+                    'change': round(change, 1),
+                    'contribution': amount_change,  # 정렬용 금액 변화량
+                    'amount_change': amount_change,  # 원본 금액 변화량 (백만달러)
+                })
+        
+        # 전국 데이터 추출
+        national_info = region_data.get('전국', {})
+        total_curr = national_info.get('total_curr', 0.0)
+        total_prev = national_info.get('total_prev', 0.0)
+        
+        if total_prev != 0:
+            national_rate = ((total_curr - total_prev) / total_prev) * 100
+        else:
+            national_rate = 0.0
+        
+        # 전국 품목에 기여도(%p) 계산: (품목 금액 변화량 / 전체 전년동분기 금액) × 100
+        national_products = national_info.get('products', [])
+        for p in national_products:
+            if total_prev != 0:
+                p['contribution_pct'] = (p['amount_change'] / total_prev) * 100
+            else:
+                p['contribution_pct'] = 0.0
+        
+        # 전국 품목 순위 정렬 (금액 변화량 기준)
+        positive_products = sorted([p for p in national_products if p['contribution'] > 0],
+                                  key=lambda x: -x['contribution'])[:5]
+        negative_products = sorted([p for p in national_products if p['contribution'] < 0],
+                                  key=lambda x: x['contribution'])[:5]
+        
+        # nationwide_data 설정
+        report_data['nationwide_data'] = {
+            'amount': round(total_curr / 10, 1) if total_curr else 0.0,  # 억달러
+            'change': round(national_rate, 1),
+            'products': positive_products[:3] if national_rate >= 0 else negative_products[:3],
+            'increase_products': positive_products[:3],
+            'decrease_products': negative_products[:3],
+        }
+        
         report_data['national_summary'] = {
-            'growth_rate': national_rate,
-            'direction': '증가' if national_rate > 0 else ('감소' if national_rate < 0 else '보합'),
+            'growth_rate': round(national_rate, 1),
+            'direction': '증가' if national_rate is not None and national_rate > 0 else ('감소' if national_rate is not None and national_rate < 0 else ('보합' if national_rate == 0 else 'N/A')),
         }
         
+        # 지역별 데이터 정리
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            
+            info = region_data.get(region, {})
+            curr = info.get('total_curr', 0.0)
+            prev = info.get('total_prev', 0.0)
+            
+            if prev != 0:
+                rate = ((curr - prev) / prev) * 100
+            else:
+                rate = 0.0
+            
+            # 지역 품목에 기여도(%p) 계산: (품목 금액 변화량 / 지역 전년동분기 금액) × 100
+            products = info.get('products', [])
+            for p in products:
+                if prev != 0:
+                    p['contribution_pct'] = (p['amount_change'] / prev) * 100
+                else:
+                    p['contribution_pct'] = 0.0
+            
+            # 지역 품목 순위 정렬 (금액 변화량 기준)
+            positive = sorted([p for p in products if p['contribution'] > 0],
+                            key=lambda x: -x['contribution'])[:3]
+            negative = sorted([p for p in products if p['contribution'] < 0],
+                            key=lambda x: x['contribution'])[:3]
+            
             regional_list.append({
                 'region': region,
-                'growth_rate': rate,
-                'direction': '증가' if rate > 0 else ('감소' if rate < 0 else '보합'),
+                'name': region,
+                'growth_rate': round(rate, 1),
+                'change': round(rate, 1),
+                'direction': '증가' if rate is not None and rate > 0 else ('감소' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
+                'products': positive if rate >= 0 else negative,
+                'increase_products': positive,
+                'decrease_products': negative,
             })
         
-        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0],
                                   key=lambda x: x['growth_rate'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0],
                                   key=lambda x: x['growth_rate'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -1244,8 +2043,108 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
-        report_data['yearly_data'] = yearly_growth
-        report_data['quarterly_data'] = quarterly_growth
+        
+        # 품목 텍스트 생성
+        increase_prods = []
+        for r in increase_regions[:3]:
+            prods = r.get('products', [])
+            if prods:
+                increase_prods.append(prods[0]['name'])
+        report_data['increase_products_text'] = ', '.join(increase_prods[:3]) if increase_prods else ''
+        
+        decrease_prods = []
+        for r in decrease_regions[:3]:
+            prods = r.get('products', [])
+            if prods:
+                decrease_prods.append(prods[0]['name'])
+        report_data['decrease_products_text'] = ', '.join(decrease_prods[:3]) if decrease_prods else ''
+        
+        # summary_box 생성
+        main_decrease_regions = []
+        for r in decrease_regions[:3]:
+            products = r.get('products', [])
+            product_names = [p['name'] for p in products[:2]] if products else []
+            main_decrease_regions.append({
+                'region': r['region'],
+                'products': product_names,
+            })
+        
+        report_data['summary_box'] = {
+            'main_increase_regions': increase_regions[:3],
+            'main_decrease_regions': main_decrease_regions,
+            'increase_count': len(increase_regions),
+            'decrease_count': len(decrease_regions),
+        }
+        
+        # summary_table 생성
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "경인": ["서울", "인천", "경기"],
+            "충청": ["대전", "세종", "충북", "충남"],
+            "호남": ["광주", "전북", "전남", "제주"],
+            "동북": ["대구", "경북", "강원"],
+            "동남": ["부산", "울산", "경남"]
+        }
+        
+        # 전국 행
+        national_table = region_data.get('전국', {})
+        rows.append({
+            'region_group': None,
+            'sido': '전 국',
+            'changes': national_table.get('table_changes', [None, None, None, None])[:4],
+            'amounts': national_table.get('table_amounts', [None, None])[:2],
+        })
+        
+        # 권역별 시도
+        for group_name in ['경인', '충청', '호남', '동북', '동남']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {})
+                
+                # 증감률 데이터
+                changes = sido_data.get('table_changes', [])
+                while len(changes) < 4:
+                    changes.append(None)
+                
+                # 수입액
+                amounts = sido_data.get('table_amounts', [])
+                while len(amounts) < 2:
+                    amounts.append(None)
+                
+                row_data = {
+                    'sido': region_display.get(sido, sido),
+                    'changes': changes[:4],
+                    'amounts': amounts[:2],
+                }
+                
+                if idx == 0:
+                    row_data['region_group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['region_group'] = None
+                
+                rows.append(row_data)
+        
+        # 테이블 컬럼 정보
+        columns = {
+            'growth_rate_columns': [label for _, _, label in table_q_pairs],
+            'amount_columns': [
+                f"{self.current_year - 1}.{self.current_quarter}/4",
+                f"{self.current_year}.{self.current_quarter}/4"
+            ],
+        }
+        
+        report_data['summary_table'] = {
+            'rows': rows,
+            'columns': columns,
+        }
         
         return report_data
     
@@ -1265,37 +2164,42 @@ class RawDataExtractor:
             'top3_decrease_regions': [],
         }
         
+        # 물가 시트: level='0'이 합계 행 (name='총지수')
         quarterly_growth = self.extract_quarterly_growth_rate(
             sheet_name,
             start_year=2020,
             region_column=0,
+            classification_column=1,
+            classification_value='0'
         )
         
         yearly_growth = self.extract_yearly_growth_rate(
             sheet_name,
             start_year=2020,
             region_column=0,
+            classification_column=1,
+            classification_value='0'
         )
         
         current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
         current_data = quarterly_growth.get(current_quarter_key, 
                        quarterly_growth.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_rate = current_data.get('전국', 0.0)
+        national_rate = current_data.get('전국', None)
         report_data['national_summary'] = {
             'growth_rate': national_rate,
-            'direction': '상승' if national_rate > 0 else ('하락' if national_rate < 0 else '보합'),
+            'direction': '상승' if national_rate is not None and national_rate > 0 else ('하락' if national_rate is not None and national_rate < 0 else ('보합' if national_rate == 0 else 'N/A')),
         }
         
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            rate = current_data.get(region, 0.0)
+            rate = current_data.get(region, None)
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
-                'direction': '상승' if rate > 0 else ('하락' if rate < 0 else '보합'),
+                'direction': '상승' if rate is not None and rate > 0 else ('하락' if rate is not None and rate < 0 else ('보합' if rate == 0 else 'N/A')),
             })
         
         increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
@@ -1313,7 +2217,94 @@ class RawDataExtractor:
         report_data['yearly_data'] = yearly_growth
         report_data['quarterly_data'] = quarterly_growth
         
+        # summary_table 생성
+        report_data['summary_table'] = self._generate_price_summary_table(quarterly_growth)
+        
         return report_data
+    
+    def _generate_price_summary_table(self, quarterly_growth: Dict) -> Dict[str, Any]:
+        """물가동향 요약 테이블 데이터 생성"""
+        # 테이블용 분기 컬럼들
+        table_q_pairs = [
+            f"{self.current_year - 1}.{self.current_quarter}/4",  # 2024.2/4
+            f"{self.current_year}.{self.current_quarter + 1 if self.current_quarter < 4 else 1}/4" if self.current_quarter < 4 else f"{self.current_year}.1/4",  # 2024.3/4 or 2025.1/4
+            f"{self.current_year}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4",  # 2025.1/4
+            f"{self.current_year}.{self.current_quarter}/4p",  # 2025.2/4p
+        ]
+        
+        # 지역별 데이터 추출
+        region_data = {}
+        for quarter_label in table_q_pairs:
+            quarter_data = quarterly_growth.get(quarter_label, {})
+            for region in self.ALL_REGIONS:
+                if region not in region_data:
+                    region_data[region] = {'changes': [], 'indices': []}
+                rate = quarter_data.get(region, None)
+                region_data[region]['changes'].append(rate)
+        
+        # 지수 데이터는 원본에서 추출 (기준년도=2020)
+        for region in self.ALL_REGIONS:
+            if region in region_data:
+                region_data[region]['indices'] = [None, None]  # 원지수는 별도 추출 필요
+        
+        # 테이블 행 생성
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "수도권": ["서울", "인천", "경기"],
+            "동남권": ["부산", "울산", "경남"],
+            "대경권": ["대구", "경북"],
+            "호남권": ["광주", "전북", "전남"],
+            "충청권": ["대전", "세종", "충북", "충남"],
+            "강원제주": ["강원", "제주"]
+        }
+        
+        # 전국 행
+        national = region_data.get('전국', {'changes': [None]*4, 'indices': [None, None]})
+        rows.append({
+            'region': '전 국',
+            'group': None,
+            'changes': national['changes'][:4],
+            'indices': national['indices'][:2],
+        })
+        
+        # 권역별 시도
+        for group_name in ['수도권', '동남권', '대경권', '호남권', '충청권', '강원제주']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {'changes': [None]*4, 'indices': [None, None]})
+                
+                row_data = {
+                    'region': region_display.get(sido, sido),
+                    'changes': sido_data['changes'][:4],
+                    'indices': sido_data['indices'][:2],
+                }
+                
+                if idx == 0:
+                    row_data['group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['group'] = None
+                
+                rows.append(row_data)
+        
+        return {
+            'base_year': 2020,
+            'columns': {
+                'change_columns': table_q_pairs,
+                'index_columns': [
+                    f"{self.current_year - 1}.{self.current_quarter}/4",
+                    f"{self.current_year}.{self.current_quarter}/4"
+                ],
+            },
+            'rows': rows,
+        }
     
     def extract_employment_rate_report_data(self) -> Dict[str, Any]:
         """고용률 보도자료 데이터 추출 (전년동기비 %p 차이)"""
@@ -1331,24 +2322,28 @@ class RawDataExtractor:
             'top3_decrease_regions': [],
         }
         
-        # 고용률은 %p 차이 계산
+        # 고용률 시트: region_column=1, level='0'이 합계 행
         quarterly_diff = self.extract_quarterly_difference(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
         )
         
         yearly_diff = self.extract_yearly_difference(
             sheet_name,
             start_year=2020,
-            region_column=0,
+            region_column=1,
+            classification_column=2,
+            classification_value='0'
         )
         
         current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
         current_data = quarterly_diff.get(current_quarter_key, 
                        quarterly_diff.get(f"{self.current_year}.{self.current_quarter}/4", {}))
         
-        national_diff = current_data.get('전국', 0.0)
+        national_diff = current_data.get('전국', None)
         report_data['national_summary'] = {
             'change': national_diff,
             'direction': '상승' if national_diff > 0 else ('하락' if national_diff < 0 else '보합'),
@@ -1358,7 +2353,7 @@ class RawDataExtractor:
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            diff = current_data.get(region, 0.0)
+            diff = current_data.get(region, None)
             regional_list.append({
                 'region': region,
                 'change': diff,
@@ -1383,7 +2378,11 @@ class RawDataExtractor:
         return report_data
     
     def extract_unemployment_report_data(self) -> Dict[str, Any]:
-        """실업률 보도자료 데이터 추출 (전년동기비 %p 차이)"""
+        """실업률 보도자료 데이터 추출 (전년동기비 %p 차이)
+        
+        실업자 수 시트는 지역명이 전체 이름으로 되어 있고 (서울특별시, 부산광역시 등),
+        연령계층별로 '계', '15-29세', '30-59세', '60세이상'으로 구분됨
+        """
         sheet_name = '실업자 수'
         
         report_data = {
@@ -1398,42 +2397,77 @@ class RawDataExtractor:
             'top3_decrease_regions': [],
         }
         
-        quarterly_diff = self.extract_quarterly_difference(
-            sheet_name,
-            start_year=2020,
-            region_column=0,
-        )
+        # 실업자 수 시트 직접 파싱
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return report_data
         
-        yearly_diff = self.extract_yearly_difference(
-            sheet_name,
-            start_year=2020,
-            region_column=0,
-        )
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        current_q_key = f"{self.current_year}_{self.current_quarter}Q"
+        prev_q_key = f"{self.current_year - 1}_{self.current_quarter}Q"
         
-        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
-        current_data = quarterly_diff.get(current_quarter_key, 
-                       quarterly_diff.get(f"{self.current_year}.{self.current_quarter}/4", {}))
+        current_col = config.get(current_q_key)
+        prev_col = config.get(prev_q_key)
         
-        national_diff = current_data.get('전국', 0.0)
+        if current_col is None or prev_col is None:
+            return report_data
+        
+        # 지역별 '계' 행에서 데이터 추출
+        region_data = {}
+        current_region = None
+        
+        for row_idx in range(3, len(df)):
+            col0 = str(df.iloc[row_idx, 0]).strip() if pd.notna(df.iloc[row_idx, 0]) else ''
+            col1 = str(df.iloc[row_idx, 1]).strip() if pd.notna(df.iloc[row_idx, 1]) else ''
+            
+            # 새 지역 시작
+            if col0 and col0 != 'nan':
+                current_region = self.REGION_FULL_TO_SHORT.get(col0, col0)
+            
+            # '계' 행 (전체 연령)
+            if col1 == '계' and current_region in self.ALL_REGIONS:
+                try:
+                    current_val = float(df.iloc[row_idx, current_col]) if pd.notna(df.iloc[row_idx, current_col]) else None
+                    prev_val = float(df.iloc[row_idx, prev_col]) if pd.notna(df.iloc[row_idx, prev_col]) else None
+                    
+                    if current_val is not None and prev_val is not None:
+                        diff = round(current_val - prev_val, 1)
+                    else:
+                        diff = None
+                    
+                    region_data[current_region] = {
+                        'change': diff,
+                        'current_value': current_val,
+                        'prev_value': prev_val,
+                    }
+                except (ValueError, TypeError):
+                    pass
+        
+        # 전국 데이터
+        national_data = region_data.get('전국', {})
+        national_diff = national_data.get('change')
         report_data['national_summary'] = {
             'change': national_diff,
-            'direction': '상승' if national_diff > 0 else ('하락' if national_diff < 0 else '보합'),
+            'direction': '상승' if national_diff and national_diff > 0 else ('하락' if national_diff and national_diff < 0 else 'N/A'),
         }
         
+        # 지역별 데이터
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            diff = current_data.get(region, 0.0)
+            data = region_data.get(region, {})
+            diff = data.get('change')
             regional_list.append({
                 'region': region,
                 'change': diff,
-                'direction': '상승' if diff > 0 else ('하락' if diff < 0 else '보합'),
+                'direction': '상승' if diff and diff > 0 else ('하락' if diff and diff < 0 else 'N/A'),
             })
         
-        increase_regions = sorted([r for r in regional_list if r['change'] > 0], 
+        # None이 아닌 값만 정렬
+        increase_regions = sorted([r for r in regional_list if r['change'] is not None and r['change'] > 0], 
                                   key=lambda x: x['change'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['change'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r['change'] is not None and r['change'] < 0], 
                                   key=lambda x: x['change'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -1443,13 +2477,93 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
-        report_data['yearly_data'] = yearly_diff
-        report_data['quarterly_data'] = quarterly_diff
+        
+        # summary_table 생성
+        report_data['summary_table'] = self._generate_unemployment_summary_table(df, config)
         
         return report_data
     
+    def _generate_unemployment_summary_table(self, df, config: Dict) -> Dict[str, Any]:
+        """실업률 요약 테이블 데이터 생성"""
+        # 테이블용 분기 컬럼들
+        quarter_keys = [
+            (f"{self.current_year - 2}_{self.current_quarter}Q", f"{self.current_year - 2}.{self.current_quarter}/4"),
+            (f"{self.current_year - 1}_{self.current_quarter}Q", f"{self.current_year - 1}.{self.current_quarter}/4"),
+            (f"{self.current_year}_{self.current_quarter - 1 if self.current_quarter > 1 else 4}Q", 
+             f"{self.current_year if self.current_quarter > 1 else self.current_year - 1}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4"),
+            (f"{self.current_year}_{self.current_quarter}Q", f"{self.current_year}.{self.current_quarter}/4p"),
+        ]
+        
+        # 지역별 데이터 추출
+        region_data = {}
+        current_region = None
+        
+        for row_idx in range(3, len(df)):
+            col0 = str(df.iloc[row_idx, 0]).strip() if pd.notna(df.iloc[row_idx, 0]) else ''
+            col1 = str(df.iloc[row_idx, 1]).strip() if pd.notna(df.iloc[row_idx, 1]) else ''
+            
+            if col0 and col0 != 'nan':
+                current_region = self.REGION_FULL_TO_SHORT.get(col0, col0)
+            
+            if col1 == '계' and current_region in self.ALL_REGIONS:
+                if current_region not in region_data:
+                    region_data[current_region] = {'changes': [], 'rates': []}
+                
+                # 각 분기별 전년동기비 차이 계산
+                for q_key, _ in quarter_keys:
+                    col = config.get(q_key)
+                    prev_q_key = f"{int(q_key.split('_')[0]) - 1}_{q_key.split('_')[1]}"
+                    prev_col = config.get(prev_q_key)
+                    
+                    if col and prev_col:
+                        try:
+                            current_val = float(df.iloc[row_idx, col]) if pd.notna(df.iloc[row_idx, col]) else None
+                            prev_val = float(df.iloc[row_idx, prev_col]) if pd.notna(df.iloc[row_idx, prev_col]) else None
+                            
+                            if current_val is not None and prev_val is not None:
+                                diff = round(current_val - prev_val, 1)
+                            else:
+                                diff = None
+                            region_data[current_region]['changes'].append(diff)
+                        except (ValueError, TypeError):
+                            region_data[current_region]['changes'].append(None)
+                    else:
+                        region_data[current_region]['changes'].append(None)
+                
+                # 실업률 (현재, 청년)
+                curr_q_col = config.get(f"{self.current_year}_{self.current_quarter}Q")
+                if curr_q_col:
+                    try:
+                        rate = float(df.iloc[row_idx, curr_q_col]) if pd.notna(df.iloc[row_idx, curr_q_col]) else None
+                        region_data[current_region]['rates'].append(rate)
+                    except (ValueError, TypeError):
+                        region_data[current_region]['rates'].append(None)
+                else:
+                    region_data[current_region]['rates'].append(None)
+        
+        # 테이블 행 생성
+        rows = self._generate_region_rows(region_data, 'changes', 'rates')
+        
+        return {
+            'columns': {
+                'change_columns': [label for _, label in quarter_keys],
+                'rate_columns': [
+                    f"{self.current_year - 1}.{self.current_quarter}/4",
+                    f"{self.current_year}.{self.current_quarter}/4",
+                    "15-29세"
+                ],
+            },
+            'rows': rows,
+        }
+    
     def extract_population_migration_report_data(self) -> Dict[str, Any]:
-        """국내인구이동 보도자료 데이터 추출"""
+        """국내인구이동 보도자료 데이터 추출
+        
+        시도 간 이동 시트 구조:
+        - col0: 지역코드
+        - col1: 지역이름 (서울, 부산 등)
+        - col2: 분류단계 (유입인구 수, 유출인구 수, 순인구이동 수)
+        """
         sheet_name = '시도 간 이동'
         
         report_data = {
@@ -1464,43 +2578,55 @@ class RawDataExtractor:
             'top3_decrease_regions': [],
         }
         
-        # 순이동은 원지수 그대로 사용
-        quarterly_data = self.extract_all_quarters(
-            sheet_name,
-            start_year=2020,
-            region_column=0,
-        )
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return report_data
         
-        yearly_data = self.extract_yearly_data(
-            sheet_name,
-            start_year=2020,
-            region_column=0,
-        )
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        current_q_key = f"{self.current_year}_{self.current_quarter}Q"
+        current_col = config.get(current_q_key)
         
-        current_quarter_key = f"{self.current_year}.{self.current_quarter}/4p"
-        current_data = quarterly_data.get(current_quarter_key, 
-                       quarterly_data.get(f"{self.current_year} {self.current_quarter}/4", {}))
+        if current_col is None:
+            return report_data
         
-        national_value = current_data.get('전국', 0.0)
+        # 지역별 순인구이동 데이터 추출
+        region_data = {}
+        
+        for row_idx in range(3, len(df)):
+            region = str(df.iloc[row_idx, 1]).strip() if pd.notna(df.iloc[row_idx, 1]) else ''
+            category = str(df.iloc[row_idx, 2]).strip() if pd.notna(df.iloc[row_idx, 2]) else ''
+            
+            # 순인구이동 수 행만 추출
+            if region in self.ALL_REGIONS and '순' in category and '이동' in category:
+                try:
+                    value = float(df.iloc[row_idx, current_col]) if pd.notna(df.iloc[row_idx, current_col]) else None
+                    region_data[region] = value
+                except (ValueError, TypeError):
+                    region_data[region] = None
+        
+        # 전국은 시도간 이동 시트에 없음 (시도별 합계도 아님, 0으로 처리)
+        # 순유입 지역과 순유출 지역의 합은 0이 됨
         report_data['national_summary'] = {
-            'value': national_value,
-            'direction': '순유입' if national_value > 0 else ('순유출' if national_value < 0 else '균형'),
+            'value': None,  # 전국 데이터 없음
+            'direction': 'N/A',
         }
         
+        # 지역별 데이터
         regional_list = []
         for region in self.ALL_REGIONS:
             if region == '전국':
                 continue
-            value = current_data.get(region, 0.0)
+            value = region_data.get(region)
             regional_list.append({
                 'region': region,
                 'value': value,
-                'direction': '순유입' if value > 0 else ('순유출' if value < 0 else '균형'),
+                'direction': '순유입' if value and value > 0 else ('순유출' if value and value < 0 else 'N/A'),
             })
         
-        increase_regions = sorted([r for r in regional_list if r['value'] > 0], 
+        # None이 아닌 값만 정렬
+        increase_regions = sorted([r for r in regional_list if r['value'] is not None and r['value'] > 0], 
                                   key=lambda x: x['value'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['value'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r['value'] is not None and r['value'] < 0], 
                                   key=lambda x: x['value'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -1510,10 +2636,124 @@ class RawDataExtractor:
             'increase_regions': increase_regions,
             'decrease_regions': decrease_regions,
         }
-        report_data['yearly_data'] = yearly_data
-        report_data['quarterly_data'] = quarterly_data
+        
+        # summary_table 생성
+        report_data['summary_table'] = self._generate_population_summary_table(df, config)
         
         return report_data
+    
+    def _generate_population_summary_table(self, df, config: Dict) -> Dict[str, Any]:
+        """국내이동 요약 테이블 데이터 생성"""
+        # 테이블용 분기 컬럼들
+        quarter_keys = [
+            (f"{self.current_year - 2}_{self.current_quarter}Q", f"{self.current_year - 2}.{self.current_quarter}/4"),
+            (f"{self.current_year - 1}_{self.current_quarter}Q", f"{self.current_year - 1}.{self.current_quarter}/4"),
+            (f"{self.current_year}_{self.current_quarter - 1 if self.current_quarter > 1 else 4}Q", 
+             f"{self.current_year if self.current_quarter > 1 else self.current_year - 1}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4"),
+            (f"{self.current_year}_{self.current_quarter}Q", f"{self.current_year}.{self.current_quarter}/4p"),
+        ]
+        
+        # 지역별 순인구이동 데이터 추출
+        region_data = {}
+        
+        for row_idx in range(3, len(df)):
+            region = str(df.iloc[row_idx, 1]).strip() if pd.notna(df.iloc[row_idx, 1]) else ''
+            category = str(df.iloc[row_idx, 2]).strip() if pd.notna(df.iloc[row_idx, 2]) else ''
+            
+            if region in self.ALL_REGIONS and '순' in category and '이동' in category:
+                if region not in region_data:
+                    region_data[region] = {'migrations': [], 'amounts': []}
+                
+                # 각 분기별 데이터
+                for q_key, _ in quarter_keys:
+                    col = config.get(q_key)
+                    if col:
+                        try:
+                            value = float(df.iloc[row_idx, col]) if pd.notna(df.iloc[row_idx, col]) else None
+                            # 천명 단위로 변환
+                            if value is not None:
+                                value = round(value / 1000, 1)
+                            region_data[region]['migrations'].append(value)
+                        except (ValueError, TypeError):
+                            region_data[region]['migrations'].append(None)
+                    else:
+                        region_data[region]['migrations'].append(None)
+                
+                # 현재 분기 금액 (전체, 20-29세)
+                curr_col = config.get(f"{self.current_year}_{self.current_quarter}Q")
+                if curr_col:
+                    try:
+                        total = float(df.iloc[row_idx, curr_col]) if pd.notna(df.iloc[row_idx, curr_col]) else None
+                        if total is not None:
+                            total = round(total / 1000, 1)
+                        region_data[region]['amounts'] = [total, None]  # 20-29세는 별도 시트 필요
+                    except (ValueError, TypeError):
+                        region_data[region]['amounts'] = [None, None]
+                else:
+                    region_data[region]['amounts'] = [None, None]
+        
+        # 테이블 행 생성
+        rows = self._generate_region_rows(region_data, 'migrations', 'amounts')
+        
+        return {
+            'columns': {
+                'quarter_columns': [label for _, label in quarter_keys],
+                'amount_columns': ['전체', '20-29세'],
+                'current_quarter': f"{self.current_year}.{self.current_quarter}/4",
+            },
+            'rows': rows,
+        }
+    
+    def _generate_region_rows(self, region_data: Dict, data_key: str, secondary_key: str) -> List[Dict]:
+        """공통 지역별 테이블 행 생성"""
+        rows = []
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        REGION_GROUPS = {
+            "수도권": ["서울", "인천", "경기"],
+            "동남권": ["부산", "울산", "경남"],
+            "대경권": ["대구", "경북"],
+            "호남권": ["광주", "전북", "전남"],
+            "충청권": ["대전", "세종", "충북", "충남"],
+            "강원제주": ["강원", "제주"]
+        }
+        
+        # 전국 행 (있는 경우)
+        if '전국' in region_data:
+            national = region_data.get('전국', {data_key: [None]*4, secondary_key: [None, None]})
+            rows.append({
+                'region': '전 국',
+                'group': None,
+                data_key: national.get(data_key, [None]*4),
+                secondary_key: national.get(secondary_key, [None, None]),
+            })
+        
+        # 권역별 시도
+        for group_name in ['수도권', '동남권', '대경권', '호남권', '충청권', '강원제주']:
+            sidos = REGION_GROUPS[group_name]
+            for idx, sido in enumerate(sidos):
+                sido_data = region_data.get(sido, {data_key: [None]*4, secondary_key: [None, None]})
+                
+                row_data = {
+                    'region': region_display.get(sido, sido),
+                    data_key: sido_data.get(data_key, [None]*4),
+                    secondary_key: sido_data.get(secondary_key, [None, None]),
+                }
+                
+                if idx == 0:
+                    row_data['group'] = group_name
+                    row_data['rowspan'] = len(sidos)
+                else:
+                    row_data['group'] = None
+                
+                rows.append(row_data)
+        
+        return rows
     
     def extract_all_report_data(self) -> Dict[str, Dict[str, Any]]:
         """모든 부문별 보도자료 데이터 추출
@@ -1538,4 +2778,529 @@ class RawDataExtractor:
             'unemployment': self.extract_unemployment_report_data(),
             'population': self.extract_population_migration_report_data(),
         }
+    
+    # ========== 시도별 보도자료 데이터 추출 메서드 ==========
+    
+    def extract_regional_data(self, region: str) -> Dict[str, Any]:
+        """특정 지역의 시도별 보도자료 데이터 추출
+        
+        Args:
+            region: 지역명 (예: '서울', '부산', '대구' 등)
+            
+        Returns:
+            시도별 보도자료 템플릿에서 사용할 데이터 딕셔너리
+        """
+        # 템플릿이 기대하는 구조 생성
+        region_info = self._get_region_info(region)
+        
+        report_data = {
+            'region': region,
+            'region_info': region_info,
+            'report_info': {
+                'year': self.current_year,
+                'quarter': self.current_quarter,
+                'region': region,
+                'region_name': region_info.get('full_name', region),
+                'region_index': region_info.get('index', 0),
+            },
+            'chart_data': {},
+            'summary_table': {'title': f'{region} 주요경제지표'},
+        }
+        
+        # 생산 섹션 (광공업, 서비스업)
+        mfg_data = self._extract_regional_indicator(region, '광공업생산', '0', 'growth_rate')
+        svc_data = self._extract_regional_indicator(region, '서비스업생산', '0', 'growth_rate')
+        
+        report_data['production'] = {
+            'manufacturing': self._to_template_format(mfg_data),
+            'service': self._to_template_format(svc_data),
+        }
+        
+        # 소비·건설 섹션 (분류단계 '0'이 합계 행)
+        retail_data = self._extract_regional_indicator(region, '소비(소매, 추가)', '0', 'growth_rate')
+        const_data = self._extract_regional_indicator(region, '건설 (공표자료)', '0', 'growth_rate')
+        
+        report_data['consumption_construction'] = {
+            'retail': self._to_template_format(retail_data),
+            'construction': self._to_template_format(const_data),
+        }
+        
+        # 수출입·물가 섹션
+        export_data = self._extract_regional_indicator(region, '수출', '0', 'growth_rate')
+        import_data = self._extract_regional_indicator(region, '수입', '0', 'growth_rate')
+        price_data = self._extract_regional_indicator(region, '품목성질별 물가', '0', 'growth_rate')
+        
+        report_data['export_import_price'] = {
+            'export': self._to_template_format(export_data),
+            'import': self._to_template_format(import_data),
+            'consumer_price': self._to_template_format(price_data, indicator_type='price'),
+        }
+        
+        # 고용·인구이동 섹션
+        emp_data = self._extract_regional_indicator(region, '고용률', '0', 'difference')
+        pop_data = self._extract_regional_indicator(region, '시도 간 이동', None, 'absolute')
+        
+        report_data['employment_migration'] = {
+            'employment_rate': self._to_template_format(emp_data, indicator_type='employment'),
+            'population_migration': self._to_template_format(pop_data, indicator_type='population'),
+        }
+        
+        # 차트용 시계열 데이터
+        report_data['chart_data'] = self._extract_regional_chart_data(region)
+        
+        # 요약 표 데이터
+        report_data['summary_table'] = self._extract_regional_summary_table(region)
+        
+        return report_data
+    
+    def _to_template_format(self, data: Dict[str, Any], indicator_type: str = 'default') -> Dict[str, Any]:
+        """_extract_regional_indicator 결과를 템플릿 형식으로 변환
+        
+        템플릿이 기대하는 형식:
+        - total_growth_rate: 총 증감률 (None이면 0.0으로, direction은 'N/A')
+        - direction: 방향 (증가/감소/보합/N/A)
+        - 각종 categories, items, industries 리스트들 (가중치 데이터 필요)
+        
+        ★ 중요: 
+        - 결측치는 None 유지하여 템플릿에서 N/A로 표시
+        - direction='N/A'로 표시하여 데이터가 없음을 알림
+        """
+        value = data.get('value')
+        direction = data.get('direction', 'N/A')
+        
+        result = {
+            'total_growth_rate': value,  # None 유지
+            'direction': direction,
+            'is_missing': value is None,  # 데이터 없음 표시
+            # 광공업/서비스업 생산용
+            'increase_industries': [],  # 가중치 데이터 필요
+            'decrease_industries': [],
+            # 수출/수입용
+            'increase_items': [],  # 가중치 데이터 필요
+            'decrease_items': [],
+            'increase_products': [],
+            'decrease_products': [],
+            # 소비용
+            'increase_businesses': [],
+            'decrease_businesses': [],
+            'increase_categories': [],  # 소매판매 카테고리
+            'decrease_categories': [],
+            # 물가용
+            'categories': [],
+            # 고용·인구이동용
+            'increase_age_groups': [],
+            'decrease_age_groups': [],
+            'inflow_age_groups': [],
+            'outflow_age_groups': [],
+        }
+        
+        # 지표 유형별 추가 필드
+        if indicator_type == 'employment':
+            result['change'] = value  # None 유지
+            result['total_change'] = value
+            result['rate'] = None
+        elif indicator_type == 'population':
+            result['net_migration'] = int(value) if value is not None else None
+        elif indicator_type == 'price':
+            result['index'] = None  # 원지수는 별도 추출 필요
+            result['change'] = value
+            result['total_growth_rate'] = value
+            # 물가는 주로 상승이므로 direction 조정
+            if value is not None and value > 0:
+                result['direction'] = '상승'
+            elif value is not None and value < 0:
+                result['direction'] = '하락'
+        
+        return result
+    
+    def _get_region_info(self, region: str) -> Dict[str, Any]:
+        """지역 정보 반환"""
+        REGION_INFO = {
+            '서울': {'full_name': '서울특별시', 'index': 1},
+            '부산': {'full_name': '부산광역시', 'index': 2},
+            '대구': {'full_name': '대구광역시', 'index': 3},
+            '인천': {'full_name': '인천광역시', 'index': 4},
+            '광주': {'full_name': '광주광역시', 'index': 5},
+            '대전': {'full_name': '대전광역시', 'index': 6},
+            '울산': {'full_name': '울산광역시', 'index': 7},
+            '세종': {'full_name': '세종특별자치시', 'index': 8},
+            '경기': {'full_name': '경기도', 'index': 9},
+            '강원': {'full_name': '강원특별자치도', 'index': 10},
+            '충북': {'full_name': '충청북도', 'index': 11},
+            '충남': {'full_name': '충청남도', 'index': 12},
+            '전북': {'full_name': '전북특별자치도', 'index': 13},
+            '전남': {'full_name': '전라남도', 'index': 14},
+            '경북': {'full_name': '경상북도', 'index': 15},
+            '경남': {'full_name': '경상남도', 'index': 16},
+            '제주': {'full_name': '제주특별자치도', 'index': 17},
+        }
+        return REGION_INFO.get(region, {'full_name': region, 'index': 0})
+    
+    def _extract_regional_indicator(self, region: str, sheet_name: str, 
+                                    level_value: Optional[str], value_type: str) -> Dict[str, Any]:
+        """지역별 특정 지표 데이터 추출
+        
+        Args:
+            region: 지역명
+            sheet_name: 시트 이름
+            level_value: 분류단계 값 (None이면 필터링 안함)
+            value_type: 'growth_rate' (전년동기비), 'difference' (%p 차이), 'absolute' (절대값)
+            
+        Returns:
+            {'value': 값, 'direction': 방향}
+        """
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name)
+        if not config:
+            return {'value': None, 'direction': 'N/A'}
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {'value': None, 'direction': 'N/A'}
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        
+        # 현재 분기와 전년동기 열
+        current_quarter = f"{self.current_year}_{self.current_quarter}Q"
+        prev_quarter = f"{self.current_year - 1}_{self.current_quarter}Q"
+        
+        current_col = config.get(current_quarter)
+        prev_col = config.get(prev_quarter)
+        
+        if current_col is None:
+            return {'value': None, 'direction': 'N/A'}
+        
+        # 해당 지역/분류 행 찾기
+        for row_idx in range(len(df)):
+            try:
+                row_region = str(df.iloc[row_idx, region_col]).strip()
+                if row_region != region:
+                    continue
+                
+                if level_value is not None:
+                    row_level = str(df.iloc[row_idx, level_col]).strip()
+                    if row_level != level_value:
+                        continue
+                
+                current_val = df.iloc[row_idx, current_col]
+                if pd.isna(current_val):
+                    continue
+                
+                current_val = float(current_val)
+                
+                if value_type == 'absolute':
+                    # 절대값 (인구이동)
+                    result_val = current_val
+                    direction = '순유입' if result_val > 0 else ('순유출' if result_val < 0 else '균형')
+                elif value_type == 'difference':
+                    # 차이 (고용률 %p)
+                    if prev_col is None:
+                        return {'value': None, 'direction': 'N/A'}
+                    prev_val = df.iloc[row_idx, prev_col]
+                    if pd.isna(prev_val):
+                        return {'value': None, 'direction': 'N/A'}
+                    result_val = round(float(current_val) - float(prev_val), 1)
+                    direction = '상승' if result_val > 0 else ('하락' if result_val < 0 else '보합')
+                else:
+                    # 증감률 (growth_rate)
+                    if prev_col is None:
+                        return {'value': None, 'direction': 'N/A'}
+                    prev_val = df.iloc[row_idx, prev_col]
+                    if pd.isna(prev_val) or float(prev_val) == 0:
+                        return {'value': None, 'direction': 'N/A'}
+                    result_val = round((float(current_val) / float(prev_val) - 1) * 100, 1)
+                    direction = '증가' if result_val > 0 else ('감소' if result_val < 0 else '보합')
+                
+                return {'value': result_val, 'direction': direction}
+                
+            except (IndexError, ValueError, TypeError):
+                continue
+        
+        return {'value': None, 'direction': 'N/A'}
+    
+    def _extract_regional_chart_data(self, region: str) -> Dict[str, List[Dict[str, Any]]]:
+        """지역별 차트용 시계열 데이터 추출"""
+        chart_data = {}
+        
+        # 각 지표별 차트 데이터 추출 (분류단계 '0'이 합계 행)
+        indicators = [
+            ('manufacturing', '광공업생산', '0'),
+            ('service', '서비스업생산', '0'),
+            ('retail', '소비(소매, 추가)', '0'),
+            ('construction', '건설 (공표자료)', '0'),
+            ('export', '수출', '0'),
+            ('import', '수입', '0'),
+            ('price', '품목성질별 물가', '0'),
+            ('employment', '고용률', '0'),
+        ]
+        
+        for key, sheet_name, level_value in indicators:
+            chart_data[key] = self._get_time_series_data(region, sheet_name, level_value)
+        
+        return chart_data
+    
+    def _get_time_series_data(self, region: str, sheet_name: str, 
+                              level_value: Optional[str]) -> List[Dict[str, Any]]:
+        """시계열 데이터 추출 (전년동기비 증감률)"""
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name)
+        if not config:
+            return []
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return []
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        
+        # 해당 지역/분류 행 찾기
+        row_data = None
+        for row_idx in range(len(df)):
+            try:
+                row_region = str(df.iloc[row_idx, region_col]).strip()
+                if row_region != region:
+                    continue
+                
+                if level_value is not None:
+                    row_level = str(df.iloc[row_idx, level_col]).strip()
+                    if row_level != level_value:
+                        continue
+                
+                row_data = df.iloc[row_idx]
+                break
+            except (IndexError, ValueError):
+                continue
+        
+        if row_data is None:
+            return []
+        
+        # 분기별 데이터 추출
+        quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4", 
+                    "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
+                    "'25.1/4", "'25.2/4"]
+        quarter_keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
+                        '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
+                        '2025_1Q', '2025_2Q']
+        prev_year_map = {
+            '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
+            '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
+            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q',
+        }
+        
+        result = []
+        for q_label, q_key in zip(quarters, quarter_keys):
+            current_col = config.get(q_key)
+            prev_key = prev_year_map.get(q_key)
+            prev_col = config.get(prev_key) if prev_key else None
+            
+            if current_col is None or prev_col is None:
+                result.append({'period': q_label, 'value': 0.0})
+                continue
+            
+            try:
+                current_val = row_data.iloc[current_col]
+                prev_val = row_data.iloc[prev_col]
+                
+                if pd.isna(current_val) or pd.isna(prev_val) or float(prev_val) == 0:
+                    result.append({'period': q_label, 'value': 0.0})
+                else:
+                    growth_rate = round((float(current_val) / float(prev_val) - 1) * 100, 1)
+                    result.append({'period': q_label, 'value': growth_rate})
+            except (IndexError, ValueError, TypeError):
+                result.append({'period': q_label, 'value': 0.0})
+        
+        return result
+    
+    def _extract_regional_summary_table(self, region: str) -> Dict[str, Any]:
+        """지역별 요약 표 데이터 추출 (템플릿 형식: rows 배열)
+        
+        Returns:
+            {
+                'title': '서울 주요경제지표',
+                'rows': [
+                    {
+                        'period': '2023.2/4',
+                        'manufacturing': -8.3,
+                        'service': 2.3,
+                        'retail': -1.8,
+                        'construction': 29.2,
+                        'export': 1.6,
+                        'import': -1.7,
+                        'consumer_price': 2.0,
+                        'employment_rate': -0.2,
+                        'migration_total': 98.0,
+                        'migration_20_29': 10.0
+                    },
+                    ...
+                ]
+            }
+        """
+        # 각 지표별 시트 및 설정
+        indicators = [
+            ('manufacturing', '광공업생산', '0', 'growth_rate'),
+            ('service', '서비스업생산', '0', 'growth_rate'),
+            ('retail', '소비(소매, 추가)', '0', 'growth_rate'),
+            ('construction', '건설 (공표자료)', '0', 'growth_rate'),
+            ('export', '수출', '0', 'growth_rate'),
+            ('import', '수입', '0', 'growth_rate'),
+            ('price', '품목성질별 물가', '0', 'growth_rate'),
+            ('employment', '고용률', '0', 'difference'),
+            ('population', '시도 간 이동', None, 'absolute'),  # 인구순이동은 분류 단계 필터링 안함
+        ]
+        
+        # 여러 분기의 데이터 추출 (2023.2/4, 2024.2/4, 2025.1/4, 2025.2/4p)
+        quarter_labels = [
+            f"{self.current_year - 2}.{self.current_quarter}/4",  # 2023.2/4
+            f"{self.current_year - 1}.{self.current_quarter}/4",  # 2024.2/4
+            f"{self.current_year}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4",  # 2025.1/4
+            f"{self.current_year}.{self.current_quarter}/4p",  # 2025.2/4p
+        ]
+        
+        rows = []
+        
+        for quarter_label in quarter_labels:
+            row_data = {'period': quarter_label}
+            
+            # 각 지표별 데이터 추출
+            for key, sheet_name, level_value, value_type in indicators:
+                value = None
+                
+                # 분기별 데이터 추출
+                if value_type == 'growth_rate':
+                    # 전년동기비 증감률 (키 형식: "2023.2/4" 또는 "2025.2/4p")
+                    quarterly_growth = self.extract_quarterly_growth_rate(
+                        sheet_name,
+                        start_year=2020,
+                        region_column=self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('region_col', 1),
+                        classification_column=self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('level_col', 2),
+                        classification_value=level_value
+                    )
+                    # 키 형식: 이미 "2023.2/4" 형식이므로 그대로 사용
+                    quarter_data = quarterly_growth.get(quarter_label, {})
+                    value = quarter_data.get(region, None)
+                    
+                elif value_type == 'difference':
+                    # %p 차이 (고용률) (키 형식: "2023.2/4" 또는 "2025.2/4p")
+                    quarterly_diff = self.extract_quarterly_difference(
+                        sheet_name,
+                        start_year=2020,
+                        region_column=self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('region_col', 1),
+                        classification_column=self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('level_col', 2),
+                        classification_value=level_value
+                    )
+                    # 키 형식: 이미 "2023.2/4" 형식이므로 그대로 사용
+                    quarter_data = quarterly_diff.get(quarter_label, {})
+                    value = quarter_data.get(region, None)
+                    
+                elif value_type == 'absolute':
+                    # 절대값 (인구이동) (키 형식: "2023 2/4" 또는 "2025.2/4p")
+                    # 인구순이동은 분류 단계 필터링 안함 (level_value가 None)
+                    quarterly_data = self.extract_all_quarters(
+                        sheet_name,
+                        start_year=2020,
+                        region_column=self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('region_col', 1),
+                        classification_column=None if level_value is None else self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {}).get('level_col', 2),
+                        classification_value=level_value
+                    )
+                    # 키 형식 변환: "2023.2/4" -> "2023 2/4", "2025.2/4p" -> "2025.2/4p"
+                    if quarter_label.endswith('p'):
+                        lookup_key = quarter_label
+                    else:
+                        lookup_key = quarter_label.replace('.', ' ')
+                    quarter_data = quarterly_data.get(lookup_key, {})
+                    value = quarter_data.get(region, None)
+                
+                # 결측치는 None 유지 (템플릿에서 N/A로 표시)
+                
+                # 키 매핑
+                if key == 'price':
+                    row_data['consumer_price'] = value
+                elif key == 'employment':
+                    row_data['employment_rate'] = value
+                elif key == 'population':
+                    # 인구이동: 값을 그대로 사용 (천명 단위)
+                    row_data['migration_total'] = value
+                    row_data['migration_20_29'] = None  # 20-29세 데이터는 별도 추출 필요
+                else:
+                    row_data[key] = value
+            
+            rows.append(row_data)
+        
+        return {
+            'title': f'{region} 주요경제지표',
+            'rows': rows,
+        }
+    
+    def extract_regional_top_industries(self, region: str, sheet_name: str, 
+                                        top_n: int = 3) -> Dict[str, List[Dict[str, Any]]]:
+        """지역별 상위/하위 업종 추출
+        
+        Args:
+            region: 지역명
+            sheet_name: 시트 이름 (광공업생산, 서비스업생산 등)
+            top_n: 상위/하위 개수
+            
+        Returns:
+            {'increase': [업종 목록], 'decrease': [업종 목록]}
+        """
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name)
+        if not config:
+            return {'increase': [], 'decrease': []}
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return {'increase': [], 'decrease': []}
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        name_col = config.get('name_col', 5)
+        
+        current_quarter = f"{self.current_year}_{self.current_quarter}Q"
+        prev_quarter = f"{self.current_year - 1}_{self.current_quarter}Q"
+        
+        current_col = config.get(current_quarter)
+        prev_col = config.get(prev_quarter)
+        
+        if current_col is None or prev_col is None:
+            return {'increase': [], 'decrease': []}
+        
+        industries = []
+        
+        for row_idx in range(len(df)):
+            try:
+                row_region = str(df.iloc[row_idx, region_col]).strip()
+                if row_region != region:
+                    continue
+                
+                row_level = str(df.iloc[row_idx, level_col]).strip()
+                # 하위 분류만 (분류단계가 0이 아닌 것)
+                if row_level in ['0', '계', '총지수', '', 'nan']:
+                    continue
+                
+                industry_name = str(df.iloc[row_idx, name_col]).strip()
+                if not industry_name or industry_name == 'nan':
+                    continue
+                
+                current_val = df.iloc[row_idx, current_col]
+                prev_val = df.iloc[row_idx, prev_col]
+                
+                if pd.isna(current_val) or pd.isna(prev_val) or float(prev_val) == 0:
+                    continue
+                
+                growth_rate = round((float(current_val) / float(prev_val) - 1) * 100, 1)
+                
+                industries.append({
+                    'name': industry_name,
+                    'value': growth_rate,
+                })
+            except (IndexError, ValueError, TypeError):
+                continue
+        
+        # 정렬
+        increase = sorted([i for i in industries if i['value'] > 0], 
+                         key=lambda x: x['value'], reverse=True)[:top_n]
+        decrease = sorted([i for i in industries if i['value'] < 0], 
+                         key=lambda x: x['value'])[:top_n]
+        
+        return {'increase': increase, 'decrease': decrease}
 
