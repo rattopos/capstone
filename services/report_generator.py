@@ -21,7 +21,7 @@ from .grdp_service import (
 
 
 def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
-    """기초자료에서 직접 보도자료 데이터 추출 (RawDataExtractor 사용)
+    """기초자료에서 직접 보도자료 데이터 추출 (모듈화된 extractors 패키지 사용)
     
     Args:
         raw_excel_path: 기초자료 엑셀 파일 경로
@@ -33,33 +33,10 @@ def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
         추출된 데이터 딕셔너리 또는 None
     """
     try:
-        from templates.raw_data_extractor import RawDataExtractor
+        from extractors import DataExtractor
         
-        extractor = RawDataExtractor(raw_excel_path, year, quarter)
-        
-        # 보도자료 ID에 따라 적절한 데이터 추출 메서드 호출
-        data = None
-        
-        if report_id == 'manufacturing':
-            data = extractor.extract_mining_manufacturing_report_data()
-        elif report_id == 'service':
-            data = extractor.extract_service_industry_report_data()
-        elif report_id == 'consumption':
-            data = extractor.extract_consumption_report_data()
-        elif report_id == 'construction':
-            data = extractor.extract_construction_report_data()
-        elif report_id == 'export':
-            data = extractor.extract_export_report_data()
-        elif report_id == 'import':
-            data = extractor.extract_import_report_data()
-        elif report_id == 'price':
-            data = extractor.extract_price_report_data()
-        elif report_id == 'employment':
-            data = extractor.extract_employment_rate_report_data()
-        elif report_id == 'unemployment':
-            data = extractor.extract_unemployment_report_data()
-        elif report_id == 'population':
-            data = extractor.extract_population_migration_report_data()
+        extractor = DataExtractor(raw_excel_path, year, quarter)
+        data = extractor.extract_report_data(report_id)
         
         if data:
             # 연도/분기 정보 추가
@@ -395,14 +372,12 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
         print(f"[DEBUG] File Type: {file_type}")
+        # ★ 항상 수집표(기초자료)에서 데이터 추출 (분석표 사용 안함)
         if raw_excel_path:
-            print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
-        
-        # raw_direct 모드: RawDataExtractor를 사용하여 기초자료에서 직접 데이터 추출
-        if file_type == 'raw_direct' and raw_excel_path:
+            print(f"[DEBUG] 수집표(기초자료) 사용: {raw_excel_path}")
             raw_data = _extract_data_from_raw(raw_excel_path, report_id, year, quarter)
             if raw_data:
-                print(f"[DEBUG] 기초자료 직접 추출 성공: {list(raw_data.keys())}")
+                print(f"[DEBUG] 수집표 직접 추출 성공: {list(raw_data.keys())}")
                 # 템플릿 호환성을 위한 기본값 추가
                 raw_data = _ensure_template_compatibility(raw_data, report_id)
                 
@@ -419,82 +394,19 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     html_content = template.render(**raw_data)
                     missing_fields = check_missing_data(raw_data, report_id)
                     return html_content, None, missing_fields
+            else:
+                error_msg = f"수집표에서 데이터를 추출할 수 없습니다: {report_id}"
+                print(f"[ERROR] {error_msg}")
+                return None, error_msg, []
         
         # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
         if generator_name is None:
             return _generate_from_schema(template_name, report_id, year, quarter, custom_data)
         
-        # Generator 모듈 로드
-        module = load_generator_module(generator_name)
-        if not module:
-            print(f"[ERROR] Generator 모듈을 찾을 수 없습니다: {generator_name}")
-            return None, f"Generator 모듈을 찾을 수 없습니다: {generator_name}", []
-        
-        # 사용 가능한 함수 확인
-        available_funcs = [name for name in dir(module) if not name.startswith('_')]
-        print(f"[DEBUG] 모듈 내 함수/클래스: {[f for f in available_funcs if 'generate' in f.lower() or 'Generator' in f or f == 'load_data']}")
-        
-        # Generator 클래스 찾기
-        generator_class = None
-        for name in dir(module):
-            obj = getattr(module, name)
-            if isinstance(obj, type) and name.endswith('Generator'):
-                generator_class = obj
-                print(f"[DEBUG] Generator 클래스 발견: {name}")
-                break
-        
-        data = None
-        
-        # 방법 1: generate_report_data 함수 사용
-        if hasattr(module, 'generate_report_data'):
-            print(f"[DEBUG] generate_report_data 함수 사용")
-            try:
-                if raw_excel_path:
-                    sig = inspect.signature(module.generate_report_data)
-                    params = sig.parameters
-                    if 'raw_excel_path' in params or 'use_raw_data' in params:
-                        data = module.generate_report_data(excel_path, raw_excel_path=raw_excel_path, 
-                                                         year=year, quarter=quarter)
-                    else:
-                        data = module.generate_report_data(excel_path)
-                else:
-                    data = module.generate_report_data(excel_path)
-            except TypeError:
-                data = module.generate_report_data(excel_path)
-            except Exception as e:
-                print(f"[WARNING] 기초자료 추출 실패, 분석표 사용: {e}")
-                data = module.generate_report_data(excel_path)
-            print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
-        
-        # 방법 2: generate_report 함수 직접 호출
-        elif hasattr(module, 'generate_report'):
-            print(f"[DEBUG] generate_report 함수 직접 호출")
-            template_path = TEMPLATES_DIR / template_name
-            output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
-            try:
-                sig = inspect.signature(module.generate_report)
-                params = sig.parameters
-                if 'raw_excel_path' in params:
-                    data = module.generate_report(excel_path, template_path, output_path, 
-                                                 raw_excel_path=raw_excel_path, year=year, quarter=quarter)
-                else:
-                    data = module.generate_report(excel_path, template_path, output_path)
-            except (TypeError, AttributeError):
-                data = module.generate_report(excel_path, template_path, output_path)
-            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
-        
-        # 방법 3: Generator 클래스 사용
-        elif generator_class:
-            print(f"[DEBUG] Generator 클래스 사용: {generator_class.__name__}")
-            generator = generator_class(excel_path)
-            data = generator.extract_all_data()
-            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
-        
-        else:
-            error_msg = f"유효한 Generator를 찾을 수 없습니다: {generator_name}"
-            print(f"[ERROR] {error_msg}")
-            print(f"[ERROR] 사용 가능한 함수: {available_funcs}")
-            return None, error_msg, []
+        # 수집표가 없고 generator가 있는 경우 에러 (분석표 사용 안함)
+        error_msg = f"수집표(기초자료)가 제공되지 않았습니다. 분석표 기반 처리는 지원하지 않습니다."
+        print(f"[ERROR] {error_msg}")
+        return None, error_msg, []
         
         # Top3 regions 후처리
         if data and 'regional_data' in data:
@@ -647,24 +559,15 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
                         return html_content, None
             except Exception as e:
                 import traceback
-                print(f"[시도별] 기초자료 직접 추출 실패, 분석표로 fallback: {e}")
+                error_msg = f"[시도별] 수집표에서 데이터 추출 실패: {e}"
+                print(f"[ERROR] {error_msg}")
                 traceback.print_exc()
+                return None, error_msg
         
-        # 분석표에서 데이터 추출 (기존 방식)
-        generator_path = TEMPLATES_DIR / 'regional_generator.py'
-        if not generator_path.exists():
-            return None, f"시도별 Generator를 찾을 수 없습니다"
-        
-        spec = importlib.util.spec_from_file_location('regional_generator', str(generator_path))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        
-        generator = module.RegionalGenerator(excel_path)
-        template_path = TEMPLATES_DIR / 'regional_template.html'
-        
-        html_content = generator.render_html(region_name, str(template_path))
-        
-        return html_content, None
+        # 수집표가 없으면 에러 (분석표 사용 안함)
+        error_msg = f"수집표(기초자료)가 제공되지 않았습니다. 분석표 기반 처리는 지원하지 않습니다."
+        print(f"[ERROR] {error_msg}")
+        return None, error_msg
         
     except Exception as e:
         import traceback

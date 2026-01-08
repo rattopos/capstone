@@ -23,7 +23,7 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '바탕', 'Batang', 'Times New Roman', serif;
             font-size: 10.5pt;
             line-height: 1.4;
             color: #000;
@@ -47,7 +47,7 @@
         
         /* 숫자 제목 - 5. 물가 동향 */
         .section-title {
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '돋움', 'Dotum', serif;
             font-size: 13pt;
             font-weight: bold;
             margin-bottom: 12px;
@@ -87,6 +87,13 @@
             font-weight: bold;
         }
         
+        /* N/A 결측치 스타일 */
+        .na, .na-value {
+            color: #888;
+            font-style: italic;
+            font-size: 9pt;
+        }
+        
         /* 상세 박스 */
         .detail-box {
             border: 1px dotted #555;
@@ -122,7 +129,7 @@
             font-weight: bold;
             margin-bottom: 6px;
             font-size: 11pt;
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '돋움', 'Dotum', serif;
         }
         
         .data-table {
@@ -225,15 +232,19 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 올라 모든 시도에서 전년동분기대비 <span class="increase">상승</span></div>
-            <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 올라 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% 상승</span></div>
+            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') if summary_box.main_items else 'N/A (품목 데이터 필요)' }} 등이 올라 모든 시도에서 전년동분기대비 <span class="increase">상승</span></div>
+            <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) if nationwide_data.index else 'N/A' }})는 {% if nationwide_data.categories %}{{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 올라{% else %}N/A (품목 데이터 필요){% endif %} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) if nationwide_data.change else 'N/A' }}% 상승</span></div>
             <div class="regional">○ 
+                {% if regional_data.low_regions %}
                 {% for region in regional_data.low_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ low_items_text }} 등이 내려 전국보다 상승률이 낮았으나, 
+                {% endfor %}은 {{ low_items_text if low_items_text else 'N/A (품목)' }} 등이 내려 전국보다 상승률이 낮았으나, 
+                {% endif %}
+                {% if regional_data.high_regions %}
                 {% for region in regional_data.high_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ high_items_text }} 등이 올라 전국보다 <span class="increase">높음</span>
+                {% endfor %}은 {{ high_items_text if high_items_text else 'N/A (품목)' }} 등이 올라 전국보다 <span class="increase">높음</span>
+                {% endif %}
             </div>
         </div>
         
@@ -242,10 +253,12 @@
             <div class="title">&lt; 주요 등락지역 및 품목 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">·전 국({{ "%.1f"|format(nationwide_data.change) }}%): 
+            <div class="item">·전 국({{ "%.1f"|format(nationwide_data.change) if nationwide_data.change else 'N/A' }}%): 
+                {% if nationwide_data.categories %}
                 {% for cat in nationwide_data.categories[:4] %}
                 {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (품목 데이터 없음)</span>{% endif %}
             </div>
             
             <div class="separator"></div>
@@ -253,9 +266,11 @@
             <!-- 전국보다 높은 지역 Top 3 -->
             {% for region in top3_above_regions %}
             <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% if region.categories %}
                 {% for cat in region.categories[:4] %}
                 {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (품목 데이터 없음)</span>{% endif %}
             </div>
             {% endfor %}
             
@@ -264,9 +279,11 @@
             <!-- 전국보다 낮은 지역 Top 3 -->
             {% for region in top3_below_regions %}
             <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% if region.categories %}
                 {% for cat in region.categories[:4] %}
                 {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (품목 데이터 없음)</span>{% endif %}
             </div>
             {% endfor %}
         </div>

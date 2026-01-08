@@ -190,15 +190,16 @@ def get_nationwide_data(df_analysis, df_index):
     growth_rate = safe_float(nationwide_row[20], 0)
     growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
-    # 집계 시트에서 전국 지수
+    # 집계 시트에서 전국 지수 (데이터가 없으면 None으로 설정)
+    production_index = None
     try:
         if len(df_index) > 3:
             index_row = df_index.iloc[3]
-            production_index = safe_float(index_row[25], 100)  # 2025.2/4p
-        else:
-            production_index = 100.0
-    except (IndexError, KeyError):
-        production_index = 100.0
+            index_val = index_row[25]  # 2025.2/4p
+            if pd.notna(index_val):
+                production_index = round(float(index_val), 1)
+    except (IndexError, KeyError, ValueError, TypeError):
+        pass
     
     # 전국 주요 업종 (기여도 기준 상위 3개 - 양수만)
     industries = []

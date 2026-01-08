@@ -167,12 +167,15 @@ def get_nationwide_data(df_analysis, df_index):
     except (IndexError, KeyError):
         return _get_nationwide_from_aggregation(df_index)
     
-    # 집계 시트에서 전국 지수
+    # 집계 시트에서 전국 지수 (데이터가 없으면 None으로 설정)
+    sales_index = None
     try:
         index_row = df_index.iloc[3]
-        sales_index = safe_float(index_row[24], 100)  # 2025.2/4p
-    except (IndexError, KeyError):
-        sales_index = 100.0
+        index_val = index_row[24]  # 2025.2/4p
+        if pd.notna(index_val):
+            sales_index = round(float(index_val), 1)
+    except (IndexError, KeyError, ValueError, TypeError):
+        pass
     
     # 전국 업태별 증감률 (컬럼 20: 2025.2/4)
     businesses = []

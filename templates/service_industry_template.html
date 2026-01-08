@@ -23,7 +23,7 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '바탕', 'Batang', 'Times New Roman', serif;
             font-size: 10.5pt;
             line-height: 1.4;
             color: #000;
@@ -47,7 +47,7 @@
         
         /* 소제목 - 나. 서비스업생산 */
         .subsection-title {
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '돋움', 'Dotum', serif;
             font-size: 11pt;
             font-weight: bold;
             margin-bottom: 10px;
@@ -89,6 +89,13 @@
             font-weight: bold;
         }
         
+        /* N/A 결측치 스타일 */
+        .na, .na-value {
+            color: #888;
+            font-style: italic;
+            font-size: 9pt;
+        }
+        
         /* 상세 박스 */
         .detail-box {
             border: 1px dotted #555;
@@ -124,7 +131,7 @@
             font-weight: bold;
             margin-bottom: 6px;
             font-size: 11pt;
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: '휴먼명조', '휴먼명조체', 'Human Myeongjo', 'Hoonmoonjo', '돋움', 'Dotum', serif;
         }
         
         .data-table {
@@ -228,19 +235,27 @@
         <!-- 요약 박스 -->
         <div class="summary-box">
             <div class="headline">◆ 서비스업생산은 
+                {% if summary_box.main_increase_regions %}
                 {% for region in summary_box.main_increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') if region.industries else 'N/A' }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                {% else %}
+                전년동분기대비 변동
+                {% endif %}
             </div>
-            <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span></div>
+            <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) if nationwide_data.production_index else 'N/A' }})은 {% if nationwide_data.main_industries %}{{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어{% else %}N/A (세부업종 데이터 필요){% endif %} 전년동분기대비 <span class="{% if nationwide_data.growth_rate and nationwide_data.growth_rate > 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(nationwide_data.growth_rate) if nationwide_data.growth_rate else 'N/A' }}% {% if nationwide_data.growth_rate is none %}{% elif nationwide_data.growth_rate > 0 %}증가{% else %}감소{% endif %}</span></div>
             <div class="regional">○ 
+                {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ decrease_industries_text }} 등의 생산이 줄었으나, 
+                {% endfor %}은 {{ decrease_industries_text if decrease_industries_text else 'N/A (세부업종)' }} 등의 생산이 줄었으나, 
+                {% endif %}
+                {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ increase_industries_text }} 등의 생산이 늘어 <span class="increase">증가</span>
+                {% endfor %}은 {{ increase_industries_text if increase_industries_text else 'N/A (세부업종)' }} 등의 생산이 늘어 <span class="increase">증가</span>
+                {% endif %}
             </div>
         </div>
         
@@ -249,10 +264,12 @@
             <div class="title">&lt; 주요 증감지역 및 업종 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
+            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.growth_rate) if nationwide_data.growth_rate else 'N/A' }}%): 
+                {% if nationwide_data.main_industries %}
                 {% for industry in nationwide_data.main_industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (세부업종 데이터 없음)</span>{% endif %}
             </div>
             
             <div class="separator"></div>
@@ -260,9 +277,11 @@
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
             <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
+                {% if region.industries %}
                 {% for industry in region.industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (세부업종 데이터 없음)</span>{% endif %}
             </div>
             {% endfor %}
             
@@ -271,9 +290,11 @@
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
             <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
+                {% if region.industries %}
                 {% for industry in region.industries[:3] %}
                 {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% else %}<span class="na">N/A (세부업종 데이터 없음)</span>{% endif %}
             </div>
             {% endfor %}
         </div>

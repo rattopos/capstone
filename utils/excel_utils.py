@@ -57,14 +57,16 @@ def extract_year_quarter_from_excel(filepath):
 
 
 def extract_year_quarter_from_raw(filepath):
-    """기초자료 수집표에서 연도와 분기 추출"""
+    """기초자료 수집표에서 연도와 분기 추출 (동적 감지)"""
+    import re
+    from datetime import datetime
+    
     try:
         # 먼저 파일명에서 추출 시도
         filename = Path(filepath).stem
-        import re
         
-        # 파일명 패턴: "기초자료 수집표_2025년 2분기" 또는 "25년_2분기" 등
-        year_match = re.search(r'(20\d{2}|25|24)년?', filename)
+        # 파일명 패턴: "기초자료 수집표_2025년 3분기" 또는 "25년_3분기" 등
+        year_match = re.search(r'(20\d{2}|\d{2})년?', filename)
         quarter_match = re.search(r'(\d)분기', filename)
         
         if year_match and quarter_match:
@@ -74,7 +76,7 @@ def extract_year_quarter_from_raw(filepath):
             quarter = int(quarter_match.group(1))
             return year, quarter
         
-        # 시트에서 연도/분기 정보 추출 시도
+        # 시트에서 연도/분기 정보 동적 추출 시도
         xl = pd.ExcelFile(filepath)
         
         # 기초자료 수집표의 첫 번째 시트에서 헤더 확인
@@ -84,19 +86,37 @@ def extract_year_quarter_from_raw(filepath):
                 for row_idx in range(min(10, len(df))):
                     for col_idx in range(min(20, len(df.columns))):
                         cell = str(df.iloc[row_idx, col_idx])
-                        if '2025.2/4' in cell or '25.2/4' in cell or '2025년 2분기' in cell:
-                            return 2025, 2
-                        elif '2025.1/4' in cell or '25.1/4' in cell or '2025년 1분기' in cell:
-                            return 2025, 1
-                        elif '2024.4/4' in cell or '24.4/4' in cell or '2024년 4분기' in cell:
-                            return 2024, 4
+                        
+                        # 동적 패턴 매칭: "2025.3/4", "'25.3/4", "2025년 3분기" 등
+                        pattern1 = re.search(r"'?(\d{2,4})\.(\d)/4", cell)  # '25.3/4 또는 2025.3/4
+                        pattern2 = re.search(r"(\d{4})년\s*(\d)분기", cell)  # 2025년 3분기
+                        
+                        if pattern1:
+                            year = int(pattern1.group(1))
+                            if year < 100:
+                                year += 2000
+                            quarter = int(pattern1.group(2))
+                            return year, quarter
+                        elif pattern2:
+                            year = int(pattern2.group(1))
+                            quarter = int(pattern2.group(2))
+                            return year, quarter
             except:
                 continue
         
-        return 2025, 2  # 기본값
+        # 기본값: 현재 날짜 기준
+        now = datetime.now()
+        default_year = now.year
+        default_quarter = ((now.month - 1) // 3) + 1
+        print(f"[경고] 연도/분기 감지 실패, 기본값 사용: {default_year}년 {default_quarter}분기")
+        return default_year, default_quarter
+        
     except Exception as e:
         print(f"기초자료 연도/분기 추출 오류: {e}")
-        return 2025, 2
+        # 기본값: 현재 날짜 기준
+        from datetime import datetime
+        now = datetime.now()
+        return now.year, ((now.month - 1) // 3) + 1
 
 
 def detect_file_type(filepath: str) -> str:

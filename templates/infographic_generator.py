@@ -40,15 +40,33 @@ REGIONS_17 = ['서울', '부산', '대구', '인천', '광주', '대전', '울�
 class 인포그래픽Generator:
     """인포그래픽 데이터 생성기"""
     
-    def __init__(self, excel_path):
+    def __init__(self, excel_path, year=None, quarter=None):
         """
         Args:
             excel_path: 분석 엑셀 파일 경로
+            year: 보도자료 연도 (None이면 파일명에서 자동 감지)
+            quarter: 보도자료 분기 (None이면 파일명에서 자동 감지)
         """
         self.excel_path = excel_path
         self.xl = pd.ExcelFile(excel_path)
-        self.year = 2025
-        self.quarter = 2
+        
+        # 파일명에서 연도/분기 자동 감지
+        if year is None or quarter is None:
+            import re
+            filename = str(excel_path)
+            match = re.search(r'(\d{4}).*?(\d)분기', filename)
+            if match:
+                self.year = int(match.group(1))
+                self.quarter = int(match.group(2))
+            else:
+                # 기본값 사용 시 현재 날짜 기반
+                from datetime import datetime
+                now = datetime.now()
+                self.year = year if year else now.year
+                self.quarter = quarter if quarter else ((now.month - 1) // 3) + 1
+        else:
+            self.year = year
+            self.quarter = quarter
         
     def normalize_region(self, region_name):
         """지역명 정규화"""

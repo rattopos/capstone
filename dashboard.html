@@ -280,83 +280,7 @@
             word-break: break-all;
         }
 
-        /* Report List */
-        .report-list-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 0.75rem;
-            flex: 1;
-            overflow-y: auto;
-            min-height: 0;
-        }
-
-        /* Tab Buttons */
-        .tab-buttons {
-            display: flex;
-            gap: 0.25rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 0.4rem 0.5rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tab-btn:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-        }
-
-        .report-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .report-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0.6rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
-        }
-
-        .report-item:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateX(4px);
-        }
-
-        .report-item.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border-color: var(--accent-primary);
-        }
-
-        .report-item.reviewed {
-            background: rgba(34, 197, 94, 0.1);
-            border-color: var(--success);
-        }
+        /* Report List - 제거됨 */
 
         .report-item.has-missing {
             background: rgba(245, 158, 11, 0.1);
@@ -454,60 +378,7 @@
             overflow: hidden;
         }
 
-        /* Control Bar */
-        .control-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.5rem 1rem;
-            flex-shrink: 0;
-        }
-
-        .nav-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .nav-btn {
-            width: 32px;
-            height: 32px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-btn:hover:not(:disabled) {
-            background: var(--accent-primary);
-            border-color: var(--accent-primary);
-        }
-
-        .nav-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .page-indicator {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 0.75rem;
-        }
+        /* Control Bar - 페이지 네비게이션 제거됨 */
 
         .btn {
             padding: 0.5rem 1rem;
@@ -1388,23 +1259,7 @@
                 </div>
             </div>
 
-            <!-- Report List -->
-            <div class="report-list-section">
-                <div class="section-title">📋 보도자료 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
-                
-                <!-- 전체 보도자료 통합 리스트 (순차적 페이지 넘김) -->
-                <div class="report-list" id="allReportsList">
-                    <!-- 초기 상태 안내 -->
-                    <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
-                        <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
-                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">파일을 업로드하세요</div>
-                        <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
-                            • <strong>기초자료 수집표</strong>: 보도자료 바로 생성<br>
-                            <span style="font-size: 0.65rem; color: var(--text-muted);">※ 차트/인포그래픽 제외, 표 기반 출력</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Report List - 제거됨 -->
         </aside>
 
         <!-- Main Content -->
@@ -1423,31 +1278,7 @@
                 </div>
             </div>
 
-            <!-- Control Bar -->
-            <div class="control-bar">
-                <div class="nav-controls">
-                    <button class="nav-btn" id="prevBtn" disabled title="이전">◀</button>
-                    <span class="page-indicator" id="pageIndicator">0 / 0</span>
-                    <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
-                </div>
-                <div class="action-btns">
-                    <button class="btn btn-success" id="exportBtn" style="display: none;">
-                        📰 html
-                    </button>
-                    <button class="btn btn-success" id="exportXlsxBtn" style="display: none; background: linear-gradient(135deg, #217346, #1e6b3e); border-color: #1a5c35; color: white;">
-                        📊 xlsx
-                    </button>
-                    <button class="btn btn-hwp-import" id="exportHwpImportBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="한글 불러오기용 XML">
-                        📄 한글 XML
-                    </button>
-                    <button class="btn btn-hwp-copy" id="exportHwpCopyBtn" style="display: none; background: linear-gradient(135deg, #e91e63, #c2185b); border-color: #ad1457; color: white;" title="한글 복붙용 HTML">
-                        📋 한글 복붙
-                    </button>
-                    <button class="btn btn-save-project" id="saveHtmlToProjectBtn" style="display: none; background: linear-gradient(135deg, #00897b, #00695c); border-color: #004d40; color: white;">
-                        💾 HTML 저장
-                    </button>
-                </div>
-            </div>
+            <!-- Control Bar - 페이지 네비게이션 제거됨 -->
 
             <!-- Preview Area -->
             <div class="preview-area">
@@ -1457,18 +1288,7 @@
                         <span>미리보기</span>
                     </div>
                     <div class="preview-actions">
-                        <button class="btn btn-edit" id="editBtn" style="display: none;" title="편집 모드">
-                            ✏️ 편집
-                        </button>
-                        <button class="btn btn-save" id="saveEditBtn" style="display: none;" title="변경사항 저장">
-                            💾 저장
-                        </button>
-                        <button class="btn btn-cancel" id="cancelEditBtn" style="display: none;" title="편집 취소">
-                            ✕ 취소
-                        </button>
-                        <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
-                            ✓ 검토 완료
-                        </button>
+                        <!-- 편집/검토 버튼들 - 추후 재구현 예정 -->
                     </div>
                 </div>
                 <div class="preview-content" id="previewContent">
@@ -2071,8 +1891,9 @@
             uploadZone: document.getElementById('uploadZone'),
             fileInput: document.getElementById('fileInput'),
             uploadFilename: document.getElementById('uploadFilename'),
-            allReportsList: document.getElementById('allReportsList'),
-            reportCountBadge: document.getElementById('reportCountBadge'),
+            // 보도자료 목록 제거됨 - 더미 객체로 대체
+            allReportsList: { innerHTML: '', querySelectorAll: () => [], querySelector: () => null },
+            reportCountBadge: { textContent: '' },
             // 기존 호환성 유지 (더미)
             summaryReportList: { innerHTML: '', style: { display: 'flex' } },
             reportList: { innerHTML: '', style: { display: 'flex' } },
@@ -2084,23 +1905,16 @@
             tabStatistics: null,
             yearSelect: document.getElementById('yearSelect'),
             quarterSelect: document.getElementById('quarterSelect'),
-            prevBtn: document.getElementById('prevBtn'),
-            nextBtn: document.getElementById('nextBtn'),
-            pageIndicator: document.getElementById('pageIndicator'),
+            // 페이지 네비게이션 제거됨
             exportBtn: document.getElementById('exportBtn'),
-            exportXlsxBtn: document.getElementById('exportXlsxBtn'),
-            exportHwpImportBtn: document.getElementById('exportHwpImportBtn'),
-            exportHwpCopyBtn: document.getElementById('exportHwpCopyBtn'),
-            saveHtmlToProjectBtn: document.getElementById('saveHtmlToProjectBtn'),
+            // 제거된 버튼들 (추후 재구현 예정)
+            // exportXlsxBtn, exportHwpImportBtn, exportHwpCopyBtn, saveHtmlToProjectBtn
+            // editBtn, saveEditBtn, cancelEditBtn, markReviewedBtn
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
             previewIframe: document.getElementById('previewIframe'),
             editContainer: document.getElementById('editContainer'),
             editContent: document.getElementById('editContent'),
-            editBtn: document.getElementById('editBtn'),
-            saveEditBtn: document.getElementById('saveEditBtn'),
-            cancelEditBtn: document.getElementById('cancelEditBtn'),
-            markReviewedBtn: document.getElementById('markReviewedBtn'),
             contactInfoModal: document.getElementById('contactInfoModal'),
             loadingOverlay: document.getElementById('loadingOverlay'),
             loadingTitle: document.getElementById('loadingTitle'),
@@ -2144,22 +1958,11 @@
             elements.uploadZone.addEventListener('dragleave', handleDragLeave);
             elements.uploadZone.addEventListener('drop', handleDrop);
 
-            // Navigation
-            elements.prevBtn.addEventListener('click', () => navigateReport(-1));
-            elements.nextBtn.addEventListener('click', () => navigateReport(1));
+            // 페이지 네비게이션 이벤트 리스너 제거됨
 
             // Actions
-            elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
             elements.exportBtn.addEventListener('click', exportFinalDocument);
-            elements.exportXlsxBtn.addEventListener('click', exportXlsxDocument);
-            elements.exportHwpImportBtn.addEventListener('click', exportHwpImportDocument);
-            elements.exportHwpCopyBtn.addEventListener('click', exportHwpCopyDocument);
-            elements.saveHtmlToProjectBtn.addEventListener('click', saveHtmlToProject);
-            
-            // Edit actions
-            elements.editBtn.addEventListener('click', enterEditMode);
-            elements.saveEditBtn.addEventListener('click', saveEditedContent);
-            elements.cancelEditBtn.addEventListener('click', cancelEditMode);
+            // 제거된 이벤트 리스너들 (추후 재구현 예정)
         }
 
         function loadReportList() {
@@ -2288,9 +2091,6 @@
             elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
             elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
             elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
-            
-            updatePageIndicator();
-            updateNavigationButtons();
         }
 
         // ===== 미리보기 생성 =====
@@ -2336,42 +2136,8 @@
             state.allGenerated = true;
             showGenerationStatus();
             
-            // 내보내기 버튼 표시 및 활성화
-            if (elements.exportBtn) {
-                elements.exportBtn.style.display = 'inline-flex';
-                elements.exportBtn.disabled = false;
-                elements.exportBtn.style.opacity = '1';
-                elements.exportBtn.style.cursor = 'pointer';
-                console.log('[출력] HTML 출력 버튼 활성화');
-            }
-            if (elements.exportXlsxBtn) {
-                elements.exportXlsxBtn.style.display = 'inline-flex';
-                elements.exportXlsxBtn.disabled = false;
-                elements.exportXlsxBtn.style.opacity = '1';
-                elements.exportXlsxBtn.style.cursor = 'pointer';
-                console.log('[출력] Excel 출력 버튼 활성화');
-            }
-            if (elements.exportHwpImportBtn) {
-                elements.exportHwpImportBtn.style.display = 'inline-flex';
-                elements.exportHwpImportBtn.disabled = false;
-                elements.exportHwpImportBtn.style.opacity = '1';
-                elements.exportHwpImportBtn.style.cursor = 'pointer';
-                console.log('[출력] 한글용 XML 출력 버튼 활성화');
-            }
-            if (elements.exportHwpCopyBtn) {
-                elements.exportHwpCopyBtn.style.display = 'inline-flex';
-                elements.exportHwpCopyBtn.disabled = false;
-                elements.exportHwpCopyBtn.style.opacity = '1';
-                elements.exportHwpCopyBtn.style.cursor = 'pointer';
-                console.log('[출력] 한글 복붙용 HTML 출력 버튼 활성화');
-            }
-            if (elements.saveHtmlToProjectBtn) {
-                elements.saveHtmlToProjectBtn.style.display = 'inline-flex';
-                elements.saveHtmlToProjectBtn.disabled = false;
-                elements.saveHtmlToProjectBtn.style.opacity = '1';
-                elements.saveHtmlToProjectBtn.style.cursor = 'pointer';
-                console.log('[출력] HTML 저장 버튼 활성화');
-            }
+            // 내보내기 버튼 - 추후 재구현 예정
+            console.log('[출력] 내보내기 버튼 기능 추후 재구현 예정');
             
             // 전체 보도자료 배열 초기화 및 렌더링
             initializeAllReports();
@@ -2666,14 +2432,7 @@ ${currentPage.outerHTML}
                 const pageInfo = state.totalPagesInReport > 1 ? ` (${state.currentPageInReport + 1}/${state.totalPagesInReport})` : '';
                 elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}${pageInfo}</span>`;
                 
-                // 편집/검토 버튼 표시
-                elements.editBtn.style.display = 'inline-flex';
-                elements.saveEditBtn.style.display = 'none';
-                elements.cancelEditBtn.style.display = 'none';
-                elements.markReviewedBtn.style.display = 'block';
-                
-                updateNavigationButtons();
-                updatePageIndicator();
+                // 편집/검토 버튼 - 추후 재구현 예정
             } else {
                 showToast('보도자료를 찾을 수 없습니다.', 'error');
             }
@@ -2803,8 +2562,6 @@ ${currentPage.outerHTML}
             
             displayCachedReport(report.type, report, targetPage);
             renderAllReportsList();
-            updateNavigationButtons();
-            updatePageIndicator();
         }
 
         // 기존 호환성을 위한 함수들 (내부적으로 globalIndex 사용)
@@ -2813,109 +2570,9 @@ ${currentPage.outerHTML}
         function renderRegionalReportList() { renderAllReportsList(); }
         function renderStatisticsReportList() { renderAllReportsList(); }
 
-        // ===== 네비게이션 =====
-        function navigateReport(direction) {
-            if (direction > 0) {
-                // 다음 페이지/보도자료
-                if (state.currentPageInReport < state.totalPagesInReport - 1) {
-                    // 같은 보도자료 내 다음 페이지
-                    const report = state.allReports[state.currentGlobalIndex];
-                    displayCachedReport(report.type, report, state.currentPageInReport + 1);
-                } else {
-                    // 다음 보도자료의 첫 페이지
-                    const newIndex = state.currentGlobalIndex + 1;
-                    if (newIndex < state.allReports.length) {
-                        selectGlobalReport(newIndex, 0);
-                    }
-                }
-            } else {
-                // 이전 페이지/보도자료
-                if (state.currentPageInReport > 0) {
-                    // 같은 보도자료 내 이전 페이지
-                    const report = state.allReports[state.currentGlobalIndex];
-                    displayCachedReport(report.type, report, state.currentPageInReport - 1);
-                } else {
-                    // 이전 보도자료의 마지막 페이지
-                    const newIndex = state.currentGlobalIndex - 1;
-                    if (newIndex >= 0) {
-                        selectGlobalReport(newIndex, -1);  // -1은 마지막 페이지를 의미
-                    }
-                }
-            }
-        }
+        // ===== 네비게이션 - 제거됨 =====
 
-        function updateNavigationButtons() {
-            // 첫 보도자료의 첫 페이지이면 이전 버튼 비활성화
-            const isFirstPage = state.currentGlobalIndex <= 0 && state.currentPageInReport <= 0;
-            // 마지막 보도자료의 마지막 페이지이면 다음 버튼 비활성화
-            const isLastPage = state.currentGlobalIndex >= state.allReports.length - 1 && 
-                              state.currentPageInReport >= state.totalPagesInReport - 1;
-            
-            elements.prevBtn.disabled = isFirstPage;
-            elements.nextBtn.disabled = isLastPage;
-        }
-
-        function updatePageIndicator() {
-            // 전체 페이지 번호 계산 (모든 보도자료의 모든 페이지)
-            let totalPages = 0;
-            let currentPage = 0;
-            
-            for (let i = 0; i < state.allReports.length; i++) {
-                const report = state.allReports[i];
-                const html = state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id];
-                let pageCount = 1;
-                
-                if (html) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    pageCount = Math.max(1, doc.querySelectorAll('.page').length);
-                }
-                
-                if (i < state.currentGlobalIndex) {
-                    currentPage += pageCount;
-                } else if (i === state.currentGlobalIndex) {
-                    currentPage += state.currentPageInReport + 1;
-                }
-                totalPages += pageCount;
-            }
-            
-            elements.pageIndicator.textContent = `${currentPage > 0 ? currentPage : 0} / ${totalPages}`;
-        }
-
-        // ===== 검토 완료 =====
-        function markCurrentAsReviewed() {
-            if (state.currentGlobalIndex < 0 || state.currentGlobalIndex >= state.allReports.length) {
-                return;
-            }
-            
-            const report = state.allReports[state.currentGlobalIndex];
-            state.reviewedReports[report.type].add(report.id);
-            
-            // iframe 내 placeholder 하이라이트 제거
-            try {
-                const iframe = elements.previewIframe;
-                if (iframe && iframe.contentDocument) {
-                    const placeholders = iframe.contentDocument.querySelectorAll('.placeholder');
-                    placeholders.forEach(el => {
-                        el.classList.remove('placeholder');
-                        el.removeAttribute('contenteditable');
-                        el.style.backgroundColor = '';
-                        el.style.border = '';
-                    });
-                    
-                    // 수정된 HTML을 캐시에 저장
-                    const cacheKey = `${report.type}_${report.id}`;
-                    state.htmlCache[cacheKey] = iframe.contentDocument.documentElement.outerHTML;
-                }
-            } catch (e) {
-                console.warn('플레이스홀더 하이라이트 제거 실패:', e);
-            }
-            
-            renderAllReportsList();
-            
-            showToast(`${report.name} 검토 완료`, 'success');
-            navigateReport(1); // 다음으로 자동 이동
-        }
+        // ===== 검토 완료 - 제거됨 (추후 재구현 예정) =====
 
         // ===== 파일 업로드 =====
         function handleDragOver(e) {
@@ -3318,179 +2975,8 @@ ${currentPage.outerHTML}
             return null;
         }
 
-        function enterEditMode() {
-            const reportInfo = getCurrentReportInfo();
-            if (!reportInfo) {
-                showToast('편집할 보도자료를 먼저 선택하세요.', 'warning');
-                return;
-            }
+        // ===== 편집 모드 함수들 - 제거됨 (추후 재구현 예정) =====
 
-            isEditMode = true;
-            currentEditingReport = reportInfo;
-            
-            // 원본 저장
-            originalHtmlBeforeEdit = state.cachedHtml[reportInfo.type][reportInfo.report.id];
-            
-            // iframe 내에서 직접 편집 모드 활성화 (스타일 유지)
-            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
-            
-            // body를 편집 가능하게 설정
-            iframeDoc.body.contentEditable = 'true';
-            iframeDoc.body.style.cursor = 'text';
-            
-            // 편집 가능한 요소에 하이라이트 스타일 추가
-            const editStyle = iframeDoc.createElement('style');
-            editStyle.id = 'edit-mode-style';
-            editStyle.textContent = `
-                [contenteditable="true"]:focus {
-                    outline: 2px solid #007bff;
-                    outline-offset: 2px;
-                }
-                body {
-                    cursor: text !important;
-                }
-                td, th, p, span, div, h1, h2, h3, h4, h5, h6, li {
-                    min-height: 1em;
-                }
-            `;
-            iframeDoc.head.appendChild(editStyle);
-            
-            // 버튼 상태 변경
-            elements.editBtn.style.display = 'none';
-            elements.saveEditBtn.style.display = 'inline-flex';
-            elements.cancelEditBtn.style.display = 'inline-flex';
-            elements.markReviewedBtn.style.display = 'none';
-            
-            showToast('편집 모드가 활성화되었습니다. 텍스트를 클릭하여 수정하세요.', 'info');
-        }
-
-        function extractStyles(headHtml) {
-            // head에서 style 태그 추출
-            const styleMatch = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-            if (styleMatch) {
-                return styleMatch.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n');
-            }
-            return '';
-        }
-
-        function makeEditable(html) {
-            // DOM 파싱
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-            const container = doc.body.firstChild;
-            
-            // 텍스트 노드를 포함한 모든 요소에 contenteditable 추가
-            const editableSelectors = [
-                'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                'td', 'th', 'li', 'div.value', 'div.text', 'div.title',
-                '.summary-text', '.description', '.content', '.data-value',
-                '.region-name', '.change-value', '.percent'
-            ];
-            
-            // 모든 텍스트 포함 요소 처리
-            container.querySelectorAll('*').forEach(el => {
-                // 이미지, SVG, 테이블 구조 등은 제외
-                const tagName = el.tagName.toLowerCase();
-                if (['img', 'svg', 'path', 'table', 'tr', 'thead', 'tbody', 'script', 'style', 'br', 'hr'].includes(tagName)) {
-                    return;
-                }
-                
-                // 직접 텍스트를 포함하는 경우만 편집 가능
-                const hasDirectText = Array.from(el.childNodes).some(node => 
-                    node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
-                );
-                
-                if (hasDirectText || editableSelectors.some(sel => el.matches(sel))) {
-                    el.setAttribute('contenteditable', 'true');
-                }
-            });
-            
-            return container.innerHTML;
-        }
-
-        function saveEditedContent() {
-            if (!currentEditingReport) {
-                showToast('저장할 보도자료가 없습니다.', 'error');
-                return;
-            }
-
-            // iframe에서 직접 편집된 내용 추출
-            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
-            
-            // 편집 모드 스타일 제거
-            const editStyle = iframeDoc.getElementById('edit-mode-style');
-            if (editStyle) editStyle.remove();
-            
-            // contentEditable 비활성화
-            iframeDoc.body.contentEditable = 'false';
-            iframeDoc.body.style.cursor = '';
-            
-            // 현재 상태의 전체 HTML 저장
-            const newHtml = `<!DOCTYPE html>\n<html lang="ko">\n${iframeDoc.documentElement.innerHTML}\n</html>`;
-            
-            // 캐시 업데이트
-            const { type, report } = currentEditingReport;
-            state.cachedHtml[type][report.id] = newHtml;
-            
-            // htmlCache도 업데이트 (최종 문서 생성용)
-            const cacheKey = `${type}_${report.id}`;
-            state.htmlCache[cacheKey] = newHtml;
-            
-            // 편집 모드 종료
-            exitEditMode();
-            
-            // 수정됨 표시
-            markReportAsEdited(type, report.id);
-            
-            showToast('✅ 변경사항이 저장되었습니다.', 'success');
-        }
-
-        function cancelEditMode() {
-            // iframe에서 편집 모드 해제
-            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
-            
-            // 편집 모드 스타일 제거
-            const editStyle = iframeDoc.getElementById('edit-mode-style');
-            if (editStyle) editStyle.remove();
-            
-            // contentEditable 비활성화
-            iframeDoc.body.contentEditable = 'false';
-            iframeDoc.body.style.cursor = '';
-            
-            // 원본 HTML로 복원
-            if (originalHtmlBeforeEdit) {
-                elements.previewIframe.srcdoc = originalHtmlBeforeEdit;
-            }
-            
-            exitEditMode();
-            showToast('편집이 취소되었습니다.', 'info');
-        }
-
-        function exitEditMode() {
-            isEditMode = false;
-            originalHtmlBeforeEdit = null;
-            currentEditingReport = null;
-            
-            // 버튼 상태 복원
-            elements.editBtn.style.display = 'inline-flex';
-            elements.saveEditBtn.style.display = 'none';
-            elements.cancelEditBtn.style.display = 'none';
-            elements.markReviewedBtn.style.display = 'block';
-        }
-
-        function markReportAsEdited(type, reportId) {
-            // 편집된 보도자료 표시 (옵션: 리스트에 표시 추가)
-            if (!state.editedReports) {
-                state.editedReports = { summary: new Set(), sectoral: new Set(), regional: new Set(), statistics: new Set() };
-            }
-            state.editedReports[type].add(reportId);
-            
-            // 목록 새로고침
-            renderSummaryReportList();
-            renderReportList();
-            renderRegionalReportList();
-            renderStatisticsReportList();
-        }
 
         // ===== 현재 미리보기 iframe 내용을 캐시에 동기화 =====
         function syncCurrentPreviewToCache() {
@@ -3944,226 +3430,7 @@ ${currentPage.outerHTML}
             }
         }
 
-        // ===== XLSX 문서 내보내기 =====
-        async function exportXlsxDocument() {
-            console.log('[출력] Excel 문서 내보내기 시작');
-            
-            // 버튼 비활성화 (중복 클릭 방지)
-            if (elements.exportXlsxBtn) {
-                elements.exportXlsxBtn.disabled = true;
-                elements.exportXlsxBtn.style.opacity = '0.6';
-                elements.exportXlsxBtn.style.cursor = 'not-allowed';
-            }
-            
-            // allGenerated 체크를 더 유연하게
-            const hasGeneratedReports = Object.keys(state.generatedReports).some(
-                type => state.generatedReports[type] && state.generatedReports[type].size > 0
-            );
-            
-            if (!state.allGenerated && !hasGeneratedReports) {
-                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
-                if (elements.exportXlsxBtn) {
-                    elements.exportXlsxBtn.disabled = false;
-                    elements.exportXlsxBtn.style.opacity = '1';
-                    elements.exportXlsxBtn.style.cursor = 'pointer';
-                }
-                return;
-            }
-            
-            // 현재 미리보기 내용을 캐시에 동기화
-            try {
-                syncCurrentPreviewToCache();
-            } catch (e) {
-                console.warn('[출력] 캐시 동기화 실패 (계속 진행):', e);
-            }
-            
-            // 로딩 표시
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgress');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const loadingCurrent = document.getElementById('loadingCurrent');
-            
-            loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '📊 Excel 문서 생성 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            loadingProgress.style.width = '0%';
-            loadingPercent.textContent = '0%';
-            
-            try {
-                // 모든 캐시된 HTML 수집 (순서대로)
-                const rawPages = [];
-                
-                // HTML 가져오기 헬퍼 함수
-                const getHtmlContent = (type, id) => {
-                    const cacheKey = `${type}_${id}`;
-                    if (state.htmlCache[cacheKey]) {
-                        return state.htmlCache[cacheKey];
-                    }
-                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
-                        return state.cachedHtml[type][id];
-                    }
-                    return null;
-                };
-                
-                // 1. 요약 보도자료
-                for (const report of state.summaryReports) {
-                    const html = getHtmlContent('summary', report.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'summary'
-                        });
-                    }
-                }
-                
-                // 2. 부문별 보도자료
-                for (const report of state.sectoralReports) {
-                    const html = getHtmlContent('sectoral', report.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'sectoral'
-                        });
-                    }
-                }
-                
-                // 3. 시도별 보도자료
-                for (const region of state.regionalReports) {
-                    const html = getHtmlContent('regional', region.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: region.name,
-                            category: 'regional'
-                        });
-                    }
-                }
-                
-                // 4. 통계표
-                for (const stat of state.statisticsReports) {
-                    const html = getHtmlContent('statistics', stat.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: stat.name,
-                            category: 'statistics'
-                        });
-                    }
-                }
-                
-                if (rawPages.length === 0) {
-                    loadingOverlay.style.display = 'none';
-                    showToast('생성된 보도자료가 없습니다.', 'error');
-                    return;
-                }
-                
-                loadingCurrent.textContent = `${rawPages.length}개 페이지 수집 완료, 이미지 변환 중...`;
-                loadingProgress.style.width = '20%';
-                loadingPercent.textContent = '20%';
-                
-                // Canvas를 이미지로 변환 (각 페이지 순차 처리)
-                const pages = [];
-                for (let i = 0; i < rawPages.length; i++) {
-                    const page = rawPages[i];
-                    const progress = 20 + Math.floor((i / rawPages.length) * 50);
-                    loadingProgress.style.width = `${progress}%`;
-                    loadingPercent.textContent = `${progress}%`;
-                    loadingCurrent.textContent = `이미지 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
-                    
-                    // Canvas가 포함된 페이지만 변환 처리
-                    let convertedHtml = page.html;
-                    if (page.html.includes('<canvas')) {
-                        try {
-                            convertedHtml = await convertCanvasToImageInHtml(page.html);
-                        } catch (e) {
-                            console.warn(`페이지 ${i + 1} 변환 실패:`, e);
-                        }
-                    }
-                    
-                    pages.push({
-                        html: convertedHtml,
-                        title: page.title,
-                        category: page.category
-                    });
-                }
-                
-                loadingCurrent.textContent = 'Excel 파일 생성 중...';
-                loadingProgress.style.width = '75%';
-                loadingPercent.textContent = '75%';
-                
-                // 연도/분기 가져오기
-                const year = parseInt(elements.yearSelect.value) || 2025;
-                const quarter = parseInt(elements.quarterSelect.value) || 2;
-                
-                // API 호출
-                console.log(`[출력] API 호출: /api/export-xlsx (${pages.length}개 페이지)`);
-                const response = await fetch('/api/export-xlsx', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pages: pages,
-                        year: year,
-                        quarter: quarter
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('[출력] API 응답:', result.success ? '성공' : '실패', result);
-                
-                loadingProgress.style.width = '100%';
-                loadingPercent.textContent = '100%';
-                
-                if (result.success) {
-                    loadingCurrent.textContent = '저장 위치 선택 중...';
-                    loadingOverlay.style.display = 'none';
-                    
-                    // base64 데이터를 Blob으로 변환
-                    const binaryString = atob(result.xlsx_data);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    const blob = new Blob([bytes], { 
-                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-                    });
-                    
-                    // 파일 저장
-                    const saved = await saveFileWithPicker(blob, result.filename);
-                    
-                    if (saved) {
-                        showToast(`✅ ${result.total_pages}개 시트의 Excel 문서가 저장되었습니다.`, 'success');
-                    } else {
-                        showToast('저장이 취소되었습니다.', 'info');
-                    }
-                } else {
-                    loadingOverlay.style.display = 'none';
-                    const errorMsg = result.error || 'Excel 생성 실패';
-                    console.error('[출력] Excel 생성 실패:', errorMsg);
-                    showToast(`Excel 생성 실패: ${errorMsg}`, 'error');
-                }
-            } catch (err) {
-                console.error('[출력] Excel 내보내기 오류:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
-                }
-                showToast(`Excel 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
-            } finally {
-                // 버튼 다시 활성화
-                if (elements.exportXlsxBtn) {
-                    elements.exportXlsxBtn.disabled = false;
-                    elements.exportXlsxBtn.style.opacity = '1';
-                    elements.exportXlsxBtn.style.cursor = 'pointer';
-                }
-            }
-        }
+        // ===== XLSX 문서 내보내기 - 제거됨 (추후 재구현 예정) =====
 
         // ===== Canvas를 이미지로 변환 (원본 비율 유지) - 한글용 =====
         function convertCanvasToImageForHwp(html) {
@@ -4267,538 +3534,11 @@ ${currentPage.outerHTML}
             });
         }
         
-        // ===== 한글용 XML 문서 내보내기 =====
-        async function exportHwpImportDocument() {
-            console.log('[출력] 한글용 XML 문서 내보내기 시작');
-            
-            // 버튼 비활성화 (중복 클릭 방지)
-            if (elements.exportHwpImportBtn) {
-                elements.exportHwpImportBtn.disabled = true;
-                elements.exportHwpImportBtn.style.opacity = '0.6';
-                elements.exportHwpImportBtn.style.cursor = 'not-allowed';
-            }
-            
-            // allGenerated 체크를 더 유연하게
-            const hasGeneratedReports = Object.keys(state.generatedReports).some(
-                type => state.generatedReports[type] && state.generatedReports[type].size > 0
-            );
-            
-            if (!state.allGenerated && !hasGeneratedReports) {
-                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
-                if (elements.exportHwpImportBtn) {
-                    elements.exportHwpImportBtn.disabled = false;
-                    elements.exportHwpImportBtn.style.opacity = '1';
-                    elements.exportHwpImportBtn.style.cursor = 'pointer';
-                }
-                return;
-            }
-            
-            // 현재 미리보기 내용을 캐시에 동기화
-            try {
-                syncCurrentPreviewToCache();
-            } catch (e) {
-                console.warn('[출력] 캐시 동기화 실패 (계속 진행):', e);
-            }
-            
-            // 로딩 표시
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgress');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const loadingCurrent = document.getElementById('loadingCurrent');
-            
-            loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '📄 한글용 XML 문서 생성 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            loadingProgress.style.width = '0%';
-            loadingPercent.textContent = '0%';
-            
-            try {
-                // 모든 캐시된 HTML 수집 (순서대로)
-                const rawPages = [];
-                
-                // HTML 가져오기 헬퍼 함수
-                const getHtmlContent = (type, id) => {
-                    const cacheKey = `${type}_${id}`;
-                    return state.htmlCache[cacheKey] 
-                        || state.cachedHtml[type]?.[id] 
-                        || null;
-                };
-                
-                // 1. 요약 보도자료
-                for (const report of state.summaryReports) {
-                    const html = getHtmlContent('summary', report.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'summary'
-                        });
-                    }
-                }
-                
-                // 2. 부문별 보도자료
-                for (const report of state.sectoralReports) {
-                    const html = getHtmlContent('sectoral', report.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'sectoral'
-                        });
-                    }
-                }
-                
-                // 3. 시도별 보도자료
-                for (const region of state.regionalReports) {
-                    const html = getHtmlContent('regional', region.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: region.name,
-                            category: 'regional'
-                        });
-                    }
-                }
-                
-                // 4. 통계표
-                for (const stat of state.statisticsReports) {
-                    const html = getHtmlContent('statistics', stat.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: stat.name,
-                            category: 'statistics'
-                        });
-                    }
-                }
-                
-                if (rawPages.length === 0) {
-                    loadingOverlay.style.display = 'none';
-                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
-                    return;
-                }
-                
-                loadingCurrent.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 이미지 변환 중...`;
-                loadingProgress.style.width = '10%';
-                loadingPercent.textContent = '10%';
-                
-                // 각 페이지의 Canvas/SVG를 이미지로 변환 (원본 비율 유지)
-                const pages = [];
-                for (let i = 0; i < rawPages.length; i++) {
-                    const page = rawPages[i];
-                    const progress = 10 + Math.floor((i / rawPages.length) * 70);
-                    loadingProgress.style.width = `${progress}%`;
-                    loadingPercent.textContent = `${progress}%`;
-                    loadingCurrent.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
-                    
-                    let convertedHtml = page.html;
-                    
-                    // Canvas 또는 SVG가 포함된 페이지만 변환 처리
-                    if (page.html.includes('<canvas') || page.html.includes('<svg')) {
-                        try {
-                            convertedHtml = await convertCanvasToImageForHwp(page.html);
-                        } catch (e) {
-                            console.warn(`페이지 ${i + 1} 변환 실패:`, e);
-                        }
-                    }
-                    
-                    // A4 크기에 맞게 최적화
-                    convertedHtml = optimizeForA4(convertedHtml);
-                    
-                    pages.push({
-                        html: convertedHtml,
-                        title: page.title,
-                        category: page.category
-                    });
-                }
-                
-                loadingCurrent.textContent = `변환 완료, XML 문서 생성 중...`;
-                loadingProgress.style.width = '85%';
-                loadingPercent.textContent = '85%';
-                
-                // 연도/분기 가져오기
-                const year = parseInt(elements.yearSelect.value) || 2025;
-                const quarter = parseInt(elements.quarterSelect.value) || 2;
-                
-                // API 호출 (한글 호환 XML 생성)
-                console.log(`[출력] API 호출: /api/export-hwp-import (${pages.length}개 페이지)`);
-                const response = await fetch('/api/export-hwp-import', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pages: pages,
-                        year: year,
-                        quarter: quarter,
-                        format: 'hwp-xml'  // 한글 호환 XML 형식
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('[출력] API 응답:', result.success ? '성공' : '실패', result);
-                
-                loadingProgress.style.width = '100%';
-                loadingPercent.textContent = '100%';
-                
-                if (result.success) {
-                    loadingCurrent.textContent = '저장 위치 선택 중...';
-                    
-                    // 로딩 오버레이 숨기기
-                    loadingOverlay.style.display = 'none';
-                    
-                    // 파일 저장 (사용자가 위치 선택)
-                    const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
-                    const saved = await saveFileWithPicker(blob, result.filename);
-                    
-                    if (saved) {
-                        showToast(
-                            `✅ 한글용 XML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
-                            `한글에서 열기:\n` +
-                            `파일 → 불러오기 → 저장한 HTML 파일 선택`,
-                            'success',
-                            8000
-                        );
-                    } else {
-                        showToast('저장이 취소되었습니다.', 'info');
-                    }
-                    
-                    // 작업 완료 후 업로드 폴더 정리
-                    setTimeout(async () => {
-                        try {
-                            const cleanupResponse = await fetch('/api/cleanup-uploads', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' }
-                            });
-                            const cleanupResult = await cleanupResponse.json();
-                            if (cleanupResult.success && cleanupResult.deleted_count > 0) {
-                                console.log(`[정리] ${cleanupResult.deleted_count}개 파일 정리 완료`);
-                            }
-                        } catch (e) {
-                            console.warn('업로드 폴더 정리 실패:', e);
-                        }
-                    }, 1000);
-                } else {
-                    loadingOverlay.style.display = 'none';
-                    const errorMsg = result.error || '문서 생성 실패';
-                    console.error('[출력] 한글용 XML 생성 실패:', errorMsg);
-                    showToast(`문서 생성 실패: ${errorMsg}`, 'error');
-                }
-            } catch (err) {
-                console.error('[출력] 한글용 XML 내보내기 오류:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
-                }
-                showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
-            } finally {
-                // 버튼 다시 활성화
-                if (elements.exportHwpImportBtn) {
-                    elements.exportHwpImportBtn.disabled = false;
-                    elements.exportHwpImportBtn.style.opacity = '1';
-                    elements.exportHwpImportBtn.style.cursor = 'pointer';
-                }
-            }
-        }
+        // ===== 한글용 XML 문서 내보내기 - 제거됨 (추후 재구현 예정) =====
 
-        // ===== 한글(HWP) 복붙용 HTML 내보내기 =====
-        async function exportHwpCopyDocument() {
-            if (!state.allGenerated) {
-                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
-                return;
-            }
-            
-            // 버튼 비활성화
-            if (elements.exportHwpCopyBtn) {
-                elements.exportHwpCopyBtn.disabled = true;
-                elements.exportHwpCopyBtn.style.opacity = '0.6';
-                elements.exportHwpCopyBtn.style.cursor = 'not-allowed';
-            }
-            
-            // 현재 미리보기 내용을 캐시에 동기화
-            syncCurrentPreviewToCache();
-            
-            // 로딩 표시
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingCurrent = document.getElementById('loadingCurrent');
-            
-            loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '📋 한글 복붙용 HTML 생성 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            
-            try {
-                // 모든 캐시된 HTML 수집 (순서대로)
-                const pages = [];
-                
-                // HTML 가져오기 헬퍼 함수
-                const getHtmlContent = (type, id) => {
-                    const cacheKey = `${type}_${id}`;
-                    if (state.htmlCache[cacheKey]) {
-                        return state.htmlCache[cacheKey];
-                    }
-                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
-                        return state.cachedHtml[type][id];
-                    }
-                    return null;
-                };
-                
-                // 요약 보도자료
-                for (const report of state.summaryReports || []) {
-                    const html = getHtmlContent('summary', report.id);
-                    if (html) {
-                        pages.push({
-                            id: report.id,
-                            title: report.name,
-                            category: 'summary',
-                            html: html
-                        });
-                    }
-                }
-                
-                // 부문별 보도자료
-                for (const report of state.sectoralReports || []) {
-                    const html = getHtmlContent('sectoral', report.id);
-                    if (html) {
-                        pages.push({
-                            id: report.id,
-                            title: report.name,
-                            category: 'sectoral',
-                            html: html
-                        });
-                    }
-                }
-                
-                // 시도별 보도자료
-                for (const report of state.regionalReports || []) {
-                    const html = getHtmlContent('regional', report.id);
-                    if (html) {
-                        pages.push({
-                            id: report.id,
-                            title: report.name,
-                            category: 'regional',
-                            html: html
-                        });
-                    }
-                }
-                
-                // 통계표
-                for (const report of state.statisticsReports || []) {
-                    const html = getHtmlContent('statistics', report.id);
-                    if (html) {
-                        pages.push({
-                            id: report.id,
-                            title: report.name,
-                            category: 'statistics',
-                            html: html
-                        });
-                    }
-                }
-                
-                if (pages.length === 0) {
-                    loadingOverlay.style.display = 'none';
-                    showToast('생성된 보도자료가 없습니다.', 'warning');
-                    return;
-                }
-                
-                console.log(`[출력] API 호출: /api/export-hwp-ready (${pages.length}개 페이지)`);
-                const response = await fetch('/api/export-hwp-ready', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        pages: pages,
-                        year: state.year,
-                        quarter: state.quarter
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('[출력] 한글 복붙용 HTML 생성 성공:', result.filename);
-                    
-                    loadingTitle.textContent = '✅ 생성 완료!';
-                    loadingCurrent.textContent = '브라우저에서 열기 준비 중...';
-                    
-                    // 1초 후 새 탭에서 열기 (복사 기능 내장)
-                    setTimeout(() => {
-                        loadingOverlay.style.display = 'none';
-                        
-                        // 새 탭에서 열기
-                        if (result.view_url) {
-                            window.open(result.view_url, '_blank');
-                            showToast('📋 한글 복붙용 HTML이 새 탭에서 열렸습니다. "전체 복사" 버튼을 클릭하세요!', 'success', 5000);
-                        } else {
-                            showToast(`📋 파일 생성 완료: ${result.filename}`, 'success');
-                        }
-                    }, 1000);
-                } else {
-                    loadingOverlay.style.display = 'none';
-                    const errorMsg = result.error || '문서 생성 실패';
-                    console.error('[출력] 한글 복붙용 HTML 생성 실패:', errorMsg);
-                    showToast(`문서 생성 실패: ${errorMsg}`, 'error');
-                }
-            } catch (err) {
-                console.error('[출력] 한글 복붙용 HTML 내보내기 오류:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
-                }
-                showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
-            } finally {
-                // 버튼 다시 활성화
-                if (elements.exportHwpCopyBtn) {
-                    elements.exportHwpCopyBtn.disabled = false;
-                    elements.exportHwpCopyBtn.style.opacity = '1';
-                    elements.exportHwpCopyBtn.style.cursor = 'pointer';
-                }
-            }
-        }
+        // ===== 한글(HWP) 복붙용 HTML 내보내기 - 제거됨 (추후 재구현 예정) =====
 
-        // ===== 프로젝트 메인 디렉토리에 HTML 저장 =====
-        async function saveHtmlToProject() {
-            if (!state.allGenerated) {
-                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
-                return;
-            }
-            
-            // 현재 미리보기 내용을 캐시에 동기화
-            syncCurrentPreviewToCache();
-            
-            // 로딩 표시
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingCurrent = document.getElementById('loadingCurrent');
-            
-            loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '💾 HTML 파일 저장 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            
-            try {
-                // 모든 캐시된 HTML 수집 (순서대로)
-                const pages = [];
-                
-                // HTML 가져오기 헬퍼 함수 (htmlCache 우선, cachedHtml 폴백)
-                const getHtmlContent = (type, id) => {
-                    const cacheKey = `${type}_${id}`;
-                    // htmlCache 우선 확인 (편집된 내용 포함)
-                    if (state.htmlCache[cacheKey]) {
-                        return state.htmlCache[cacheKey];
-                    }
-                    // cachedHtml 폴백
-                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
-                        return state.cachedHtml[type][id];
-                    }
-                    return null;
-                };
-                
-                // 1. 요약 보도자료
-                for (const report of state.summaryReports) {
-                    const html = getHtmlContent('summary', report.id);
-                    if (html) {
-                        pages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'summary'
-                        });
-                    }
-                }
-                
-                // 2. 부문별 보도자료
-                for (const report of state.sectoralReports) {
-                    const html = getHtmlContent('sectoral', report.id);
-                    if (html) {
-                        pages.push({
-                            html: html,
-                            title: report.name,
-                            category: 'sectoral'
-                        });
-                    }
-                }
-                
-                // 3. 시도별 보도자료
-                for (const region of state.regionalReports) {
-                    const html = getHtmlContent('regional', region.id);
-                    if (html) {
-                        pages.push({
-                            html: html,
-                            title: region.name,
-                            category: 'regional'
-                        });
-                    }
-                }
-                
-                // 4. 통계표
-                for (const stat of state.statisticsReports) {
-                    const html = getHtmlContent('statistics', stat.id);
-                    if (html) {
-                        pages.push({
-                            html: html,
-                            title: stat.name,
-                            category: 'statistics'
-                        });
-                    }
-                }
-                
-                loadingCurrent.textContent = `${pages.length}개 페이지 수집 완료`;
-                
-                // 페이지가 비어있는 경우 에러 처리
-                if (pages.length === 0) {
-                    loadingOverlay.style.display = 'none';
-                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
-                    return;
-                }
-                
-                // 연도/분기 가져오기
-                const year = parseInt(elements.yearSelect.value) || 2025;
-                const quarter = parseInt(elements.quarterSelect.value) || 2;
-                
-                // API 호출
-                const response = await fetch('/api/save-html-to-project', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pages: pages,
-                        year: year,
-                        quarter: quarter
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    loadingCurrent.textContent = '저장 완료!';
-                    
-                    setTimeout(() => {
-                        loadingOverlay.style.display = 'none';
-                        
-                        showToast(
-                            `✅ HTML 파일이 프로젝트 폴더에 저장되었습니다!\n📁 ${result.filename}`,
-                            'success',
-                            7000
-                        );
-                        
-                        // 시스템 알림
-                        sendSystemNotification(
-                            '💾 HTML 저장 완료',
-                            `${result.filename} 파일이 프로젝트 폴더에 저장되었습니다.`
-                        );
-                    }, 500);
-                } else {
-                    loadingOverlay.style.display = 'none';
-                    showToast(result.error || 'HTML 저장 실패', 'error');
-                }
-            } catch (err) {
-                console.error('HTML 저장 오류:', err);
-                loadingOverlay.style.display = 'none';
-                showToast('HTML 저장 중 오류가 발생했습니다.', 'error');
-            }
-        }
+        // ===== 프로젝트 메인 디렉토리에 HTML 저장 - 제거됨 (추후 재구현 예정) =====
 
         // ===== 가중치 경고 모달 함수 =====
         function showWeightWarningModal(weightValidation) {

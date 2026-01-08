@@ -28,6 +28,153 @@
 
 ### 2026-01-08
 
+#### 세부공종/품목 데이터 N/A 표시 추가
+- **시간**: 2026-01-08 16:00
+- **문제 설명**: 
+  - 세부업종, 품목 등의 데이터가 없을 때 보도자료에 아무것도 표시되지 않음
+  - 결측치가 명확하게 표시되어야 함
+- **해결 방법**: 
+  1. **템플릿 수정** (3개 파일):
+     - `mining_manufacturing_template.html`: 업종 데이터 없으면 "N/A (세부업종 데이터 없음)" 표시
+     - `service_industry_template.html`: 동일
+     - `price_trend_template.html`: 품목 데이터 없으면 "N/A (품목 데이터 없음)" 표시
+  2. **N/A 스타일 추가**: `.na, .na-value { color: #888; font-style: italic; }`
+- **관련 파일**: 
+  - `templates/mining_manufacturing_template.html`
+  - `templates/service_industry_template.html`
+  - `templates/price_trend_template.html`
+- **상태**: 완료
+- **참고 사항**: 
+  - 수출/수입 템플릿은 이미 N/A 처리가 되어 있음
+  - 세부업종/품목 데이터는 가중치 정보가 필요하여 현재 결측
+
+---
+
+#### 코드 모듈화 및 리팩토링 - extractors 패키지 생성
+- **시간**: 2026-01-08 15:30
+- **문제 설명**: 
+  - 코드가 스파게티 상태 - 주요 파일들이 너무 거대함
+    - `raw_data_extractor.py`: 3,511줄 (단일 클래스)
+    - `report_generator.py`: 1,128줄
+    - `api.py`: 2,439줄
+- **원인 분석**: 
+  - 모든 보도자료 추출 로직이 단일 클래스에 집중
+  - 도메인별 분리 없이 기능 추가로 인한 코드 비대화
+- **에이전트 사고 과정**:
+  1. 코드 구조 분석: 3개 파일에 7,000줄 이상 집중
+  2. 도메인 분리 전략 수립:
+     - 생산 (광공업, 서비스업)
+     - 소비/건설
+     - 무역 (수출, 수입)
+     - 물가
+     - 고용/인구
+  3. 설계 패턴 결정: Facade 패턴으로 기존 인터페이스 유지
+- **해결 방법**: 
+  새로운 `extractors/` 패키지 생성:
+  ```
+  extractors/
+  ├── __init__.py     (47줄)  - 패키지 초기화
+  ├── config.py       (165줄) - 공통 상수, 시트 매핑
+  ├── base.py         (397줄) - 기본 추출기 클래스
+  ├── production.py   (399줄) - 광공업/서비스업
+  ├── consumption.py  (335줄) - 소비/건설
+  ├── trade.py        (293줄) - 수출/수입
+  ├── price.py        (284줄) - 물가
+  ├── employment.py   (490줄) - 고용률/실업률/인구이동
+  └── facade.py       (214줄) - Facade (기존 인터페이스 유지)
+  ```
+  총 2,624줄 (평균 328줄/파일)
+- **관련 파일**: 
+  - `extractors/` 패키지 (신규)
+  - `services/report_generator.py` (수정)
+- **상태**: 완료
+- **참고 사항**: 
+  - 기존 `RawDataExtractor`는 유지 (하위 호환성)
+  - 새 코드는 `extractors.DataExtractor` 사용
+  - Facade 패턴으로 동일한 인터페이스 제공
+  - 지연 로딩으로 메모리 효율성 향상
+
+---
+
+#### 분석표 폐지 - 수집표(기초자료)만 사용하도록 전환
+- **시간**: 2026-01-08 14:30
+- **문제 설명**: 
+  - 사용자가 분석표 사용을 중단하고 모든 데이터를 수집표(기초자료)에서만 추출하도록 요청
+  - 기존에는 분석표 기반 generator와 수집표 기반 RawDataExtractor가 혼재
+- **원인 분석**: 
+  - `generate_report_html`에서 `_extract_data_from_raw` 실패 시 generator fallback 존재
+  - generator들(service_industry_generator.py 등)이 분석 시트 사용
+  - 두 가지 데이터 소스가 혼재하여 일관성 문제 발생
+- **에이전트 사고 과정**:
+  1. 현재 코드 흐름 분석:
+     - `file_type == 'raw_direct' and raw_excel_path`일 때만 RawDataExtractor 사용
+     - 그 외에는 분석표 기반 generator로 fallback
+  2. 사용자 요구사항 확인:
+     - "분석표 기준으로 하지 말고 무조건 수집표 기준으로 하세요"
+  3. 해결 전략:
+     - generator fallback 완전 제거
+     - `raw_excel_path`가 있으면 무조건 수집표에서 추출
+     - 추출 실패 시 에러 반환 (분석표로 fallback 안함)
+- **해결 방법**: 
+  1. **`services/report_generator.py` 수정**:
+     - `if file_type == 'raw_direct' and raw_excel_path:` → `if raw_excel_path:`
+     - generator fallback 코드 블록 제거
+     - 수집표 추출 실패 시 에러 메시지 반환
+  2. **시도별 보도자료 함수**:
+     - `generate_regional_report_html`에서도 분석표 fallback 제거
+     - 수집표 추출 실패 시 에러 반환
+- **관련 파일**: 
+  - `services/report_generator.py`
+- **상태**: 완료
+- **참고 사항**: 
+  - 이제 모든 데이터가 `RawDataExtractor`를 통해 수집표에서만 추출됨
+  - 분석표 기반 generator들(service_industry_generator.py 등)은 더 이상 호출되지 않음
+  - 통계표 generator는 `raw_excel_path`를 전달받으면 RawDataExtractor 사용
+
+---
+
+#### 모든 하드코딩된 데이터를 동적 추출로 전환
+- **시간**: 2026-01-08 13:00
+- **문제 설명**: 
+  - 사용자가 모든 하드코딩된 값을 동적으로 추출하도록 요청
+  - 여러 보도자료에서 원지수, 금액 등이 고정값으로 설정되어 있음
+- **원인 분석**: 
+  - 수출/수입: `amounts = [None, None]` 하드코딩
+  - 물가동향: `indices = [None, None]` 하드코딩  
+  - 서비스업생산: `production_index = 100.0` 기본값
+  - 소비동향: `sales_index = 100.0` 기본값
+  - 건설동향/소비동향: 결측치를 `0.0`으로 설정
+- **에이전트 사고 과정**:
+  - 모든 관련 파일 grep 검색
+  - 각 보도자료별 하드코딩된 값 확인
+  - 시트 구조 분석 (분류단계 컬럼 vs 분류명 컬럼 혼동 수정)
+- **해결 방법**: 
+  1. **수출/수입** (`_generate_export_import_summary_table`):
+     - `_extract_raw_amounts_for_table()` 함수 추가
+     - 분류단계 0인 행에서 금액 추출 (백만달러 → 억달러 변환)
+  2. **물가동향** (`_generate_price_summary_table`):
+     - `_extract_price_indices_for_table()` 함수 추가
+     - 분류단계 0인 행에서 물가지수 추출
+  3. **서비스업생산** (`service_industry_generator.py`):
+     - `production_index = 100.0` → 실제 데이터 추출, 없으면 None
+  4. **소비동향** (`consumption_generator.py`):
+     - `sales_index = 100.0` → 실제 데이터 추출, 없으면 None
+  5. **결측치 처리**:
+     - `if rate is None: rate = 0.0` 제거
+     - 정렬 시 `None` 값 필터링
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py` (4개 함수 추가, 다수 수정)
+  - `templates/service_industry_generator.py` (1곳 수정)
+  - `templates/consumption_generator.py` (1곳 수정)
+- **상태**: ✅ 완료
+- **테스트 결과**:
+  - 광공업생산: 전국 [112.0, 114.4], 서울 [89.4, 82.0] ✓
+  - 서비스업생산: 전국 [117.6, 119.2], 서울 [123.5, 126.3] ✓
+  - 수출: 전국 [1715.0, 1752.0], 서울 [176.0, 179.0], 경기 [413.0, 427.0] ✓
+  - 물가동향: 전국 [114.0, 116.3], 서울 [113.3, 115.6] ✓
+
+---
+
 #### 전면 재검토 및 리팩토링: 물가동향/실업률/국내이동 보고서 생성 문제 해결
 - **시간**: 2026-01-08 (새벽)
 - **문제 설명**: 

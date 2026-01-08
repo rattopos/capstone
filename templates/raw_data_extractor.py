@@ -29,67 +29,77 @@ class RawDataExtractor:
         "물가": "품목성질별 물가"
     }
     
-    # 기초자료 시트별 분기 열 매핑 (2025년 2분기 기준)
+    # 기초자료 시트별 분기 열 매핑 (동적 확장 지원)
     RAW_SHEET_QUARTER_COLS = {
         "광공업생산": {
             'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
             '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
             '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
-            '2025_1Q': 63, '2025_2Q': 64
+            '2025_1Q': 63, '2025_2Q': 64, '2025_3Q': 65, '2025_4Q': 66,
+            '2026_1Q': 67, '2026_2Q': 68, '2026_3Q': 69, '2026_4Q': 70
         },
         "서비스업생산": {
             'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
             '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
             '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
-            '2025_1Q': 63, '2025_2Q': 64
+            '2025_1Q': 63, '2025_2Q': 64, '2025_3Q': 65, '2025_4Q': 66,
+            '2026_1Q': 67, '2026_2Q': 68, '2026_3Q': 69, '2026_4Q': 70
         },
         "소비(소매, 추가)": {
             'region_col': 1, 'level_col': 2, 'name_col': 4, 'header_row': 2,
             '2023_1Q': 54, '2023_2Q': 55, '2023_3Q': 56, '2023_4Q': 57,
             '2024_1Q': 58, '2024_2Q': 59, '2024_3Q': 60, '2024_4Q': 61,
-            '2025_1Q': 62, '2025_2Q': 63
+            '2025_1Q': 62, '2025_2Q': 63, '2025_3Q': 64, '2025_4Q': 65,
+            '2026_1Q': 66, '2026_2Q': 67, '2026_3Q': 68, '2026_4Q': 69
         },
         "건설 (공표자료)": {
             'region_col': 1, 'level_col': 2, 'name_col': 4, 'header_row': 2,
             '2023_1Q': 58, '2023_2Q': 59, '2023_3Q': 60, '2023_4Q': 61,
             '2024_1Q': 62, '2024_2Q': 63, '2024_3Q': 64, '2024_4Q': 65,
-            '2025_1Q': 66, '2025_2Q': 67
+            '2025_1Q': 66, '2025_2Q': 67, '2025_3Q': 68, '2025_4Q': 69,
+            '2026_1Q': 70, '2026_2Q': 71, '2026_3Q': 72, '2026_4Q': 73
         },
         "수출": {
             'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2, 'total_code': '계',
             '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
             '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
-            '2025_1Q': 67, '2025_2Q': 68
+            '2025_1Q': 67, '2025_2Q': 68, '2025_3Q': 69, '2025_4Q': 70,
+            '2026_1Q': 71, '2026_2Q': 72, '2026_3Q': 73, '2026_4Q': 74
         },
         "수입": {
             'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2, 'total_code': '계',
             '2023_1Q': 59, '2023_2Q': 60, '2023_3Q': 61, '2023_4Q': 62,
             '2024_1Q': 63, '2024_2Q': 64, '2024_3Q': 65, '2024_4Q': 66,
-            '2025_1Q': 67, '2025_2Q': 68
+            '2025_1Q': 67, '2025_2Q': 68, '2025_3Q': 69, '2025_4Q': 70,
+            '2026_1Q': 71, '2026_2Q': 72, '2026_3Q': 73, '2026_4Q': 74
         },
         "품목성질별 물가": {
             'region_col': 0, 'level_col': 1, 'name_col': 3, 'header_row': 2, 'total_code': '총지수',
             '2023_1Q': 47, '2023_2Q': 48, '2023_3Q': 49, '2023_4Q': 50,
             '2024_1Q': 51, '2024_2Q': 52, '2024_3Q': 53, '2024_4Q': 54,
-            '2025_1Q': 55, '2025_2Q': 56
+            '2025_1Q': 55, '2025_2Q': 56, '2025_3Q': 57, '2025_4Q': 58,
+            '2026_1Q': 59, '2026_2Q': 60, '2026_3Q': 61, '2026_4Q': 62
         },
         "고용률": {
             'region_col': 1, 'level_col': 2, 'name_col': 3, 'header_row': 2, 'total_code': '계',
             '2023_1Q': 57, '2023_2Q': 58, '2023_3Q': 59, '2023_4Q': 60,
             '2024_1Q': 61, '2024_2Q': 62, '2024_3Q': 63, '2024_4Q': 64,
-            '2025_1Q': 65, '2025_2Q': 66
+            '2025_1Q': 65, '2025_2Q': 66, '2025_3Q': 67, '2025_4Q': 68,
+            '2026_1Q': 69, '2026_2Q': 70, '2026_3Q': 71, '2026_4Q': 72
         },
         "실업자 수": {
             'region_col': 0, 'level_col': 1, 'name_col': 1, 'header_row': 2, 'total_code': '계',
             '2023_1Q': 52, '2023_2Q': 53, '2023_3Q': 54, '2023_4Q': 55,
             '2024_1Q': 56, '2024_2Q': 57, '2024_3Q': 58, '2024_4Q': 59,
-            '2025_1Q': 60, '2025_2Q': 61
+            '2025_1Q': 60, '2025_2Q': 61, '2025_3Q': 62, '2025_4Q': 63,
+            '2026_1Q': 64, '2026_2Q': 65, '2026_3Q': 66, '2026_4Q': 67
         },
         "시도 간 이동": {
             'region_col': 1, 'level_col': 2, 'name_col': 1, 'header_row': 2,
             '2023_1Q': 71, '2023_2Q': 72, '2023_3Q': 73, '2023_4Q': 74,
             '2024_1Q': 75, '2024_2Q': 76, '2024_3Q': 77, '2024_4Q': 78,
-            '2025_1Q': 79, '2025_2Q': 80
+            '2025_1Q': 79, '2025_2Q': 80, '2025_3Q': 81, '2025_4Q': 82,
+            '2026_1Q': 83, '2026_2Q': 84, '2026_3Q': 85, '2026_4Q': 86
         },
     }
     
@@ -1113,6 +1123,80 @@ class RawDataExtractor:
         
         return report_data
     
+    def _extract_raw_indices_for_table(self, sheet_name: str, config: Dict) -> Dict[str, List[float]]:
+        """요약 테이블용 원지수 데이터 추출 (전년동분기, 현재분기)
+        
+        Args:
+            sheet_name: 시트 이름
+            config: RAW_SHEET_QUARTER_COLS에서 가져온 설정
+            
+        Returns:
+            {
+                '전국': [전년동분기 원지수, 현재분기 원지수],
+                '서울': [전년동분기 원지수, 현재분기 원지수],
+                ...
+            }
+        """
+        result = {}
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return result
+        
+        # 전년동분기와 현재분기 컬럼 키
+        prev_year_quarter_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        curr_quarter_key = f"{self.current_year}_{self.current_quarter}Q"
+        
+        prev_col_idx = config.get(prev_year_quarter_key)
+        curr_col_idx = config.get(curr_quarter_key)
+        
+        if prev_col_idx is None or curr_col_idx is None:
+            # 설정에 없으면 parse_sheet_structure로 시도
+            structure = self.parse_sheet_structure(sheet_name)
+            prev_key = f"{self.current_year - 1} {self.current_quarter}/4"
+            curr_key = f"{self.current_year} {self.current_quarter}/4"
+            prev_col_idx = prev_col_idx or structure['quarters'].get(prev_key)
+            curr_col_idx = curr_col_idx or structure['quarters'].get(curr_key)
+        
+        if prev_col_idx is None or curr_col_idx is None:
+            # 컬럼을 찾을 수 없으면 빈 결과 반환
+            return result
+        
+        # 지역 컬럼과 분류 컬럼 인덱스
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        
+        # 각 지역의 원지수 추출 (분류단계 0 = 총지수)
+        for row_idx in range(len(df)):
+            try:
+                region = str(df.iloc[row_idx, region_col]).strip()
+                if region not in self.ALL_REGIONS:
+                    continue
+                
+                # 이미 해당 지역 데이터가 있으면 스킵 (첫 번째 행만 사용)
+                if region in result:
+                    continue
+                
+                # 분류단계 확인 (0 = 총지수)
+                level_val = df.iloc[row_idx, level_col]
+                if pd.notna(level_val):
+                    level_str = str(level_val).strip()
+                    if level_str not in ['0', '0.0', '총지수', '계']:
+                        continue
+                
+                # 원지수 값 추출
+                prev_value = df.iloc[row_idx, prev_col_idx]
+                curr_value = df.iloc[row_idx, curr_col_idx]
+                
+                prev_index = round(float(prev_value), 1) if pd.notna(prev_value) else None
+                curr_index = round(float(curr_value), 1) if pd.notna(curr_value) else None
+                
+                result[region] = [prev_index, curr_index]
+            except (IndexError, ValueError, TypeError):
+                continue
+        
+        return result
+    
     def _generate_production_summary_table(self, sheet_name: str, config: Dict, 
                                           quarterly_growth: Dict, yearly_growth: Dict) -> Dict[str, Any]:
         """광공업생산/서비스업생산 요약 테이블 데이터 생성"""
@@ -1160,10 +1244,11 @@ class RawDataExtractor:
                 rate = quarter_data.get(region, None)
                 region_data[region]['growth_rates'].append(rate)
         
-        # 지수 데이터는 기준값 100.0 사용 (실제 지수 데이터는 별도 계산 필요)
+        # 원지수 데이터 추출: 전년동분기, 현재분기
+        raw_indices = self._extract_raw_indices_for_table(sheet_name, config)
         for region in self.ALL_REGIONS:
             if region in region_data:
-                region_data[region]['indices'] = [100.0, 100.0]
+                region_data[region]['indices'] = raw_indices.get(region, [None, None])
         
         # 테이블 행 생성
         rows = []
@@ -1184,7 +1269,7 @@ class RawDataExtractor:
         }
         
         # 전국 행
-        national = region_data.get('전국', {'growth_rates': [None]*4, 'indices': [100.0, 100.0]})
+        national = region_data.get('전국', {'growth_rates': [None]*4, 'indices': [None, None]})
         rows.append({
             'region': '전 국',
             'group': None,
@@ -1196,7 +1281,7 @@ class RawDataExtractor:
         for group_name in ['수도권', '동남권', '대경권', '호남권', '충청권', '강원제주']:
             sidos = REGION_GROUPS[group_name]
             for idx, sido in enumerate(sidos):
-                sido_data = region_data.get(sido, {'growth_rates': [None]*4, 'indices': [100.0, 100.0]})
+                sido_data = region_data.get(sido, {'growth_rates': [None]*4, 'indices': [None, None]})
                 
                 row_data = {
                     'region': region_display.get(sido, sido),
@@ -1217,8 +1302,8 @@ class RawDataExtractor:
             'columns': {
                 'growth_rate_columns': [label for _, _, label in table_q_pairs],
                 'index_columns': [
-                    f"{self.current_year}.{self.current_quarter - 1 if self.current_quarter > 1 else 4}/4",
-                    f"{self.current_year}.{self.current_quarter}/4"
+                    f"{self.current_year - 1}.{self.current_quarter}/4",  # 전년동분기
+                    f"{self.current_year}.{self.current_quarter}/4p"  # 현재분기(잠정)
                 ],
             },
             'regions': rows,
@@ -1301,8 +1386,6 @@ class RawDataExtractor:
             if region == '전국':
                 continue
             rate = current_data.get(region, None)
-            if rate is None:
-                rate = 0.0
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
@@ -1310,9 +1393,9 @@ class RawDataExtractor:
                 'businesses': [],  # 가중치 필요
             })
         
-        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+        increase_regions = sorted([r for r in regional_list if r.get('growth_rate') is not None and r['growth_rate'] > 0], 
                                   key=lambda x: x['growth_rate'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r.get('growth_rate') is not None and r['growth_rate'] < 0], 
                                   key=lambda x: x['growth_rate'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -1575,8 +1658,6 @@ class RawDataExtractor:
             if region == '전국':
                 continue
             rate = current_data.get(region, None)
-            if rate is None:
-                rate = 0.0
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
@@ -1584,9 +1665,9 @@ class RawDataExtractor:
                 'categories': [],  # 가중치 필요
             })
         
-        increase_regions = sorted([r for r in regional_list if r['growth_rate'] > 0], 
+        increase_regions = sorted([r for r in regional_list if r.get('growth_rate') is not None and r['growth_rate'] > 0], 
                                   key=lambda x: x['growth_rate'], reverse=True)
-        decrease_regions = sorted([r for r in regional_list if r['growth_rate'] < 0], 
+        decrease_regions = sorted([r for r in regional_list if r.get('growth_rate') is not None and r['growth_rate'] < 0], 
                                   key=lambda x: x['growth_rate'])
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -1684,6 +1765,70 @@ class RawDataExtractor:
         
         return report_data
     
+    def _extract_raw_amounts_for_table(self, sheet_name: str, config: Dict) -> Dict[str, List[float]]:
+        """수출/수입 요약 테이블용 금액 데이터 추출 (전년동분기, 현재분기)
+        
+        Args:
+            sheet_name: 시트 이름 (수출 또는 수입)
+            config: RAW_SHEET_QUARTER_COLS에서 가져온 설정
+            
+        Returns:
+            {
+                '전국': [전년동분기 금액(억달러), 현재분기 금액(억달러)],
+                '서울': [...],
+                ...
+            }
+        """
+        result = {}
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return result
+        
+        # 전년동분기와 현재분기 컬럼 키
+        prev_year_quarter_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        curr_quarter_key = f"{self.current_year}_{self.current_quarter}Q"
+        
+        prev_col_idx = config.get(prev_year_quarter_key)
+        curr_col_idx = config.get(curr_quarter_key)
+        
+        if prev_col_idx is None or curr_col_idx is None:
+            return result
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        
+        # 각 지역의 금액 추출 (분류단계 = 0, 합계 행)
+        for row_idx in range(len(df)):
+            try:
+                region = str(df.iloc[row_idx, region_col]).strip()
+                if region not in self.ALL_REGIONS:
+                    continue
+                
+                # 이미 해당 지역 데이터가 있으면 스킵
+                if region in result:
+                    continue
+                
+                # 분류단계 확인 (0 = 합계)
+                level_val = df.iloc[row_idx, level_col]
+                if pd.notna(level_val):
+                    level_str = str(level_val).strip()
+                    if level_str not in ['0', '0.0']:
+                        continue
+                
+                # 금액 추출 (백만달러 → 억달러 변환: /100)
+                prev_value = df.iloc[row_idx, prev_col_idx]
+                curr_value = df.iloc[row_idx, curr_col_idx]
+                
+                prev_amount = round(float(prev_value) / 100, 0) if pd.notna(prev_value) else None
+                curr_amount = round(float(curr_value) / 100, 0) if pd.notna(curr_value) else None
+                
+                result[region] = [prev_amount, curr_amount]
+            except (IndexError, ValueError, TypeError):
+                continue
+        
+        return result
+    
     def _generate_export_import_summary_table(self, sheet_name: str, quarterly_growth: Dict) -> Dict[str, Any]:
         """수출/수입 요약 테이블 데이터 생성"""
         # 테이블용 분기 컬럼들: 4개 분기의 전년동기비 증감률
@@ -1730,10 +1875,12 @@ class RawDataExtractor:
                 rate = quarter_data.get(region, None)
                 region_data[region]['changes'].append(rate)
         
-        # 수입액은 별도 계산 필요 (현재는 None)
+        # 수출/수입 금액 추출 (전년동분기, 현재분기)
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        raw_amounts = self._extract_raw_amounts_for_table(sheet_name, config)
         for region in self.ALL_REGIONS:
             if region in region_data:
-                region_data[region]['amounts'] = [None, None]
+                region_data[region]['amounts'] = raw_amounts.get(region, [None, None])
         
         # 테이블 행 생성
         rows = []
@@ -2222,6 +2369,71 @@ class RawDataExtractor:
         
         return report_data
     
+    def _extract_price_indices_for_table(self, sheet_name: str, config: Dict) -> Dict[str, List[float]]:
+        """물가동향 요약 테이블용 물가지수 추출 (전년동분기, 현재분기)
+        
+        Args:
+            sheet_name: 시트 이름
+            config: RAW_SHEET_QUARTER_COLS에서 가져온 설정
+            
+        Returns:
+            {
+                '전국': [전년동분기 지수, 현재분기 지수],
+                '서울': [...],
+                ...
+            }
+        """
+        result = {}
+        
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return result
+        
+        # 전년동분기와 현재분기 컬럼 키
+        prev_year_quarter_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        curr_quarter_key = f"{self.current_year}_{self.current_quarter}Q"
+        
+        prev_col_idx = config.get(prev_year_quarter_key)
+        curr_col_idx = config.get(curr_quarter_key)
+        
+        if prev_col_idx is None or curr_col_idx is None:
+            return result
+        
+        region_col = config.get('region_col', 0)
+        level_col = config.get('level_col', 1)
+        total_code = config.get('total_code', '총지수')
+        
+        # 각 지역의 물가지수 추출 (분류단계 = 0, 총지수 행)
+        for row_idx in range(len(df)):
+            try:
+                region = str(df.iloc[row_idx, region_col]).strip()
+                if region not in self.ALL_REGIONS:
+                    continue
+                
+                # 이미 해당 지역 데이터가 있으면 스킵
+                if region in result:
+                    continue
+                
+                # 분류단계 확인 (0 = 총지수)
+                level_val = df.iloc[row_idx, level_col]
+                if pd.notna(level_val):
+                    # 숫자 0 또는 문자열 '0' 모두 처리
+                    if level_val != 0 and str(level_val).strip() not in ['0', '0.0']:
+                        continue
+                
+                # 지수 추출
+                prev_value = df.iloc[row_idx, prev_col_idx]
+                curr_value = df.iloc[row_idx, curr_col_idx]
+                
+                prev_index = round(float(prev_value), 1) if pd.notna(prev_value) else None
+                curr_index = round(float(curr_value), 1) if pd.notna(curr_value) else None
+                
+                result[region] = [prev_index, curr_index]
+            except (IndexError, ValueError, TypeError):
+                continue
+        
+        return result
+    
     def _generate_price_summary_table(self, quarterly_growth: Dict) -> Dict[str, Any]:
         """물가동향 요약 테이블 데이터 생성"""
         # 테이블용 분기 컬럼들
@@ -2242,10 +2454,13 @@ class RawDataExtractor:
                 rate = quarter_data.get(region, None)
                 region_data[region]['changes'].append(rate)
         
-        # 지수 데이터는 원본에서 추출 (기준년도=2020)
+        # 물가지수 추출 (전년동분기, 현재분기)
+        sheet_name = '품목성질별 물가'
+        config = self.RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        raw_indices = self._extract_price_indices_for_table(sheet_name, config)
         for region in self.ALL_REGIONS:
             if region in region_data:
-                region_data[region]['indices'] = [None, None]  # 원지수는 별도 추출 필요
+                region_data[region]['indices'] = raw_indices.get(region, [None, None])
         
         # 테이블 행 생성
         rows = []
@@ -3074,17 +3289,20 @@ class RawDataExtractor:
         if row_data is None:
             return []
         
-        # 분기별 데이터 추출
+        # 분기별 데이터 추출 (동적 확장 지원)
         quarters = ["'23.1/4", "'23.2/4", "'23.3/4", "'23.4/4", 
                     "'24.1/4", "'24.2/4", "'24.3/4", "'24.4/4",
-                    "'25.1/4", "'25.2/4"]
+                    "'25.1/4", "'25.2/4", "'25.3/4", "'25.4/4",
+                    "'26.1/4", "'26.2/4", "'26.3/4", "'26.4/4"]
         quarter_keys = ['2023_1Q', '2023_2Q', '2023_3Q', '2023_4Q',
                         '2024_1Q', '2024_2Q', '2024_3Q', '2024_4Q',
-                        '2025_1Q', '2025_2Q']
+                        '2025_1Q', '2025_2Q', '2025_3Q', '2025_4Q',
+                        '2026_1Q', '2026_2Q', '2026_3Q', '2026_4Q']
         prev_year_map = {
             '2023_1Q': '2022_1Q', '2023_2Q': '2022_2Q', '2023_3Q': '2022_3Q', '2023_4Q': '2022_4Q',
             '2024_1Q': '2023_1Q', '2024_2Q': '2023_2Q', '2024_3Q': '2023_3Q', '2024_4Q': '2023_4Q',
-            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q',
+            '2025_1Q': '2024_1Q', '2025_2Q': '2024_2Q', '2025_3Q': '2024_3Q', '2025_4Q': '2024_4Q',
+            '2026_1Q': '2025_1Q', '2026_2Q': '2025_2Q', '2026_3Q': '2025_3Q', '2026_4Q': '2025_4Q',
         }
         
         result = []
