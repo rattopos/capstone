@@ -10,6 +10,8 @@ import pandas as pd
 from pathlib import Path
 from jinja2 import Template
 
+import re
+
 from config.settings import TEMPLATES_DIR, BASE_DIR, UPLOAD_FOLDER
 from utils.filters import is_missing, format_value
 from utils.excel_utils import load_generator_module
@@ -18,6 +20,31 @@ from .grdp_service import (
     get_kosis_grdp_download_info,
     parse_kosis_grdp_file
 )
+
+
+def _remove_page_numbers(html_content: str) -> str:
+    """HTML에서 페이지 번호 제거
+    
+    모든 .page-number 클래스를 가진 div 요소를 제거합니다.
+    
+    Args:
+        html_content: 원본 HTML 문자열
+        
+    Returns:
+        페이지 번호가 제거된 HTML 문자열
+    """
+    if not html_content:
+        return html_content
+    
+    # .page-number div 제거 (단일 라인 및 멀티라인 모두 처리)
+    html_content = re.sub(
+        r'<div\s+class=["\']page-number["\'][^>]*>.*?</div>',
+        '',
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+    
+    return html_content
 
 
 def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
@@ -330,7 +357,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         html_content = template.render(**data)
         
         print(f"[DEBUG] 스키마 기반 보도자료 생성 완료: {report_id}")
-        return html_content, None, []
+        return _remove_page_numbers(html_content), None, []
         
     except Exception as e:
         import traceback
@@ -393,7 +420,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     
                     html_content = template.render(**raw_data)
                     missing_fields = check_missing_data(raw_data, report_id)
-                    return html_content, None, missing_fields
+                    return _remove_page_numbers(html_content), None, missing_fields
             else:
                 error_msg = f"수집표에서 데이터를 추출할 수 없습니다: {report_id}"
                 print(f"[ERROR] {error_msg}")
@@ -407,94 +434,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         error_msg = f"수집표(기초자료)가 제공되지 않았습니다. 분석표 기반 처리는 지원하지 않습니다."
         print(f"[ERROR] {error_msg}")
         return None, error_msg, []
-        
-        # Top3 regions 후처리
-        if data and 'regional_data' in data:
-            if 'top3_increase_regions' not in data:
-                top3_increase = []
-                for r in data['regional_data'].get('increase_regions', [])[:3]:
-                    rate_value = r.get('change', r.get('growth_rate', 0))
-                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                    top3_increase.append({
-                        'region': r.get('region', ''),
-                        'change': rate_value,
-                        'growth_rate': rate_value,
-                        'age_groups': items,
-                        'industries': items
-                    })
-                data['top3_increase_regions'] = top3_increase
-            else:
-                for r in data['top3_increase_regions']:
-                    if 'growth_rate' not in r:
-                        r['growth_rate'] = r.get('change', 0)
-                    if 'change' not in r:
-                        r['change'] = r.get('growth_rate', 0)
-                    if 'industries' not in r:
-                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
-                    if 'age_groups' not in r:
-                        r['age_groups'] = r.get('industries', [])
-            
-            if 'top3_decrease_regions' not in data:
-                top3_decrease = []
-                for r in data['regional_data'].get('decrease_regions', [])[:3]:
-                    rate_value = r.get('change', r.get('growth_rate', 0))
-                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                    top3_decrease.append({
-                        'region': r.get('region', ''),
-                        'change': rate_value,
-                        'growth_rate': rate_value,
-                        'age_groups': items,
-                        'industries': items
-                    })
-                data['top3_decrease_regions'] = top3_decrease
-            else:
-                for r in data['top3_decrease_regions']:
-                    if 'growth_rate' not in r:
-                        r['growth_rate'] = r.get('change', 0)
-                    if 'change' not in r:
-                        r['change'] = r.get('growth_rate', 0)
-                    if 'industries' not in r:
-                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
-                    if 'age_groups' not in r:
-                        r['age_groups'] = r.get('industries', [])
-            
-            print(f"[DEBUG] Top3 regions 후처리 완료")
-        
-        # 커스텀 데이터 병합
-        if custom_data:
-            for key, value in custom_data.items():
-                keys = key.split('.')
-                obj = data
-                for k in keys[:-1]:
-                    if '[' in k:
-                        name, idx = k.replace(']', '').split('[')
-                        obj = obj[name][int(idx)]
-                    else:
-                        if k not in obj:
-                            obj[k] = {}
-                        obj = obj[k]
-                final_key = keys[-1]
-                if '[' in final_key:
-                    name, idx = final_key.replace(']', '').split('[')
-                    obj[name][int(idx)] = value
-                else:
-                    obj[final_key] = value
-        
-        # 결측치 확인
-        missing = check_missing_data(data, report_id)
-        
-        # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / template_name
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template = Template(f.read())
-        
-        template.environment.filters['format_value'] = format_value
-        template.environment.filters['is_missing'] = is_missing
-        
-        html_content = template.render(**data)
-        
-        print(f"[DEBUG] 보도자료 생성 성공!")
-        return html_content, None, missing
         
     except Exception as e:
         import traceback
@@ -556,7 +495,7 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
                         
                         html_content = template.render(**regional_data)
                         print(f"[시도별] 기초자료 직접 추출 성공: {region_name}")
-                        return html_content, None
+                        return _remove_page_numbers(html_content), None
             except Exception as e:
                 import traceback
                 error_msg = f"[시도별] 수집표에서 데이터 추출 실패: {e}"
@@ -726,7 +665,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         else:
             html_content = _generate_default_grdp_html(grdp_data)
         
-        return html_content, None
+        return _remove_page_numbers(html_content), None
         
     except Exception as e:
         import traceback
@@ -924,7 +863,7 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
         
         html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
         
-        return html_content, None
+        return _remove_page_numbers(html_content), None
         
     except Exception as e:
         import traceback
@@ -1094,7 +1033,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
             template = Template(f.read())
         
         html_content = template.render(**template_data)
-        return html_content, None
+        return _remove_page_numbers(html_content), None
         
     except Exception as e:
         import traceback

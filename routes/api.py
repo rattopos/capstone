@@ -15,6 +15,23 @@ import unicodedata
 import uuid
 
 from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER, EXPORT_FOLDER
+from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
+from utils.excel_utils import extract_year_quarter_from_excel, extract_year_quarter_from_raw, detect_file_type
+from services.report_generator import (
+    generate_report_html,
+    generate_regional_report_html,
+    generate_statistics_report_html,
+    generate_individual_statistics_html
+)
+from services.grdp_service import (
+    get_kosis_grdp_download_info, 
+    parse_kosis_grdp_file,
+    get_default_grdp_data,
+    save_extracted_contributions
+)
+from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
+from data_converter import DataConverter
+import openpyxl
 
 
 def safe_filename(filename):
@@ -75,23 +92,7 @@ def send_file_with_korean_filename(filepath, filename, mimetype):
     )
     
     return response
-from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
-from utils.excel_utils import extract_year_quarter_from_excel, extract_year_quarter_from_raw, detect_file_type
-from services.report_generator import (
-    generate_report_html,
-    generate_regional_report_html,
-    generate_statistics_report_html,
-    generate_individual_statistics_html
-)
-from services.grdp_service import (
-    get_kosis_grdp_download_info, 
-    parse_kosis_grdp_file,
-    get_default_grdp_data,
-    save_extracted_contributions
-)
-from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
-from data_converter import DataConverter
-import openpyxl
+
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -1518,6 +1519,11 @@ def cleanup_uploads():
 def validate_weights_in_raw_data(filepath: str) -> dict:
     """기초자료 수집표에서 가중치 누락 여부 검증
     
+    개선된 버전: 시트 내 다중 테이블 구조 지원
+    - 빈 행으로 구분된 여러 테이블을 개별적으로 인식
+    - 헤더에 "가중치" 열이 있는 테이블만 검증
+    - "보조 지표" 등 가중치가 원래 없는 테이블은 제외
+    
     Returns:
         {
             'has_missing_weights': bool,
@@ -1537,77 +1543,180 @@ def validate_weights_in_raw_data(filepath: str) -> dict:
         'affected_reports': []
     }
     
+    def find_tables_in_sheet(df):
+        """시트 내 테이블들의 범위와 헤더 정보를 찾음"""
+        tables = []
+        current_table = None
+        
+        for i in range(len(df)):
+            row = df.iloc[i]
+            
+            # 빈 행 확인
+            is_empty_row = all(pd.isna(row.iloc[j]) for j in range(min(6, len(row))))
+            
+            if is_empty_row:
+                # 현재 테이블 종료
+                if current_table is not None:
+                    current_table['end_row'] = i - 1
+                    tables.append(current_table)
+                    current_table = None
+                continue
+            
+            # 헤더 행 감지 (지역코드/지역이름 패턴)
+            first_cell = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ''
+            
+            # 헤더 패턴 감지: "지역" 포함, "코드" 포함
+            is_header = False
+            if '지역' in first_cell and ('코드' in first_cell or '이름' in first_cell):
+                is_header = True
+            elif first_cell in ['지역코드', '지역\n코드']:
+                is_header = True
+            
+            if is_header:
+                # 이전 테이블 종료
+                if current_table is not None:
+                    current_table['end_row'] = i - 1
+                    tables.append(current_table)
+                
+                # 헤더에서 가중치 열 위치 찾기
+                weight_col = None
+                has_weight_header = False
+                for j in range(min(10, len(row))):
+                    cell_val = str(row.iloc[j]).strip() if pd.notna(row.iloc[j]) else ''
+                    if '가중치' in cell_val:
+                        weight_col = j
+                        has_weight_header = True
+                        break
+                
+                # 보조 지표 테이블 확인 (가중치 열 없음)
+                is_auxiliary = False
+                for j in range(min(10, len(row))):
+                    cell_val = str(row.iloc[j]).strip() if pd.notna(row.iloc[j]) else ''
+                    if '보조' in cell_val and '지표' in cell_val:
+                        is_auxiliary = True
+                        break
+                
+                # 새 테이블 시작
+                current_table = {
+                    'header_row': i,
+                    'start_row': i + 1,
+                    'end_row': len(df) - 1,  # 기본값
+                    'weight_col': weight_col if has_weight_header else None,
+                    'has_weight_header': has_weight_header,
+                    'is_auxiliary': is_auxiliary
+                }
+        
+        # 마지막 테이블 추가
+        if current_table is not None:
+            tables.append(current_table)
+        
+        return tables
+    
+    def get_column_indices_from_header(df, header_row):
+        """헤더 행에서 열 인덱스 동적으로 찾기"""
+        header = df.iloc[header_row]
+        indices = {
+            'region_col': None,
+            'level_col': None,
+            'weight_col': None,
+            'code_col': None,
+            'name_col': None
+        }
+        
+        for j in range(min(15, len(header))):
+            cell = str(header.iloc[j]).strip() if pd.notna(header.iloc[j]) else ''
+            cell_lower = cell.replace('\n', '').replace(' ', '').lower()
+            
+            if '지역이름' in cell_lower or cell_lower == '지역\n이름' or '지역명' in cell:
+                indices['region_col'] = j
+            elif '분류단계' in cell_lower or '분류\n단계' in cell:
+                indices['level_col'] = j
+            elif '가중치' in cell_lower:
+                indices['weight_col'] = j
+            elif '산업코드' in cell_lower or '산업\n코드' in cell:
+                indices['code_col'] = j
+            elif '산업이름' in cell_lower or '산업 이름' in cell or ('산업' in cell and '이름' in cell):
+                indices['name_col'] = j
+        
+        return indices
+    
     try:
         xl = pd.ExcelFile(filepath)
         
-        # 가중치가 필요한 시트 및 열 위치 (0-based)
-        weight_sheets = {
-            '광공업생산': {
-                'weight_col': 3,  # D열 (가중치)
-                'region_col': 1,  # B열 (지역명)
-                'level_col': 2,   # C열 (분류단계)
-                'name_col': 5,    # F열 (산업이름)
-                'header_row': 2,  # 헤더 행
-                'affected_report': '광공업생산'
-            },
-            '서비스업생산': {
-                'weight_col': 3,  # D열 (가중치)
-                'region_col': 1,  # B열 (지역명)
-                'level_col': 2,   # C열 (분류단계)
-                'name_col': 5,    # F열 (산업이름)
-                'header_row': 2,  # 헤더 행
-                'affected_report': '서비스업생산'
-            }
+        # 가중치 검증이 필요한 시트 목록
+        weight_check_sheets = {
+            '광공업생산': '광공업생산',
+            '서비스업생산': '서비스업생산'
         }
         
-        for sheet_name, config in weight_sheets.items():
+        for sheet_name, affected_report in weight_check_sheets.items():
             if sheet_name not in xl.sheet_names:
                 continue
             
             df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
             
-            # 헤더 행 이후부터 데이터 확인
+            # 시트 내 테이블들 찾기
+            tables = find_tables_in_sheet(df)
+            
+            print(f"[가중치 검증] {sheet_name}: {len(tables)}개 테이블 발견")
+            for idx, table in enumerate(tables):
+                print(f"  테이블 {idx+1}: 행 {table['header_row']+1}-{table['end_row']+1}, 가중치열={table['weight_col']}, 보조={table['is_auxiliary']}")
+            
             missing_industries = []
             total_industries = 0
             
-            for i in range(config['header_row'] + 1, len(df)):
-                row = df.iloc[i]
-                
-                # 지역이 있는 행만 확인 (빈 행 제외)
-                region = str(row.iloc[config['region_col']]).strip() if pd.notna(row.iloc[config['region_col']]) else ''
-                if not region or region in ['nan', 'NaN', '']:
+            for table in tables:
+                # 보조 지표 테이블이거나 가중치 열이 없으면 건너뛰기
+                if table['is_auxiliary'] or not table['has_weight_header']:
+                    print(f"  → 테이블 건너뜀 (보조지표={table['is_auxiliary']}, 가중치헤더없음={not table['has_weight_header']})")
                     continue
                 
-                # 분류단계 확인 (산업 행인지)
-                level = row.iloc[config['level_col']] if config['level_col'] < len(row) else None
+                # 헤더에서 열 인덱스 동적으로 가져오기
+                col_indices = get_column_indices_from_header(df, table['header_row'])
                 
-                # 산업 이름이 있는 행
-                industry_name = str(row.iloc[config['name_col']]).strip() if config['name_col'] < len(row) and pd.notna(row.iloc[config['name_col']]) else ''
-                if not industry_name or industry_name in ['nan', 'NaN', '']:
-                    continue
+                weight_col = col_indices['weight_col'] or table['weight_col'] or 3
+                region_col = col_indices['region_col'] or 1
+                name_col = col_indices['name_col'] or 5
+                level_col = col_indices['level_col'] or 2
                 
-                total_industries += 1
-                
-                # 가중치 확인
-                weight = row.iloc[config['weight_col']] if config['weight_col'] < len(row) else None
-                if pd.isna(weight) or weight == '' or weight == 0:
-                    # 전국 데이터의 0이 아닌 경우만 누락으로 처리
-                    if region == '전국' and pd.isna(weight):
-                        missing_industries.append({
-                            'row': i + 1,  # 엑셀 행 번호 (1-based)
-                            'region': region,
-                            'industry': industry_name,
-                            'level': str(level) if pd.notna(level) else ''
-                        })
+                # 테이블 데이터 범위에서 검증
+                for i in range(table['start_row'], table['end_row'] + 1):
+                    row = df.iloc[i]
+                    
+                    # 지역 확인
+                    region = str(row.iloc[region_col]).strip() if region_col < len(row) and pd.notna(row.iloc[region_col]) else ''
+                    if not region or region in ['nan', 'NaN', '']:
+                        continue
+                    
+                    # 산업 이름 확인
+                    industry_name = str(row.iloc[name_col]).strip() if name_col < len(row) and pd.notna(row.iloc[name_col]) else ''
+                    if not industry_name or industry_name in ['nan', 'NaN', '']:
+                        continue
+                    
+                    # 분류단계
+                    level = row.iloc[level_col] if level_col < len(row) else None
+                    
+                    total_industries += 1
+                    
+                    # 가중치 확인 (전국 데이터만)
+                    if region == '전국':
+                        weight = row.iloc[weight_col] if weight_col < len(row) else None
+                        if pd.isna(weight):
+                            missing_industries.append({
+                                'row': i + 1,
+                                'region': region,
+                                'industry': industry_name,
+                                'level': str(level) if pd.notna(level) else ''
+                            })
             
             if missing_industries:
                 result['missing_details'].append({
                     'sheet': sheet_name,
                     'missing_count': len(missing_industries),
                     'total_count': total_industries,
-                    'missing_industries': missing_industries[:10]  # 최대 10개만 반환
+                    'missing_industries': missing_industries[:10]
                 })
-                result['affected_reports'].append(config['affected_report'])
+                result['affected_reports'].append(affected_report)
                 result['total_missing'] += len(missing_industries)
         
         result['has_missing_weights'] = result['total_missing'] > 0
@@ -1748,17 +1857,83 @@ def _apply_hwp_inline_styles(html_content):
     
     한글(HWP)의 HTML 불러오기 기능은 CSS 클래스를 무시하고
     인라인 스타일만 인식하므로, 모든 스타일을 인라인으로 변환합니다.
+    
+    주요 개선사항:
+    - 모든 CSS 클래스를 인라인 스타일로 변환
+    - 한글에서 지원하는 기본 글꼴 사용 (맑은 고딕)
+    - 테두리, 배경색, 여백 등 명확하게 지정
     """
+    
+    # CSS 클래스를 인라인 스타일로 변환하는 매핑
+    class_to_style = {
+        'bold': 'font-weight: bold;',
+        'title': 'text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 25px; border-bottom: 2px solid #1976D2; padding-bottom: 8px;',
+        'blue': 'color: #1976D2;',
+        'section-box': 'border: 1px solid #000000; padding: 12px 15px; margin-bottom: 15px;',
+        'item': 'margin-bottom: 8px; padding-left: 20px; text-indent: -20px; line-height: 1.7;',
+        'sub-item': 'margin-left: 20px; padding-left: 20px; text-indent: -20px; line-height: 1.7;',
+        'gray-bg': 'background-color: #e8e8e8;',
+        'light-gray': 'background-color: #f5f5f5;',
+        'table-title': 'text-align: center; font-weight: bold; margin: 20px 0 10px 0;',
+        'right-note': 'text-align: right; font-size: 9pt; margin-bottom: 3px;',
+        'page-num': 'text-align: center; margin-top: 20px;',
+        'center': 'text-align: center;',
+        'right': 'text-align: right;',
+        'no-border': 'border: none;',
+        'increase': 'font-weight: bold; color: #c00000;',
+        'decrease': 'font-weight: bold; color: #0000c0;',
+        'highlight': 'font-weight: bold;',
+        'placeholder': 'background-color: #fff3cd; border: 1px dashed #ffc107; padding: 2px 6px;',
+        'section-title': 'font-weight: bold; font-size: 11pt; margin: 12px 0 8px 0;',
+        'region-title': 'font-weight: bold; font-size: 13pt; margin-bottom: 12px;',
+        'main-header': 'font-weight: bold; font-size: 14pt; text-align: center; padding: 6px 40px; background-color: #e0e0e0; margin-bottom: 18px;',
+        'summary-table': 'border-collapse: collapse; width: 100%; font-size: 8pt;',
+        'period-col': 'font-weight: bold; background-color: #f0f0f0;',
+    }
+    
+    # CSS 클래스를 인라인 스타일로 변환
+    def convert_class_to_inline(match):
+        tag_name = match.group(1)
+        attrs = match.group(2) if match.group(2) else ''
+        
+        # class 속성 추출
+        class_match = re.search(r'class="([^"]*)"', attrs)
+        if not class_match:
+            return match.group(0)
+        
+        classes = class_match.group(1).split()
+        styles = []
+        
+        for cls in classes:
+            if cls in class_to_style:
+                styles.append(class_to_style[cls])
+        
+        # 기존 style 속성 추출
+        style_match = re.search(r'style="([^"]*)"', attrs)
+        if style_match:
+            styles.append(style_match.group(1))
+        
+        # class와 기존 style 제거
+        attrs = re.sub(r'class="[^"]*"', '', attrs)
+        attrs = re.sub(r'style="[^"]*"', '', attrs)
+        
+        if styles:
+            style_str = ' '.join(styles)
+            return f'<{tag_name}{attrs} style="{style_str}">'
+        return f'<{tag_name}{attrs}>'
+    
+    # 모든 태그의 class를 인라인으로 변환
+    html_content = re.sub(r'<(\w+)([^>]*)>', convert_class_to_inline, html_content)
     
     # 기존 style 속성 제거 후 새로운 인라인 스타일 적용
     
     # table 태그 처리
     def replace_table(match):
         attrs = match.group(1) if match.group(1) else ''
-        # 기존 style 제거
-        attrs = re.sub(r'style="[^"]*"', '', attrs)
-        attrs = re.sub(r"style='[^']*'", '', attrs)
-        return f'<table{attrs} style="border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9pt; border: 2px solid #000000;">'
+        # 기존 style이 있으면 유지하면서 추가
+        if 'style=' not in attrs:
+            return f'<table{attrs} style="border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9pt; border: 2px solid #000000;">'
+        return match.group(0)
     
     html_content = re.sub(r'<table([^>]*)>', replace_table, html_content)
     

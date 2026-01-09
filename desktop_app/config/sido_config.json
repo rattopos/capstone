@@ -1,0 +1,119 @@
+{
+  "version": "1.0",
+  "description": "17개 시도 설정",
+  "sido_list": [
+    {
+      "code": "11",
+      "name": "서울",
+      "full_name": "서울특별시",
+      "order": 1
+    },
+    {
+      "code": "21",
+      "name": "부산",
+      "full_name": "부산광역시",
+      "order": 2
+    },
+    {
+      "code": "22",
+      "name": "대구",
+      "full_name": "대구광역시",
+      "order": 3
+    },
+    {
+      "code": "23",
+      "name": "인천",
+      "full_name": "인천광역시",
+      "order": 4
+    },
+    {
+      "code": "24",
+      "name": "광주",
+      "full_name": "광주광역시",
+      "order": 5
+    },
+    {
+      "code": "25",
+      "name": "대전",
+      "full_name": "대전광역시",
+      "order": 6
+    },
+    {
+      "code": "26",
+      "name": "울산",
+      "full_name": "울산광역시",
+      "order": 7
+    },
+    {
+      "code": "29",
+      "name": "세종",
+      "full_name": "세종특별자치시",
+      "order": 8
+    },
+    {
+      "code": "31",
+      "name": "경기",
+      "full_name": "경기도",
+      "order": 9
+    },
+    {
+      "code": "32",
+      "name": "강원",
+      "full_name": "강원특별자치도",
+      "order": 10
+    },
+    {
+      "code": "33",
+      "name": "충북",
+      "full_name": "충청북도",
+      "order": 11
+    },
+    {
+      "code": "34",
+      "name": "충남",
+      "full_name": "충청남도",
+      "order": 12
+    },
+    {
+      "code": "35",
+      "name": "전북",
+      "full_name": "전북특별자치도",
+      "order": 13
+    },
+    {
+      "code": "36",
+      "name": "전남",
+      "full_name": "전라남도",
+      "order": 14
+    },
+    {
+      "code": "37",
+      "name": "경북",
+      "full_name": "경상북도",
+      "order": 15
+    },
+    {
+      "code": "38",
+      "name": "경남",
+      "full_name": "경상남도",
+      "order": 16
+    },
+    {
+      "code": "39",
+      "name": "제주",
+      "full_name": "제주특별자치도",
+      "order": 17
+    }
+  ],
+  "indicators": [
+    {"id": "manufacturing", "name": "광공업생산", "unit": "%"},
+    {"id": "service", "name": "서비스업생산", "unit": "%"},
+    {"id": "retail", "name": "소매판매", "unit": "%"},
+    {"id": "construction", "name": "건설수주", "unit": "%"},
+    {"id": "export", "name": "수출", "unit": "%"},
+    {"id": "import", "name": "수입", "unit": "%"},
+    {"id": "price", "name": "소비자물가", "unit": "%"},
+    {"id": "employment", "name": "고용률", "unit": "%p"},
+    {"id": "migration", "name": "인구순이동", "unit": "천명"}
+  ]
+}

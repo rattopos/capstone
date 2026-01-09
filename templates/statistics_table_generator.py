@@ -24,12 +24,15 @@ except ImportError:
 class StatisticsTableGenerator:
     """통계표 생성 클래스
     
-    데이터 로딩 전략:
-    1. 과거 데이터 (statistics_historical_data.json)에서 먼저 로드
-    2. JSON에 없는 데이터 (현재/최신 분기)는 기초자료 또는 분석표에서 동적 추출
-    3. 새로 추출한 데이터는 옵션에 따라 JSON에 저장 가능
+    데이터 로딩 전략 (개선됨):
+    1. 기초자료 엑셀에서 모든 데이터 동적 추출 (우선순위 1)
+    2. 기초자료에서 추출 실패 시 과거 데이터 JSON에서 로드 (fallback)
+    3. JSON에도 없으면 분석표 집계 시트에서 추출 (legacy fallback)
     
-    과거 데이터 JSON 구조:
+    모든 연도/분기 데이터는 엑셀 헤더를 동적으로 파싱하여 추출합니다.
+    따라서 새로운 분기가 추가되더라도 코드 수정 없이 자동으로 지원됩니다.
+    
+    과거 데이터 JSON 구조 (fallback용):
     {
         "_metadata": {
             "quarterly_range": {"start": "2016.1/4", "end": "2025.1/4"},
@@ -43,7 +46,7 @@ class StatisticsTableGenerator:
     }
     """
     
-    # 과거 데이터 JSON 파일 경로
+    # 과거 데이터 JSON 파일 경로 (fallback용)
     HISTORICAL_DATA_FILE = "statistics_historical_data.json"
     
     # 통계표 항목 정의 (집계 시트 기준, 전년동기비 계산 필요)
@@ -141,12 +144,16 @@ class StatisticsTableGenerator:
     }
     
     # 기초자료 시트 매핑
+    # 통계표 이름 → 기초자료 시트 이름 매핑
+    # 엑셀 시트 목록: 광공업생산, 서비스업생산, 소비(소매, 추가), 고용, 고용(kosis),
+    #               연령별고용률, 실업자 수, 지출목적별 물가, 품목성질별 물가,
+    #               건설 (공표자료), 수출, 수입, 연령별 인구이동, 시도 간 이동 등
     RAW_SHEET_MAPPING = {
         "광공업생산지수": "광공업생산",
         "서비스업생산지수": "서비스업생산",
         "소매판매액지수": "소비(소매, 추가)",
         "건설수주액": "건설 (공표자료)",
-        "고용률": "고용률",
+        "고용률": "연령별고용률",  # 고용률 → 연령별고용률 시트 사용
         "실업률": "실업자 수",
         "수출액": "수출",
         "수입액": "수입",
@@ -154,19 +161,21 @@ class StatisticsTableGenerator:
         "소비자물가지수": "품목성질별 물가"
     }
     
-    # 기초자료 시트별 컬럼 매핑 (분석표와 다른 구조 대응)
+    # 기초자료 시트별 컬럼 매핑 (동적 헤더 파싱 보완용)
     # 각 시트에서 지역이름과 분류단계의 컬럼 인덱스
+    # 분류값: 분류단계 컬럼에서 필터링할 값 (총지수/합계를 나타내는 값)
     RAW_COLUMN_MAPPING = {
         "광공업생산": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
         "서비스업생산": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
         "소비(소매, 추가)": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
         "건설 (공표자료)": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
-        "고용률": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "difference"},  # %p 단위
-        "실업자 수": {"지역_컬럼": 0, "분류단계_컬럼": 1, "분류값": "계", "계산방식": "growth_rate"},
-        "수출": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
-        "수입": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},
-        "시도 간 이동": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "순인구이동 수", "계산방식": "growth_rate"},
-        "품목성질별 물가": {"지역_컬럼": 0, "분류단계_컬럼": 1, "분류값": "0", "계산방식": "growth_rate"},
+        "고용": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "difference"},  # %p 단위, 분류단계 0 = 계
+        "연령별고용률": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "difference"},  # %p 단위, 분류단계 0 = 계
+        "실업자 수": {"지역_컬럼": 0, "분류단계_컬럼": None, "분류값": None, "계산방식": "difference"},  # 지역만으로 필터, %p 단위
+        "수출": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},  # 분류단계 0 = 합계
+        "수입": {"지역_컬럼": 1, "분류단계_컬럼": 2, "분류값": "0", "계산방식": "growth_rate"},  # 분류단계 0 = 합계
+        "시도 간 이동": {"지역_컬럼": 1, "분류단계_컬럼": None, "분류값": None, "계산방식": "absolute"},  # 순이동 수 (절대값)
+        "품목성질별 물가": {"지역_컬럼": 0, "분류단계_컬럼": 1, "분류값": "0", "계산방식": "growth_rate"},  # 분류단계 0 = 총지수
     }
     
     # 지역 목록 (페이지별)
@@ -567,10 +576,10 @@ class StatisticsTableGenerator:
     def extract_table_data(self, table_name: str) -> Dict[str, Any]:
         """특정 통계표의 데이터 추출 (하이브리드: JSON + 동적 추출)
         
-        데이터 로딩 전략:
-        1. 과거 데이터 JSON에서 먼저 로드 (확정된 데이터)
-        2. JSON에 없는 분기만 기초자료/분석표에서 동적 추출
-        3. auto_update_json이 True면 새 데이터를 JSON에 저장
+        데이터 로딩 전략 (개선됨):
+        1. 기초자료 엑셀에서 모든 데이터 동적 추출 (우선순위 1)
+        2. 기초자료에서 추출 실패 시 과거 데이터 JSON에서 로드 (fallback)
+        3. JSON에도 없으면 분석표 집계 시트에서 추출 (legacy fallback)
         """
         config = self.TABLE_CONFIG.get(table_name)
         if not config:
@@ -579,9 +588,48 @@ class StatisticsTableGenerator:
         # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
         data = self._create_empty_table_data()
         
-        # 1. 과거 데이터 JSON에서 로드 (우선순위 1)
-        json_loaded = False
-        if table_name in self.historical_data:
+        extracted_from_raw = False
+        
+        # 1. 기초자료 엑셀에서 모든 데이터 동적 추출 (우선순위 1)
+        if self.raw_extractor:
+            raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
+            if raw_sheet_name:
+                try:
+                    print(f"[통계표] 기초자료에서 전체 데이터 추출: {table_name} (시트: {raw_sheet_name})")
+                    raw_data = self._extract_from_raw_data(raw_sheet_name, config)
+                    if raw_data:
+                        # 연도별 데이터 적용
+                        for year, regions in raw_data.get('yearly', {}).items():
+                            if year in data['yearly']:
+                                for region, value in regions.items():
+                                    if value is not None:
+                                        data['yearly'][year][region] = value
+                        
+                        # 분기별 데이터 적용
+                        for quarter, regions in raw_data.get('quarterly', {}).items():
+                            # 분기 키 정규화 (p 처리)
+                            quarter_key = quarter
+                            if quarter not in data['quarterly']:
+                                quarter_clean = quarter.rstrip('p')
+                                if quarter_clean in data['quarterly']:
+                                    quarter_key = quarter_clean
+                                else:
+                                    continue
+                            
+                            for region, value in regions.items():
+                                if value is not None:
+                                    data['quarterly'][quarter_key][region] = value
+                        
+                        extracted_from_raw = True
+                        print(f"[통계표] 기초자료에서 데이터 추출 완료: {table_name}")
+                except Exception as e:
+                    print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # 2. 기초자료에서 추출 실패 시 과거 데이터 JSON에서 로드 (fallback)
+        if not extracted_from_raw and table_name in self.historical_data:
+            print(f"[통계표] JSON에서 과거 데이터 로드 (fallback): {table_name}")
             historical = self.historical_data[table_name]
             
             # 연도별 데이터 로드
@@ -597,65 +645,11 @@ class StatisticsTableGenerator:
                     for region, value in regions.items():
                         if value is not None:
                             data['quarterly'][quarter][region] = value
-            
-            json_loaded = True
-            print(f"[통계표] JSON에서 과거 데이터 로드: {table_name}")
         
-        # 2. JSON에 없는 분기 확인
-        missing_quarters = self._get_missing_quarters()
-        
-        if missing_quarters:
-            print(f"[통계표] JSON에 없는 분기 동적 추출 필요: {missing_quarters}")
-            
-            # 기초자료에서 최신 데이터 추출
-            if self.raw_extractor:
-                raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
-                if raw_sheet_name:
-                    try:
-                        print(f"[통계표] 기초자료에서 데이터 추출: {table_name}")
-                        raw_data = self._extract_from_raw_data(raw_sheet_name, config)
-                        if raw_data:
-                            # JSON에 없는 분기만 업데이트
-                            for quarter in missing_quarters:
-                                quarter_clean = quarter.rstrip('p')
-                                # raw_data에서 해당 분기 찾기
-                                quarter_data = raw_data.get('quarterly', {}).get(quarter) or \
-                                              raw_data.get('quarterly', {}).get(quarter_clean)
-                                
-                                if quarter_data and quarter in data['quarterly']:
-                                    for region, value in quarter_data.items():
-                                        if value is not None:
-                                            data['quarterly'][quarter][region] = value
-                                    print(f"[통계표] 분기 데이터 추가: {quarter}")
-                                    
-                                    # 새로 추출한 데이터 저장 (JSON 업데이트용)
-                                    if table_name not in self.newly_extracted_data:
-                                        self.newly_extracted_data[table_name] = {'yearly': {}, 'quarterly': {}}
-                                    self.newly_extracted_data[table_name]['quarterly'][quarter] = quarter_data
-                            
-                            # 연도 데이터도 필요시 업데이트
-                            for year, regions in raw_data.get('yearly', {}).items():
-                                if year not in self.historical_data.get(table_name, {}).get('yearly', {}):
-                                    if year in data['yearly']:
-                                        for region, value in regions.items():
-                                            if value is not None:
-                                                data['yearly'][year][region] = value
-                                        
-                                        # 새로 추출한 데이터 저장
-                                        if table_name not in self.newly_extracted_data:
-                                            self.newly_extracted_data[table_name] = {'yearly': {}, 'quarterly': {}}
-                                        self.newly_extracted_data[table_name]['yearly'][year] = regions
-                    except Exception as e:
-                        print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
-            
-            # 기초자료 없으면 분석표 집계 시트에서 추출
-            if not self.raw_extractor:
-                self._extract_from_aggregate_sheet(table_name, config, data)
-        
-        # JSON 데이터가 없고 동적 추출도 실패한 경우 -> 전체 동적 추출 시도
-        if not json_loaded and not missing_quarters:
-            print(f"[통계표] JSON 없음, 전체 동적 추출: {table_name}")
-            self._extract_all_dynamic(table_name, config, data)
+        # 3. JSON에도 없으면 분석표 집계 시트에서 추출 (legacy fallback)
+        if not extracted_from_raw and table_name not in self.historical_data:
+            print(f"[통계표] 분석표 집계 시트에서 추출 (legacy fallback): {table_name}")
+            self._extract_from_aggregate_sheet(table_name, config, data)
         
         # 모든 지역이 "-"인 분기 제거 (해당 통계에서 데이터를 제공하지 않는 분기)
         quarters_to_remove = []

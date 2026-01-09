@@ -26,7 +26,295 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-09
+
+#### 동적 연도/분기 처리 및 통계표 엑셀 직접 추출 구현
+- **시간**: 2026-01-09 10:30
+- **문제 설명**:
+  - 하드코딩된 연도/분기 컬럼 인덱스로 인해 새로운 분기 추가 시 코드 수정 필요
+  - 통계표 데이터가 로컬 JSON 파일(statistics_historical_data.json)을 먼저 참조하는 비효율적 로직
+  - 기초자료 수집표 엑셀에 모든 통계표 데이터가 있음에도 불필요한 fallback 사용
+- **원인 분석**:
+  1. `RAW_SHEET_QUARTER_COLS`에 2023~2026년 분기 컬럼 인덱스가 하드코딩됨
+  2. `StatisticsTableGenerator`가 JSON에서 과거 데이터를 먼저 로드하고, 엑셀은 최신 분기만 추출
+  3. 분류값(classification_value) 설정 오류로 일부 시트에서 데이터 추출 실패
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 "다른 연도 분기에 대해서도 정상 동작하도록 동적으로 구성" 및 "통계표도 엑셀에서 직접 추출" 요청
+  - 분석:
+    1. 엑셀 시트 목록 확인: 광공업생산, 서비스업생산, 연령별고용률, 실업자 수 등 모든 통계표 원본 데이터 포함
+    2. `parse_sheet_structure()` 함수가 이미 동적 헤더 파싱 지원
+    3. 하드코딩된 `RAW_SHEET_QUARTER_COLS`를 `RAW_SHEET_CONFIG`로 교체 가능
+  - 해결 방향:
+    1. 분기 컬럼 인덱스 하드코딩 제거 → 동적 파싱 사용
+    2. 통계표 추출 우선순위 변경: 엑셀 우선 → JSON fallback
+    3. 분류값 설정 수정 (고용률, 수출/수입 등)
+  - 각 수정이 기존 기능에 미치는 영향 분석 후 진행
+- **해결 방법**:
+  1. `RAW_SHEET_QUARTER_COLS`를 `RAW_SHEET_CONFIG`로 변경
+     - 하드코딩된 분기 컬럼 인덱스 제거
+     - 기본 설정만 유지 (region_col, level_col, header_row, total_code)
+  2. `RAW_SHEET_QUARTER_COLS` property로 레거시 호환성 유지
+  3. `_get_time_series_data()` 함수 수정
+     - 하드코딩된 분기 목록 제거
+     - `parse_sheet_structure()`로 동적 컬럼 파싱
+  4. `StatisticsTableGenerator.extract_table_data()` 로직 변경
+     - 기초자료 엑셀에서 모든 데이터 동적 추출 (우선순위 1)
+     - JSON은 fallback으로만 사용
+  5. `RAW_COLUMN_MAPPING` 수정
+     - 고용률: "계" → "0" (분류단계 기준)
+     - 수출/수입: "계" → "0" (분류단계 0 = 합계)
+     - 품목성질별 물가: "총지수" → "0" (분류단계 0 = 총지수)
+     - 실업률: 분류컬럼 None으로 설정 (지역만으로 필터링)
+  6. `RAW_SHEET_MAPPING` 수정
+     - 고용률: "고용률" → "연령별고용률" (실제 시트명)
+- **관련 파일**:
+  - `templates/raw_data_extractor.py`
+  - `templates/statistics_table_generator.py`
+  - `docs/DEBUG_LOG.md`
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 모든 10개 통계표 정상 추출 확인
+  - 2023~2025년 다양한 분기에서 테스트 완료
+  - 새로운 분기 추가 시 코드 수정 불필요
+
+---
+
+#### 스키마-템플릿 전면 재검토 및 불일치 수정
+- **시간**: 2026-01-09 12:00
+- **문제 설명**: 
+  - 스키마(regional_schema.json)와 데이터 추출 함수 간의 불일치
+  - 템플릿 렌더링 시 누락된 필드로 인한 오류 발생 가능성
+- **원인 분석**: 
+  - `report_info.region_name` → 스키마는 `region_full_name` 요구
+  - `report_info.region_code`, `page_number` 누락
+  - `chart_data` → 스키마는 `charts` 요구
+  - `increase_industries`, `decrease_industries` 등 빈 리스트
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자의 스키마-템플릿 재검토 요청
+  - 분석 방법: regional_schema.json과 extract_regional_data 함수 비교
+  - 발견한 불일치:
+    1. report_info 필드명 및 누락
+    2. charts vs chart_data 네이밍
+    3. 상위/하위 산업 데이터 미추출
+  - 해결 방향: 스키마에 맞게 코드 수정, 레거시 호환성 유지
+- **해결 방법**: 
+  1. `report_info`에 `region_full_name`, `region_code`, `page_number` 추가
+  2. `charts` 필드 추가 (chart_data 레거시 호환 유지)
+  3. `extract_regional_top_industries` 결과를 각 섹션에 통합
+  4. 광공업/서비스업: `increase_industries`, `decrease_industries`
+  5. 소매/건설: `increase_categories`, `decrease_categories`
+  6. 수출/수입/물가: `increase_items`, `decrease_items`
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py`
+  - `templates/regional_schema.json`
+  - `templates/regional_template.html`
+  - `docs/DEBUG_LOG.md`
+- **상태**: 완료
+- **참고 사항**: 
+  - 모든 필수 필드가 스키마에 맞게 반환됨 확인
+  - 레거시 호환성을 위해 `region_name`, `chart_data` 유지
+
+---
+
+#### 시도별 보도자료 데이터 추출 오류 수정 - 동적 헤더 파싱
+- **시간**: 2026-01-09 11:00
+- **문제 설명**: 
+  - 시도별 보도자료 생성 시 `bad operand type for abs(): 'NoneType'` 에러 발생
+  - 기초자료 수집표에서 데이터를 제대로 추출하지 못함
+- **원인 분석**: 
+  1. `_extract_regional_indicator` 함수가 하드코딩된 컬럼 인덱스만 사용
+  2. 엑셀 구조가 변경되면 컬럼 인덱스가 달라져 데이터 추출 실패
+  3. `None` 값이 템플릿의 `| abs` 필터로 전달되어 에러 발생
+  4. "고용률" 시트가 없고 "연령별고용률" 시트 사용해야 함
+- **에이전트 사고 과정**:
+  - 문제 인식: 터미널 에러 로그에서 `abs(): 'NoneType'` 확인
+  - 초기 분석: 템플릿 렌더링 중 `None` 값에 `| abs` 필터 적용 시 에러
+  - 근본 원인: `_extract_regional_indicator`가 데이터를 찾지 못해 `None` 반환
+  - 해결 방향:
+    1. 동적 헤더 파싱으로 분기 컬럼 자동 탐지
+    2. `_to_template_format`에서 `None`을 0.0으로 안전 변환
+    3. "연령별고용률" 시트 설정 추가
+- **해결 방법**: 
+  1. `_extract_regional_indicator` 함수에 동적 헤더 파싱 추가 (`get_quarter_column_index` 활용)
+  2. 하드코딩 설정 실패 시 동적 파싱으로 폴백
+  3. `_to_template_format`에서 `None` → 0.0 변환 및 `is_missing` 플래그 유지
+  4. `RAW_SHEET_QUARTER_COLS`에 "연령별고용률" 시트 설정 추가
+  5. `extract_regional_data`에서 "연령별고용률" 시트 우선 사용
+- **관련 파일**: 
+  - `templates/raw_data_extractor.py`
+  - `docs/DEBUG_LOG.md`
+- **상태**: 완료
+- **참고 사항**: 
+  - 동적 헤더 파싱으로 엑셀 구조 변경에도 유연하게 대응
+  - 모든 지표 데이터가 정상 추출됨 확인 (서울 테스트)
+
+---
+
+#### 가중치 결측 오탐지 수정 - 다중 테이블 구조 지원
+- **시간**: 2026-01-09 10:00
+- **문제 설명**: 
+  - 엑셀 파일에 결측치가 없음에도 "가중치 정보 누락 감지" 경고가 표시됨
+  - 광공업생산 시트에서 "전국 - 출하지수"가 누락으로 잘못 감지됨
+- **원인 분석**: 
+  - 광공업생산 시트에는 실제로 3개의 테이블이 포함되어 있음:
+    1. Row 0-540: 광공업생산지수(원지수) - 가중치 있음
+    2. Row 541-692: 계절조정지수 등 - 가중치 있음
+    3. Row 696-714: **보조 지표 (출하지수)** - 원래 가중치 없음
+  - 기존 `validate_weights_in_raw_data` 함수가 시트 전체를 단일 테이블로 처리
+  - 보조 지표 테이블의 빈 가중치 열을 결측으로 오인
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자 스크린샷에서 "광공업생산 - 전국 출하지수" 누락 표시 확인
+  - 초기 분석: 엑셀 파일을 직접 파싱하여 시트 구조 분석
+  - 발견 사항:
+    - 시트 내 빈 행으로 구분된 여러 테이블 존재
+    - Row 696에 새로운 헤더 "보조 지표" 발견 (가중치 열 없음)
+    - 출하지수는 원래 가중치가 없는 보조 지표 데이터
+  - 고려한 해결책:
+    1. 특정 키워드(출하지수) 하드코딩으로 제외 → 유연성 부족
+    2. 다중 테이블 구조 인식 및 동적 파싱 → 채택
+  - 선택한 접근 방법: 시트 내 테이블을 개별적으로 인식하고, 헤더에 "가중치" 열이 있는 테이블만 검증
+- **해결 방법**: 
+  1. `find_tables_in_sheet()` 내부 함수 추가: 빈 행으로 구분된 테이블들의 범위 식별
+  2. `get_column_indices_from_header()` 내부 함수 추가: 헤더에서 열 인덱스 동적 파싱
+  3. 보조 지표 테이블(가중치 헤더 없음) 자동 제외
+  4. 각 테이블별로 독립적 검증 수행
+- **관련 파일**: 
+  - `routes/api.py` (validate_weights_in_raw_data 함수 전면 개선)
+  - `docs/DEBUG_LOG.md`
+- **상태**: 완료
+- **참고 사항**: 
+  - 향후 엑셀 시트 구조가 변경되어도 헤더를 동적으로 파싱하므로 유연하게 대응 가능
+  - 보조 지표 외에도 가중치 열이 없는 테이블은 자동으로 검증에서 제외됨
+
+---
+
 ### 2026-01-08
+
+#### 프로젝트 전체 코드 검토 및 문제점 수정 (2차)
+- **시간**: 2026-01-08 19:00
+- **문제 설명**: 
+  - 프로젝트 전체 파일을 처음부터 끝까지 읽어보면서 문제점을 찾아달라는 요청
+  - 이전 검토에서 발견하지 못한 추가 문제점 발견
+- **원인 분석**: 
+  1. **`updateUploadStep` 진행률 계산 오류**: step4가 제거되었지만 여전히 4로 나눔 (라인 2609)
+  2. **`switchTab` null 참조 오류**: elements.tabSummary 등이 null인데 classList.toggle 호출 (라인 2043-2055)
+  3. **`exportFinalDocument` 로딩 UI 요소 ID 불일치**: loadingProgress, loadingPercent, loadingCurrent라는 ID를 찾지만 실제 ID는 loadingProgressFill, loadingProgressPercent, loadingCurrentText
+  4. **`buildReportList` 함수 미정의**: 함수가 호출되지만 정의되지 않음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 원인 불명의 문제에 빠져있다고 호소
+  - 접근 방법: 프로젝트의 모든 핵심 파일을 체계적으로 읽으면서 문제점 수집
+  - 발견한 문제점들:
+    1. `updateUploadStep`에서 progress를 4로 나누고 있음 → 3으로 변경 필요
+    2. `switchTab`에서 null 참조 → 안전한 체크 추가
+    3. `exportFinalDocument`에서 ID 불일치 → 올바른 ID로 수정
+    4. `buildReportList` 함수 누락 → 함수 정의 추가
+  - 각 수정이 다른 코드에 미치는 영향 분석 후 진행
+- **해결 방법**: 
+  1. `updateUploadStep`: `const progress = (stepNum / 4) * 100;` → `const progress = (stepNum / 3) * 100;`
+  2. `switchTab`: null 체크 추가하여 안전하게 동작하도록 수정
+  3. `exportFinalDocument`: loadingProgress → loadingProgressFill, loadingPercent → loadingProgressPercent, loadingCurrent → loadingCurrentText로 수정, 모든 참조에 null 체크 추가
+  4. `buildReportList` 함수 정의 추가: loadReportList와 동일한 로직이지만 매개변수로 데이터를 받음
+- **관련 파일**: 
+  - `dashboard.html`
+  - `docs/DEBUG_LOG.md`
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 진행률 계산이 100%까지 정상적으로 표시됨
+  - switchTab 함수는 레거시로 유지 (탭 요소가 제거되어 기능 무효화)
+  - 로딩 UI가 정상적으로 동작함
+  - buildReportList 함수가 정의되어 파일 업로드 후 보도자료 목록이 정상 표시됨
+
+---
+
+#### 프로젝트 전체 코드 검토 및 문제점 수정
+- **시간**: 2026-01-08 18:00
+- **문제 설명**: 
+  - 프로젝트 전체 파일을 처음부터 끝까지 읽어보면서 문제점을 찾아달라는 요청
+  - 정말 원인 불명의 문제에 빠져서 도저히 빠져나올 수 없다는 상황
+- **원인 분석**: 
+  - **도달할 수 없는 코드 (Unreachable Code)**: `services/report_generator.py`의 411-497번 라인에 return 문 이후에 실행될 수 없는 코드가 존재
+  - **Import 순서 문제**: `routes/api.py`의 78번 라인에 import 문이 함수 정의 중간에 위치하여 코드 가독성 저해
+  - **함수 정의 순서**: `validate_weights_in_raw_data` 함수가 1518번 라인에 정의되어 있으나 298번 라인에서 호출됨 (Python에서는 문제 없지만 가독성 저해)
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 프로젝트 전체를 검토해달라고 요청
+  - 초기 분석:
+    1. 주요 파일들을 체계적으로 읽기 시작
+    2. `app.py`, `routes/api.py`, `services/report_generator.py` 등 핵심 파일 확인
+    3. 코드 구조와 로직 흐름 파악
+  - 발견한 문제점들:
+    1. **도달할 수 없는 코드**: `services/report_generator.py`의 `generate_report_html` 함수에서 409번 라인에 `return None, error_msg, []` 후에 411-497번 라인까지 실행될 수 없는 코드 존재
+    2. **Import 순서**: `routes/api.py`에서 78번 라인에 import 문이 함수 정의 중간에 위치
+    3. **함수 정의 순서**: `validate_weights_in_raw_data` 함수가 호출되는 위치보다 훨씬 뒤에 정의됨
+  - 고려한 해결책:
+    1. 도달할 수 없는 코드 제거: 411-497번 라인 삭제
+    2. Import 순서 정리: 모든 import 문을 파일 상단으로 이동
+    3. 함수 정의 순서: Python에서는 문제 없지만 주석 추가로 가독성 향상
+  - 선택한 접근 방법: 
+    1. 도달할 수 없는 코드는 즉시 제거 (버그 가능성)
+    2. Import 순서는 PEP 8 스타일 가이드에 따라 상단으로 이동
+    3. 함수 정의 순서는 Python 특성상 문제 없으므로 주석으로 명시
+  - 시도한 방법들과 결과:
+    - `services/report_generator.py`의 도달할 수 없는 코드 제거: 성공
+    - `routes/api.py`의 import 순서 정리: 성공
+    - Linter 검사: 오류 없음 확인
+  - 최종 결정의 근거: 코드 품질 향상과 유지보수성 개선을 위해 발견된 문제점들을 모두 수정
+- **해결 방법**: 
+  1. `services/report_generator.py`의 411-497번 라인 도달할 수 없는 코드 제거
+  2. `routes/api.py`의 import 문을 파일 상단으로 이동 (78번 라인 → 18번 라인 이후)
+  3. 코드 가독성 향상을 위한 구조 정리
+- **관련 파일**: 
+  - `services/report_generator.py` (도달할 수 없는 코드 제거)
+  - `routes/api.py` (import 순서 정리)
+  - `docs/DEBUG_LOG.md` (로그 업데이트)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 도달할 수 없는 코드는 실제로 실행되지 않으므로 기능에는 영향 없지만, 코드 품질과 유지보수성에 문제가 됨
+  - Import 순서는 PEP 8 스타일 가이드에 따라 표준 라이브러리 → 서드파티 → 로컬 import 순서로 정리
+  - Python에서는 함수 정의 순서가 중요하지 않지만, 가독성을 위해 호출되는 위치와 가까운 곳에 정의하는 것이 좋음
+
+---
+
+### 2026-01-08
+
+#### 업로드 화면 GRDP 추출 단계 멈춤 문제 해결 및 GRDP 단계 제거
+- **시간**: 2026-01-08 17:30
+- **문제 설명**: 
+  - 파일 업로드 완료 후 "GRDP 데이터 추출" 단계에서 화면이 멈추고 넘어가지 않음
+  - 사용자 요청: GRDP 추출 단계를 제거하고, GRDP 데이터가 없으면 별도로 입력받도록 변경
+- **원인 분석**: 
+  - 업로드 모달의 4번째 단계(uploadStep4)가 "GRDP 데이터 추출"로 되어 있음
+  - 기초자료 업로드 시 GRDP 추출 관련 상태 업데이트가 비동기적으로 처리되면서 완료 상태가 제대로 설정되지 않음
+  - 진행 바가 100%로 넘어가지 않고 멈춰 있음
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 스크린샷과 함께 "GRDP 추출" 단계에서 멈춘다고 제보
+  - 코드 분석:
+    1. `dashboard.html`에서 uploadStep4가 "GRDP 데이터 추출" 단계로 정의됨
+    2. uploadFile 함수에서 data.has_grdp 값에 따라 step4 상태가 결정됨
+    3. 스텝 초기화 로직에서 4개 스텝을 관리함
+  - 해결책 결정:
+    1. GRDP 추출 단계(uploadStep4) HTML 완전 제거
+    2. uploadFile 함수에서 GRDP 관련 step4 로직 제거
+    3. 업로드 단계를 3개로 축소: 파일 업로드, 파일 유형 분석, 데이터 처리
+    4. GRDP 데이터 입력은 기존 GRDP 모달(showGrdpModal)을 통해 별도로 처리
+  - 구현 결과:
+    - 업로드 모달이 3단계로 간소화됨
+    - GRDP 관련 UI가 정리되어 깔끔해짐
+    - GRDP 데이터가 필요하면 기존 모달을 통해 별도로 입력 가능
+- **해결 방법**: 
+  1. `dashboard.html`의 uploadStep4 HTML 요소 제거
+  2. uploadFile 함수에서 step4 관련 로직 제거
+  3. 스텝 초기화 배열에서 'uploadStep4' 제거
+  4. GRDP 정보 표시 영역(grdpInfo, grdpMissing) 간소화
+  5. 분석표 업로드 시 step4 참조 제거
+- **관련 파일**: 
+  - `dashboard.html` (5곳 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 업로드 단계: 파일 업로드 → 파일 유형 분석 → 데이터 처리 (3단계)
+  - GRDP 데이터는 별도의 모달(showGrdpModal)을 통해 입력 가능
+  - 참고_GRDP 보도자료는 GRDP 데이터가 없으면 N/A로 표시됨
+
+---
 
 #### 세부공종/품목 데이터 N/A 표시 추가
 - **시간**: 2026-01-08 16:00
@@ -2393,14 +2681,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 32
-- 완료: 32
+- 총 항목: 34
+- 완료: 34
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-07 (시도별 보도자료의 summary_table 행 데이터가 표시되지 않는 문제 해결)
+- 마지막 업데이트: 2026-01-08 (프로젝트 전체 코드 검토 및 문제점 수정 - 2차)
 
 ---
 

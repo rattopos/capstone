@@ -18,7 +18,8 @@ from services.report_generator import (
     generate_report_html,
     generate_regional_report_html,
     generate_statistics_report_html,
-    generate_individual_statistics_html
+    generate_individual_statistics_html,
+    _remove_page_numbers
 )
 from services.summary_data import (
     get_summary_overview_data,
@@ -215,6 +216,8 @@ def generate_summary_preview():
                 template = Template(f.read())
             
             html_content = template.render(**report_data)
+            # 페이지 번호 제거
+            html_content = _remove_page_numbers(html_content)
             print(f"[PREVIEW] {report_id} 템플릿 렌더링 완료: {template_name}")
             
             return jsonify({
