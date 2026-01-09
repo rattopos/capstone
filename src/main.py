@@ -18,7 +18,7 @@ from .template_generator import TemplateGenerator
 def main():
     """메인 함수 - CLI 인터페이스"""
     parser = argparse.ArgumentParser(
-        description='통계청 보도자료 자동 생성 시스템',
+        description='지역경제동향 보도자료 자동생성',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 사용 예시:
@@ -60,44 +60,24 @@ def main():
     )
     
     parser.add_argument(
-        '--year',
-        type=int,
-        default=None,
-        help='분석할 연도 (예: 2025)'
-    )
-    
-    parser.add_argument(
-        '--quarter',
-        type=int,
-        default=None,
-        help='분석할 분기 (1-4)'
-    )
-    
-    parser.add_argument(
-        '--all-sheets',
-        action='store_true',
-        default=True,
-        help='모든 시트 처리 (기본값: True)'
-    )
-    
-    parser.add_argument(
-        '--sheet',
+        '--sheet', '-s',
         type=str,
         default=None,
-        help='특정 시트만 처리 (--all-sheets와 상호 배타적)'
+        help='시트 이름 (지정하지 않으면 마커에서 추출)'
     )
     
     parser.add_argument(
-        '--generate-template',
-        action='store_true',
-        help='템플릿 생성 모드 (스크린샷에서 템플릿 생성)'
-    )
-    
-    parser.add_argument(
-        '--screenshot',
-        type=str,
+        '--year', '-y',
+        type=int,
         default=None,
-        help='템플릿 생성에 사용할 스크린샷 이미지 경로'
+        help='연도 (지정하지 않으면 자동 감지)'
+    )
+    
+    parser.add_argument(
+        '--quarter', '-q',
+        type=int,
+        default=None,
+        help='분기 (1-4, 지정하지 않으면 자동 감지)'
     )
     
     args = parser.parse_args()
@@ -194,16 +174,25 @@ def main():
         if args.verbose:
             print(f"사용 가능한 시트: {', '.join(all_sheet_names)}")
         
-        # 처리할 시트 결정
-        if args.sheet:
-            if args.sheet not in all_sheet_names:
-                print(f"에러: 시트 '{args.sheet}'를 찾을 수 없습니다.", file=sys.stderr)
-                print(f"사용 가능한 시트: {', '.join(all_sheet_names)}", file=sys.stderr)
-                sys.exit(1)
-            sheets_to_process = [args.sheet]
-        else:
-            # 모든 시트 처리
-            sheets_to_process = all_sheet_names
+        # 템플릿 필러 초기화 및 처리
+        if args.verbose:
+            print("템플릿 채우는 중...")
+        template_filler = TemplateFiller(template_manager, excel_extractor)
+        
+        # 시트명, 연도, 분기 파라미터 추가 (CLI에서)
+        sheet_name = getattr(args, 'sheet', None)
+        year = getattr(args, 'year', None)
+        quarter = getattr(args, 'quarter', None)
+        
+        filled_template = template_filler.fill_template(
+            sheet_name=sheet_name,
+            year=year,
+            quarter=quarter
+        )
+        
+        if args.verbose and template_filler._current_year:
+            print(f"사용된 연도: {template_filler._current_year}")
+            print(f"사용된 분기: {template_filler._current_quarter}")
         
         # 각 시트별로 처리
         if len(sheets_to_process) == 1:

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025년 2/4분기 지역경제동향</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background-color: #fff;
+            padding: 30px 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+        
+        /* 표지/제목 영역 */
+        .cover-page {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 0;
+        }
+        
+        .cover-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+        
+        .cover-subtitle {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .cover-info {
+            font-size: 12px;
+            margin-top: 30px;
+            color: #666;
+        }
+        
+        /* 섹션 제목 */
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 40px 0 20px 0;
+            color: #000;
+            line-height: 1.4;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        
+        .subsection-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 30px 0 15px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .subsubsection-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        /* 본문 텍스트 */
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.7;
+            color: #000;
+        }
+        
+        .content-text strong {
+            font-weight: bold;
+        }
+        
+        /* 불릿 포인트 */
+        ul {
+            margin: 12px 0;
+            padding-left: 0;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+        
+        .bullet-diamond {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-diamond li::before {
+            content: "◆";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-square {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-square li::before {
+            content: "■";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        .bullet-circle {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-circle li::before {
+            content: "●";
+            margin-right: 6px;
+            color: #000;
+        }
+        
+        /* 하이라이트 박스 */
+        .highlight-box {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #000;
+        }
+        
+        .region-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .region-name {
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .category-list {
+            margin-left: 0;
+            margin-top: 3px;
+        }
+        
+        .category-item {
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+        
+        .percentage {
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .percentage.positive {
+            color: #000;
+        }
+        
+        .percentage.negative {
+            color: #000;
+        }
+        
+        /* 테이블 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 12px;
+            border: 1px solid #000;
+        }
+        
+        table caption {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+            color: #000;
+            caption-side: top;
+        }
+        
+        .table-unit {
+            font-size: 12px;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+        
+        thead {
+            background-color: #f5f5f5;
+        }
+        
+        th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #000;
+            white-space: nowrap;
+            font-size: 12px;
+            background-color: #f5f5f5;
+        }
+        
+        td {
+            padding: 7px 6px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 12px;
+            background-color: #fff;
+        }
+        
+        .region-name-cell {
+            text-align: left;
+            font-weight: normal;
+            padding-left: 8px;
+        }
+        
+        .data-cell {
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .preliminary {
+            font-size: 10px;
+            vertical-align: super;
+        }
+        
+        /* 출처 */
+        .source {
+            font-size: 12px;
+            color: #000;
+            margin-top: 15px;
+            text-align: left;
+            font-style: normal;
+        }
+        
+        /* 요약 섹션 */
+        .summary-section {
+            margin: 30px 0;
+        }
+        
+        .summary-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #000;
+        }
+        
+        .summary-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        /* 시도별 섹션 */
+        .region-section {
+            margin: 40px 0;
+            page-break-inside: avoid;
+        }
+        
+        .region-section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #000;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 표지/제목 -->
+    <div class="cover-page">
+        <div class="cover-title">2025년 2/4분기 지역경제동향</div>
+        <div class="cover-subtitle">지역경제동향</div>
+        <div class="cover-info">
+            <p>통계청 경제통계국 소득통계과</p>
+            <p>보도시점: 2025. 8. 12.(화) 12:00</p>
+        </div>
+    </div>
+    
+    <!-- I. 요약 -->
+    <div class="section-title">I. 2025년 2/4분기 지역경제동향(요약)</div>
+    
+    <div class="summary-section">
+        <ul class="bullet-diamond">
+            <li>생산: 광공업생산 {요약:광공업생산_증감률}%, 서비스업생산 {요약:서비스업생산_증감률}%</li>
+            <li>소비·건설: 소매판매 {요약:소매판매_증감률}%, 건설수주 {요약:건설수주_증감률}%</li>
+            <li>수출입: 수출 {요약:수출_증감률}%, 수입 {요약:수입_증감률}%</li>
+            <li>고용: 취업자 수 {요약:취업자_증감률}%, 고용률 {요약:고용률_증감률}%p</li>
+            <li>물가: 소비자물가 {요약:물가_증감률}%</li>
+            <li>인구이동: 순인구이동 {요약:인구이동_증감}명</li>
+        </ul>
+    </div>
+    
+    <!-- II. 부문별 지역경제동향 -->
+    <div class="section-title">II. 부문별 지역경제동향</div>
+    
+    <!-- 1. 생산 -->
+    <div class="subsection-title">1. 생산</div>
+    
+    <!-- 가. 광공업생산 -->
+    <div class="subsubsection-title">가. 광공업생산</div>
+    
+    <ul class="bullet-diamond">
+        <li>광공업생산은 충북(반도체·전자부품, 전기장비), 경기(반도체·전자부품, 기타기계장비), 광주(전기장비, 담배) 등 <strong>{광공업생산:증가_시도_수}</strong>개 시도에서 전년동분기대비 증가.</li>
+    </ul>
+    
+    <ul class="bullet-square">
+        <li><strong>{요약:연도}</strong>년 <strong>{요약:분기}/4</strong>분기 전국 광공업생산은 반도체·전자부품, 기타 운송장비 등의 생산이 늘어 전년동분기대비 <strong><span class="percentage">{광공업생산:전국_증감률}%</span></strong> 증가.</li>
+    </ul>
+    
+    <ul class="bullet-circle">
+        <li>○ 충북(<strong><span class="percentage positive">{광공업생산:충북_증감률}%</span></strong>), 경기(<strong><span class="percentage positive">{광공업생산:경기_증감률}%</span></strong>), 광주(<strong><span class="percentage positive">{광공업생산:광주_증감률}%</span></strong>)는 반도체·전자부품, 전기장비 등의 생산이 늘어 증가하였으며, 서울(<strong><span class="percentage negative">{광공업생산:서울_증감률}%</span></strong>), 충남(<strong><span class="percentage negative">{광공업생산:충남_증감률}%</span></strong>), 부산(<strong><span class="percentage negative">{광공업생산:부산_증감률}%</span></strong>)은 의료·정밀, 반도체·전자부품, 금속 등의 생산이 줄어 감소.</li>
+    </ul>
+    
+    <div class="highlight-box">
+        <div class="highlight-box-title">&lt; 주요 증감지역 및 업종 &gt;</div>
+        
+        <!-- 전국 -->
+        <div class="region-item">
+            <span class="region-name">전국({광공업생산:전국_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">반도체·전자부품(<span class="percentage positive">{광공업생산:전국_반도체_증감률}%</span>), 기타 운송장비(<span class="percentage positive">{광공업생산:전국_기타운송_증감률}%</span>), 의료·정밀(<span class="percentage positive">{광공업생산:전국_의료정밀_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 상위 3개 시도 -->
+        <div class="region-item">
+            <span class="region-name">충북({광공업생산:충북_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">반도체·전자부품(<span class="percentage positive">{광공업생산:충북_반도체_증감률}%</span>), 전기장비(<span class="percentage positive">{광공업생산:충북_전기장비_증감률}%</span>), 의약품(<span class="percentage positive">{광공업생산:충북_의약품_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">경기({광공업생산:경기_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">반도체·전자부품(<span class="percentage positive">{광공업생산:경기_반도체_증감률}%</span>), 기타기계장비(<span class="percentage positive">{광공업생산:경기_기타기계_증감률}%</span>), 의료·정밀(<span class="percentage positive">{광공업생산:경기_의료정밀_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">광주({광공업생산:광주_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">전기장비(<span class="percentage positive">{광공업생산:광주_전기장비_증감률}%</span>), 담배(<span class="percentage positive">{광공업생산:광주_담배_증감률}%</span>), 자동차·트레일러(<span class="percentage positive">{광공업생산:광주_자동차_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 하위 3개 시도 -->
+        <div class="region-item">
+            <span class="region-name">서울({광공업생산:서울_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">의료·정밀(<span class="percentage negative">{광공업생산:서울_의료정밀_증감률}%</span>), 전기·가스업(<span class="percentage negative">{광공업생산:서울_전기가스_증감률}%</span>), 식료품(<span class="percentage negative">{광공업생산:서울_식료품_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">충남({광공업생산:충남_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">반도체·전자부품(<span class="percentage negative">{광공업생산:충남_반도체_증감률}%</span>), 전기장비(<span class="percentage negative">{광공업생산:충남_전기장비_증감률}%</span>), 전기·가스업(<span class="percentage negative">{광공업생산:충남_전기가스_증감률}%</span>)</div>
+            </div>
+        </div>
+        
+        <div class="region-item">
+            <span class="region-name">부산({광공업생산:부산_증감률}%):</span>
+            <div class="category-list">
+                <div class="category-item">금속(<span class="percentage negative">{광공업생산:부산_금속_증감률}%</span>), 기타 운송장비(<span class="percentage negative">{광공업생산:부산_기타운송_증감률}%</span>), 금속가공제품(<span class="percentage negative">{광공업생산:부산_금속가공_증감률}%</span>)</div>
+            </div>
+        </div>
+    </div>
+    
+    <table>
+        <caption>《광공업생산 증감률(불변)》<span class="table-unit">[전년 동분기비, %]</span></caption>
+        <thead>
+            <tr>
+                <th>시·도</th>
+                <th>2023<br>3/4</th>
+                <th>2023<br>4/4</th>
+                <th>2024<br>1/4</th>
+                <th>2024<br>2/4</th>
+                <th>2024<br>3/4</th>
+                <th>2024<br>4/4</th>
+                <th>2025<br>1/4</th>
+                <th>2025<br>2/4<span class="preliminary">P</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="region-name-cell">전국</td>
+                <td class="data-cell">{광공업생산:전국_2023_3}</td>
+                <td class="data-cell">{광공업생산:전국_2023_4}</td>
+                <td class="data-cell">{광공업생산:전국_2024_1}</td>
+                <td class="data-cell">{광공업생산:전국_2024_2}</td>
+                <td class="data-cell">{광공업생산:전국_2024_3}</td>
+                <td class="data-cell">{광공업생산:전국_2024_4}</td>
+                <td class="data-cell">{광공업생산:전국_2025_1}</td>
+                <td class="data-cell">{광공업생산:전국_2025_2}</td>
+            </tr>
+            <!-- 다른 시도들도 동일한 패턴으로 추가 -->
+        </tbody>
+    </table>
+    
+    <div class="source">
+        자료: 통계청 국가통계포털(KOSIS), 광업제조업동향조사
+    </div>
+    
+    <!-- 나. 서비스업생산 -->
+    <div class="subsubsection-title">나. 서비스업생산</div>
+    
+    <!-- 서비스업생산 내용 (광공업생산과 유사한 구조) -->
+    
+    <!-- 2. 소비·건설 -->
+    <div class="subsection-title">2. 소비·건설</div>
+    
+    <!-- 가. 소매판매 -->
+    <div class="subsubsection-title">가. 소매판매</div>
+    
+    <!-- 나. 건설수주 -->
+    <div class="subsubsection-title">나. 건설수주</div>
+    
+    <!-- 3. 수출입 -->
+    <div class="subsection-title">3. 수출입</div>
+    
+    <!-- 가. 수출 -->
+    <div class="subsubsection-title">가. 수출</div>
+    
+    <!-- 나. 수입 -->
+    <div class="subsubsection-title">나. 수입</div>
+    
+    <!-- 4. 고용 -->
+    <div class="subsection-title">4. 고용</div>
+    
+    <!-- 5. 물가 -->
+    <div class="subsection-title">5. 물가</div>
+    
+    <!-- 6. 국내 인구이동 -->
+    <div class="subsection-title">6. 국내 인구이동</div>
+    
+    <!-- III. 시도별 경제동향 -->
+    <div class="section-title">III. 시도별 경제동향</div>
+    
+    <!-- 각 시도별 섹션 (17개 시도) -->
+    <div class="region-section">
+        <div class="region-section-title">1. 서울</div>
+        <!-- 서울 데이터 -->
+    </div>
+    
+    <div class="region-section">
+        <div class="region-section-title">2. 부산</div>
+        <!-- 부산 데이터 -->
+    </div>
+    
+    <!-- 나머지 시도들... -->
+    
+</body>
+</html>
+

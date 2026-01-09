@@ -11,11 +11,6 @@ from difflib import SequenceMatcher
 class FlexibleMapper:
     """유연한 시트 및 컬럼 매핑 클래스"""
     
-    # 시트명 매핑 (가상 시트명 -> 실제 시트명)
-    SHEET_NAME_MAPPING = {
-        '실업률': '실업자 수'
-    }
-    
     def __init__(self, excel_extractor):
         """
         매퍼 초기화
@@ -24,21 +19,20 @@ class FlexibleMapper:
             excel_extractor: ExcelExtractor 인스턴스
         """
         self.excel_extractor = excel_extractor
+        self.sheet_cache = {}  # 시트 정보 캐시
+        self.header_cache = {}  # 헤더 정보 캐시
     
-    def find_sheet_by_name(self, target_sheet_name: str, similarity_threshold: float = 0.6) -> Optional[str]:
+    def find_sheet_by_name(self, target_sheet_name: str, similarity_threshold: float = 0.3) -> Optional[str]:
         """
-        시트명을 유연하게 찾습니다.
+        시트명을 유연하게 찾습니다. 키워드 기반 자연어 처리 사용.
         
         Args:
-            target_sheet_name: 찾고자 하는 시트명
-            similarity_threshold: 유사도 임계값 (0.0 ~ 1.0)
+            target_sheet_name: 찾고자 하는 시트명 또는 키워드
+            similarity_threshold: 유사도 임계값 (0.0 ~ 1.0, 기본값 0.3으로 낮춤)
             
         Returns:
             실제 시트명 또는 None
         """
-        # 시트명 매핑 적용 (가상 시트명 -> 실제 시트명)
-        target_sheet_name = self.SHEET_NAME_MAPPING.get(target_sheet_name, target_sheet_name)
-        
         if not self.excel_extractor.workbook:
             self.excel_extractor.load_workbook()
         
@@ -56,38 +50,30 @@ class FlexibleMapper:
             if target_normalized in sheet_normalized or sheet_normalized in target_normalized:
                 return sheet
         
-        # 키워드 기반 매칭 (2글자 이상의 공통 키워드가 있는 경우)
+        # 키워드 기반 매칭 (새로운 방식)
         target_keywords = self._extract_keywords(target_sheet_name)
-        if target_keywords:
-            # 키워드가 2글자 이상인 것만 필터링
-            significant_keywords = [kw for kw in target_keywords if len(kw) >= 2]
-            
-            best_keyword_match = None
-            best_keyword_score = 0
-            
-            for sheet in available_sheets:
-                sheet_keywords = self._extract_keywords(sheet)
-                # 공통 키워드 개수 계산
-                common_keywords = set(significant_keywords) & set(sheet_keywords)
-                if common_keywords:
-                    # 공통 키워드가 많을수록, 그리고 긴 키워드일수록 높은 점수
-                    score = sum(len(kw) for kw in common_keywords)
-                    if score > best_keyword_score:
-                        best_keyword_score = score
-                        best_keyword_match = sheet
-            
-            if best_keyword_match:
-                return best_keyword_match
-        
-        # 유사도 기반 매칭
         best_match = None
         best_score = 0.0
         
         for sheet in available_sheets:
-            score = self._calculate_similarity(target_sheet_name, sheet)
-            if score > best_score and score >= similarity_threshold:
-                best_score = score
-                best_match = sheet
+            sheet_keywords = self._extract_keywords(sheet)
+            
+            # 키워드 교집합 점수
+            if target_keywords and sheet_keywords:
+                common_keywords = set(target_keywords) & set(sheet_keywords)
+                if common_keywords:
+                    keyword_score = len(common_keywords) / max(len(target_keywords), len(sheet_keywords))
+                    if keyword_score > best_score:
+                        best_score = keyword_score
+                        best_match = sheet
+        
+        # 키워드 매칭이 실패하면 유사도 기반 매칭
+        if not best_match:
+            for sheet in available_sheets:
+                score = self._calculate_similarity(target_sheet_name, sheet)
+                if score > best_score and score >= similarity_threshold:
+                    best_score = score
+                    best_match = sheet
         
         return best_match
     
@@ -112,8 +98,12 @@ class FlexibleMapper:
         """
         sheet = self.excel_extractor.get_sheet(sheet_name)
         
-        # 캐시 없이 항상 새로 파싱
-        headers = self._parse_headers(sheet, header_row)
+        # 헤더 캐시 확인
+        cache_key = f"{sheet_name}_{header_row}"
+        if cache_key not in self.header_cache:
+            self.header_cache[cache_key] = self._parse_headers(sheet, header_row)
+        
+        headers = self.header_cache[cache_key]
         
         # 정확한 매칭
         target_normalized = self._normalize_name(target_header)
@@ -318,25 +308,12 @@ class FlexibleMapper:
         if not text:
             return []
         
-        keywords = set()
-        
         # 숫자, 한글, 영문 단어 추출
-        words = re.findall(r'[가-힣]+|[a-zA-Z]+|\d+', text)
-        for word in words:
-            # 1자리 숫자나 너무 짧은 단어 제외
-            if len(word) > 1 or word.isdigit():
-                keywords.add(word)
-            
-            # 한글의 경우 2글자 이상인 경우 부분 문자열도 추가 (예: "실업률" -> "실업", "률")
-            if re.match(r'^[가-힣]+$', word) and len(word) >= 3:
-                # 2글자 이상의 부분 문자열 추출
-                for i in range(len(word) - 1):
-                    for j in range(i + 2, len(word) + 1):
-                        substring = word[i:j]
-                        if len(substring) >= 2:
-                            keywords.add(substring)
+        keywords = re.findall(r'[가-힣]+|[a-zA-Z]+|\d+', text)
+        # 1자리 숫자나 너무 짧은 단어 제외
+        keywords = [kw for kw in keywords if len(kw) > 1 or kw.isdigit()]
         
-        return list(keywords)
+        return keywords
     
     def _calculate_similarity(self, str1: str, str2: str) -> float:
         """두 문자열의 유사도를 계산합니다."""

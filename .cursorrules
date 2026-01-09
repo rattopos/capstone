@@ -1,15 +1,9 @@
-  # Cursor Action Rules
+# Cursor 작업 규칙
 
-## 1. Context & Scope Management
-* **Minimal File Access:** Read only the files strictly necessary for the current task.
-* **Targeted Modification:** Modify only the files directly related to the current objective.
-* **No Unrelated Code:** Never generate or modify code that is not explicitly requested or essential for the task.
+## 파일 읽기 및 수정 규칙
+1. 현재 작업하는데 필요한 파일만 읽기
+2. 현재 작업하는데 필요한 파일만 수정
 
-## 2. Code Integrity & Minimal Impact
-* **Atomic Changes:** Apply changes within the smallest possible scope. Avoid rewriting entire functions if only a single line needs a fix.
-* **Side-effect Prevention:** Do not refactor or change unrelated logic unless it is critical for the current fix.
-* **Excel Files Read-Only:** Excel files (`.xlsx`, `.xls`) are read-only. Never modify, write, or overwrite Excel files. Only read data from them when necessary for the task.
+## 규칙 변경 규칙
+3. 커서 규칙을 변경할 때는 사용자의 동의를 얻을 것
 
-## 3. Communication & Rule Compliance
-* **Consent for Rule Changes:** Ask for explicit user permission before modifying or adding any rules in `.cursorrules`.
-* **Reasoning:** Briefly explain which files are being modified and why, especially if the change spans multiple files.

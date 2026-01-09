@@ -18,6 +18,7 @@ class PeriodDetector:
             excel_extractor: 엑셀 추출기 인스턴스
         """
         self.excel_extractor = excel_extractor
+        self._period_cache: Dict[str, Dict] = {}
     
     def detect_available_periods(self, sheet_name: str) -> Dict[str, any]:
         """
@@ -37,6 +38,9 @@ class PeriodDetector:
                 'default_quarter': 기본 분기
             }
         """
+        if sheet_name in self._period_cache:
+            return self._period_cache[sheet_name]
+        
         sheet = self.excel_extractor.get_sheet(sheet_name)
         
         # 헤더 행에서 분기 정보 찾기 (보통 3행에 있음)
@@ -97,6 +101,7 @@ class PeriodDetector:
                 'default_quarter': default_quarter
             }
         
+        self._period_cache[sheet_name] = result
         return result
     
     def _parse_period_string(self, period_str: str) -> Optional[Tuple[int, int]]:
