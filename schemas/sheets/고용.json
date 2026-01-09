@@ -1,0 +1,16 @@
+{
+  "category_column": 4,
+  "base_year": 2023,
+  "base_quarter": 1,
+  "base_col": 58,
+  "name_mapping": null,
+  "national_priorities": null,
+  "region_priorities": {},
+  "weight_column": null,
+  "weight_default": 1,
+  "classification_column": 3,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true,
+  "_comment": "고용 시트 설정 - 나이 범위별 고용률 계산을 위해 사용"
+}
+

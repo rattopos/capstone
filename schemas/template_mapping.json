@@ -1,0 +1,92 @@
+{
+  "광공업생산": {
+    "template": "광공업생산.html",
+    "display_name": "광공업생산",
+    "output_format": "광공업생산"
+  },
+  "서비스업생산": {
+    "template": "서비스업생산.html",
+    "display_name": "서비스업생산",
+    "output_format": "서비스업생산"
+  },
+  "소비(소매, 추가)": {
+    "template": "소매판매.html",
+    "display_name": "소매판매",
+    "output_format": "소매판매"
+  },
+  "고용": {
+    "template": "고용률.html",
+    "display_name": "고용률",
+    "output_format": "고용률"
+  },
+  "고용률": {
+    "template": "고용률.html",
+    "display_name": "고용률",
+    "output_format": "고용률"
+  },
+  "실업자 수": {
+    "template": "실업률.html",
+    "display_name": "실업률",
+    "output_format": "실업률"
+  },
+  "실업률": {
+    "template": "실업률.html",
+    "display_name": "실업률",
+    "output_format": "실업률",
+    "source_sheet": "실업자 수"
+  },
+  "물가동향": {
+    "template": "물가동향.html",
+    "display_name": "물가동향",
+    "output_format": "물가동향",
+    "source_sheets": ["품목성질별 물가", "지출목적별 물가"],
+    "_comment": "품목성질별 물가: 시도별 전체 등락률/표 데이터, 지출목적별 물가: 품목별 등락률"
+  },
+  "지출목적별 물가": {
+    "template": "물가동향.html",
+    "display_name": "물가동향",
+    "output_format": "물가동향",
+    "paired_sheet": "품목성질별 물가"
+  },
+  "품목성질별 물가": {
+    "template": "물가동향.html",
+    "display_name": "물가동향",
+    "output_format": "물가동향",
+    "paired_sheet": "지출목적별 물가"
+  },
+  "건설 (공표자료)": {
+    "template": "건설수주.html",
+    "display_name": "건설수주",
+    "output_format": "건설수주"
+  },
+  "수출": {
+    "template": "수출.html",
+    "display_name": "수출",
+    "output_format": "수출"
+  },
+  "수입": {
+    "template": "수입.html",
+    "display_name": "수입",
+    "output_format": "수입"
+  },
+  "시도 간 이동": {
+    "template": "국내인구이동.html",
+    "display_name": "국내인구이동",
+    "output_format": "국내인구이동"
+  },
+  "연령별 인구이동": {
+    "template": "국내인구이동.html",
+    "display_name": "국내인구이동",
+    "output_format": "국내인구이동"
+  },
+  "서울": {
+    "template": "서울.html",
+    "display_name": "서울 경제동향",
+    "output_format": "서울"
+  },
+  "서울주요지표": {
+    "template": "서울주요지표.html",
+    "display_name": "서울특별시 주요지표",
+    "output_format": "서울주요지표"
+  }
+}

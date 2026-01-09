@@ -1,0 +1,107 @@
+{
+  "_comment": "국내인구이동 출력 형식 스키마 - 연령별 인구이동 + 시도 간 이동 시트 참조",
+  
+  "template_type": "population_movement",
+  "display_name": "국내인구이동",
+  "template_file": "국내인구이동.html",
+  
+  "required_sheets": {
+    "연령별 인구이동": {
+      "purpose": "연령별 유입/유출 상세 데이터",
+      "data_fields": ["region", "age_category", "net_movement"]
+    },
+    "시도 간 이동": {
+      "purpose": "시도별 순이동 데이터 및 테이블용 분기별 데이터",
+      "data_fields": ["region", "inflow", "outflow", "net_movement"]
+    }
+  },
+  
+  "data_type": {
+    "unit": "명",
+    "direction_positive": "inflow",
+    "direction_negative": "outflow"
+  },
+  
+  "sentence_patterns": {
+    "diamond_summary": {
+      "pattern": "국내 인구이동은 {inflow_region1}, {inflow_region2} 등 {inflow_count}개 시·도 인구 순유입, {outflow_region1}, {outflow_region2} 등 {outflow_count}개 시·도 인구 순유출",
+      "description": "순유입/순유출 시도 요약"
+    },
+    "square_inflow": {
+      "pattern": "{year}년 {quarter}/4분기 국내 인구 순유입지역은 {region1}({count1}명), {region2}({count2}명), {region3}({count3}명) 등 {count}개 시·도로 나타났음",
+      "description": "순유입 지역 상세"
+    },
+    "square_outflow": {
+      "pattern": "국내 인구 순유출지역은 {region1}({count1}명), {region2}({count2}명), {region3}({count3}명) 등 {count}개 시·도로 나타났음",
+      "description": "순유출 지역 상세"
+    }
+  },
+  
+  "detail_sections": {
+    "inflow": {
+      "title": "< 주요 유입지역 및 연령별 유입인구 >",
+      "format": "{region}({total}명): {age1}({count1}명), {age2}({count2}명), {age3}({count3}명)",
+      "top_count": 3,
+      "age_ranking_count": 3
+    },
+    "outflow": {
+      "title": "< 주요 유출지역 및 연령별 유출인구 >",
+      "format": "{region}({total}명): {age1}({count1}명), {age2}({count2}명), {age3}({count3}명)",
+      "top_count": 3,
+      "age_ranking_count": 3
+    }
+  },
+  
+  "table": {
+    "title": "《 국내 인구 순이동¹⁾ 》",
+    "unit_text": "[명]",
+    "columns": 8,
+    "column_periods": [
+      {"year": -2, "quarter": 3},
+      {"year": -2, "quarter": 4},
+      {"year": -1, "quarter": 1},
+      {"year": -1, "quarter": 2},
+      {"year": -1, "quarter": 3},
+      {"year": -1, "quarter": 4},
+      {"year": 0, "quarter": 1},
+      {"year": 0, "quarter": 2}
+    ],
+    "regions": [
+      "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+      "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+    ],
+    "footnotes": [
+      "1) 순이동 = 전입자 수 - 전출자 수 (전국 순이동 = 0)"
+    ],
+    "source": "자료: 통계청 국가통계포털(KOSIS), 국내 인구이동 통계"
+  },
+  
+  "region_ranking": {
+    "inflow": {
+      "sort_by": "net_movement",
+      "sort_order": "descending",
+      "filter": "positive",
+      "top_count": 3
+    },
+    "outflow": {
+      "sort_by": "net_movement",
+      "sort_order": "ascending",
+      "filter": "negative",
+      "top_count": 3
+    }
+  },
+  
+  "age_ranking": {
+    "_comment": "유입/유출 시도별 연령 순위 계산",
+    "inflow": {
+      "sort_by": "value",
+      "sort_order": "descending",
+      "top_count": 3
+    },
+    "outflow": {
+      "sort_by": "absolute_value",
+      "sort_order": "descending",
+      "top_count": 3
+    }
+  }
+}

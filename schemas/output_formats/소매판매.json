@@ -1,0 +1,70 @@
+{
+  "_comment": "소매판매 출력 형식 스키마",
+  
+  "template_type": "consumption",
+  "sheet_name": "소비(소매, 추가)",
+  "display_name": "소매판매",
+  "template_file": "소매판매.html",
+  
+  "data_type": {
+    "unit": "%",
+    "direction_positive": "increase",
+    "direction_negative": "decrease",
+    "category_name": "업태"
+  },
+  
+  "sentence_patterns": {
+    "diamond_summary": {
+      "pattern": "소매판매는 {bottom_regions_with_categories} 등 {count}개 시도에서 전년동분기대비 {direction}",
+      "count_condition": "negative",
+      "description": "감소한 시도 수를 카운트"
+    },
+    "square_national": {
+      "pattern": "{year}년 {quarter}분기 전국 소매판매는 {categories} 등의 판매가 {production_change} 전년동분기대비 {rate} {direction}",
+      "description": "전국 데이터 요약"
+    },
+    "circle_regions": {
+      "pattern_increase": "{top_region1}({top_rate1}), {top_region2}({top_rate2}), {top_region3}({top_rate3})은 {top_categories} 등의 판매가 늘어 증가하였으며,",
+      "pattern_decrease": "{bottom_region1}({bottom_rate1}), {bottom_region2}({bottom_rate2}), {bottom_region3}({bottom_rate3})은 {bottom_categories} 등의 판매가 줄어 감소",
+      "description": "상위/하위 시도 요약"
+    }
+  },
+  
+  "detail_section": {
+    "title": "< 주요 증감지역 및 업태 >",
+    "format": {
+      "national": "{region}( {rate}): {category1}({rate1}), {category2}({rate2}), {category3}({rate3})",
+      "top_region": "{region}( {rate}): {category1}({rate1}), {category2}({rate2}), {category3}({rate3})",
+      "bottom_region": "{region}( {rate}): {category1}({rate1}), {category2}({rate2}), {category3}({rate3})"
+    }
+  },
+  
+  "table": {
+    "title": "《 소매판매 증감률(불변) 》",
+    "unit_text": "[전년동분기비, %]",
+    "columns": 8,
+    "source": "자료: 통계청 국가통계포털(KOSIS), 서비스업동향조사"
+  },
+  
+  "region_category_selection": {
+    "top_regions": {
+      "count": 3,
+      "sort_by": "growth_rate",
+      "sort_order": "descending",
+      "category_filter": "positive"
+    },
+    "bottom_regions": {
+      "count": 3,
+      "sort_by": "growth_rate",
+      "sort_order": "ascending",
+      "category_filter": "negative"
+    },
+    "national_categories": {
+      "count": 3,
+      "sort_by": "absolute_growth_rate",
+      "sort_order": "descending",
+      "priorities": ["슈퍼마켓 및 잡화점", "면세점", "전문소매점"]
+    }
+  }
+}
+

@@ -1,0 +1,19 @@
+{
+  "category_column": 5,
+  "base_year": 2023,
+  "base_quarter": 1,
+  "base_col": 59,
+  "name_mapping": "construction_category_mapping",
+  "national_priorities": null,
+  "region_priorities": {},
+  "weight_column": null,
+  "weight_default": 1,
+  "classification_column": 3,
+  "max_classification_level": 2,
+  "use_weighted_ranking": true
+}
+
+
+
+
+

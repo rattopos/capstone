@@ -1,12 +1,17 @@
-# -*- coding: utf-8 -*-
 """
-라우트 모듈 초기화
+라우트 모듈
+Flask Blueprint로 분리된 API 라우트들
 """
 
-from .main import main_bp
-from .api import api_bp
-from .preview import preview_bp
-from .debug import debug_bp
+from .templates import templates_bp
+from .processing import processing_bp
+from .export import export_bp
+from .validation import validation_bp
 
-__all__ = ['main_bp', 'api_bp', 'preview_bp', 'debug_bp']
+__all__ = [
+    'templates_bp',
+    'processing_bp',
+    'export_bp',
+    'validation_bp',
+]
 

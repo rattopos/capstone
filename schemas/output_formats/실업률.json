@@ -1,0 +1,51 @@
+{
+  "_comment": "실업률 출력 형식 스키마 (실업자 수 시트에서 직접 매핑)",
+  
+  "template_type": "unemployment_rate",
+  "sheet_name": "실업률",
+  "display_name": "실업률",
+  "template_file": "실업률.html",
+  
+  "change_calculation": {
+    "_comment": "실업률은 퍼센트포인트(%p) 증감으로 계산 - 증감률이 아님",
+    "type": "percentage_point",
+    "formula": "current_rate - previous_rate",
+    "description": "실업률 증감(%p) = 현재 실업률 - 전년동분기 실업률",
+    "unit": "%p",
+    "marker_suffix": "증감pp"
+  },
+  
+  "data_type": {
+    "unit": "%",
+    "change_unit": "%p",
+    "change_calculation_type": "percentage_point",
+    "direction_positive": "fall",
+    "direction_negative": "rise",
+    "category_name": "연령별 실업률",
+    "inverse_direction": true
+  },
+  
+  "table": {
+    "title": "《 실업률¹⁾ 》",
+    "unit_text": "[전년동분기비, %, %p]",
+    "columns": 8,
+    "has_dual_header": true,
+    "dual_headers": ["실업률", "실업률 증감"],
+    "source": "1) 실업률(%) = (실업자수 ÷ 경제활동인구) × 100\n자료: 통계청 국가통계포털(KOSIS), 경제활동인구조사"
+  },
+  
+  "region_category_selection": {
+    "top_regions": {
+      "count": 3,
+      "sort_by": "change_rate",
+      "sort_order": "descending",
+      "category_filter": "positive"
+    },
+    "bottom_regions": {
+      "count": 3,
+      "sort_by": "change_rate",
+      "sort_order": "ascending",
+      "category_filter": "negative"
+    }
+  }
+}

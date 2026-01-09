@@ -1,0 +1,51 @@
+{
+  "category_column": 2,
+  "base_year": 2023,
+  "base_quarter": 1,
+  "base_col": 53,
+  "name_mapping": null,
+  "national_priorities": null,
+  "region_priorities": {},
+  "weight_column": null,
+  "weight_default": 1,
+  "classification_column": null,
+  "max_classification_level": null,
+  "use_weighted_ranking": true,
+  "unemployment_rate_table": {
+    "enabled": true,
+    "start_row": 81,
+    "header_row": 80,
+    "title_row": 79,
+    "title_text": "시도별 실업률(%)",
+    "region_column": 1,
+    "age_group_column": 2,
+    "age_group_filter": "계",
+    "region_mapping": {
+      "서울": "서울특별시",
+      "부산": "부산광역시",
+      "대구": "대구광역시",
+      "인천": "인천광역시",
+      "광주": "광주광역시",
+      "대전": "대전광역시",
+      "울산": "울산광역시",
+      "세종": "세종특별자치시",
+      "경기": "경기도",
+      "강원": "강원도",
+      "충북": "충청북도",
+      "충남": "충청남도",
+      "전북": "전라북도",
+      "전남": "전라남도",
+      "경북": "경상북도",
+      "경남": "경상남도",
+      "제주": "제주도",
+      "전국": "전국"
+    },
+    "header_row_number": 3,
+    "quarter_header_pattern": "{year}  {quarter}/4"
+  }
+}
+
+
+
+
+

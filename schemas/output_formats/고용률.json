@@ -1,0 +1,88 @@
+{
+  "_comment": "고용률 출력 형식 스키마",
+  
+  "template_type": "employment",
+  "sheet_name": "고용",
+  "display_name": "고용률",
+  "template_file": "고용률.html",
+  
+  "calculation": {
+    "enabled": true,
+    "type": "rate",
+    "formula": "(numerator / denominator) * 100",
+    "description": "고용률 = (취업자수 ÷ 15세 이상 인구 수) × 100",
+    "numerator_source": "취업자수",
+    "denominator_source": "15세 이상 인구 수",
+    "age_group_based": true,
+    "age_groups": ["15~29세", "30~59세", "60세이상", "계"]
+  },
+  
+  "change_calculation": {
+    "_comment": "고용률은 퍼센트포인트(%p) 증감으로 계산 - 증감률이 아님",
+    "type": "percentage_point",
+    "formula": "current_rate - previous_rate",
+    "description": "고용률 증감(%p) = 현재 고용률 - 전년동분기 고용률",
+    "unit": "%p",
+    "marker_suffix": "증감pp"
+  },
+  
+  "data_type": {
+    "unit": "%",
+    "change_unit": "%p",
+    "change_calculation_type": "percentage_point",
+    "direction_positive": "rise",
+    "direction_negative": "fall",
+    "category_name": "연령별 고용률"
+  },
+  
+  "sentence_patterns": {
+    "diamond_summary": {
+      "pattern": "고용률은 {top_regions} 등 {count}개 시도에서 전년동분기대비 {direction}",
+      "count_condition": "positive",
+      "description": "상승한 시도 수를 카운트"
+    },
+    "square_national": {
+      "pattern": "{year}년 {quarter}분기 전국 고용률은 {national_rate}로, {age_groups} 등의 고용률이 {change_direction} 전년동분기대비 {change_rate} {direction}",
+      "description": "전국 데이터 요약"
+    },
+    "circle_regions": {
+      "pattern_increase": "{top_region1}({top_change1}), {top_region2}({top_change2}), {top_region3}({top_change3}) 등의 고용률은 상승하였으며,",
+      "pattern_decrease": "{bottom_region1}({bottom_change1}), {bottom_region2}({bottom_change2}), {bottom_region3}({bottom_change3}) 등의 고용률은 하락",
+      "description": "상위/하위 시도 요약"
+    }
+  },
+  
+  "detail_section": {
+    "title": "< 주요 등락지역 및 연령별 고용률 >",
+    "format": {
+      "national": "{region}( {change}): {age1}({change1}), {age2}({change2}), {age3}({change3})",
+      "top_region": "{region}( {change}): {age1}({change1}), {age2}({change2})",
+      "bottom_region": "{region}( {change}): {age1}({change1}), {age2}({change2})"
+    }
+  },
+  
+  "table": {
+    "title": "《 고용률¹⁾ 》",
+    "unit_text": "[전년동분기비, %, %p]",
+    "columns": 8,
+    "has_dual_header": true,
+    "dual_headers": ["고용률", "고용률 증감"],
+    "source": "1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100\n자료: 통계청 국가통계포털(KOSIS), 경제활동인구조사"
+  },
+  
+  "region_category_selection": {
+    "top_regions": {
+      "count": 3,
+      "sort_by": "change_rate",
+      "sort_order": "descending",
+      "category_filter": "positive"
+    },
+    "bottom_regions": {
+      "count": 3,
+      "sort_by": "change_rate",
+      "sort_order": "ascending",
+      "category_filter": "negative"
+    }
+  }
+}
+

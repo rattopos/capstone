@@ -1,0 +1,28 @@
+{
+  "_comment": "시도 간 이동 시트 설정 - 국내인구이동 템플릿용",
+  "sheet_name": "시도 간 이동",
+  "base_year": 2023,
+  "base_quarter": 3,
+  "base_col": 74,
+  "region_column": 2,
+  "classification_column": 3,
+  "data_start_row": 4,
+  
+  "regions": [
+    "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+  ],
+  
+  "classification_types": {
+    "유입인구 수": "inflow",
+    "유출인구 수": "outflow", 
+    "순인구이동 수": "net_movement"
+  },
+  
+  "row_structure": {
+    "_comment": "각 시도별로 3행씩 (유입, 유출, 순이동)",
+    "rows_per_region": 3,
+    "row_order": ["유입인구 수", "유출인구 수", "순인구이동 수"]
+  }
+}
+
