@@ -26,6 +26,45 @@
 
 ## 📅 디버그 기록
 
+### 2026-01-09
+
+#### 업로드 완료 후 "전국 GRDP" 값이 "-"로 표시되는 문제 해결
+- **시간**: 2026-01-09 10:55
+- **문제 설명**: 
+  - 기초자료 업로드 완료 후 모달에서 "전국 GRDP:" 값이 "-"로 표시됨
+  - GRDP 데이터는 정상적으로 추출되었으나 (전국: 0.4%), 대시보드에 표시되지 않음
+- **원인 분석**: 
+  - `routes/api.py`의 업로드 응답에서 `conversion_info`가 항상 `None`으로 반환됨
+  - 대시보드의 JavaScript 코드가 `data.conversion_info.grdp_extracted`를 체크하여 GRDP 정보 표시 여부 결정
+  - `conversion_info`가 `None`이면 조건이 false가 되어 "-"가 표시됨
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 업로드 완료 화면 스크린샷을 제공, "전국 GRDP: -" 확인
+  - 코드 분석:
+    1. `dashboard.html`에서 GRDP 표시 로직 확인 (`resultGrdp` 요소)
+    2. `data.conversion_info && data.conversion_info.grdp_extracted` 조건 확인
+    3. `routes/api.py`에서 `conversion_info: None` 하드코딩 발견
+  - 해결책 결정:
+    1. GRDP 데이터가 있을 때 `conversion_info`에 관련 정보 포함
+    2. `grdp_extracted`, `national_growth_rate`, `top_region` 필드 추가
+  - 첫 시도: `regional_data.items()` 사용 → `'list' object has no attribute 'items'` 오류 발생
+  - 원인 파악: `grdp_extracted.json` 확인 결과 `regional_data`가 딕셔너리가 아닌 리스트임
+  - 최종 해결: `grdp_data.get('top_region', {})` 사용하여 1위 지역 정보 직접 가져오기
+- **해결 방법**: 
+  - `routes/api.py` 수정 (트랙 1, 트랙 2 모두):
+    - GRDP 데이터가 있을 때 `conversion_info` 딕셔너리 생성
+    - `grdp_extracted: True` - GRDP 추출 성공 여부
+    - `national_growth_rate` - 전국 GRDP 성장률 (예: 0.4)
+    - `top_region` - 성장률 1위 지역 (예: '충북')
+    - `grdp_data.get('top_region', {}).get('name')` 사용하여 1위 지역 직접 가져오기
+- **관련 파일**: 
+  - `routes/api.py` (`_handle_raw_data_upload`, `_handle_analysis_upload` 수정)
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 테스트 결과: `conversion_info: {'grdp_extracted': True, 'national_growth_rate': 0.4, 'top_region': '충북'}`
+  - 대시보드에서 "전국 GRDP: 0.4% (1위: 충북)" 형식으로 표시됨
+
+---
+
 ### 2026-01-08
 
 #### 세부공종/품목 데이터 N/A 표시 추가
@@ -2393,14 +2432,14 @@
 ## 📊 통계
 
 ### 전체 디버그 항목 수
-- 총 항목: 32
-- 완료: 32
+- 총 항목: 33
+- 완료: 33
 - 진행중: 0
 - 실패: 0
 - 보류: 0
 
 ### 최근 활동
-- 마지막 업데이트: 2026-01-07 (시도별 보도자료의 summary_table 행 데이터가 표시되지 않는 문제 해결)
+- 마지막 업데이트: 2026-01-09 (업로드 완료 후 "전국 GRDP" 값이 "-"로 표시되는 문제 해결)
 
 ---
 

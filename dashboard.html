@@ -1960,8 +1960,10 @@
 
             // 페이지 네비게이션 이벤트 리스너 제거됨
 
-            // Actions
-            elements.exportBtn.addEventListener('click', exportFinalDocument);
+            // Actions (존재하는 요소만 이벤트 리스너 추가)
+            if (elements.exportBtn) {
+                elements.exportBtn.addEventListener('click', exportFinalDocument);
+            }
             // 제거된 이벤트 리스너들 (추후 재구현 예정)
         }
 

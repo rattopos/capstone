@@ -1,0 +1,153 @@
+{
+  "_comment": "분석표/KOSIS에서 추출한 실제 기여율 데이터",
+  "_last_updated": "2026-01-09 11:02",
+  "_source": "unknown",
+  "national": {
+    "growth_rate": 0.4,
+    "contributions": {
+      "manufacturing": 0.5,
+      "construction": -0.6,
+      "service": 0.7,
+      "other": -0.2
+    },
+    "is_placeholder": false
+  },
+  "regional": {
+    "서울": {
+      "growth_rate": 1.2,
+      "manufacturing": -0.1,
+      "construction": -0.1,
+      "service": 1.5,
+      "other": -0.1,
+      "is_placeholder": false
+    },
+    "부산": {
+      "growth_rate": 0.7,
+      "manufacturing": -0.7,
+      "construction": -0.2,
+      "service": 1.9,
+      "other": -0.2,
+      "is_placeholder": false
+    },
+    "대구": {
+      "growth_rate": -3.2,
+      "manufacturing": -0.9,
+      "construction": -1.1,
+      "service": -0.7,
+      "other": -0.4,
+      "is_placeholder": false
+    },
+    "인천": {
+      "growth_rate": -1.6,
+      "manufacturing": -1.2,
+      "construction": -0.4,
+      "service": 0.5,
+      "other": -0.4,
+      "is_placeholder": false
+    },
+    "광주": {
+      "growth_rate": -0.9,
+      "manufacturing": 0.0,
+      "construction": -0.7,
+      "service": -0.0,
+      "other": -0.2,
+      "is_placeholder": false
+    },
+    "대전": {
+      "growth_rate": -0.6,
+      "manufacturing": -0.4,
+      "construction": -0.5,
+      "service": 0.4,
+      "other": -0.2,
+      "is_placeholder": false
+    },
+    "울산": {
+      "growth_rate": -1.0,
+      "manufacturing": -0.5,
+      "construction": -0.3,
+      "service": 0.3,
+      "other": -0.4,
+      "is_placeholder": false
+    },
+    "세종": {
+      "growth_rate": -0.3,
+      "manufacturing": -0.0,
+      "construction": -1.2,
+      "service": 1.2,
+      "other": -0.1,
+      "is_placeholder": false
+    },
+    "경기": {
+      "growth_rate": 2.7,
+      "manufacturing": 2.6,
+      "construction": -0.7,
+      "service": 1.0,
+      "other": -0.0,
+      "is_placeholder": false
+    },
+    "강원": {
+      "growth_rate": -0.5,
+      "manufacturing": 0.0,
+      "construction": -1.0,
+      "service": 0.3,
+      "other": 0.4,
+      "is_placeholder": false
+    },
+    "충북": {
+      "growth_rate": 5.8,
+      "manufacturing": 5.1,
+      "construction": -0.5,
+      "service": 0.8,
+      "other": 0.5,
+      "is_placeholder": false
+    },
+    "충남": {
+      "growth_rate": -3.9,
+      "manufacturing": -2.4,
+      "construction": -0.4,
+      "service": 0.3,
+      "other": -1.2,
+      "is_placeholder": false
+    },
+    "전북": {
+      "growth_rate": -0.9,
+      "manufacturing": 0.5,
+      "construction": -0.8,
+      "service": -0.4,
+      "other": -0.1,
+      "is_placeholder": false
+    },
+    "전남": {
+      "growth_rate": -3.2,
+      "manufacturing": -1.0,
+      "construction": -1.2,
+      "service": 0.1,
+      "other": -0.8,
+      "is_placeholder": false
+    },
+    "경북": {
+      "growth_rate": 1.9,
+      "manufacturing": 2.7,
+      "construction": -1.1,
+      "service": 0.1,
+      "other": 0.3,
+      "is_placeholder": false
+    },
+    "경남": {
+      "growth_rate": -2.2,
+      "manufacturing": -0.4,
+      "construction": -0.6,
+      "service": -0.5,
+      "other": -0.6,
+      "is_placeholder": false
+    },
+    "제주": {
+      "growth_rate": -3.7,
+      "manufacturing": -0.1,
+      "construction": -1.1,
+      "service": -2.9,
+      "other": 0.5,
+      "is_placeholder": false
+    }
+  }
+}

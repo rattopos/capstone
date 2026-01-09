@@ -317,6 +317,8 @@ def _handle_raw_data_upload(filepath: Path, filename: str):
     session['quarter'] = quarter
     session['file_type'] = 'raw_direct'
     
+    # GRDP conversion_info 생성
+    conversion_info = None
     if grdp_data:
         session['grdp_data'] = grdp_data
         grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
@@ -325,6 +327,19 @@ def _handle_raw_data_upload(filepath: Path, filename: str):
                 json.dump(grdp_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[경고] GRDP JSON 저장 실패: {e}")
+        
+        # GRDP 정보를 conversion_info에 포함
+        national_summary = grdp_data.get('national_summary', {})
+        
+        # 1위 지역 찾기 - top_region에서 가져오기
+        top_region_info = grdp_data.get('top_region', {})
+        top_region = top_region_info.get('name', '전국') if top_region_info else '전국'
+        
+        conversion_info = {
+            'grdp_extracted': True,
+            'national_growth_rate': national_summary.get('growth_rate', '-'),
+            'top_region': top_region
+        }
     
     try:
         session['raw_file_mtime'] = Path(filepath).stat().st_mtime
@@ -339,7 +354,7 @@ def _handle_raw_data_upload(filepath: Path, filename: str):
         'quarter': quarter,
         'reports': REPORT_ORDER,
         'regional_reports': REGIONAL_REPORTS,
-        'conversion_info': None,
+        'conversion_info': conversion_info,
         'has_grdp': has_grdp,
         'grdp_sheet': grdp_sheet_found,
         'needs_grdp': not has_grdp,
@@ -415,6 +430,8 @@ def _handle_analysis_upload(filepath: Path, filename: str):
     except OSError:
         pass
     
+    # GRDP conversion_info 생성
+    conversion_info = None
     if grdp_data:
         session['grdp_data'] = grdp_data
         grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
@@ -423,6 +440,19 @@ def _handle_analysis_upload(filepath: Path, filename: str):
                 json.dump(grdp_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[경고] GRDP JSON 저장 실패: {e}")
+        
+        # GRDP 정보를 conversion_info에 포함
+        national_summary = grdp_data.get('national_summary', {})
+        
+        # 1위 지역 찾기 - top_region에서 가져오기
+        top_region_info = grdp_data.get('top_region', {})
+        top_region = top_region_info.get('name', '전국') if top_region_info else '전국'
+        
+        conversion_info = {
+            'grdp_extracted': True,
+            'national_growth_rate': national_summary.get('growth_rate', '-'),
+            'top_region': top_region
+        }
     
     print(f"[결과] GRDP {'있음' if has_grdp else '없음'}")
     
@@ -437,7 +467,7 @@ def _handle_analysis_upload(filepath: Path, filename: str):
         'needs_grdp': not has_grdp,
         'has_grdp': has_grdp,
         'grdp_sheet': grdp_sheet_found,
-        'conversion_info': None,
+        'conversion_info': conversion_info,
         'preprocessing': {
             'success': preprocess_success,
             'message': preprocess_msg,
