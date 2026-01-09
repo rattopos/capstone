@@ -1,0 +1,6986 @@
+{
+  "image_name": "png",
+  "template_fields": [
+    {
+      "field_id": "field_0",
+      "text_in_image": "4. 고용 동향",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_1",
+      "text_in_image": "가 고용률",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_2",
+      "text_in_image": "고용물은 대전   부산 강원 등 11개 시도에서   전년동분기대비  상승",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B140",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_3",
+      "text_in_image": "2025년 리4분기   전국 고용물은 63.5%로   30대 , 40대 , 60세이상의   고용롭이",
+      "type": "percentage",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B4",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_4",
+      "text_in_image": "올라  전년동분기대비 0.29P 상승",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_5",
+      "text_in_image": "대전(12%P); 부산(1O%p); 강원(1.O%p) 등의 고용물은 상승하없으며 전북",
+      "type": "percentage",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B140",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_6",
+      "text_in_image": "(1.0%p); 광주(-0.49P) , 서울(0.29p) 등의 고용물은 하락",
+      "type": "percentage",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B118",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_7",
+      "text_in_image": "주요",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_8",
+      "text_in_image": "등락지역",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_9",
+      "text_in_image": "및 연령별",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_10",
+      "text_in_image": "고용률",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_11",
+      "text_in_image": "전국(",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B4",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_12",
+      "text_in_image": "0.2oop): 30~39세(0.99op),",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_13",
+      "text_in_image": "40 ~49세(099op) ,",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_14",
+      "text_in_image": "60세이상(0.89op)",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_15",
+      "text_in_image": "대전",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B243",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_16",
+      "text_in_image": "1.2oop): 60세이상(2.89op) ,",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_17",
+      "text_in_image": "15 ~29세(2.49op)",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_18",
+      "text_in_image": "부산(",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B140",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_19",
+      "text_in_image": "1.09op): 50~59세(3.69op),",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_20",
+      "text_in_image": "40 ~49세(1.89op)",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_21",
+      "text_in_image": "강원",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B341",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_22",
+      "text_in_image": "1.Ooop): 60세이상(2.99op) ,  50~59세(2.1%p)",
+      "type": "percentage",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_23",
+      "text_in_image": "전북",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B422",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_24",
+      "text_in_image": "-1.09op): 60세이상(-2.59op) ,",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_25",
+      "text_in_image": "50~59세(-1.49op)",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_26",
+      "text_in_image": "광주",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "B222",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_27",
+      "text_in_image": "0.49pp): 50~59세1(-4.29op) ,",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_28",
+      "text_in_image": "15 ~29세(-2.O9op",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_29",
+      "text_in_image": "서울",
+      "type": "region",
+      "excel_mapping": {
+        "sheet_name": "연령별 인구이동",
+        "cell_or_range": "B4",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_30",
+      "text_in_image": "0.29op): 30~39세(1.89op) ,",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_31",
+      "text_in_image": "15 ~29세(-0.79op",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_32",
+      "text_in_image": "고용률",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_33",
+      "text_in_image": "[전년동분기비, %",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_34",
+      "text_in_image": "op",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_35",
+      "text_in_image": "고용률",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_36",
+      "text_in_image": "고용률",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_37",
+      "text_in_image": "증감",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_38",
+      "text_in_image": "2024",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_39",
+      "text_in_image": "2024",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_40",
+      "text_in_image": "2025",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_41",
+      "text_in_image": "2025",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_42",
+      "text_in_image": "2024",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_43",
+      "text_in_image": "2024",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_44",
+      "text_in_image": "2025",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_45",
+      "text_in_image": "2025",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_46",
+      "text_in_image": "3/4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_47",
+      "text_in_image": "414",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_48",
+      "text_in_image": "114",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_49",
+      "text_in_image": "리4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_50",
+      "text_in_image": "3/4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_51",
+      "text_in_image": "414",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_52",
+      "text_in_image": "1/4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_53",
+      "text_in_image": "리l4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_54",
+      "text_in_image": "63.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_55",
+      "text_in_image": "62.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_56",
+      "text_in_image": "61.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_57",
+      "text_in_image": "63.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_58",
+      "text_in_image": "01",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_59",
+      "text_in_image": "0.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_60",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_61",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_62",
+      "text_in_image": "61.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_63",
+      "text_in_image": "61.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_64",
+      "text_in_image": "60.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_65",
+      "text_in_image": "61.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_66",
+      "text_in_image": "0.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_67",
+      "text_in_image": "0.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_68",
+      "text_in_image": "1.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_69",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_70",
+      "text_in_image": "58.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_71",
+      "text_in_image": "57.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_72",
+      "text_in_image": "57.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_73",
+      "text_in_image": "58.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_74",
+      "text_in_image": "0.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_75",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_76",
+      "text_in_image": "0.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_77",
+      "text_in_image": "1.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_78",
+      "text_in_image": "58.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_79",
+      "text_in_image": "57.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_80",
+      "text_in_image": "57.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_81",
+      "text_in_image": "58.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_82",
+      "text_in_image": "-2.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_83",
+      "text_in_image": "-1.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_84",
+      "text_in_image": "05",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_85",
+      "text_in_image": "0.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_86",
+      "text_in_image": "64.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_87",
+      "text_in_image": "63.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_88",
+      "text_in_image": "62.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_89",
+      "text_in_image": "63.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_90",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_91",
+      "text_in_image": "1.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_92",
+      "text_in_image": "0.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_93",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_94",
+      "text_in_image": "60.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_95",
+      "text_in_image": "59.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_96",
+      "text_in_image": "59.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_97",
+      "text_in_image": "61.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_98",
+      "text_in_image": "01",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_99",
+      "text_in_image": "-1.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_100",
+      "text_in_image": "-1.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_101",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_102",
+      "text_in_image": "60.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_103",
+      "text_in_image": "60.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_104",
+      "text_in_image": "61.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_105",
+      "text_in_image": "62.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_106",
+      "text_in_image": "1.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_107",
+      "text_in_image": "-1.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_108",
+      "text_in_image": "0.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_109",
+      "text_in_image": "1.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_110",
+      "text_in_image": "60.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_111",
+      "text_in_image": "60.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_112",
+      "text_in_image": "59.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_113",
+      "text_in_image": "60.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_114",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_115",
+      "text_in_image": "0.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_116",
+      "text_in_image": "0.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_117",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_118",
+      "text_in_image": "세 종",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_119",
+      "text_in_image": "65.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_120",
+      "text_in_image": "66.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_121",
+      "text_in_image": "64.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_122",
+      "text_in_image": "65.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_123",
+      "text_in_image": "0.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_124",
+      "text_in_image": "2.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_125",
+      "text_in_image": "0.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_126",
+      "text_in_image": "0.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_127",
+      "text_in_image": "64.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_128",
+      "text_in_image": "64.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_129",
+      "text_in_image": "63.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_130",
+      "text_in_image": "64.",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_131",
+      "text_in_image": "01",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_132",
+      "text_in_image": "03",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_133",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_134",
+      "text_in_image": "0.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_135",
+      "text_in_image": "강 원",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_136",
+      "text_in_image": "66.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_137",
+      "text_in_image": "63.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_138",
+      "text_in_image": "60.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_139",
+      "text_in_image": "66.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_140",
+      "text_in_image": "0.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_141",
+      "text_in_image": "0.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_142",
+      "text_in_image": "1.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_143",
+      "text_in_image": "1.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_144",
+      "text_in_image": "66.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_145",
+      "text_in_image": "65.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_146",
+      "text_in_image": "65.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_147",
+      "text_in_image": "68.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_148",
+      "text_in_image": "04",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_149",
+      "text_in_image": "0.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_150",
+      "text_in_image": "1.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_151",
+      "text_in_image": "0.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_152",
+      "text_in_image": "66.",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_153",
+      "text_in_image": "65.",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_154",
+      "text_in_image": "63.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_155",
+      "text_in_image": "66.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_156",
+      "text_in_image": "2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_157",
+      "text_in_image": "0.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_158",
+      "text_in_image": "1.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_159",
+      "text_in_image": "0.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_160",
+      "text_in_image": "64.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_161",
+      "text_in_image": "62.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_162",
+      "text_in_image": "61.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_163",
+      "text_in_image": "63.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_164",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_165",
+      "text_in_image": "0.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_166",
+      "text_in_image": "08",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_167",
+      "text_in_image": "1.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_168",
+      "text_in_image": "66.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_169",
+      "text_in_image": "65.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_170",
+      "text_in_image": "64.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_171",
+      "text_in_image": "66.6",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_172",
+      "text_in_image": "0.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_173",
+      "text_in_image": "05",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_174",
+      "text_in_image": "-05",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_175",
+      "text_in_image": "0.2",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_176",
+      "text_in_image": "64.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_177",
+      "text_in_image": "64.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_178",
+      "text_in_image": "62.7",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_179",
+      "text_in_image": "65.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_180",
+      "text_in_image": "0.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_181",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_182",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_183",
+      "text_in_image": "0.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_184",
+      "text_in_image": "62.1",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_185",
+      "text_in_image": "61.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_186",
+      "text_in_image": "62.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_187",
+      "text_in_image": "63.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_188",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_189",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_190",
+      "text_in_image": "0.9",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_191",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_192",
+      "text_in_image": "69.5",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_193",
+      "text_in_image": "69.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_194",
+      "text_in_image": "68.8",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_195",
+      "text_in_image": "702",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_196",
+      "text_in_image": "0.4",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_197",
+      "text_in_image": "-.0",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_198",
+      "text_in_image": "0.3",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_199",
+      "text_in_image": "05",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_200",
+      "text_in_image": "1) 고용롭(이",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_201",
+      "text_in_image": "(취업자수",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_202",
+      "text_in_image": "15세",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_203",
+      "text_in_image": "이상 인구",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_204",
+      "text_in_image": "수) X",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_205",
+      "text_in_image": "100",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_206",
+      "text_in_image": "자료: 통계청",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "C3",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_207",
+      "text_in_image": "국가통계 포털(KOSIS)  경제 활동인구조사",
+      "type": "text",
+      "excel_mapping": {
+        "sheet_name": "광공업생산",
+        "cell_or_range": "C3",
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    },
+    {
+      "field_id": "field_208",
+      "text_in_image": "14",
+      "type": "number",
+      "excel_mapping": {
+        "sheet_name": null,
+        "cell_or_range": null,
+        "column_pattern": null,
+        "row_pattern": null
+      }
+    }
+  ],
+  "detected_structure": {
+    "text_regions": [
+      {
+        "text": "4. 고용 동향",
+        "bbox": [
+          120,
+          0,
+          358,
+          50
+        ],
+        "confidence": 0.8806621783252113
+      },
+      {
+        "text": "가 고용률",
+        "bbox": [
+          136,
+          66,
+          308,
+          114
+        ],
+        "confidence": 0.6733917363422781
+      },
+      {
+        "text": "고용물은 대전   부산 강원 등 11개 시도에서   전년동분기대비  상승",
+        "bbox": [
+          175,
+          136,
+          1164,
+          185
+        ],
+        "confidence": 0.3045251224022177
+      },
+      {
+        "text": "2025년 리4분기   전국 고용물은 63.5%로   30대 , 40대 , 60세이상의   고용롭이",
+        "bbox": [
+          160,
+          206,
+          1254,
+          254
+        ],
+        "confidence": 0.23824394602854856
+      },
+      {
+        "text": "올라  전년동분기대비 0.29P 상승",
+        "bbox": [
+          164,
+          258,
+          652,
+          306
+        ],
+        "confidence": 0.7242468756547159
+      },
+      {
+        "text": "대전(12%P); 부산(1O%p); 강원(1.O%p) 등의 고용물은 상승하없으며 전북",
+        "bbox": [
+          177,
+          314,
+          1256,
+          368
+        ],
+        "confidence": 0.2898447540720549
+      },
+      {
+        "text": "(1.0%p); 광주(-0.49P) , 서울(0.29p) 등의 고용물은 하락",
+        "bbox": [
+          175,
+          364,
+          1038,
+          416
+        ],
+        "confidence": 0.13845476989302594
+      },
+      {
+        "text": "주요",
+        "bbox": [
+          182,
+          468,
+          240,
+          500
+        ],
+        "confidence": 0.5014094771392285
+      },
+      {
+        "text": "등락지역",
+        "bbox": [
+          251,
+          467,
+          365,
+          503
+        ],
+        "confidence": 0.8793150782585144
+      },
+      {
+        "text": "및 연령별",
+        "bbox": [
+          377,
+          467,
+          505,
+          503
+        ],
+        "confidence": 0.9946320006101559
+      },
+      {
+        "text": "고용률",
+        "bbox": [
+          517,
+          467,
+          607,
+          503
+        ],
+        "confidence": 0.665964613769635
+      },
+      {
+        "text": "전국(",
+        "bbox": [
+          181,
+          523,
+          261,
+          559
+        ],
+        "confidence": 0.9998657914515785
+      },
+      {
+        "text": "0.2oop): 30~39세(0.99op),",
+        "bbox": [
+          275,
+          522,
+          595,
+          561
+        ],
+        "confidence": 0.4722270775700328
+      },
+      {
+        "text": "40 ~49세(099op) ,",
+        "bbox": [
+          603,
+          522,
+          817,
+          561
+        ],
+        "confidence": 0.763233850569215
+      },
+      {
+        "text": "60세이상(0.89op)",
+        "bbox": [
+          825,
+          521,
+          1037,
+          561
+        ],
+        "confidence": 0.7432084508831434
+      },
+      {
+        "text": "대전",
+        "bbox": [
+          183,
+          583,
+          245,
+          619
+        ],
+        "confidence": 0.992130757792294
+      },
+      {
+        "text": "1.2oop): 60세이상(2.89op) ,",
+        "bbox": [
+          277,
+          583,
+          591,
+          621
+        ],
+        "confidence": 0.6435180126019988
+      },
+      {
+        "text": "15 ~29세(2.49op)",
+        "bbox": [
+          604,
+          586,
+          806,
+          618
+        ],
+        "confidence": 0.5494195324204747
+      },
+      {
+        "text": "부산(",
+        "bbox": [
+          183,
+          615,
+          249,
+          651
+        ],
+        "confidence": 0.2659689246127703
+      },
+      {
+        "text": "1.09op): 50~59세(3.69op),",
+        "bbox": [
+          277,
+          613,
+          596,
+          654
+        ],
+        "confidence": 0.6270081226300082
+      },
+      {
+        "text": "40 ~49세(1.89op)",
+        "bbox": [
+          604,
+          618,
+          806,
+          650
+        ],
+        "confidence": 0.5653199076161962
+      },
+      {
+        "text": "강원",
+        "bbox": [
+          181,
+          647,
+          247,
+          683
+        ],
+        "confidence": 0.08268882084273382
+      },
+      {
+        "text": "1.Ooop): 60세이상(2.99op) ,  50~59세(2.1%p)",
+        "bbox": [
+          276,
+          648,
+          811,
+          685
+        ],
+        "confidence": 0.33478590333187
+      },
+      {
+        "text": "전북",
+        "bbox": [
+          181,
+          691,
+          245,
+          727
+        ],
+        "confidence": 0.9923013145940389
+      },
+      {
+        "text": "-1.09op): 60세이상(-2.59op) ,",
+        "bbox": [
+          257,
+          689,
+          607,
+          730
+        ],
+        "confidence": 0.4509116907557522
+      },
+      {
+        "text": "50~59세(-1.49op)",
+        "bbox": [
+          617,
+          691,
+          842,
+          729
+        ],
+        "confidence": 0.8924613045239329
+      },
+      {
+        "text": "광주",
+        "bbox": [
+          183,
+          721,
+          245,
+          757
+        ],
+        "confidence": 0.9991049183117212
+      },
+      {
+        "text": "0.49pp): 50~59세1(-4.29op) ,",
+        "bbox": [
+          258,
+          719,
+          607,
+          760
+        ],
+        "confidence": 0.4225506939085336
+      },
+      {
+        "text": "15 ~29세(-2.O9op",
+        "bbox": [
+          618,
+          724,
+          832,
+          756
+        ],
+        "confidence": 0.5556255077179264
+      },
+      {
+        "text": "서울",
+        "bbox": [
+          184,
+          754,
+          246,
+          786
+        ],
+        "confidence": 0.9823221037780494
+      },
+      {
+        "text": "0.29op): 30~39세(1.89op) ,",
+        "bbox": [
+          261,
+          753,
+          607,
+          789
+        ],
+        "confidence": 0.5725214233123973
+      },
+      {
+        "text": "15 ~29세(-0.79op",
+        "bbox": [
+          620,
+          753,
+          831,
+          786
+        ],
+        "confidence": 0.5923992612322573
+      },
+      {
+        "text": "고용률",
+        "bbox": [
+          628,
+          872,
+          752,
+          924
+        ],
+        "confidence": 0.49113699259234417
+      },
+      {
+        "text": "[전년동분기비, %",
+        "bbox": [
+          1008,
+          918,
+          1204,
+          948
+        ],
+        "confidence": 0.9179254210302419
+      },
+      {
+        "text": "op",
+        "bbox": [
+          1223,
+          927,
+          1245,
+          943
+        ],
+        "confidence": 0.8314384951068067
+      },
+      {
+        "text": "고용률",
+        "bbox": [
+          476,
+          954,
+          558,
+          986
+        ],
+        "confidence": 0.8085447703085693
+      },
+      {
+        "text": "고용률",
+        "bbox": [
+          932,
+          954,
+          1014,
+          986
+        ],
+        "confidence": 0.8652732869015954
+      },
+      {
+        "text": "증감",
+        "bbox": [
+          1024,
+          954,
+          1082,
+          986
+        ],
+        "confidence": 0.9883641327541585
+      },
+      {
+        "text": "시",
+        "bbox": [
+          164,
+          988,
+          192,
+          1014
+        ],
+        "confidence": 0.9999891519840709
+      },
+      {
+        "text": "도",
+        "bbox": [
+          204,
+          986,
+          234,
+          1016
+        ],
+        "confidence": 0.8835757328535945
+      },
+      {
+        "text": "2024",
+        "bbox": [
+          302,
+          988,
+          366,
+          1018
+        ],
+        "confidence": 0.5911326881488053
+      },
+      {
+        "text": "2024",
+        "bbox": [
+          424,
+          988,
+          488,
+          1018
+        ],
+        "confidence": 0.7360496515533411
+      },
+      {
+        "text": "2025",
+        "bbox": [
+          546,
+          988,
+          610,
+          1018
+        ],
+        "confidence": 0.9999945759773254
+      },
+      {
+        "text": "2025",
+        "bbox": [
+          668,
+          988,
+          732,
+          1018
+        ],
+        "confidence": 0.9999933242797852
+      },
+      {
+        "text": "2024",
+        "bbox": [
+          790,
+          988,
+          854,
+          1018
+        ],
+        "confidence": 0.9999943375587463
+      },
+      {
+        "text": "2024",
+        "bbox": [
+          914,
+          988,
+          976,
+          1018
+        ],
+        "confidence": 0.9999914169311523
+      },
+      {
+        "text": "2025",
+        "bbox": [
+          1036,
+          988,
+          1100,
+          1018
+        ],
+        "confidence": 0.9999841451644897
+      },
+      {
+        "text": "2025",
+        "bbox": [
+          1158,
+          988,
+          1222,
+          1018
+        ],
+        "confidence": 0.9999759793281555
+      },
+      {
+        "text": "3/4",
+        "bbox": [
+          312,
+          1018,
+          356,
+          1046
+        ],
+        "confidence": 0.717060552696591
+      },
+      {
+        "text": "414",
+        "bbox": [
+          436,
+          1018,
+          478,
+          1046
+        ],
+        "confidence": 0.7533980011940002
+      },
+      {
+        "text": "114",
+        "bbox": [
+          558,
+          1018,
+          600,
+          1048
+        ],
+        "confidence": 0.46513908537241233
+      },
+      {
+        "text": "리4",
+        "bbox": [
+          678,
+          1018,
+          722,
+          1048
+        ],
+        "confidence": 0.9375551965311505
+      },
+      {
+        "text": "3/4",
+        "bbox": [
+          800,
+          1018,
+          844,
+          1048
+        ],
+        "confidence": 0.7344123212371145
+      },
+      {
+        "text": "414",
+        "bbox": [
+          924,
+          1018,
+          968,
+          1048
+        ],
+        "confidence": 0.5172473788261414
+      },
+      {
+        "text": "1/4",
+        "bbox": [
+          1046,
+          1018,
+          1088,
+          1046
+        ],
+        "confidence": 0.5453878045082092
+      },
+      {
+        "text": "리l4",
+        "bbox": [
+          1166,
+          1018,
+          1212,
+          1048
+        ],
+        "confidence": 0.3766068057760639
+      },
+      {
+        "text": "국",
+        "bbox": [
+          204,
+          1048,
+          234,
+          1080
+        ],
+        "confidence": 0.9999454028906172
+      },
+      {
+        "text": "63.3",
+        "bbox": [
+          336,
+          1052,
+          386,
+          1078
+        ],
+        "confidence": 0.9147838481438519
+      },
+      {
+        "text": "62.6",
+        "bbox": [
+          458,
+          1052,
+          508,
+          1080
+        ],
+        "confidence": 0.9925465199789906
+      },
+      {
+        "text": "61.8",
+        "bbox": [
+          580,
+          1052,
+          630,
+          1078
+        ],
+        "confidence": 0.9170129473933217
+      },
+      {
+        "text": "63.5",
+        "bbox": [
+          702,
+          1052,
+          754,
+          1080
+        ],
+        "confidence": 0.9999642968177795
+      },
+      {
+        "text": "01",
+        "bbox": [
+          836,
+          1052,
+          872,
+          1078
+        ],
+        "confidence": 0.9993731653328499
+      },
+      {
+        "text": "0.1",
+        "bbox": [
+          958,
+          1052,
+          994,
+          1078
+        ],
+        "confidence": 0.7598074213589568
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          1080,
+          1052,
+          1118,
+          1078
+        ],
+        "confidence": 0.9892738486045729
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          1202,
+          1052,
+          1242,
+          1078
+        ],
+        "confidence": 0.9605227821299631
+      },
+      {
+        "text": "61.8",
+        "bbox": [
+          336,
+          1084,
+          386,
+          1110
+        ],
+        "confidence": 0.9982408881187439
+      },
+      {
+        "text": "61.6",
+        "bbox": [
+          458,
+          1084,
+          510,
+          1112
+        ],
+        "confidence": 0.9801696282084588
+      },
+      {
+        "text": "60.4",
+        "bbox": [
+          580,
+          1084,
+          630,
+          1110
+        ],
+        "confidence": 0.7498567571179908
+      },
+      {
+        "text": "61.8",
+        "bbox": [
+          702,
+          1084,
+          752,
+          1110
+        ],
+        "confidence": 0.9995759129524231
+      },
+      {
+        "text": "0.6",
+        "bbox": [
+          836,
+          1084,
+          876,
+          1110
+        ],
+        "confidence": 0.9625340016515389
+      },
+      {
+        "text": "0.1",
+        "bbox": [
+          958,
+          1084,
+          994,
+          1110
+        ],
+        "confidence": 0.493538782065156
+      },
+      {
+        "text": "1.1",
+        "bbox": [
+          1080,
+          1084,
+          1116,
+          1110
+        ],
+        "confidence": 0.9624975919723511
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          1202,
+          1084,
+          1240,
+          1110
+        ],
+        "confidence": 0.7964301372110781
+      },
+      {
+        "text": "훔",
+        "bbox": [
+          164,
+          1050,
+          194,
+          1210
+        ],
+        "confidence": 0.002182946197697655
+      },
+      {
+        "text": "58.3",
+        "bbox": [
+          336,
+          1116,
+          388,
+          1144
+        ],
+        "confidence": 0.9430693225101315
+      },
+      {
+        "text": "57.7",
+        "bbox": [
+          458,
+          1116,
+          506,
+          1142
+        ],
+        "confidence": 0.6669261670704116
+      },
+      {
+        "text": "57.4",
+        "bbox": [
+          580,
+          1116,
+          630,
+          1142
+        ],
+        "confidence": 0.8593026125021681
+      },
+      {
+        "text": "58.9",
+        "bbox": [
+          702,
+          1116,
+          752,
+          1144
+        ],
+        "confidence": 0.8166933412986803
+      },
+      {
+        "text": "0.1",
+        "bbox": [
+          836,
+          1116,
+          872,
+          1142
+        ],
+        "confidence": 0.8938369515651952
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          958,
+          1116,
+          996,
+          1142
+        ],
+        "confidence": 0.9475118835543765
+      },
+      {
+        "text": "0.1",
+        "bbox": [
+          1080,
+          1116,
+          1116,
+          1142
+        ],
+        "confidence": 0.7211402897430415
+      },
+      {
+        "text": "1.0",
+        "bbox": [
+          1204,
+          1116,
+          1242,
+          1142
+        ],
+        "confidence": 0.9994004850171585
+      },
+      {
+        "text": "#",
+        "bbox": [
+          204,
+          1082,
+          236,
+          1242
+        ],
+        "confidence": 0.029684382323021063
+      },
+      {
+        "text": "58.0",
+        "bbox": [
+          336,
+          1148,
+          386,
+          1176
+        ],
+        "confidence": 0.9983969692291527
+      },
+      {
+        "text": "57.6",
+        "bbox": [
+          458,
+          1148,
+          508,
+          1176
+        ],
+        "confidence": 0.9022294426485865
+      },
+      {
+        "text": "57.3",
+        "bbox": [
+          580,
+          1148,
+          632,
+          1178
+        ],
+        "confidence": 0.5837891762694085
+      },
+      {
+        "text": "58.5",
+        "bbox": [
+          702,
+          1148,
+          752,
+          1178
+        ],
+        "confidence": 0.8346716161636336
+      },
+      {
+        "text": "-2.3",
+        "bbox": [
+          824,
+          1148,
+          876,
+          1176
+        ],
+        "confidence": 0.8588182330131531
+      },
+      {
+        "text": "-1.4",
+        "bbox": [
+          946,
+          1150,
+          996,
+          1174
+        ],
+        "confidence": 0.4181399941444397
+      },
+      {
+        "text": "05",
+        "bbox": [
+          1068,
+          1148,
+          1120,
+          1174
+        ],
+        "confidence": 0.9999915706407035
+      },
+      {
+        "text": "0.0",
+        "bbox": [
+          1202,
+          1148,
+          1242,
+          1174
+        ],
+        "confidence": 0.9935106546682981
+      },
+      {
+        "text": "64.4",
+        "bbox": [
+          336,
+          1180,
+          386,
+          1208
+        ],
+        "confidence": 0.9994701147079468
+      },
+      {
+        "text": "63.9",
+        "bbox": [
+          458,
+          1180,
+          508,
+          1210
+        ],
+        "confidence": 0.6314081591237168
+      },
+      {
+        "text": "62.9",
+        "bbox": [
+          580,
+          1180,
+          632,
+          1210
+        ],
+        "confidence": 0.842110381908148
+      },
+      {
+        "text": "63.8",
+        "bbox": [
+          702,
+          1180,
+          752,
+          1210
+        ],
+        "confidence": 0.678478831163178
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          836,
+          1180,
+          874,
+          1208
+        ],
+        "confidence": 0.9853730221489865
+      },
+      {
+        "text": "1.0",
+        "bbox": [
+          960,
+          1180,
+          998,
+          1208
+        ],
+        "confidence": 0.9987918658954776
+      },
+      {
+        "text": "0.6",
+        "bbox": [
+          1080,
+          1180,
+          1120,
+          1208
+        ],
+        "confidence": 0.948361073368086
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          1202,
+          1180,
+          1242,
+          1210
+        ],
+        "confidence": 0.5467390418052673
+      },
+      {
+        "text": "광",
+        "bbox": [
+          164,
+          1210,
+          196,
+          1244
+        ],
+        "confidence": 0.9981573971256239
+      },
+      {
+        "text": "60.5",
+        "bbox": [
+          334,
+          1212,
+          386,
+          1240
+        ],
+        "confidence": 0.998579740524292
+      },
+      {
+        "text": "59.2",
+        "bbox": [
+          458,
+          1212,
+          508,
+          1242
+        ],
+        "confidence": 0.9272084235719876
+      },
+      {
+        "text": "59.9",
+        "bbox": [
+          580,
+          1212,
+          632,
+          1242
+        ],
+        "confidence": 0.9653370561335588
+      },
+      {
+        "text": "61.0",
+        "bbox": [
+          702,
+          1212,
+          752,
+          1240
+        ],
+        "confidence": 0.5887161845351359
+      },
+      {
+        "text": "01",
+        "bbox": [
+          836,
+          1214,
+          872,
+          1240
+        ],
+        "confidence": 0.9989323344588983
+      },
+      {
+        "text": "-1.2",
+        "bbox": [
+          946,
+          1214,
+          996,
+          1240
+        ],
+        "confidence": 0.6831662058830261
+      },
+      {
+        "text": "-1.2",
+        "bbox": [
+          1068,
+          1212,
+          1118,
+          1240
+        ],
+        "confidence": 0.9523652791976929
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          1192,
+          1212,
+          1240,
+          1240
+        ],
+        "confidence": 0.7870881998407758
+      },
+      {
+        "text": "대",
+        "bbox": [
+          164,
+          1242,
+          194,
+          1274
+        ],
+        "confidence": 0.999999046325911
+      },
+      {
+        "text": "60.5",
+        "bbox": [
+          334,
+          1244,
+          386,
+          1272
+        ],
+        "confidence": 0.9818354845046997
+      },
+      {
+        "text": "60.3",
+        "bbox": [
+          458,
+          1246,
+          508,
+          1272
+        ],
+        "confidence": 0.9801166850379747
+      },
+      {
+        "text": "61.0",
+        "bbox": [
+          580,
+          1244,
+          630,
+          1272
+        ],
+        "confidence": 0.9998250007629395
+      },
+      {
+        "text": "62.5",
+        "bbox": [
+          702,
+          1244,
+          752,
+          1274
+        ],
+        "confidence": 0.9374978762515002
+      },
+      {
+        "text": "1.1",
+        "bbox": [
+          841,
+          1249,
+          871,
+          1269
+        ],
+        "confidence": 0.9527822348808886
+      },
+      {
+        "text": "-1.1",
+        "bbox": [
+          946,
+          1246,
+          994,
+          1272
+        ],
+        "confidence": 0.5985891532114135
+      },
+      {
+        "text": "0.5",
+        "bbox": [
+          1080,
+          1244,
+          1120,
+          1272
+        ],
+        "confidence": 0.8658318519592285
+      },
+      {
+        "text": "1.2",
+        "bbox": [
+          1204,
+          1246,
+          1240,
+          1272
+        ],
+        "confidence": 0.9990467586772536
+      },
+      {
+        "text": "울",
+        "bbox": [
+          166,
+          1274,
+          194,
+          1308
+        ],
+        "confidence": 0.9693756721145839
+      },
+      {
+        "text": "전",
+        "bbox": [
+          204,
+          1242,
+          236,
+          1308
+        ],
+        "confidence": 0.7794778877474187
+      },
+      {
+        "text": "60.2",
+        "bbox": [
+          334,
+          1276,
+          388,
+          1306
+        ],
+        "confidence": 0.9021996008365968
+      },
+      {
+        "text": "60.1",
+        "bbox": [
+          458,
+          1278,
+          506,
+          1306
+        ],
+        "confidence": 0.9920652508735657
+      },
+      {
+        "text": "59.4",
+        "bbox": [
+          580,
+          1276,
+          630,
+          1304
+        ],
+        "confidence": 0.9997949004173279
+      },
+      {
+        "text": "60.6",
+        "bbox": [
+          702,
+          1278,
+          752,
+          1304
+        ],
+        "confidence": 0.9984580278396606
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          836,
+          1278,
+          876,
+          1304
+        ],
+        "confidence": 0.9861008950627713
+      },
+      {
+        "text": "0.0",
+        "bbox": [
+          958,
+          1278,
+          998,
+          1304
+        ],
+        "confidence": 0.9824109603915742
+      },
+      {
+        "text": "0.8",
+        "bbox": [
+          1080,
+          1278,
+          1120,
+          1304
+        ],
+        "confidence": 0.8588430942045451
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          1202,
+          1278,
+          1242,
+          1306
+        ],
+        "confidence": 0.941704297100634
+      },
+      {
+        "text": "세 종",
+        "bbox": [
+          163,
+          1305,
+          235,
+          1341
+        ],
+        "confidence": 0.961230905425121
+      },
+      {
+        "text": "65.8",
+        "bbox": [
+          334,
+          1310,
+          386,
+          1336
+        ],
+        "confidence": 0.9997298121452332
+      },
+      {
+        "text": "66.0",
+        "bbox": [
+          458,
+          1310,
+          508,
+          1336
+        ],
+        "confidence": 0.9999687075614929
+      },
+      {
+        "text": "64.0",
+        "bbox": [
+          580,
+          1310,
+          630,
+          1338
+        ],
+        "confidence": 0.9552250417190056
+      },
+      {
+        "text": "65.6",
+        "bbox": [
+          702,
+          1310,
+          754,
+          1338
+        ],
+        "confidence": 0.8150171975951862
+      },
+      {
+        "text": "0.6",
+        "bbox": [
+          836,
+          1310,
+          876,
+          1336
+        ],
+        "confidence": 0.9595702239654695
+      },
+      {
+        "text": "2.0",
+        "bbox": [
+          958,
+          1310,
+          998,
+          1336
+        ],
+        "confidence": 0.99995058344352
+      },
+      {
+        "text": "0.7",
+        "bbox": [
+          1080,
+          1310,
+          1118,
+          1336
+        ],
+        "confidence": 0.9503280560290991
+      },
+      {
+        "text": "0.0",
+        "bbox": [
+          1202,
+          1310,
+          1242,
+          1336
+        ],
+        "confidence": 0.9816618267118569
+      },
+      {
+        "text": "경",
+        "bbox": [
+          164,
+          1340,
+          194,
+          1372
+        ],
+        "confidence": 0.999993562708724
+      },
+      {
+        "text": "기",
+        "bbox": [
+          204,
+          1342,
+          234,
+          1372
+        ],
+        "confidence": 0.9999995231628986
+      },
+      {
+        "text": "64.7",
+        "bbox": [
+          336,
+          1342,
+          384,
+          1370
+        ],
+        "confidence": 0.853428031699843
+      },
+      {
+        "text": "64.0",
+        "bbox": [
+          458,
+          1342,
+          508,
+          1370
+        ],
+        "confidence": 0.9466226346051785
+      },
+      {
+        "text": "63.2",
+        "bbox": [
+          580,
+          1342,
+          630,
+          1370
+        ],
+        "confidence": 0.7508802341684591
+      },
+      {
+        "text": "64.",
+        "bbox": [
+          702,
+          1342,
+          738,
+          1370
+        ],
+        "confidence": 0.8534226417541504
+      },
+      {
+        "text": "01",
+        "bbox": [
+          836,
+          1342,
+          870,
+          1368
+        ],
+        "confidence": 0.9998690943982164
+      },
+      {
+        "text": "03",
+        "bbox": [
+          946,
+          1342,
+          998,
+          1368
+        ],
+        "confidence": 0.9999352630544434
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          1080,
+          1342,
+          1118,
+          1368
+        ],
+        "confidence": 0.9884040329907299
+      },
+      {
+        "text": "0.1",
+        "bbox": [
+          1202,
+          1342,
+          1238,
+          1368
+        ],
+        "confidence": 0.7875931841413454
+      },
+      {
+        "text": "강 원",
+        "bbox": [
+          161,
+          1369,
+          233,
+          1405
+        ],
+        "confidence": 0.9980196952819824
+      },
+      {
+        "text": "66.2",
+        "bbox": [
+          334,
+          1374,
+          386,
+          1402
+        ],
+        "confidence": 0.999790054683487
+      },
+      {
+        "text": "63.4",
+        "bbox": [
+          458,
+          1374,
+          508,
+          1404
+        ],
+        "confidence": 0.7435428199474939
+      },
+      {
+        "text": "60.2",
+        "bbox": [
+          580,
+          1374,
+          630,
+          1402
+        ],
+        "confidence": 0.9996688365936279
+      },
+      {
+        "text": "66.7",
+        "bbox": [
+          702,
+          1374,
+          750,
+          1404
+        ],
+        "confidence": 0.9999530852969051
+      },
+      {
+        "text": "0.8",
+        "bbox": [
+          836,
+          1376,
+          874,
+          1402
+        ],
+        "confidence": 0.8940944547851638
+      },
+      {
+        "text": "0.5",
+        "bbox": [
+          958,
+          1374,
+          996,
+          1400
+        ],
+        "confidence": 0.9687173524972544
+      },
+      {
+        "text": "1.3",
+        "bbox": [
+          1082,
+          1374,
+          1120,
+          1402
+        ],
+        "confidence": 0.7730531079753091
+      },
+      {
+        "text": "1.0",
+        "bbox": [
+          1204,
+          1374,
+          1242,
+          1402
+        ],
+        "confidence": 0.9997895345413559
+      },
+      {
+        "text": "충",
+        "bbox": [
+          164,
+          1404,
+          194,
+          1438
+        ],
+        "confidence": 0.8867222962652619
+      },
+      {
+        "text": "북",
+        "bbox": [
+          206,
+          1404,
+          234,
+          1436
+        ],
+        "confidence": 0.9993678138746418
+      },
+      {
+        "text": "66.6",
+        "bbox": [
+          334,
+          1406,
+          386,
+          1434
+        ],
+        "confidence": 0.9588865597151545
+      },
+      {
+        "text": "65.6",
+        "bbox": [
+          458,
+          1406,
+          508,
+          1434
+        ],
+        "confidence": 0.9999793171882629
+      },
+      {
+        "text": "65.2",
+        "bbox": [
+          580,
+          1406,
+          632,
+          1436
+        ],
+        "confidence": 0.9894305169206528
+      },
+      {
+        "text": "68.1",
+        "bbox": [
+          702,
+          1406,
+          748,
+          1436
+        ],
+        "confidence": 0.9999650120735168
+      },
+      {
+        "text": "04",
+        "bbox": [
+          841,
+          1411,
+          873,
+          1431
+        ],
+        "confidence": 0.9991344134961945
+      },
+      {
+        "text": "0.0",
+        "bbox": [
+          960,
+          1408,
+          996,
+          1434
+        ],
+        "confidence": 0.9959760325404212
+      },
+      {
+        "text": "1.2",
+        "bbox": [
+          1084,
+          1408,
+          1118,
+          1434
+        ],
+        "confidence": 0.8462015986442566
+      },
+      {
+        "text": "0.8",
+        "bbox": [
+          1202,
+          1406,
+          1242,
+          1434
+        ],
+        "confidence": 0.6964443325996399
+      },
+      {
+        "text": "충",
+        "bbox": [
+          164,
+          1436,
+          194,
+          1470
+        ],
+        "confidence": 0.6468020546971367
+      },
+      {
+        "text": "66.",
+        "bbox": [
+          336,
+          1440,
+          372,
+          1468
+        ],
+        "confidence": 0.4466127555538856
+      },
+      {
+        "text": "65.",
+        "bbox": [
+          458,
+          1440,
+          496,
+          1466
+        ],
+        "confidence": 0.9698699650805161
+      },
+      {
+        "text": "63.0",
+        "bbox": [
+          580,
+          1438,
+          630,
+          1466
+        ],
+        "confidence": 0.9999831914901733
+      },
+      {
+        "text": "66.9",
+        "bbox": [
+          702,
+          1438,
+          752,
+          1468
+        ],
+        "confidence": 0.9733782408887921
+      },
+      {
+        "text": "2",
+        "bbox": [
+          857,
+          1441,
+          873,
+          1465
+        ],
+        "confidence": 0.9814443460187008
+      },
+      {
+        "text": "0.8",
+        "bbox": [
+          962,
+          1442,
+          996,
+          1466
+        ],
+        "confidence": 0.9548429881151118
+      },
+      {
+        "text": "1.9",
+        "bbox": [
+          1084,
+          1440,
+          1118,
+          1466
+        ],
+        "confidence": 0.7744027376174927
+      },
+      {
+        "text": "0.7",
+        "bbox": [
+          1202,
+          1438,
+          1242,
+          1468
+        ],
+        "confidence": 0.9191583395004272
+      },
+      {
+        "text": "북",
+        "bbox": [
+          204,
+          1436,
+          232,
+          1500
+        ],
+        "confidence": 0.29603325008418224
+      },
+      {
+        "text": "64.8",
+        "bbox": [
+          336,
+          1472,
+          386,
+          1498
+        ],
+        "confidence": 0.999602735042572
+      },
+      {
+        "text": "62.9",
+        "bbox": [
+          458,
+          1472,
+          508,
+          1500
+        ],
+        "confidence": 0.5743995712294486
+      },
+      {
+        "text": "61.8",
+        "bbox": [
+          580,
+          1472,
+          630,
+          1500
+        ],
+        "confidence": 0.9991735816001892
+      },
+      {
+        "text": "63.8",
+        "bbox": [
+          702,
+          1472,
+          752,
+          1500
+        ],
+        "confidence": 0.9999462962150574
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          840,
+          1472,
+          874,
+          1498
+        ],
+        "confidence": 0.6286858432165123
+      },
+      {
+        "text": "0.6",
+        "bbox": [
+          948,
+          1472,
+          998,
+          1498
+        ],
+        "confidence": 0.4889594543635705
+      },
+      {
+        "text": "08",
+        "bbox": [
+          1068,
+          1472,
+          1120,
+          1498
+        ],
+        "confidence": 0.9999973026027609
+      },
+      {
+        "text": "1.0",
+        "bbox": [
+          1204,
+          1470,
+          1244,
+          1500
+        ],
+        "confidence": 0.9998726050581931
+      },
+      {
+        "text": "출",
+        "bbox": [
+          164,
+          1468,
+          194,
+          1566
+        ],
+        "confidence": 0.012853552892057307
+      },
+      {
+        "text": "66.6",
+        "bbox": [
+          336,
+          1504,
+          386,
+          1530
+        ],
+        "confidence": 0.999739833371845
+      },
+      {
+        "text": "65.7",
+        "bbox": [
+          458,
+          1504,
+          506,
+          1530
+        ],
+        "confidence": 0.8785519334093316
+      },
+      {
+        "text": "64.6",
+        "bbox": [
+          580,
+          1504,
+          630,
+          1532
+        ],
+        "confidence": 0.9384864720531854
+      },
+      {
+        "text": "66.6",
+        "bbox": [
+          702,
+          1504,
+          754,
+          1532
+        ],
+        "confidence": 0.9999761581420898
+      },
+      {
+        "text": "0.7",
+        "bbox": [
+          836,
+          1504,
+          872,
+          1530
+        ],
+        "confidence": 0.9936149726794214
+      },
+      {
+        "text": "05",
+        "bbox": [
+          948,
+          1504,
+          998,
+          1530
+        ],
+        "confidence": 0.9999779151228091
+      },
+      {
+        "text": "-05",
+        "bbox": [
+          1068,
+          1504,
+          1120,
+          1530
+        ],
+        "confidence": 0.6964985848130582
+      },
+      {
+        "text": "0.2",
+        "bbox": [
+          1202,
+          1502,
+          1242,
+          1532
+        ],
+        "confidence": 0.9952500070094961
+      },
+      {
+        "text": "북",
+        "bbox": [
+          204,
+          1500,
+          232,
+          1564
+        ],
+        "confidence": 0.36148571398939566
+      },
+      {
+        "text": "64.8",
+        "bbox": [
+          334,
+          1536,
+          386,
+          1562
+        ],
+        "confidence": 0.9991252422332764
+      },
+      {
+        "text": "64.0",
+        "bbox": [
+          458,
+          1536,
+          508,
+          1564
+        ],
+        "confidence": 0.9422105984782929
+      },
+      {
+        "text": "62.7",
+        "bbox": [
+          580,
+          1536,
+          630,
+          1562
+        ],
+        "confidence": 0.9039524074893569
+      },
+      {
+        "text": "65.5",
+        "bbox": [
+          702,
+          1536,
+          752,
+          1566
+        ],
+        "confidence": 0.9975136956478048
+      },
+      {
+        "text": "0.8",
+        "bbox": [
+          836,
+          1536,
+          876,
+          1564
+        ],
+        "confidence": 0.969799707825422
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          958,
+          1536,
+          998,
+          1562
+        ],
+        "confidence": 0.9811954677111366
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          1080,
+          1536,
+          1118,
+          1562
+        ],
+        "confidence": 0.9887054365128154
+      },
+      {
+        "text": "0.5",
+        "bbox": [
+          1202,
+          1536,
+          1242,
+          1562
+        ],
+        "confidence": 0.7546002268791199
+      },
+      {
+        "text": "경",
+        "bbox": [
+          164,
+          1566,
+          194,
+          1598
+        ],
+        "confidence": 0.9999866486041356
+      },
+      {
+        "text": "62.1",
+        "bbox": [
+          334,
+          1568,
+          382,
+          1598
+        ],
+        "confidence": 0.9991663694381714
+      },
+      {
+        "text": "61.9",
+        "bbox": [
+          458,
+          1568,
+          508,
+          1598
+        ],
+        "confidence": 0.6175024419284284
+      },
+      {
+        "text": "62.3",
+        "bbox": [
+          580,
+          1568,
+          632,
+          1598
+        ],
+        "confidence": 0.9895591057545559
+      },
+      {
+        "text": "63.3",
+        "bbox": [
+          702,
+          1568,
+          754,
+          1596
+        ],
+        "confidence": 0.9998583197593689
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          824,
+          1568,
+          876,
+          1596
+        ],
+        "confidence": 0.9436563137951489
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          946,
+          1568,
+          998,
+          1596
+        ],
+        "confidence": 0.8991277930898628
+      },
+      {
+        "text": "0.9",
+        "bbox": [
+          1080,
+          1568,
+          1120,
+          1596
+        ],
+        "confidence": 0.9197510046440331
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          1202,
+          1568,
+          1242,
+          1594
+        ],
+        "confidence": 0.8745430707931519
+      },
+      {
+        "text": "제",
+        "bbox": [
+          164,
+          1598,
+          194,
+          1628
+        ],
+        "confidence": 0.9999878406894283
+      },
+      {
+        "text": "낮",
+        "bbox": [
+          204,
+          1566,
+          236,
+          1628
+        ],
+        "confidence": 0.6843328058735985
+      },
+      {
+        "text": "69.5",
+        "bbox": [
+          334,
+          1600,
+          386,
+          1628
+        ],
+        "confidence": 0.9995419383049011
+      },
+      {
+        "text": "69.0",
+        "bbox": [
+          458,
+          1600,
+          508,
+          1628
+        ],
+        "confidence": 0.5657286227326338
+      },
+      {
+        "text": "68.8",
+        "bbox": [
+          580,
+          1600,
+          630,
+          1628
+        ],
+        "confidence": 0.9997736811637878
+      },
+      {
+        "text": "702",
+        "bbox": [
+          702,
+          1600,
+          754,
+          1630
+        ],
+        "confidence": 0.9999317254009753
+      },
+      {
+        "text": "0.4",
+        "bbox": [
+          824,
+          1602,
+          874,
+          1626
+        ],
+        "confidence": 0.4746577519092801
+      },
+      {
+        "text": "-.0",
+        "bbox": [
+          946,
+          1602,
+          998,
+          1628
+        ],
+        "confidence": 0.8473501156321577
+      },
+      {
+        "text": "0.3",
+        "bbox": [
+          1068,
+          1600,
+          1120,
+          1628
+        ],
+        "confidence": 0.6185450826956702
+      },
+      {
+        "text": "05",
+        "bbox": [
+          1202,
+          1602,
+          1244,
+          1630
+        ],
+        "confidence": 0.9999984827137908
+      },
+      {
+        "text": "1) 고용롭(이",
+        "bbox": [
+          146,
+          1638,
+          278,
+          1668
+        ],
+        "confidence": 0.6144065719054332
+      },
+      {
+        "text": "(취업자수",
+        "bbox": [
+          311,
+          1635,
+          418,
+          1667
+        ],
+        "confidence": 0.9963679101590578
+      },
+      {
+        "text": "15세",
+        "bbox": [
+          452,
+          1638,
+          502,
+          1664
+        ],
+        "confidence": 0.9997651710357326
+      },
+      {
+        "text": "이상 인구",
+        "bbox": [
+          512,
+          1638,
+          620,
+          1666
+        ],
+        "confidence": 0.6268158768166059
+      },
+      {
+        "text": "수) X",
+        "bbox": [
+          630,
+          1638,
+          688,
+          1666
+        ],
+        "confidence": 0.7192791545292301
+      },
+      {
+        "text": "100",
+        "bbox": [
+          696,
+          1638,
+          736,
+          1664
+        ],
+        "confidence": 0.9727744134659843
+      },
+      {
+        "text": "자료: 통계청",
+        "bbox": [
+          146,
+          1666,
+          284,
+          1696
+        ],
+        "confidence": 0.8709073796180837
+      },
+      {
+        "text": "국가통계 포털(KOSIS)  경제 활동인구조사",
+        "bbox": [
+          292,
+          1666,
+          724,
+          1696
+        ],
+        "confidence": 0.7003965848348748
+      },
+      {
+        "text": "14",
+        "bbox": [
+          672,
+          1734,
+          708,
+          1760
+        ],
+        "confidence": 0.999962910974765
+      }
+    ],
+    "tables": [],
+    "layout": {
+      "width": 1342,
+      "height": 1784,
+      "rows": [
+        [
+          {
+            "text": "4. 고용 동향",
+            "bbox": [
+              120,
+              0,
+              358,
+              50
+            ],
+            "confidence": 0.8806621783252113
+          }
+        ],
+        [
+          {
+            "text": "가 고용률",
+            "bbox": [
+              136,
+              66,
+              308,
+              114
+            ],
+            "confidence": 0.6733917363422781
+          }
+        ],
+        [
+          {
+            "text": "고용물은 대전   부산 강원 등 11개 시도에서   전년동분기대비  상승",
+            "bbox": [
+              175,
+              136,
+              1164,
+              185
+            ],
+            "confidence": 0.3045251224022177
+          }
+        ],
+        [
+          {
+            "text": "2025년 리4분기   전국 고용물은 63.5%로   30대 , 40대 , 60세이상의   고용롭이",
+            "bbox": [
+              160,
+              206,
+              1254,
+              254
+            ],
+            "confidence": 0.23824394602854856
+          }
+        ],
+        [
+          {
+            "text": "올라  전년동분기대비 0.29P 상승",
+            "bbox": [
+              164,
+              258,
+              652,
+              306
+            ],
+            "confidence": 0.7242468756547159
+          }
+        ],
+        [
+          {
+            "text": "대전(12%P); 부산(1O%p); 강원(1.O%p) 등의 고용물은 상승하없으며 전북",
+            "bbox": [
+              177,
+              314,
+              1256,
+              368
+            ],
+            "confidence": 0.2898447540720549
+          }
+        ],
+        [
+          {
+            "text": "(1.0%p); 광주(-0.49P) , 서울(0.29p) 등의 고용물은 하락",
+            "bbox": [
+              175,
+              364,
+              1038,
+              416
+            ],
+            "confidence": 0.13845476989302594
+          }
+        ],
+        [
+          {
+            "text": "주요",
+            "bbox": [
+              182,
+              468,
+              240,
+              500
+            ],
+            "confidence": 0.5014094771392285
+          },
+          {
+            "text": "등락지역",
+            "bbox": [
+              251,
+              467,
+              365,
+              503
+            ],
+            "confidence": 0.8793150782585144
+          },
+          {
+            "text": "및 연령별",
+            "bbox": [
+              377,
+              467,
+              505,
+              503
+            ],
+            "confidence": 0.9946320006101559
+          },
+          {
+            "text": "고용률",
+            "bbox": [
+              517,
+              467,
+              607,
+              503
+            ],
+            "confidence": 0.665964613769635
+          }
+        ],
+        [
+          {
+            "text": "전국(",
+            "bbox": [
+              181,
+              523,
+              261,
+              559
+            ],
+            "confidence": 0.9998657914515785
+          },
+          {
+            "text": "0.2oop): 30~39세(0.99op),",
+            "bbox": [
+              275,
+              522,
+              595,
+              561
+            ],
+            "confidence": 0.4722270775700328
+          },
+          {
+            "text": "40 ~49세(099op) ,",
+            "bbox": [
+              603,
+              522,
+              817,
+              561
+            ],
+            "confidence": 0.763233850569215
+          },
+          {
+            "text": "60세이상(0.89op)",
+            "bbox": [
+              825,
+              521,
+              1037,
+              561
+            ],
+            "confidence": 0.7432084508831434
+          }
+        ],
+        [
+          {
+            "text": "대전",
+            "bbox": [
+              183,
+              583,
+              245,
+              619
+            ],
+            "confidence": 0.992130757792294
+          },
+          {
+            "text": "1.2oop): 60세이상(2.89op) ,",
+            "bbox": [
+              277,
+              583,
+              591,
+              621
+            ],
+            "confidence": 0.6435180126019988
+          },
+          {
+            "text": "15 ~29세(2.49op)",
+            "bbox": [
+              604,
+              586,
+              806,
+              618
+            ],
+            "confidence": 0.5494195324204747
+          }
+        ],
+        [
+          {
+            "text": "부산(",
+            "bbox": [
+              183,
+              615,
+              249,
+              651
+            ],
+            "confidence": 0.2659689246127703
+          },
+          {
+            "text": "1.09op): 50~59세(3.69op),",
+            "bbox": [
+              277,
+              613,
+              596,
+              654
+            ],
+            "confidence": 0.6270081226300082
+          },
+          {
+            "text": "40 ~49세(1.89op)",
+            "bbox": [
+              604,
+              618,
+              806,
+              650
+            ],
+            "confidence": 0.5653199076161962
+          }
+        ],
+        [
+          {
+            "text": "강원",
+            "bbox": [
+              181,
+              647,
+              247,
+              683
+            ],
+            "confidence": 0.08268882084273382
+          },
+          {
+            "text": "1.Ooop): 60세이상(2.99op) ,  50~59세(2.1%p)",
+            "bbox": [
+              276,
+              648,
+              811,
+              685
+            ],
+            "confidence": 0.33478590333187
+          }
+        ],
+        [
+          {
+            "text": "전북",
+            "bbox": [
+              181,
+              691,
+              245,
+              727
+            ],
+            "confidence": 0.9923013145940389
+          },
+          {
+            "text": "-1.09op): 60세이상(-2.59op) ,",
+            "bbox": [
+              257,
+              689,
+              607,
+              730
+            ],
+            "confidence": 0.4509116907557522
+          },
+          {
+            "text": "50~59세(-1.49op)",
+            "bbox": [
+              617,
+              691,
+              842,
+              729
+            ],
+            "confidence": 0.8924613045239329
+          }
+        ],
+        [
+          {
+            "text": "광주",
+            "bbox": [
+              183,
+              721,
+              245,
+              757
+            ],
+            "confidence": 0.9991049183117212
+          },
+          {
+            "text": "0.49pp): 50~59세1(-4.29op) ,",
+            "bbox": [
+              258,
+              719,
+              607,
+              760
+            ],
+            "confidence": 0.4225506939085336
+          },
+          {
+            "text": "15 ~29세(-2.O9op",
+            "bbox": [
+              618,
+              724,
+              832,
+              756
+            ],
+            "confidence": 0.5556255077179264
+          }
+        ],
+        [
+          {
+            "text": "서울",
+            "bbox": [
+              184,
+              754,
+              246,
+              786
+            ],
+            "confidence": 0.9823221037780494
+          },
+          {
+            "text": "0.29op): 30~39세(1.89op) ,",
+            "bbox": [
+              261,
+              753,
+              607,
+              789
+            ],
+            "confidence": 0.5725214233123973
+          },
+          {
+            "text": "15 ~29세(-0.79op",
+            "bbox": [
+              620,
+              753,
+              831,
+              786
+            ],
+            "confidence": 0.5923992612322573
+          }
+        ],
+        [
+          {
+            "text": "고용률",
+            "bbox": [
+              628,
+              872,
+              752,
+              924
+            ],
+            "confidence": 0.49113699259234417
+          }
+        ],
+        [
+          {
+            "text": "[전년동분기비, %",
+            "bbox": [
+              1008,
+              918,
+              1204,
+              948
+            ],
+            "confidence": 0.9179254210302419
+          },
+          {
+            "text": "op",
+            "bbox": [
+              1223,
+              927,
+              1245,
+              943
+            ],
+            "confidence": 0.8314384951068067
+          }
+        ],
+        [
+          {
+            "text": "고용률",
+            "bbox": [
+              476,
+              954,
+              558,
+              986
+            ],
+            "confidence": 0.8085447703085693
+          },
+          {
+            "text": "고용률",
+            "bbox": [
+              932,
+              954,
+              1014,
+              986
+            ],
+            "confidence": 0.8652732869015954
+          },
+          {
+            "text": "증감",
+            "bbox": [
+              1024,
+              954,
+              1082,
+              986
+            ],
+            "confidence": 0.9883641327541585
+          }
+        ],
+        [
+          {
+            "text": "시",
+            "bbox": [
+              164,
+              988,
+              192,
+              1014
+            ],
+            "confidence": 0.9999891519840709
+          },
+          {
+            "text": "도",
+            "bbox": [
+              204,
+              986,
+              234,
+              1016
+            ],
+            "confidence": 0.8835757328535945
+          },
+          {
+            "text": "2024",
+            "bbox": [
+              302,
+              988,
+              366,
+              1018
+            ],
+            "confidence": 0.5911326881488053
+          },
+          {
+            "text": "2024",
+            "bbox": [
+              424,
+              988,
+              488,
+              1018
+            ],
+            "confidence": 0.7360496515533411
+          },
+          {
+            "text": "2025",
+            "bbox": [
+              546,
+              988,
+              610,
+              1018
+            ],
+            "confidence": 0.9999945759773254
+          },
+          {
+            "text": "2025",
+            "bbox": [
+              668,
+              988,
+              732,
+              1018
+            ],
+            "confidence": 0.9999933242797852
+          },
+          {
+            "text": "2024",
+            "bbox": [
+              790,
+              988,
+              854,
+              1018
+            ],
+            "confidence": 0.9999943375587463
+          },
+          {
+            "text": "2024",
+            "bbox": [
+              914,
+              988,
+              976,
+              1018
+            ],
+            "confidence": 0.9999914169311523
+          },
+          {
+            "text": "2025",
+            "bbox": [
+              1036,
+              988,
+              1100,
+              1018
+            ],
+            "confidence": 0.9999841451644897
+          },
+          {
+            "text": "2025",
+            "bbox": [
+              1158,
+              988,
+              1222,
+              1018
+            ],
+            "confidence": 0.9999759793281555
+          }
+        ],
+        [
+          {
+            "text": "3/4",
+            "bbox": [
+              312,
+              1018,
+              356,
+              1046
+            ],
+            "confidence": 0.717060552696591
+          },
+          {
+            "text": "414",
+            "bbox": [
+              436,
+              1018,
+              478,
+              1046
+            ],
+            "confidence": 0.7533980011940002
+          },
+          {
+            "text": "114",
+            "bbox": [
+              558,
+              1018,
+              600,
+              1048
+            ],
+            "confidence": 0.46513908537241233
+          },
+          {
+            "text": "리4",
+            "bbox": [
+              678,
+              1018,
+              722,
+              1048
+            ],
+            "confidence": 0.9375551965311505
+          },
+          {
+            "text": "3/4",
+            "bbox": [
+              800,
+              1018,
+              844,
+              1048
+            ],
+            "confidence": 0.7344123212371145
+          },
+          {
+            "text": "414",
+            "bbox": [
+              924,
+              1018,
+              968,
+              1048
+            ],
+            "confidence": 0.5172473788261414
+          },
+          {
+            "text": "1/4",
+            "bbox": [
+              1046,
+              1018,
+              1088,
+              1046
+            ],
+            "confidence": 0.5453878045082092
+          },
+          {
+            "text": "리l4",
+            "bbox": [
+              1166,
+              1018,
+              1212,
+              1048
+            ],
+            "confidence": 0.3766068057760639
+          }
+        ],
+        [
+          {
+            "text": "훔",
+            "bbox": [
+              164,
+              1050,
+              194,
+              1210
+            ],
+            "confidence": 0.002182946197697655
+          },
+          {
+            "text": "국",
+            "bbox": [
+              204,
+              1048,
+              234,
+              1080
+            ],
+            "confidence": 0.9999454028906172
+          },
+          {
+            "text": "63.3",
+            "bbox": [
+              336,
+              1052,
+              386,
+              1078
+            ],
+            "confidence": 0.9147838481438519
+          },
+          {
+            "text": "62.6",
+            "bbox": [
+              458,
+              1052,
+              508,
+              1080
+            ],
+            "confidence": 0.9925465199789906
+          },
+          {
+            "text": "61.8",
+            "bbox": [
+              580,
+              1052,
+              630,
+              1078
+            ],
+            "confidence": 0.9170129473933217
+          },
+          {
+            "text": "63.5",
+            "bbox": [
+              702,
+              1052,
+              754,
+              1080
+            ],
+            "confidence": 0.9999642968177795
+          },
+          {
+            "text": "01",
+            "bbox": [
+              836,
+              1052,
+              872,
+              1078
+            ],
+            "confidence": 0.9993731653328499
+          },
+          {
+            "text": "0.1",
+            "bbox": [
+              958,
+              1052,
+              994,
+              1078
+            ],
+            "confidence": 0.7598074213589568
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              1080,
+              1052,
+              1118,
+              1078
+            ],
+            "confidence": 0.9892738486045729
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              1202,
+              1052,
+              1242,
+              1078
+            ],
+            "confidence": 0.9605227821299631
+          }
+        ],
+        [
+          {
+            "text": "#",
+            "bbox": [
+              204,
+              1082,
+              236,
+              1242
+            ],
+            "confidence": 0.029684382323021063
+          },
+          {
+            "text": "61.8",
+            "bbox": [
+              336,
+              1084,
+              386,
+              1110
+            ],
+            "confidence": 0.9982408881187439
+          },
+          {
+            "text": "61.6",
+            "bbox": [
+              458,
+              1084,
+              510,
+              1112
+            ],
+            "confidence": 0.9801696282084588
+          },
+          {
+            "text": "60.4",
+            "bbox": [
+              580,
+              1084,
+              630,
+              1110
+            ],
+            "confidence": 0.7498567571179908
+          },
+          {
+            "text": "61.8",
+            "bbox": [
+              702,
+              1084,
+              752,
+              1110
+            ],
+            "confidence": 0.9995759129524231
+          },
+          {
+            "text": "0.6",
+            "bbox": [
+              836,
+              1084,
+              876,
+              1110
+            ],
+            "confidence": 0.9625340016515389
+          },
+          {
+            "text": "0.1",
+            "bbox": [
+              958,
+              1084,
+              994,
+              1110
+            ],
+            "confidence": 0.493538782065156
+          },
+          {
+            "text": "1.1",
+            "bbox": [
+              1080,
+              1084,
+              1116,
+              1110
+            ],
+            "confidence": 0.9624975919723511
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              1202,
+              1084,
+              1240,
+              1110
+            ],
+            "confidence": 0.7964301372110781
+          }
+        ],
+        [
+          {
+            "text": "58.3",
+            "bbox": [
+              336,
+              1116,
+              388,
+              1144
+            ],
+            "confidence": 0.9430693225101315
+          },
+          {
+            "text": "57.7",
+            "bbox": [
+              458,
+              1116,
+              506,
+              1142
+            ],
+            "confidence": 0.6669261670704116
+          },
+          {
+            "text": "57.4",
+            "bbox": [
+              580,
+              1116,
+              630,
+              1142
+            ],
+            "confidence": 0.8593026125021681
+          },
+          {
+            "text": "58.9",
+            "bbox": [
+              702,
+              1116,
+              752,
+              1144
+            ],
+            "confidence": 0.8166933412986803
+          },
+          {
+            "text": "0.1",
+            "bbox": [
+              836,
+              1116,
+              872,
+              1142
+            ],
+            "confidence": 0.8938369515651952
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              958,
+              1116,
+              996,
+              1142
+            ],
+            "confidence": 0.9475118835543765
+          },
+          {
+            "text": "0.1",
+            "bbox": [
+              1080,
+              1116,
+              1116,
+              1142
+            ],
+            "confidence": 0.7211402897430415
+          },
+          {
+            "text": "1.0",
+            "bbox": [
+              1204,
+              1116,
+              1242,
+              1142
+            ],
+            "confidence": 0.9994004850171585
+          }
+        ],
+        [
+          {
+            "text": "58.0",
+            "bbox": [
+              336,
+              1148,
+              386,
+              1176
+            ],
+            "confidence": 0.9983969692291527
+          },
+          {
+            "text": "57.6",
+            "bbox": [
+              458,
+              1148,
+              508,
+              1176
+            ],
+            "confidence": 0.9022294426485865
+          },
+          {
+            "text": "57.3",
+            "bbox": [
+              580,
+              1148,
+              632,
+              1178
+            ],
+            "confidence": 0.5837891762694085
+          },
+          {
+            "text": "58.5",
+            "bbox": [
+              702,
+              1148,
+              752,
+              1178
+            ],
+            "confidence": 0.8346716161636336
+          },
+          {
+            "text": "-2.3",
+            "bbox": [
+              824,
+              1148,
+              876,
+              1176
+            ],
+            "confidence": 0.8588182330131531
+          },
+          {
+            "text": "-1.4",
+            "bbox": [
+              946,
+              1150,
+              996,
+              1174
+            ],
+            "confidence": 0.4181399941444397
+          },
+          {
+            "text": "05",
+            "bbox": [
+              1068,
+              1148,
+              1120,
+              1174
+            ],
+            "confidence": 0.9999915706407035
+          },
+          {
+            "text": "0.0",
+            "bbox": [
+              1202,
+              1148,
+              1242,
+              1174
+            ],
+            "confidence": 0.9935106546682981
+          }
+        ],
+        [
+          {
+            "text": "64.4",
+            "bbox": [
+              336,
+              1180,
+              386,
+              1208
+            ],
+            "confidence": 0.9994701147079468
+          },
+          {
+            "text": "63.9",
+            "bbox": [
+              458,
+              1180,
+              508,
+              1210
+            ],
+            "confidence": 0.6314081591237168
+          },
+          {
+            "text": "62.9",
+            "bbox": [
+              580,
+              1180,
+              632,
+              1210
+            ],
+            "confidence": 0.842110381908148
+          },
+          {
+            "text": "63.8",
+            "bbox": [
+              702,
+              1180,
+              752,
+              1210
+            ],
+            "confidence": 0.678478831163178
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              836,
+              1180,
+              874,
+              1208
+            ],
+            "confidence": 0.9853730221489865
+          },
+          {
+            "text": "1.0",
+            "bbox": [
+              960,
+              1180,
+              998,
+              1208
+            ],
+            "confidence": 0.9987918658954776
+          },
+          {
+            "text": "0.6",
+            "bbox": [
+              1080,
+              1180,
+              1120,
+              1208
+            ],
+            "confidence": 0.948361073368086
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              1202,
+              1180,
+              1242,
+              1210
+            ],
+            "confidence": 0.5467390418052673
+          }
+        ],
+        [
+          {
+            "text": "광",
+            "bbox": [
+              164,
+              1210,
+              196,
+              1244
+            ],
+            "confidence": 0.9981573971256239
+          },
+          {
+            "text": "60.5",
+            "bbox": [
+              334,
+              1212,
+              386,
+              1240
+            ],
+            "confidence": 0.998579740524292
+          },
+          {
+            "text": "59.2",
+            "bbox": [
+              458,
+              1212,
+              508,
+              1242
+            ],
+            "confidence": 0.9272084235719876
+          },
+          {
+            "text": "59.9",
+            "bbox": [
+              580,
+              1212,
+              632,
+              1242
+            ],
+            "confidence": 0.9653370561335588
+          },
+          {
+            "text": "61.0",
+            "bbox": [
+              702,
+              1212,
+              752,
+              1240
+            ],
+            "confidence": 0.5887161845351359
+          },
+          {
+            "text": "01",
+            "bbox": [
+              836,
+              1214,
+              872,
+              1240
+            ],
+            "confidence": 0.9989323344588983
+          },
+          {
+            "text": "-1.2",
+            "bbox": [
+              946,
+              1214,
+              996,
+              1240
+            ],
+            "confidence": 0.6831662058830261
+          },
+          {
+            "text": "-1.2",
+            "bbox": [
+              1068,
+              1212,
+              1118,
+              1240
+            ],
+            "confidence": 0.9523652791976929
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              1192,
+              1212,
+              1240,
+              1240
+            ],
+            "confidence": 0.7870881998407758
+          }
+        ],
+        [
+          {
+            "text": "대",
+            "bbox": [
+              164,
+              1242,
+              194,
+              1274
+            ],
+            "confidence": 0.999999046325911
+          },
+          {
+            "text": "전",
+            "bbox": [
+              204,
+              1242,
+              236,
+              1308
+            ],
+            "confidence": 0.7794778877474187
+          },
+          {
+            "text": "60.5",
+            "bbox": [
+              334,
+              1244,
+              386,
+              1272
+            ],
+            "confidence": 0.9818354845046997
+          },
+          {
+            "text": "60.3",
+            "bbox": [
+              458,
+              1246,
+              508,
+              1272
+            ],
+            "confidence": 0.9801166850379747
+          },
+          {
+            "text": "61.0",
+            "bbox": [
+              580,
+              1244,
+              630,
+              1272
+            ],
+            "confidence": 0.9998250007629395
+          },
+          {
+            "text": "62.5",
+            "bbox": [
+              702,
+              1244,
+              752,
+              1274
+            ],
+            "confidence": 0.9374978762515002
+          },
+          {
+            "text": "1.1",
+            "bbox": [
+              841,
+              1249,
+              871,
+              1269
+            ],
+            "confidence": 0.9527822348808886
+          },
+          {
+            "text": "-1.1",
+            "bbox": [
+              946,
+              1246,
+              994,
+              1272
+            ],
+            "confidence": 0.5985891532114135
+          },
+          {
+            "text": "0.5",
+            "bbox": [
+              1080,
+              1244,
+              1120,
+              1272
+            ],
+            "confidence": 0.8658318519592285
+          },
+          {
+            "text": "1.2",
+            "bbox": [
+              1204,
+              1246,
+              1240,
+              1272
+            ],
+            "confidence": 0.9990467586772536
+          }
+        ],
+        [
+          {
+            "text": "울",
+            "bbox": [
+              166,
+              1274,
+              194,
+              1308
+            ],
+            "confidence": 0.9693756721145839
+          },
+          {
+            "text": "60.2",
+            "bbox": [
+              334,
+              1276,
+              388,
+              1306
+            ],
+            "confidence": 0.9021996008365968
+          },
+          {
+            "text": "60.1",
+            "bbox": [
+              458,
+              1278,
+              506,
+              1306
+            ],
+            "confidence": 0.9920652508735657
+          },
+          {
+            "text": "59.4",
+            "bbox": [
+              580,
+              1276,
+              630,
+              1304
+            ],
+            "confidence": 0.9997949004173279
+          },
+          {
+            "text": "60.6",
+            "bbox": [
+              702,
+              1278,
+              752,
+              1304
+            ],
+            "confidence": 0.9984580278396606
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              836,
+              1278,
+              876,
+              1304
+            ],
+            "confidence": 0.9861008950627713
+          },
+          {
+            "text": "0.0",
+            "bbox": [
+              958,
+              1278,
+              998,
+              1304
+            ],
+            "confidence": 0.9824109603915742
+          },
+          {
+            "text": "0.8",
+            "bbox": [
+              1080,
+              1278,
+              1120,
+              1304
+            ],
+            "confidence": 0.8588430942045451
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              1202,
+              1278,
+              1242,
+              1306
+            ],
+            "confidence": 0.941704297100634
+          }
+        ],
+        [
+          {
+            "text": "세 종",
+            "bbox": [
+              163,
+              1305,
+              235,
+              1341
+            ],
+            "confidence": 0.961230905425121
+          },
+          {
+            "text": "65.8",
+            "bbox": [
+              334,
+              1310,
+              386,
+              1336
+            ],
+            "confidence": 0.9997298121452332
+          },
+          {
+            "text": "66.0",
+            "bbox": [
+              458,
+              1310,
+              508,
+              1336
+            ],
+            "confidence": 0.9999687075614929
+          },
+          {
+            "text": "64.0",
+            "bbox": [
+              580,
+              1310,
+              630,
+              1338
+            ],
+            "confidence": 0.9552250417190056
+          },
+          {
+            "text": "65.6",
+            "bbox": [
+              702,
+              1310,
+              754,
+              1338
+            ],
+            "confidence": 0.8150171975951862
+          },
+          {
+            "text": "0.6",
+            "bbox": [
+              836,
+              1310,
+              876,
+              1336
+            ],
+            "confidence": 0.9595702239654695
+          },
+          {
+            "text": "2.0",
+            "bbox": [
+              958,
+              1310,
+              998,
+              1336
+            ],
+            "confidence": 0.99995058344352
+          },
+          {
+            "text": "0.7",
+            "bbox": [
+              1080,
+              1310,
+              1118,
+              1336
+            ],
+            "confidence": 0.9503280560290991
+          },
+          {
+            "text": "0.0",
+            "bbox": [
+              1202,
+              1310,
+              1242,
+              1336
+            ],
+            "confidence": 0.9816618267118569
+          }
+        ],
+        [
+          {
+            "text": "경",
+            "bbox": [
+              164,
+              1340,
+              194,
+              1372
+            ],
+            "confidence": 0.999993562708724
+          },
+          {
+            "text": "기",
+            "bbox": [
+              204,
+              1342,
+              234,
+              1372
+            ],
+            "confidence": 0.9999995231628986
+          },
+          {
+            "text": "64.7",
+            "bbox": [
+              336,
+              1342,
+              384,
+              1370
+            ],
+            "confidence": 0.853428031699843
+          },
+          {
+            "text": "64.0",
+            "bbox": [
+              458,
+              1342,
+              508,
+              1370
+            ],
+            "confidence": 0.9466226346051785
+          },
+          {
+            "text": "63.2",
+            "bbox": [
+              580,
+              1342,
+              630,
+              1370
+            ],
+            "confidence": 0.7508802341684591
+          },
+          {
+            "text": "64.",
+            "bbox": [
+              702,
+              1342,
+              738,
+              1370
+            ],
+            "confidence": 0.8534226417541504
+          },
+          {
+            "text": "01",
+            "bbox": [
+              836,
+              1342,
+              870,
+              1368
+            ],
+            "confidence": 0.9998690943982164
+          },
+          {
+            "text": "03",
+            "bbox": [
+              946,
+              1342,
+              998,
+              1368
+            ],
+            "confidence": 0.9999352630544434
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              1080,
+              1342,
+              1118,
+              1368
+            ],
+            "confidence": 0.9884040329907299
+          },
+          {
+            "text": "0.1",
+            "bbox": [
+              1202,
+              1342,
+              1238,
+              1368
+            ],
+            "confidence": 0.7875931841413454
+          }
+        ],
+        [
+          {
+            "text": "강 원",
+            "bbox": [
+              161,
+              1369,
+              233,
+              1405
+            ],
+            "confidence": 0.9980196952819824
+          },
+          {
+            "text": "66.2",
+            "bbox": [
+              334,
+              1374,
+              386,
+              1402
+            ],
+            "confidence": 0.999790054683487
+          },
+          {
+            "text": "63.4",
+            "bbox": [
+              458,
+              1374,
+              508,
+              1404
+            ],
+            "confidence": 0.7435428199474939
+          },
+          {
+            "text": "60.2",
+            "bbox": [
+              580,
+              1374,
+              630,
+              1402
+            ],
+            "confidence": 0.9996688365936279
+          },
+          {
+            "text": "66.7",
+            "bbox": [
+              702,
+              1374,
+              750,
+              1404
+            ],
+            "confidence": 0.9999530852969051
+          },
+          {
+            "text": "0.8",
+            "bbox": [
+              836,
+              1376,
+              874,
+              1402
+            ],
+            "confidence": 0.8940944547851638
+          },
+          {
+            "text": "0.5",
+            "bbox": [
+              958,
+              1374,
+              996,
+              1400
+            ],
+            "confidence": 0.9687173524972544
+          },
+          {
+            "text": "1.3",
+            "bbox": [
+              1082,
+              1374,
+              1120,
+              1402
+            ],
+            "confidence": 0.7730531079753091
+          },
+          {
+            "text": "1.0",
+            "bbox": [
+              1204,
+              1374,
+              1242,
+              1402
+            ],
+            "confidence": 0.9997895345413559
+          }
+        ],
+        [
+          {
+            "text": "충",
+            "bbox": [
+              164,
+              1404,
+              194,
+              1438
+            ],
+            "confidence": 0.8867222962652619
+          },
+          {
+            "text": "북",
+            "bbox": [
+              206,
+              1404,
+              234,
+              1436
+            ],
+            "confidence": 0.9993678138746418
+          },
+          {
+            "text": "66.6",
+            "bbox": [
+              334,
+              1406,
+              386,
+              1434
+            ],
+            "confidence": 0.9588865597151545
+          },
+          {
+            "text": "65.6",
+            "bbox": [
+              458,
+              1406,
+              508,
+              1434
+            ],
+            "confidence": 0.9999793171882629
+          },
+          {
+            "text": "65.2",
+            "bbox": [
+              580,
+              1406,
+              632,
+              1436
+            ],
+            "confidence": 0.9894305169206528
+          },
+          {
+            "text": "68.1",
+            "bbox": [
+              702,
+              1406,
+              748,
+              1436
+            ],
+            "confidence": 0.9999650120735168
+          },
+          {
+            "text": "04",
+            "bbox": [
+              841,
+              1411,
+              873,
+              1431
+            ],
+            "confidence": 0.9991344134961945
+          },
+          {
+            "text": "0.0",
+            "bbox": [
+              960,
+              1408,
+              996,
+              1434
+            ],
+            "confidence": 0.9959760325404212
+          },
+          {
+            "text": "1.2",
+            "bbox": [
+              1084,
+              1408,
+              1118,
+              1434
+            ],
+            "confidence": 0.8462015986442566
+          },
+          {
+            "text": "0.8",
+            "bbox": [
+              1202,
+              1406,
+              1242,
+              1434
+            ],
+            "confidence": 0.6964443325996399
+          }
+        ],
+        [
+          {
+            "text": "충",
+            "bbox": [
+              164,
+              1436,
+              194,
+              1470
+            ],
+            "confidence": 0.6468020546971367
+          },
+          {
+            "text": "북",
+            "bbox": [
+              204,
+              1436,
+              232,
+              1500
+            ],
+            "confidence": 0.29603325008418224
+          },
+          {
+            "text": "66.",
+            "bbox": [
+              336,
+              1440,
+              372,
+              1468
+            ],
+            "confidence": 0.4466127555538856
+          },
+          {
+            "text": "65.",
+            "bbox": [
+              458,
+              1440,
+              496,
+              1466
+            ],
+            "confidence": 0.9698699650805161
+          },
+          {
+            "text": "63.0",
+            "bbox": [
+              580,
+              1438,
+              630,
+              1466
+            ],
+            "confidence": 0.9999831914901733
+          },
+          {
+            "text": "66.9",
+            "bbox": [
+              702,
+              1438,
+              752,
+              1468
+            ],
+            "confidence": 0.9733782408887921
+          },
+          {
+            "text": "2",
+            "bbox": [
+              857,
+              1441,
+              873,
+              1465
+            ],
+            "confidence": 0.9814443460187008
+          },
+          {
+            "text": "0.8",
+            "bbox": [
+              962,
+              1442,
+              996,
+              1466
+            ],
+            "confidence": 0.9548429881151118
+          },
+          {
+            "text": "1.9",
+            "bbox": [
+              1084,
+              1440,
+              1118,
+              1466
+            ],
+            "confidence": 0.7744027376174927
+          },
+          {
+            "text": "0.7",
+            "bbox": [
+              1202,
+              1438,
+              1242,
+              1468
+            ],
+            "confidence": 0.9191583395004272
+          }
+        ],
+        [
+          {
+            "text": "출",
+            "bbox": [
+              164,
+              1468,
+              194,
+              1566
+            ],
+            "confidence": 0.012853552892057307
+          },
+          {
+            "text": "64.8",
+            "bbox": [
+              336,
+              1472,
+              386,
+              1498
+            ],
+            "confidence": 0.999602735042572
+          },
+          {
+            "text": "62.9",
+            "bbox": [
+              458,
+              1472,
+              508,
+              1500
+            ],
+            "confidence": 0.5743995712294486
+          },
+          {
+            "text": "61.8",
+            "bbox": [
+              580,
+              1472,
+              630,
+              1500
+            ],
+            "confidence": 0.9991735816001892
+          },
+          {
+            "text": "63.8",
+            "bbox": [
+              702,
+              1472,
+              752,
+              1500
+            ],
+            "confidence": 0.9999462962150574
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              840,
+              1472,
+              874,
+              1498
+            ],
+            "confidence": 0.6286858432165123
+          },
+          {
+            "text": "0.6",
+            "bbox": [
+              948,
+              1472,
+              998,
+              1498
+            ],
+            "confidence": 0.4889594543635705
+          },
+          {
+            "text": "08",
+            "bbox": [
+              1068,
+              1472,
+              1120,
+              1498
+            ],
+            "confidence": 0.9999973026027609
+          },
+          {
+            "text": "1.0",
+            "bbox": [
+              1204,
+              1470,
+              1244,
+              1500
+            ],
+            "confidence": 0.9998726050581931
+          }
+        ],
+        [
+          {
+            "text": "북",
+            "bbox": [
+              204,
+              1500,
+              232,
+              1564
+            ],
+            "confidence": 0.36148571398939566
+          },
+          {
+            "text": "66.6",
+            "bbox": [
+              336,
+              1504,
+              386,
+              1530
+            ],
+            "confidence": 0.999739833371845
+          },
+          {
+            "text": "65.7",
+            "bbox": [
+              458,
+              1504,
+              506,
+              1530
+            ],
+            "confidence": 0.8785519334093316
+          },
+          {
+            "text": "64.6",
+            "bbox": [
+              580,
+              1504,
+              630,
+              1532
+            ],
+            "confidence": 0.9384864720531854
+          },
+          {
+            "text": "66.6",
+            "bbox": [
+              702,
+              1504,
+              754,
+              1532
+            ],
+            "confidence": 0.9999761581420898
+          },
+          {
+            "text": "0.7",
+            "bbox": [
+              836,
+              1504,
+              872,
+              1530
+            ],
+            "confidence": 0.9936149726794214
+          },
+          {
+            "text": "05",
+            "bbox": [
+              948,
+              1504,
+              998,
+              1530
+            ],
+            "confidence": 0.9999779151228091
+          },
+          {
+            "text": "-05",
+            "bbox": [
+              1068,
+              1504,
+              1120,
+              1530
+            ],
+            "confidence": 0.6964985848130582
+          },
+          {
+            "text": "0.2",
+            "bbox": [
+              1202,
+              1502,
+              1242,
+              1532
+            ],
+            "confidence": 0.9952500070094961
+          }
+        ],
+        [
+          {
+            "text": "64.8",
+            "bbox": [
+              334,
+              1536,
+              386,
+              1562
+            ],
+            "confidence": 0.9991252422332764
+          },
+          {
+            "text": "64.0",
+            "bbox": [
+              458,
+              1536,
+              508,
+              1564
+            ],
+            "confidence": 0.9422105984782929
+          },
+          {
+            "text": "62.7",
+            "bbox": [
+              580,
+              1536,
+              630,
+              1562
+            ],
+            "confidence": 0.9039524074893569
+          },
+          {
+            "text": "65.5",
+            "bbox": [
+              702,
+              1536,
+              752,
+              1566
+            ],
+            "confidence": 0.9975136956478048
+          },
+          {
+            "text": "0.8",
+            "bbox": [
+              836,
+              1536,
+              876,
+              1564
+            ],
+            "confidence": 0.969799707825422
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              958,
+              1536,
+              998,
+              1562
+            ],
+            "confidence": 0.9811954677111366
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              1080,
+              1536,
+              1118,
+              1562
+            ],
+            "confidence": 0.9887054365128154
+          },
+          {
+            "text": "0.5",
+            "bbox": [
+              1202,
+              1536,
+              1242,
+              1562
+            ],
+            "confidence": 0.7546002268791199
+          }
+        ],
+        [
+          {
+            "text": "경",
+            "bbox": [
+              164,
+              1566,
+              194,
+              1598
+            ],
+            "confidence": 0.9999866486041356
+          },
+          {
+            "text": "낮",
+            "bbox": [
+              204,
+              1566,
+              236,
+              1628
+            ],
+            "confidence": 0.6843328058735985
+          },
+          {
+            "text": "62.1",
+            "bbox": [
+              334,
+              1568,
+              382,
+              1598
+            ],
+            "confidence": 0.9991663694381714
+          },
+          {
+            "text": "61.9",
+            "bbox": [
+              458,
+              1568,
+              508,
+              1598
+            ],
+            "confidence": 0.6175024419284284
+          },
+          {
+            "text": "62.3",
+            "bbox": [
+              580,
+              1568,
+              632,
+              1598
+            ],
+            "confidence": 0.9895591057545559
+          },
+          {
+            "text": "63.3",
+            "bbox": [
+              702,
+              1568,
+              754,
+              1596
+            ],
+            "confidence": 0.9998583197593689
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              824,
+              1568,
+              876,
+              1596
+            ],
+            "confidence": 0.9436563137951489
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              946,
+              1568,
+              998,
+              1596
+            ],
+            "confidence": 0.8991277930898628
+          },
+          {
+            "text": "0.9",
+            "bbox": [
+              1080,
+              1568,
+              1120,
+              1596
+            ],
+            "confidence": 0.9197510046440331
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              1202,
+              1568,
+              1242,
+              1594
+            ],
+            "confidence": 0.8745430707931519
+          }
+        ],
+        [
+          {
+            "text": "제",
+            "bbox": [
+              164,
+              1598,
+              194,
+              1628
+            ],
+            "confidence": 0.9999878406894283
+          },
+          {
+            "text": "69.5",
+            "bbox": [
+              334,
+              1600,
+              386,
+              1628
+            ],
+            "confidence": 0.9995419383049011
+          },
+          {
+            "text": "69.0",
+            "bbox": [
+              458,
+              1600,
+              508,
+              1628
+            ],
+            "confidence": 0.5657286227326338
+          },
+          {
+            "text": "68.8",
+            "bbox": [
+              580,
+              1600,
+              630,
+              1628
+            ],
+            "confidence": 0.9997736811637878
+          },
+          {
+            "text": "702",
+            "bbox": [
+              702,
+              1600,
+              754,
+              1630
+            ],
+            "confidence": 0.9999317254009753
+          },
+          {
+            "text": "0.4",
+            "bbox": [
+              824,
+              1602,
+              874,
+              1626
+            ],
+            "confidence": 0.4746577519092801
+          },
+          {
+            "text": "-.0",
+            "bbox": [
+              946,
+              1602,
+              998,
+              1628
+            ],
+            "confidence": 0.8473501156321577
+          },
+          {
+            "text": "0.3",
+            "bbox": [
+              1068,
+              1600,
+              1120,
+              1628
+            ],
+            "confidence": 0.6185450826956702
+          },
+          {
+            "text": "05",
+            "bbox": [
+              1202,
+              1602,
+              1244,
+              1630
+            ],
+            "confidence": 0.9999984827137908
+          }
+        ],
+        [
+          {
+            "text": "1) 고용롭(이",
+            "bbox": [
+              146,
+              1638,
+              278,
+              1668
+            ],
+            "confidence": 0.6144065719054332
+          },
+          {
+            "text": "(취업자수",
+            "bbox": [
+              311,
+              1635,
+              418,
+              1667
+            ],
+            "confidence": 0.9963679101590578
+          },
+          {
+            "text": "15세",
+            "bbox": [
+              452,
+              1638,
+              502,
+              1664
+            ],
+            "confidence": 0.9997651710357326
+          },
+          {
+            "text": "이상 인구",
+            "bbox": [
+              512,
+              1638,
+              620,
+              1666
+            ],
+            "confidence": 0.6268158768166059
+          },
+          {
+            "text": "수) X",
+            "bbox": [
+              630,
+              1638,
+              688,
+              1666
+            ],
+            "confidence": 0.7192791545292301
+          },
+          {
+            "text": "100",
+            "bbox": [
+              696,
+              1638,
+              736,
+              1664
+            ],
+            "confidence": 0.9727744134659843
+          }
+        ],
+        [
+          {
+            "text": "자료: 통계청",
+            "bbox": [
+              146,
+              1666,
+              284,
+              1696
+            ],
+            "confidence": 0.8709073796180837
+          },
+          {
+            "text": "국가통계 포털(KOSIS)  경제 활동인구조사",
+            "bbox": [
+              292,
+              1666,
+              724,
+              1696
+            ],
+            "confidence": 0.7003965848348748
+          }
+        ],
+        [
+          {
+            "text": "14",
+            "bbox": [
+              672,
+              1734,
+              708,
+              1760
+            ],
+            "confidence": 0.999962910974765
+          }
+        ]
+      ],
+      "num_rows": 41
+    }
+  },
+  "markers": [
+    {
+      "marker_id": "전국_증감률",
+      "field_id": "field_3",
+      "text_in_image": "2025년 리4분기   전국 고용물은 63.5%로   30대 , 40대 , 60세이상의   고용롭이",
+      "type": "percentage"
+    }
+  ]
+}

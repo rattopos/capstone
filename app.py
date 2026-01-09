@@ -20,37 +20,26 @@ import tempfile
 # 새로운 Word 템플릿 워크플로우 (메인)
 from src.excel_extractor import ExcelExtractor
 from src.period_detector import PeriodDetector
-from src.pdf_to_word import PDFToWordConverter
-from src.word_template_manager import WordTemplateManager
-from src.word_template_filler import WordTemplateFiller
-from src.word_to_pdf import WordToPDFConverter
-
-# 기존 HTML 템플릿 워크플로우 (하위 호환성)
-from src.template_manager import TemplateManager
-from src.template_filler import TemplateFiller
-from src.model_based_filler import ModelBasedFiller
+from src.image_analyzer import ImageAnalyzer
 from src.template_generator import TemplateGenerator
-from src.excel_header_parser import ExcelHeaderParser
-from src.pdf_to_html import PDFToHTMLConverter
+from src.mapping_trainer import MappingTrainer
+from src.template_storage import TemplateStorage
+from src.template_matcher import TemplateMatcher
+from src.template_auto_trainer import TemplateAutoTrainer
+from src.image_cache import ImageCache
+from src.training_status import training_status_manager
+import threading
 
 app = Flask(__name__, template_folder='flask_templates', static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
-# Word 파일 저장 폴더 (로컬에 저장)
-app.config['WORD_FILES_FOLDER'] = Path(__file__).parent / 'output' / 'word_files'
-
-# 진행 상황 저장소 (세션 ID 기반)
-progress_store = {}
-progress_lock = threading.Lock()
-
-# 진행 상황 타임아웃 (10분)
-PROGRESS_TIMEOUT = 600  # 초 단위
+app.config['IMAGE_FOLDER'] = Path('uploaded_images')
+app.config['IMAGE_FOLDER'].mkdir(parents=True, exist_ok=True)
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
-ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
-ALLOWED_PDF_EXTENSIONS = {'pdf'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # 시트명과 템플릿 파일 매핑
 SHEET_TEMPLATE_MAPPING = {
@@ -145,11 +134,6 @@ def allowed_file(filename):
 def allowed_image_file(filename):
     """이미지 파일 확장자 검증"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
-
-
-def allowed_pdf_file(filename):
-    """PDF 파일 확장자 검증"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PDF_EXTENSIONS
 
 
 def get_template_for_sheet(sheet_name):
@@ -416,774 +400,407 @@ def validate_files():
         }), 500
 
 
-@app.route('/api/create-template', methods=['POST'])
+@app.route('/api/create_template', methods=['POST'])
 def create_template():
-    """이미지와 엑셀 파일에서 템플릿 생성 (헤더 기반 마커)"""
+    """이미지로부터 템플릿 생성 및 매핑 학습"""
     try:
-        # 파일 검증
         if 'image_file' not in request.files:
             return jsonify({'error': '이미지 파일이 없습니다.'}), 400
-        
-        image_file = request.files['image_file']
-        if image_file.filename == '':
-            return jsonify({'error': '이미지 파일을 선택해주세요.'}), 400
-        
-        if not allowed_image_file(image_file.filename):
-            return jsonify({'error': '지원하지 않는 이미지 형식입니다. (png, jpg, jpeg, gif, bmp, webp만 가능)'}), 400
-        
-        # 엑셀 파일 검증 (선택사항이지만 권장)
-        excel_file = request.files.get('excel_file')
-        excel_path = None
-        header_parser = None
-        
-        if excel_file and excel_file.filename:
-            if not allowed_file(excel_file.filename):
-                return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
-            
-            # 엑셀 파일 저장
-            excel_filename = secure_filename(excel_file.filename)
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
-            excel_file.save(str(excel_path))
-        
-        # 템플릿 이름 가져오기
-        template_name = request.form.get('template_name', '').strip()
-        if not template_name:
-            # 파일명에서 확장자 제거하여 템플릿 이름으로 사용
-            template_name = Path(image_file.filename).stem
-        
-        # 시트명 가져오기
-        sheet_name = request.form.get('sheet_name', '').strip()
-        if not sheet_name and excel_path:
-            # 엑셀 파일이 있으면 첫 번째 시트 사용
-            try:
-                extractor = ExcelExtractor(str(excel_path))
-                extractor.load_workbook()
-                sheet_names = extractor.get_sheet_names()
-                if sheet_names:
-                    sheet_name = sheet_names[0]
-                extractor.close()
-            except:
-                pass
-        
-        if not sheet_name:
-            sheet_name = '시트1'
-        
-        # 이미지 파일 저장
-        image_filename = secure_filename(image_file.filename)
-        image_path = Path(app.config['UPLOAD_FOLDER']) / image_filename
-        image_file.save(str(image_path))
-        
-        try:
-            # 엑셀 헤더 파서 초기화 (엑셀 파일이 있는 경우)
-            if excel_path and excel_path.exists():
-                header_parser = ExcelHeaderParser(str(excel_path))
-            
-            # 템플릿 생성기 초기화
-            generator = TemplateGenerator(use_easyocr=True)
-            
-            # HTML 템플릿 생성 (헤더 파서 전달)
-            html_template = generator.generate_html_template_from_excel(
-                str(image_path),
-                template_name,
-                sheet_name,
-                header_parser
-            )
-            
-            # 템플릿 저장
-            templates_dir = Path('templates')
-            templates_dir.mkdir(exist_ok=True)
-            
-            template_filename = secure_filename(template_name) + '.html'
-            template_path = templates_dir / template_filename
-            
-            with open(template_path, 'w', encoding='utf-8') as f:
-                f.write(html_template)
-            
-            # 임시 파일 삭제
-            if image_path.exists():
-                image_path.unlink()
-            if excel_path and excel_path.exists():
-                excel_path.unlink()
-            if header_parser:
-                header_parser.close()
-            
-            return jsonify({
-                'success': True,
-                'template_name': template_filename,
-                'template_path': str(template_path),
-                'message': f'템플릿 "{template_name}"이 성공적으로 생성되었습니다.'
-            })
-            
-        except Exception as e:
-            # 임시 파일 삭제
-            if image_path.exists():
-                image_path.unlink()
-            if excel_path and excel_path.exists():
-                excel_path.unlink()
-            if header_parser:
-                header_parser.close()
-            return jsonify({
-                'error': f'템플릿 생성 중 오류가 발생했습니다: {str(e)}'
-            }), 500
-    
-    except Exception as e:
-        return jsonify({
-            'error': f'서버 오류가 발생했습니다: {str(e)}'
-        }), 500
-
-
-@app.route('/api/pdf-to-html', methods=['POST'])
-def pdf_to_html():
-    """PDF 파일을 이미지로 변환하고 OCR을 통해 HTML로 생성"""
-    try:
-        # 파일 검증
-        if 'pdf_file' not in request.files:
-            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
-        
-        pdf_file = request.files['pdf_file']
-        if pdf_file.filename == '':
-            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
-        
-        if not allowed_pdf_file(pdf_file.filename):
-            return jsonify({'error': '지원하지 않는 파일 형식입니다. (.pdf만 가능)'}), 400
-        
-        # OCR 엔진 선택 (기본값: easyocr)
-        use_easyocr = request.form.get('use_easyocr', 'true').lower() == 'true'
-        
-        # DPI 설정 (기본값: 300)
-        try:
-            dpi = int(request.form.get('dpi', '300'))
-        except ValueError:
-            dpi = 300
-        
-        # PDF 파일 저장
-        pdf_filename = secure_filename(pdf_file.filename)
-        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
-        pdf_file.save(str(pdf_path))
-        
-        try:
-            # PDF 변환기 초기화
-            converter = PDFToHTMLConverter(use_easyocr=use_easyocr, dpi=dpi)
-            
-            # 출력 파일명 생성
-            pdf_stem = Path(pdf_filename).stem
-            output_filename = f"{pdf_stem}_ocr.html"
-            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-            
-            # PDF를 HTML로 변환
-            html_content = converter.generate_html_from_pdf(
-                str(pdf_path),
-                str(output_path)
-            )
-            
-            # 임시 PDF 파일 삭제
-            if pdf_path.exists():
-                pdf_path.unlink()
-            
-            return jsonify({
-                'success': True,
-                'output_filename': output_filename,
-                'message': f'PDF 파일이 성공적으로 HTML로 변환되었습니다. ({len(html_content)} 문자)'
-            })
-            
-        except Exception as e:
-            # 임시 파일 삭제
-            if pdf_path.exists():
-                pdf_path.unlink()
-            return jsonify({
-                'error': f'PDF 처리 중 오류가 발생했습니다: {str(e)}'
-            }), 500
-    
-    except Exception as e:
-        return jsonify({
-            'error': f'서버 오류가 발생했습니다: {str(e)}'
-        }), 500
-
-
-@app.route('/api/pdf-to-word-template', methods=['POST'])
-def pdf_to_word_template():
-    """PDF 파일을 Word 템플릿으로 변환"""
-    try:
-        # 파일 검증
-        if 'pdf_file' not in request.files:
-            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
-        
-        pdf_file = request.files['pdf_file']
-        if pdf_file.filename == '':
-            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
-        
-        if not allowed_pdf_file(pdf_file.filename):
-            return jsonify({'error': '지원하지 않는 파일 형식입니다. (.pdf만 가능)'}), 400
-        
-        # OCR 엔진 선택 (기본값: easyocr)
-        use_easyocr = request.form.get('use_easyocr', 'true').lower() == 'true'
-        
-        # DPI 설정 (기본값: 300)
-        try:
-            dpi = int(request.form.get('dpi', '300'))
-        except ValueError:
-            dpi = 300
-        
-        # PDF 파일 저장
-        pdf_filename = secure_filename(pdf_file.filename)
-        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
-        pdf_file.save(str(pdf_path))
-        
-        try:
-            # PDF to Word 변환기 초기화
-            converter = PDFToWordConverter(use_easyocr=use_easyocr, dpi=dpi)
-            
-            # 출력 파일명 생성
-            pdf_stem = Path(pdf_filename).stem
-            output_filename = f"{pdf_stem}_template.docx"
-            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-            
-            # PDF를 Word 템플릿으로 변환
-            word_path = converter.convert_pdf_to_word(
-                str(pdf_path),
-                str(output_path)
-            )
-            
-            # 임시 PDF 파일 삭제
-            if pdf_path.exists():
-                pdf_path.unlink()
-            
-            return jsonify({
-                'success': True,
-                'output_filename': output_filename,
-                'message': f'PDF 파일이 성공적으로 Word 템플릿으로 변환되었습니다.'
-            })
-            
-        except Exception as e:
-            # 임시 파일 삭제
-            if pdf_path.exists():
-                pdf_path.unlink()
-            return jsonify({
-                'error': f'PDF 처리 중 오류가 발생했습니다: {str(e)}'
-            }), 500
-    
-    except Exception as e:
-        return jsonify({
-            'error': f'서버 오류가 발생했습니다: {str(e)}'
-        }), 500
-
-
-@app.route('/api/process-word-template', methods=['POST'])
-def process_word_template():
-    """PDF → Word 템플릿 → 데이터 채우기 → PDF 출력 워크플로우"""
-    try:
-        # 파일 검증
-        if 'pdf_file' not in request.files:
-            return jsonify({'error': 'PDF 파일이 없습니다.'}), 400
-        
         if 'excel_file' not in request.files:
             return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
         
-        pdf_file = request.files['pdf_file']
+        image_file = request.files['image_file']
         excel_file = request.files['excel_file']
         
-        if pdf_file.filename == '':
-            return jsonify({'error': 'PDF 파일을 선택해주세요.'}), 400
-        
+        if image_file.filename == '':
+            return jsonify({'error': '이미지 파일을 선택해주세요.'}), 400
         if excel_file.filename == '':
             return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
         
-        if not allowed_pdf_file(pdf_file.filename):
-            return jsonify({'error': '지원하지 않는 PDF 파일 형식입니다.'}), 400
-        
+        if not allowed_image_file(image_file.filename):
+            return jsonify({'error': '지원하지 않는 이미지 형식입니다.'}), 400
         if not allowed_file(excel_file.filename):
-            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다. (.xlsx, .xls만 가능)'}), 400
+            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
         
-        # 연도 및 분기 파라미터 가져오기 (시트는 백엔드에서 자동 감지)
-        year_str = request.form.get('year', '')
-        quarter_str = request.form.get('quarter', '')
-        output_format = request.form.get('output_format', 'pdf').lower()  # 'pdf' 또는 'word'
+        # 템플릿 이름 가져오기
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            template_name = Path(image_file.filename).stem
         
-        # 시트명은 백엔드에서 Word 템플릿의 마커를 분석하여 자동으로 감지합니다
-        # 요청에서 sheet_name 파라미터가 있어도 무시하고 템플릿에서 자동 감지
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
         
-        # 세션 ID 생성
-        session_id = str(uuid.uuid4())
+        # 이미지 파일 저장
+        image_filename = secure_filename(image_file.filename)
+        image_path = app.config['IMAGE_FOLDER'] / image_filename
+        image_file.save(str(image_path))
         
-        # 진행 상황 초기화
-        update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 0, '초기화 중...')
-        
-        # 파일 저장
-        pdf_filename = secure_filename(pdf_file.filename)
+        # 엑셀 파일 저장
         excel_filename = secure_filename(excel_file.filename)
-        pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
         excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
-        pdf_file.save(str(pdf_path))
         excel_file.save(str(excel_path))
         
         try:
-            # 1단계: PDF를 Word 템플릿으로 변환
-            print("=" * 60)
-            print("1단계: PDF를 Word 템플릿으로 변환 중...")
-            print("=" * 60)
-            update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 5, 'PDF 파일 로딩 중...')
-            
-            pdf_to_word = PDFToWordConverter(use_easyocr=True, dpi=300)
-            pdf_stem = Path(pdf_filename).stem
-            word_template_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_temp_template.docx"
-            
-            # PDF 페이지 수 확인
-            import fitz
-            pdf_doc_temp = fitz.open(str(pdf_path))
-            total_pages = len(pdf_doc_temp)
-            pdf_doc_temp.close()
-            
-            # OCR 시간 추적용
-            ocr_times = {}
-            page_ocr_start_times = {}
-            
-            # 진행 상황 콜백 함수 정의
-            def progress_callback(current_page, total_pages, message, ocr_progress=None):
-                # OCR 진행률이 있으면 반영
-                if ocr_progress is not None:
-                    # OCR 진행률을 고려한 전체 진행률 계산
-                    page_base_progress = int(((current_page - 1) / total_pages) * 40)
-                    page_ocr_progress = int((ocr_progress / 100) * (40 / total_pages))
-                    overall_progress = 5 + page_base_progress + page_ocr_progress
-                    
-                    # OCR 진행률이 0%면 시작 시간 기록
-                    if ocr_progress == 0 and current_page not in page_ocr_start_times:
-                        page_ocr_start_times[current_page] = time.time()
-                    
-                    # OCR 진행률이 100%면 종료 시간 기록
-                    if ocr_progress == 100 and current_page in page_ocr_start_times:
-                        ocr_duration = (time.time() - page_ocr_start_times[current_page]) * 1000  # 밀리초
-                        ocr_times[str(current_page)] = int(ocr_duration)
-                        del page_ocr_start_times[current_page]
-                else:
-                    # 페이지 진행률만 계산
-                    page_progress = int((current_page / total_pages) * 40)
-                    overall_progress = 5 + page_progress
-                
-                update_progress(
-                    session_id, 1, 'PDF를 Word 템플릿으로 변환 중',
-                    overall_progress, message,
-                    {'current': current_page, 'total': total_pages},
-                    ocr_progress=ocr_progress,
-                    ocr_times=ocr_times if ocr_times else None
-                )
-            
-            # PDF to Word 변환 (진행 상황 콜백 전달)
-            pdf_to_word.convert_pdf_to_word(
-                str(pdf_path), 
-                str(word_template_path),
-                progress_callback=progress_callback
+            # 템플릿 생성
+            template_generator = TemplateGenerator()
+            template_result = template_generator.generate_template_from_image(
+                str(image_path),
+                template_name
             )
             
-            update_progress(session_id, 1, 'PDF를 Word 템플릿으로 변환 중', 45, 'Word 문서 생성 완료')
-            print(f"[DEBUG] Word 템플릿 생성 완료: {word_template_path}")
-            print(f"[DEBUG] Word 템플릿 파일 존재 여부: {word_template_path.exists()}")
-            
-            # 2단계: Word 템플릿 관리자 초기화
-            print("=" * 60)
-            print("2단계: Word 템플릿 로드 중...")
-            print("=" * 60)
-            update_progress(session_id, 2, 'Word 템플릿 로드 중', 50, '템플릿 파일 로딩 중...')
-            
-            word_template_manager = WordTemplateManager(str(word_template_path))
-            word_template_manager.load_template()
-            
-            update_progress(session_id, 2, 'Word 템플릿 로드 중', 55, '템플릿 로드 완료')
-            print(f"[DEBUG] Word 템플릿 로드 완료")
-            
-            # Word 템플릿 내용 확인 (처음 500자)
-            if word_template_manager.document:
-                sample_text = ""
-                for para in word_template_manager.document.paragraphs[:5]:
-                    sample_text += para.text + "\n"
-                print(f"[DEBUG] Word 템플릿 샘플 텍스트 (처음 5개 단락):")
-                print(f"  {repr(sample_text[:500])}")
-            
-            # 3단계: 엑셀 추출기 초기화
-            print("=" * 60)
-            print("3단계: 엑셀 데이터 로드 중...")
-            print("=" * 60)
-            update_progress(session_id, 3, '엑셀 데이터 로드 중', 60, '엑셀 파일 로딩 중...')
-            
+            # 엑셀 추출기 초기화
             excel_extractor = ExcelExtractor(str(excel_path))
             excel_extractor.load_workbook()
             
-            update_progress(session_id, 3, '엑셀 데이터 로드 중', 65, '엑셀 데이터 로드 완료')
-            
-            # 사용 가능한 시트 목록 가져오기
-            sheet_names = excel_extractor.get_sheet_names()
-            print(f"[DEBUG] 사용 가능한 시트 목록 ({len(sheet_names)}개):")
-            for i, sheet in enumerate(sheet_names[:10], 1):  # 처음 10개만 출력
-                print(f"  {i}. {sheet}")
-            if len(sheet_names) > 10:
-                print(f"  ... 외 {len(sheet_names) - 10}개")
-            
-            # 4단계: Word 템플릿에서 필요한 시트 자동 감지 (키워드 기반)
-            print("=" * 60)
-            print("4단계: 템플릿에서 필요한 시트 자동 감지 중 (키워드 기반)...")
-            print("=" * 60)
-            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 70, '마커 추출 중...')
-            
-            markers = word_template_manager.extract_markers()
-            
-            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 75, f'마커 {len(markers)}개 발견, 시트 매칭 중...')
-            print(f"[DEBUG] 추출된 마커 개수: {len(markers)}")
-            
-            if len(markers) == 0:
-                print("[DEBUG] ⚠️ 경고: 마커가 하나도 추출되지 않았습니다!")
-                print("[DEBUG] Word 템플릿의 모든 단락 텍스트 확인:")
-                if word_template_manager.document:
-                    for idx, para in enumerate(word_template_manager.document.paragraphs[:10]):
-                        para_text = para.text.strip()
-                        if para_text:
-                            print(f"  단락 {idx+1}: {repr(para_text[:100])}")
-                            # 마커 패턴이 있는지 확인
-                            import re
-                            marker_pattern = re.compile(r'\{([^:{}]+):([^:}]+)(?::([^}]+))?\}')
-                            if marker_pattern.search(para_text):
-                                print(f"    -> 마커 패턴 발견!")
-            else:
-                print("[DEBUG] 추출된 마커 목록:")
-                for i, marker in enumerate(markers, 1):
-                    print(f"  마커 {i}: {marker.get('full_match', 'N/A')}")
-                    print(f"    - 시트명: {marker.get('sheet_name', 'N/A')}")
-                    print(f"    - 셀주소: {marker.get('cell_address', 'N/A')}")
-                    print(f"    - 계산식: {marker.get('operation', 'N/A')}")
-            
-            required_sheets = set()
-            
-            # 키워드 기반 시트 매칭 사용
-            from src.semantic_sheet_matcher import SemanticSheetMatcher
-            semantic_matcher = SemanticSheetMatcher(excel_extractor)
-            from src.flexible_mapper import FlexibleMapper
-            flexible_mapper = FlexibleMapper(excel_extractor)
-            
-            for marker in markers:
-                marker_full = marker.get('full_match', 'N/A')
-                is_semantic = marker.get('is_semantic', False)
-                marker_sheet = marker.get('sheet_keyword') or marker.get('sheet_name')
-                marker_data = marker.get('data_keyword') or marker.get('cell_address')
-                
-                print(f"\n[DEBUG] 마커 처리 중: '{marker_full}'")
-                print(f"  - 의미 기반 마커: {is_semantic}")
-                print(f"  - 시트 키워드: '{marker_sheet}'")
-                print(f"  - 데이터 키워드: '{marker_data}'")
-                
-                # 의미 기반 마커인 경우
-                if is_semantic:
-                    print(f"  [의미 기반 마커] 의미 해석을 통한 시트 찾기...")
-                    # 의미 기반으로 시트 찾기
-                    if marker_sheet:
-                        semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
-                    else:
-                        # 시트 키워드가 없으면 데이터 키워드에서 추론
-                        semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_data)
-                    
-                    if semantic_sheet:
-                        required_sheets.add(semantic_sheet)
-                        print(f"  ✅ 의미 기반 매칭 성공: '{marker_sheet or marker_data}' -> '{semantic_sheet}'")
-                        continue
-                    else:
-                        print(f"  ❌ 의미 기반 매칭 실패, 기존 방식으로 시도...")
-                
-                # 기존 방식 (하위 호환)
-                if marker_sheet:
-                    # 1. 키워드 기반 의미 매칭 시도
-                    print(f"  [1단계] 키워드 기반 의미 매칭 시도...")
-                    semantic_sheet = semantic_matcher.find_sheet_by_semantic_keywords(marker_sheet)
-                    if semantic_sheet:
-                        required_sheets.add(semantic_sheet)
-                        print(f"  ✅ 키워드 매칭 성공: '{marker_sheet}' -> '{semantic_sheet}'")
-                        continue
-                    else:
-                        print(f"  ❌ 키워드 매칭 실패")
-                    
-                    # 2. 유연한 매핑으로 실제 시트명 찾기
-                    print(f"  [2단계] 유연한 매핑 시도...")
-                    actual_sheet = flexible_mapper.find_sheet_by_name(marker_sheet)
-                    if actual_sheet:
-                        required_sheets.add(actual_sheet)
-                        print(f"  ✅ 유연 매칭 성공: '{marker_sheet}' -> '{actual_sheet}'")
-                        continue
-                    else:
-                        print(f"  ❌ 유연 매칭 실패")
-                    
-                    # 3. 정확한 매칭
-                    print(f"  [3단계] 정확한 매칭 시도...")
-                    if marker_sheet in sheet_names:
-                        required_sheets.add(marker_sheet)
-                        print(f"  ✅ 정확 매칭 성공: '{marker_sheet}'")
-                        continue
-                    else:
-                        print(f"  ❌ 정확 매칭 실패 (시트 목록에 없음)")
-                    
-                    # 4. 컨텍스트 기반 추론
-                    print(f"  [4단계] 컨텍스트 기반 추론 시도...")
-                    context_results = semantic_matcher.find_sheets_by_context(marker_full)
-                    if context_results and context_results[0][1] > 0.3:
-                        inferred_sheet = context_results[0][0]
-                        required_sheets.add(inferred_sheet)
-                        print(f"  ✅ 컨텍스트 추론 성공: '{marker_sheet}' -> '{inferred_sheet}' (점수: {context_results[0][1]:.2f})")
-                        continue
-                    else:
-                        if context_results:
-                            print(f"  ❌ 컨텍스트 추론 실패 (최고 점수: {context_results[0][1]:.2f}, 임계값: 0.3)")
-                        else:
-                            print(f"  ❌ 컨텍스트 추론 실패 (결과 없음)")
-                    
-                    print(f"  ⚠️ 경고: 모든 방법으로 시트를 찾을 수 없음: '{marker_sheet}'")
-                else:
-                    print(f"  ⚠️ 경고: 시트 키워드가 없습니다. 의미 기반 마커로 처리됩니다.")
-            
-            print("\n" + "=" * 60)
-            print(f"[DEBUG] 최종 결과: 발견된 필요한 시트 개수: {len(required_sheets)}")
-            if required_sheets:
-                print(f"[DEBUG] 발견된 시트 목록:")
-                for sheet in sorted(required_sheets):
-                    print(f"  - {sheet}")
-            else:
-                print("[DEBUG] ⚠️ 경고: 필요한 시트를 하나도 찾지 못했습니다!")
-                print("[DEBUG] 가능한 원인:")
-                print("  1. Word 템플릿에 마커가 없음 (PDF 변환 실패)")
-                print("  2. 마커 형식이 올바르지 않음 (예: {시트명:셀주소} 형식이어야 함)")
-                print("  3. 시트명이 엑셀 파일의 시트명과 전혀 일치하지 않음")
-                print("[DEBUG] 디버그 정보를 확인하세요.")
-            
-            if not required_sheets:
-                error_msg = '템플릿에서 사용 가능한 시트를 찾을 수 없습니다. 템플릿의 마커 형식을 확인해주세요.'
-                if len(markers) == 0:
-                    error_msg += ' (Word 템플릿에 마커가 없습니다. PDF 변환이 제대로 되지 않았을 수 있습니다.)'
-                return jsonify({
-                    'error': error_msg,
-                    'debug_info': {
-                        'markers_found': len(markers),
-                        'available_sheets': sheet_names[:10],  # 처음 10개만
-                        'markers': [m.get('full_match', 'N/A') for m in markers[:5]]  # 처음 5개만
-                    }
-                }), 400
-            
-            print(f"발견된 필요한 시트: {', '.join(required_sheets)}")
-            update_progress(session_id, 4, '템플릿에서 필요한 시트 자동 감지 중', 80, f'{len(required_sheets)}개 시트 발견')
-            
-            # 5단계: 연도 및 분기 자동 감지 또는 사용자 입력값 사용
-            print("5단계: 연도/분기 감지 중...")
-            update_progress(session_id, 5, '연도/분기 감지 중', 82, '연도 및 분기 정보 분석 중...')
-            
-            period_detector = PeriodDetector(excel_extractor)
-            
-            # 첫 번째 필요한 시트를 기준으로 연도/분기 감지
-            primary_sheet = list(required_sheets)[0]
-            periods_info = period_detector.detect_available_periods(primary_sheet)
-            
-            if year_str and quarter_str:
-                year = int(year_str)
-                quarter = int(quarter_str)
-                
-                # 유효성 검증 (첫 번째 시트 기준)
-                is_valid, error_msg = period_detector.validate_period(primary_sheet, year, quarter)
-                if not is_valid:
-                    return jsonify({'error': error_msg}), 400
-            else:
-                year = periods_info['default_year']
-                quarter = periods_info['default_quarter']
-            
-            # 6단계: Word 템플릿에 데이터 채우기 (시트명 없이 자동 처리)
-            print("6단계: Word 템플릿에 데이터 채우는 중...")
-            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 85, '데이터 매핑 중...')
-            
-            word_template_filler = WordTemplateFiller(word_template_manager, excel_extractor)
-            word_template_filler.fill_template(
-                sheet_name=None,  # None으로 설정하면 마커에서 자동으로 시트 찾음
-                year=year,
-                quarter=quarter
+            # 매핑 학습
+            mapping_trainer = MappingTrainer(excel_extractor)
+            mapping_data = mapping_trainer.train_mapping(
+                template_result['template_html'],
+                template_name,
+                template_result['sheet_name'],
+                year,
+                quarter
             )
             
-            # 채워진 Word 파일 저장
-            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 90, '템플릿에 데이터 채우는 중...')
+            # 템플릿 저장
+            template_storage = TemplateStorage()
+            template_storage.save_template(
+                template_name,
+                template_result['template_html'],
+                mapping_data,
+                {
+                    'sheet_name': template_result['sheet_name'],
+                    'markers_count': len(template_result['markers']),
+                    'image_filename': image_filename
+                }
+            )
             
-            filled_word_path = Path(app.config['UPLOAD_FOLDER']) / f"{pdf_stem}_filled.docx"
-            word_template_filler.save_filled_template(str(filled_word_path))
-            
-            update_progress(session_id, 6, '데이터 매핑 및 채우기 중', 92, '데이터 채우기 완료')
-            
-            # Word 파일을 로컬에 저장 (확인용)
-            word_files_folder = Path(app.config['WORD_FILES_FOLDER'])
-            word_files_folder.mkdir(parents=True, exist_ok=True)
-            
-            import datetime
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            # Word 템플릿 파일 복사 (PDF에서 변환된 원본)
-            saved_template_path = word_files_folder / f"{timestamp}_{pdf_stem}_template.docx"
-            shutil.copy2(str(word_template_path), str(saved_template_path))
-            print(f"[DEBUG] Word 템플릿 파일 저장: {saved_template_path}")
-            
-            # 채워진 Word 파일 복사
-            saved_filled_path = word_files_folder / f"{timestamp}_{pdf_stem}_filled.docx"
-            shutil.copy2(str(filled_word_path), str(saved_filled_path))
-            print(f"[DEBUG] 채워진 Word 파일 저장: {saved_filled_path}")
-            
-            # 7단계: 출력 포맷에 따라 처리
-            sheets_display = ', '.join(sorted(required_sheets))[:50]  # 시트명이 너무 길면 잘라냄
-            
-            if output_format == 'word':
-                # Word 파일로 출력
-                print("7단계: Word 파일로 저장 중...")
-                update_progress(session_id, 7, 'Word 파일 생성 중', 95, 'Word 파일 저장 중...')
-                
-                output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.docx"
-                output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-                shutil.copy2(str(filled_word_path), str(output_path))
-                
-                update_progress(session_id, 7, 'Word 파일 생성 중', 100, '완료')
-                print(f"[DEBUG] Word 파일 저장: {output_path}")
-            else:
-                # PDF로 변환 (기본값)
-                print("7단계: Word를 PDF로 변환 중...")
-                update_progress(session_id, 7, 'PDF로 변환 중', 95, 'PDF 변환 중...')
-                
-                word_to_pdf = WordToPDFConverter()
-                output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료.pdf"
-                output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
-                word_to_pdf.convert_word_to_pdf(str(filled_word_path), str(output_path))
-                
-                update_progress(session_id, 7, 'PDF로 변환 중', 100, '완료')
-                print(f"[DEBUG] PDF 파일 저장: {output_path}")
-            
-            # 엑셀 파일 닫기
             excel_extractor.close()
-            
-            # 임시 파일 정리 (로컬에 저장된 파일은 유지)
-            if pdf_path.exists():
-                pdf_path.unlink()
-            if excel_path.exists():
-                excel_path.unlink()
-            if word_template_path.exists():
-                word_template_path.unlink()
-            if filled_word_path.exists():
-                filled_word_path.unlink()
-            
-            # 결과 반환
-            format_text = 'Word' if output_format == 'word' else 'PDF'
-            
-            # 진행 상황 데이터 정리 (완료 후 5초 후 삭제)
-            def cleanup_session():
-                time.sleep(5)
-                with progress_lock:
-                    if session_id in progress_store:
-                        del progress_store[session_id]
-            threading.Thread(target=cleanup_session, daemon=True).start()
             
             return jsonify({
                 'success': True,
-                'session_id': session_id,
-                'output_filename': output_filename,
-                'output_format': output_format,
-                'used_sheets': list(required_sheets),
-                'year': year,
-                'quarter': quarter,
-                'message': f'{format_text} 파일이 성공적으로 생성되었습니다. (사용된 시트: {", ".join(sorted(required_sheets))})'
+                'template_name': template_name,
+                'markers_count': len(template_result['markers']),
+                'validation': mapping_data.get('validation_results', {}),
+                'message': f'템플릿 "{template_name}"이 성공적으로 생성되고 저장되었습니다.'
             })
             
         except Exception as e:
             import traceback
             traceback.print_exc()
-            
-            # 에러 발생 시 진행 상황 업데이트
-            update_progress(session_id, 0, '오류 발생', 0, f'오류: {str(e)}')
-            
             return jsonify({
-                'error': f'처리 중 오류가 발생했습니다: {str(e)}',
-                'session_id': session_id
+                'error': f'템플릿 생성 중 오류가 발생했습니다: {str(e)}'
             }), 500
             
         finally:
-            # 임시 파일 정리
-            pdf_path = Path(app.config['UPLOAD_FOLDER']) / pdf_filename
-            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
-            if pdf_path.exists():
-                pdf_path.unlink()
             if excel_path.exists():
                 excel_path.unlink()
     
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({
             'error': f'서버 오류가 발생했습니다: {str(e)}'
         }), 500
 
 
-@app.route('/api/progress/<session_id>', methods=['GET'])
-def get_progress(session_id):
-    """진행 상황 조회 API"""
-    with progress_lock:
-        if session_id not in progress_store:
+@app.route('/api/templates/list', methods=['GET'])
+def list_templates():
+    """저장된 템플릿 목록 반환"""
+    try:
+        template_storage = TemplateStorage()
+        templates = template_storage.list_templates()
+        
+        return jsonify({
+            'success': True,
+            'templates': templates
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'템플릿 목록을 불러오는 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/templates/<template_name>/html', methods=['GET'])
+def get_template_html(template_name):
+    """템플릿 HTML 가져오기"""
+    try:
+        from urllib.parse import unquote
+        # URL 디코딩 (한글 템플릿 이름 지원)
+        # Flask가 이미 디코딩을 수행하지만, 추가 인코딩이 있을 수 있으므로 unquote 사용
+        template_name_decoded = unquote(template_name)
+        
+        template_storage = TemplateStorage()
+        template_data = template_storage.load_template(template_name_decoded)
+        
+        if not template_data:
+            # 저장된 템플릿 목록 확인 (디버깅용)
+            all_templates = template_storage.list_templates()
+            print(f"템플릿 '{template_name_decoded}'을 찾을 수 없습니다. 저장된 템플릿: {[t['name'] for t in all_templates]}")
             return jsonify({
-                'error': '진행 상황을 찾을 수 없습니다.',
-                'session_id': session_id
+                'error': f'템플릿 "{template_name_decoded}"을 찾을 수 없습니다.',
+                'available_templates': [t['name'] for t in all_templates]
             }), 404
         
-        progress_data = progress_store[session_id]
+        from flask import Response
+        return Response(
+            template_data['template_html'],
+            mimetype='text/html',
+            headers={'Content-Type': 'text/html; charset=utf-8'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': f'템플릿을 불러오는 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/auto_train', methods=['POST'])
+def auto_train_template():
+    """템플릿 자동 학습 루틴 실행"""
+    try:
+        if 'reference_image' not in request.files:
+            return jsonify({'error': '정답 이미지 파일이 없습니다.'}), 400
         
-        # 타임아웃 체크
-        if time.time() - progress_data.get('last_update', 0) > PROGRESS_TIMEOUT:
-            del progress_store[session_id]
+        reference_image = request.files['reference_image']
+        if reference_image.filename == '':
+            return jsonify({'error': '정답 이미지를 선택해주세요.'}), 400
+        
+        if not allowed_image_file(reference_image.filename):
+            return jsonify({'error': '지원하지 않는 이미지 형식입니다.'}), 400
+        
+        # 템플릿 이름
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            template_name = Path(reference_image.filename).stem
+        
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 최대 반복 횟수 및 임계값
+        max_iterations = int(request.form.get('max_iterations', '10'))
+        similarity_threshold = float(request.form.get('similarity_threshold', '0.85'))
+        
+        # 엑셀 파일 (선택적)
+        excel_file = request.files.get('excel_file')
+        excel_path = None
+        
+        # 이미지 파일 저장
+        image_filename = secure_filename(reference_image.filename)
+        image_path = app.config['IMAGE_FOLDER'] / image_filename
+        reference_image.save(str(image_path))
+        
+        # 엑셀 파일 저장 (있는 경우)
+        if excel_file and excel_file.filename:
+            if not allowed_file(excel_file.filename):
+                return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
+            
+            excel_filename = secure_filename(excel_file.filename)
+            excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+            excel_file.save(str(excel_path))
+        
+        try:
+            # 상태 ID 생성
+            status_id = training_status_manager.create_status(template_name)
+            
+            # 엑셀 파일이 있으면 스레드 시작 전에 복사본 생성 (원본이 삭제되기 전에)
+            excel_path_for_thread = None
+            if excel_path and excel_path.exists():
+                import shutil
+                temp_excel = Path(app.config['UPLOAD_FOLDER']) / f"{status_id}_{excel_path.name}"
+                try:
+                    shutil.copy2(excel_path, temp_excel)
+                    excel_path_for_thread = str(temp_excel)
+                except Exception as e:
+                    print(f"엑셀 파일 복사 실패: {e}")
+                    excel_path_for_thread = None
+            
+            # 별도 스레드에서 학습 실행
+            def train_in_thread():
+                try:
+                    auto_trainer = TemplateAutoTrainer()
+                    training_result = auto_trainer.train_template(
+                        reference_image_path=str(image_path),
+                        template_name=template_name,
+                        excel_file_path=excel_path_for_thread,
+                        sheet_name=None,  # 자동 추론
+                        year=year,
+                        quarter=quarter,
+                        max_iterations=max_iterations,
+                        similarity_threshold=similarity_threshold,
+                        status_id=status_id
+                    )
+                        
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    training_status_manager.update_status(
+                        status_id,
+                        status='error',
+                        message=f'오류 발생: {str(e)}'
+                    )
+                finally:
+                    # 스레드 종료 시 사용한 엑셀 파일 삭제
+                    if excel_path_for_thread and Path(excel_path_for_thread).exists():
+                        try:
+                            Path(excel_path_for_thread).unlink()
+                        except Exception as e:
+                            print(f"임시 엑셀 파일 삭제 실패: {e}")
+            
+            # 학습 시작
+            train_thread = threading.Thread(target=train_in_thread, daemon=True)
+            train_thread.start()
+            
             return jsonify({
-                'error': '진행 상황이 만료되었습니다.',
-                'session_id': session_id
-            }), 404
-        
-        return jsonify(progress_data)
+                'success': True,
+                'status_id': status_id,
+                'message': '자동 학습이 시작되었습니다.',
+                'template_name': template_name
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            # 오류 발생 시 복사본 파일 정리
+            if excel_path_for_thread and Path(excel_path_for_thread).exists():
+                try:
+                    Path(excel_path_for_thread).unlink()
+                except:
+                    pass
+            return jsonify({
+                'error': f'자동 학습 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            # 원본 엑셀 파일은 즉시 삭제 가능 (스레드에서 복사본 사용)
+            if excel_path and excel_path.exists():
+                try:
+                    excel_path.unlink()
+                except:
+                    pass
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
 
 
-def update_progress(session_id, step, step_name, progress, message, page_info=None, ocr_progress=None, ocr_times=None):
-    """진행 상황 업데이트 헬퍼 함수"""
-    with progress_lock:
-        if session_id not in progress_store:
-            progress_store[session_id] = {
-                'session_id': session_id,
-                'step': 1,
-                'step_name': '',
-                'progress': 0,
-                'message': '',
-                'page_info': {'current': 0, 'total': 0},
-                'ocr_progress': 0,
-                'ocr_times': {},
-                'last_update': time.time()
-            }
+@app.route('/api/training_status/<status_id>', methods=['GET'])
+def get_training_status(status_id):
+    """학습 진행 상태 조회"""
+    try:
+        status = training_status_manager.get_status(status_id)
+        if not status:
+            return jsonify({'error': '상태를 찾을 수 없습니다.'}), 404
         
-        update_data = {
-            'step': step,
-            'step_name': step_name,
-            'progress': progress,
-            'message': message,
-            'page_info': page_info or {'current': 0, 'total': 0},
-            'last_update': time.time()
-        }
-        
-        if ocr_progress is not None:
-            update_data['ocr_progress'] = ocr_progress
-        
-        if ocr_times is not None:
-            # 기존 OCR 시간 정보 업데이트
-            existing_times = progress_store[session_id].get('ocr_times', {})
-            existing_times.update(ocr_times)
-            update_data['ocr_times'] = existing_times
-        
-        progress_store[session_id].update(update_data)
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'상태 조회 중 오류가 발생했습니다: {str(e)}'
+        }), 500
 
 
-def cleanup_old_progress():
-    """오래된 진행 상황 데이터 정리"""
-    current_time = time.time()
-    with progress_lock:
-        expired_sessions = [
-            sid for sid, data in progress_store.items()
-            if current_time - data.get('last_update', 0) > PROGRESS_TIMEOUT
-        ]
-        for sid in expired_sessions:
-            del progress_store[sid]
+@app.route('/api/training_stop/<status_id>', methods=['POST'])
+def stop_training(status_id):
+    """학습 중단"""
+    try:
+        training_status_manager.request_stop(status_id)
+        return jsonify({
+            'success': True,
+            'message': '중단 요청이 전송되었습니다.'
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'중단 요청 중 오류가 발생했습니다: {str(e)}'
+        }), 500
+
+
+@app.route('/api/process_template', methods=['POST'])
+def process_template_selected():
+    """저장된 템플릿을 선택하여 보도자료 생성"""
+    try:
+        if 'excel_file' not in request.files:
+            return jsonify({'error': '엑셀 파일이 없습니다.'}), 400
+        
+        excel_file = request.files['excel_file']
+        if excel_file.filename == '':
+            return jsonify({'error': '엑셀 파일을 선택해주세요.'}), 400
+        
+        if not allowed_file(excel_file.filename):
+            return jsonify({'error': '지원하지 않는 엑셀 파일 형식입니다.'}), 400
+        
+        # 템플릿 이름 가져오기
+        template_name = request.form.get('template_name', '')
+        if not template_name:
+            return jsonify({'error': '템플릿 이름을 선택해주세요.'}), 400
+        
+        # 연도 및 분기
+        year_str = request.form.get('year', '2025')
+        quarter_str = request.form.get('quarter', '2')
+        year = int(year_str)
+        quarter = int(quarter_str)
+        
+        # 엑셀 파일 저장
+        excel_filename = secure_filename(excel_file.filename)
+        excel_path = Path(app.config['UPLOAD_FOLDER']) / excel_filename
+        excel_file.save(str(excel_path))
+        
+        try:
+            # 엑셀 추출기 초기화
+            excel_extractor = ExcelExtractor(str(excel_path))
+            excel_extractor.load_workbook()
+            
+            # 템플릿 매처로 템플릿 매칭 및 채우기
+            template_matcher = TemplateMatcher()
+            filled_template = template_matcher.match_and_fill(
+                template_name,
+                excel_extractor,
+                year,
+                quarter
+            )
+            
+            if not filled_template:
+                return jsonify({
+                    'error': f'템플릿 "{template_name}"을 찾을 수 없습니다.'
+                }), 404
+            
+            # 결과 저장
+            output_filename = f"{year}년_{quarter}분기_지역경제동향_보도자료({template_name}).html"
+            output_path = Path(app.config['OUTPUT_FOLDER']) / output_filename
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(filled_template)
+            
+            excel_extractor.close()
+            
+            return jsonify({
+                'success': True,
+                'output_filename': output_filename,
+                'message': '보도자료가 성공적으로 생성되었습니다.'
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'error': f'처리 중 오류가 발생했습니다: {str(e)}'
+            }), 500
+            
+        finally:
+            if excel_path.exists():
+                excel_path.unlink()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'서버 오류가 발생했습니다: {str(e)}'
+        }), 500
 
 
 @app.errorhandler(413)
@@ -1198,6 +815,7 @@ if __name__ == '__main__':
     # 출력 폴더 생성
     os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['IMAGE_FOLDER'], exist_ok=True)
     
     # Word 파일 저장 폴더 생성
     word_files_folder = Path(app.config['WORD_FILES_FOLDER'])
