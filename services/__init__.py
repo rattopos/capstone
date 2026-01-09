@@ -8,7 +8,8 @@ from .report_generator import (
     generate_regional_report_html,
     generate_grdp_reference_html,
     generate_statistics_report_html,
-    generate_individual_statistics_html
+    generate_individual_statistics_html,
+    _remove_page_numbers
 )
 from .grdp_service import (
     get_kosis_grdp_download_info,

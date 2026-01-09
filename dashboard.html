@@ -472,7 +472,7 @@
             cursor: not-allowed;
         }
 
-        /* Preview Area */
+        /* Preview Area - 사이드바 포함 */
         .preview-area {
             flex: 1;
             background: var(--bg-card);
@@ -502,11 +502,131 @@
             font-weight: 600;
         }
 
-        .preview-content {
-            background: white;
+        /* Preview Body with Sidebar */
+        .preview-body {
+            display: flex;
             flex: 1;
-            overflow: hidden;
             min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Page Sidebar */
+        .page-sidebar {
+            width: 180px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .page-sidebar-header {
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .page-thumbnail {
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-thumbnail:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .page-thumbnail.active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .page-thumbnail-preview {
+            width: 100%;
+            aspect-ratio: 210 / 297;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .page-thumbnail-preview iframe {
+            width: 400%;
+            height: 400%;
+            transform: scale(0.25);
+            transform-origin: top left;
+            pointer-events: none;
+            border: none;
+        }
+
+        .page-thumbnail-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .page-thumbnail-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .page-thumbnail-number {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* Preview Main Content */
+        .preview-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .preview-content {
+            background: #e5e5e5;
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .preview-page-container {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 210mm;
+            min-height: 297mm;
+            max-width: 100%;
         }
 
         .preview-iframe {
@@ -514,7 +634,6 @@
             height: 100%;
             border: none;
             background: white;
-            overflow: auto;
         }
 
         .preview-placeholder {
@@ -523,6 +642,7 @@
             align-items: center;
             justify-content: center;
             height: 100%;
+            width: 100%;
             color: var(--text-muted);
             background: var(--bg-tertiary);
         }
@@ -545,6 +665,45 @@
             max-width: 350px;
             text-align: center;
             line-height: 1.5;
+        }
+
+        /* Page Navigation */
+        .page-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border);
+        }
+
+        .page-nav-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.4rem 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .page-nav-btn:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .page-nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-nav-info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            min-width: 100px;
+            text-align: center;
         }
 
         /* Preview Actions */
@@ -1179,6 +1338,9 @@
                 <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
                     ⚙️ 담당자 설정
                 </button>
+                <button class="btn btn-primary" id="exportBtn" onclick="exportFinalDocument()" title="HTML 문서 내보내기" style="margin-left: 1rem;">
+                    📄 HTML 내보내기
+                </button>
             </div>
         </div>
     </header>
@@ -1212,39 +1374,9 @@
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;" id="conversionDetails">보도자료 생성 준비 완료</div>
                     
-                    <!-- GRDP 추출 결과 -->
-                    <div class="grdp-info" id="grdpInfo" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-secondary); margin-bottom: 0.5rem;">📊 GRDP 추출 완료</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.75rem;">
-                            <div>
-                                <span style="color: var(--text-muted);">전국 성장률:</span>
-                                <span id="grdpNational" style="color: var(--text-primary); font-weight: 600;"></span>
-                            </div>
-                            <div>
-                                <span style="color: var(--text-muted);">1위 지역:</span>
-                                <span id="grdpTopRegion" style="color: var(--text-primary); font-weight: 600;"></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- GRDP 누락 안내 (간소화) -->
-                    <div class="grdp-missing" id="grdpMissing" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid #f59e0b;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <div style="font-size: 0.8rem; font-weight: 600; color: #f59e0b;">⚠️ GRDP 데이터 누락</div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">참고_GRDP 보도자료에 영향</div>
-                            </div>
-                            <button onclick="showGrdpModal()" style="
-                                padding: 0.4rem 0.75rem;
-                                background: #f59e0b;
-                                color: white;
-                                border: none;
-                                border-radius: 6px;
-                                font-size: 0.75rem;
-                                cursor: pointer;
-                            ">추가</button>
-                        </div>
-                    </div>
+                    <!-- GRDP 정보 영역 (필요시 표시) -->
+                    <div class="grdp-info" id="grdpInfo" style="display: none;"></div>
+                    <div class="grdp-missing" id="grdpMissing" style="display: none;"></div>
                     
                     <!-- 보도자료 생성 안내 -->
                     <div id="reportGenerationHint" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--success);">
@@ -1280,7 +1412,7 @@
 
             <!-- Control Bar - 페이지 네비게이션 제거됨 -->
 
-            <!-- Preview Area -->
+            <!-- Preview Area with Sidebar -->
             <div class="preview-area">
                 <div class="preview-header">
                     <div class="preview-title" id="previewTitle">
@@ -1288,23 +1420,53 @@
                         <span>미리보기</span>
                     </div>
                     <div class="preview-actions">
-                        <!-- 편집/검토 버튼들 - 추후 재구현 예정 -->
+                        <button class="btn btn-secondary" id="toggleSidebarBtn" onclick="togglePageSidebar()" title="사이드바 토글" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;">
+                            📑 페이지 목록
+                        </button>
                     </div>
                 </div>
-                <div class="preview-content" id="previewContent">
-                    <div class="preview-placeholder" id="previewPlaceholder">
-                        <div class="preview-placeholder-icon">📊</div>
-                        <h3>보도자료를 선택하세요</h3>
-                        <p>엑셀 파일을 업로드하면 자동으로 보도자료가 생성됩니다.</p>
-                    </div>
-                    <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
-                    <!-- 편집 모드용 에디터 -->
-                    <div class="edit-container" id="editContainer" style="display: none;">
-                        <div class="edit-toolbar">
-                            <span class="edit-mode-badge">📝 편집 모드</span>
-                            <span class="edit-hint">텍스트를 클릭하여 직접 수정하세요. 레이아웃은 유지됩니다.</span>
+                <div class="preview-body">
+                    <!-- Page Sidebar -->
+                    <div class="page-sidebar" id="pageSidebar">
+                        <div class="page-sidebar-header">
+                            <span>📋</span>
+                            <span>페이지 목록</span>
+                            <span id="pageCount" style="margin-left: auto; color: var(--accent-secondary);">0</span>
                         </div>
-                        <div class="edit-content" id="editContent"></div>
+                        <div class="page-sidebar-content" id="pageSidebarContent">
+                            <!-- 페이지 썸네일이 여기에 동적으로 생성됨 -->
+                            <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
+                                파일을 업로드하면<br>페이지가 표시됩니다.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Main -->
+                    <div class="preview-main">
+                        <div class="preview-content" id="previewContent">
+                            <div class="preview-placeholder" id="previewPlaceholder">
+                                <div class="preview-placeholder-icon">📊</div>
+                                <h3>보도자료를 선택하세요</h3>
+                                <p>엑셀 파일을 업로드하면 자동으로 보도자료가 생성됩니다.</p>
+                            </div>
+                            <div class="preview-page-container" id="previewPageContainer" style="display: none;">
+                                <iframe class="preview-iframe" id="previewIframe"></iframe>
+                            </div>
+                            <!-- 편집 모드용 에디터 -->
+                            <div class="edit-container" id="editContainer" style="display: none;">
+                                <div class="edit-toolbar">
+                                    <span class="edit-mode-badge">📝 편집 모드</span>
+                                    <span class="edit-hint">텍스트를 클릭하여 직접 수정하세요. 레이아웃은 유지됩니다.</span>
+                                </div>
+                                <div class="edit-content" id="editContent"></div>
+                            </div>
+                        </div>
+                        <!-- Page Navigation -->
+                        <div class="page-nav" id="pageNav">
+                            <button class="page-nav-btn" id="prevPageBtn" onclick="goToPrevPage()" disabled>◀ 이전</button>
+                            <span class="page-nav-info" id="pageNavInfo">-</span>
+                            <button class="page-nav-btn" id="nextPageBtn" onclick="goToNextPage()" disabled>다음 ▶</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1521,12 +1683,7 @@
                 </div>
                 <div class="upload-step" id="uploadStep3">
                     <span class="step-icon">⏳</span>
-                    <span class="step-text">분석표 변환</span>
-                    <span class="step-status"></span>
-                </div>
-                <div class="upload-step" id="uploadStep4">
-                    <span class="step-icon">⏳</span>
-                    <span class="step-text">GRDP 데이터 추출</span>
+                    <span class="step-text">데이터 처리</span>
                     <span class="step-status"></span>
                 </div>
             </div>
@@ -1539,10 +1696,6 @@
                 <div class="result-item">
                     <span class="result-label">기준시점:</span>
                     <span class="result-value" id="resultPeriod"></span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">전국 GRDP:</span>
-                    <span class="result-value" id="resultGrdp"></span>
                 </div>
             </div>
         </div>
@@ -1912,9 +2065,18 @@
             // editBtn, saveEditBtn, cancelEditBtn, markReviewedBtn
             previewTitle: document.getElementById('previewTitle'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
+            previewPageContainer: document.getElementById('previewPageContainer'),
             previewIframe: document.getElementById('previewIframe'),
             editContainer: document.getElementById('editContainer'),
             editContent: document.getElementById('editContent'),
+            // 페이지 사이드바 및 네비게이션
+            pageSidebar: document.getElementById('pageSidebar'),
+            pageSidebarContent: document.getElementById('pageSidebarContent'),
+            pageCount: document.getElementById('pageCount'),
+            pageNav: document.getElementById('pageNav'),
+            prevPageBtn: document.getElementById('prevPageBtn'),
+            nextPageBtn: document.getElementById('nextPageBtn'),
+            pageNavInfo: document.getElementById('pageNavInfo'),
             contactInfoModal: document.getElementById('contactInfoModal'),
             loadingOverlay: document.getElementById('loadingOverlay'),
             loadingTitle: document.getElementById('loadingTitle'),
@@ -1952,15 +2114,19 @@
 
         function setupEventListeners() {
             // File upload
-            elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
-            elements.fileInput.addEventListener('change', handleFileSelect);
-            elements.uploadZone.addEventListener('dragover', handleDragOver);
-            elements.uploadZone.addEventListener('dragleave', handleDragLeave);
-            elements.uploadZone.addEventListener('drop', handleDrop);
+            if (elements.uploadZone) {
+                elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
+                elements.uploadZone.addEventListener('dragover', handleDragOver);
+                elements.uploadZone.addEventListener('dragleave', handleDragLeave);
+                elements.uploadZone.addEventListener('drop', handleDrop);
+            }
+            if (elements.fileInput) {
+                elements.fileInput.addEventListener('change', handleFileSelect);
+            }
 
             // 페이지 네비게이션 이벤트 리스너 제거됨
 
-            // Actions (존재하는 요소만 이벤트 리스너 추가)
+            // Actions - null 체크 추가
             if (elements.exportBtn) {
                 elements.exportBtn.addEventListener('click', exportFinalDocument);
             }
@@ -1991,6 +2157,30 @@
                     console.error('보도자료 목록 로드 오류:', err);
                     showToast('보도자료 목록을 불러오는데 실패했습니다.', 'error');
                 });
+        }
+
+        // 보도자료 목록 빌드 (매개변수로 받은 데이터 사용)
+        function buildReportList(reports, regionalReports) {
+            if (!reports || !Array.isArray(reports)) {
+                console.warn('buildReportList: reports가 유효하지 않습니다.');
+                return;
+            }
+            
+            state.reports = reports;
+            state.summaryReports = reports.filter(r => r.category === 'summary');
+            state.sectoralReports = reports.filter(r => r.category !== 'summary');
+            state.regionalReports = regionalReports || [];
+            
+            // 총 보도자료 수 계산
+            state.generationStats.total = 
+                state.summaryReports.length + 
+                state.sectoralReports.length + 
+                state.regionalReports.length + 
+                state.statisticsReports.length;
+            
+            // 전체 보도자료 배열 초기화 및 렌더링
+            initializeAllReports();
+            renderAllReportsList();
         }
 
         // ===== 담당자 정보 모달 함수 =====
@@ -2080,19 +2270,29 @@
             showToast('가중치 결측치 설정이 저장되었습니다.', 'success');
         }
 
-        // Tab switching
+        // Tab switching (레거시 - 탭이 제거되어 기능 무효화)
         function switchTab(tab) {
             state.currentTab = tab;
             
-            elements.tabSummary.classList.toggle('active', tab === 'summary');
-            elements.tabSectoral.classList.toggle('active', tab === 'sectoral');
-            elements.tabRegional.classList.toggle('active', tab === 'regional');
-            elements.tabStatistics.classList.toggle('active', tab === 'statistics');
+            // 탭 요소들이 제거되었으므로 null 체크 후 처리
+            if (elements.tabSummary) elements.tabSummary.classList.toggle('active', tab === 'summary');
+            if (elements.tabSectoral) elements.tabSectoral.classList.toggle('active', tab === 'sectoral');
+            if (elements.tabRegional) elements.tabRegional.classList.toggle('active', tab === 'regional');
+            if (elements.tabStatistics) elements.tabStatistics.classList.toggle('active', tab === 'statistics');
             
-            elements.summaryReportList.style.display = tab === 'summary' ? 'flex' : 'none';
-            elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
-            elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
-            elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
+            // 리스트 요소들도 null 체크 후 처리
+            if (elements.summaryReportList && elements.summaryReportList.style) {
+                elements.summaryReportList.style.display = tab === 'summary' ? 'flex' : 'none';
+            }
+            if (elements.reportList && elements.reportList.style) {
+                elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
+            }
+            if (elements.regionalReportList && elements.regionalReportList.style) {
+                elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
+            }
+            if (elements.statisticsReportList && elements.statisticsReportList.style) {
+                elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
+            }
         }
 
         // ===== 미리보기 생성 =====
@@ -2407,37 +2607,164 @@
                 state.totalPagesInReport = Math.max(1, pages.length);
                 state.currentPageInReport = Math.min(pageIndex, state.totalPagesInReport - 1);
                 
-                let displayHtml = html;
+                // 현재 페이지만 표시
+                const headContent = doc.head.innerHTML;
+                let displayHtml;
                 
-                // 페이지가 여러 개인 경우 현재 페이지만 표시
-                if (pages.length > 1) {
+                if (pages.length > 0) {
                     const currentPage = pages[state.currentPageInReport];
                     if (currentPage) {
-                        // 원본 HTML의 head 유지하고 body는 현재 페이지만
-                        const headContent = doc.head.innerHTML;
                         displayHtml = `<!DOCTYPE html>
 <html lang="ko">
-<head>${headContent}</head>
-<body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #f5f5f5;">
+<head>${headContent}
+<style>
+body { margin: 0; padding: 0; background: white; }
+.page { box-shadow: none; margin: 0 auto; }
+</style>
+</head>
+<body>
 ${currentPage.outerHTML}
 </body>
 </html>`;
                     }
+                } else {
+                    displayHtml = html;
                 }
                 
+                // UI 업데이트
                 elements.previewPlaceholder.style.display = 'none';
                 elements.editContainer.style.display = 'none';
-                elements.previewIframe.style.display = 'block';
+                if (elements.previewPageContainer) {
+                    elements.previewPageContainer.style.display = 'block';
+                }
                 elements.previewIframe.srcdoc = displayHtml;
                 
                 // 제목에 페이지 정보 표시
                 const pageInfo = state.totalPagesInReport > 1 ? ` (${state.currentPageInReport + 1}/${state.totalPagesInReport})` : '';
                 elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}${pageInfo}</span>`;
                 
-                // 편집/검토 버튼 - 추후 재구현 예정
+                // 페이지 네비게이션 업데이트
+                updatePageNavigation();
+                
+                // 사이드바 업데이트 (현재 보고서의 페이지들)
+                updatePageSidebar(doc, pages, report.icon || '📄', report.name);
+                
             } else {
                 showToast('보도자료를 찾을 수 없습니다.', 'error');
             }
+        }
+        
+        // ===== 페이지 네비게이션 함수들 =====
+        function updatePageNavigation() {
+            if (!elements.pageNavInfo) return;
+            
+            const current = state.currentPageInReport + 1;
+            const total = state.totalPagesInReport;
+            
+            elements.pageNavInfo.textContent = `${current} / ${total} 페이지`;
+            
+            if (elements.prevPageBtn) {
+                elements.prevPageBtn.disabled = state.currentPageInReport <= 0;
+            }
+            if (elements.nextPageBtn) {
+                elements.nextPageBtn.disabled = state.currentPageInReport >= state.totalPagesInReport - 1;
+            }
+        }
+        
+        function goToPrevPage() {
+            if (state.currentPageInReport > 0) {
+                state.currentPageInReport--;
+                refreshCurrentPage();
+            }
+        }
+        
+        function goToNextPage() {
+            if (state.currentPageInReport < state.totalPagesInReport - 1) {
+                state.currentPageInReport++;
+                refreshCurrentPage();
+            }
+        }
+        
+        function goToPage(pageIndex) {
+            if (pageIndex >= 0 && pageIndex < state.totalPagesInReport) {
+                state.currentPageInReport = pageIndex;
+                refreshCurrentPage();
+            }
+        }
+        
+        function refreshCurrentPage() {
+            if (state.currentGlobalIndex >= 0 && state.currentGlobalIndex < state.allReports.length) {
+                const report = state.allReports[state.currentGlobalIndex];
+                displayCachedReport(report.type, report, state.currentPageInReport);
+            }
+        }
+        
+        // ===== 페이지 사이드바 함수들 =====
+        function togglePageSidebar() {
+            if (elements.pageSidebar) {
+                const isHidden = elements.pageSidebar.style.display === 'none';
+                elements.pageSidebar.style.display = isHidden ? 'flex' : 'none';
+            }
+        }
+        
+        function updatePageSidebar(doc, pages, icon, reportName) {
+            if (!elements.pageSidebarContent) return;
+            
+            // 페이지 수 업데이트
+            if (elements.pageCount) {
+                elements.pageCount.textContent = pages.length || 1;
+            }
+            
+            // 썸네일 생성
+            let sidebarHtml = '';
+            
+            if (pages.length > 0) {
+                const headContent = doc.head.innerHTML;
+                pages.forEach((page, idx) => {
+                    const isActive = idx === state.currentPageInReport ? 'active' : '';
+                    const pageTitle = page.querySelector('h1, h2, .region-title, .section-title')?.textContent?.slice(0, 20) || `페이지 ${idx + 1}`;
+                    
+                    sidebarHtml += `
+                        <div class="page-thumbnail ${isActive}" onclick="goToPage(${idx})" data-page-index="${idx}">
+                            <div class="page-thumbnail-preview">
+                                <span style="font-size: 1.2rem;">${icon}</span>
+                            </div>
+                            <div class="page-thumbnail-info">
+                                <div class="page-thumbnail-title">${pageTitle}</div>
+                                <div class="page-thumbnail-number">${idx + 1} / ${pages.length}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                sidebarHtml = `
+                    <div class="page-thumbnail active">
+                        <div class="page-thumbnail-preview">
+                            <span style="font-size: 1.2rem;">${icon}</span>
+                        </div>
+                        <div class="page-thumbnail-info">
+                            <div class="page-thumbnail-title">${reportName}</div>
+                            <div class="page-thumbnail-number">1 / 1</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            elements.pageSidebarContent.innerHTML = sidebarHtml;
+        }
+        
+        function updateSidebarActiveState() {
+            if (!elements.pageSidebarContent) return;
+            
+            const thumbnails = elements.pageSidebarContent.querySelectorAll('.page-thumbnail');
+            thumbnails.forEach((thumb, idx) => {
+                if (idx === state.currentPageInReport) {
+                    thumb.classList.add('active');
+                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
         }
 
         // ===== 렌더링 함수들 =====
@@ -2613,7 +2940,7 @@ ${currentPage.outerHTML}
             document.getElementById('uploadResult').style.display = 'none';
             
             // 모든 스텝 초기화
-            ['uploadStep1', 'uploadStep2', 'uploadStep3', 'uploadStep4'].forEach(id => {
+            ['uploadStep1', 'uploadStep2', 'uploadStep3'].forEach(id => {
                 const step = document.getElementById(id);
                 step.className = 'upload-step';
                 step.querySelector('.step-icon').textContent = '⏳';
@@ -2623,6 +2950,10 @@ ${currentPage.outerHTML}
         
         function updateUploadStep(stepNum, status, statusText = '') {
             const step = document.getElementById(`uploadStep${stepNum}`);
+            if (!step) {
+                console.warn(`uploadStep${stepNum}을 찾을 수 없습니다.`);
+                return;
+            }
             const icon = step.querySelector('.step-icon');
             const statusEl = step.querySelector('.step-status');
             
@@ -2646,8 +2977,8 @@ ${currentPage.outerHTML}
                 statusEl.textContent = statusText || '실패';
             }
             
-            // 진행률 업데이트
-            const progress = (stepNum / 4) * 100;
+            // 진행률 업데이트 (총 3단계 기준)
+            const progress = (stepNum / 3) * 100;
             document.getElementById('uploadProgressFill').style.width = `${progress}%`;
         }
         
@@ -2700,24 +3031,12 @@ ${currentPage.outerHTML}
                         document.getElementById('uploadModalSubtitle').textContent = '보도자료 생성 준비 중...';
                         await new Promise(r => setTimeout(r, 300));
                         
-                        if (data.has_grdp) {
-                            updateUploadStep(4, 'completed', 'GRDP 포함됨');
-                        } else {
-                            updateUploadStep(4, 'warning', 'GRDP: N/A (미업로드)');
-                        }
-                        
                     } else if (data.file_type === 'analysis') {
                         // [트랙 2] 분석표 업로드 → 보도자료 생성 (레거시)
-                        updateUploadStep(3, 'skipped', '분석표 직접 업로드');
+                        updateUploadStep(3, 'completed', '분석표 처리 완료');
                         
-                        if (data.has_grdp) {
-                            updateUploadStep(4, 'completed', `GRDP 시트: ${data.grdp_sheet || '발견됨'}`);
-                        } else {
-                            updateUploadStep(4, 'active', 'GRDP 추가 필요');
-                        }
                     } else {
                         updateUploadStep(3, 'skipped');
-                        updateUploadStep(4, 'skipped');
                     }
                     
                     // 완료 상태 표시
@@ -2730,13 +3049,6 @@ ${currentPage.outerHTML}
                     const resultDiv = document.getElementById('uploadResult');
                     resultDiv.style.display = 'block';
                     document.getElementById('resultPeriod').textContent = `${data.year}년 ${data.quarter}분기`;
-                    
-                    if (data.conversion_info && data.conversion_info.grdp_extracted) {
-                        document.getElementById('resultGrdp').textContent = 
-                            `${data.conversion_info.national_growth_rate}% (1위: ${data.conversion_info.top_region})`;
-                    } else {
-                        document.getElementById('resultGrdp').textContent = '-';
-                    }
                     
                     // 기존 UI 업데이트
                     state.fileUploaded = true;
@@ -2782,34 +3094,9 @@ ${currentPage.outerHTML}
                         // UI 상태 업데이트 (보도자료 생성 모드로 바로 전환)
                         updateUIForFileType('raw_direct');
                         
-                        // GRDP 정보 표시 (있으면)
-                        if (data.has_grdp && data.conversion_info.grdp_extracted) {
-                            grdpInfo.style.display = 'block';
-                            const grdpInfoHtml = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: var(--accent-primary); margin-bottom: 0.25rem;">
-                                    📊 GRDP 데이터 포함
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    전국 성장률: ${data.conversion_info.national_growth_rate || '-'}%
-                                </div>
-                            `;
-                            grdpInfo.innerHTML = grdpInfoHtml;
-                            grdpMissing.style.display = 'none';
-                        } else if (data.needs_review) {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'block';
-                            grdpMissing.innerHTML = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
-                                    ⚠️ GRDP 데이터 확인 필요
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
-                                </div>
-                            `;
-                        } else {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
-                        }
+                        // GRDP 정보 표시 - 항상 숨김 (GRDP 데이터는 별도 업로드)
+                        grdpInfo.style.display = 'none';
+                        grdpMissing.style.display = 'none';
                         
                         // 안내 메시지
                         document.getElementById('uploadModalSubtitle').textContent = 
@@ -2830,6 +3117,7 @@ ${currentPage.outerHTML}
                         
                     // ===== raw_direct: 기초자료 직접 사용 (가중치 검증 포함) =====
                     } else if (data.file_type === 'raw_direct') {
+                        console.log('[DEBUG] raw_direct 처리 시작');
                         conversionInfo.style.display = 'block';
                         conversionDetails.innerHTML = `
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -2840,45 +3128,39 @@ ${currentPage.outerHTML}
                         
                         // UI 상태 업데이트
                         updateUIForFileType('raw_direct');
+                        console.log('[DEBUG] updateUIForFileType 완료');
                         
-                        // GRDP 정보 표시
-                        if (data.has_grdp) {
-                            grdpInfo.style.display = 'block';
-                            grdpMissing.style.display = 'none';
-                        } else if (data.needs_review) {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'block';
-                            grdpMissing.innerHTML = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
-                                    ⚠️ GRDP 데이터 확인 필요
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
-                                </div>
-                            `;
-                        } else {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
-                        }
+                        // GRDP 정보 표시 - 항상 숨김 (GRDP 데이터는 별도 업로드)
+                        grdpInfo.style.display = 'none';
+                        grdpMissing.style.display = 'none';
                         
                         // 가중치 검증 결과 저장
                         state.weightValidation = data.weight_validation;
+                        console.log('[DEBUG] weight_validation:', data.weight_validation);
                         
                         // 모달 닫기
+                        console.log('[DEBUG] 모달 닫기 시작 (1.5초 후)');
                         hideUploadModal(1500);
                         
                         // 보도자료 목록 빌드
+                        console.log('[DEBUG] 보도자료 목록 빌드 예약 (0.3초 후)');
                         setTimeout(() => {
+                            console.log('[DEBUG] buildReportList 호출');
                             buildReportList(data.reports, data.regional_reports);
+                            console.log('[DEBUG] buildReportList 완료');
                         }, 300);
                         
                         // 가중치 누락 확인 후 경고 모달 또는 바로 진행
+                        console.log('[DEBUG] 가중치 확인 예약 (1.8초 후)');
                         setTimeout(() => {
+                            console.log('[DEBUG] 가중치 확인 시작');
                             if (data.weight_validation && data.weight_validation.has_missing_weights) {
                                 // 가중치 누락 경고 모달 표시
+                                console.log('[DEBUG] 가중치 경고 모달 표시');
                                 showWeightWarningModal(data.weight_validation);
                             } else {
                                 // 가중치 문제 없음 - 바로 미리보기 생성
+                                console.log('[DEBUG] 미리보기 생성 시작');
                                 showToast('🎉 보도자료 생성 시작!', 'success', 3000);
                                 generateAllReports();
                             }
@@ -2910,9 +3192,7 @@ ${currentPage.outerHTML}
                             document.getElementById('uploadModalIcon').textContent = '✅';
                             document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
                             document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추가로 업로드해주세요.';
-                            document.getElementById('uploadProgressFill').style.width = '75%';
-                            
-                            updateUploadStep(4, 'active', 'GRDP 추가 필요');
+                            document.getElementById('uploadProgressFill').style.width = '100%';
                             
                             hideUploadModal(1500);
                             setTimeout(() => {
@@ -2920,16 +3200,13 @@ ${currentPage.outerHTML}
                             }, 1600);
                         } else {
                             // GRDP가 있는 경우 → 바로 보도자료 생성
-                            grdpInfo.style.display = 'block';
+                            grdpInfo.style.display = 'none';
                             grdpMissing.style.display = 'none';
                             
                             document.getElementById('uploadModalIcon').textContent = '✅';
                             document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 시트가 포함되어 있습니다.';
+                            document.getElementById('uploadModalSubtitle').textContent = '보도자료를 생성할 수 있습니다.';
                             document.getElementById('uploadProgressFill').style.width = '100%';
-                            
-                            updateUploadStep(3, 'skipped', '분석표 직접 업로드');
-                            updateUploadStep(4, 'completed', 'GRDP 포함');
                             
                             hideUploadModal(2000);
                             setTimeout(() => {
@@ -3054,33 +3331,99 @@ ${currentPage.outerHTML}
             }
         }
         
-        // ===== 파일 저장 (저장 위치 선택 지원) =====
-        async function saveFileWithPicker(blob, filename) {
-            // File System Access API 지원 확인
+        // ===== 파일 저장 (다른 이름으로 저장 - Save As) =====
+        // 파일 형식별 설정
+        const FILE_TYPE_CONFIG = {
+            'html': {
+                description: 'HTML 파일',
+                mimeType: 'text/html',
+                extensions: ['.html', '.htm']
+            },
+            'xlsx': {
+                description: 'Excel 파일',
+                mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                extensions: ['.xlsx']
+            },
+            'xls': {
+                description: 'Excel 97-2003 파일',
+                mimeType: 'application/vnd.ms-excel',
+                extensions: ['.xls']
+            },
+            'csv': {
+                description: 'CSV 파일',
+                mimeType: 'text/csv',
+                extensions: ['.csv']
+            },
+            'json': {
+                description: 'JSON 파일',
+                mimeType: 'application/json',
+                extensions: ['.json']
+            },
+            'txt': {
+                description: '텍스트 파일',
+                mimeType: 'text/plain',
+                extensions: ['.txt']
+            },
+            'pdf': {
+                description: 'PDF 파일',
+                mimeType: 'application/pdf',
+                extensions: ['.pdf']
+            },
+            'zip': {
+                description: 'ZIP 압축 파일',
+                mimeType: 'application/zip',
+                extensions: ['.zip']
+            }
+        };
+        
+        /**
+         * 파일 저장 대화상자를 표시하여 사용자가 파일명과 저장 위치를 선택할 수 있도록 함
+         * @param {Blob} blob - 저장할 파일 데이터
+         * @param {string} filename - 기본 파일명 (확장자 포함)
+         * @param {string} [fileType] - 파일 형식 (html, xlsx, csv, json, txt, pdf, zip). 미지정시 확장자에서 추론
+         * @returns {Promise<boolean>} - 저장 성공 여부
+         */
+        async function saveFileWithPicker(blob, filename, fileType = null) {
+            // 파일 형식 자동 추론
+            if (!fileType) {
+                const ext = filename.split('.').pop().toLowerCase();
+                fileType = ext;
+            }
+            
+            const config = FILE_TYPE_CONFIG[fileType] || FILE_TYPE_CONFIG['txt'];
+            
+            // File System Access API 지원 확인 (Chrome, Edge 등 최신 브라우저)
             if ('showSaveFilePicker' in window) {
                 try {
+                    // 파일 저장 대화상자 표시
                     const handle = await window.showSaveFilePicker({
                         suggestedName: filename,
                         types: [{
-                            description: 'HTML 파일',
-                            accept: { 'text/html': ['.html'] }
+                            description: config.description,
+                            accept: { [config.mimeType]: config.extensions }
                         }]
                     });
                     
+                    // 파일 쓰기
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
+                    
+                    console.log(`[저장] 파일 저장 완료: ${filename}`);
                     return true;
                 } catch (err) {
                     if (err.name === 'AbortError') {
-                        // 사용자가 취소함
+                        // 사용자가 저장 대화상자에서 취소함
+                        console.log('[저장] 사용자가 저장을 취소했습니다.');
                         return false;
                     }
-                    console.warn('File System Access API 오류, 기본 다운로드로 전환:', err);
+                    console.warn('[저장] File System Access API 오류, 기본 다운로드로 전환:', err);
                 }
             }
             
-            // 폴백: 기본 다운로드 (브라우저 설정에 따라 저장 위치 묻기)
+            // 폴백: 기본 다운로드 방식 (Firefox, Safari 등)
+            // 브라우저 설정에 따라 저장 위치를 묻거나 기본 다운로드 폴더에 저장
+            console.log('[저장] File System Access API 미지원, 기본 다운로드 방식 사용');
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -3090,6 +3433,18 @@ ${currentPage.outerHTML}
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             return true;
+        }
+        
+        /**
+         * 데이터를 Blob으로 변환하여 저장 (Save As)
+         * @param {string|ArrayBuffer|Blob} data - 저장할 데이터
+         * @param {string} filename - 기본 파일명
+         * @param {string} mimeType - MIME 타입
+         * @returns {Promise<boolean>} - 저장 성공 여부
+         */
+        async function saveDataAs(data, filename, mimeType = 'application/octet-stream') {
+            const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType });
+            return await saveFileWithPicker(blob, filename);
         }
         
         // ===== A4 크기에 맞게 HTML 최적화 =====
@@ -3220,11 +3575,11 @@ ${currentPage.outerHTML}
             // 로딩 표시
             const loadingOverlay = document.getElementById('loadingOverlay');
             const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgress');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const loadingCurrent = document.getElementById('loadingCurrent');
+            const loadingProgress = document.getElementById('loadingProgressFill');
+            const loadingPercent = document.getElementById('loadingProgressPercent');
+            const loadingCurrent = document.getElementById('loadingCurrentText');
             
-            if (!loadingOverlay || !loadingTitle || !loadingProgress || !loadingPercent || !loadingCurrent) {
+            if (!loadingOverlay || !loadingTitle) {
                 console.error('[출력] 로딩 UI 요소를 찾을 수 없습니다.');
                 showToast('로딩 UI 오류가 발생했습니다.', 'error');
                 if (elements.exportBtn) {
@@ -3237,9 +3592,9 @@ ${currentPage.outerHTML}
             
             loadingOverlay.style.display = 'flex';
             loadingTitle.textContent = '📄 HTML 문서 생성 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            loadingProgress.style.width = '0%';
-            loadingPercent.textContent = '0%';
+            if (loadingCurrent) loadingCurrent.textContent = '페이지 수집 중';
+            if (loadingProgress) loadingProgress.style.width = '0%';
+            if (loadingPercent) loadingPercent.textContent = '0%';
             
             try {
                 // 모든 캐시된 HTML 수집 (순서대로)
@@ -3314,18 +3669,18 @@ ${currentPage.outerHTML}
                     return;
                 }
                 
-                loadingCurrent.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 변환 중...`;
-                loadingProgress.style.width = '20%';
-                loadingPercent.textContent = '20%';
+                if (loadingCurrent) loadingCurrent.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 변환 중...`;
+                if (loadingProgress) loadingProgress.style.width = '20%';
+                if (loadingPercent) loadingPercent.textContent = '20%';
                 
                 // Canvas를 이미지로 변환 (각 페이지 순차 처리)
                 const pages = [];
                 for (let i = 0; i < rawPages.length; i++) {
                     const page = rawPages[i];
                     const progress = 20 + Math.floor((i / rawPages.length) * 60);
-                    loadingProgress.style.width = `${progress}%`;
-                    loadingPercent.textContent = `${progress}%`;
-                    loadingCurrent.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
+                    if (loadingProgress) loadingProgress.style.width = `${progress}%`;
+                    if (loadingPercent) loadingPercent.textContent = `${progress}%`;
+                    if (loadingCurrent) loadingCurrent.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
                     
                     // Canvas가 포함된 페이지만 변환 처리
                     let convertedHtml = page.html;
@@ -3347,9 +3702,9 @@ ${currentPage.outerHTML}
                     });
                 }
                 
-                loadingCurrent.textContent = `${pages.length}개 페이지 변환 완료, HTML 생성 중...`;
-                loadingProgress.style.width = '85%';
-                loadingPercent.textContent = '85%';
+                if (loadingCurrent) loadingCurrent.textContent = `${pages.length}개 페이지 변환 완료, HTML 생성 중...`;
+                if (loadingProgress) loadingProgress.style.width = '85%';
+                if (loadingPercent) loadingPercent.textContent = '85%';
                 
                 // 연도/분기 가져오기
                 const year = parseInt(elements.yearSelect.value) || 2025;
@@ -3375,11 +3730,11 @@ ${currentPage.outerHTML}
                 const result = await response.json();
                 console.log('[출력] API 응답:', result.success ? '성공' : '실패', result);
                 
-                loadingProgress.style.width = '100%';
-                loadingPercent.textContent = '100%';
+                if (loadingProgress) loadingProgress.style.width = '100%';
+                if (loadingPercent) loadingPercent.textContent = '100%';
                 
                 if (result.success) {
-                    loadingCurrent.textContent = '저장 위치 선택 중...';
+                    if (loadingCurrent) loadingCurrent.textContent = '저장 위치 선택 중...';
                     
                     // 로딩 오버레이 숨기고 파일 저장 대화상자 표시
                     loadingOverlay.style.display = 'none';
@@ -3802,7 +4157,7 @@ ${currentPage.outerHTML}
             
             if (fileType === 'raw_direct' || fileType === 'raw_with_analysis' || fileType === 'raw') {
                 // ===== 기초자료 업로드 → 바로 보도자료 생성 모드 =====
-                reportListSection.style.opacity = '1';
+                if (reportListSection) reportListSection.style.opacity = '1';
                 
                 // 미리보기 영역 안내 변경
                 if (previewPlaceholder) {
@@ -3823,7 +4178,7 @@ ${currentPage.outerHTML}
                 
             } else if (fileType === 'analysis') {
                 // ===== 분석표 업로드 → 보도자료 생성 모드 (폴백) =====
-                reportListSection.style.opacity = '1';
+                if (reportListSection) reportListSection.style.opacity = '1';
                 
                 if (reportGenerationHint) reportGenerationHint.style.display = 'block';
             }
