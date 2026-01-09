@@ -28,6 +28,79 @@
 
 ### 2026-01-09
 
+#### 기본 워크플로우 정리 및 분석표 생성 버튼 추가
+- **시간**: 2026-01-09 15:00
+- **문제 설명**: 
+  - 사용자 요청: 분석표 생성은 별도 요청 시에만 생성되도록 변경
+  - 기본 워크플로우: 기초자료 업로드 → 데이터 추출 → 원수치/기여도 계산 → 스키마 매핑 → 보도자료 생성
+- **해결 방법**:
+  1. **업로드 단계 수정**: "분석표 변환" → "데이터 추출" 텍스트 변경
+  2. **업로드 영역 설명 수정**: 기초자료 중심으로 설명 변경
+  3. **분석표 생성 버튼 추가**: 선택 사항으로 별도 버튼 제공
+     - `generateAnalysisFile()` 함수 추가
+     - `/api/download-analysis` API 호출
+     - 버튼 상태 관리 (로딩, 완료)
+- **관련 파일**: 
+  - `dashboard.html` - UI 및 JavaScript 로직
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 분석표 업로드(레거시) 기능은 호환성을 위해 유지
+  - 기본 워크플로우는 기초자료에서 직접 보도자료 생성
+
+---
+
+#### 연도/분기 동적 처리 로직 검토 및 수정
+- **시간**: 2026-01-09 14:30
+- **문제 설명**: 
+  - 다른 연도/분기 데이터를 업로드했을 때 최신 정보로 제대로 불러오는지 검토 요청
+  - 로직, 스키마, 템플릿 전체 검토
+- **원인 분석**: 
+  - **심각한 하드코딩 발견**:
+    1. `utils/excel_utils.py`의 `extract_year_quarter_from_excel` 함수가 `'2025.2/4'`, `'2025.1/4'` 등 특정 패턴만 검색
+    2. `services/summary_data.py`에서 컬럼 인덱스 `curr_col: 64, prev_col: 60` 등이 2025년 2분기 기준으로 하드코딩
+  - **정상 작동 확인된 부분**:
+    1. `utils/excel_utils.py`의 `extract_year_quarter_from_raw` - 동적 정규식 패턴 사용 ✅
+    2. `extractors/config.py`의 `get_quarter_col` 함수 - 패턴 기반 동적 계산 ✅
+    3. 템플릿 HTML - Jinja2 변수 사용으로 실제 렌더링 시 동적 대체됨 ✅
+- **에이전트 사고 과정**:
+  - 문제 인식: 사용자가 다른 연도/분기 데이터의 정상 처리 여부 검토 요청
+  - 전체 코드베이스 검토:
+    1. `grep`으로 `2025`, `2024`, `year`, `quarter`, `curr_col`, `prev_col` 등 키워드 검색
+    2. 템플릿 HTML, JSON 스키마, Python 서비스 파일들 체계적 검토
+  - 분석 결과 분류:
+    1. 심각한 문제: 하드코딩된 연도 패턴과 컬럼 인덱스
+    2. 경미한 문제: 템플릿 default 값 (실제 렌더링 시 대체됨)
+    3. 정상: `extractors/config.py`의 동적 계산 로직
+  - 해결 방안 수립:
+    1. `extract_year_quarter_from_excel` 함수를 `extract_year_quarter_from_raw`와 동일하게 동적 패턴으로 변경
+    2. `summary_data.py`에 동적 컬럼 계산 헬퍼 함수 추가
+    3. 하드코딩된 설정들을 동적 함수로 대체
+- **해결 방법**:
+  1. `utils/excel_utils.py` - `extract_year_quarter_from_excel` 함수 완전 재작성:
+     - 하드코딩된 패턴(`'2025.2/4'` 등) 제거
+     - 동적 정규식 패턴으로 모든 연도/분기 자동 감지
+     - 가장 최신 연도/분기 찾아서 반환
+     - 기본값: 현재 날짜 기준 (하드코딩 제거)
+  2. `services/summary_data.py` - 동적 컬럼 계산 시스템 추가:
+     - `RAW_SHEET_BASE_COLS`: 기초자료 시트별 기준 컬럼 (2025년 2분기 기준점)
+     - `AGGREGATE_SHEET_BASE_COLS`: 집계 시트별 기준 컬럼
+     - `get_dynamic_col()`: 시트별 동적 컬럼 인덱스 계산
+     - `get_dynamic_raw_sheet_config()`: 기초자료 시트 동적 설정 생성
+     - `get_dynamic_aggregate_sheet_config()`: 집계 시트 동적 설정 생성
+  3. `get_summary_table_data` 함수 수정:
+     - `year`, `quarter` 매개변수 추가
+     - 모든 컬럼 인덱스를 `get_dynamic_col()` 함수로 동적 계산
+- **관련 파일**: 
+  - `utils/excel_utils.py` - 동적 연도/분기 감지 로직
+  - `services/summary_data.py` - 동적 컬럼 계산 헬퍼 함수 및 설정 적용
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 향후 2027년 이후 데이터도 자동 지원됨 (기준점 기반 계산)
+  - 일부 템플릿에 남아있는 default 값은 Jinja2 렌더링 시 실제 데이터로 대체되므로 기능에 영향 없음
+  - `extractors/config.py`의 `get_quarter_col` 함수와 동일한 패턴 사용
+
+---
+
 #### 업로드 완료 모달에서 다음 단계로 넘어가지 않는 문제 해결
 - **시간**: 2026-01-09 11:30
 - **문제 설명**: 

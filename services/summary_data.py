@@ -6,6 +6,165 @@
 import pandas as pd
 
 
+# =========================================================
+# 동적 컬럼 인덱스 계산 헬퍼 함수들
+# =========================================================
+
+# 기초자료 시트별 기준 컬럼 설정 (2025년 2분기 기준)
+# key: (시트명, 기준연도, 기준분기) -> 컬럼 인덱스
+RAW_SHEET_BASE_COLS = {
+    '광공업생산': {'base_year': 2025, 'base_quarter': 2, 'base_col': 64, 'region_col': 1, 'code_col': 4, 'total_code': 'BCD'},
+    '서비스업생산': {'base_year': 2025, 'base_quarter': 2, 'base_col': 64, 'region_col': 1, 'code_col': 4, 'total_code': 'E~S'},
+    '소비(소매, 추가)': {'base_year': 2025, 'base_quarter': 2, 'base_col': 63, 'region_col': 1, 'code_col': 4, 'total_code': '총지수'},
+    '수출': {'base_year': 2025, 'base_quarter': 2, 'base_col': 68, 'region_col': 1, 'code_col': 5, 'total_code': '합계'},
+    '수입': {'base_year': 2025, 'base_quarter': 2, 'base_col': 68, 'region_col': 1, 'code_col': 5, 'total_code': '합계'},
+    '품목성질별 물가': {'base_year': 2025, 'base_quarter': 2, 'base_col': 56, 'region_col': 0, 'code_col': 3, 'total_code': '총지수'},
+    '고용률': {'base_year': 2025, 'base_quarter': 2, 'base_col': 66, 'region_col': 1, 'code_col': 3, 'total_code': '계'},
+    '실업자 수': {'base_year': 2025, 'base_quarter': 2, 'base_col': 61, 'region_col': 0, 'code_col': 1, 'total_code': '계'},
+    '시도 간 이동': {'base_year': 2025, 'base_quarter': 2, 'base_col': 80, 'region_col': 1, 'code_col': 1, 'total_code': None},
+}
+
+# 집계 시트별 기준 컬럼 설정 (2025년 2분기 기준)
+AGGREGATE_SHEET_BASE_COLS = {
+    'A(광공업생산)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 26, 'region_col': 4, 'code_col': 7, 'total_code': 'BCD'},
+    'B(서비스업생산)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 25, 'region_col': 3, 'code_col': 6, 'total_code': 'E~S'},
+    'C(소비)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 24, 'region_col': 2, 'code_col': 6, 'total_code': '총지수'},
+    'G(수출)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 26, 'region_col': 3, 'code_col': 4, 'total_code': '0'},
+    'E(품목성질물가)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 21, 'region_col': 0, 'code_col': 3, 'total_code': '총지수'},
+    'D(고용률)집계': {'base_year': 2025, 'base_quarter': 2, 'base_col': 21, 'region_col': 1, 'code_col': 3, 'total_code': '계'},
+}
+
+
+def get_dynamic_col(sheet_name: str, target_year: int, target_quarter: int, is_aggregate: bool = False) -> int:
+    """
+    시트별 동적 컬럼 인덱스 계산
+    
+    Args:
+        sheet_name: 시트 이름
+        target_year: 대상 연도
+        target_quarter: 대상 분기 (1-4)
+        is_aggregate: 집계 시트 여부
+        
+    Returns:
+        컬럼 인덱스
+    """
+    base_config = AGGREGATE_SHEET_BASE_COLS.get(sheet_name) if is_aggregate else RAW_SHEET_BASE_COLS.get(sheet_name)
+    
+    if not base_config:
+        print(f"[경고] 알 수 없는 시트: {sheet_name}")
+        return None
+    
+    base_year = base_config['base_year']
+    base_quarter = base_config['base_quarter']
+    base_col = base_config['base_col']
+    
+    # 분기 차이 계산 (분기 단위로)
+    quarters_diff = (target_year - base_year) * 4 + (target_quarter - base_quarter)
+    
+    return base_col + quarters_diff
+
+
+def get_dynamic_raw_sheet_config(sheet_name: str, year: int, quarter: int) -> dict:
+    """
+    기초자료 시트의 동적 설정 생성
+    
+    Args:
+        sheet_name: 원본 시트 이름 (예: 'A 분석')
+        year: 대상 연도
+        quarter: 대상 분기
+        
+    Returns:
+        동적으로 계산된 설정 딕셔너리
+    """
+    # 시트명 매핑
+    sheet_mapping = {
+        'A 분석': '광공업생산',
+        'B 분석': '서비스업생산',
+        'C 분석': '소비(소매, 추가)',
+        'G 분석': '수출',
+        'E(품목성질물가)분석': '품목성질별 물가',
+        'D(고용률)분석': '고용률',
+    }
+    
+    raw_sheet = sheet_mapping.get(sheet_name)
+    if not raw_sheet:
+        return None
+    
+    base_config = RAW_SHEET_BASE_COLS.get(raw_sheet)
+    if not base_config:
+        return None
+    
+    curr_col = get_dynamic_col(raw_sheet, year, quarter, is_aggregate=False)
+    prev_col = get_dynamic_col(raw_sheet, year - 1, quarter, is_aggregate=False)
+    
+    config = {
+        'raw_sheet': raw_sheet,
+        'region_col': base_config['region_col'],
+        'code_col': base_config['code_col'],
+        'total_code': base_config['total_code'],
+        'curr_col': curr_col,
+        'prev_col': prev_col,
+    }
+    
+    # 고용률은 차이 계산
+    if sheet_name == 'D(고용률)분석':
+        config['calc_type'] = 'difference'
+    
+    return config
+
+
+def get_dynamic_aggregate_sheet_config(sheet_name: str, year: int, quarter: int) -> dict:
+    """
+    집계 시트의 동적 설정 생성
+    
+    Args:
+        sheet_name: 원본 시트 이름 (예: 'A 분석')
+        year: 대상 연도
+        quarter: 대상 분기
+        
+    Returns:
+        동적으로 계산된 설정 딕셔너리
+    """
+    # 시트명 매핑
+    sheet_mapping = {
+        'A 분석': 'A(광공업생산)집계',
+        'B 분석': 'B(서비스업생산)집계',
+        'C 분석': 'C(소비)집계',
+        'G 분석': 'G(수출)집계',
+        'E(품목성질물가)분석': 'E(품목성질물가)집계',
+        'D(고용률)분석': 'D(고용률)집계',
+    }
+    
+    agg_sheet = sheet_mapping.get(sheet_name)
+    if not agg_sheet:
+        return None
+    
+    base_config = AGGREGATE_SHEET_BASE_COLS.get(agg_sheet)
+    if not base_config:
+        return None
+    
+    curr_col = get_dynamic_col(agg_sheet, year, quarter, is_aggregate=True)
+    prev_col = get_dynamic_col(agg_sheet, year - 1, quarter, is_aggregate=True)
+    
+    config = {
+        'aggregate_sheet': agg_sheet,
+        'region_col': base_config['region_col'],
+        'code_col': base_config['code_col'],
+        'total_code': base_config['total_code'],
+        'curr_col': curr_col,
+        'prev_col': prev_col,
+    }
+    
+    # 고용률은 차이 계산
+    if sheet_name == 'D(고용률)분석':
+        config['calc_type'] = 'difference'
+    
+    return config
+
+
+# =========================================================
+
+
 def safe_float(value, default=None):
     """안전한 float 변환 함수 (NaN, '-', 빈 문자열 체크 포함)"""
     if value is None:
@@ -55,7 +214,7 @@ def get_summary_overview_data(excel_path, year, quarter):
     """
     try:
         # ★ 테이블 데이터를 먼저 가져옴 (Single Source of Truth)
-        table_data = get_summary_table_data(excel_path)
+        table_data = get_summary_table_data(excel_path, year, quarter)
         
         # ★ 테이블 데이터에서 나레이션용 구조로 변환
         return _convert_table_to_narration(table_data)
@@ -447,91 +606,118 @@ def _get_default_sector_summary():
     }
 
 
-def get_summary_table_data(excel_path):
-    """요약 테이블 데이터 (기초자료 또는 집계 시트에서 전년동기비 계산)"""
+def get_summary_table_data(excel_path, year=None, quarter=None):
+    """요약 테이블 데이터 (기초자료 또는 집계 시트에서 전년동기비 계산)
+    
+    Args:
+        excel_path: 엑셀 파일 경로
+        year: 대상 연도 (None이면 현재 날짜 기준)
+        quarter: 대상 분기 (None이면 현재 날짜 기준)
+    """
     try:
-        print(f"[DEBUG] get_summary_table_data - excel_path: {excel_path}")
+        print(f"[DEBUG] get_summary_table_data - excel_path: {excel_path}, year: {year}, quarter: {quarter}")
         xl = pd.ExcelFile(excel_path)
         print(f"[DEBUG] 시트 목록: {xl.sheet_names[:5]}...")
         all_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
-        # 기초자료 시트 설정 (우선 사용)
+        # year, quarter가 None이면 현재 날짜 기준
+        if year is None or quarter is None:
+            from datetime import datetime
+            now = datetime.now()
+            year = year or now.year
+            quarter = quarter or ((now.month - 1) // 3) + 1
+        
+        print(f"[DEBUG] 사용할 연도/분기: {year}년 {quarter}분기")
+        
+        # 기초자료 시트 설정 (동적 컬럼 계산)
         raw_sheet_configs = {
             'mining_production': {
                 'sheet': '광공업생산',
                 'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
-                'curr_col': 64, 'prev_col': 60,  # 2025 2/4p, 2024 2/4
+                'curr_col': get_dynamic_col('광공업생산', year, quarter),
+                'prev_col': get_dynamic_col('광공업생산', year - 1, quarter),
                 'calc_type': 'growth_rate'
             },
             'service_production': {
                 'sheet': '서비스업생산',
                 'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
-                'curr_col': 64, 'prev_col': 60,
+                'curr_col': get_dynamic_col('서비스업생산', year, quarter),
+                'prev_col': get_dynamic_col('서비스업생산', year - 1, quarter),
                 'calc_type': 'growth_rate'
             },
             'retail_sales': {
                 'sheet': '소비(소매, 추가)',
                 'region_col': 1, 'code_col': 4, 'total_code': '총지수',
-                'curr_col': 63, 'prev_col': 59,
+                'curr_col': get_dynamic_col('소비(소매, 추가)', year, quarter),
+                'prev_col': get_dynamic_col('소비(소매, 추가)', year - 1, quarter),
                 'calc_type': 'growth_rate'
             },
             'exports': {
                 'sheet': '수출',
                 'region_col': 1, 'code_col': 5, 'total_code': '합계',
-                'curr_col': 68, 'prev_col': 64,
+                'curr_col': get_dynamic_col('수출', year, quarter),
+                'prev_col': get_dynamic_col('수출', year - 1, quarter),
                 'calc_type': 'growth_rate'
             },
             'price': {
                 'sheet': '품목성질별 물가',
                 'region_col': 0, 'code_col': 3, 'total_code': '총지수',
-                'curr_col': 56, 'prev_col': 52,
+                'curr_col': get_dynamic_col('품목성질별 물가', year, quarter),
+                'prev_col': get_dynamic_col('품목성질별 물가', year - 1, quarter),
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': '고용률',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
-                'curr_col': 66, 'prev_col': 62,
+                'curr_col': get_dynamic_col('고용률', year, quarter),
+                'prev_col': get_dynamic_col('고용률', year - 1, quarter),
                 'calc_type': 'difference'  # 고용률은 %p
             },
         }
         
-        # 집계 시트 설정 (fallback) - 실제 엑셀 열 구조에 맞게 수정
+        # 집계 시트 설정 (동적 컬럼 계산)
         aggregate_sheet_configs = {
             'mining_production': {
                 'sheet': 'A(광공업생산)집계',
                 'region_col': 4, 'code_col': 7, 'total_code': 'BCD',
-                'curr_col': 26, 'prev_col': 22,
+                'curr_col': get_dynamic_col('A(광공업생산)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('A(광공업생산)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'growth_rate'
             },
             'service_production': {
                 'sheet': 'B(서비스업생산)집계',
                 'region_col': 3, 'code_col': 6, 'total_code': 'E~S',
-                'curr_col': 25, 'prev_col': 21,
+                'curr_col': get_dynamic_col('B(서비스업생산)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('B(서비스업생산)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'growth_rate'
             },
             'retail_sales': {
                 'sheet': 'C(소비)집계',
                 'region_col': 2, 'code_col': 6, 'total_code': '총지수',
-                'curr_col': 24, 'prev_col': 20,
+                'curr_col': get_dynamic_col('C(소비)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('C(소비)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'growth_rate'
             },
             'exports': {
                 'sheet': 'G(수출)집계',
                 'region_col': 3, 'division_col': 4, 'total_code': '0',
-                'curr_col': 26, 'prev_col': 22,
+                'curr_col': get_dynamic_col('G(수출)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('G(수출)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'growth_rate'
             },
             'price': {
                 'sheet': 'E(품목성질물가)집계',
                 'region_col': 0, 'code_col': 3, 'total_code': '총지수',
-                'curr_col': 21, 'prev_col': 17,
+                'curr_col': get_dynamic_col('E(품목성질물가)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('E(품목성질물가)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': 'D(고용률)집계',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
-                'curr_col': 21, 'prev_col': 17,
+                'curr_col': get_dynamic_col('D(고용률)집계', year, quarter, is_aggregate=True),
+                'prev_col': get_dynamic_col('D(고용률)집계', year - 1, quarter, is_aggregate=True),
                 'calc_type': 'difference'
             },
         }

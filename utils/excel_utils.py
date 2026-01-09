@@ -26,34 +26,88 @@ def load_generator_module(generator_name):
 
 
 def extract_year_quarter_from_excel(filepath):
-    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용)"""
+    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용) - 동적 감지"""
+    import re
+    from datetime import datetime
+    
     try:
-        xl = pd.ExcelFile(filepath)
-        # A 분석 시트에서 연도/분기 정보 추출 시도
-        df = pd.read_excel(xl, sheet_name='A 분석', header=None)
-        
-        # 일반적으로 컬럼 헤더에서 연도/분기 정보를 찾음
-        for row_idx in range(min(5, len(df))):
-            for col_idx in range(len(df.columns)):
-                cell = str(df.iloc[row_idx, col_idx])
-                if '2025.2/4' in cell or '25.2/4' in cell:
-                    return 2025, 2
-                elif '2025.1/4' in cell or '25.1/4' in cell:
-                    return 2025, 1
-                elif '2024.4/4' in cell or '24.4/4' in cell:
-                    return 2024, 4
-        
-        # 파일명에서 추출 시도
+        # 1. 파일명에서 추출 시도 (가장 빠름)
         filename = Path(filepath).stem
-        if '25년' in filename and '2분기' in filename:
-            return 2025, 2
-        elif '25년' in filename and '1분기' in filename:
-            return 2025, 1
         
-        return 2025, 2  # 기본값
+        # 파일명 패턴: "분석표_2025년 3분기" 또는 "25년_3분기" 등
+        year_match = re.search(r'(20\d{2}|\d{2})년?', filename)
+        quarter_match = re.search(r'(\d)분기', filename)
+        
+        if year_match and quarter_match:
+            year = int(year_match.group(1))
+            if year < 100:
+                year += 2000
+            quarter = int(quarter_match.group(1))
+            return year, quarter
+        
+        # 2. A 분석 시트에서 연도/분기 정보 동적 추출
+        xl = pd.ExcelFile(filepath)
+        
+        # 분석 시트 목록
+        analysis_sheets = ['A 분석', 'B 분석', 'C 분석']
+        
+        for sheet_name in analysis_sheets:
+            if sheet_name not in xl.sheet_names:
+                continue
+                
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=10)
+            
+            # 가장 최신 연도/분기 찾기
+            latest_year = 0
+            latest_quarter = 0
+            
+            for row_idx in range(min(10, len(df))):
+                for col_idx in range(min(100, len(df.columns))):
+                    try:
+                        cell = str(df.iloc[row_idx, col_idx])
+                        if pd.isna(df.iloc[row_idx, col_idx]):
+                            continue
+                            
+                        # 동적 패턴 매칭: "2025.3/4p", "'25.3/4", "2025 3/4" 등
+                        pattern1 = re.search(r"'?(\d{2,4})\.(\d)/4p?", cell)  # 2025.3/4 또는 '25.3/4
+                        pattern2 = re.search(r"(\d{4})\s+(\d)/4", cell)       # 2025 3/4
+                        
+                        if pattern1:
+                            year = int(pattern1.group(1))
+                            if year < 100:
+                                year += 2000
+                            quarter = int(pattern1.group(2))
+                            
+                            if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                latest_year = year
+                                latest_quarter = quarter
+                        elif pattern2:
+                            year = int(pattern2.group(1))
+                            quarter = int(pattern2.group(2))
+                            
+                            if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                latest_year = year
+                                latest_quarter = quarter
+                    except:
+                        continue
+            
+            if latest_year > 0 and latest_quarter > 0:
+                print(f"[정보] 분석표에서 연도/분기 감지: {latest_year}년 {latest_quarter}분기")
+                return latest_year, latest_quarter
+        
+        # 3. 기본값: 현재 날짜 기준
+        now = datetime.now()
+        default_year = now.year
+        default_quarter = ((now.month - 1) // 3) + 1
+        print(f"[경고] 분석표 연도/분기 감지 실패, 기본값 사용: {default_year}년 {default_quarter}분기")
+        return default_year, default_quarter
+        
     except Exception as e:
         print(f"연도/분기 추출 오류: {e}")
-        return 2025, 2
+        # 기본값: 현재 날짜 기준
+        from datetime import datetime
+        now = datetime.now()
+        return now.year, ((now.month - 1) // 3) + 1
 
 
 def extract_year_quarter_from_raw(filepath):

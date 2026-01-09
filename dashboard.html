@@ -1255,7 +1255,37 @@
                         </div>
                     </div>
                     
-                    <!-- 분석표 다운로드 버튼 제거됨 - 기초자료에서 직접 보도자료 생성 -->
+                    <!-- 분석표 생성 버튼 (선택 사항) -->
+                    <div id="analysisGenerateSection" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>📋</span>
+                                    <span>분석표 생성 (선택)</span>
+                                </div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                    기초자료를 분석표(엑셀)로 변환합니다
+                                </div>
+                            </div>
+                            <button id="generateAnalysisBtn" onclick="generateAnalysisFile()" style="
+                                padding: 0.5rem 1rem;
+                                background: linear-gradient(135deg, #6366f1, #818cf8);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-size: 0.75rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                transition: all 0.2s;
+                            " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                <span>📥</span>
+                                <span>생성 및 다운로드</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1521,7 +1551,7 @@
                 </div>
                 <div class="upload-step" id="uploadStep3">
                     <span class="step-icon">⏳</span>
-                    <span class="step-text">분석표 변환</span>
+                    <span class="step-text">데이터 추출</span>
                     <span class="step-status"></span>
                 </div>
                 <div class="upload-step" id="uploadStep4">
@@ -2095,6 +2125,74 @@
             elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
         }
 
+        // ===== 분석표 생성 (선택 기능) =====
+        async function generateAnalysisFile() {
+            if (!state.fileUploaded) {
+                showToast('먼저 기초자료를 업로드하세요.', 'warning');
+                return;
+            }
+            
+            const btn = document.getElementById('generateAnalysisBtn');
+            const originalText = btn.innerHTML;
+            
+            try {
+                // 버튼 상태 변경
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span><span>생성 중...</span>';
+                btn.style.opacity = '0.7';
+                
+                showToast('분석표를 생성하고 있습니다...', 'info');
+                
+                // API 호출로 분석표 생성
+                const response = await fetch('/api/download-analysis', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('분석표 생성 실패');
+                }
+                
+                // 파일 다운로드
+                const blob = await response.blob();
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = '분석표_자동생성.xlsx';
+                
+                if (contentDisposition) {
+                    // filename*=UTF-8'' 형식 파싱
+                    const utf8Match = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                    if (utf8Match) {
+                        filename = decodeURIComponent(utf8Match[1]);
+                    } else {
+                        // 일반 filename 파싱
+                        const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+                        if (match) filename = match[1];
+                    }
+                }
+                
+                // 다운로드 트리거
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showToast('✅ 분석표가 다운로드되었습니다.', 'success');
+                
+            } catch (error) {
+                console.error('분석표 생성 오류:', error);
+                showToast('분석표 생성에 실패했습니다: ' + error.message, 'error');
+            } finally {
+                // 버튼 상태 복원
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+            }
+        }
+
         // ===== 미리보기 생성 =====
         async function generateAllReports() {
             if (!state.fileUploaded) {
@@ -2463,10 +2561,10 @@ ${currentPage.outerHTML}
                 elements.allReportsList.innerHTML = `
                     <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
                         <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
-                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">파일을 업로드하세요</div>
+                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">기초자료 수집표를 업로드하세요</div>
                         <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
-                            • <strong style="color: var(--warning);">기초자료 수집표</strong>: 분석표 생성<br>
-                            • <strong style="color: var(--success);">분석표</strong>: 보도자료 생성
+                            • 기초자료 → 데이터 추출 → 보도자료 자동 생성<br>
+                            • <span style="color: var(--text-muted);">분석표 생성은 선택 사항입니다</span>
                         </div>
                     </div>
                 `;
