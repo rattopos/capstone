@@ -6,7 +6,7 @@
 import html
 import re
 import math
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from .template_manager import TemplateManager
 from .excel_extractor import ExcelExtractor
 from .calculator import Calculator
@@ -14,6 +14,7 @@ from .data_analyzer import DataAnalyzer
 from .period_detector import PeriodDetector
 from .flexible_mapper import FlexibleMapper
 from .sheet_resolver import SheetResolver
+from .config import Config
 
 # 산업 이름 매핑 (엑셀의 긴 이름 -> 짧은 이름)
 INDUSTRY_NAME_MAPPING = {

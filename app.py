@@ -36,6 +36,8 @@ app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 app.config['OUTPUT_FOLDER'] = tempfile.mkdtemp()
 app.config['IMAGE_FOLDER'] = Path('uploaded_images')
 app.config['IMAGE_FOLDER'].mkdir(parents=True, exist_ok=True)
+app.config['WORD_FILES_FOLDER'] = Path('word_files')
+app.config['WORD_FILES_FOLDER'].mkdir(parents=True, exist_ok=True)
 
 # 허용된 파일 확장자
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'html'}
@@ -825,10 +827,10 @@ if __name__ == '__main__':
     print("지역경제동향 보도자료 자동생성")
     print("=" * 50)
     print(f"웹 서버가 시작되었습니다.")
-    print(f"브라우저에서 http://localhost:8000 을 열어주세요.")
+    print(f"브라우저에서 http://localhost:5050 을 열어주세요.")
     print(f"최대 파일 크기: 100MB")
     print(f"Word 파일 저장 위치: {word_files_folder.absolute()}")
     print("=" * 50)
     
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=5050)
 
