@@ -1584,7 +1584,7 @@
     </div>
 
     <!-- 가중치 누락 경고 모달 -->
-    <div class="upload-modal-overlay" id="weightWarningModal">
+    <div class="upload-modal-overlay" id="weightWarningModal" style="z-index: 1005;">
         <div class="upload-modal-content" style="max-width: 520px;">
             <div class="upload-modal-icon" style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
             <h2 class="upload-modal-title" style="color: #f59e0b;">가중치 정보 누락 감지</h2>
@@ -2823,7 +2823,6 @@ ${currentPage.outerHTML}
                         
                         // 보도자료 목록 활성화 및 미리보기 생성
                         setTimeout(async () => {
-                            buildReportList(data.reports, data.regional_reports);
                             // 보도자료 미리보기 생성
                             await generateAllReports();
                         }, 500);
@@ -2866,11 +2865,6 @@ ${currentPage.outerHTML}
                         
                         // 모달 닫기
                         hideUploadModal(1500);
-                        
-                        // 보도자료 목록 빌드
-                        setTimeout(() => {
-                            buildReportList(data.reports, data.regional_reports);
-                        }, 300);
                         
                         // 가중치 누락 확인 후 경고 모달 또는 바로 진행
                         setTimeout(() => {
@@ -3544,6 +3538,12 @@ ${currentPage.outerHTML}
 
         // ===== 가중치 경고 모달 함수 =====
         function showWeightWarningModal(weightValidation) {
+            // 업로드 모달이 열려있으면 먼저 닫기
+            const uploadModal = document.getElementById('uploadModal');
+            if (uploadModal && uploadModal.classList.contains('active')) {
+                uploadModal.classList.remove('active');
+            }
+            
             const modal = document.getElementById('weightWarningModal');
             const detailsDiv = document.getElementById('weightMissingDetails');
             
