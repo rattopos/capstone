@@ -91,19 +91,30 @@ class DataConverter:
         """
         Args:
             raw_excel_path: 기초자료 수집표 엑셀 파일 경로
-            template_path: 분석표 템플릿 경로 (None이면 기본 템플릿 사용)
+            template_path: 분석표 템플릿 경로 (None이면 기본 템플릿 사용, 없으면 새로 생성)
         """
         self.raw_excel_path = Path(raw_excel_path)
         
         # 템플릿 경로 설정
+        self.template_available = False
         if template_path:
             self.template_path = Path(template_path)
+            if self.template_path.exists():
+                self.template_available = True
         else:
             # 기본 템플릿 (프로젝트 내 분석표)
             self.template_path = Path(__file__).parent / '분석표_25년 2분기_캡스톤.xlsx'
-            if not self.template_path.exists():
+            if self.template_path.exists():
+                self.template_available = True
+            else:
                 # 대안 경로
                 self.template_path = self.raw_excel_path.parent / '분석표_25년 2분기_캡스톤.xlsx'
+                if self.template_path.exists():
+                    self.template_available = True
+        
+        # 템플릿이 없어도 동작 가능 (새로 생성 모드)
+        if not self.template_available:
+            print("[정보] 템플릿 파일 없음 - 기초자료에서 새 분석표를 생성합니다.")
         
         self.year = None
         self.quarter = None
@@ -246,7 +257,7 @@ class DataConverter:
         return {'years': year_cols, 'quarters': quarter_cols}
     
     def convert_all(self, output_path: str = None, weight_settings: Dict = None) -> str:
-        """분석표 생성 (템플릿 복사 + 집계 시트 데이터 교체)
+        """분석표 생성 (템플릿 사용 또는 새로 생성)
         
         Args:
             output_path: 출력 파일 경로 (None이면 자동 생성)
@@ -260,17 +271,21 @@ class DataConverter:
         if output_path is None:
             output_path = str(self.raw_excel_path.parent / f"분석표_{self.year}년_{self.quarter}분기_자동생성.xlsx")
         
-        # 1. 템플릿 파일 복사
-        if not self.template_path.exists():
-            raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {self.template_path}")
-        
+        # 템플릿이 있으면 복사, 없으면 새로 생성
+        if self.template_available:
+            return self._convert_with_template(output_path, weight_settings)
+        else:
+            return self._create_from_scratch(output_path, weight_settings)
+    
+    def _convert_with_template(self, output_path: str, weight_settings: Dict = None) -> str:
+        """템플릿을 사용하여 분석표 생성 (기존 방식)"""
         print(f"[변환] 템플릿 복사: {self.template_path.name}")
         shutil.copy(self.template_path, output_path)
         
-        # 2. 복사된 파일 열기 (수식 보존)
+        # 복사된 파일 열기 (수식 보존)
         wb = openpyxl.load_workbook(output_path)
         
-        # 3. 이용관련 시트에서 연도/분기 설정 (핵심!)
+        # 이용관련 시트에서 연도/분기 설정 (핵심!)
         if '이용관련' in wb.sheetnames:
             ws_config = wb['이용관련']
             ws_config.cell(row=17, column=11).value = self.year    # K17: 연도
@@ -279,10 +294,10 @@ class DataConverter:
         else:
             print("[경고] '이용관련' 시트를 찾을 수 없습니다.")
         
-        # 4. 기초자료 열기
+        # 기초자료 열기
         raw_xl = pd.ExcelFile(self.raw_excel_path)
         
-        # 5. 각 집계 시트에 데이터 복사
+        # 각 집계 시트에 데이터 복사
         for raw_sheet, target_sheet in self.SHEET_MAPPING.items():
             if raw_sheet in raw_xl.sheet_names and target_sheet in wb.sheetnames:
                 print(f"[변환] {raw_sheet} → {target_sheet}")
@@ -293,16 +308,244 @@ class DataConverter:
                 if target_sheet not in wb.sheetnames:
                     print(f"  [경고] 템플릿에 '{target_sheet}' 시트 없음")
         
-        # 6. 저장
+        # 저장
         wb.save(output_path)
         wb.close()
         
-        # 7. 수식 계산 및 값으로 저장
+        # 수식 계산 및 값으로 저장
         print(f"[변환] 분석 시트 수식 계산 중...")
         self._calculate_formulas_in_file(output_path)
         
         print(f"[완료] 분석표 생성: {output_path}")
         return output_path
+    
+    def _create_from_scratch(self, output_path: str, weight_settings: Dict = None) -> str:
+        """템플릿 없이 기초자료에서 새 분석표 생성
+        
+        기초자료의 각 시트 데이터를 정리하여 분석표 형태로 변환합니다.
+        집계 시트와 기본 분석 데이터(전년동기비)를 포함합니다.
+        """
+        print(f"[생성] 기초자료에서 새 분석표 생성 중...")
+        
+        # 새 워크북 생성
+        wb = openpyxl.Workbook()
+        
+        # 기초자료 열기
+        raw_xl = pd.ExcelFile(self.raw_excel_path)
+        
+        # 설정 시트 생성
+        ws_config = wb.active
+        ws_config.title = '설정'
+        ws_config['A1'] = '분석표 자동생성'
+        ws_config['A2'] = f'기준: {self.year}년 {self.quarter}분기'
+        ws_config['A3'] = f'생성일: {pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")}'
+        ws_config['A5'] = '※ 이 파일은 기초자료에서 자동 생성되었습니다.'
+        
+        # 각 시트별로 집계 시트 생성
+        sheet_count = 0
+        for raw_sheet, target_sheet in self.SHEET_MAPPING.items():
+            if raw_sheet in raw_xl.sheet_names:
+                print(f"[생성] {raw_sheet} → {target_sheet}")
+                self._create_aggregation_sheet(wb, raw_xl, raw_sheet, target_sheet, weight_settings)
+                sheet_count += 1
+            else:
+                print(f"  [건너뜀] 기초자료에 '{raw_sheet}' 시트 없음")
+        
+        # 요약 시트 생성
+        self._create_summary_sheet(wb, raw_xl)
+        
+        # 저장
+        wb.save(output_path)
+        wb.close()
+        
+        print(f"[완료] 분석표 생성: {output_path} ({sheet_count}개 시트)")
+        return output_path
+    
+    def _create_aggregation_sheet(self, wb, raw_xl, raw_sheet: str, target_sheet: str, weight_settings: Dict = None):
+        """기초자료에서 집계 시트 생성"""
+        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+        
+        # 기초자료 읽기
+        df = pd.read_excel(raw_xl, sheet_name=raw_sheet, header=None)
+        
+        # 새 시트 생성
+        ws = wb.create_sheet(title=target_sheet[:31])  # 시트 이름 31자 제한
+        
+        # 스타일 정의
+        header_font = Font(bold=True, size=11)
+        header_fill = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # 헤더 행 찾기 (보통 3행)
+        header_row = 2
+        for i in range(min(5, len(df))):
+            row_str = ' '.join([str(v) for v in df.iloc[i].values[:10] if pd.notna(v)])
+            if '지역' in row_str or '시도' in row_str:
+                header_row = i
+                break
+        
+        # 데이터 복사
+        for row_idx in range(len(df)):
+            for col_idx in range(len(df.columns)):
+                value = df.iloc[row_idx, col_idx]
+                cell = ws.cell(row=row_idx + 1, column=col_idx + 1)
+                
+                # NaN 처리
+                if pd.isna(value):
+                    cell.value = None
+                elif isinstance(value, float) and value != int(value):
+                    cell.value = round(value, 2)
+                else:
+                    cell.value = value
+                
+                # 헤더 스타일
+                if row_idx <= header_row:
+                    cell.font = header_font
+                    cell.fill = header_fill
+                
+                cell.border = thin_border
+        
+        # 열 너비 자동 조정
+        for col_idx in range(1, min(len(df.columns) + 1, 30)):
+            ws.column_dimensions[get_column_letter(col_idx)].width = 12
+    
+    def _create_summary_sheet(self, wb, raw_xl):
+        """요약 시트 생성 (전년동기비 계산 결과)"""
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        
+        ws = wb.create_sheet(title='요약_전년동기비', index=0)
+        
+        # 스타일
+        header_font = Font(bold=True, size=12)
+        header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+        white_font = Font(bold=True, color='FFFFFF')
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # 제목
+        ws['A1'] = f'{self.year}년 {self.quarter}분기 지역경제동향 요약'
+        ws['A1'].font = Font(bold=True, size=14)
+        ws.merge_cells('A1:F1')
+        
+        ws['A3'] = '지표'
+        ws['B3'] = '전국'
+        
+        # 지역 헤더
+        regions = self.REGIONS_ORDER[1:]  # 전국 제외
+        for idx, region in enumerate(regions):
+            ws.cell(row=3, column=idx + 3).value = region
+        
+        # 헤더 스타일
+        for col in range(1, len(regions) + 3):
+            cell = ws.cell(row=3, column=col)
+            cell.font = white_font
+            cell.fill = header_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center')
+        
+        # 각 지표별 전년동기비 계산
+        indicators = [
+            ('광공업생산', '광공업생산지수'),
+            ('서비스업생산', '서비스업생산지수'),
+            ('소매판매액', '소매판매액지수'),
+            ('건설수주액', '건설수주액'),
+        ]
+        
+        row_num = 4
+        for indicator_name, raw_sheet in indicators:
+            if raw_sheet not in raw_xl.sheet_names:
+                # 대체 시트명 확인
+                alt_sheets = {
+                    '광공업생산지수': '광공업생산',
+                    '서비스업생산지수': '서비스업생산',
+                    '소매판매액지수': '소비(소매, 추가)',
+                    '건설수주액': '건설 (공표자료)'
+                }
+                raw_sheet = alt_sheets.get(raw_sheet, raw_sheet)
+                if raw_sheet not in raw_xl.sheet_names:
+                    continue
+            
+            ws.cell(row=row_num, column=1).value = indicator_name
+            ws.cell(row=row_num, column=1).font = Font(bold=True)
+            ws.cell(row=row_num, column=1).border = thin_border
+            
+            # 전년동기비 계산 (간단한 예시)
+            try:
+                growth_rates = self._calculate_yoy_growth(raw_xl, raw_sheet)
+                for idx, region in enumerate(['전국'] + regions):
+                    cell = ws.cell(row=row_num, column=idx + 2)
+                    cell.value = growth_rates.get(region, '-')
+                    cell.border = thin_border
+                    cell.alignment = Alignment(horizontal='right')
+                    
+                    # 색상 (양수: 파랑, 음수: 빨강)
+                    if isinstance(cell.value, (int, float)):
+                        if cell.value > 0:
+                            cell.font = Font(color='0000FF')
+                        elif cell.value < 0:
+                            cell.font = Font(color='FF0000')
+            except Exception as e:
+                print(f"  [경고] {indicator_name} 전년동기비 계산 실패: {e}")
+            
+            row_num += 1
+        
+        # 열 너비
+        ws.column_dimensions['A'].width = 15
+        for col in range(2, len(regions) + 3):
+            ws.column_dimensions[get_column_letter(col)].width = 8
+    
+    def _calculate_yoy_growth(self, raw_xl, raw_sheet: str) -> Dict[str, float]:
+        """전년동기비 계산"""
+        df = pd.read_excel(raw_xl, sheet_name=raw_sheet, header=None)
+        
+        result = {}
+        
+        # 헤더 행과 현재/전년 동기 열 찾기
+        header_row = 2
+        current_col = None
+        prev_year_col = None
+        region_col = 1
+        
+        # 헤더에서 열 위치 찾기
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            for col_idx in range(len(row)):
+                val = str(row[col_idx]) if pd.notna(row[col_idx]) else ''
+                # 현재 분기 열
+                if f'{self.year}' in val and f'{self.quarter}/4' in val:
+                    current_col = col_idx
+                # 전년 동기 열
+                if f'{self.year - 1}' in val and f'{self.quarter}/4' in val:
+                    prev_year_col = col_idx
+        
+        if current_col is None or prev_year_col is None:
+            return result
+        
+        # 각 지역의 전년동기비 계산
+        for row_idx in range(header_row + 1, len(df)):
+            region = str(df.iloc[row_idx, region_col]).strip() if pd.notna(df.iloc[row_idx, region_col]) else ''
+            
+            if region in self.REGIONS_ORDER:
+                current_val = df.iloc[row_idx, current_col]
+                prev_val = df.iloc[row_idx, prev_year_col]
+                
+                if pd.notna(current_val) and pd.notna(prev_val) and prev_val != 0:
+                    try:
+                        growth = ((float(current_val) - float(prev_val)) / float(prev_val)) * 100
+                        result[region] = round(growth, 1)
+                    except:
+                        pass
+        
+        return result
     
     def add_grdp_sheet(self, analysis_path: str, grdp_file_path: str = None) -> bool:
         """분석표에 GRDP 시트 추가 (마지막 시트로)

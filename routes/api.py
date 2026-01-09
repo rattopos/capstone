@@ -1616,12 +1616,19 @@ def validate_weights_in_raw_data(filepath: str) -> dict:
                 if not industry_name or industry_name in ['nan', 'NaN', '']:
                     continue
                 
+                # 가중치 검증 제외 대상 (특수 항목)
+                # 전국출하지수, 전국재고지수 등은 가중치가 필요 없는 특수 항목
+                exclude_keywords = ['출하지수', '재고지수', '가동률', '출하', '재고']
+                should_skip = any(keyword in industry_name for keyword in exclude_keywords)
+                if should_skip:
+                    continue
+                
                 total_industries += 1
                 
                 # 가중치 확인
                 weight = row.iloc[config['weight_col']] if config['weight_col'] < len(row) else None
                 if pd.isna(weight) or weight == '' or weight == 0:
-                    # 전국 데이터의 0이 아닌 경우만 누락으로 처리
+                    # 전국 데이터의 가중치가 없는 경우만 누락으로 처리
                     if region == '전국' and pd.isna(weight):
                         missing_industries.append({
                             'row': i + 1,  # 엑셀 행 번호 (1-based)

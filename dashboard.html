@@ -1317,8 +1317,24 @@
                         <span>📄</span>
                         <span>미리보기</span>
                     </div>
-                    <div class="preview-actions">
-                        <!-- 편집/검토 버튼들 - 추후 재구현 예정 -->
+                    <div class="preview-actions" style="display: flex; gap: 0.5rem;">
+                        <button id="exportBtn" onclick="exportFinalDocument()" style="
+                            padding: 0.5rem 1rem;
+                            background: linear-gradient(135deg, #059669, #10b981);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 0.75rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" disabled>
+                            <span>📥</span>
+                            <span>HTML 내보내기</span>
+                        </button>
                     </div>
                 </div>
                 <div class="preview-content" id="previewContent">
@@ -2135,13 +2151,90 @@
             const btn = document.getElementById('generateAnalysisBtn');
             const originalText = btn.innerHTML;
             
+            // 로딩 모달 요소
+            const loadingOverlay = elements.loadingOverlay;
+            const loadingTitle = elements.loadingTitle;
+            const loadingSubtitle = document.getElementById('loadingSubtitle');
+            const loadingIcon = elements.loadingIcon;
+            const loadingProgress = elements.loadingProgressFill;
+            const loadingProgressText = elements.loadingProgressText;
+            const loadingPercent = elements.loadingProgressPercent;
+            const loadingCurrent = elements.loadingCurrentText;
+            const loadingCurrentIcon = elements.loadingCurrentIcon;
+            const elapsedTimeEl = elements.elapsedTime;
+            
+            // 진행률 시뮬레이션 변수
+            let progressInterval = null;
+            let currentProgress = 0;
+            let startTime = Date.now();
+            let elapsedInterval = null;
+            
+            // 경과 시간 업데이트 함수
+            const updateElapsedTime = () => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                if (elapsedTimeEl) {
+                    elapsedTimeEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }
+            };
+            
+            // 진행률 시뮬레이션 (예상 시간 기반)
+            const simulateProgress = () => {
+                // 예상 소요 시간: 15초
+                const estimatedTime = 15000;
+                const elapsed = Date.now() - startTime;
+                
+                // 로그 곡선으로 진행 (90%까지만)
+                const targetProgress = Math.min(90, Math.floor((elapsed / estimatedTime) * 90));
+                
+                if (currentProgress < targetProgress) {
+                    currentProgress = targetProgress;
+                    loadingProgress.style.width = `${currentProgress}%`;
+                    loadingPercent.textContent = `${currentProgress}%`;
+                    
+                    // 단계별 메시지 업데이트
+                    if (currentProgress < 20) {
+                        loadingCurrent.textContent = '기초자료 시트 분석 중...';
+                    } else if (currentProgress < 40) {
+                        loadingCurrent.textContent = '집계 시트 생성 중...';
+                    } else if (currentProgress < 60) {
+                        loadingCurrent.textContent = '데이터 복사 중...';
+                    } else if (currentProgress < 80) {
+                        loadingCurrent.textContent = '전년동기비 계산 중...';
+                    } else {
+                        loadingCurrent.textContent = '엑셀 파일 저장 중...';
+                    }
+                }
+            };
+            
             try {
                 // 버튼 상태 변경
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳</span><span>생성 중...</span>';
                 btn.style.opacity = '0.7';
                 
-                showToast('분석표를 생성하고 있습니다...', 'info');
+                // 로딩 모달 표시
+                if (loadingOverlay) {
+                    loadingIcon.textContent = '📊';
+                    loadingTitle.textContent = '분석표 생성 중';
+                    if (loadingSubtitle) {
+                        loadingSubtitle.textContent = '기초자료에서 분석표를 생성하고 있습니다. 잠시만 기다려주세요.';
+                    }
+                    loadingProgress.style.width = '0%';
+                    loadingProgressText.textContent = '분석표 생성';
+                    loadingPercent.textContent = '0%';
+                    loadingCurrentIcon.textContent = '📄';
+                    loadingCurrent.textContent = '시작 중...';
+                    if (elapsedTimeEl) elapsedTimeEl.textContent = '0:00';
+                    
+                    loadingOverlay.classList.add('active');
+                    
+                    // 타이머 시작
+                    startTime = Date.now();
+                    elapsedInterval = setInterval(updateElapsedTime, 1000);
+                    progressInterval = setInterval(simulateProgress, 200);
+                }
                 
                 // API 호출로 분석표 생성
                 const response = await fetch('/api/download-analysis', {
@@ -2149,7 +2242,19 @@
                     credentials: 'same-origin'
                 });
                 
+                // 진행률 100%로
+                if (progressInterval) clearInterval(progressInterval);
+                loadingProgress.style.width = '100%';
+                loadingPercent.textContent = '100%';
+                loadingCurrent.textContent = '완료!';
+                
                 if (!response.ok) {
+                    // JSON 에러 응답 처리
+                    const contentType = response.headers.get('Content-Type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || errorData.error || '분석표 생성 실패');
+                    }
                     throw new Error('분석표 생성 실패');
                 }
                 
@@ -2170,6 +2275,14 @@
                     }
                 }
                 
+                // 잠시 대기 (완료 표시 보여주기)
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 로딩 모달 숨기기
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('active');
+                }
+                
                 // 다운로드 트리거
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2184,8 +2297,17 @@
                 
             } catch (error) {
                 console.error('분석표 생성 오류:', error);
-                showToast('분석표 생성에 실패했습니다: ' + error.message, 'error');
+                showToast('⚠️ ' + error.message, 'warning');
+                
+                // 로딩 모달 숨기기
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('active');
+                }
             } finally {
+                // 타이머 정리
+                if (progressInterval) clearInterval(progressInterval);
+                if (elapsedInterval) clearInterval(elapsedInterval);
+                
                 // 버튼 상태 복원
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -2236,8 +2358,12 @@
             state.allGenerated = true;
             showGenerationStatus();
             
-            // 내보내기 버튼 - 추후 재구현 예정
-            console.log('[출력] 내보내기 버튼 기능 추후 재구현 예정');
+            // 내보내기 버튼 활성화
+            if (elements.exportBtn) {
+                elements.exportBtn.disabled = false;
+                elements.exportBtn.style.opacity = '1';
+                elements.exportBtn.style.cursor = 'pointer';
+            }
             
             // 전체 보도자료 배열 초기화 및 렌더링
             initializeAllReports();
@@ -2785,8 +2911,10 @@ ${currentPage.outerHTML}
                 });
 
                 const data = await response.json();
+                console.log('[DEBUG] 서버 응답:', data);
 
                 if (data.success) {
+                    console.log('[DEBUG] 업로드 성공, file_type:', data.file_type);
                     // Step 2 완료
                     const fileTypeText = data.file_type === 'analysis' ? '분석표' : '기초자료 수집표';
                     updateUploadStep(2, 'completed', fileTypeText);
@@ -2837,13 +2965,19 @@ ${currentPage.outerHTML}
                     }
                     
                     // 기존 UI 업데이트
+                    console.log('[DEBUG] UI 업데이트 시작');
                     state.fileUploaded = true;
                     state.fileType = data.file_type;
+                    console.log('[DEBUG] state.fileUploaded 설정 완료');
                     
                     elements.uploadZone.classList.add('uploaded');
                     elements.uploadFilename.textContent = `✓ ${data.filename}`;
                     elements.uploadFilename.style.display = 'block';
-                    elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
+                    const uploadIcon = elements.uploadZone.querySelector('.upload-icon');
+                    if (uploadIcon) {
+                        uploadIcon.textContent = '✅';
+                    }
+                    console.log('[DEBUG] 업로드 존 UI 완료');
                     
                     if (data.file_type === 'raw_direct' || data.file_type === 'raw_with_analysis' || data.file_type === 'raw') {
                         // 트랙 1: 기초자료 직접 처리
@@ -2869,44 +3003,49 @@ ${currentPage.outerHTML}
                     
                     // ===== 프로세스 1: 기초자료 → 보도자료 바로 생성 (새로운 워크플로우) =====
                     if ((data.file_type === 'raw_with_analysis' || data.file_type === 'raw') && data.conversion_info) {
-                        conversionInfo.style.display = 'block';
-                        conversionDetails.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="color: var(--success);">✅</span>
-                                <span>기초자료 처리 완료: ${data.conversion_info.original_file || data.filename}</span>
-                            </div>
-                        `;
+                        if (conversionInfo) conversionInfo.style.display = 'block';
+                        if (conversionDetails) {
+                            conversionDetails.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--success);">✅</span>
+                                    <span>기초자료 처리 완료: ${data.conversion_info.original_file || data.filename}</span>
+                                </div>
+                            `;
+                        }
                         
                         // UI 상태 업데이트 (보도자료 생성 모드로 바로 전환)
                         updateUIForFileType('raw_direct');
                         
                         // GRDP 정보 표시 (있으면)
                         if (data.has_grdp && data.conversion_info.grdp_extracted) {
-                            grdpInfo.style.display = 'block';
-                            const grdpInfoHtml = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: var(--accent-primary); margin-bottom: 0.25rem;">
-                                    📊 GRDP 데이터 포함
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    전국 성장률: ${data.conversion_info.national_growth_rate || '-'}%
-                                </div>
-                            `;
-                            grdpInfo.innerHTML = grdpInfoHtml;
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) {
+                                grdpInfo.style.display = 'block';
+                                grdpInfo.innerHTML = `
+                                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--accent-primary); margin-bottom: 0.25rem;">
+                                        📊 GRDP 데이터 포함
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                        전국 성장률: ${data.conversion_info.national_growth_rate || '-'}%
+                                    </div>
+                                `;
+                            }
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                         } else if (data.needs_review) {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'block';
-                            grdpMissing.innerHTML = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
-                                    ⚠️ GRDP 데이터 확인 필요
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
-                                </div>
-                            `;
+                            if (grdpInfo) grdpInfo.style.display = 'none';
+                            if (grdpMissing) {
+                                grdpMissing.style.display = 'block';
+                                grdpMissing.innerHTML = `
+                                    <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
+                                        ⚠️ GRDP 데이터 확인 필요
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                        기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
+                                    </div>
+                                `;
+                            }
                         } else {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) grdpInfo.style.display = 'none';
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                         }
                         
                         // 안내 메시지
@@ -2927,50 +3066,66 @@ ${currentPage.outerHTML}
                         
                     // ===== raw_direct: 기초자료 직접 사용 (가중치 검증 포함) =====
                     } else if (data.file_type === 'raw_direct') {
-                        conversionInfo.style.display = 'block';
-                        conversionDetails.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="color: var(--success);">✅</span>
-                                <span>기초자료 직접 사용: ${data.filename}</span>
-                            </div>
-                        `;
+                        console.log('[DEBUG] raw_direct 분기 진입');
+                        console.log('[DEBUG] weight_validation:', data.weight_validation);
+                        
+                        if (conversionInfo) {
+                            conversionInfo.style.display = 'block';
+                        }
+                        if (conversionDetails) {
+                            conversionDetails.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--success);">✅</span>
+                                    <span>기초자료 직접 사용: ${data.filename}</span>
+                                </div>
+                            `;
+                        }
                         
                         // UI 상태 업데이트
                         updateUIForFileType('raw_direct');
                         
                         // GRDP 정보 표시
                         if (data.has_grdp) {
-                            grdpInfo.style.display = 'block';
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) grdpInfo.style.display = 'block';
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                         } else if (data.needs_review) {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'block';
-                            grdpMissing.innerHTML = `
-                                <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
-                                    ⚠️ GRDP 데이터 확인 필요
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">
-                                    기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
-                                </div>
-                            `;
+                            if (grdpInfo) grdpInfo.style.display = 'none';
+                            if (grdpMissing) {
+                                grdpMissing.style.display = 'block';
+                                grdpMissing.innerHTML = `
+                                    <div style="font-size: 0.75rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
+                                        ⚠️ GRDP 데이터 확인 필요
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                        기본값이 적용됩니다. 정확한 데이터는 GRDP 파일을 별도 업로드하세요.
+                                    </div>
+                                `;
+                            }
                         } else {
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) grdpInfo.style.display = 'none';
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                         }
                         
                         // 가중치 검증 결과 저장
                         state.weightValidation = data.weight_validation;
                         
+                        console.log('[DEBUG] 모달 닫기 예약 (1500ms)');
                         // 모달 닫기
                         hideUploadModal(1500);
                         
                         // 가중치 누락 확인 후 경고 모달 또는 바로 진행
+                        console.log('[DEBUG] 가중치 확인 예약 (1800ms)');
                         setTimeout(() => {
+                            console.log('[DEBUG] 가중치 확인 시작');
+                            console.log('[DEBUG] has_missing_weights:', data.weight_validation?.has_missing_weights);
+                            
                             if (data.weight_validation && data.weight_validation.has_missing_weights) {
                                 // 가중치 누락 경고 모달 표시
+                                console.log('[DEBUG] 가중치 경고 모달 표시');
                                 showWeightWarningModal(data.weight_validation);
                             } else {
                                 // 가중치 문제 없음 - 바로 미리보기 생성
+                                console.log('[DEBUG] 가중치 문제 없음 - 미리보기 생성');
                                 showToast('🎉 보도자료 생성 시작!', 'success', 3000);
                                 generateAllReports();
                             }
@@ -2979,13 +3134,15 @@ ${currentPage.outerHTML}
                     // ===== 프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성 =====
                     } else if (data.file_type === 'analysis') {
                         // 분석표 직접 업로드
-                        conversionInfo.style.display = 'block';
-                        conversionDetails.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="color: var(--success);">✅</span>
-                                <span>분석표 업로드 완료: ${data.filename}</span>
-                            </div>
-                        `;
+                        if (conversionInfo) conversionInfo.style.display = 'block';
+                        if (conversionDetails) {
+                            conversionDetails.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="color: var(--success);">✅</span>
+                                    <span>분석표 업로드 완료: ${data.filename}</span>
+                                </div>
+                            `;
+                        }
                         
                         // UI 상태 업데이트 (분석표 모드)
                         updateUIForFileType('analysis');
@@ -2996,13 +3153,18 @@ ${currentPage.outerHTML}
                         
                         if (data.needs_grdp) {
                             // GRDP가 없는 경우 → GRDP 모달 표시
-                            grdpInfo.style.display = 'none';
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) grdpInfo.style.display = 'none';
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                             
-                            document.getElementById('uploadModalIcon').textContent = '✅';
-                            document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추가로 업로드해주세요.';
-                            document.getElementById('uploadProgressFill').style.width = '75%';
+                            const modalIcon = document.getElementById('uploadModalIcon');
+                            const modalTitle = document.getElementById('uploadModalTitle');
+                            const modalSubtitle = document.getElementById('uploadModalSubtitle');
+                            const progressFill = document.getElementById('uploadProgressFill');
+                            
+                            if (modalIcon) modalIcon.textContent = '✅';
+                            if (modalTitle) modalTitle.textContent = '분석표 업로드 완료!';
+                            if (modalSubtitle) modalSubtitle.textContent = 'GRDP 데이터를 추가로 업로드해주세요.';
+                            if (progressFill) progressFill.style.width = '75%';
                             
                             updateUploadStep(4, 'active', 'GRDP 추가 필요');
                             
@@ -3012,13 +3174,18 @@ ${currentPage.outerHTML}
                             }, 1600);
                         } else {
                             // GRDP가 있는 경우 → 바로 보도자료 생성
-                            grdpInfo.style.display = 'block';
-                            grdpMissing.style.display = 'none';
+                            if (grdpInfo) grdpInfo.style.display = 'block';
+                            if (grdpMissing) grdpMissing.style.display = 'none';
                             
-                            document.getElementById('uploadModalIcon').textContent = '✅';
-                            document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                            document.getElementById('uploadModalSubtitle').textContent = 'GRDP 시트가 포함되어 있습니다.';
-                            document.getElementById('uploadProgressFill').style.width = '100%';
+                            const modalIcon = document.getElementById('uploadModalIcon');
+                            const modalTitle = document.getElementById('uploadModalTitle');
+                            const modalSubtitle = document.getElementById('uploadModalSubtitle');
+                            const progressFill = document.getElementById('uploadProgressFill');
+                            
+                            if (modalIcon) modalIcon.textContent = '✅';
+                            if (modalTitle) modalTitle.textContent = '분석표 업로드 완료!';
+                            if (modalSubtitle) modalSubtitle.textContent = 'GRDP 시트가 포함되어 있습니다.';
+                            if (progressFill) progressFill.style.width = '100%';
                             
                             updateUploadStep(3, 'skipped', '분석표 직접 업로드');
                             updateUploadStep(4, 'completed', 'GRDP 포함');
@@ -3029,8 +3196,8 @@ ${currentPage.outerHTML}
                             }, 2100);
                         }
                     } else {
-                        conversionInfo.style.display = 'none';
-                        grdpMissing.style.display = 'none';
+                        if (conversionInfo) conversionInfo.style.display = 'none';
+                        if (grdpMissing) grdpMissing.style.display = 'none';
                         // 모달 닫기 (2초 후) 후 자동 미리보기 생성
                         hideUploadModal(2000);
                         setTimeout(() => {
@@ -3050,7 +3217,9 @@ ${currentPage.outerHTML}
                 }
             } catch (err) {
                 console.error('업로드 오류:', err);
-                showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+                console.error('에러 상세:', err.message, err.stack);
+                hideUploadModal(0);
+                showToast('파일 업로드 중 오류가 발생했습니다: ' + err.message, 'error');
             }
         }
 
@@ -3309,12 +3478,12 @@ ${currentPage.outerHTML}
                 console.warn('[출력] 캐시 동기화 실패 (계속 진행):', e);
             }
             
-            // 로딩 표시
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgress');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const loadingCurrent = document.getElementById('loadingCurrent');
+            // 로딩 표시 (elements 객체의 이미 참조된 요소 사용)
+            const loadingOverlay = elements.loadingOverlay;
+            const loadingTitle = elements.loadingTitle;
+            const loadingProgress = elements.loadingProgressFill;
+            const loadingPercent = elements.loadingProgressPercent;
+            const loadingCurrent = elements.loadingCurrentText;
             
             if (!loadingOverlay || !loadingTitle || !loadingProgress || !loadingPercent || !loadingCurrent) {
                 console.error('[출력] 로딩 UI 요소를 찾을 수 없습니다.');
@@ -3327,7 +3496,7 @@ ${currentPage.outerHTML}
                 return;
             }
             
-            loadingOverlay.style.display = 'flex';
+            loadingOverlay.classList.add('active');
             loadingTitle.textContent = '📄 HTML 문서 생성 중...';
             loadingCurrent.textContent = '페이지 수집 중';
             loadingProgress.style.width = '0%';
@@ -3401,7 +3570,7 @@ ${currentPage.outerHTML}
                 
                 // 페이지가 비어있는 경우 에러 처리
                 if (rawPages.length === 0) {
-                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('active');
                     showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
                     return;
                 }
@@ -3474,7 +3643,7 @@ ${currentPage.outerHTML}
                     loadingCurrent.textContent = '저장 위치 선택 중...';
                     
                     // 로딩 오버레이 숨기고 파일 저장 대화상자 표시
-                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('active');
                     
                     // 파일 저장 (사용자가 위치 선택)
                     const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
@@ -3502,16 +3671,15 @@ ${currentPage.outerHTML}
                         showToast('저장이 취소되었습니다.', 'info');
                     }
                 } else {
-                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('active');
                     const errorMsg = result.error || '문서 생성 실패';
                     console.error('[출력] 문서 생성 실패:', errorMsg);
                     showToast(`문서 생성 실패: ${errorMsg}`, 'error');
                 }
             } catch (err) {
                 console.error('[출력] 내보내기 오류:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
+                if (elements.loadingOverlay) {
+                    elements.loadingOverlay.classList.remove('active');
                 }
                 showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
             } finally {
@@ -3900,7 +4068,7 @@ ${currentPage.outerHTML}
             
             if (fileType === 'raw_direct' || fileType === 'raw_with_analysis' || fileType === 'raw') {
                 // ===== 기초자료 업로드 → 바로 보도자료 생성 모드 =====
-                reportListSection.style.opacity = '1';
+                if (reportListSection) reportListSection.style.opacity = '1';
                 
                 // 미리보기 영역 안내 변경
                 if (previewPlaceholder) {
@@ -3921,7 +4089,7 @@ ${currentPage.outerHTML}
                 
             } else if (fileType === 'analysis') {
                 // ===== 분석표 업로드 → 보도자료 생성 모드 (폴백) =====
-                reportListSection.style.opacity = '1';
+                if (reportListSection) reportListSection.style.opacity = '1';
                 
                 if (reportGenerationHint) reportGenerationHint.style.display = 'block';
             }
