@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보도자료 미리보기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-primary:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .preview-wrapper {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            border: none;
+            min-height: 800px;
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📊 보도자료 미리보기</h1>
+            <div class="header-actions">
+                <a href="/" class="btn btn-secondary">← 새로 만들기</a>
+                <a href="/download/{{ file_id }}" class="btn btn-primary" id="downloadBtn">💾 다운로드</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-container">
+        <div class="preview-wrapper">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>미리보기를 로딩 중입니다...</p>
+            </div>
+            <iframe 
+                id="previewFrame" 
+                class="preview-iframe" 
+                src="/view/{{ file_id }}"
+                style="display: none;"
+                onload="handleFrameLoad()">
+            </iframe>
+        </div>
+    </div>
+
+    <script>
+        function handleFrameLoad() {
+            const loading = document.getElementById('loading');
+            const frame = document.getElementById('previewFrame');
+            
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            if (frame) {
+                frame.style.display = 'block';
+            }
+        }
+
+        // iframe 로드 실패 시 처리
+        window.addEventListener('error', function(e) {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.innerHTML = '<p style="color: #e74c3c;">미리보기를 로드할 수 없습니다. 다운로드 버튼을 사용해주세요.</p>';
+            }
+        }, true);
+    </script>
+</body>
+</html>
+

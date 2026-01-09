@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계청 보도자료 자동 생성 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        input[type="file"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="file"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .file-info {
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .config-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .help-text {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            border-left: 4px solid #3c3;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .config-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 보도자료 자동 생성</h1>
+        <p class="subtitle">엑셀 데이터를 HTML 보도자료로 변환합니다</p>
+
+        <div class="info-box">
+            <h3>사용 방법</h3>
+            <ul>
+                <li>엑셀 파일(.xlsx, .xls)을 업로드하세요</li>
+                <li>템플릿 파일은 선택사항입니다 (기본 템플릿 사용)</li>
+                <li>연도와 분기는 선택사항입니다</li>
+                <li>처리 버튼을 클릭하면 결과 파일이 다운로드됩니다</li>
+            </ul>
+        </div>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="excel_file">
+                    엑셀 파일 <span class="required">*</span>
+                </label>
+                <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                <div class="file-info">.xlsx 또는 .xls 파일만 업로드 가능합니다 (최대 200MB)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="template_file">
+                    템플릿 파일 (선택)
+                </label>
+                <input type="file" id="template_file" name="template_file" accept=".html">
+                <div class="file-info">HTML 템플릿 파일 (기본 템플릿 사용 시 생략 가능)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="sheet_name">
+                    시트 선택 (선택)
+                </label>
+                <select id="sheet_name" name="sheet_name">
+                    <option value="">자동 선택 (첫 번째 시트)</option>
+                </select>
+                <div class="help-text">처리할 엑셀 시트를 선택하세요. 선택하지 않으면 첫 번째 시트를 사용합니다.</div>
+            </div>
+
+            <div class="form-group">
+                <label>설정 (선택)</label>
+                <div class="config-group">
+                    <div>
+                        <label for="year">연도</label>
+                        <input type="number" id="year" name="year" min="2020" max="2100" placeholder="예: 2023">
+                        <div class="help-text">분석할 연도를 입력하세요 (선택사항, 시트 기본값 사용)</div>
+                    </div>
+                    <div>
+                        <label for="quarter">분기</label>
+                        <select id="quarter" name="quarter">
+                            <option value="">선택 안함</option>
+                            <option value="1">1분기</option>
+                            <option value="2">2분기</option>
+                            <option value="3">3분기</option>
+                            <option value="4">4분기</option>
+                        </select>
+                        <div class="help-text">분석할 분기를 선택하세요 (선택사항, 시트 기본값 사용)</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                보도자료 생성하기
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">처리 중입니다. 잠시만 기다려주세요...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 파일 크기 검증
+            const excelFile = document.getElementById('excel_file').files[0];
+            const maxSize = 200 * 1024 * 1024; // 200MB
+            
+            if (excelFile && excelFile.size > maxSize) {
+                errorMessage.textContent = `파일 크기가 너무 큽니다. 최대 파일 크기는 200MB입니다. (현재: ${(excelFile.size / 1024 / 1024).toFixed(2)}MB)`;
+                errorMessage.classList.add('active');
+                return;
+            }
+
+            // UI 상태 초기화
+            errorMessage.classList.remove('active');
+            successMessage.classList.remove('active');
+            submitBtn.disabled = true;
+            loading.classList.add('active');
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // 응답 데이터 파싱
+                    const data = await response.json();
+                    
+                    if (data.success && data.file_id) {
+                        // 미리보기 페이지로 리다이렉트
+                        window.location.href = `/preview/${data.file_id}`;
+                    } else {
+                        // 예전 형식 지원 (blob 응답)
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = data.filename || 'result.html';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        successMessage.textContent = '보도자료가 성공적으로 생성되었습니다! 파일이 다운로드됩니다.';
+                        successMessage.classList.add('active');
+                    }
+                } else {
+                    // 에러 응답 처리
+                    const errorData = await response.json();
+                    errorMessage.textContent = errorData.error || '처리 중 오류가 발생했습니다.';
+                    errorMessage.classList.add('active');
+                }
+            } catch (error) {
+                errorMessage.textContent = `네트워크 오류: ${error.message}`;
+                errorMessage.classList.add('active');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('active');
+            }
+        });
+
+        // 파일 선택 시 파일명 표시 및 크기 검증, 시트 목록 로드
+        document.getElementById('excel_file').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileInfo = this.nextElementSibling;
+                const fileSizeMB = file.size / 1024 / 1024;
+                const maxSizeMB = 200;
+                
+                if (fileSizeMB > maxSizeMB) {
+                    fileInfo.textContent = `⚠️ 파일 크기 초과: ${fileSizeMB.toFixed(2)}MB (최대 ${maxSizeMB}MB)`;
+                    fileInfo.style.color = '#e74c3c';
+                    errorMessage.textContent = `파일 크기가 너무 큽니다. 최대 ${maxSizeMB}MB까지 업로드 가능합니다.`;
+                    errorMessage.classList.add('active');
+                } else {
+                    fileInfo.textContent = `선택된 파일: ${file.name} (${fileSizeMB.toFixed(2)} MB)`;
+                    fileInfo.style.color = '#666';
+                    errorMessage.classList.remove('active');
+                    
+                    // 시트 목록 로드
+                    await loadSheetNames(file);
+                }
+            }
+        });
+
+        // 엑셀 파일에서 시트 목록 가져오기
+        async function loadSheetNames(file) {
+            const sheetSelect = document.getElementById('sheet_name');
+            sheetSelect.innerHTML = '<option value="">로딩 중...</option>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('excel_file', file);
+                
+                const response = await fetch('/get_sheets', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+                    
+                    if (data.sheets && data.sheets.length > 0) {
+                        data.sheets.forEach(sheetName => {
+                            const option = document.createElement('option');
+                            option.value = sheetName;
+                            option.textContent = sheetName;
+                            sheetSelect.appendChild(option);
+                        });
+                    }
+                } else {
+                    sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+                }
+            } catch (error) {
+                console.error('시트 목록 로드 실패:', error);
+                sheetSelect.innerHTML = '<option value="">자동 선택 (첫 번째 시트)</option>';
+            }
+        }
+
+        document.getElementById('template_file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileInfo = this.nextElementSibling;
+                fileInfo.textContent = `선택된 파일: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            }
+        });
+    </script>
+</body>
+</html>
+

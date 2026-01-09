@@ -1,267 +1,266 @@
 """
-템플릿 생성 모듈
-이미지에서 HTML 템플릿을 자동 생성하는 기능 제공
+스크린샷 기반 템플릿 자동 생성 모듈
+스크린샷 이미지를 분석하여 광공업생산 템플릿과 유사한 구조의 HTML 템플릿 생성
 """
 
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
-from PIL import Image
-import pytesseract
+from typing import Optional, List, Dict, Any, Tuple
 
 try:
-    import easyocr
-    EASYOCR_AVAILABLE = True
-except ImportError:
-    EASYOCR_AVAILABLE = False
-
-try:
+    from PIL import Image
+    import pytesseract
     import cv2
     import numpy as np
-    CV2_AVAILABLE = True
+    OCR_AVAILABLE = True
 except ImportError:
-    CV2_AVAILABLE = False
+    OCR_AVAILABLE = False
 
 
 class TemplateGenerator:
-    """이미지에서 HTML 템플릿을 생성하는 클래스"""
+    """스크린샷에서 템플릿을 자동 생성하는 클래스"""
     
-    def __init__(self, use_easyocr: bool = True):
-        """
-        템플릿 생성기 초기화
-        
-        Args:
-            use_easyocr: True면 easyocr 사용, False면 pytesseract 사용
-        """
-        self.use_easyocr = use_easyocr and EASYOCR_AVAILABLE
-        self.reader = None
-        
-        if self.use_easyocr:
-            try:
-                self.reader = easyocr.Reader(['ko', 'en'], gpu=False)
-            except Exception as e:
-                print(f"EasyOCR 초기화 실패, pytesseract 사용: {e}")
-                self.use_easyocr = False
-                self.reader = None
+    def __init__(self):
+        """템플릿 생성기 초기화"""
+        if not OCR_AVAILABLE:
+            raise ImportError(
+                "OCR 라이브러리가 설치되지 않았습니다. "
+                "다음 명령어로 설치하세요: pip install Pillow pytesseract opencv-python"
+            )
+        # Tesseract OCR 설정 (한국어 + 영어)
+        self.tesseract_config = '--oem 3 --psm 6 -l kor+eng'
     
-    def extract_text_from_image(self, image_path: str) -> List[Dict]:
+    def load_image(self, image_path: str) -> Image.Image:
         """
-        이미지에서 텍스트와 위치 정보를 추출합니다.
+        이미지를 로드합니다.
         
         Args:
             image_path: 이미지 파일 경로
             
         Returns:
-            텍스트 정보 딕셔너리 리스트. 각 딕셔너리는 다음 키를 포함:
-            - 'text': 추출된 텍스트
-            - 'bbox': 바운딩 박스 좌표 (x1, y1, x2, y2)
-            - 'confidence': 신뢰도 (0-1)
+            PIL Image 객체
         """
-        if CV2_AVAILABLE:
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError(f"이미지를 읽을 수 없습니다: {image_path}")
-            
-            # 이미지 전처리
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            
-            # 노이즈 제거
-            denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
-            
-            # 이진화
-            _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        else:
-            # PIL만 사용
-            img = Image.open(image_path)
-            binary = img.convert('L')
-        
-        text_data = []
-        
-        if self.use_easyocr and self.reader and CV2_AVAILABLE:
-            # EasyOCR 사용
-            results = self.reader.readtext(binary)
-            for (bbox, text, confidence) in results:
-                # bbox는 [[x1, y1], [x2, y1], [x2, y2], [x1, y2]] 형식
-                x_coords = [point[0] for point in bbox]
-                y_coords = [point[1] for point in bbox]
-                x1, y1 = min(x_coords), min(y_coords)
-                x2, y2 = max(x_coords), max(y_coords)
-                
-                text_data.append({
-                    'text': text.strip(),
-                    'bbox': (x1, y1, x2, y2),
-                    'confidence': confidence
-                })
-        else:
-            # pytesseract 사용
-            try:
-                # 이미지를 PIL Image로 변환
-                if CV2_AVAILABLE:
-                    pil_image = Image.fromarray(binary)
-                else:
-                    pil_image = binary
-                
-                # OCR 수행
-                data = pytesseract.image_to_data(pil_image, lang='kor+eng', output_type=pytesseract.Output.DICT)
-                
-                for i in range(len(data['text'])):
-                    text = data['text'][i].strip()
-                    if text and int(data['conf'][i]) > 0:
-                        x1 = data['left'][i]
-                        y1 = data['top'][i]
-                        x2 = x1 + data['width'][i]
-                        y2 = y1 + data['height'][i]
-                        confidence = float(data['conf'][i]) / 100.0
-                        
-                        text_data.append({
-                            'text': text,
-                            'bbox': (x1, y1, x2, y2),
-                            'confidence': confidence
-                        })
-            except Exception as e:
-                raise ValueError(f"OCR 처리 중 오류 발생: {e}")
-        
-        return text_data
+        return Image.open(image_path)
     
-    def analyze_layout(self, text_data: List[Dict], image_width: int, image_height: int) -> Dict:
+    def preprocess_image(self, image: Image.Image) -> np.ndarray:
         """
-        텍스트 데이터를 분석하여 레이아웃 구조를 파악합니다.
+        이미지를 전처리합니다 (OCR 정확도 향상).
         
         Args:
-            text_data: extract_text_from_image()의 결과
-            image_width: 이미지 너비
-            image_height: 이미지 높이
+            image: PIL Image 객체
             
         Returns:
-            레이아웃 정보 딕셔너리
+            전처리된 이미지 (numpy array)
         """
-        if not text_data:
-            return {
-                'sections': [],
-                'tables': [],
-                'paragraphs': []
-            }
+        # PIL Image를 numpy array로 변환
+        img_array = np.array(image)
         
-        # 텍스트를 y 좌표 기준으로 정렬
-        sorted_text = sorted(text_data, key=lambda x: x['bbox'][1])
+        # 그레이스케일 변환
+        if len(img_array.shape) == 3:
+            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = img_array
         
-        # 섹션 구분 (y 좌표 차이가 큰 경우)
-        sections = []
-        current_section = []
-        prev_y = None
+        # 노이즈 제거
+        denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
         
-        for item in sorted_text:
-            y = item['bbox'][1]
-            if prev_y is not None and y - prev_y > image_height * 0.05:  # 5% 이상 차이면 새 섹션
-                if current_section:
-                    sections.append(current_section)
-                current_section = [item]
-            else:
-                current_section.append(item)
-            prev_y = y
+        # 이진화 (thresholding)
+        _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
-        if current_section:
-            sections.append(current_section)
+        return binary
+    
+    def extract_text(self, image: Image.Image) -> str:
+        """
+        이미지에서 텍스트를 추출합니다 (OCR).
         
-        # 테이블 감지 (정렬된 텍스트가 여러 줄에 걸쳐 있는 경우)
-        tables = []
-        # 간단한 테이블 감지 로직 (개선 가능)
+        Args:
+            image: PIL Image 객체
+            
+        Returns:
+            추출된 텍스트
+        """
+        # 이미지 전처리
+        processed = self.preprocess_image(image)
         
-        return {
-            'sections': sections,
-            'tables': tables,
-            'paragraphs': sorted_text
+        # numpy array를 PIL Image로 변환
+        processed_image = Image.fromarray(processed)
+        
+        # OCR 수행
+        try:
+            text = pytesseract.image_to_string(processed_image, config=self.tesseract_config)
+            return text
+        except Exception as e:
+            # Tesseract가 설치되지 않았거나 오류 발생 시
+            raise RuntimeError(f"OCR 오류: {e}. Tesseract OCR이 설치되어 있는지 확인하세요.")
+    
+    def parse_structure(self, text: str) -> Dict[str, Any]:
+        """
+        추출된 텍스트에서 문서 구조를 파악합니다.
+        
+        Args:
+            text: 추출된 텍스트
+            
+        Returns:
+            구조 정보 딕셔너리
+        """
+        lines = text.split('\n')
+        structure = {
+            'title': None,
+            'sections': [],
+            'tables': [],
+            'text_blocks': []
         }
+        
+        current_section = None
+        current_text = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                if current_text:
+                    structure['text_blocks'].append(' '.join(current_text))
+                    current_text = []
+                continue
+            
+            # 제목 감지 (짧고 큰 폰트로 가정)
+            if len(line) < 50 and not current_section:
+                if any(keyword in line for keyword in ['부문별', '지역경제', '동향', '보도자료']):
+                    structure['title'] = line
+                    continue
+            
+            # 섹션 제목 감지 (숫자로 시작하는 패턴)
+            section_match = re.match(r'^(\d+\.?\s*[가-힣]+)', line)
+            if section_match:
+                if current_text:
+                    structure['text_blocks'].append(' '.join(current_text))
+                    current_text = []
+                current_section = section_match.group(1)
+                structure['sections'].append({
+                    'title': current_section,
+                    'content': []
+                })
+                continue
+            
+            # 하위 섹션 감지
+            subsection_match = re.match(r'^([가-힣]\.\s*[가-힣]+)', line)
+            if subsection_match:
+                if current_section:
+                    structure['sections'][-1]['content'].append({
+                        'type': 'subsection',
+                        'title': subsection_match.group(1),
+                        'text': []
+                    })
+                continue
+            
+            # 텍스트 블록에 추가
+            current_text.append(line)
+        
+        if current_text:
+            structure['text_blocks'].append(' '.join(current_text))
+        
+        return structure
     
-    def detect_data_markers(self, text: str) -> List[str]:
+    def generate_markers(self, text: str, sheet_name: str) -> List[Tuple[str, str]]:
         """
-        텍스트에서 데이터 마커로 변환할 수 있는 부분을 감지합니다.
+        텍스트에서 마커를 생성합니다.
         
         Args:
-            text: 분석할 텍스트
+            text: 추출된 텍스트
+            sheet_name: 시트 이름
             
         Returns:
-            마커로 변환 가능한 텍스트 패턴 리스트
+            (원본 텍스트, 마커) 튜플 리스트
         """
         markers = []
         
-        # 숫자 패턴 (퍼센트, 소수점 등)
-        number_patterns = [
-            r'-?\d+\.?\d*%',  # 퍼센트
-            r'-?\d+\.?\d*',    # 일반 숫자
-            r'\d{4}년',        # 연도
-            r'\d{1,2}분기',    # 분기
-        ]
+        # 숫자 패턴 찾기 (퍼센트 포함)
+        percent_pattern = r'([+-]?\d+\.?\d*)\s*%'
+        number_pattern = r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?)'
         
-        for pattern in number_patterns:
-            matches = re.finditer(pattern, text)
-            for match in matches:
-                markers.append(match.group())
+        # 지역명 패턴
+        region_pattern = r'(전국|서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)'
         
-        # 지역명 패턴 (한글 지역명)
-        region_pattern = r'[가-힣]+(?:시|도|군|구|시|읍|면)'
-        region_matches = re.finditer(region_pattern, text)
-        for match in region_matches:
-            markers.append(match.group())
+        # 퍼센트 값 마커 생성
+        for match in re.finditer(percent_pattern, text):
+            value = match.group(1)
+            # 동적 마커 생성 (예: {시트명:지역명_증감률})
+            marker = f"{{{sheet_name}:동적_증감률}}"
+            markers.append((match.group(0), marker))
+        
+        # 지역명 마커 생성
+        for match in re.finditer(region_pattern, text):
+            region = match.group(1)
+            marker = f"{{{sheet_name}:{region}_이름}}"
+            markers.append((region, marker))
         
         return markers
     
-    def generate_html_template(
-        self, 
-        image_path: str, 
-        template_name: str,
-        default_sheet_name: str = "시트1"
-    ) -> str:
+    def generate_template(self, image_path: str, sheet_name: str, 
+                         base_template_path: Optional[str] = None) -> str:
         """
-        이미지에서 HTML 템플릿을 생성합니다.
+        스크린샷에서 템플릿을 생성합니다.
         
         Args:
-            image_path: 이미지 파일 경로
-            template_name: 생성할 템플릿 이름
-            default_sheet_name: 기본 시트명
+            image_path: 스크린샷 이미지 경로
+            sheet_name: 시트 이름
+            base_template_path: 기본 템플릿 경로 (스타일 참조용, 선택적)
             
         Returns:
-            생성된 HTML 템플릿 문자열
+            생성된 HTML 템플릿
         """
-        # 이미지 크기 가져오기
-        img = Image.open(image_path)
-        image_width, image_height = img.size
+        # 이미지 로드
+        image = self.load_image(image_path)
         
         # 텍스트 추출
-        text_data = self.extract_text_from_image(image_path)
+        text = self.extract_text(image)
         
-        if not text_data:
-            # 텍스트가 없으면 기본 템플릿 생성
-            return self._generate_default_template(template_name)
+        # 구조 파악
+        structure = self.parse_structure(text)
         
-        # 레이아웃 분석
-        layout = self.analyze_layout(text_data, image_width, image_height)
+        # 기본 템플릿 스타일 로드 (있는 경우)
+        base_style = ""
+        if base_template_path and Path(base_template_path).exists():
+            with open(base_template_path, 'r', encoding='utf-8') as f:
+                base_content = f.read()
+                # CSS 스타일 추출
+                style_match = re.search(r'<style[^>]*>(.*?)</style>', base_content, re.DOTALL)
+                if style_match:
+                    base_style = style_match.group(1)
         
         # HTML 생성
-        html_parts = []
-        html_parts.append('<!DOCTYPE html>')
-        html_parts.append('<html lang="ko">')
-        html_parts.append('<head>')
-        html_parts.append('    <meta charset="UTF-8">')
-        html_parts.append('    <meta name="viewport" content="width=device-width, initial-scale=1.0">')
-        html_parts.append(f'    <title>{template_name}</title>')
-        html_parts.append('    <style>')
-        html_parts.append(self._generate_css())
-        html_parts.append('    </style>')
-        html_parts.append('</head>')
-        html_parts.append('<body>')
+        html = self._generate_html(structure, sheet_name, base_style)
         
-        # 본문 생성
-        html_parts.append(self._generate_body_content(text_data, layout, default_sheet_name))
-        
-        html_parts.append('</body>')
-        html_parts.append('</html>')
-        
-        return '\n'.join(html_parts)
+        return html
     
-    def _generate_css(self) -> str:
-        """기본 CSS 스타일 생성"""
-        return """        * {
+    def _generate_html(self, structure: Dict[str, Any], sheet_name: str, base_style: str) -> str:
+        """
+        구조 정보로부터 HTML을 생성합니다.
+        
+        Args:
+            structure: 구조 정보 딕셔너리
+            sheet_name: 시트 이름
+            base_style: 기본 CSS 스타일
+            
+        Returns:
+            HTML 문자열
+        """
+        html_parts = [
+            '<!DOCTYPE html>',
+            '<html lang="ko">',
+            '<head>',
+            '    <meta charset="UTF-8">',
+            '    <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            f'    <title>{structure.get("title", "보도자료")}</title>',
+            '    <style>',
+        ]
+        
+        # 기본 스타일 추가
+        if base_style:
+            html_parts.append(base_style)
+        else:
+            # 기본 스타일 (광공업생산 템플릿과 유사)
+            html_parts.append("""
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -269,331 +268,99 @@ class TemplateGenerator:
         
         body {
             font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-            line-height: 1.6;
-            color: #000;
+            line-height: 1.8;
+            color: #333;
             background-color: #fff;
-            padding: 30px 40px;
-            max-width: 1000px;
+            padding: 40px 20px;
+            max-width: 1200px;
             margin: 0 auto;
-            font-size: 14px;
         }
         
         .document-title {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
-            color: #000;
-            line-height: 1.4;
+            color: #1a1a1a;
         }
         
         .section-title {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
-            margin: 25px 0 12px 0;
-            color: #000;
-            line-height: 1.4;
+            margin: 30px 0 15px 0;
+            color: #2c3e50;
+        }
+        
+        .subsection-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            color: #34495e;
         }
         
         .content-text {
             font-size: 14px;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             text-align: justify;
-            line-height: 1.7;
-            color: #000;
+            line-height: 1.9;
         }
+            """)
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            font-size: 13px;
-            border: 1px solid #000;
-        }
+        html_parts.extend([
+            '    </style>',
+            '</head>',
+            '<body>',
+        ])
         
-        th, td {
-            padding: 8px 6px;
-            text-align: center;
-            border: 1px solid #000;
-            font-size: 12px;
-        }
+        # 제목 추가
+        if structure.get('title'):
+            html_parts.append(f'    <div class="document-title">{structure["title"]}</div>')
         
-        th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-        }"""
+        # 섹션 추가
+        for section in structure.get('sections', []):
+            html_parts.append(f'    <div class="section-title">{section["title"]}</div>')
+            
+            for content in section.get('content', []):
+                if content.get('type') == 'subsection':
+                    html_parts.append(f'        <div class="subsection-title">{content["title"]}</div>')
+        
+        # 텍스트 블록 추가
+        for text_block in structure.get('text_blocks', []):
+            # 마커 생성 및 적용
+            markers = self.generate_markers(text_block, sheet_name)
+            processed_text = text_block
+            for original, marker in markers:
+                processed_text = processed_text.replace(original, marker)
+            
+            html_parts.append(f'    <div class="content-text">{processed_text}</div>')
+        
+        html_parts.extend([
+            '</body>',
+            '</html>',
+        ])
+        
+        return '\n'.join(html_parts)
     
-    def _generate_body_content(
-        self, 
-        text_data: List[Dict], 
-        layout: Dict,
-        default_sheet_name: str
-    ) -> str:
-        """본문 내용 생성 (기본 버전, 헤더 파서 없이)"""
-        return self._generate_body_content_with_headers(text_data, layout, default_sheet_name, None)
-    
-    def _replace_with_markers(self, text: str, sheet_name: str, header_parser=None) -> str:
+    def generate_from_screenshot(self, screenshot_path: str, sheet_name: str,
+                                 output_path: Optional[str] = None,
+                                 base_template_path: Optional[str] = None) -> str:
         """
-        텍스트의 숫자 부분을 마커로 변환
-        헤더 파서가 있으면 헤더 기반 마커 사용, 없으면 기본 마커 사용
-        """
-        if header_parser:
-            return self._replace_with_header_markers(text, sheet_name, header_parser)
-        
-        # 기본 마커 (컬럼 번호 기반)
-        patterns = [
-            (r'-?\d+\.?\d*%', f'{{{sheet_name}:A1}}'),  # 퍼센트
-            (r'-?\d+\.?\d*', f'{{{sheet_name}:A1}}'),   # 일반 숫자
-        ]
-        
-        processed = text
-        for pattern, marker in patterns:
-            processed = re.sub(pattern, marker, processed)
-        
-        return processed
-    
-    def _replace_with_header_markers(self, text: str, sheet_name: str, header_parser) -> str:
-        """
-        헤더 기반으로 마커를 생성하여 텍스트의 숫자 부분을 변환
-        """
-        try:
-            headers_info = header_parser.get_all_headers(sheet_name)
-            
-            # 숫자 패턴 찾기
-            number_pattern = r'-?\d+\.?\d*%?'
-            matches = list(re.finditer(number_pattern, text))
-            
-            if not matches:
-                return text
-            
-            # 역순으로 치환 (뒤에서부터 치환하여 인덱스 문제 방지)
-            processed = text
-            marker_count = {}  # 같은 마커가 여러 번 나오는 경우 카운트
-            
-            for match in reversed(matches):
-                number_text = match.group()
-                
-                # 컨텍스트 기반으로 적절한 헤더 찾기
-                # 주변 텍스트를 분석하여 어떤 헤더인지 추론
-                start_pos = max(0, match.start() - 50)
-                end_pos = min(len(text), match.end() + 50)
-                context = text[start_pos:end_pos]
-                
-                # 지역명이나 헤더 키워드 찾기
-                header_key = self._find_header_from_context(context, headers_info, number_text, header_parser)
-                
-                if header_key:
-                    marker = f"{{{sheet_name}:{header_key}}}"
-                else:
-                    # 기본 마커 (첫 번째 열 사용)
-                    if headers_info['columns']:
-                        first_col = headers_info['columns'][0]['normalized']
-                        marker = f"{{{sheet_name}:{first_col}}}"
-                    else:
-                        marker = f"{{{sheet_name}:value}}"
-                
-                processed = processed[:match.start()] + marker + processed[match.end():]
-            
-            return processed
-        except Exception as e:
-            # 오류 발생 시 기본 마커 사용
-            return self._replace_with_markers(text, sheet_name, None)
-    
-    def _find_header_from_context(self, context: str, headers_info: Dict, number_text: str, header_parser=None) -> Optional[str]:
-        """
-        컨텍스트에서 헤더를 찾습니다.
-        """
-        # 지역명 패턴 찾기
-        region_pattern = r'([가-힣]+(?:시|도|군|구|시|읍|면))'
-        region_match = re.search(region_pattern, context)
-        
-        if region_match:
-            region_name = region_match.group(1)
-            # 헤더 정규화 함수
-            def normalize(text):
-                normalized = re.sub(r'[^\w가-힣]', '_', text)
-                normalized = re.sub(r'_+', '_', normalized)
-                normalized = normalized.strip('_')
-                return normalized if normalized else 'column'
-            
-            normalized_region = normalize(region_name)
-            
-            # 행 헤더에서 찾기
-            if normalized_region in headers_info.get('row_map', {}):
-                # 열 헤더도 찾기 (퍼센트인지, 숫자인지 등)
-                if '%' in number_text:
-                    # 퍼센트 관련 헤더 찾기
-                    for col in headers_info.get('columns', []):
-                        if '증감' in col['header'] or '증감률' in col['header'] or '%' in col['header']:
-                            return f"{normalized_region}_{col['normalized']}"
-                else:
-                    # 일반 숫자 헤더 찾기
-                    for col in headers_info.get('columns', []):
-                        if col['normalized'] not in ['시도', '시·도']:
-                            return f"{normalized_region}_{col['normalized']}"
-        
-        # 헤더 키워드로 찾기
-        for col in headers_info.get('columns', []):
-            if col['header'] in context or any(keyword in context for keyword in ['증감', '증감률', '생산', '수주']):
-                return col['normalized']
-        
-        return None
-    
-    def generate_html_template_from_excel(
-        self,
-        image_path: str,
-        template_name: str,
-        sheet_name: str,
-        header_parser=None
-    ) -> str:
-        """
-        이미지와 엑셀 헤더 정보를 사용하여 HTML 템플릿을 생성합니다.
+        스크린샷에서 템플릿을 생성하고 저장합니다.
         
         Args:
-            image_path: 이미지 파일 경로
-            template_name: 생성할 템플릿 이름
+            screenshot_path: 스크린샷 이미지 경로
             sheet_name: 시트 이름
-            header_parser: ExcelHeaderParser 객체 (선택사항)
+            output_path: 출력 파일 경로 (선택적)
+            base_template_path: 기본 템플릿 경로 (선택적)
             
         Returns:
             생성된 HTML 템플릿 문자열
         """
-        # 이미지 크기 가져오기
-        img = Image.open(image_path)
-        image_width, image_height = img.size
+        template_html = self.generate_template(screenshot_path, sheet_name, base_template_path)
         
-        # 텍스트 추출
-        text_data = self.extract_text_from_image(image_path)
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(template_html)
         
-        if not text_data:
-            # 텍스트가 없으면 기본 템플릿 생성
-            return self._generate_default_template(template_name)
-        
-        # 레이아웃 분석
-        layout = self.analyze_layout(text_data, image_width, image_height)
-        
-        # HTML 생성
-        html_parts = []
-        html_parts.append('<!DOCTYPE html>')
-        html_parts.append('<html lang="ko">')
-        html_parts.append('<head>')
-        html_parts.append('    <meta charset="UTF-8">')
-        html_parts.append('    <meta name="viewport" content="width=device-width, initial-scale=1.0">')
-        html_parts.append(f'    <title>{template_name}</title>')
-        html_parts.append('    <style>')
-        html_parts.append(self._generate_css())
-        html_parts.append('    </style>')
-        html_parts.append('</head>')
-        html_parts.append('<body>')
-        
-        # 본문 생성 (헤더 파서 전달)
-        html_parts.append(self._generate_body_content_with_headers(
-            text_data, layout, sheet_name, header_parser
-        ))
-        
-        html_parts.append('</body>')
-        html_parts.append('</html>')
-        
-        return '\n'.join(html_parts)
-    
-    def _generate_body_content_with_headers(
-        self,
-        text_data: List[Dict],
-        layout: Dict,
-        sheet_name: str,
-        header_parser=None
-    ) -> str:
-        """헤더 파서를 사용하여 본문 내용 생성"""
-        content_parts = []
-        
-        # 텍스트를 y 좌표 기준으로 정렬
-        sorted_text = sorted(text_data, key=lambda x: (x['bbox'][1], x['bbox'][0]))
-        
-        current_y = None
-        current_line = []
-        
-        for item in sorted_text:
-            y = item['bbox'][1]
-            text = item['text']
-            
-            # 같은 줄인지 판단 (y 좌표 차이가 작으면)
-            if current_y is None or abs(y - current_y) < 20:
-                current_line.append(item)
-                if current_y is None:
-                    current_y = y
-            else:
-                # 이전 줄 처리
-                if current_line:
-                    line_html = self._process_line_with_headers(current_line, sheet_name, header_parser)
-                    if line_html:
-                        content_parts.append(line_html)
-                
-                # 새 줄 시작
-                current_line = [item]
-                current_y = y
-        
-        # 마지막 줄 처리
-        if current_line:
-            line_html = self._process_line_with_headers(current_line, sheet_name, header_parser)
-            if line_html:
-                content_parts.append(line_html)
-        
-        return '\n    '.join(content_parts) if content_parts else '    <div class="content-text">템플릿 내용이 여기에 표시됩니다.</div>'
-    
-    def _process_line_with_headers(self, line_items: List[Dict], sheet_name: str, header_parser=None) -> str:
-        """헤더 파서를 사용하여 한 줄의 텍스트를 HTML로 변환"""
-        if not line_items:
-            return ''
-        
-        # 텍스트 합치기
-        line_text = ' '.join([item['text'] for item in line_items])
-        
-        # 숫자나 데이터로 보이는 부분을 마커로 변환 (헤더 파서 사용)
-        processed_text = self._replace_with_markers(line_text, sheet_name, header_parser)
-        
-        # 제목인지 본문인지 판단
-        if len(line_text) < 50 and any(keyword in line_text for keyword in ['제목', '제', '장', '절']):
-            return f'    <div class="section-title">{processed_text}</div>'
-        else:
-            return f'    <div class="content-text">{processed_text}</div>'
-    
-    def _generate_default_template(self, template_name: str) -> str:
-        """기본 템플릿 생성 (텍스트 추출 실패 시)"""
-        return f"""<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{template_name}</title>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        
-        body {{
-            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-            line-height: 1.6;
-            color: #000;
-            background-color: #fff;
-            padding: 30px 40px;
-            max-width: 1000px;
-            margin: 0 auto;
-            font-size: 14px;
-        }}
-        
-        .content-text {{
-            font-size: 14px;
-            margin-bottom: 12px;
-            text-align: justify;
-            line-height: 1.7;
-            color: #000;
-        }}
-    </style>
-</head>
-<body>
-    <div class="content-text">템플릿 내용을 수동으로 편집해주세요.</div>
-    <div class="content-text">데이터 마커 형식: {{시트명:셀주소}} 또는 {{시트명:셀주소:계산식}}</div>
-</body>
-</html>"""
+        return template_html
 

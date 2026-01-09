@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{시트명:문서제목} - {시트명:서브섹션제목}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #fff;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .document-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 30px 0 15px 0;
+            color: #2c3e50;
+        }
+        
+        .subsection-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            color: #34495e;
+        }
+        
+        .content-text {
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: justify;
+            line-height: 1.9;
+        }
+        
+        .content-text strong {
+            font-weight: bold;
+        }
+        
+        .highlight-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .highlight-box-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .region-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .region-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .industry-list {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+        
+        .industry-item {
+            margin-bottom: 5px;
+        }
+        
+        .percentage {
+            font-weight: bold;
+        }
+        
+        .percentage.positive {
+            color: #27ae60;
+        }
+        
+        .percentage.negative {
+            color: #e74c3c;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table caption {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: left;
+            color: #2c3e50;
+        }
+        
+        thead {
+            background-color: #34495e;
+            color: #fff;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2c3e50;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        .region-name-cell {
+            text-align: left;
+            font-weight: 500;
+            padding-left: 12px;
+        }
+        
+        .data-cell {
+            font-weight: 500;
+        }
+        
+        .data-cell.positive {
+            color: #27ae60;
+        }
+        
+        .data-cell.negative {
+            color: #e74c3c;
+        }
+        
+        .source {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 20px;
+            text-align: right;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- 문서 제목: SheetConfig에서 가져옴 -->
+    <div class="document-title">{시트명:문서제목}</div>
+    
+    <!-- 섹션 제목: SheetConfig에서 가져옴 -->
+    {시트명:섹션제목_마커}
+    
+    <!-- 서브섹션 제목: SheetConfig에서 가져옴 -->
+    {시트명:서브섹션제목_마커}
+    
+    <!-- 첫 번째 문단: 전국 증감률에 따라 상위/하위 시도 자동 선택 -->
+    <div class="content-text">
+        {시트명:서브섹션제목}은 {시트명:첫문단시도1_이름}({시트명:첫문단시도1_산업1_이름}, {시트명:첫문단시도1_산업2_이름}), {시트명:첫문단시도2_이름}({시트명:첫문단시도2_산업1_이름}, {시트명:첫문단시도2_산업2_이름}), {시트명:첫문단시도3_이름}({시트명:첫문단시도3_산업1_이름}, {시트명:첫문단시도3_산업2_이름}) 등 <strong>{시트명:첫문단시도수}</strong>개 시도에서 전년동분기대비 {시트명:전국_증감방향}.
+    </div>
+    
+    <!-- 두 번째 문단: 기준 분기 전국 증감률 -->
+    <div class="content-text">
+        <strong>{시트명:기준연도}</strong>년 <strong>{시트명:기준분기}</strong>분기 전국 {시트명:서브섹션제목}은 {시트명:전국_산업1_이름}, {시트명:전국_산업2_이름} 등의 생산이 {시트명:전국_증감방향_동사} 전년동분기대비 <strong><span class="percentage {시트명:전국_증감방향_클래스}">{시트명:전국_증감률}</span></strong> {시트명:전국_증감방향}.
+    </div>
+    
+    <!-- 세 번째 문단: 상위/하위 시도 비교 -->
+    <div class="content-text">
+        {시트명:상위시도1_이름}(<strong><span class="percentage positive">{시트명:상위시도1_증감률}</span></strong>), {시트명:상위시도2_이름}(<strong><span class="percentage positive">{시트명:상위시도2_증감률}</span></strong>), {시트명:상위시도3_이름}(<strong><span class="percentage positive">{시트명:상위시도3_증감률}</span></strong>)는 {시트명:상위시도1_산업1_이름}, {시트명:상위시도1_산업2_이름} 등의 생산이 늘어 {시트명:상위시도1_증감방향}하였으며, {시트명:하위시도1_이름}(<strong><span class="percentage negative">{시트명:하위시도1_증감률}</span></strong>), {시트명:하위시도2_이름}(<strong><span class="percentage negative">{시트명:하위시도2_증감률}</span></strong>), {시트명:하위시도3_이름}(<strong><span class="percentage negative">{시트명:하위시도3_증감률}</span></strong>)은 {시트명:하위시도1_산업1_이름}, {시트명:하위시도1_산업2_이름}, {시트명:하위시도1_산업3_이름} 등의 생산이 줄어 {시트명:하위시도1_증감방향}.
+    </div>
+    
+    <!-- 주요 증감지역 및 업종 박스 -->
+    <div class="highlight-box">
+        <div class="highlight-box-title">&lt; 주요 증감지역 및 업종 &gt;</div>
+        
+        <!-- 전국 -->
+        <div class="region-item">
+            <span class="region-name">{시트명:전국_이름}({시트명:전국_증감률}):</span>
+            <div class="industry-list">
+                <div class="industry-item">{시트명:전국_산업1_이름}(<span class="percentage {시트명:전국_산업1_증감방향_클래스}">{시트명:전국_산업1_증감률}</span>), {시트명:전국_산업2_이름}(<span class="percentage {시트명:전국_산업2_증감방향_클래스}">{시트명:전국_산업2_증감률}</span>), {시트명:전국_산업3_이름}(<span class="percentage {시트명:전국_산업3_증감방향_클래스}">{시트명:전국_산업3_증감률}</span>)</div>
+            </div>
+        </div>
+        
+        <!-- 상위 3개 시도: 동적 생성 -->
+        {시트명:상위시도_리스트}
+        
+        <!-- 하위 3개 시도: 동적 생성 -->
+        {시트명:하위시도_리스트}
+    </div>
+    
+    <!-- 동적 표 생성 -->
+    {시트명:동적표}
+    
+    <!-- 출처 -->
+    <div class="source">
+        자료: 통계청 국가통계포털(KOSIS), 광업제조업동향조사
+    </div>
+</body>
+</html>
+
