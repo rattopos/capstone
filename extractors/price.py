@@ -88,13 +88,21 @@ class PriceExtractor(BaseExtractor):
         
         region_col = config.get('region_col', 0)
         level_col = config.get('level_col', 1)
+        name_col = config.get('name_col', 3)  # 분류이름 컬럼
         total_code = config.get('total_code', '총지수')
         result = {}
         
+        # 4개 분기 추출 (테이블 열 순서와 일치)
+        q2_q = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        q2_y = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        q3_q = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        q3_y = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        
         quarters = [
-            (self.current_year - 1, self.current_quarter),
-            (self.current_year, self.current_quarter - 1 if self.current_quarter > 1 else 4),
-            (self.current_year, self.current_quarter),
+            (self.current_year - 1, self.current_quarter),  # 전년동분기
+            (q2_y, q2_q),  # 2분기 전
+            (q3_y, q3_q),  # 직전 분기
+            (self.current_year, self.current_quarter),  # 현재 분기
         ]
         
         for year, quarter in quarters:
@@ -118,8 +126,20 @@ class PriceExtractor(BaseExtractor):
                     if region not in ALL_REGIONS or region in quarter_data:
                         continue
                     
+                    # 물가 시트: level_col은 0이고, name_col에서 '총지수' 확인
                     level = df.iloc[row_idx, level_col]
-                    if pd.isna(level) or str(level).strip() != total_code:
+                    name = str(df.iloc[row_idx, name_col]).strip() if name_col and name_col < len(df.columns) else ''
+                    
+                    # level이 0이고 name이 '총지수'인 행 또는 level_col 자체가 total_code인 행
+                    is_total_row = False
+                    if name == total_code:
+                        is_total_row = True
+                    elif not pd.isna(level) and str(level).strip() == total_code:
+                        is_total_row = True
+                    elif not pd.isna(level) and str(level).strip() == '0' and name == total_code:
+                        is_total_row = True
+                    
+                    if not is_total_row:
                         continue
                     
                     curr_val = self.safe_float(df.iloc[row_idx, current_col])
@@ -230,6 +250,7 @@ class PriceExtractor(BaseExtractor):
         
         region_col = config.get('region_col', 0)
         level_col = config.get('level_col', 1)
+        name_col = config.get('name_col', 3)
         total_code = config.get('total_code', '총지수')
         
         for row_idx in range(len(df)):
@@ -239,8 +260,17 @@ class PriceExtractor(BaseExtractor):
                 if region not in ALL_REGIONS or region in result:
                     continue
                 
+                # 물가 시트: level_col이 0이고, name_col에서 '총지수' 확인
                 level = df.iloc[row_idx, level_col]
-                if pd.isna(level) or str(level).strip() != total_code:
+                name = str(df.iloc[row_idx, name_col]).strip() if name_col and name_col < len(df.columns) else ''
+                
+                is_total_row = False
+                if name == total_code:
+                    is_total_row = True
+                elif not pd.isna(level) and str(level).strip() == total_code:
+                    is_total_row = True
+                
+                if not is_total_row:
                     continue
                 
                 prev_val = self.safe_float(df.iloc[row_idx, prev_col])

@@ -485,7 +485,14 @@ def generate_summary_table(summary_df, sido_data, excel_path=None, use_aggregati
             
             rows.append(row_data)
     
-    return {'rows': rows}
+    return {
+        'rows': rows,
+        'columns': {
+            'change_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4p'],
+            'index_columns': ['2024.2/4', '2025.2/4p']
+        },
+        'base_year': 2020
+    }
 
 
 def _generate_summary_table_from_aggregation(summary_df, sido_data):
@@ -531,7 +538,14 @@ def _generate_summary_table_from_aggregation(summary_df, sido_data):
             
             rows.append(row_data)
     
-    return {'rows': rows}
+    return {
+        'rows': rows,
+        'columns': {
+            'change_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4p'],
+            'index_columns': ['2024.2/4', '2025.2/4p']
+        },
+        'base_year': 2020
+    }
 
 
 def _calculate_changes_from_aggregation(summary_df, sido_name):

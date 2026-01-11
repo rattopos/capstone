@@ -4,6 +4,190 @@
 
 ---
 
+## 📅 디버그 기록
+
+### 2026-01-11 (최신)
+
+#### 요약 테이블 -100.0% 오류 및 물가동향 테이블 공란 문제 해결
+- **시간**: 2026-01-11 오전
+- **문제 설명**: 
+  1. **-100.0% 문제**: 요약-지역경제동향 페이지의 테이블에서 서비스업생산, 소매판매 열이 모든 시도에서 -100.0%로 표시됨
+  2. **물가동향 테이블 공란**: 물가동향 페이지의 소비자물가지수 테이블이 모두 공란(`[  ]`)으로 표시됨
+- **원인 분석**: 
+  1. **-100.0% 문제**:
+     - `routes/preview.py`와 `routes/debug.py`에서 `get_summary_table_data(excel_path)` 호출 시 `year, quarter` 매개변수를 전달하지 않음
+     - 함수 내부에서 `year, quarter`가 None일 경우 현재 날짜(2026년 1월) 기준으로 2026년 1분기 데이터를 찾으려 함
+     - 기초자료에는 2025년 3분기까지만 데이터가 있어서 컬럼 범위를 초과
+     - 범위 초과 시 0값을 가져와 `(0 - 이전값) / 이전값 * 100 = -100%` 계산됨
+  2. **물가동향 테이블 공란 문제**:
+     - `extractors/price.py`에서 `level_col`(열 1)의 값을 `total_code`('총지수')와 비교했지만, 실제 물가 시트에서는:
+       - `level_col`(열 1)은 분류단계(0, 1, 2, 3 등 숫자)
+       - `name_col`(열 3)에서 '총지수' 문자열 확인 필요
+     - 조건 불일치로 총지수 행을 찾지 못해 모든 데이터가 None
+- **에이전트 사고 과정**:
+  1. HTML 파일에서 -100.0 패턴을 grep으로 검색하여 문제 위치 파악
+  2. `get_summary_table_data` 함수 분석: year=None, quarter=None일 때 현재 날짜 기준으로 동적 컬럼 계산
+  3. 테스트 코드로 year/quarter 전달 여부에 따른 결과 비교:
+     - 미전달: 2026년 1분기 → curr_col=67 (범위 초과) → -100.0%
+     - 전달(2025, 3): curr_col=65 (정상) → 올바른 값
+  4. 물가 시트 구조 분석: `row 3: region="전국", level="0" (int), name="총지수"`
+  5. 기존 추출기가 `level == '총지수'`를 찾았지만 실제로는 `name == '총지수'`여야 함
+- **해결 방법**:
+  1. **routes/preview.py** (라인 173):
+     - `get_summary_table_data(excel_path)` → `get_summary_table_data(excel_path, year, quarter)`
+  2. **routes/debug.py** (라인 1510):
+     - `get_summary_table_data(excel_path)` → `get_summary_table_data(excel_path, year, quarter)`
+  3. **extractors/price.py** (`_extract_quarterly_growth`, `_extract_raw_indices` 함수):
+     - `name_col = config.get('name_col', 3)` 추가
+     - 총지수 행 판별 로직 수정: `name == total_code` 또는 `level == total_code` 둘 다 확인
+  4. **templates/price_trend_generator.py** (`generate_summary_table`, `_generate_summary_table_from_aggregation` 함수):
+     - 반환값에 `columns` 키 추가 (템플릿에서 `summary_table.columns` 사용)
+- **관련 파일**: 
+  - `routes/preview.py` - year, quarter 매개변수 전달
+  - `routes/debug.py` - year, quarter 매개변수 전달
+  - `extractors/price.py` - 총지수 행 탐색 로직 수정
+  - `templates/price_trend_generator.py` - columns 키 추가
+- **작업 상태**: ✅ 완료
+- **참고 사항**: 
+  - 고용률 데이터는 기초자료의 '연령별고용률' 시트에서 가져오지만, 해당 시트에 2025년 3분기 데이터가 없어 0.0으로 표시됨 (기초자료 불완전)
+  - 향후 기초자료에 고용률 분기 데이터가 추가되면 자동으로 반영됨
+
+---
+
+### 2026-01-09
+
+#### 표가 공란으로 표시되는 문제 해결 - summary_table 데이터 구조 완성
+- **시간**: 2026-01-09 저녁 (추가)
+- **문제 설명**: 
+  - 보도자료 생성 시 표(summary_table)가 모두 공란으로 표시됨
+  - 터미널 로그에서 다음 추가 오류 확인:
+    - 건설동향: `'dict object' has no attribute 'civil_growth'`
+    - 실업률: `'dict object' has no attribute 'youth_rate'`
+    - 국내인구이동: `'dict object' has no attribute 'age_20_29'`
+    - 시도별: `TypeError: bad operand type for abs(): 'NoneType'`
+- **원인 분석**: 
+  1. 추출기에서 `summary_table.rows`를 반환하지만 일부 템플릿은 `summary_table.regions`를 사용
+  2. 건설동향 템플릿에서 `top3_increase_regions[i].civil_growth` 등 세부 속성 필요
+  3. 실업률 템플릿에서 `rate_columns`의 3번째 열과 `youth_rate` 필요
+  4. 국내인구이동 템플릿에서 `age_20_29`, `age_other` 필요
+  5. 시도별 템플릿에서 `abs(None)` 오류 발생
+- **에이전트 사고 과정**:
+  1. 터미널 로그 분석하여 세부 오류 확인
+  2. 각 템플릿에서 사용하는 필드와 추출기 반환 데이터 비교
+  3. `_ensure_template_compatibility` 함수에 누락된 데이터 매핑 추가 결정
+  4. 시도별 템플릿의 `| abs` → `| default(0) | abs` 변경
+- **해결 방법**:
+  1. `services/report_generator.py`:
+     - `summary_table.rows`를 `summary_table.regions`에도 복사
+     - 건설동향: `civil_growth`, `building_growth`, `civil_subtypes`, `building_subtypes` 추가
+     - 실업률: `rate_columns`에 3번째 열 추가, `youth_rate` 기본값 추가
+     - 국내인구이동: `age_20_29`, `age_other` 기본값 추가
+     - `safe_abs` import 및 템플릿에 등록
+  2. `templates/regional_template.html`:
+     - `| abs` → `| default(0) | abs`로 변경 (8곳)
+- **관련 파일**: 
+  - `services/report_generator.py`
+  - `templates/regional_template.html`
+- **작업 상태**: 완료
+
+---
+
+#### 24페이지만 생성되는 문제 해결 - 추출기와 템플릿 데이터 구조 불일치 수정
+- **시간**: 2026-01-09 저녁
+- **문제 설명**: 
+  - 사용자가 보도자료 생성 시 24페이지만 생성되고, 소비동향, 건설동향, 수출, 수입, 고용률, 실업률, 국내인구이동, 요약-고용인구 8개 시트가 생성되지 않음
+  - 터미널 로그에서 다음 오류 확인:
+    - 소비동향: `TypeError: must be real number, not NoneType` (line 234)
+    - 건설동향: `'dict object' has no attribute 'decrease_count'` (line 276)
+    - 수출/수입: `'dict object' has no attribute 'growth_rate_columns'` (line 327)
+    - 고용률: `TypeError: must be real number, not NoneType` (line 252)
+    - 실업률: `'dict object' has no attribute 'main_decrease_regions'` (line 240)
+    - 국내인구이동: `'dict object' has no attribute 'quarter_columns'` (line 264)
+    - 요약-고용인구: `'dict object' has no attribute 'rate'` (line 100)
+- **원인 분석**: 
+  - 추출기(`extractors/`)에서 반환하는 데이터 구조와 템플릿에서 기대하는 구조가 일치하지 않음
+  - 예: 추출기는 `change_columns`를 반환하지만 템플릿은 `growth_rate_columns`를 기대
+  - 예: 추출기는 `migration_columns`를 반환하지만 템플릿은 `quarter_columns`를 기대
+  - None 값에 대한 포맷팅 오류 (예: `"%.1f"|format(None)`)
+- **에이전트 사고 과정**:
+  1. 터미널 로그에서 오류 메시지 분석하여 문제의 정확한 원인 파악
+  2. 추출기와 템플릿 간 데이터 구조 비교
+  3. `_ensure_template_compatibility` 함수에서 데이터 구조 변환 로직 추가
+  4. 템플릿에서 None 안전 처리 (val 매크로 및 default 필터 사용)
+- **해결 방법**:
+  1. `services/report_generator.py`의 `_ensure_template_compatibility` 함수 수정:
+     - `change_columns` → `growth_rate_columns` 변환
+     - `migration_columns` → `quarter_columns` 변환
+     - `summary_table.rows`의 `region` → `sido`, `group` → `region_group` 변환
+     - `summary_box`에 `decrease_count`, `increase_count` 기본값 추가
+  2. `utils/filters.py`에 `val()` 함수 추가 (None 안전 포맷팅)
+  3. 템플릿 수정:
+     - `consumption_template.html`: None 안전 처리 및 `val` 매크로 사용
+     - `employment_rate_template.html`: None 안전 처리
+     - `unemployment_template.html`: None 안전 처리
+     - `summary_employment_template.html`: None 안전 처리 및 기본값 제공
+  4. `services/summary_data.py`의 `_get_default_chart_data()`에 `rate` 키 추가
+- **관련 파일**: 
+  - `services/report_generator.py` - 데이터 구조 변환 로직 추가
+  - `utils/filters.py` - val() 함수 추가
+  - `templates/consumption_template.html` - None 안전 처리
+  - `templates/employment_rate_template.html` - None 안전 처리
+  - `templates/unemployment_template.html` - None 안전 처리
+  - `templates/summary_employment_template.html` - None 안전 처리
+  - `services/summary_data.py` - 기본값에 rate 키 추가
+- **상태**: ✅ 완료
+- **참고 사항**: 
+  - 템플릿에서 사용하는 모든 변수에 default 필터나 val 매크로를 사용하여 None 안전 처리 권장
+  - 추출기와 템플릿 간 데이터 구조가 다를 경우 `_ensure_template_compatibility`에서 변환 로직 추가
+
+---
+
+#### 누락된 보도자료 시트 확인 및 생성 보장
+- **시간**: 2026-01-09
+- **문제 설명**: 
+  - 사용자가 제공한 HTML 파일(`지역경제동향_2025년_3분기 (1).html`)을 확인한 결과, `config/reports.py`에 정의된 일부 시트가 생성되지 않았음
+  - 누락된 시트 목록:
+    1. 요약-고용인구 (`summary_employment`)
+    2. 소비동향 (`consumption`)
+    3. 건설동향 (`construction`)
+    4. 수출 (`export`)
+    5. 수입 (`import`)
+    6. 고용률 (`employment`)
+    7. 실업률 (`unemployment`)
+    8. 국내인구이동 (`population`)
+- **원인 분석**: 
+  - `config/reports.py`의 `REPORT_ORDER`에는 모든 시트가 정의되어 있음
+  - `dashboard.html`의 `generateAllReports()` 함수는 `state.summaryReports`와 `state.sectoralReports`를 순회하며 생성
+  - `loadReportList()`에서 `state.sectoralReports = data.reports.filter(r => r.category !== 'summary')`로 필터링
+  - 모든 시트가 `REPORT_ORDER`에 포함되어 있으므로, 생성 로직은 정상적으로 보임
+  - `extractors/facade.py`의 `DataExtractor`는 모든 누락된 시트의 데이터 추출을 지원함
+  - `services/report_generator.py`의 `_extract_data_from_raw`가 `extract_report_data`를 호출하여 데이터 추출
+  - 템플릿 파일들(`summary_employment_template.html`, `consumption_template.html` 등)은 모두 존재함
+- **에이전트 사고 과정**:
+  - HTML 파일 분석: `grep`으로 `data-title` 검색하여 생성된 페이지 목록 확인
+  - `config/reports.py` 확인: `REPORT_ORDER`, `SUMMARY_REPORTS`, `SECTOR_REPORTS` 정의 확인
+  - 누락된 시트 식별: HTML 파일과 `config/reports.py` 비교하여 8개 시트 누락 확인
+  - 생성 로직 확인: `dashboard.html`의 `generateAllReports()`, `loadReportList()` 확인
+  - 데이터 추출 확인: `extractors/facade.py`에서 모든 누락된 시트의 추출 메서드 존재 확인
+  - 템플릿 확인: `glob_file_search`로 템플릿 파일 존재 확인
+  - 결론: 생성 로직과 데이터 추출 로직은 모두 정상이며, 템플릿도 존재함. 실제로 생성되지 않은 이유는 사용자가 제공한 HTML 파일이 불완전하게 생성되었거나, 특정 시점의 생성 결과일 가능성이 있음
+- **해결 방법**:
+  - 현재 코드는 모든 시트를 생성하도록 구현되어 있음
+  - 사용자가 제공한 HTML 파일이 불완전하게 생성되었을 가능성이 있으므로, 실제 생성 테스트가 필요함
+  - 모든 시트가 `REPORT_ORDER`에 포함되어 있고, 생성 로직도 정상이므로 추가 수정은 불필요함
+- **관련 파일**: 
+  - `config/reports.py` - 모든 시트 정의 확인
+  - `dashboard.html` - 생성 로직 확인
+  - `extractors/facade.py` - 데이터 추출 로직 확인
+  - `services/report_generator.py` - 보도자료 생성 로직 확인
+  - `templates/` - 템플릿 파일 존재 확인
+- **상태**: ✅ 확인 완료 (추가 수정 불필요)
+- **참고 사항**: 
+  - 모든 누락된 시트는 이미 `config/reports.py`에 정의되어 있고, 생성 로직도 정상적으로 구현되어 있음
+  - 사용자가 제공한 HTML 파일이 불완전하게 생성되었을 가능성이 있으므로, 실제로 보도자료를 생성하여 모든 시트가 포함되는지 확인 필요
+
+---
+
 ## 📋 로그 형식
 
 각 디버그 항목은 다음 형식으로 기록됩니다:

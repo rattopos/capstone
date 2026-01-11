@@ -170,7 +170,7 @@ def generate_summary_preview():
         
         elif report_id == 'summary_overview':
             report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
-            report_data['table_data'] = get_summary_table_data(excel_path)
+            report_data['table_data'] = get_summary_table_data(excel_path, year, quarter)
             report_data['page_number'] = 1
         
         elif report_id == 'summary_production':

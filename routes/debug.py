@@ -1507,7 +1507,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
         elif report_id == 'summary_overview':
             try:
                 report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
-                report_data['table_data'] = get_summary_table_data(excel_path)
+                report_data['table_data'] = get_summary_table_data(excel_path, year, quarter)
                 report_data['page_number'] = 1
             except Exception as e:
                 import traceback
