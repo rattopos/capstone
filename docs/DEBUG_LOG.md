@@ -6,7 +6,66 @@
 
 ## 📅 디버그 기록
 
-### 2026-01-11 (최신)
+### 2026-01-11 오후 (최신)
+
+#### 고용률/건설동향 데이터 추출 오류 수정
+- **시간**: 2026-01-11 오후
+- **문제 설명**: 
+  1. **고용률 0.0% 문제**: 요약 테이블 및 시도별 보도자료에서 고용률이 0.0%로 표시됨
+  2. **건설동향 토목/건축 0.0% 문제**: 건설동향 페이지에서 토목/건축 세부 증감률이 0.0%로 표시됨
+  3. **건설 요약 데이터 문제**: 요약-소비건설 페이지에서 건설 데이터가 누락됨
+- **원인 분석**: 
+  1. **고용률 시트 이름 불일치**:
+     - 코드에서 `'고용률'` 시트를 찾으려 했으나 실제 시트 이름은 `'연령별고용률'`
+     - 시트를 찾지 못해 기본값 0.0% 반환
+  2. **건설 시트 설정 누락**:
+     - `RAW_SHEET_BASE_COLS`에 `'건설 (공표자료)'` 시트 설정이 없음
+     - `_extract_construction_chart_data` 함수가 존재하지 않는 `F'(건설)집계` 시트를 참조
+     - 건설 시트의 열 매핑이 다른 시트와 다름 (col68=2025 3분기, col64=2024 3분기)
+  3. **토목/건축 데이터 추출 누락**:
+     - `extractors/consumption.py`에서 토목(code='2')/건축(code='1') 데이터 추출 로직 없음
+     - level/code 값이 문자열 타입(`'0'`, `'1'`)인데 정수로 비교
+- **에이전트 사고 과정**:
+  1. 테스트 스크립트로 요약 테이블 데이터 확인 → 고용률 정상 추출 실패 발견
+  2. Excel 시트 목록 확인 → `'고용률'` 시트 없음, `'연령별고용률'` 시트 존재 확인
+  3. 건설 시트 헤더 분석 → col64=2024 3/4, col68=2025 3/4p 열 매핑 확인
+  4. 건설 시트 데이터 타입 분석 → level, code가 문자열 `'0'`, `'1'` 타입임 확인
+  5. 토목(code='2')/건축(code='1') 행 구조 분석 → 증감률 계산 로직 설계
+- **해결 방법**:
+  1. **services/summary_data.py**:
+     - `RAW_SHEET_BASE_COLS`에 `'연령별고용률'` 설정 추가 (기존 `'고용률'` 대체)
+     - `RAW_SHEET_BASE_COLS`에 `'건설 (공표자료)'` 설정 추가 (base_year=2024, base_quarter=3, base_col=64)
+     - `_extract_construction_chart_data` 함수 수정: `'건설 (공표자료)'` 시트 사용, 동적 열 계산, 문자열 비교(`level == '0' and code == '0'`)
+     - 중복 방지를 위한 `seen_regions` 집합 추가
+  2. **extractors/config.py**:
+     - `RAW_SHEET_MAPPING`에서 `"고용률"` → `"연령별고용률"` 변경
+     - `RAW_SHEET_QUARTER_COLS`에서 `"연령별고용률"` 키 사용
+  3. **extractors/consumption.py**:
+     - `extract_construction_data`에 토목/건축 데이터 추가 (`civil_growth`, `building_growth`)
+     - `_extract_civil_building_data` 함수 추가: 토목(code='1')/건축(code='2') 증감률 추출
+  4. **extractors/employment.py**:
+     - `extract_employment_rate_data`에서 `sheet_name='연령별고용률'` 사용
+  5. **templates/raw_data_extractor.py**:
+     - `RAW_SHEET_MAPPING`, `RAW_SHEET_QUARTER_COLS` 수정
+     - `extract_employment_rate_report_data`, `_extract_regional_indicator`, `_get_time_series_data`, `_extract_regional_summary_table`에서 `'연령별고용률'` 시트 사용
+- **관련 파일**: 
+  - `services/summary_data.py` - 고용률/건설 시트 설정 및 추출 로직
+  - `extractors/config.py` - 시트 매핑 및 열 설정
+  - `extractors/consumption.py` - 토목/건축 데이터 추출
+  - `extractors/employment.py` - 고용률 시트 이름 변경
+  - `templates/raw_data_extractor.py` - 시트 매핑 및 추출 로직
+- **테스트 결과**:
+  - 고용률: 전국 0.2%, 서울 0.5% (정상)
+  - 건설동향: 전국 26.5%, 토목 11.7%, 건축 65.6% (정상)
+  - 토목/건축 0.0% 발견: 0개 (해결됨)
+- **작업 상태**: ✅ 완료
+- **참고 사항**: 
+  - 소비(소매, 추가) 시트의 권역별 데이터(수도, 충청, 호남, 대경, 동남)는 원본 Excel에서 NaN이므로 코드로 해결 불가
+  - 건설 시트는 두 세트의 데이터가 있음 (계/건축/토목 vs 계/공공/민간/국내외국기관/민자), 중복 처리 필요
+
+---
+
+### 2026-01-11 (이전)
 
 #### 요약 테이블 -100.0% 오류 및 물가동향 테이블 공란 문제 해결
 - **시간**: 2026-01-11 오전

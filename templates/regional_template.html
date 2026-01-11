@@ -198,7 +198,7 @@
             {% set mfg_inc = production.manufacturing.increase_industries | default([]) %}
             {% set mfg_dec = production.manufacturing.decrease_industries | default([]) %}
             {% if production.manufacturing.direction == '감소' %}
-                {% if mfg_inc | length > 0 %}{{ mfg_inc | map(attribute='name') | join(', ') }}({% for i in mfg_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 늘었으나, {% endif %}{% if mfg_dec | length > 0 %}{{ mfg_dec | map(attribute='name') | join(', ') }}({% for i in mfg_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(production.manufacturing.total_growth_rate | abs) }}% 감소</span>
+                {% if mfg_inc | length > 0 %}{{ mfg_inc | map(attribute='name') | join(', ') }}({% for i in mfg_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 늘었으나, {% endif %}{% if mfg_dec | length > 0 %}{{ mfg_dec | map(attribute='name') | join(', ') }}({% for i in mfg_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format((production.manufacturing.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% else %}
                 {% if mfg_dec | length > 0 %}{{ mfg_dec | map(attribute='name') | join(', ') }}({% for i in mfg_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 줄었으나, {% endif %}{% if mfg_inc | length > 0 %}{{ mfg_inc | map(attribute='name') | join(', ') }}({% for i in mfg_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등에서 늘어 {% endif %}전년동분기대비 <span class="increase">{{ "%.1f"|format(production.manufacturing.total_growth_rate) }}% 증가</span>
             {% endif %}
@@ -211,7 +211,7 @@
             {% if production.service.direction == '증가' %}
                 {% if svc_dec | length > 0 %}{{ svc_dec | map(attribute='name') | join(', ') }}({% for i in svc_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄었으나, {% endif %}{% if svc_inc | length > 0 %}{{ svc_inc | map(attribute='name') | join(', ') }}({% for i in svc_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘어 {% endif %}전년동분기대비 <span class="increase">{{ "%.1f"|format(production.service.total_growth_rate) }}% 증가</span>
             {% else %}
-                {% if svc_inc | length > 0 %}{{ svc_inc | map(attribute='name') | join(', ') }}({% for i in svc_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘었으나, {% endif %}{% if svc_dec | length > 0 %}{{ svc_dec | map(attribute='name') | join(', ') }}({% for i in svc_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(production.service.total_growth_rate | abs) }}% 감소</span>
+                {% if svc_inc | length > 0 %}{{ svc_inc | map(attribute='name') | join(', ') }}({% for i in svc_inc %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 늘었으나, {% endif %}{% if svc_dec | length > 0 %}{{ svc_dec | map(attribute='name') | join(', ') }}({% for i in svc_dec %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format((production.service.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% endif %}
         </div>
         
@@ -228,7 +228,7 @@
                 {% elif has_decrease %}
                     {{ consumption_construction.retail.decrease_categories | map(attribute='name') | join(', ') }}({% for i in consumption_construction.retail.decrease_categories %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})등이 줄어
                 {% endif %}
-                전년동분기대비 <span class="decrease">{{ "%.1f"|format(consumption_construction.retail.total_growth_rate | abs) }}% 감소</span>
+                전년동분기대비 <span class="decrease">{{ "%.1f"|format((consumption_construction.retail.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% else %}
                 {% if has_decrease and has_increase %}
                     {{ consumption_construction.retail.decrease_categories | map(attribute='name') | join(', ') }}({% for i in consumption_construction.retail.decrease_categories %}{{ "%.1f"|format(i.growth_rate) }}%{% if not loop.last %}, {% endif %}{% endfor %})등이 줄었으나, {{ consumption_construction.retail.increase_categories[0].name }}({{ "%.1f"|format(consumption_construction.retail.increase_categories[0].growth_rate) }}%)이 늘어
@@ -262,7 +262,7 @@
                 {% else %}
                     <span class="placeholder" contenteditable="true"></span>(<span class="placeholder" contenteditable="true"></span>%)이 감소하여
                 {% endif %}
-                전년동분기대비 <span class="decrease">{{ "%.1f"|format(consumption_construction.construction.total_growth_rate | abs) }}% 감소</span>
+                전년동분기대비 <span class="decrease">{{ "%.1f"|format((consumption_construction.construction.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% endif %}
         </div>
         
@@ -278,7 +278,7 @@
             {% if export_import_price.export.direction == '증가' %}
                 {% if exp_dec | length > 0 %}{{ render_items(exp_dec) }}({{ render_rates(exp_dec) }}) 등이 줄었으나, {% endif %}{% if exp_inc | length > 0 %}{{ render_items(exp_inc) }}({{ render_rates(exp_inc) }}) 등이 늘어 {% endif %}전년동분기대비 <span class="increase">{{ "%.1f"|format(export_import_price.export.total_growth_rate) }}% 증가</span>
             {% else %}
-                {% if exp_inc | length > 0 %}{{ render_items(exp_inc) }}({{ render_rates(exp_inc) }}) 등이 늘었으나, {% endif %}{% if exp_dec | length > 0 %}{{ render_items(exp_dec) }}({{ render_rates(exp_dec) }}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(export_import_price.export.total_growth_rate | abs) }}% 감소</span>
+                {% if exp_inc | length > 0 %}{{ render_items(exp_inc) }}({{ render_rates(exp_inc) }}) 등이 늘었으나, {% endif %}{% if exp_dec | length > 0 %}{{ render_items(exp_dec) }}({{ render_rates(exp_dec) }}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format((export_import_price.export.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% endif %}
         </div>
         
@@ -287,7 +287,7 @@
             {% set imp_inc = export_import_price.import.increase_items | default([]) %}
             {% set imp_dec = export_import_price.import.decrease_items | default([]) %}
             {% if export_import_price.import.direction == '감소' %}
-                {% if imp_inc | length > 0 %}{{ render_items(imp_inc) }}({{ render_rates(imp_inc) }}) 등이 늘었으나, {% endif %}{% if imp_dec | length > 0 %}{{ render_items(imp_dec) }}({{ render_rates(imp_dec) }}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(export_import_price.import.total_growth_rate | abs) }}% 감소</span>
+                {% if imp_inc | length > 0 %}{{ render_items(imp_inc) }}({{ render_rates(imp_inc) }}) 등이 늘었으나, {% endif %}{% if imp_dec | length > 0 %}{{ render_items(imp_dec) }}({{ render_rates(imp_dec) }}) 등이 줄어 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format((export_import_price.import.total_growth_rate | default(0, true)) | abs) }}% 감소</span>
             {% else %}
                 {% if imp_dec | length > 0 %}{{ render_items(imp_dec) }}({{ render_rates(imp_dec) }}) 등이 줄었으나, {% endif %}{% if imp_inc | length > 0 %}{{ render_items(imp_inc) }}({{ render_rates(imp_inc) }}) 등이 늘어 {% endif %}전년동분기대비 <span class="increase">{{ "%.1f"|format(export_import_price.import.total_growth_rate) }}% 증가</span>
             {% endif %}
@@ -310,7 +310,7 @@
             {% if employment_migration.employment_rate.direction == '상승' %}
                 {% if emp_dec | length > 0 %}{% for g in emp_dec %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 하락하였으나, {% endif %}{% if emp_inc | length > 0 %}{% for g in emp_inc %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 올라 {% endif %}전년동분기대비 <span class="increase">{{ "%.1f"|format(employment_migration.employment_rate.total_change) }}%p 상승</span>
             {% else %}
-                {% if emp_inc | length > 0 %}{% for g in emp_inc %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 상승하였으나, {% endif %}{% if emp_dec | length > 0 %}{% for g in emp_dec %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 내려 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format(employment_migration.employment_rate.total_change | abs) }}%p 하락</span>
+                {% if emp_inc | length > 0 %}{% for g in emp_inc %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 상승하였으나, {% endif %}{% if emp_dec | length > 0 %}{% for g in emp_dec %}{{ g.name }}({{ "%.1f"|format(g.change) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등에서 내려 {% endif %}전년동분기대비 <span class="decrease">{{ "%.1f"|format((employment_migration.employment_rate.total_change | default(0, true)) | abs) }}%p 하락</span>
             {% endif %}
         </div>
         
@@ -321,7 +321,7 @@
             {% if employment_migration.population_migration.direction == '순유입' %}
                 인구는 {% if mig_out | length > 0 %}{% for g in mig_out %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유출되었으나, {% endif %}{% if mig_in | length > 0 %}{% for g in mig_in %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유입되어 {% endif %}<span class="increase">{{ "{:,}".format(employment_migration.population_migration.net_migration) }}명 순유입</span>
             {% else %}
-                인구는 {% if mig_in | length > 0 %}{% for g in mig_in %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유입되었으나, {% endif %}{% if mig_out | length > 0 %}{% for g in mig_out %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유출되어 {% endif %}<span class="decrease">{{ "{:,}".format(employment_migration.population_migration.net_migration | abs) }}명 순유출</span>
+                인구는 {% if mig_in | length > 0 %}{% for g in mig_in %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유입되었으나, {% endif %}{% if mig_out | length > 0 %}{% for g in mig_out %}{{ g.name }}({{ "{:,}".format(g.count) }}명){% if not loop.last %}, {% endif %}{% endfor %} 등에서 유출되어 {% endif %}<span class="decrease">{{ "{:,}".format((employment_migration.population_migration.net_migration | default(0, true)) | int | abs) }}명 순유출</span>
             {% endif %}
         </div>
         
@@ -352,16 +352,16 @@
                     {% for row in summary_table.rows %}
                     <tr>
                         <td class="period-col">{{ row.period }}</td>
-                        <td>{{ "%.1f"|format(row.manufacturing) }}</td>
-                        <td>{{ "%.1f"|format(row.service) }}</td>
-                        <td>{{ "%.1f"|format(row.retail) }}</td>
-                        <td>{{ "%.1f"|format(row.construction) }}</td>
-                        <td>{{ "%.1f"|format(row.export) }}</td>
-                        <td>{{ "%.1f"|format(row.import) }}</td>
-                        <td>{{ "%.1f"|format(row.consumer_price) }}</td>
-                        <td>{{ "%.1f"|format(row.employment_rate) }}</td>
-                        <td>{{ "%.1f"|format(row.migration_total) }}</td>
-                        <td>{{ "%.1f"|format(row.migration_20_29) }}</td>
+                        <td>{{ "%.1f"|format(row.manufacturing | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.service | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.retail | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.construction | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.export | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.import | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.consumer_price | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.employment_rate | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.migration_total | default(0, true)) }}</td>
+                        <td>{{ "%.1f"|format(row.migration_20_29 | default(0, true)) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

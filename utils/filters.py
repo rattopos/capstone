@@ -60,6 +60,19 @@ def safe_format(value, format_str="%.1f", default="N/A"):
         return default
 
 
+def val(value, format_str="%.1f", default="-"):
+    """템플릿에서 안전하게 값 출력 (None이면 '-' 반환)
+    
+    템플릿에서 {{ val(value) }} 형태로 사용
+    """
+    if is_missing(value):
+        return default
+    try:
+        return format_str % float(value)
+    except (ValueError, TypeError):
+        return str(value) if value else default
+
+
 def register_filters(app):
     """Flask 앱에 Jinja2 필터 등록"""
     app.jinja_env.filters['is_missing'] = is_missing

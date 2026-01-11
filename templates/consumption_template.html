@@ -227,18 +227,18 @@
         <div class="summary-box">
             <div class="headline">◆ 소매판매는 
                 {% for region in summary_box.main_decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.main_business }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.main_business | default('[  ]') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
             </div>
-            <div class="nationwide">□ 전국 소매판매({{ "%.1f"|format(nationwide_data.sales_index) }})는 {{ nationwide_data.main_businesses | map(attribute='name') | join(', ') }} 등의 판매가 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 감소</span></div>
+            <div class="nationwide">□ 전국 소매판매({{ val(nationwide_data.sales_index) }})는 {{ nationwide_data.main_businesses | map(attribute='name') | join(', ') | default('[  ]') }} 등의 판매가 줄어 전년동분기대비 <span class="decrease">{{ val(nationwide_data.growth_rate) }}% 감소</span></div>
             <div class="regional">○ 
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ increase_businesses_text }} 등의 판매가 늘어 <span class="increase">증가</span>하였으나, 
+                <span class="highlight">{{ region.region }}</span>({{ val(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {{ increase_businesses_text | default('[  ]') }} 등의 판매가 늘어 <span class="increase">증가</span>하였으나, 
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ decrease_businesses_text }} 등의 판매가 줄어 <span class="decrease">감소</span>
+                <span class="highlight">{{ region.region }}</span>({{ val(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}은 {{ decrease_businesses_text | default('[  ]') }} 등의 판매가 줄어 <span class="decrease">감소</span>
             </div>
         </div>
         
@@ -247,20 +247,22 @@
             <div class="title">&lt; 주요 증감지역 및 업태 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">·전 국( {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
+            <div class="item">·전 국( {{ val(nationwide_data.growth_rate) }}%): 
                 {% for business in nationwide_data.main_businesses[:3] %}
-                {{ business.name }}({{ "%.1f"|format(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {{ business.name }}({{ val(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% if not nationwide_data.main_businesses %}[  ]{% endif %}
             </div>
             
             <div class="separator"></div>
             
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
-                {% for business in region.businesses %}
-                {{ business.name }}({{ "%.1f"|format(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region }}( {{ val(region.growth_rate) }}%): 
+                {% for business in region.businesses | default([]) %}
+                {{ business.name }}({{ val(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% if not region.businesses %}[  ]{% endif %}
             </div>
             {% endfor %}
             
@@ -268,10 +270,11 @@
             
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
-                {% for business in region.businesses %}
-                {{ business.name }}({{ "%.1f"|format(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region }}({{ val(region.growth_rate) }}%): 
+                {% for business in region.businesses | default([]) %}
+                {{ business.name }}({{ val(business.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% if not region.businesses %}[  ]{% endif %}
             </div>
             {% endfor %}
         </div>

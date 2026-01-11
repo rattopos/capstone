@@ -19,9 +19,11 @@ RAW_SHEET_BASE_COLS = {
     '수출': {'base_year': 2025, 'base_quarter': 2, 'base_col': 68, 'region_col': 1, 'code_col': 5, 'total_code': '합계'},
     '수입': {'base_year': 2025, 'base_quarter': 2, 'base_col': 68, 'region_col': 1, 'code_col': 5, 'total_code': '합계'},
     '품목성질별 물가': {'base_year': 2025, 'base_quarter': 2, 'base_col': 56, 'region_col': 0, 'code_col': 3, 'total_code': '총지수'},
-    '고용률': {'base_year': 2025, 'base_quarter': 2, 'base_col': 66, 'region_col': 1, 'code_col': 3, 'total_code': '계'},
+    '연령별고용률': {'base_year': 2025, 'base_quarter': 2, 'base_col': 66, 'region_col': 1, 'code_col': 3, 'total_code': '계'},
     '실업자 수': {'base_year': 2025, 'base_quarter': 2, 'base_col': 61, 'region_col': 0, 'code_col': 1, 'total_code': '계'},
     '시도 간 이동': {'base_year': 2025, 'base_quarter': 2, 'base_col': 80, 'region_col': 1, 'code_col': 1, 'total_code': None},
+    # 건설 시트 - 열 구조가 다름 (2024 3Q = col64)
+    '건설 (공표자료)': {'base_year': 2024, 'base_quarter': 3, 'base_col': 64, 'region_col': 1, 'code_col': 3, 'total_code': 0, 'name_col': 4},
 }
 
 # 집계 시트별 기준 컬럼 설정 (2025년 2분기 기준)
@@ -83,7 +85,7 @@ def get_dynamic_raw_sheet_config(sheet_name: str, year: int, quarter: int) -> di
         'C 분석': '소비(소매, 추가)',
         'G 분석': '수출',
         'E(품목성질물가)분석': '품목성질별 물가',
-        'D(고용률)분석': '고용률',
+        'D(고용률)분석': '연령별고용률',
     }
     
     raw_sheet = sheet_mapping.get(sheet_name)
@@ -325,7 +327,7 @@ def _extract_sector_summary(xl, sheet_name):
                 'curr_col': 56, 'prev_col': 52,
             },
             'D(고용률)분석': {
-                'raw_sheet': '고용률',
+                'raw_sheet': '연령별고용률',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
                 'curr_col': 66, 'prev_col': 62,
                 'calc_type': 'difference'  # 고용률은 %p
@@ -668,10 +670,10 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
                 'calc_type': 'growth_rate'
             },
             'employment': {
-                'sheet': '고용률',
+                'sheet': '연령별고용률',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
-                'curr_col': get_dynamic_col('고용률', year, quarter),
-                'prev_col': get_dynamic_col('고용률', year - 1, quarter),
+                'curr_col': get_dynamic_col('연령별고용률', year, quarter),
+                'prev_col': get_dynamic_col('연령별고용률', year - 1, quarter),
                 'calc_type': 'difference'  # 고용률은 %p
             },
         }
@@ -757,6 +759,9 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
                 prev_col = config['prev_col']
                 calc_type = config['calc_type']
                 
+                print(f"[TABLE] {key}: sheet={sheet_name}, curr_col={curr_col}, prev_col={prev_col}, total_code={total_code}")
+                found_regions = []
+                
                 for i, row in df.iterrows():
                     try:
                         region_raw = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
@@ -772,6 +777,14 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
                             is_total_row = (division == total_code)
                         
                         if is_total_row:
+                            # 컬럼 인덱스 범위 확인
+                            if curr_col is None or prev_col is None:
+                                print(f"[DEBUG] {sheet_name}/{region}: curr_col={curr_col}, prev_col={prev_col} - 컬럼 없음")
+                                continue
+                            if curr_col >= len(row) or prev_col >= len(row):
+                                print(f"[DEBUG] {sheet_name}/{region}: 컬럼 범위 초과 (curr_col={curr_col}, prev_col={prev_col}, row_len={len(row)})")
+                                continue
+                            
                             curr_val = safe_float(row[curr_col], 0)
                             prev_val = safe_float(row[prev_col], 0)
                             
@@ -784,12 +797,20 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
                                 else:
                                     value = 0.0
                             
+                            # 디버그: 비정상 값 출력
+                            if value == -100.0 or (value == 0.0 and key != 'employment'):
+                                print(f"[DEBUG] {sheet_name}/{region}: curr={curr_val}, prev={prev_val} → {value}% (cols: {curr_col}, {prev_col})")
+                            
                             if region == '전국':
                                 nationwide_data[key] = value
+                                found_regions.append('전국')
                             elif region in all_regions:
                                 region_data[region][key] = value
+                                found_regions.append(region)
                     except:
                         continue
+                
+                print(f"[TABLE] {key}: 찾은 지역 {len(found_regions)}개: {found_regions[:5]}...")
             except Exception as e:
                 print(f"{sheet_name} 테이블 데이터 추출 오류: {e}")
                 continue
@@ -839,8 +860,8 @@ def get_consumption_construction_data(excel_path, year, quarter):
         xl = pd.ExcelFile(excel_path)
         retail = _extract_chart_data(xl, 'C 분석')
         
-        # 건설 데이터 추출
-        construction = _extract_construction_chart_data(xl)
+        # 건설 데이터 추출 - year, quarter 파라미터 전달
+        construction = _extract_construction_chart_data(xl, year, quarter)
         
         return {
             'retail_sales': retail,
@@ -854,8 +875,8 @@ def get_consumption_construction_data(excel_path, year, quarter):
         }
 
 
-def _extract_construction_chart_data(xl):
-    """건설수주액 차트 데이터 추출"""
+def _extract_construction_chart_data(xl, year=2025, quarter=3):
+    """건설수주액 차트 데이터 추출 - 건설 (공표자료) 시트 사용"""
     try:
         regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
@@ -864,21 +885,34 @@ def _extract_construction_chart_data(xl):
         increase_regions = []
         decrease_regions = []
         chart_data = []
+        seen_regions = set()  # 중복 방지
         
-        # F'(건설)집계 시트에서 데이터 추출
-        if "F'(건설)집계" in xl.sheet_names:
-            df = pd.read_excel(xl, sheet_name="F'(건설)집계", header=None)
+        # 건설 (공표자료) 시트 사용
+        sheet_name = '건설 (공표자료)'
+        if sheet_name in xl.sheet_names:
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+            
+            # 동적 열 계산 - 건설 시트는 2024 3Q = col64 기준
+            curr_col = get_dynamic_col(sheet_name, year, quarter, is_aggregate=False)
+            prev_col = get_dynamic_col(sheet_name, year - 1, quarter, is_aggregate=False)
+            
+            print(f"[건설] 동적 열 계산: curr_col={curr_col}, prev_col={prev_col} (year={year}, quarter={quarter})")
             
             for i, row in df.iterrows():
                 try:
                     region = str(row[1]).strip() if pd.notna(row[1]) else ''
-                    code = str(row[2]).strip() if pd.notna(row[2]) else ''
+                    level = str(row[2]).strip() if pd.notna(row[2]) else ''
+                    code = str(row[3]).strip() if pd.notna(row[3]) else ''
+                    name = str(row[4]).strip() if pd.notna(row[4]) else ''
                     
-                    # 총계 행 (code == '0')
-                    if code == '0':
-                        # 현재 분기 값 (열 19)과 전년동분기 값 (열 15)
-                        curr_val = safe_float(row[19], 0)
-                        prev_val = safe_float(row[15], 0)
+                    # 이미 처리한 지역은 건너뛰기
+                    if region in seen_regions:
+                        continue
+                    
+                    # 총계 행 (level == '0', code == '0') - '계' 데이터
+                    if level == '0' and code == '0':
+                        curr_val = safe_float(row[curr_col], 0) if curr_col and curr_col < len(row) else 0
+                        prev_val = safe_float(row[prev_col], 0) if prev_col and prev_col < len(row) else 0
                         
                         # 증감률 계산
                         if prev_val is not None and prev_val != 0:
@@ -886,14 +920,18 @@ def _extract_construction_chart_data(xl):
                         else:
                             change = 0.0
                         
-                        # 금액 (백억원 단위)
+                        # 금액 (백억원 단위로 변환 - 원본은 십억원 단위)
                         amount = int(round(curr_val / 10, 0))
                         amount_normalized = min(100, max(0, curr_val / 30))  # 최대 3000억원 기준
                         
                         if region == '전국':
-                            nationwide['amount'] = amount
-                            nationwide['change'] = change
+                            if 'nationwide' not in seen_regions:
+                                nationwide['amount'] = amount
+                                nationwide['change'] = change
+                                seen_regions.add('nationwide')
+                                print(f"[건설] 전국: curr={curr_val}, prev={prev_val}, change={change}%")
                         elif region in regions:
+                            seen_regions.add(region)
                             data = {
                                 'name': region,
                                 'value': change,
@@ -907,8 +945,10 @@ def _extract_construction_chart_data(xl):
                             else:
                                 decrease_regions.append(data)
                             chart_data.append(data)
-                except:
+                except Exception as row_err:
                     continue
+        else:
+            print(f"[건설] '{sheet_name}' 시트를 찾을 수 없습니다.")
         
         increase_regions.sort(key=lambda x: x['value'], reverse=True)
         decrease_regions.sort(key=lambda x: x['value'])
@@ -923,6 +963,8 @@ def _extract_construction_chart_data(xl):
         }
     except Exception as e:
         print(f"건설 차트 데이터 추출 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return _get_default_construction_data()
 
 
@@ -1081,7 +1123,7 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                 'curr_col': 56, 'prev_col': 52,
             },
             'D(고용률)분석': {
-                'raw_sheet': '고용률',
+                'raw_sheet': '연령별고용률',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
                 'curr_col': 66, 'prev_col': 62,
                 'calc_type': 'difference'  # 고용률은 %p
@@ -1602,9 +1644,9 @@ def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
 def _get_default_chart_data():
     """기본 차트 데이터"""
     return {
-        'nationwide': {'index': 100.0, 'change': 0.0},
-        'increase_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0}],
-        'decrease_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0}],
+        'nationwide': {'index': 100.0, 'change': 0.0, 'rate': 60.0, 'amount': 0},
+        'increase_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0, 'rate': 60.0}],
+        'decrease_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0, 'rate': 60.0}],
         'increase_count': 0, 'decrease_count': 0,
         'above_regions': [{'name': '-', 'value': 0.0}],
         'below_regions': [{'name': '-', 'value': 0.0}],

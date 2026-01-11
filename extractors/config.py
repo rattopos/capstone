@@ -87,7 +87,7 @@ RAW_SHEET_QUARTER_COLS: Dict[str, Dict] = {
         '2025_1Q': 55, '2025_2Q': 56, '2025_3Q': 57, '2025_4Q': 58,
         '2026_1Q': 59, '2026_2Q': 60, '2026_3Q': 61, '2026_4Q': 62
     },
-    "고용률": {
+    "연령별고용률": {
         'region_col': 1, 'level_col': 2, 'name_col': 3, 'header_row': 2, 'total_code': '계',
         '2023_1Q': 57, '2023_2Q': 58, '2023_3Q': 59, '2023_4Q': 60,
         '2024_1Q': 61, '2024_2Q': 62, '2024_3Q': 63, '2024_4Q': 64,
@@ -180,7 +180,7 @@ REPORT_CONFIG: Dict[str, Dict] = {
         'calculation': 'growth_rate'
     },
     'employment': {
-        'sheet': '고용률',
+        'sheet': '연령별고용률',
         'name': '고용률',
         'unit': '%p',
         'calculation': 'difference'

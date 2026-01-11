@@ -11,7 +11,7 @@ from pathlib import Path
 from jinja2 import Template
 
 from config.settings import TEMPLATES_DIR, BASE_DIR, UPLOAD_FOLDER
-from utils.filters import is_missing, format_value
+from utils.filters import is_missing, format_value, val, safe_format, safe_abs
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .grdp_service import (
@@ -161,23 +161,53 @@ def _ensure_template_compatibility(data, report_id):
     if not data:
         return data
     
+    # summary_table 컬럼 키 변환 (추출기 → 템플릿 호환)
+    if 'summary_table' in data and 'columns' in data['summary_table']:
+        cols = data['summary_table']['columns']
+        # change_columns → growth_rate_columns 변환
+        if 'change_columns' in cols and 'growth_rate_columns' not in cols:
+            cols['growth_rate_columns'] = cols['change_columns']
+        # migration_columns → quarter_columns 변환
+        if 'migration_columns' in cols and 'quarter_columns' not in cols:
+            cols['quarter_columns'] = cols['migration_columns']
+        # index_columns 기본값
+        if 'index_columns' not in cols and 'amount_columns' in cols:
+            cols['index_columns'] = cols['amount_columns']
+        # rate_columns 기본값 (고용률/실업률)
+        if 'rate_columns' not in cols and 'amount_columns' in cols:
+            cols['rate_columns'] = cols['amount_columns']
+    
+    # summary_table.rows의 키 변환 (region → sido, group → region_group)
+    if 'summary_table' in data and 'rows' in data['summary_table']:
+        for row in data['summary_table']['rows']:
+            if 'region' in row and 'sido' not in row:
+                row['sido'] = row['region']
+            if 'group' in row and 'region_group' not in row:
+                row['region_group'] = row['group']
+            if 'rowspan' in row and row.get('region_group') is None:
+                del row['rowspan']  # region_group이 없으면 rowspan 제거
+        # rows를 regions에도 복사 (소비동향 등 템플릿 호환용)
+        if 'regions' not in data['summary_table']:
+            data['summary_table']['regions'] = data['summary_table']['rows']
+    
     # summary_box 기본값 (부문별 템플릿용)
+    regional_data = data.get('regional_data', {})
+    increase_regions = regional_data.get('increase_regions', [])
+    decrease_regions = regional_data.get('decrease_regions', [])
+    
     if 'summary_box' not in data:
-        regional_data = data.get('regional_data', {})
-        increase_regions = regional_data.get('increase_regions', [])
-        decrease_regions = regional_data.get('decrease_regions', [])
-        
-        data['summary_box'] = {
-            'main_increase_regions': increase_regions[:3] if increase_regions else [],
-            'main_decrease_regions': decrease_regions[:3] if decrease_regions else [],
-            'region_count': len(increase_regions),
-            'increase_count': len(increase_regions),
-            'decrease_count': len(decrease_regions),
-            'main_items': [],  # 물가동향용
-            'headline': '',  # 인구이동용
-            'inflow_summary': '',
-            'outflow_summary': '',
-        }
+        data['summary_box'] = {}
+    
+    sb = data['summary_box']
+    sb.setdefault('main_increase_regions', increase_regions[:3] if increase_regions else [])
+    sb.setdefault('main_decrease_regions', decrease_regions[:3] if decrease_regions else [])
+    sb.setdefault('region_count', len(decrease_regions))
+    sb.setdefault('increase_count', len(increase_regions))
+    sb.setdefault('decrease_count', len(decrease_regions))
+    sb.setdefault('main_items', [])
+    sb.setdefault('headline', '')
+    sb.setdefault('inflow_summary', '')
+    sb.setdefault('outflow_summary', '')
     
     # nationwide_data 기본값 - 공통 속성
     national_summary = data.get('national_summary', {})
@@ -251,6 +281,21 @@ def _ensure_template_compatibility(data, report_id):
                 if 'products' not in item:
                     item['products'] = []
     
+    if report_id == 'construction':
+        # 건설동향 전용 속성 - 토목/건축 세부 속성 추가
+        for region_list in [data.get('top3_increase_regions', []), data.get('top3_decrease_regions', [])]:
+            for item in region_list:
+                item.setdefault('civil_growth', 0.0)
+                item.setdefault('building_growth', 0.0)
+                item.setdefault('civil_subtypes', '[  ]')
+                item.setdefault('building_subtypes', '[  ]')
+        # nationwide_data에도 추가
+        nwd.setdefault('civil_subtypes', '[  ]')
+        nwd.setdefault('building_subtypes', '[  ]')
+        nwd.setdefault('construction_index_trillion', 0.0)
+        nwd.setdefault('main_category', '토목')
+        nwd.setdefault('sub_types_text', '[  ]')
+    
     if report_id == 'price':
         # 물가동향 전용 속성
         if 'above_regions' not in data:
@@ -261,9 +306,27 @@ def _ensure_template_compatibility(data, report_id):
     if report_id == 'population':
         # 인구이동 전용 속성
         if 'inflow_regions' not in data:
-            data['inflow_regions'] = data.get('regional_data', {}).get('increase_regions', [])
+            data['inflow_regions'] = data.get('regional_data', {}).get('inflow_regions', 
+                                       data.get('regional_data', {}).get('increase_regions', []))
         if 'outflow_regions' not in data:
-            data['outflow_regions'] = data.get('regional_data', {}).get('decrease_regions', [])
+            data['outflow_regions'] = data.get('regional_data', {}).get('outflow_regions',
+                                        data.get('regional_data', {}).get('decrease_regions', []))
+        # summary_table.rows에 age_20_29, age_other 추가
+        if 'summary_table' in data and 'rows' in data['summary_table']:
+            for row in data['summary_table']['rows']:
+                row.setdefault('age_20_29', None)
+                row.setdefault('age_other', None)
+    
+    if report_id == 'unemployment':
+        # 실업률 전용 속성 - rate_columns에 3번째 열(15-29세) 추가
+        if 'summary_table' in data and 'columns' in data['summary_table']:
+            cols = data['summary_table']['columns']
+            if 'rate_columns' in cols and len(cols['rate_columns']) < 3:
+                cols['rate_columns'] = list(cols['rate_columns']) + ['15-29세']
+        # summary_table.rows에 youth_rate 추가
+        if 'summary_table' in data and 'rows' in data['summary_table']:
+            for row in data['summary_table']['rows']:
+                row.setdefault('youth_rate', None)
     
     if report_id in ('employment', 'unemployment'):
         # 고용률/실업률 지역 데이터에 필수 속성 추가
@@ -390,6 +453,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     template = Template(template_content)
                     template.globals['is_missing'] = is_missing
                     template.globals['format_value'] = format_value
+                    template.globals['val'] = val
+                    template.globals['safe_format'] = safe_format
                     
                     html_content = template.render(**raw_data)
                     missing_fields = check_missing_data(raw_data, report_id)
@@ -553,6 +618,11 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
                         with open(template_path, 'r', encoding='utf-8') as f:
                             from jinja2 import Template
                             template = Template(f.read())
+                        
+                        # safe_abs 등 필터 등록
+                        template.globals['safe_abs'] = safe_abs
+                        template.globals['val'] = val
+                        template.globals['is_missing'] = is_missing
                         
                         html_content = template.render(**regional_data)
                         print(f"[시도별] 기초자료 직접 추출 성공: {region_name}")

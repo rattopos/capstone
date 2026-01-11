@@ -33,7 +33,7 @@ class EmploymentPopulationExtractor(BaseExtractor):
     
     def extract_employment_rate_data(self) -> Dict[str, Any]:
         """고용률 보도자료 데이터 추출"""
-        sheet_name = '고용률'
+        sheet_name = '연령별고용률'
         config = RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
         
         report_data = {
@@ -191,10 +191,17 @@ class EmploymentPopulationExtractor(BaseExtractor):
         total_code = config.get('total_code', '계')
         result = {}
         
+        # 4개 분기 추출 (테이블 열 순서와 일치)
+        q2_q = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        q2_y = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        q3_q = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        q3_y = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        
         quarters = [
-            (self.current_year - 1, self.current_quarter),
-            (self.current_year, self.current_quarter - 1 if self.current_quarter > 1 else 4),
-            (self.current_year, self.current_quarter),
+            (self.current_year - 1, self.current_quarter),  # 전년동분기
+            (q2_y, q2_q),  # 2분기 전
+            (q3_y, q3_q),  # 직전 분기
+            (self.current_year, self.current_quarter),  # 현재 분기
         ]
         
         for year, quarter in quarters:
@@ -246,10 +253,17 @@ class EmploymentPopulationExtractor(BaseExtractor):
         region_col = config.get('region_col', 1)
         result = {}
         
+        # 4개 분기 추출 (테이블 열 순서와 일치)
+        q2_q = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        q2_y = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        q3_q = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        q3_y = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        
         quarters = [
-            (self.current_year - 1, self.current_quarter),
-            (self.current_year, self.current_quarter - 1 if self.current_quarter > 1 else 4),
-            (self.current_year, self.current_quarter),
+            (self.current_year - 1, self.current_quarter),  # 전년동분기
+            (q2_y, q2_q),  # 2분기 전
+            (q3_y, q3_q),  # 직전 분기
+            (self.current_year, self.current_quarter),  # 현재 분기
         ]
         
         for year, quarter in quarters:

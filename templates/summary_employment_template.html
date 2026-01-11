@@ -97,15 +97,15 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change) }}%p {% if employment.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
+                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate | default(60.0)) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change | default(0) >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change | default(0)) }}%p {% if employment.nationwide.change | default(0) >= 0 %}상승{% else %}하락{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in employment.increase_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ employment.increase_count }}개 시도는 고용률이 <span class="increase">상승</span>하였으나,
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value | default(0)) }}%p){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ employment.increase_count | default(0) }}개 시도는 고용률이 <span class="increase">상승</span>하였으나,
                 {% for region in employment.decrease_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ employment.decrease_count }}개 시도는 <span class="decrease">하락</span>
+                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value | default(0)) }}%p){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ employment.decrease_count | default(0) }}개 시도는 <span class="decrease">하락</span>
             </div>
         </div>
         
@@ -127,11 +127,11 @@
             </div>
             <div class="summary-sub">
                 {% for region in population.inflow_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "{:,}".format(region.value|int) }}명){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ population.inflow_count }}개 지역은 <span class="increase">순유입</span><br>
+                <span class="highlight">{{ region.name }}</span>({{ "{:,}".format((region.value | default(0)) | int) }}명){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ population.inflow_count | default(0) }}개 지역은 <span class="increase">순유입</span><br>
                 - {% for region in population.outflow_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>(-{{ "{:,}".format(region.value|int) }}명){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ population.outflow_count }}개 지역은 <span class="decrease">순유출</span>
+                <span class="highlight">{{ region.name }}</span>(-{{ "{:,}".format((region.value | default(0)) | int) }}명){% if not loop.last %}, {% endif %}
+                {% endfor %} 등 {{ population.outflow_count | default(0) }}개 지역은 <span class="decrease">순유출</span>
             </div>
         </div>
         
@@ -316,13 +316,13 @@
         
         const employmentData = [
             {% for region in employment.chart_data %}
-            { name: '{{ region.name }}', rate: {{ region.rate }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            { name: '{{ region.name }}', rate: {{ region.rate | default(60) }}, change: {{ region.change | default(0) }} }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
         
         const populationData = [
             {% for region in population.chart_data %}
-            { name: '{{ region.name }}', value: {{ region.value }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
+            { name: '{{ region.name }}', value: {{ region.value | default(0) }}, change: {{ region.change | default(0) }} }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
         

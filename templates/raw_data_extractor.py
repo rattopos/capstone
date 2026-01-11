@@ -21,7 +21,7 @@ class RawDataExtractor:
         "서비스업생산지수": "서비스업생산",
         "소매판매액지수": "소비(소매, 추가)",
         "건설수주액": "건설 (공표자료)",
-        "고용률": "고용률",
+        "고용률": "연령별고용률",
         "실업률": "실업자 수",
         "수출액": "수출",
         "수입액": "수입",
@@ -80,7 +80,7 @@ class RawDataExtractor:
             '2025_1Q': 55, '2025_2Q': 56, '2025_3Q': 57, '2025_4Q': 58,
             '2026_1Q': 59, '2026_2Q': 60, '2026_3Q': 61, '2026_4Q': 62
         },
-        "고용률": {
+        "연령별고용률": {
             'region_col': 1, 'level_col': 2, 'name_col': 3, 'header_row': 2, 'total_code': '계',
             '2023_1Q': 57, '2023_2Q': 58, '2023_3Q': 59, '2023_4Q': 60,
             '2024_1Q': 61, '2024_2Q': 62, '2024_3Q': 63, '2024_4Q': 64,
@@ -2523,7 +2523,7 @@ class RawDataExtractor:
     
     def extract_employment_rate_report_data(self) -> Dict[str, Any]:
         """고용률 보도자료 데이터 추출 (전년동기비 %p 차이)"""
-        sheet_name = '고용률'
+        sheet_name = '연령별고용률'
         
         report_data = {
             'report_info': {
@@ -3052,7 +3052,7 @@ class RawDataExtractor:
         }
         
         # 고용·인구이동 섹션
-        emp_data = self._extract_regional_indicator(region, '고용률', '0', 'difference')
+        emp_data = self._extract_regional_indicator(region, '연령별고용률', '0', 'difference')
         pop_data = self._extract_regional_indicator(region, '시도 간 이동', None, 'absolute')
         
         report_data['employment_migration'] = {
@@ -3246,7 +3246,7 @@ class RawDataExtractor:
             ('export', '수출', '0'),
             ('import', '수입', '0'),
             ('price', '품목성질별 물가', '0'),
-            ('employment', '고용률', '0'),
+            ('employment', '연령별고용률', '0'),
         ]
         
         for key, sheet_name, level_value in indicators:
@@ -3362,7 +3362,7 @@ class RawDataExtractor:
             ('export', '수출', '0', 'growth_rate'),
             ('import', '수입', '0', 'growth_rate'),
             ('price', '품목성질별 물가', '0', 'growth_rate'),
-            ('employment', '고용률', '0', 'difference'),
+            ('employment', '연령별고용률', '0', 'difference'),
             ('population', '시도 간 이동', None, 'absolute'),  # 인구순이동은 분류 단계 필터링 안함
         ]
         

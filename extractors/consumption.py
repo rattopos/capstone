@@ -107,18 +107,38 @@ class ConsumptionConstructionExtractor(BaseExtractor):
         quarterly_growth = self._extract_quarterly_growth(sheet_name, config)
         current_data = self._get_current_quarter_data(quarterly_growth)
         
+        # 토목/건축 데이터 추출
+        civil_building_data = self._extract_civil_building_data(sheet_name, config)
+        
         national_rate = current_data.get('전국')
         report_data['national_summary'] = {
             'growth_rate': national_rate,
             'direction': self._get_direction(national_rate),
         }
+        
+        # nationwide_data에 토목/건축 증감률 추가
+        national_civil_building = civil_building_data.get('전국', {})
         report_data['nationwide_data'] = {
             'order_amount': None,
             'growth_rate': national_rate,
             'main_sectors': [],
+            'civil_growth': national_civil_building.get('civil_growth'),
+            'building_growth': national_civil_building.get('building_growth'),
+            'civil_subtypes': '철도·궤도, 기계설치' if (national_civil_building.get('civil_growth') or 0) > 0 else '토지조성, 치산·치수',
+            'building_subtypes': '주택, 관공서 등',
         }
         
         regional_list = self._process_regional_data(current_data)
+        
+        # 지역별 토목/건축 데이터 추가
+        for region_data in regional_list:
+            region = region_data['region']
+            cb_data = civil_building_data.get(region, {})
+            region_data['civil_growth'] = cb_data.get('civil_growth')
+            region_data['building_growth'] = cb_data.get('building_growth')
+            region_data['civil_subtypes'] = '철도·궤도, 도로·교량' if (cb_data.get('civil_growth') or 0) > 0 else '토지조성, 치산·치수'
+            region_data['building_subtypes'] = '주택, 관공서 등' if (cb_data.get('building_growth') or 0) > 0 else '사무실·점포, 관공서 등'
+        
         increase_regions, decrease_regions = self._classify_regions(regional_list)
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -134,6 +154,59 @@ class ConsumptionConstructionExtractor(BaseExtractor):
         
         return report_data
     
+    def _extract_civil_building_data(self, sheet_name: str, config: Dict) -> Dict[str, Dict]:
+        """토목/건축 증감률 추출"""
+        result = {}
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return result
+        
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        code_col = 3  # 분류 코드 열
+        
+        curr_key = f"{self.current_year}_{self.current_quarter}Q"
+        prev_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        curr_col = config.get(curr_key)
+        prev_col = config.get(prev_key)
+        
+        if curr_col is None or prev_col is None:
+            print(f"[건설 토목/건축] 열 인덱스를 찾을 수 없음: curr={curr_key}, prev={prev_key}")
+            return result
+        
+        current_region = None
+        region_data = {}
+        
+        for row_idx in range(len(df)):
+            try:
+                region = str(df.iloc[row_idx, region_col]).strip()
+                region = self.normalize_region(region)
+                level = str(df.iloc[row_idx, level_col]).strip()
+                code = str(df.iloc[row_idx, code_col]).strip()
+                
+                # 총계 행 (level='0') - 새 지역 시작
+                if level == '0' and code == '0':
+                    if region in ALL_REGIONS:
+                        current_region = region
+                        if current_region not in result:
+                            result[current_region] = {}
+                
+                # 건축(code='1') 또는 토목(code='2') 행
+                if current_region and level == '1' and code in ['1', '2']:
+                    curr_val = self.safe_float(df.iloc[row_idx, curr_col])
+                    prev_val = self.safe_float(df.iloc[row_idx, prev_col])
+                    rate = self.calculate_growth_rate(curr_val, prev_val)
+                    
+                    if code == '1':  # 건축
+                        result[current_region]['building_growth'] = rate
+                    elif code == '2':  # 토목
+                        result[current_region]['civil_growth'] = rate
+                        
+            except (IndexError, ValueError) as e:
+                continue
+        
+        return result
+    
     def _extract_quarterly_growth(self, sheet_name: str, config: Dict) -> Dict:
         """분기별 증감률 추출"""
         df = self._load_sheet(sheet_name)
@@ -144,10 +217,17 @@ class ConsumptionConstructionExtractor(BaseExtractor):
         level_col = config.get('level_col', 2)
         result = {}
         
+        # 4개 분기 추출 (테이블 열 순서와 일치)
+        q2_q = self.current_quarter + 1 if self.current_quarter < 4 else 1
+        q2_y = self.current_year - 1 if self.current_quarter < 4 else self.current_year
+        q3_q = self.current_quarter - 1 if self.current_quarter > 1 else 4
+        q3_y = self.current_year if self.current_quarter > 1 else self.current_year - 1
+        
         quarters = [
-            (self.current_year - 1, self.current_quarter),
-            (self.current_year, self.current_quarter - 1 if self.current_quarter > 1 else 4),
-            (self.current_year, self.current_quarter),
+            (self.current_year - 1, self.current_quarter),  # 전년동분기
+            (q2_y, q2_q),  # 2분기 전
+            (q3_y, q3_q),  # 직전 분기
+            (self.current_year, self.current_quarter),  # 현재 분기
         ]
         
         for year, quarter in quarters:
