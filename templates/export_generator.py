@@ -126,13 +126,16 @@ def _get_sido_data_from_aggregation(summary_df):
         
         if level == '0' and sido in SIDO_ORDER:
             # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수출액으로 증감률 계산
-            current = safe_float(row[26], 0)  # 2025.2/4
-            prev = safe_float(row[22], 0)  # 2024.2/4
+            current = safe_float(row[26], None)  # 2025.2/4 - PM 요구사항: None으로 처리
+            prev = safe_float(row[22], None)  # 2024.2/4 - PM 요구사항: None으로 처리
             
-            if prev and prev != 0:
-                change = ((current - prev) / prev) * 100
+            # PM 요구사항: 데이터가 없으면 None 반환
+            if current is None or prev is None:
+                change = None  # N/A 처리
+            elif prev != 0:
+                change = round(((current - prev) / prev) * 100, 1)
             else:
-                change = 0.0
+                change = None  # 0으로 나누기 방지, N/A 처리
             
             sido_data[sido] = {
                 'change': change,
@@ -228,8 +231,8 @@ def get_sido_products_from_reference(reference_df, summary_df=None, use_aggregat
                 product_info = {
                     'rank': rank_num,
                     'name': display_name,
-                    'change': change if pd.notna(change) else 0,
-                    'contribution': contribution if pd.notna(contribution) else 0
+                    'change': change if pd.notna(change) and change is not None else None,  # PM 요구사항: None으로 처리
+                    'contribution': contribution if pd.notna(contribution) and contribution is not None else None  # PM 요구사항: None으로 처리
                 }
                 
                 # 상위 5개 (증가 품목)
@@ -439,7 +442,7 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     
     # None 값 안전 처리
     amount_str = f"{amount:,.1f}억달러" if amount is not None else "-"
-    change_val = change if change is not None else 0
+    change_val = change  # PM 요구사항: None 유지 (0으로 치환 금지)
     direction = "증가" if change_val >= 0 else "감소"
     verb = "늘어" if change_val >= 0 else "줄어"
     
@@ -636,10 +639,11 @@ def _generate_summary_table_from_aggregation(summary_df, sido_data):
         idx_2025_2 = safe_float(row[26], 0)
         
         # 전년동분기비 증감률 계산
-        change_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 and idx_2022_2 != 0 else 0.0
-        change_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 and idx_2023_2 != 0 else 0.0
-        change_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 and idx_2024_1 != 0 else 0.0
-        change_2025_2 = ((idx_2025_2 - idx_2024_2) / idx_2024_2 * 100) if idx_2024_2 and idx_2024_2 != 0 else 0.0
+        # PM 요구사항: 데이터가 없으면 None 반환
+        change_2023_2 = round(((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100), 1) if (idx_2023_2 is not None and idx_2022_2 is not None and idx_2022_2 != 0) else None
+        change_2024_2 = round(((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100), 1) if (idx_2024_2 is not None and idx_2023_2 is not None and idx_2023_2 != 0) else None
+        change_2025_1 = round(((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100), 1) if (idx_2025_1 is not None and idx_2024_1 is not None and idx_2024_1 != 0) else None
+        change_2025_2 = round(((idx_2025_2 - idx_2024_2) / idx_2024_2 * 100), 1) if (idx_2025_2 is not None and idx_2024_2 is not None and idx_2024_2 != 0) else None
         
         sido_table_data[region] = {
             'changes': [round(change_2023_2, 1), round(change_2024_2, 1), round(change_2025_1, 1), round(change_2025_2, 1)],
@@ -713,12 +717,12 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
                 continue
         
         # 테이블의 2025.2/4 증감률 (changes[3])
-        change_value = row['changes'][3] if len(row['changes']) > 3 else 0
+        change_value = row['changes'][3] if len(row['changes']) > 3 else None  # PM 요구사항: None으로 처리
         table_change_map[sido_raw] = change_value
         
         sido_data[sido_raw] = {
             'change': change_value,
-            'amount': row['amounts'][1] if len(row['amounts']) > 1 else 0  # 2025.2/4 수출액
+            'amount': row['amounts'][1] if len(row['amounts']) > 1 else None  # 2025.2/4 수출액 - PM 요구사항: None으로 처리
         }
     
     # ★ 3단계: 품목 데이터 추출

@@ -187,7 +187,7 @@ def get_nationwide_data(df_analysis, df_index):
         return _get_nationwide_from_aggregation(df_index)
     
     # 분석 시트에서 증감률 읽기 (컬럼 20: 2025.2/4)
-    growth_rate = safe_float(nationwide_row[20], 0)
+    growth_rate = safe_float(nationwide_row[20], None)  # PM 요구사항: None으로 처리
     growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
     # 집계 시트에서 전국 지수 (데이터가 없으면 None으로 설정)
@@ -389,14 +389,14 @@ def get_regional_data(df_analysis, df_index):
         try:
             # 총지수 행에서 증감률 (컬럼 20: 2025.2/4)
             total_row = df_analysis.iloc[start_idx]
-            growth_rate_val = safe_float(total_row[20], 0)
+            growth_rate_val = safe_float(total_row[20], None)  # PM 요구사항: None으로 처리
             growth_rate = round(growth_rate_val, 1) if growth_rate_val else 0.0
             
             # 집계 시트에서 지수
             idx_row = df_index[df_index[3] == region]
             if not idx_row.empty:
-                index_2024 = safe_float(idx_row.iloc[0][21], 0)
-                index_2025 = safe_float(idx_row.iloc[0][25], 0)
+                index_2024 = safe_float(idx_row.iloc[0][21], None)  # PM 요구사항: None으로 처리
+                index_2025 = safe_float(idx_row.iloc[0][25], None)  # PM 요구사항: None으로 처리
             else:
                 index_2024 = 0
                 index_2025 = 0
@@ -409,8 +409,8 @@ def get_regional_data(df_analysis, df_index):
                 if classification != '1':  # 분류단계가 1이 아니면 스킵
                     continue
                 industry_name = row[7] if pd.notna(row[7]) else ''
-                industry_growth = safe_float(row[20], 0)
-                contribution = safe_float(row[26], 0)
+                industry_growth = safe_float(row[20], None)  # PM 요구사항: None으로 처리
+                contribution = safe_float(row[26], None)  # PM 요구사항: None으로 처리
                 
                 if contribution is not None:
                     industries.append({
@@ -673,14 +673,14 @@ def get_growth_rates_table(df_analysis, df_index):
             'rowspan': None,
             'region': REGION_DISPLAY_MAPPING['전국'],
             'growth_rates': [
-                round(safe_float(nationwide_row[12], 0), 1),  # 2023 2/4
-                round(safe_float(nationwide_row[16], 0), 1),  # 2024 2/4
-                round(safe_float(nationwide_row[19], 0), 1),  # 2025 1/4
-                round(safe_float(nationwide_row[20], 0), 1),  # 2025 2/4
+                round(safe_float(nationwide_row[12], None), 1) if safe_float(nationwide_row[12], None) is not None else None,  # 2023 2/4
+                round(safe_float(nationwide_row[16], None), 1) if safe_float(nationwide_row[16], None) is not None else None,  # 2024 2/4
+                round(safe_float(nationwide_row[19], None), 1) if safe_float(nationwide_row[19], None) is not None else None,  # 2025 1/4
+                round(safe_float(nationwide_row[20], None), 1) if safe_float(nationwide_row[20], None) is not None else None,  # 2025 2/4
             ],
             'indices': [
-                safe_float(nationwide_idx_row[21], 0) if nationwide_idx_row is not None else 0,  # 2024 2/4
-                safe_float(nationwide_idx_row[25], 0) if nationwide_idx_row is not None else 0,  # 2025 2/4
+                safe_float(nationwide_idx_row[21], None) if nationwide_idx_row is not None else None,  # 2024 2/4
+                safe_float(nationwide_idx_row[25], None) if nationwide_idx_row is not None else None,  # 2025 2/4
             ]
         })
     except (IndexError, KeyError):
@@ -712,14 +712,14 @@ def get_growth_rates_table(df_analysis, df_index):
                 entry = {
                     'region': REGION_DISPLAY_MAPPING.get(region, region),
                     'growth_rates': [
-                        round(safe_float(row[12], 0), 1),  # 2023 2/4
-                        round(safe_float(row[16], 0), 1),  # 2024 2/4
-                        round(safe_float(row[19], 0), 1),  # 2025 1/4
-                        round(safe_float(row[20], 0), 1),  # 2025 2/4
+                        round(safe_float(row[12], None), 1) if safe_float(row[12], None) is not None else None,  # 2023 2/4
+                        round(safe_float(row[16], None), 1) if safe_float(row[16], None) is not None else None,  # 2024 2/4
+                        round(safe_float(row[19], None), 1) if safe_float(row[19], None) is not None else None,  # 2025 1/4
+                        round(safe_float(row[20], None), 1) if safe_float(row[20], None) is not None else None,  # 2025 2/4
                     ],
                     'indices': [
-                        safe_float(idx_row[21], 0),  # 2024 2/4
-                        safe_float(idx_row[25], 0),  # 2025 2/4
+                        safe_float(idx_row[21], None),  # 2024 2/4
+                        safe_float(idx_row[25], None),  # 2025 2/4
                     ]
                 }
                 
@@ -758,21 +758,21 @@ def _get_table_data_from_aggregation(df_index):
         row = region_total.iloc[0]
         
         # 지수 추출
-        idx_2024_2 = safe_float(row[21], 0)  # 2024.2/4 지수
-        idx_2025_2 = safe_float(row[25], 0)  # 2025.2/4 지수
-        idx_2023_2 = safe_float(row[17], 0)  # 2023.2/4 지수
-        idx_2025_1 = safe_float(row[24], 0)  # 2025.1/4 지수
+        idx_2024_2 = safe_float(row[21], None)  # 2024.2/4 지수
+        idx_2025_2 = safe_float(row[25], None)  # 2025.2/4 지수
+        idx_2023_2 = safe_float(row[17], None)  # 2023.2/4 지수
+        idx_2025_1 = safe_float(row[24], None)  # 2025.1/4 지수
         
         # 전년동분기비 증감률 계산
         # 2023.2/4 증감률 = (2023.2/4 지수 - 2022.2/4 지수) / 2022.2/4 지수 * 100
-        idx_2022_2 = safe_float(row[13], 0)  # 2022.2/4 지수
+        idx_2022_2 = safe_float(row[13], None)  # 2022.2/4 지수
         growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 and idx_2022_2 != 0 else 0.0
         
         # 2024.2/4 증감률
         growth_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 and idx_2023_2 != 0 else 0.0
         
         # 2025.1/4 증감률 (전년동분기대비)
-        idx_2024_1 = safe_float(row[20], 0)  # 2024.1/4 지수
+        idx_2024_1 = safe_float(row[20], None)  # 2024.1/4 지수
         growth_2025_1 = ((idx_2025_1 - idx_2024_1) / idx_2024_1 * 100) if idx_2024_1 and idx_2024_1 != 0 else 0.0
         
         # 2025.2/4 증감률

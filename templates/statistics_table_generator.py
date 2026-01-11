@@ -267,7 +267,7 @@ class StatisticsTableGenerator:
             match = re.match(r'(\d{4})\.(\d)/4', q)
             if match:
                 return int(match.group(1)), int(match.group(2))
-            return 0, 0
+            return None, None  # PM 요구사항: 데이터 없음 → N/A
         
         current_year, current_q = parse_quarter(quarter_key_clean)
         end_year, end_q = parse_quarter(json_end_clean)

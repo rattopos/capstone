@@ -184,6 +184,28 @@ class DataCache:
                 pass  # 없는 시트는 무시
 
 
+def safe_float(value, default=None):
+    """안전한 float 변환 함수 (NaN, '-', 빈 문자열 체크 포함)
+    
+    PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리
+    """
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none', 'n/a']:
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
 class RegionalGenerator:
     """시도별 경제동향 보도자료 생성 클래스"""
     
@@ -337,11 +359,14 @@ class RegionalGenerator:
         return cleaned
     
     def _get_quarter_value(self, row: pd.Series, sheet_name: str, quarter: str) -> float:
-        """분기별 값 추출 (분석 시트: 직접, 기초자료: 전년동기비 계산)"""
+        """분기별 값 추출 (분석 시트: 직접, 기초자료: 전년동기비 계산)
+        
+        PM 요구사항: 데이터가 없으면 None 반환 (0.0 금지)
+        """
         config = self.QUARTER_COLS.get(sheet_name, {})
         col = config.get(quarter)
         if col is None:
-            return 0.0
+            return None  # 데이터 없음 → N/A
         
         val = row.iloc[col] if col < len(row) else None
         
@@ -350,6 +375,7 @@ class RegionalGenerator:
             # 전년동기 열 찾기
             prev_quarter_map = {
                 '2025_2Q': '2024_2Q', '2025_1Q': '2024_1Q',
+                '2025_3Q': '2024_3Q',  # 2025년 3분기 추가
                 '2024_4Q': '2023_4Q', '2024_3Q': '2023_3Q',
                 '2024_2Q': '2023_2Q', '2024_1Q': '2023_1Q',
             }
@@ -357,22 +383,27 @@ class RegionalGenerator:
             if prev_quarter:
                 prev_col = config.get(prev_quarter)
                 if prev_col and prev_col < len(row):
-                    curr_val = row.iloc[col] if pd.notna(row.iloc[col]) else 0
-                    prev_val = row.iloc[prev_col] if pd.notna(row.iloc[prev_col]) else 0
+                    curr_val = safe_float(row.iloc[col], None)  # None으로 처리
+                    prev_val = safe_float(row.iloc[prev_col], None)  # None으로 처리
+                    # PM 요구사항: 데이터가 없으면 None 반환
+                    if curr_val is None or prev_val is None:
+                        return None  # N/A 처리
                     if prev_val != 0:
                         try:
-                            return round((float(curr_val) - float(prev_val)) / float(prev_val) * 100, 1)
+                            return round((curr_val - prev_val) / prev_val * 100, 1)
                         except (ValueError, TypeError):
-                            return 0.0
-            return 0.0
+                            return None  # 계산 실패 → N/A
+            return None  # 데이터 없음 → N/A
         
         # 분석 시트: 값 직접 반환
         if pd.isna(val) or val == '없음' or val == '-':
-            return 0.0
+            return None  # 데이터 없음 → N/A
         try:
-            return round(float(val), 1)
+            result = round(float(val), 1)
+            # 실제 0인 경우는 0으로 반환 (데이터가 있는 경우)
+            return result
         except (ValueError, TypeError):
-            return 0.0
+            return None  # 변환 실패 → N/A
     
     def _get_chart_time_series(self, df: pd.DataFrame, region: str, 
                                region_col: int, code_col: int, total_code: str,
@@ -2297,7 +2328,7 @@ class RegionalGenerator:
             df = self.cache.get_sheet(agg_sheet)
             row = df[(df[region_col] == region) & (df[code_col].astype(str) == str(total_code))]
             if len(row) == 0:
-                return 0.0
+                return None  # PM 요구사항: 데이터 없음 → N/A
             row = row.iloc[0]
             
             cols = SHEET_QUARTER_CONFIGS.get(agg_sheet, {})
@@ -2306,16 +2337,19 @@ class RegionalGenerator:
             prev_col = cols.get(prev_key) if prev_key else None
             
             if not curr_col or not prev_col or curr_col >= len(row) or prev_col >= len(row):
-                return 0.0
+                return None  # PM 요구사항: 데이터 없음 → N/A
             
-            curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
-            prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            curr_val = safe_float(row.iloc[curr_col], None)  # None으로 처리
+            prev_val = safe_float(row.iloc[prev_col], None)  # None으로 처리
             
+            # PM 요구사항: 데이터가 없으면 None 반환
+            if curr_val is None or prev_val is None:
+                return None  # N/A 처리
             if prev_val != 0:
                 return round((curr_val - prev_val) / prev_val * 100, 1)
-            return 0.0
+            return None  # 0으로 나누기 방지, N/A 처리
         except:
-            return 0.0
+            return None  # PM 요구사항: 에러 시 None 반환
     
     def _get_employment_change_from_aggregation(self, region: str, quarter_key: str) -> float:
         """고용률 집계 시트에서 전년동기대비 증감(%p) 계산"""
@@ -2335,7 +2369,7 @@ class RegionalGenerator:
             df = self.cache.get_sheet('D(고용률)집계')
             row = df[(df[1] == region) & (df[3].astype(str).str.strip() == '계')]
             if len(row) == 0:
-                return 0.0
+                return None  # PM 요구사항: 데이터 없음 → N/A
             row = row.iloc[0]
             
             curr_col = EMP_QUARTER_COLS.get(quarter_key)
@@ -2343,15 +2377,19 @@ class RegionalGenerator:
             prev_col = EMP_QUARTER_COLS.get(prev_key) if prev_key else None
             
             if not curr_col or not prev_col or curr_col >= len(row) or prev_col >= len(row):
-                return 0.0
+                return None  # PM 요구사항: 데이터 없음 → N/A
             
-            curr_val = float(row.iloc[curr_col]) if pd.notna(row.iloc[curr_col]) else 0
-            prev_val = float(row.iloc[prev_col]) if pd.notna(row.iloc[prev_col]) else 0
+            curr_val = safe_float(row.iloc[curr_col], None)  # None으로 처리
+            prev_val = safe_float(row.iloc[prev_col], None)  # None으로 처리
+            
+            # PM 요구사항: 데이터가 없으면 None 반환
+            if curr_val is None or prev_val is None:
+                return None  # N/A 처리
             
             # 고용률은 %p 단위로 단순 차이 계산
             return round(curr_val - prev_val, 1)
         except:
-            return 0.0
+            return None  # PM 요구사항: 에러 시 None 반환
     
     def extract_summary_table(self, region: str) -> Dict[str, Any]:
         """주요지표 요약 테이블 데이터 추출 (집계 시트 fallback 포함)"""

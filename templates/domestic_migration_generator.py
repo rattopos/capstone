@@ -26,12 +26,24 @@ REGION_GROUPS = {
 }
 
 
-def safe_float(value, default=0.0):
-    """안전하게 float로 변환합니다."""
+def safe_float(value, default=None):
+    """안전하게 float로 변환합니다.
+    
+    PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리
+    """
+    if value is None:
+        return default
     try:
         if pd.isna(value):
             return default
-        return float(value)
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none', 'n/a']:
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
     except (ValueError, TypeError):
         return default
 

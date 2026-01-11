@@ -170,12 +170,22 @@ def _parse_grdp_from_sheets(file_path, year, quarter, regions, region_groups):
         regional_data = []
         national_data = None
         
-        def safe_float(val, default=0.0):
+        def safe_float(val, default=None):
+            """PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리"""
+            if val is None:
+                return default
             try:
                 if pd.isna(val):
                     return default
-                return round(float(val), 1)
-            except:
+                if isinstance(val, str):
+                    val = val.strip()
+                    if val == '-' or val == '' or val.lower() in ['없음', 'nan', 'none', 'n/a']:
+                        return default
+                result = float(val)
+                if pd.isna(result):
+                    return default
+                return round(result, 1)
+            except (ValueError, TypeError):
                 return default
         
         current_region = None
@@ -394,9 +404,12 @@ def _parse_grdp_from_values(file_path, year, quarter, regions, region_groups):
             
             def calc_contrib(key):
                 d = ind.get(key, {})
-                if total_prev > 0:
-                    return round(((d.get('current', 0) - d.get('prev', 0)) / total_prev) * 100, 1)
-                return 0.0
+                current = d.get('current')
+                prev = d.get('prev')
+                # PM 요구사항: 데이터가 없으면 None 반환
+                if current is None or prev is None or total_prev <= 0:
+                    return None  # N/A 처리
+                return round(((current - prev) / total_prev) * 100, 1)
             
             entry = {
                 'region': region,

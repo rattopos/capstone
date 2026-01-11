@@ -162,8 +162,8 @@ def get_nationwide_data(df_analysis, df_index):
     # 분석 시트에서 전국 총지수 행
     try:
         nationwide_row = df_analysis.iloc[3]
-        growth_rate = safe_float(nationwide_row[20], 0)
-        growth_rate = round(growth_rate, 1) if growth_rate else 0.0
+        growth_rate = safe_float(nationwide_row[20], None)  # PM 요구사항: None으로 처리
+        growth_rate = round(growth_rate, 1) if growth_rate is not None else None  # PM 요구사항: None 유지
     except (IndexError, KeyError):
         return _get_nationwide_from_aggregation(df_index)
     
@@ -471,9 +471,23 @@ def _get_regional_from_aggregation(df_index):
             growth_rate = 0.0
         
         # 전년동분기비 계산
-        growth_2023_2 = ((prev_2023_2 - safe_float(region_total[12], 100)) / safe_float(region_total[12], 100) * 100) if safe_float(region_total[12], 0) != 0 else 0.0
-        growth_2024_2 = ((prev_2024_2 - prev_2023_2) / prev_2023_2 * 100) if prev_2023_2 != 0 else 0.0
-        growth_2025_1 = ((prev_2025_1 - safe_float(region_total[19], 100)) / safe_float(region_total[19], 100) * 100) if safe_float(region_total[19], 0) != 0 else 0.0
+        # PM 요구사항: 데이터가 없으면 None 반환
+        region_2023_2 = safe_float(region_total[12], None)
+        if region_2023_2 is None or region_2023_2 == 0:
+            growth_2023_2 = None  # N/A 처리
+        else:
+            growth_2023_2 = round((prev_2023_2 - region_2023_2) / region_2023_2 * 100, 1) if prev_2023_2 is not None else None
+        # PM 요구사항: 데이터가 없으면 None 반환
+        if prev_2024_2 is None or prev_2023_2 is None or prev_2023_2 == 0:
+            growth_2024_2 = None  # N/A 처리
+        else:
+            growth_2024_2 = round((prev_2024_2 - prev_2023_2) / prev_2023_2 * 100, 1)
+        # PM 요구사항: 데이터가 없으면 None 반환
+        region_2025_1 = safe_float(region_total[19], None)
+        if region_2025_1 is None or region_2025_1 == 0:
+            growth_2025_1 = None  # N/A 처리
+        else:
+            growth_2025_1 = round((prev_2025_1 - region_2025_1) / region_2025_1 * 100, 1) if prev_2025_1 is not None else None
         
         # 해당 지역 업태별 데이터 (분류단계 1)
         region_businesses = df_index[(df_index[2] == region) & (df_index[3].astype(str) == '1')]
@@ -736,12 +750,12 @@ def _get_table_data_from_aggregation(df_index):
         row = region_total.iloc[0]
         
         # 지수 추출
-        idx_2024_2 = safe_float(row[20], 0)  # 2024.2/4 지수
-        idx_2025_2 = safe_float(row[24], 0)  # 2025.2/4 지수
-        idx_2023_2 = safe_float(row[16], 0)  # 2023.2/4 지수
-        idx_2022_2 = safe_float(row[12], 0)  # 2022.2/4 지수
-        idx_2025_1 = safe_float(row[23], 0)  # 2025.1/4 지수
-        idx_2024_1 = safe_float(row[19], 0)  # 2024.1/4 지수
+        idx_2024_2 = safe_float(row[20], None)  # 2024.2/4 지수
+        idx_2025_2 = safe_float(row[24], None)  # 2025.2/4 지수
+        idx_2023_2 = safe_float(row[16], None)  # 2023.2/4 지수
+        idx_2022_2 = safe_float(row[12], None)  # 2022.2/4 지수
+        idx_2025_1 = safe_float(row[23], None)  # 2025.1/4 지수
+        idx_2024_1 = safe_float(row[19], None)  # 2024.1/4 지수
         
         # 전년동분기비 증감률 계산
         growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 and idx_2022_2 != 0 else 0.0

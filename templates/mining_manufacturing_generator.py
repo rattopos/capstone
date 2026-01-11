@@ -229,27 +229,27 @@ class 광공업생산Generator:
         production_index = nationwide_agg[26]  # 2025.2/4p 컬럼
         
         growth_col = 21 + col_offset if 21 + col_offset < len(nationwide_total) else 21
-        growth_rate = nationwide_total[growth_col] if pd.notna(nationwide_total[growth_col]) else 0
+        growth_rate = safe_float(nationwide_total[growth_col], None) if growth_col < len(nationwide_total) else None  # PM 요구사항: None으로 처리
         
         industry_name_col = 7 + col_offset
         
         return {
-            "production_index": safe_float(production_index, 100.0),
-            "growth_rate": safe_round(growth_rate, 1, 0.0),
-            "growth_direction": "증가" if safe_float(growth_rate, 0) > 0 else "감소",
+            "production_index": safe_float(production_index, None),  # PM 요구사항: None으로 처리
+            "growth_rate": safe_round(growth_rate, 1, None),  # PM 요구사항: None으로 처리
+            "growth_direction": "증가" if (growth_rate is not None and growth_rate > 0) else ("감소" if (growth_rate is not None and growth_rate < 0) else "N/A"),
             "main_increase_industries": [
                 {
                     "name": self._get_industry_display_name(str(row[industry_name_col]) if pd.notna(row[industry_name_col]) else ''),
-                    "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
-                    "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
+                    "growth_rate": safe_round(row[growth_col], 1, None) if growth_col < len(row) else None,  # PM 요구사항: None으로 처리
+                    "contribution": safe_round(row[contrib_col], 6, None) if contrib_col < len(row) else None  # PM 요구사항: None으로 처리
                 }
                 for _, row in increase_industries.head(5).iterrows()
             ],
             "main_decrease_industries": [
                 {
                     "name": self._get_industry_display_name(str(row[industry_name_col]) if pd.notna(row[industry_name_col]) else ''),
-                    "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
-                    "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
+                    "growth_rate": safe_round(row[growth_col], 1, None) if growth_col < len(row) else None,  # PM 요구사항: None으로 처리
+                    "contribution": safe_round(row[contrib_col], 6, None) if contrib_col < len(row) else None  # PM 요구사항: None으로 처리
                 }
                 for _, row in decrease_industries.head(5).iterrows()
             ]
@@ -287,12 +287,17 @@ class 광공업생산Generator:
         for _, row in nationwide_industries.iterrows():
             curr = safe_float(row[26], None)
             prev = safe_float(row[22], None)
-            weight = safe_float(row[6], 0)
+            weight = safe_float(row[6], None)  # PM 요구사항: None으로 처리
             
-            if curr is not None and prev is not None and prev != 0:
-                ind_growth = ((curr - prev) / prev) * 100
-                # 기여도 = (당기 - 전기) / 전국전기 * 가중치/10000
-                contribution = (curr - prev) / prev_year_index * weight / 10000 * 100 if prev_year_index else 0
+            # PM 요구사항: 데이터가 없으면 None 반환
+            if curr is None or prev is None or prev == 0:
+                continue  # 데이터 없으면 건너뛰기
+            if prev_year_index is None or prev_year_index == 0 or weight is None:
+                continue  # 계산 불가능하면 건너뛰기
+            
+            ind_growth = ((curr - prev) / prev) * 100
+            # 기여도 = (당기 - 전기) / 전국전기 * 가중치/10000
+            contribution = (curr - prev) / prev_year_index * weight / 10000 * 100
                 industries.append({
                     'name': self._get_industry_display_name(str(row[8]) if pd.notna(row[8]) else ''),
                     'growth_rate': round(ind_growth, 1),
@@ -449,7 +454,7 @@ class 광공업생산Generator:
                 continue
             region_total = region_total.iloc[0]
             
-            growth_rate = safe_float(region_total[growth_col] if growth_col < len(region_total) else 0, 0)
+            growth_rate = safe_float(region_total[growth_col], None) if growth_col < len(region_total) else None  # PM 요구사항: None으로 처리
             
             # 해당 지역 업종별 데이터
             try:
@@ -470,8 +475,8 @@ class 광공업생산Generator:
                     if pd.notna(row[industry_name_col]) and str(row[code_col]) != 'BCD':
                         top_industries.append({
                             "name": self._get_industry_display_name(str(row[industry_name_col])),
-                            "growth_rate": safe_round(row[growth_col], 1, 0.0) if growth_col < len(row) else 0.0,
-                            "contribution": safe_round(row[contrib_col], 6, 0.0) if contrib_col < len(row) else 0.0
+                            "growth_rate": safe_round(row[growth_col], 1, None) if growth_col < len(row) else None,  # PM 요구사항: None으로 처리
+                            "contribution": safe_round(row[contrib_col], 6, None) if contrib_col < len(row) else None  # PM 요구사항: None으로 처리
                         })
                         industry_count += 1
             except:
@@ -510,7 +515,7 @@ class 광공업생산Generator:
         
         # 전국 전년동분기 지수 (기여도 계산용)
         nationwide_rows = df[(df[4] == '전국') & (df[7] == 'BCD')]
-        nationwide_prev = safe_float(nationwide_rows.iloc[0][22], 100) if not nationwide_rows.empty else 100
+        nationwide_prev = safe_float(nationwide_rows.iloc[0][22], None) if not nationwide_rows.empty else None  # PM 요구사항: None으로 처리
         
         regions_data = []
         
@@ -537,11 +542,16 @@ class 광공업생산Generator:
             for _, row in region_industries.iterrows():
                 curr = safe_float(row[26], None)
                 prev_ind = safe_float(row[22], None)
-                weight = safe_float(row[6], 0)
+                weight = safe_float(row[6], None)  # PM 요구사항: None으로 처리
                 
-                if curr is not None and prev_ind is not None and prev_ind != 0:
-                    ind_growth = ((curr - prev_ind) / prev_ind) * 100
-                    contribution = (curr - prev_ind) / nationwide_prev * weight / 10000 * 100 if nationwide_prev else 0
+                # PM 요구사항: 데이터가 없으면 None 반환
+                if curr is None or prev_ind is None or prev_ind == 0:
+                    continue  # 데이터 없으면 건너뛰기
+                if nationwide_prev is None or nationwide_prev == 0 or weight is None:
+                    continue  # 계산 불가능하면 건너뛰기
+                
+                ind_growth = ((curr - prev_ind) / prev_ind) * 100
+                contribution = (curr - prev_ind) / nationwide_prev * weight / 10000 * 100
                     industries.append({
                         'name': self._get_industry_display_name(str(row[8]) if pd.notna(row[8]) else ''),
                         'growth_rate': round(ind_growth, 1),
@@ -785,9 +795,12 @@ class 광공업생산Generator:
             idx_2024_1q = safe_float(region_agg[21], 100)  # 2024.1/4 (2025.1/4의 전년동분기)
             
             def calc_growth(curr, prev):
-                if prev and prev != 0:
+                # PM 요구사항: 데이터가 없으면 None 반환
+                if curr is None or prev is None:
+                    return None  # N/A 처리
+                if prev != 0:
                     return round(((curr - prev) / prev) * 100, 1)
-                return 0.0
+                return None  # 0으로 나누기 방지, N/A 처리
             
             growth_rates = [
                 calc_growth(idx_2023_2q, idx_2022_2q),

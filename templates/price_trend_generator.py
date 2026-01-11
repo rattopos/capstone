@@ -115,12 +115,24 @@ def load_data(excel_path):
     
     return summary_df, analysis_df
 
-def safe_float(value, default=0.0):
-    """안전하게 float로 변환합니다."""
+def safe_float(value, default=None):
+    """안전하게 float로 변환합니다.
+    
+    PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리
+    """
+    if value is None:
+        return default
     try:
         if pd.isna(value):
             return default
-        return float(value)
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none', 'n/a']:
+                return default
+        result = float(value)
+        if pd.isna(result):
+            return default
+        return result
     except (ValueError, TypeError):
         return default
 
@@ -271,8 +283,8 @@ def _get_category_data_from_aggregation(summary_df, sido_name):
         if pd.isna(category):
             continue
         
-        idx_2024 = safe_float(row[17], 0)
-        idx_2025 = safe_float(row[21], 0)
+        idx_2024 = safe_float(row[17], None)
+        idx_2025 = safe_float(row[21], None)
         
         # 증감률 계산 (전년동분기대비)
         if idx_2024 and idx_2024 != 0:
@@ -580,11 +592,11 @@ def _calculate_changes_from_aggregation(summary_df, sido_name):
         if sido != sido_name:
             continue
         
-        idx_2022_2 = safe_float(row[9], 0)
-        idx_2023_2 = safe_float(row[13], 0)
-        idx_2024_1 = safe_float(row[16], 0)
-        idx_2024_2 = safe_float(row[17], 0)
-        idx_2025_1 = safe_float(row[20], 0)
+        idx_2022_2 = safe_float(row[9], None)
+        idx_2023_2 = safe_float(row[13], None)
+        idx_2024_1 = safe_float(row[16], None)
+        idx_2024_2 = safe_float(row[17], None)
+        idx_2025_1 = safe_float(row[20], None)
         
         # 전년동분기대비 증감률
         change_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 != 0 else 0.0

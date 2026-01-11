@@ -1492,19 +1492,34 @@ class DataConverter:
             'data_missing': False
         }
     
-    def _safe_float(self, val) -> float:
-        """안전하게 float으로 변환"""
+    def _safe_float(self, val) -> Optional[float]:
+        """안전하게 float으로 변환
+        
+        PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리
+        """
+        if val is None:
+            return None
         if pd.isna(val):
-            return 0.0
+            return None
         try:
-            return float(val)
+            if isinstance(val, str):
+                val = val.strip()
+                if val == '-' or val == '' or val.lower() in ['없음', 'nan', 'none', 'n/a']:
+                    return None
+            result = float(val)
+            if pd.isna(result):
+                return None
+            return result
         except (ValueError, TypeError):
-            return 0.0
+            return None
     
-    def _calculate_contribution(self, current: float, prev: float, total_prev: float) -> float:
-        """산업별 기여도 계산"""
-        if total_prev == 0:
-            return 0.0
+    def _calculate_contribution(self, current: Optional[float], prev: Optional[float], total_prev: Optional[float]) -> Optional[float]:
+        """산업별 기여도 계산
+        
+        PM 요구사항: 데이터가 없으면 None 반환
+        """
+        if current is None or prev is None or total_prev is None or total_prev == 0:
+            return None  # N/A 처리
         return round(((current - prev) / total_prev) * 100, 1)
     
     def _get_placeholder_grdp(self) -> Dict:
