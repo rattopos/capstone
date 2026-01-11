@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
-from .config import ALL_REGIONS, RAW_SHEET_MAPPING, RAW_SHEET_QUARTER_COLS
+from .config import ALL_REGIONS, RAW_SHEET_MAPPING, RAW_SHEET_QUARTER_COLS, SHEET_KEYWORDS
 
 
 class BaseExtractor:
@@ -103,22 +103,113 @@ class BaseExtractor:
                 raise RuntimeError(f"엑셀 파일을 열 수 없습니다: {self.raw_excel_path} - {e}")
         return self._xl
     
-    def _load_sheet(self, sheet_name: str) -> Optional[pd.DataFrame]:
-        """시트 로드 (캐싱)"""
+    def find_sheet_by_keywords(self, keywords: List[str], exact_match: Optional[str] = None) -> Optional[str]:
+        """키워드 기반 fuzzy matching으로 시트 찾기
+        
+        Args:
+            keywords: 찾을 시트의 키워드 리스트 (예: ['고용률', '연령별'])
+            exact_match: 정확한 시트명 (우선순위 1)
+            
+        Returns:
+            찾은 시트명 또는 None
+        """
+        xl = self._get_excel_file()
+        sheet_names = xl.sheet_names
+        
+        # 1. 정확한 매칭 (최우선)
+        if exact_match and exact_match in sheet_names:
+            return exact_match
+        
+        # 2. 키워드 기반 부분 매칭
+        # 모든 키워드가 포함된 시트 찾기
+        best_match = None
+        best_score = 0
+        
+        for sheet_name in sheet_names:
+            normalized_sheet = self._normalize_sheet_name(sheet_name)
+            score = 0
+            
+            # 각 키워드가 포함되어 있는지 확인
+            matched_keywords = 0
+            for keyword in keywords:
+                normalized_keyword = self._normalize_sheet_name(keyword)
+                if normalized_keyword in normalized_sheet:
+                    matched_keywords += 1
+                    # 키워드 길이에 비례하여 점수 부여
+                    score += len(normalized_keyword) / len(normalized_sheet)
+            
+            # 모든 키워드가 매칭되고 점수가 높으면 선택
+            if matched_keywords == len(keywords) and score > best_score:
+                best_score = score
+                best_match = sheet_name
+        
+        if best_match:
+            return best_match
+        
+        # 3. 일부 키워드만 매칭되는 경우 (fallback)
+        for sheet_name in sheet_names:
+            normalized_sheet = self._normalize_sheet_name(sheet_name)
+            for keyword in keywords:
+                normalized_keyword = self._normalize_sheet_name(keyword)
+                if normalized_keyword in normalized_sheet:
+                    return sheet_name
+        
+        return None
+    
+    def _normalize_sheet_name(self, name: str) -> str:
+        """시트명 정규화 (공백, 괄호, 특수문자 제거)"""
+        if not name:
+            return ""
+        # 소문자 변환, 공백 제거, 괄호 제거
+        normalized = re.sub(r'[()（）\s\-_\.]', '', str(name).lower())
+        return normalized
+    
+    def _load_sheet(self, sheet_name: str, keywords: Optional[List[str]] = None) -> Optional[pd.DataFrame]:
+        """시트 로드 (캐싱 및 fuzzy matching 지원)
+        
+        Args:
+            sheet_name: 시트명 (정확한 이름 또는 기본값)
+            keywords: 키워드 리스트 (시트를 찾지 못할 경우 사용, None이면 자동 추출)
+        """
         if self._check_file_modified():
             self._clear_cache()
         
-        if sheet_name not in self._sheet_cache:
-            xl = self._get_excel_file()
-            if sheet_name not in xl.sheet_names:
+        # 캐시 확인
+        if sheet_name in self._sheet_cache:
+            return self._sheet_cache[sheet_name]
+        
+        xl = self._get_excel_file()
+        actual_sheet_name = sheet_name
+        
+        # 시트를 찾지 못한 경우 fuzzy matching 시도
+        if sheet_name not in xl.sheet_names:
+            # 키워드가 제공되지 않으면 config에서 찾기
+            if keywords is None:
+                keywords = SHEET_KEYWORDS.get(sheet_name, [])
+                # 키워드가 없으면 시트명에서 추출
+                if not keywords:
+                    # 괄호 제거 후 단어 추출
+                    cleaned = re.sub(r'[()（）\s]', ' ', sheet_name)
+                    keywords = [k.strip() for k in cleaned.split() if k.strip() and len(k.strip()) > 1]
+                    if not keywords:
+                        keywords = [sheet_name]
+            
+            actual_sheet_name = self.find_sheet_by_keywords(keywords, exact_match=sheet_name)
+            if not actual_sheet_name:
+                print(f"[BaseExtractor] 시트를 찾을 수 없습니다: {sheet_name} (키워드: {keywords})")
                 return None
-            try:
-                df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
-                self._sheet_cache[sheet_name] = df
-            except Exception as e:
-                print(f"[BaseExtractor] 시트 로드 실패: {sheet_name} - {e}")
-                return None
-        return self._sheet_cache[sheet_name]
+            if actual_sheet_name != sheet_name:
+                print(f"[BaseExtractor] 시트명 매칭: '{sheet_name}' → '{actual_sheet_name}' (키워드: {keywords})")
+        
+        # 시트 로드
+        try:
+            df = pd.read_excel(xl, sheet_name=actual_sheet_name, header=None)
+            self._sheet_cache[sheet_name] = df  # 원래 이름으로 캐싱
+            self._sheet_cache[actual_sheet_name] = df  # 실제 이름으로도 캐싱
+            return df
+        except Exception as e:
+            print(f"[BaseExtractor] 시트 로드 실패: {actual_sheet_name} - {e}")
+            return None
     
     # =========================================================================
     # 시트 구조 분석
@@ -184,6 +275,41 @@ class BaseExtractor:
     def get_sheet_config(self, sheet_name: str) -> Dict:
         """시트별 설정 정보 반환"""
         return RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+    
+    def find_and_load_sheet(self, sheet_name: str) -> Optional[pd.DataFrame]:
+        """시트 찾기 및 로드 (fuzzy matching 포함)
+        
+        Args:
+            sheet_name: 시트명 또는 기본 시트명
+            
+        Returns:
+            DataFrame 또는 None
+        """
+        xl = self._get_excel_file()
+        
+        # 1. 정확한 매칭 시도
+        if sheet_name in xl.sheet_names:
+            return self._load_sheet(sheet_name)
+        
+        # 2. 키워드 기반 fuzzy matching
+        keywords = SHEET_KEYWORDS.get(sheet_name, [sheet_name])
+        actual_sheet = self.find_sheet_by_keywords(keywords, exact_match=sheet_name)
+        
+        if actual_sheet:
+            return self._load_sheet(actual_sheet)
+        
+        # 3. 시트명에서 키워드 추출하여 재시도
+        # 예: "연령별고용률" → ["연령별", "고용률"]
+        if '(' in sheet_name or ')' in sheet_name:
+            # 괄호 제거 후 키워드 추출
+            cleaned = re.sub(r'[()（）]', ' ', sheet_name)
+            keywords = [k.strip() for k in cleaned.split() if k.strip()]
+            actual_sheet = self.find_sheet_by_keywords(keywords)
+            if actual_sheet:
+                return self._load_sheet(actual_sheet)
+        
+        print(f"[BaseExtractor] 시트를 찾을 수 없습니다: {sheet_name}")
+        return None
     
     # =========================================================================
     # 지역 처리
