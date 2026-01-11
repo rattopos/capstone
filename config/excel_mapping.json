@@ -1,0 +1,64 @@
+{
+  "manufacturing": {
+    "keywords": ["광공업", "생산"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["BCD", "0", "총지수", "계"]
+  },
+  "service": {
+    "keywords": ["서비스", "생산"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["E~S", "0", "총지수", "계"]
+  },
+  "consumption": {
+    "keywords": ["소비", "소매", "판매"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["총지수", "0", "계"]
+  },
+  "construction": {
+    "keywords": ["건설", "공표"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["0", "계", "총지수"]
+  },
+  "export": {
+    "keywords": ["수출"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["합계", "0", "계"]
+  },
+  "price": {
+    "keywords": ["물가", "품목"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["총지수", "0", "계"]
+  },
+  "employment": {
+    "keywords": ["고용률", "연령별"],
+    "header_anchors": ["고용률", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["계", "0", "총지수"]
+  },
+  "common": {
+    "quarter_patterns": [
+      "\\d{4}[.\\s]*\\d/4",
+      "\\d{4}\\.\\d/4",
+      "\\d{4} \\d/4"
+    ],
+    "year_patterns": [
+      "\\d{4}",
+      "\\d{4}\\.0"
+    ],
+    "header_scan_rows": 10,
+    "default_header_row": 2
+  }
+}

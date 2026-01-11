@@ -7,6 +7,7 @@
 
 import pandas as pd
 import re
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -15,6 +16,9 @@ from .config import ALL_REGIONS, RAW_SHEET_MAPPING, RAW_SHEET_QUARTER_COLS, SHEE
 
 class BaseExtractor:
     """기본 데이터 추출기 클래스"""
+    
+    # Excel 매핑 설정 캐시
+    _excel_mapping_config: Optional[Dict] = None
     
     # 지역명 전체 이름 → 단축명 매핑
     REGION_FULL_TO_SHORT: Dict[str, str] = {
@@ -59,6 +63,49 @@ class BaseExtractor:
             self._file_mtime = self.raw_excel_path.stat().st_mtime
         except OSError:
             self._file_mtime = None
+    
+    # =========================================================================
+    # 동적 설정 로드
+    # =========================================================================
+    
+    @classmethod
+    def load_excel_mapping_config(cls) -> Dict:
+        """Excel 매핑 설정 파일 로드 (캐싱)"""
+        if cls._excel_mapping_config is not None:
+            return cls._excel_mapping_config
+        
+        try:
+            # config/excel_mapping.json 경로 찾기
+            config_path = Path(__file__).parent.parent / 'config' / 'excel_mapping.json'
+            if not config_path.exists():
+                # 기본 설정 반환
+                cls._excel_mapping_config = {}
+                return cls._excel_mapping_config
+            
+            with open(config_path, 'r', encoding='utf-8') as f:
+                cls._excel_mapping_config = json.load(f)
+            return cls._excel_mapping_config
+        except Exception as e:
+            print(f"[BaseExtractor] 설정 파일 로드 실패: {e}")
+            cls._excel_mapping_config = {}
+            return cls._excel_mapping_config
+    
+    def get_sheet_mapping_config(self, sheet_type: str) -> Optional[Dict]:
+        """시트 타입별 매핑 설정 가져오기
+        
+        Args:
+            sheet_type: 'manufacturing', 'service', 'consumption' 등
+            
+        Returns:
+            설정 딕셔너리 또는 None
+        """
+        config = self.load_excel_mapping_config()
+        return config.get(sheet_type)
+    
+    def get_common_config(self) -> Dict:
+        """공통 설정 가져오기"""
+        config = self.load_excel_mapping_config()
+        return config.get('common', {})
     
     # =========================================================================
     # 캐시 관리
@@ -215,12 +262,175 @@ class BaseExtractor:
     # 시트 구조 분석
     # =========================================================================
     
+    def find_anchor_points(self, df: pd.DataFrame, scan_rows: int = 10, anchor_keywords: Optional[List[str]] = None) -> Dict[str, Tuple[int, int]]:
+        """앵커 포인트 기반 컬럼 매핑
+        
+        상위 scan_rows 행을 스캔하여 핵심 키워드(앵커)가 있는 셀의 좌표를 찾습니다.
+        
+        Args:
+            df: DataFrame
+            scan_rows: 스캔할 행 수 (기본 10)
+            anchor_keywords: 찾을 키워드 리스트 (None이면 기본 패턴 사용)
+            
+        Returns:
+            {키워드: (row, col), ...} 딕셔너리
+        """
+        if anchor_keywords is None:
+            # 기본 앵커 키워드: 분기 패턴, 전년동기비, 증감률 등
+            anchor_keywords = [
+                '전년동기비',
+                '증감률',
+                '전년대비',
+                '지수',
+            ]
+        
+        anchors = {}
+        max_row = min(scan_rows, len(df))
+        
+        # 정규식 패턴 (분기 패턴)
+        quarter_pattern = re.compile(r'\d{4}[.\s]*\d/4')
+        
+        for row_idx in range(max_row):
+            for col_idx in range(len(df.columns)):
+                try:
+                    val = df.iloc[row_idx, col_idx]
+                    if pd.isna(val):
+                        continue
+                    
+                    val_str = str(val).strip()
+                    
+                    # 분기 패턴 매칭 (정규식)
+                    if quarter_pattern.search(val_str):
+                        if 'quarter_pattern' not in anchors:
+                            anchors['quarter_pattern'] = (row_idx, col_idx)
+                    
+                    # 문자열 키워드 매칭
+                    for keyword in anchor_keywords:
+                        if keyword.lower() in val_str.lower():
+                            if keyword not in anchors:
+                                anchors[keyword] = (row_idx, col_idx)
+                except (IndexError, ValueError):
+                    continue
+        
+        return anchors
+    
+    def find_column_by_anchor(self, sheet_name: str, year: int, quarter: int, anchor_keywords: Optional[List[str]] = None) -> Optional[int]:
+        """앵커 포인트를 기준으로 특정 연도/분기의 컬럼 인덱스 찾기
+        
+        Args:
+            sheet_name: 시트 이름
+            year: 대상 연도
+            quarter: 대상 분기
+            anchor_keywords: 앵커 키워드 리스트
+            
+        Returns:
+            컬럼 인덱스 또는 None
+        """
+        # Two-pass reading: 먼저 헤더만 읽기
+        df_header = self._load_sheet_header(sheet_name, nrows=10)
+        if df_header is None:
+            return None
+        
+        # 앵커 포인트 찾기
+        anchors = self.find_anchor_points(df_header, scan_rows=10, anchor_keywords=anchor_keywords)
+        
+        # 분기 패턴 찾기 (예: "2025.2/4", "2025 2/4")
+        target_patterns = [
+            f"{year}.{quarter}/4",
+            f"{year} {quarter}/4",
+            f"{year}.{quarter}/4p",
+            f"{year} {quarter}/4p",
+        ]
+        
+        # 전체 시트 로드 (헤더 영역에서 찾지 못한 경우)
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return None
+        
+        # 헤더 행 찾기 (앵커가 있는 행)
+        header_row = None
+        if anchors:
+            # 첫 번째 앵커의 행을 헤더 행으로 사용
+            header_row = list(anchors.values())[0][0]
+        else:
+            # 기본값: 2행
+            header_row = 2
+        
+        # 헤더 행에서 분기 패턴 검색
+        for col_idx in range(len(df.columns)):
+            try:
+                val = df.iloc[header_row, col_idx]
+                if pd.isna(val):
+                    continue
+                
+                val_str = str(val).strip()
+                
+                # 분기 패턴 매칭
+                for pattern in target_patterns:
+                    if pattern in val_str:
+                        return col_idx
+                
+                # 정규식 패턴 매칭
+                quarter_match = re.search(rf'(\d{{4}})[.\s]*(\d)/4', val_str)
+                if quarter_match:
+                    q_year = int(quarter_match.group(1))
+                    q_num = int(quarter_match.group(2))
+                    if q_year == year and q_num == quarter:
+                        return col_idx
+            except (IndexError, ValueError):
+                continue
+        
+        return None
+    
+    def _load_sheet_header(self, sheet_name: str, nrows: int = 20) -> Optional[pd.DataFrame]:
+        """시트의 헤더 영역만 읽기 (Two-pass reading의 첫 번째 단계)
+        
+        Args:
+            sheet_name: 시트 이름
+            nrows: 읽을 행 수
+            
+        Returns:
+            DataFrame 또는 None
+        """
+        xl = self._get_excel_file()
+        actual_sheet_name = sheet_name
+        
+        # 시트 찾기 (fuzzy matching)
+        if sheet_name not in xl.sheet_names:
+            keywords = SHEET_KEYWORDS.get(sheet_name, [sheet_name])
+            actual_sheet_name = self.find_sheet_by_keywords(keywords, exact_match=sheet_name)
+            if not actual_sheet_name:
+                return None
+        
+        try:
+            # 헤더만 읽기
+            df = pd.read_excel(xl, sheet_name=actual_sheet_name, header=None, nrows=nrows)
+            return df
+        except Exception as e:
+            print(f"[BaseExtractor] 헤더 읽기 실패: {actual_sheet_name} - {e}")
+            return None
+    
     def parse_sheet_structure(self, sheet_name: str, header_row: int = 2) -> Dict:
-        """시트 헤더에서 연도/분기별 컬럼 인덱스 매핑 생성"""
+        """시트 헤더에서 연도/분기별 컬럼 인덱스 매핑 생성
+        
+        앵커 포인트 기반으로 헤더 행을 동적으로 찾습니다.
+        """
         cache_key = f"{sheet_name}_{header_row}"
         if cache_key in self._header_cache:
             return self._header_cache[cache_key]
         
+        # Two-pass reading: 먼저 헤더만 읽기
+        df_header = self._load_sheet_header(sheet_name, nrows=20)
+        if df_header is None:
+            return {'years': {}, 'quarters': {}}
+        
+        # 앵커 포인트로 헤더 행 찾기
+        anchors = self.find_anchor_points(df_header, scan_rows=10)
+        if anchors:
+            # 앵커가 있는 행 중 첫 번째를 헤더 행으로 사용
+            header_row = list(anchors.values())[0][0]
+        
+        # 전체 시트 로드
         df = self._load_sheet(sheet_name)
         if df is None:
             return {'years': {}, 'quarters': {}}
@@ -350,6 +560,132 @@ class BaseExtractor:
             except (IndexError, ValueError):
                 continue
         return None
+    
+    # =========================================================================
+    # 방어적 검증
+    # =========================================================================
+    
+    def validate_structure(self, sheet_name: str, required_anchors: Optional[List[str]] = None, 
+                          expected_data_types: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """시트 구조 검증
+        
+        Args:
+            sheet_name: 시트 이름
+            required_anchors: 필수 앵커 키워드 리스트
+            expected_data_types: 예상 데이터 타입 {'column_name': 'numeric'|'text'}
+            
+        Returns:
+            {
+                'valid': bool,
+                'errors': List[str],
+                'warnings': List[str],
+                'found_anchors': Dict[str, Tuple[int, int]]
+            }
+        """
+        result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'found_anchors': {}
+        }
+        
+        # 시트 로드
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            result['valid'] = False
+            result['errors'].append(f"시트를 로드할 수 없습니다: {sheet_name}")
+            return result
+        
+        # 헤더 영역 스캔
+        df_header = self._load_sheet_header(sheet_name, nrows=10)
+        if df_header is None:
+            result['valid'] = False
+            result['errors'].append(f"헤더 영역을 읽을 수 없습니다: {sheet_name}")
+            return result
+        
+        # 앵커 포인트 찾기
+        anchors = self.find_anchor_points(df_header, scan_rows=10)
+        result['found_anchors'] = anchors
+        
+        # 필수 앵커 검증
+        if required_anchors:
+            for anchor in required_anchors:
+                found = False
+                for key, pos in anchors.items():
+                    if anchor.lower() in key.lower() or anchor.lower() in str(key).lower():
+                        found = True
+                        break
+                
+                if not found:
+                    result['warnings'].append(f"필수 앵커를 찾을 수 없습니다: {anchor}")
+                    # 경고만 발생하고 valid는 유지 (Fail-Safe)
+        
+        # 데이터 타입 검증
+        if expected_data_types and len(df) > 0:
+            # 헤더 행 찾기
+            header_row = 2
+            if anchors:
+                header_row = list(anchors.values())[0][0] if anchors else 2
+            
+            # 데이터 행 검증 (헤더 다음 5행)
+            data_start_row = header_row + 1
+            data_end_row = min(data_start_row + 5, len(df))
+            
+            for row_idx in range(data_start_row, data_end_row):
+                for col_idx in range(min(10, len(df.columns))):  # 처음 10개 컬럼만 검증
+                    try:
+                        val = df.iloc[row_idx, col_idx]
+                        if pd.isna(val):
+                            continue
+                        
+                        # 숫자 데이터 검증
+                        if isinstance(val, str):
+                            # 숫자로 변환 가능한지 확인
+                            try:
+                                float(val.replace(',', ''))
+                            except ValueError:
+                                # 텍스트 데이터는 정상
+                                pass
+                    except (IndexError, ValueError):
+                        continue
+        
+        return result
+    
+    def safe_extract_with_validation(self, sheet_name: str, extraction_func, 
+                                     default_value: Any = None, section_name: str = "데이터") -> Any:
+        """검증과 함께 안전하게 데이터 추출 (Fail-Safe)
+        
+        검증 실패 시 전체 프로세스를 중단하지 않고 해당 섹션만 N/A 처리
+        
+        Args:
+            sheet_name: 시트 이름
+            extraction_func: 데이터 추출 함수
+            default_value: 실패 시 반환할 기본값
+            section_name: 섹션 이름 (에러 메시지용)
+            
+        Returns:
+            추출된 데이터 또는 default_value
+        """
+        try:
+            # 구조 검증
+            validation = self.validate_structure(sheet_name)
+            
+            if not validation['valid']:
+                print(f"[검증 실패] {section_name}: {validation['errors']}")
+                return default_value
+            
+            if validation['warnings']:
+                print(f"[검증 경고] {section_name}: {validation['warnings']}")
+            
+            # 데이터 추출 시도
+            result = extraction_func()
+            return result
+            
+        except Exception as e:
+            print(f"[추출 실패] {section_name}: {e}")
+            import traceback
+            traceback.print_exc()
+            return default_value
     
     # =========================================================================
     # 데이터 추출 유틸리티

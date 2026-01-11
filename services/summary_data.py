@@ -4,6 +4,154 @@
 """
 
 import pandas as pd
+import re
+from typing import Optional, Tuple, Dict, List
+from pathlib import Path
+
+
+# =========================================================
+# 앵커 기반 컬럼 매핑 헬퍼 함수들
+# =========================================================
+
+def find_anchor_based_column(xl: pd.ExcelFile, sheet_name: str, year: int, quarter: int, 
+                             scan_rows: int = 10) -> Optional[int]:
+    """앵커 포인트 기반으로 특정 연도/분기의 컬럼 인덱스 찾기
+    
+    Two-pass reading: 먼저 헤더만 읽어서 분기 패턴을 찾고, 그 다음 전체 시트에서 정확한 컬럼 찾기
+    
+    Args:
+        xl: ExcelFile 객체
+        sheet_name: 시트 이름
+        year: 대상 연도
+        quarter: 대상 분기
+        scan_rows: 헤더 스캔 행 수
+        
+    Returns:
+        컬럼 인덱스 또는 None
+    """
+    if sheet_name not in xl.sheet_names:
+        return None
+    
+    try:
+        # Step 1: 헤더만 읽기 (Two-pass reading)
+        df_header = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=scan_rows)
+        
+        # Step 2: 헤더에서 분기 패턴 찾기
+        target_patterns = [
+            f"{year}.{quarter}/4",
+            f"{year} {quarter}/4",
+            f"{year}.{quarter}/4p",
+            f"{year} {quarter}/4p",
+        ]
+        
+        # 헤더 행 찾기 (분기 패턴이 있는 행)
+        header_row = None
+        for row_idx in range(min(scan_rows, len(df_header))):
+            for col_idx in range(len(df_header.columns)):
+                try:
+                    val = df_header.iloc[row_idx, col_idx]
+                    if pd.isna(val):
+                        continue
+                    
+                    val_str = str(val).strip()
+                    
+                    # 분기 패턴 매칭
+                    for pattern in target_patterns:
+                        if pattern in val_str:
+                            header_row = row_idx
+                            break
+                    
+                    # 정규식 패턴 매칭
+                    quarter_match = re.search(rf'(\d{{4}})[.\s]*(\d)/4', val_str)
+                    if quarter_match:
+                        q_year = int(quarter_match.group(1))
+                        q_num = int(quarter_match.group(2))
+                        if q_year == year and q_num == quarter:
+                            header_row = row_idx
+                            break
+                    
+                    if header_row is not None:
+                        break
+                except (IndexError, ValueError):
+                    continue
+            
+            if header_row is not None:
+                break
+        
+        if header_row is None:
+            header_row = 2  # 기본값
+        
+        # Step 3: 전체 시트에서 정확한 컬럼 찾기
+        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        
+        for col_idx in range(len(df.columns)):
+            try:
+                val = df.iloc[header_row, col_idx]
+                if pd.isna(val):
+                    continue
+                
+                val_str = str(val).strip()
+                
+                # 분기 패턴 매칭
+                for pattern in target_patterns:
+                    if pattern in val_str:
+                        return col_idx
+                
+                # 정규식 패턴 매칭
+                quarter_match = re.search(rf'(\d{{4}})[.\s]*(\d)/4', val_str)
+                if quarter_match:
+                    q_year = int(quarter_match.group(1))
+                    q_num = int(quarter_match.group(2))
+                    if q_year == year and q_num == quarter:
+                        return col_idx
+            except (IndexError, ValueError):
+                continue
+        
+        return None
+    except Exception as e:
+        print(f"[앵커 기반 컬럼 찾기 실패] {sheet_name}: {e}")
+        return None
+
+
+def get_anchor_based_cols(sheet_name: str, year: int, quarter: int, 
+                          excel_path: str, fallback_base_col: Optional[int] = None) -> Tuple[Optional[int], Optional[int]]:
+    """앵커 기반으로 현재 분기와 전년동기 분기의 컬럼 인덱스 찾기
+    
+    Args:
+        sheet_name: 시트 이름
+        year: 현재 연도
+        quarter: 현재 분기
+        excel_path: 엑셀 파일 경로
+        fallback_base_col: 앵커 찾기 실패 시 사용할 기본 컬럼 (동적 계산용)
+        
+    Returns:
+        (curr_col, prev_col) 튜플
+    """
+    try:
+        xl = pd.ExcelFile(excel_path)
+        
+        # 현재 분기 컬럼 찾기
+        curr_col = find_anchor_based_column(xl, sheet_name, year, quarter)
+        
+        # 전년동기 분기 컬럼 찾기
+        prev_col = find_anchor_based_column(xl, sheet_name, year - 1, quarter)
+        
+        # 앵커 찾기 실패 시 fallback (동적 계산)
+        if curr_col is None and fallback_base_col is not None:
+            # 분기 차이 계산
+            base_year, base_quarter = 2025, 2
+            quarters_diff = (year - base_year) * 4 + (quarter - base_quarter)
+            curr_col = fallback_base_col + quarters_diff
+        
+        if prev_col is None and fallback_base_col is not None:
+            base_year, base_quarter = 2025, 2
+            quarters_diff = ((year - 1) - base_year) * 4 + (quarter - base_quarter)
+            prev_col = fallback_base_col + quarters_diff
+        
+        return curr_col, prev_col
+    except Exception as e:
+        print(f"[앵커 기반 컬럼 찾기 실패] {sheet_name}: {e}")
+        return None, None
 
 
 # =========================================================
@@ -37,19 +185,32 @@ AGGREGATE_SHEET_BASE_COLS = {
 }
 
 
-def get_dynamic_col(sheet_name: str, target_year: int, target_quarter: int, is_aggregate: bool = False) -> int:
+def get_dynamic_col(sheet_name: str, target_year: int, target_quarter: int, 
+                   is_aggregate: bool = False, excel_path: Optional[str] = None) -> Optional[int]:
     """
-    시트별 동적 컬럼 인덱스 계산
+    시트별 동적 컬럼 인덱스 계산 (앵커 기반 우선, 실패 시 fallback)
     
     Args:
         sheet_name: 시트 이름
         target_year: 대상 연도
         target_quarter: 대상 분기 (1-4)
         is_aggregate: 집계 시트 여부
+        excel_path: 엑셀 파일 경로 (앵커 기반 검색용, None이면 fallback만 사용)
         
     Returns:
-        컬럼 인덱스
+        컬럼 인덱스 또는 None
     """
+    # 앵커 기반 검색 시도 (excel_path가 제공된 경우)
+    if excel_path:
+        try:
+            xl = pd.ExcelFile(excel_path)
+            anchor_col = find_anchor_based_column(xl, sheet_name, target_year, target_quarter)
+            if anchor_col is not None:
+                return anchor_col
+        except Exception as e:
+            print(f"[앵커 기반 검색 실패, fallback 사용] {sheet_name}: {e}")
+    
+    # Fallback: 기존 동적 계산 방식
     base_config = AGGREGATE_SHEET_BASE_COLS.get(sheet_name) if is_aggregate else RAW_SHEET_BASE_COLS.get(sheet_name)
     
     if not base_config:
@@ -632,94 +793,94 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
         
         print(f"[DEBUG] 사용할 연도/분기: {year}년 {quarter}분기")
         
-        # 기초자료 시트 설정 (동적 컬럼 계산)
+        # 기초자료 시트 설정 (앵커 기반 컬럼 계산 우선, 실패 시 동적 계산)
         raw_sheet_configs = {
             'mining_production': {
                 'sheet': '광공업생산',
                 'region_col': 1, 'code_col': 4, 'total_code': 'BCD',
-                'curr_col': get_dynamic_col('광공업생산', year, quarter),
-                'prev_col': get_dynamic_col('광공업생산', year - 1, quarter),
+                'curr_col': get_dynamic_col('광공업생산', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('광공업생산', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'service_production': {
                 'sheet': '서비스업생산',
                 'region_col': 1, 'code_col': 4, 'total_code': 'E~S',
-                'curr_col': get_dynamic_col('서비스업생산', year, quarter),
-                'prev_col': get_dynamic_col('서비스업생산', year - 1, quarter),
+                'curr_col': get_dynamic_col('서비스업생산', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('서비스업생산', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'retail_sales': {
                 'sheet': '소비(소매, 추가)',
                 'region_col': 1, 'code_col': 4, 'total_code': '총지수',
-                'curr_col': get_dynamic_col('소비(소매, 추가)', year, quarter),
-                'prev_col': get_dynamic_col('소비(소매, 추가)', year - 1, quarter),
+                'curr_col': get_dynamic_col('소비(소매, 추가)', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('소비(소매, 추가)', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'exports': {
                 'sheet': '수출',
                 'region_col': 1, 'code_col': 5, 'total_code': '합계',
-                'curr_col': get_dynamic_col('수출', year, quarter),
-                'prev_col': get_dynamic_col('수출', year - 1, quarter),
+                'curr_col': get_dynamic_col('수출', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('수출', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'price': {
                 'sheet': '품목성질별 물가',
                 'region_col': 0, 'code_col': 3, 'total_code': '총지수',
-                'curr_col': get_dynamic_col('품목성질별 물가', year, quarter),
-                'prev_col': get_dynamic_col('품목성질별 물가', year - 1, quarter),
+                'curr_col': get_dynamic_col('품목성질별 물가', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('품목성질별 물가', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': '연령별고용률',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
-                'curr_col': get_dynamic_col('연령별고용률', year, quarter),
-                'prev_col': get_dynamic_col('연령별고용률', year - 1, quarter),
+                'curr_col': get_dynamic_col('연령별고용률', year, quarter, excel_path=excel_path),
+                'prev_col': get_dynamic_col('연령별고용률', year - 1, quarter, excel_path=excel_path),
                 'calc_type': 'difference'  # 고용률은 %p
             },
         }
         
-        # 집계 시트 설정 (동적 컬럼 계산)
+        # 집계 시트 설정 (앵커 기반 컬럼 계산 우선, 실패 시 동적 계산)
         aggregate_sheet_configs = {
             'mining_production': {
                 'sheet': 'A(광공업생산)집계',
                 'region_col': 4, 'code_col': 7, 'total_code': 'BCD',
-                'curr_col': get_dynamic_col('A(광공업생산)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('A(광공업생산)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('A(광공업생산)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('A(광공업생산)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'service_production': {
                 'sheet': 'B(서비스업생산)집계',
                 'region_col': 3, 'code_col': 6, 'total_code': 'E~S',
-                'curr_col': get_dynamic_col('B(서비스업생산)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('B(서비스업생산)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('B(서비스업생산)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('B(서비스업생산)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'retail_sales': {
                 'sheet': 'C(소비)집계',
                 'region_col': 2, 'code_col': 6, 'total_code': '총지수',
-                'curr_col': get_dynamic_col('C(소비)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('C(소비)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('C(소비)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('C(소비)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'exports': {
                 'sheet': 'G(수출)집계',
                 'region_col': 3, 'division_col': 4, 'total_code': '0',
-                'curr_col': get_dynamic_col('G(수출)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('G(수출)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('G(수출)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('G(수출)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'price': {
                 'sheet': 'E(품목성질물가)집계',
                 'region_col': 0, 'code_col': 3, 'total_code': '총지수',
-                'curr_col': get_dynamic_col('E(품목성질물가)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('E(품목성질물가)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('E(품목성질물가)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('E(품목성질물가)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'growth_rate'
             },
             'employment': {
                 'sheet': 'D(고용률)집계',
                 'region_col': 1, 'code_col': 3, 'total_code': '계',
-                'curr_col': get_dynamic_col('D(고용률)집계', year, quarter, is_aggregate=True),
-                'prev_col': get_dynamic_col('D(고용률)집계', year - 1, quarter, is_aggregate=True),
+                'curr_col': get_dynamic_col('D(고용률)집계', year, quarter, is_aggregate=True, excel_path=excel_path),
+                'prev_col': get_dynamic_col('D(고용률)집계', year - 1, quarter, is_aggregate=True, excel_path=excel_path),
                 'calc_type': 'difference'
             },
         }
