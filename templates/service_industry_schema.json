@@ -20,6 +20,7 @@
       "growth_2024_2Q": 16,
       "growth_2025_1Q": 19,
       "growth_2025_2Q": 20,
+      "growth_2025_3Q": 21,
       "quarterly_change": 21,
       "contribution": 26,
       "rank": 27
@@ -28,7 +29,8 @@
     "index_columns": {
       "region_name": 3,
       "index_2024_2Q": 21,
-      "index_2025_2Q": 25
+      "index_2025_2Q": 25,
+      "index_2025_3Q": 26
     }
   },
   
@@ -216,8 +218,8 @@
       "properties": {
         "base_year": "integer",
         "columns": {
-          "growth_rate_columns": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.2/4p"],
-          "index_columns": ["2024.2/4", "2025.2/4p"]
+          "growth_rate_columns": ["2023.2/4", "2024.2/4", "2025.1/4", "2025.3/4p"],
+          "index_columns": ["2024.2/4", "2025.3/4p"]
         },
         "regions": {
           "type": "array",
