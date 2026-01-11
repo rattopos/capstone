@@ -24,15 +24,7 @@ SUMMARY_REPORTS = [
         'icon': '📖',
         'category': 'summary'
     },
-    {
-        'id': 'toc',
-        'name': '목차',
-        'sheet': None,
-        'generator': None,
-        'template': 'toc_template.html',
-        'icon': '📋',
-        'category': 'summary'
-    },
+    # 목차 제거됨 (사용자 요청)
     {
         'id': 'summary_overview',
         'name': '요약-지역경제동향',

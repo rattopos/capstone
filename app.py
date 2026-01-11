@@ -11,9 +11,13 @@ Flask 기반 대시보드로 기초자료 수집표를 업로드하고 보도자
 - routes/     : API 라우트 (메인, API, 미리보기)
 """
 
+import sys
+import webbrowser
+import threading
+
 from flask import Flask
 
-from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, UPLOAD_FOLDER
+from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, UPLOAD_FOLDER, IS_FROZEN
 from utils.filters import register_filters
 from routes import main_bp, api_bp, preview_bp, debug_bp
 
@@ -47,10 +51,25 @@ def create_app():
 app = create_app()
 
 
+def open_browser():
+    """기본 브라우저에서 애플리케이션 열기"""
+    webbrowser.open('http://localhost:5050')
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("지역경제동향 보도자료 생성 시스템")
     print("=" * 50)
     print(f"서버 시작: http://localhost:5050")
     print("=" * 50)
-    app.run(debug=True, host='0.0.0.0', port=5050)
+    
+    if IS_FROZEN:
+        # PyInstaller 패키징 환경: Production 모드
+        # 1.5초 후 브라우저 자동 실행 (서버 시작 대기)
+        threading.Timer(1.5, open_browser).start()
+        print("브라우저가 자동으로 열립니다...")
+        print("종료하려면 이 창을 닫거나 Ctrl+C를 누르세요.")
+        app.run(debug=False, host='127.0.0.1', port=5050, threaded=True)
+    else:
+        # 개발 환경: Debug 모드
+        app.run(debug=True, host='0.0.0.0', port=5050)

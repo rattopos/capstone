@@ -25,10 +25,17 @@
     "header_anchors": ["지수", "증감률", "전년동기비"],
     "region_col_keywords": ["지역", "시도"],
     "code_col_keywords": ["분류", "코드", "단계"],
-    "total_code_values": ["0", "계", "총지수"]
+    "total_code_values": [0, "0", "계", "총지수"]
   },
   "export": {
     "keywords": ["수출"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["합계", "0", "계"]
+  },
+  "import": {
+    "keywords": ["수입"],
     "header_anchors": ["지수", "증감률", "전년동기비"],
     "region_col_keywords": ["지역", "시도"],
     "code_col_keywords": ["분류", "코드", "단계"],
@@ -47,6 +54,20 @@
     "region_col_keywords": ["지역", "시도"],
     "code_col_keywords": ["분류", "코드", "단계"],
     "total_code_values": ["계", "0", "총지수"]
+  },
+  "unemployment": {
+    "keywords": ["실업", "실업자"],
+    "header_anchors": ["지수", "증감률", "전년동기비"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["계", "0", "총지수"]
+  },
+  "population": {
+    "keywords": ["인구", "이동", "시도"],
+    "header_anchors": ["인구", "이동", "증감률"],
+    "region_col_keywords": ["지역", "시도"],
+    "code_col_keywords": ["분류", "코드", "단계"],
+    "total_code_values": ["0", "계", "총지수"]
   },
   "common": {
     "quarter_patterns": [

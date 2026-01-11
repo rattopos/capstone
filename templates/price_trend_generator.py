@@ -9,6 +9,12 @@ import pandas as pd
 import json
 from jinja2 import Environment, FileSystemLoader
 import os
+import sys
+from pathlib import Path
+
+# 공통 유틸리티 임포트
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.column_finder import find_column_by_header_text
 
 # 시도 이름 매핑
 SIDO_MAPPING = {
@@ -178,12 +184,23 @@ def _get_sido_data_from_aggregation(summary_df):
         if sido not in SIDO_ORDER:
             continue
         
-        # 집계 시트 구조: 17=2024.2/4 지수, 21=2025.2/4 지수
-        index_2024 = safe_float(row[17], 0)
-        index_2025 = safe_float(row[21], 0)
+        # 동적으로 컬럼 찾기 (헤더 텍스트 기반)
+        # PM 요구사항: 하드코딩된 열 번호 제거, 헤더 텍스트 검색
+        header_row = 2
+        index_2024_col = find_column_by_header_text(df, header_row, 2024, 2)
+        index_2025_col = find_column_by_header_text(df, header_row, 2025, 2)
         
-        # 증감률 계산 (전년동분기대비)
-        change = ((index_2025 - index_2024) / index_2024 * 100) if index_2024 != 0 else 0.0
+        if index_2024_col is None or index_2025_col is None:
+            continue  # 컬럼을 찾을 수 없으면 건너뛰기
+        
+        index_2024 = safe_float(row[index_2024_col], None)  # 0 대신 None
+        index_2025 = safe_float(row[index_2025_col], None)  # 0 대신 None
+        
+        # 증감률 계산 (전년동분기대비) - 데이터가 없으면 None
+        if index_2024 is None or index_2025 is None or index_2024 == 0:
+            change = None  # N/A 처리
+        else:
+            change = round((index_2025 - index_2024) / index_2024 * 100, 1)
         
         sido_data[sido] = {
             'change': round(change, 1),

@@ -628,17 +628,19 @@ def _extract_sector_summary(xl, sheet_name):
                 
                 if is_total_row:
                     # 전년동기비 계산
-                    curr_val = safe_float(row[curr_col], 0)
-                    prev_val = safe_float(row[prev_col], 0)
+                    curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                    prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                     
-                    # 계산 방식에 따라 증감률 또는 차이 계산
-                    if calc_type == 'difference':
-                        change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                    # 계산 방식에 따라 증감률 또는 차이 계산 (데이터가 없으면 None)
+                    if curr_val is None or prev_val is None:
+                        change = None  # N/A 처리
+                    elif calc_type == 'difference':
+                        change = round(curr_val - prev_val, 1)  # %p 차이
                     else:  # growth_rate
-                        if prev_val is not None and prev_val != 0:
+                        if prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
-                            change = 0.0
+                            change = None  # 0으로 나누기 방지, N/A 처리
                     
                     if region == '전국':
                         nationwide = change
@@ -1601,9 +1603,13 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             is_total = (division == rate_total_code)
                         
                         if is_total:
-                            rate_val = safe_float(row[rate_value_col], 60.0)
-                            prev_rate = safe_float(row[prev_rate_col], rate_val if rate_val is not None else 60.0)
-                            change_val = round(rate_val - prev_rate, 1) if (rate_val is not None and prev_rate is not None) else 0.0
+                            rate_val = safe_float(row[rate_value_col], None)  # 60.0 대신 None
+                            prev_rate = safe_float(row[prev_rate_col], None)  # None으로 변경
+                            # 고용률은 %p 차이 (데이터가 없으면 None)
+                            if rate_val is None or prev_rate is None:
+                                change_val = None  # N/A 처리
+                            else:
+                                change_val = round(rate_val - prev_rate, 1)  # %p 차이
                             
                             if region == '전국':
                                 nationwide['rate'] = round(rate_val, 1)
@@ -1676,12 +1682,21 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             division = str(row[4]).strip() if pd.notna(row[4]) else ''
                             if division == '0':
                                 # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
-                                # 동적으로 컬럼 찾기 (임시로 하드코딩, 나중에 수정 필요)
-                                amount_col = find_column_by_header_text(df, header_row, year, quarter)
+                                # 동적으로 컬럼 찾기
+                                amount_col = find_column_by_header_text(df_export, header_row, year, quarter)
                                 if amount_col is None:
-                                    amount_col = 26  # Fallback
-                                amount_val = safe_float(row[amount_col], None)  # 0 대신 None
-                                amount_val = amount_val if amount_val is not None else 0
+                                    # Fallback: 가장 최신 분기 찾기
+                                    for col_idx in range(len(df_export.columns)):
+                                        cell = str(df_export.iloc[header_row, col_idx]).strip() if header_row < len(df_export) else ''
+                                        if str(year) in cell and f"{quarter}/4" in cell:
+                                            amount_col = col_idx
+                                            break
+                                    if amount_col is None:
+                                        continue  # 컬럼을 찾을 수 없으면 건너뛰기
+                                
+                                amount_val = safe_float(row[amount_col], None)  # None으로 처리
+                                if amount_val is None:
+                                    continue  # 데이터가 없으면 건너뛰기
                                 amount_in_billion = round(amount_val / 100, 0)  # 백만달러 → 억달러
                                 if region == '전국':
                                     nationwide['amount'] = amount_in_billion
