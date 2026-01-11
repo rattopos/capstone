@@ -13,6 +13,53 @@ from pathlib import Path
 # 앵커 기반 컬럼 매핑 헬퍼 함수들
 # =========================================================
 
+def find_column_by_header_text(df: pd.DataFrame, header_row: int, year: int, quarter: int) -> Optional[int]:
+    """헤더 텍스트를 검색하여 열 번호를 찾기 (PM 가이드 준수)
+    
+    Args:
+        df: DataFrame
+        header_row: 헤더가 있는 행 인덱스
+        year: 대상 연도
+        quarter: 대상 분기 (1-4)
+        
+    Returns:
+        컬럼 인덱스 또는 None
+    """
+    if header_row >= len(df):
+        return None
+    
+    target_col_idx = -1
+    header_row_data = df.iloc[header_row]
+    
+    # 다양한 패턴 지원
+    patterns = [
+        f"{year}",
+        f"{quarter}/4",
+        f"{quarter}분기",
+        f"{year}.{quarter}/4",
+        f"{year} {quarter}/4",
+        f"{year}  {quarter}/4",  # 공백 2개
+        f"{year}.{quarter}/4p",
+        f"{year} {quarter}/4p",
+    ]
+    
+    for idx, val in enumerate(header_row_data):
+        if pd.isna(val):
+            continue
+        
+        val_str = str(val).strip()
+        
+        # PM 가이드: "2025"와 "3/4" (또는 "3분기")가 모두 포함된 열 찾기
+        has_year = str(year) in val_str
+        has_quarter = (f"{quarter}/4" in val_str or f"{quarter}분기" in val_str)
+        
+        if has_year and has_quarter:
+            target_col_idx = idx
+            break
+    
+    return target_col_idx if target_col_idx != -1 else None
+
+
 def find_anchor_based_column(xl: pd.ExcelFile, sheet_name: str, year: int, quarter: int, 
                              scan_rows: int = 10) -> Optional[int]:
     """앵커 포인트 기반으로 특정 연도/분기의 컬럼 인덱스 찾기
@@ -329,7 +376,12 @@ def get_dynamic_aggregate_sheet_config(sheet_name: str, year: int, quarter: int)
 
 
 def safe_float(value, default=None):
-    """안전한 float 변환 함수 (NaN, '-', 빈 문자열 체크 포함)"""
+    """안전한 float 변환 함수 (NaN, '-', 빈 문자열 체크 포함)
+    
+    PM 요구사항: 데이터가 없을 때는 0.0이 아니라 None(N/A)로 처리
+    - 기본값은 None (0이 아님)
+    - '-' 또는 빈 문자열은 None 반환
+    """
     if value is None:
         return default
     try:
@@ -337,14 +389,14 @@ def safe_float(value, default=None):
             return default
         if isinstance(value, str):
             value = value.strip()
-            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none']:
-                return default
+            if value == '-' or value == '' or value.lower() in ['없음', 'nan', 'none', 'n/a']:
+                return default  # None 반환 (N/A 처리)
         result = float(value)
         if pd.isna(result):
             return default
         return result
     except (ValueError, TypeError):
-        return default
+        return default  # None 반환 (N/A 처리)
 
 
 # 지역명 정식 명칭 → 약칭 매핑
@@ -619,17 +671,30 @@ def _extract_sector_summary(xl, sheet_name):
         return _get_default_sector_summary()
 
 
-def _extract_price_summary_from_aggregate(xl, regions):
+def _extract_price_summary_from_aggregate(xl, regions, year=None, quarter=None):
     """E(품목성질물가)집계 시트에서 소비자물가 증감률 추출"""
     try:
+        # 연도/분기 동적 추출
+        if year is None or quarter is None:
+            from utils.excel_utils import extract_year_quarter_from_raw
+            year, quarter = extract_year_quarter_from_raw(xl.io if hasattr(xl, 'io') else str(xl))
+        
         df = pd.read_excel(xl, sheet_name='E(품목성질물가)집계', header=None)
         
-        # 열 구조: 0=지역이름, 1=분류단계, 2=가중치, 3=분류이름
-        # 열 20=2024 2/4분기, 열 24=2025 2/4분기
+        # 헤더 행에서 동적으로 컬럼 찾기
+        header_row = 2
+        curr_col = find_column_by_header_text(df, header_row, year, quarter)
+        prev_col = find_column_by_header_text(df, header_row, year - 1, quarter)
+        
+        if curr_col is None or prev_col is None:
+            print(f"[경고] E(품목성질물가)집계: {year}년 {quarter}분기 컬럼을 찾을 수 없습니다.")
+            return _get_default_sector_summary()
+        
+        print(f"[물가] 현재 분기 컬럼: {curr_col}, 전년동기 컬럼: {prev_col}")
         
         increase_regions = []
         decrease_regions = []
-        nationwide = 0.0
+        nationwide = None  # 0.0 대신 None으로 초기화
         
         for i, row in df.iterrows():
             try:
@@ -639,15 +704,20 @@ def _extract_price_summary_from_aggregate(xl, regions):
                 
                 # 총지수 행 (division == '0')
                 if division == '0':
-                    # 2025 2/4분기 지수 (열 24)와 2024 2/4분기 지수 (열 20)
-                    curr_val = safe_float(row[24], 0)
-                    prev_val = safe_float(row[20], 0)
+                    # 동적으로 찾은 컬럼 사용
+                    curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                    prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                     
-                    # 전년동분기 대비 증감률 계산
-                    if prev_val is not None and prev_val != 0:
+                    # 전년동분기 대비 증감률 계산 (데이터가 없으면 None)
+                    if curr_val is None or prev_val is None:
+                        change = None  # N/A 처리
+                    elif prev_val != 0:
                         change = round((curr_val - prev_val) / prev_val * 100, 1)
                     else:
-                        change = 0.0
+                        change = None  # 0으로 나누기 방지, N/A 처리
+                    
+                    if change is None:
+                        continue  # 데이터가 없으면 건너뛰기
                     
                     if region == '전국':
                         nationwide = change
@@ -680,17 +750,30 @@ def _extract_price_summary_from_aggregate(xl, regions):
         return _get_default_sector_summary()
 
 
-def _extract_employment_summary_from_aggregate(xl, regions):
-    """D(고용률)집계 시트에서 고용률 증감 추출"""
+def _extract_employment_summary_from_aggregate(xl, regions, year=None, quarter=None):
+    """D(고용률)집계 시트에서 고용률 증감 추출 (%p 차이)"""
     try:
+        # 연도/분기 동적 추출
+        if year is None or quarter is None:
+            from utils.excel_utils import extract_year_quarter_from_raw
+            year, quarter = extract_year_quarter_from_raw(xl.io if hasattr(xl, 'io') else str(xl))
+        
         df = pd.read_excel(xl, sheet_name='D(고용률)집계', header=None)
         
-        # 열 구조: 0=지역코드, 1=지역이름, 2=분류단계, 3=산업이름
-        # 열 24=2025 2/4분기 고용률, 열 20=2024 2/4분기 고용률
+        # 헤더 행에서 동적으로 컬럼 찾기
+        header_row = 2
+        curr_col = find_column_by_header_text(df, header_row, year, quarter)
+        prev_col = find_column_by_header_text(df, header_row, year - 1, quarter)
+        
+        if curr_col is None or prev_col is None:
+            print(f"[경고] D(고용률)집계: {year}년 {quarter}분기 컬럼을 찾을 수 없습니다.")
+            return _get_default_sector_summary()
+        
+        print(f"[고용률] 현재 분기 컬럼: {curr_col}, 전년동기 컬럼: {prev_col}")
         
         increase_regions = []
         decrease_regions = []
-        nationwide = 0.0
+        nationwide = None  # 0.0 대신 None으로 초기화
         
         for i, row in df.iterrows():
             try:
@@ -701,12 +784,15 @@ def _extract_employment_summary_from_aggregate(xl, regions):
                 
                 # 총계 행 (division == '0' 또는 industry == '계')
                 if division == '0' or industry == '계':
-                    # 2025 2/4분기 고용률 (열 24)와 2024 2/4분기 고용률 (열 20)
-                    curr_val = safe_float(row[24], 0)
-                    prev_val = safe_float(row[20], 0)
+                    # 동적으로 찾은 컬럼 사용
+                    curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                    prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                     
-                    # 전년동분기 대비 증감 (고용률은 %p 단위)
-                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                    # 전년동분기 대비 증감 (고용률은 %p 단위 - 단순 차이)
+                    if curr_val is None or prev_val is None:
+                        change = None  # N/A 처리
+                    else:
+                        change = round(curr_val - prev_val, 1)  # %p 차이
                     
                     if region == '전국':
                         nationwide = change
@@ -946,17 +1032,19 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
                                 print(f"[DEBUG] {sheet_name}/{region}: 컬럼 범위 초과 (curr_col={curr_col}, prev_col={prev_col}, row_len={len(row)})")
                                 continue
                             
-                            curr_val = safe_float(row[curr_col], 0)
-                            prev_val = safe_float(row[prev_col], 0)
+                            curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                            prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                             
                             # 계산 방식에 따라 증감률 또는 차이 계산
-                            if calc_type == 'difference':
-                                value = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                            if curr_val is None or prev_val is None:
+                                value = None  # N/A 처리
+                            elif calc_type == 'difference':
+                                value = round(curr_val - prev_val, 1)  # %p 차이
                             else:  # growth_rate
-                                if prev_val is not None and prev_val != 0:
+                                if prev_val != 0:
                                     value = round((curr_val - prev_val) / prev_val * 100, 1)
                                 else:
-                                    value = 0.0
+                                    value = None  # 0으로 나누기 방지, N/A 처리
                             
                             # 디버그: 비정상 값 출력
                             if value == -100.0 or (value == 0.0 and key != 'employment'):
@@ -1072,14 +1160,16 @@ def _extract_construction_chart_data(xl, year=2025, quarter=3):
                     
                     # 총계 행 (level == '0', code == '0') - '계' 데이터
                     if level == '0' and code == '0':
-                        curr_val = safe_float(row[curr_col], 0) if curr_col and curr_col < len(row) else 0
-                        prev_val = safe_float(row[prev_col], 0) if prev_col and prev_col < len(row) else 0
+                        curr_val = safe_float(row[curr_col], None) if curr_col and curr_col < len(row) else None
+                        prev_val = safe_float(row[prev_col], None) if prev_col and prev_col < len(row) else None
                         
-                        # 증감률 계산
-                        if prev_val is not None and prev_val != 0:
+                        # 증감률 계산 (데이터가 없으면 None)
+                        if curr_val is None or prev_val is None:
+                            change = None  # N/A 처리
+                        elif prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
-                            change = 0.0
+                            change = None  # 0으로 나누기 방지, N/A 처리
                         
                         # 금액 (백억원 단위로 변환 - 원본은 십억원 단위)
                         amount = int(round(curr_val / 10, 0))
@@ -1173,11 +1263,24 @@ def get_employment_population_data(excel_path, year, quarter):
             'chart_data': []
         }
         try:
+            # 연도/분기 동적 추출
+            from utils.excel_utils import extract_year_quarter_from_raw
+            year, quarter = extract_year_quarter_from_raw(excel_path)
+            
             df = pd.read_excel(xl, sheet_name='I(순인구이동)집계', header=None)
             regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
             
-            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기, col21=2024 2/4분기
+            # 헤더 행에서 동적으로 컬럼 찾기
+            header_row = 2
+            curr_col = find_column_by_header_text(df, header_row, year, quarter)
+            prev_col = find_column_by_header_text(df, header_row, year - 1, quarter)
+            
+            if curr_col is None or prev_col is None:
+                print(f"[경고] I(순인구이동)집계: {year}년 {quarter}분기 컬럼을 찾을 수 없습니다.")
+            else:
+                print(f"[인구이동] 현재 분기 컬럼: {curr_col}, 전년동기 컬럼: {prev_col}")
+            
             # 합계(분류단계 0) 행만 추출
             processed_regions = set()
             region_data = {}  # 지역별 데이터 저장
@@ -1189,16 +1292,25 @@ def get_employment_population_data(excel_path, year, quarter):
                 # 합계 행 (분류단계 0)만 처리, 중복 지역 방지
                 if division == '0' and region in regions and region not in processed_regions:
                     try:
-                        # 2025 2/4분기 데이터 (열 25)와 2024 2/4분기 데이터 (열 21)
-                        curr_value = safe_float(row[25], 0)
-                        prev_value = safe_float(row[21], 0)
-                        value = int(curr_value) if curr_value is not None else 0
+                        # 동적으로 찾은 컬럼 사용
+                        if curr_col is not None and prev_col is not None:
+                            curr_value = safe_float(row[curr_col], None)  # 0 대신 None
+                            prev_value = safe_float(row[prev_col], None)  # 0 대신 None
+                        else:
+                            # Fallback: 하드코딩된 컬럼 (임시)
+                            curr_value = safe_float(row[25], None)
+                            prev_value = safe_float(row[21], None)
+                        
+                        if curr_value is None:
+                            continue  # 데이터가 없으면 건너뛰기
+                        
+                        value = int(curr_value) if curr_value is not None else None
                         
                         # 전년동분기대비 증감률 계산 (천명 단위이므로 직접 비교)
                         if prev_value is not None and prev_value != 0:
                             change = round((curr_value - prev_value) / abs(prev_value) * 100, 1)
                         else:
-                            change = 0.0
+                            change = None  # N/A 처리
                         
                         processed_regions.add(region)
                         region_data[region] = {'value': value, 'change': change}
@@ -1564,7 +1676,11 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             division = str(row[4]).strip() if pd.notna(row[4]) else ''
                             if division == '0':
                                 # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
-                                amount_val = safe_float(row[26], 0)
+                                # 동적으로 컬럼 찾기 (임시로 하드코딩, 나중에 수정 필요)
+                                amount_col = find_column_by_header_text(df, header_row, year, quarter)
+                                if amount_col is None:
+                                    amount_col = 26  # Fallback
+                                amount_val = safe_float(row[amount_col], None)  # 0 대신 None
                                 amount_val = amount_val if amount_val is not None else 0
                                 amount_in_billion = round(amount_val / 100, 0)  # 백만달러 → 억달러
                                 if region == '전국':
@@ -1653,17 +1769,19 @@ def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employm
                     continue
                 
                 # 현재 분기와 전년동기 값
-                curr_val = safe_float(row[curr_col], 0)
-                prev_val = safe_float(row[prev_col], 0)
+                curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                 
-                # 전년동기비 계산
-                if calc_type == 'difference':
-                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                # 전년동기비 계산 (데이터가 없으면 None)
+                if curr_val is None or prev_val is None:
+                    change = None  # N/A 처리
+                elif calc_type == 'difference':
+                    change = round(curr_val - prev_val, 1)  # %p 차이
                 else:  # growth_rate
-                    if prev_val is not None and prev_val != 0:
+                    if prev_val != 0:
                         change = round((curr_val - prev_val) / prev_val * 100, 1)
                     else:
-                        change = 0.0
+                        change = None  # 0으로 나누기 방지, N/A 처리
                 
                 data = {
                     'name': region,
@@ -1742,8 +1860,8 @@ def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
                     continue
                 
                 # 현재 분기와 전년동기 값
-                curr_val = safe_float(row[curr_col], 0)
-                prev_val = safe_float(row[prev_col], 0)
+                curr_val = safe_float(row[curr_col], None)  # 0 대신 None
+                prev_val = safe_float(row[prev_col], None)  # 0 대신 None
                 
                 # 전년동기비 계산
                 if prev_val is not None and prev_val != 0:

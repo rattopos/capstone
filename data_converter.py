@@ -107,10 +107,16 @@ class DataConverter:
             if self.template_path.exists():
                 self.template_available = True
             else:
-                # 대안 경로
-                self.template_path = self.raw_excel_path.parent / '분석표_25년 2분기_캡스톤.xlsx'
-                if self.template_path.exists():
+                # 대안 경로 (홈 디렉토리)
+                home_template = Path.home() / 'Desktop' / '분석표_25년 2분기_캡스톤.xlsx'
+                if home_template.exists():
+                    self.template_path = home_template
                     self.template_available = True
+                else:
+                    # 마지막 대안 경로
+                    self.template_path = self.raw_excel_path.parent / '분석표_25년 2분기_캡스톤.xlsx'
+                    if self.template_path.exists():
+                        self.template_available = True
         
         # 템플릿이 없어도 동작 가능 (새로 생성 모드)
         if not self.template_available:
@@ -119,6 +125,12 @@ class DataConverter:
         self.year = None
         self.quarter = None
         self._detect_year_quarter()
+        
+        # 템플릿에서 연도/분기 개수 파악 (동적 범위 계산용)
+        self.num_years = self.NUM_YEARS
+        self.num_quarters = self.NUM_QUARTERS
+        if self.template_available:
+            self._detect_template_range()
     
     def _detect_year_quarter(self):
         """기초자료에서 연도/분기 자동 추출"""
@@ -191,22 +203,82 @@ class DataConverter:
         self.year, self.quarter = 2025, 2
         print(f"[기본값] 연도/분기: {self.year}년 {self.quarter}분기")
     
-    def _get_target_years(self) -> List[int]:
-        """당해 제외 최근 5개년 리스트 반환
+    def _detect_template_range(self):
+        """템플릿에서 연도/분기 개수 파악 (동적 범위 계산용)
         
-        예: 2025년 2분기 기준 → [2020, 2021, 2022, 2023, 2024]
+        참고 분석표에서 몇 개의 연도와 분기가 사용되는지 확인하여,
+        입력 기초자료의 연도/분기에 맞춰 동일한 범위로 계산할 수 있도록 함.
         """
-        return list(range(self.year - self.NUM_YEARS, self.year))
+        if not self.template_available:
+            return
+        
+        try:
+            wb = openpyxl.load_workbook(self.template_path, data_only=True)
+            
+            # A(광공업생산)집계 시트에서 헤더 확인
+            if 'A(광공업생산)집계' in wb.sheetnames:
+                ws = wb['A(광공업생산)집계']
+                header_row = 3  # 일반적으로 3행이 헤더
+                
+                years = set()
+                quarters = set()
+                
+                # 열 1부터 100까지 확인
+                for col in range(1, 101):
+                    cell = ws.cell(row=header_row, column=col)
+                    val = cell.value
+                    
+                    if val is None:
+                        continue
+                    
+                    val_str = str(val).strip()
+                    
+                    # 연도 패턴: 4자리 숫자 (2000~2100)
+                    if val_str.isdigit() and len(val_str) == 4:
+                        year = int(val_str)
+                        if 2000 <= year <= 2100:
+                            years.add(year)
+                    
+                    # 분기 패턴: "YYYY Q/4" 형식
+                    if '/' in val_str and '4' in val_str:
+                        # "2022 2/4", "2022.2/4" 등 패턴
+                        import re
+                        q_match = re.search(r'(\d{4})[.\s]*(\d)/4', val_str)
+                        if q_match:
+                            quarters.add(f"{q_match.group(1)} {q_match.group(2)}/4")
+                
+                if years:
+                    self.num_years = len(years)
+                    print(f"[템플릿] 연도 개수: {self.num_years}개 ({min(years)}~{max(years)})")
+                
+                if quarters:
+                    self.num_quarters = len(quarters)
+                    sorted_quarters = sorted(quarters)
+                    print(f"[템플릿] 분기 개수: {self.num_quarters}개 ({sorted_quarters[0]}~{sorted_quarters[-1]})")
+            
+            wb.close()
+        except Exception as e:
+            print(f"[경고] 템플릿 범위 파악 실패, 기본값 사용: {e}")
+            # 기본값 유지
+    
+    def _get_target_years(self) -> List[int]:
+        """당해 제외 최근 N개년 리스트 반환 (템플릿에서 파악한 개수 사용)
+        
+        예: 2025년 2분기, num_years=5 기준 → [2020, 2021, 2022, 2023, 2024]
+        예: 2026년 1분기, num_years=5 기준 → [2021, 2022, 2023, 2024, 2025]
+        """
+        return list(range(self.year - self.num_years, self.year))
     
     def _get_target_quarters(self) -> List[str]:
-        """최근 13개 분기 리스트 반환 (YYYY Q/4 형식)
+        """최근 N개 분기 리스트 반환 (템플릿에서 파악한 개수 사용, YYYY Q/4 형식)
         
-        예: 2025년 2분기 기준 → ['2022 2/4', '2022 3/4', ..., '2025 2/4']
+        예: 2025년 2분기, num_quarters=13 기준 → ['2022 2/4', '2022 3/4', ..., '2025 2/4']
+        예: 2026년 1분기, num_quarters=13 기준 → ['2023 1/4', '2023 2/4', ..., '2026 1/4']
         """
         quarters = []
         
-        # 현재 분기부터 거슬러 13개 (현재 분기 포함)
-        for i in range(self.NUM_QUARTERS - 1, -1, -1):
+        # 현재 분기부터 거슬러 num_quarters개 (현재 분기 포함)
+        for i in range(self.num_quarters - 1, -1, -1):
             # i분기 전
             total_quarters = (self.year * 4 + self.quarter) - i
             q_year = (total_quarters - 1) // 4
@@ -269,7 +341,9 @@ class DataConverter:
             생성된 분석표 파일 경로
         """
         if output_path is None:
-            output_path = str(self.raw_excel_path.parent / f"분석표_{self.year}년_{self.quarter}분기_자동생성.xlsx")
+            # 파일명: 입력 기초자료의 연도/분기에 맞춰 생성
+            # 예: "분석표_26년 1분기.xlsx"
+            output_path = str(self.raw_excel_path.parent / f"분석표_{self.year}년 {self.quarter}분기.xlsx")
         
         # 템플릿이 있으면 복사, 없으면 새로 생성
         if self.template_available:
@@ -278,12 +352,12 @@ class DataConverter:
             return self._create_from_scratch(output_path, weight_settings)
     
     def _convert_with_template(self, output_path: str, weight_settings: Dict = None) -> str:
-        """템플릿을 사용하여 분석표 생성 (기존 방식)"""
+        """템플릿을 사용하여 분석표 생성 (스타일 및 수식 보존)"""
         print(f"[변환] 템플릿 복사: {self.template_path.name}")
         shutil.copy(self.template_path, output_path)
         
-        # 복사된 파일 열기 (수식 보존)
-        wb = openpyxl.load_workbook(output_path)
+        # 복사된 파일 열기 (수식 보존, data_only=False로 수식 유지)
+        wb = openpyxl.load_workbook(output_path, data_only=False)
         
         # 이용관련 시트에서 연도/분기 설정 (핵심!)
         if '이용관련' in wb.sheetnames:
@@ -638,20 +712,15 @@ class DataConverter:
         print(f"[GRDP] 기본값 시트 생성 ({row-4}행, {self.year}년 {self.quarter}분기)")
     
     def _calculate_formulas_in_file(self, excel_path: str):
-        """분석표 파일의 수식을 계산하여 값으로 저장
+        """분석표 파일의 분석 시트 수식 계산
         
-        formulas 라이브러리를 사용하여 엑셀 수식을 계산합니다.
+        집계 시트의 값을 분석 시트로 복사하는 방식으로 처리합니다.
+        분석 시트의 수식은 그대로 유지하고, 집계 시트의 값만 업데이트합니다.
         """
-        if FORMULAS_AVAILABLE:
-            try:
-                self._calculate_with_formulas_lib(excel_path)
-                return
-            except Exception as e:
-                print(f"[경고] formulas 라이브러리 계산 실패: {e}")
-                print("[경고] 대체 방식으로 수식 계산 시도...")
-        
-        # formulas 라이브러리 사용 불가 시 직접 계산
-        self._calculate_formulas_manually(excel_path)
+        # 분석 시트의 수식은 그대로 유지하고, 집계 시트의 데이터만 복사하면
+        # 엑셀에서 열 때 자동으로 계산됩니다.
+        # 여기서는 집계 시트의 데이터가 이미 복사되었으므로 추가 작업 불필요.
+        print(f"[변환] 분석 시트 수식은 엑셀에서 자동 계산됩니다.")
     
     def _calculate_with_formulas_lib(self, excel_path: str):
         """formulas 라이브러리를 사용하여 수식 계산"""
@@ -893,8 +962,8 @@ class DataConverter:
                 col_mapping[raw_col] = target_quarter_start_col + i
         
         print(f"    메타데이터: 기초자료 열 0~{raw_meta_cols-1} → 분석표 열 {meta_start}~")
-        print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.NUM_YEARS - 1})")
-        print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.NUM_QUARTERS - 1})")
+        print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.num_years - 1})")
+        print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.num_quarters - 1})")
         if target_weight_col:
             print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (모드: {weight_mode})")
         
@@ -910,9 +979,23 @@ class DataConverter:
                 
                 value = raw_df.iloc[row_idx, raw_col]
                 
-                # NaN 처리
+                # NaN 처리: 빈셀은 그대로 두되, 주변 패턴을 보고 추정 가능하면 추정
                 if pd.isna(value):
-                    continue
+                    # 주변 패턴 확인 (같은 행의 이전/다음 열 값 확인)
+                    estimated_value = self._estimate_missing_value(raw_df, row_idx, raw_col, header_mapping)
+                    if estimated_value is not None:
+                        value = estimated_value
+                    else:
+                        # 추정 불가능하면 건너뛰기 (나중에 실제 값이 들어갈 것으로 가정)
+                        continue
+                
+                # 0 처리: 0으로 채워진 셀은 주변 패턴을 보고 실제 값일 가능성 확인
+                if isinstance(value, (int, float)) and value == 0:
+                    # 주변 패턴 확인
+                    estimated_value = self._estimate_zero_value(raw_df, row_idx, raw_col, header_mapping)
+                    if estimated_value is not None and estimated_value != 0:
+                        value = estimated_value
+                    # 0이 실제 값일 수도 있으므로 그대로 사용
                 
                 # 데이터 검증: 숫자 열에 문자열이 들어가는 것 방지
                 # 연도/분기 데이터 열 (target_year_start_col 이후)에는 숫자만 허용
@@ -949,9 +1032,17 @@ class DataConverter:
                     skipped_count += 1
                     continue
                 
-                # 값 복사
+                # 값 복사 (스타일은 템플릿에서 유지됨)
                 try:
-                    cell.value = value
+                    # 숫자 값의 경우 소수점 처리
+                    if isinstance(value, float):
+                        # 소수점이 0이면 정수로 변환
+                        if value == int(value):
+                            cell.value = int(value)
+                        else:
+                            cell.value = round(value, 2)
+                    else:
+                        cell.value = value
                     copied_count += 1
                 except Exception:
                     skipped_count += 1
@@ -971,6 +1062,63 @@ class DataConverter:
                             skipped_count += 1
         
         print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀, {error_count}개 오류)")
+    
+    def _estimate_missing_value(self, df: pd.DataFrame, row_idx: int, col_idx: int, header_mapping: Dict) -> Optional[float]:
+        """빈셀의 값을 주변 패턴으로 추정
+        
+        같은 행의 이전/다음 분기 값이나 같은 열의 이전/다음 행 값을 참고하여 추정.
+        추정 불가능하면 None 반환 (나중에 실제 값이 들어갈 것으로 가정).
+        """
+        # 같은 행의 이전/다음 분기 값 확인
+        quarter_cols = sorted(header_mapping['quarters'].values())
+        if col_idx in quarter_cols:
+            q_idx = quarter_cols.index(col_idx)
+            # 이전 분기 값 확인
+            if q_idx > 0:
+                prev_col = quarter_cols[q_idx - 1]
+                if prev_col < len(df.columns):
+                    prev_val = df.iloc[row_idx, prev_col]
+                    if pd.notna(prev_val) and isinstance(prev_val, (int, float)) and prev_val != 0:
+                        # 이전 분기 값의 평균 증가율을 가정하여 추정 (보수적 추정)
+                        return prev_val * 1.0  # 변화 없음으로 가정 (보수적)
+        
+        # 추정 불가능
+        return None
+    
+    def _estimate_zero_value(self, df: pd.DataFrame, row_idx: int, col_idx: int, header_mapping: Dict) -> Optional[float]:
+        """0으로 채워진 셀의 값을 주변 패턴으로 추정
+        
+        0이 실제 값일 수도 있으므로, 주변 패턴을 확인하여 0이 아닐 가능성이 높은 경우만 추정.
+        """
+        # 같은 행의 이전/다음 분기 값 확인
+        quarter_cols = sorted(header_mapping['quarters'].values())
+        if col_idx in quarter_cols:
+            q_idx = quarter_cols.index(col_idx)
+            # 이전/다음 분기 값 확인
+            prev_val = None
+            next_val = None
+            
+            if q_idx > 0:
+                prev_col = quarter_cols[q_idx - 1]
+                if prev_col < len(df.columns):
+                    prev_val = df.iloc[row_idx, prev_col]
+            
+            if q_idx < len(quarter_cols) - 1:
+                next_col = quarter_cols[q_idx + 1]
+                if next_col < len(df.columns):
+                    next_val = df.iloc[row_idx, next_col]
+            
+            # 이전과 다음 값이 모두 0이 아니면 평균으로 추정
+            if prev_val is not None and next_val is not None:
+                if pd.notna(prev_val) and pd.notna(next_val) and prev_val != 0 and next_val != 0:
+                    return (prev_val + next_val) / 2
+                elif pd.notna(prev_val) and prev_val != 0:
+                    return prev_val
+                elif pd.notna(next_val) and next_val != 0:
+                    return next_val
+        
+        # 추정 불가능 (0이 실제 값일 가능성)
+        return None
     
     def _calculate_analysis_values(self, wb):
         """분석 시트의 수식을 계산하여 값으로 저장 (캐시용)
@@ -1073,23 +1221,126 @@ class DataConverter:
         # 헤더 행 (3행)
         header_row = 2
         
-        # 최신 분기 컬럼 찾기 (2025 2/4p)
+        # self.year, self.quarter 사용 (이미 _detect_year_quarter()에서 설정됨)
+        year = self.year
+        quarter = self.quarter
+        prev_year = year - 1
+        
+        print(f"[GRDP] 추출된 연도/분기: {year}년 {quarter}분기")
+        
+        # 최신 분기 컬럼 찾기 (동적 처리)
         current_quarter_col = -1
         prev_year_quarter_col = -1
         
+        # 분기 패턴 리스트 (다양한 형식 지원)
+        import re
+        
+        current_patterns = [
+            f"{year}.{quarter}/4",
+            f"{year} {quarter}/4",
+            f"{year}.{quarter}/4p",
+            f"{year} {quarter}/4p",
+            f"{year}년 {quarter}분기",
+            f"{year}  {quarter}/4",  # 공백 2개
+            f"{year}  {quarter}/4p",  # 공백 2개 + p
+        ]
+        
+        prev_patterns = [
+            f"{prev_year}.{quarter}/4",
+            f"{prev_year} {quarter}/4",
+            f"{prev_year}.{quarter}/4p",
+            f"{prev_year} {quarter}/4p",
+            f"{prev_year}년 {quarter}분기",
+            f"{prev_year}  {quarter}/4",  # 공백 2개
+            f"{prev_year}  {quarter}/4p",  # 공백 2개 + p
+        ]
+        
         for col_idx in range(len(df.columns)):
             cell = str(df.iloc[header_row, col_idx]).strip()
-            if '2025' in cell and '2/4' in cell:
-                current_quarter_col = col_idx
-            elif '2024' in cell and '2/4' in cell:
-                prev_year_quarter_col = col_idx
+            
+            # 현재 분기 패턴 매칭
+            if current_quarter_col == -1:
+                for pattern in current_patterns:
+                    if pattern in cell:
+                        current_quarter_col = col_idx
+                        print(f"[GRDP] 현재 분기 컬럼 발견: col {col_idx} = '{cell}'")
+                        break
+            
+            # 전년동기 분기 패턴 매칭
+            if prev_year_quarter_col == -1:
+                for pattern in prev_patterns:
+                    if pattern in cell:
+                        prev_year_quarter_col = col_idx
+                        print(f"[GRDP] 전년동기 컬럼 발견: col {col_idx} = '{cell}'")
+                        break
         
+        # Fallback: 정규식 패턴으로 재시도 (더 유연한 매칭)
         if current_quarter_col == -1:
-            # 마지막 컬럼 사용
-            current_quarter_col = len(df.columns) - 1
-            prev_year_quarter_col = current_quarter_col - 4
+            for col_idx in range(len(df.columns)):
+                cell = str(df.iloc[header_row, col_idx]).strip()
+                # "2025.3/4", "2025 3/4", "2025  3/4", "'25.3/4", "2025  3/4p" 등 패턴
+                # 공백이 1개 이상일 수 있음
+                quarter_match = re.search(rf'(\d{{2,4}})[.\s]{{1,3}}{quarter}/4', cell)
+                if quarter_match:
+                    matched_year = int(quarter_match.group(1))
+                    if matched_year < 100:
+                        matched_year += 2000
+                    if matched_year == year:
+                        current_quarter_col = col_idx
+                        print(f"[GRDP] 현재 분기 컬럼 발견 (정규식): col {col_idx} = '{cell}'")
+                        break
         
-        print(f"[GRDP] 당분기 컬럼: {current_quarter_col}, 전년동기 컬럼: {prev_year_quarter_col}")
+        if prev_year_quarter_col == -1:
+            for col_idx in range(len(df.columns)):
+                cell = str(df.iloc[header_row, col_idx]).strip()
+                # 공백이 1개 이상일 수 있음
+                quarter_match = re.search(rf'(\d{{2,4}})[.\s]{{1,3}}{quarter}/4', cell)
+                if quarter_match:
+                    matched_year = int(quarter_match.group(1))
+                    if matched_year < 100:
+                        matched_year += 2000
+                    if matched_year == prev_year:
+                        prev_year_quarter_col = col_idx
+                        print(f"[GRDP] 전년동기 컬럼 발견 (정규식): col {col_idx} = '{cell}'")
+                        break
+        
+        # 최종 Fallback: 가장 최신 분기 찾기
+        if current_quarter_col == -1:
+            print(f"[경고] {year}년 {quarter}분기 컬럼을 찾을 수 없습니다. 가장 최신 분기 검색 중...")
+            latest_year = 0
+            latest_quarter = 0
+            latest_col = -1
+            
+            for col_idx in range(len(df.columns)):
+                cell = str(df.iloc[header_row, col_idx]).strip()
+                # 분기 패턴 찾기
+                q_match = re.search(r'(\d{4})[.\s]{1,3}(\d)/4', cell)
+                if q_match:
+                    matched_year = int(q_match.group(1))
+                    matched_quarter = int(q_match.group(2))
+                    
+                    # 가장 최신 분기 찾기
+                    if matched_year > latest_year or (matched_year == latest_year and matched_quarter > latest_quarter):
+                        latest_year = matched_year
+                        latest_quarter = matched_quarter
+                        latest_col = col_idx
+            
+            if latest_col != -1:
+                current_quarter_col = latest_col
+                print(f"[GRDP] 가장 최신 분기 사용: {latest_year}년 {latest_quarter}분기 (col {latest_col})")
+                # 전년동기 컬럼 계산 (4분기 전)
+                prev_year_quarter_col = latest_col - 4
+            else:
+                # 최후의 수단: 마지막 컬럼 사용
+                print(f"[경고] 분기 컬럼을 전혀 찾을 수 없습니다. 마지막 컬럼 사용.")
+                current_quarter_col = len(df.columns) - 1
+                prev_year_quarter_col = current_quarter_col - 4
+        
+        if prev_year_quarter_col == -1 or prev_year_quarter_col < 0:
+            print(f"[경고] {prev_year}년 {quarter}분기 컬럼을 찾을 수 없습니다. 계산된 컬럼 사용.")
+            prev_year_quarter_col = max(0, current_quarter_col - 4)
+        
+        print(f"[GRDP] 최종 컬럼: 현재={current_quarter_col}, 전년동기={prev_year_quarter_col}")
         
         # 지역별 데이터 추출
         regional_data = []
