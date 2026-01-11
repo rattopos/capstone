@@ -210,7 +210,7 @@ def get_nationwide_data(df_analysis, df_index):
         try:
             row = df_analysis.iloc[i]
             industry_name = row[7] if pd.notna(row[7]) else ''
-            industry_growth = safe_float(row[20], 0)
+            industry_growth = safe_float(row[20], None)  # PM 요구사항: None으로 처리
             if industry_growth is not None and str(industry_name).strip() != '총지수':
                 industries.append({
                     'name': INDUSTRY_MAPPING.get(str(industry_name).strip(), str(industry_name).strip()),

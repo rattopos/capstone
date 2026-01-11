@@ -278,8 +278,8 @@ def _get_sido_products_from_aggregation(summary_df):
             if pd.isna(product) or product == '합계':
                 continue
             
-            curr = safe_float(row[26], 0)  # 2025.2/4
-            prev = safe_float(row[22], 0)  # 2024.2/4
+            curr = safe_float(row[26], None)  # 2025.2/4 - PM 요구사항: None으로 처리
+            prev = safe_float(row[22], None)  # 2024.2/4 - PM 요구사항: None으로 처리
             
             # 증감률 계산
             if prev and prev != 0:
@@ -627,16 +627,19 @@ def _generate_summary_table_from_aggregation(summary_df, sido_data):
         row = region_total.iloc[0]
         
         # 수출액 (백만달러 -> 억달러)
-        amount_2024 = safe_float(row[22], 0) / 10
-        amount_2025 = safe_float(row[26], 0) / 10
+        # PM 요구사항: 데이터가 없으면 None 반환
+        amount_2024_val = safe_float(row[22], None)
+        amount_2025_val = safe_float(row[26], None)
+        amount_2024 = (amount_2024_val / 10) if amount_2024_val is not None else None
+        amount_2025 = (amount_2025_val / 10) if amount_2025_val is not None else None
         
         # 지수 값
-        idx_2022_2 = safe_float(row[14], 0)
-        idx_2023_2 = safe_float(row[18], 0)
-        idx_2024_1 = safe_float(row[21], 0)
-        idx_2024_2 = safe_float(row[22], 0)
-        idx_2025_1 = safe_float(row[25], 0)
-        idx_2025_2 = safe_float(row[26], 0)
+        idx_2022_2 = safe_float(row[14], None)  # PM 요구사항: None으로 처리
+        idx_2023_2 = safe_float(row[18], None)  # PM 요구사항: None으로 처리
+        idx_2024_1 = safe_float(row[21], None)  # PM 요구사항: None으로 처리
+        idx_2024_2 = safe_float(row[22], None)  # PM 요구사항: None으로 처리
+        idx_2025_1 = safe_float(row[25], None)  # PM 요구사항: None으로 처리
+        idx_2025_2 = safe_float(row[26], None)  # PM 요구사항: None으로 처리
         
         # 전년동분기비 증감률 계산
         # PM 요구사항: 데이터가 없으면 None 반환

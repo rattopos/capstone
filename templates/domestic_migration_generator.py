@@ -108,10 +108,10 @@ def get_sido_data(summary_df):
         if age_group == '합계':
             sido = row[4]
             if sido in SIDO_ORDER:
-                net_migration_2025_24 = safe_float(row[25], 0)  # 2025.2/4 순이동
-                net_migration_2025_14 = safe_float(row[24], 0)  # 2025.1/4
-                net_migration_2024_24 = safe_float(row[21], 0)  # 2024.2/4
-                net_migration_2023_24 = safe_float(row[17], 0)  # 2023.2/4
+                net_migration_2025_24 = safe_float(row[25], None)  # 2025.2/4 순이동 - PM 요구사항: None으로 처리
+                net_migration_2025_14 = safe_float(row[24], None)  # 2025.1/4 - PM 요구사항: None으로 처리
+                net_migration_2024_24 = safe_float(row[21], None)  # 2024.2/4 - PM 요구사항: None으로 처리
+                net_migration_2023_24 = safe_float(row[17], None)  # 2023.2/4 - PM 요구사항: None으로 처리
                 
                 sido_data[sido] = {
                     'net_migration': net_migration_2025_24,
@@ -131,7 +131,7 @@ def get_sido_age_data(summary_df):
         age_group = row[7]
         rank = row[6]
         level = row[5]
-        net_migration = safe_float(row[25], 0)  # 2025.2/4 순이동
+        net_migration = safe_float(row[25], None)  # 2025.2/4 순이동 - PM 요구사항: None으로 처리
         
         if sido in SIDO_ORDER and age_group == '합계':
             current_sido = sido
