@@ -203,6 +203,79 @@ class BaseExtractor:
         
         return None
     
+    def find_sheet_by_content_keyword(self, content_keywords: List[str], sheet_name_keywords: Optional[List[str]] = None) -> Optional[str]:
+        """시트 내용의 키워드로 시트 찾기
+        
+        시트 이름과 시트 내용(헤더) 모두를 확인하여 시트를 찾습니다.
+        건설 시트의 '공정' 키워드처럼 시트 내용에 있는 키워드로 찾을 때 사용합니다.
+        
+        Args:
+            content_keywords: 시트 내용(헤더)에서 찾을 키워드 리스트 (예: ['공정', '산업 이름'])
+            sheet_name_keywords: 시트 이름에서 찾을 키워드 리스트 (선택사항, 예: ['건설'])
+            
+        Returns:
+            찾은 시트명 또는 None
+        """
+        xl = self._get_excel_file()
+        
+        # 1단계: 시트 이름 키워드와 내용 키워드를 모두 만족하는 시트 찾기
+        if sheet_name_keywords and isinstance(sheet_name_keywords, list):
+            for sheet_name in xl.sheet_names:
+                # 시트 이름에 키워드가 있는지 확인
+                sheet_name_match = any(keyword in sheet_name for keyword in sheet_name_keywords)
+                
+                if sheet_name_match:
+                    # 시트 내용 확인
+                    try:
+                        df_header = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=10)
+                        
+                        content_match = False
+                        for i in range(min(10, len(df_header))):
+                            for j in range(min(20, len(df_header.columns))):
+                                val = str(df_header.iloc[i, j]) if pd.notna(df_header.iloc[i, j]) else ''
+                                if any(keyword in val for keyword in content_keywords):
+                                    content_match = True
+                                    break
+                            if content_match:
+                                break
+                        
+                        if content_match:
+                            print(f"[시트 찾기] '{sheet_name_keywords}'와 '{content_keywords}' 키워드로 시트 발견: {sheet_name}")
+                            return sheet_name
+                    except Exception as e:
+                        continue
+        
+        # 2단계: 내용 키워드만으로 찾기 (시트 이름 키워드가 없거나 매칭 실패 시)
+        candidates = []
+        for sheet_name in xl.sheet_names:
+            try:
+                df_header = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=10)
+                
+                for i in range(min(10, len(df_header))):
+                    for j in range(min(20, len(df_header.columns))):
+                        val = str(df_header.iloc[i, j]) if pd.notna(df_header.iloc[i, j]) else ''
+                        if any(keyword in val for keyword in content_keywords):
+                            candidates.append(sheet_name)
+                            break
+                    if sheet_name in candidates:
+                        break
+            except Exception as e:
+                continue
+        
+        if candidates:
+            # 시트 이름 키워드가 있으면 우선순위 부여
+            if sheet_name_keywords:
+                for keyword in sheet_name_keywords:
+                    for candidate in candidates:
+                        if keyword in candidate:
+                            print(f"[시트 찾기] '{content_keywords}' 키워드로 시트 발견: {candidate}")
+                            return candidate
+            
+            print(f"[시트 찾기] '{content_keywords}' 키워드로 시트 발견: {candidates[0]}")
+            return candidates[0]
+        
+        return None
+    
     def _normalize_sheet_name(self, name: str) -> str:
         """시트명 정규화 (공백, 괄호, 특수문자 제거)"""
         if not name:
@@ -857,3 +930,126 @@ class BaseExtractor:
         
         items.sort(key=lambda x: x['value'], reverse=descending)
         return items
+    
+    # =========================================================================
+    # 분류 이름 축약 매핑
+    # =========================================================================
+    
+    _classification_name_mapping: Optional[Dict[str, Dict[str, str]]] = None
+    
+    @classmethod
+    def load_classification_name_mapping(cls) -> Dict[str, Dict[str, str]]:
+        """분류 이름 축약.xlsx 파일 로드 (캐싱)
+        
+        Returns:
+            {
+                '광공업': {'기존이름': '축약이름', ...},
+                '서비스업': {'기존이름': '축약이름', ...},
+                '수출': {'기존이름': '축약이름', ...},
+                '수입': {'기존이름': '축약이름', ...},
+                '소비': {'기존이름': '축약이름', ...},
+                '건설': {'기존이름': '축약이름', ...},
+                '물가': {'기존이름': '축약이름', ...}
+            }
+        """
+        if cls._classification_name_mapping is not None:
+            return cls._classification_name_mapping
+        
+        mapping = {
+            '광공업': {},
+            '서비스업': {},
+            '수출': {},
+            '수입': {},
+            '소비': {},
+            '건설': {},
+            '물가': {}
+        }
+        
+        try:
+            # 프로젝트 루트에서 '분류 이름 축약.xlsx' 파일 찾기
+            base_dir = Path(__file__).parent.parent
+            mapping_file = base_dir / '분류 이름 축약.xlsx'
+            
+            if not mapping_file.exists():
+                print(f"[BaseExtractor] 분류 이름 축약 파일을 찾을 수 없습니다: {mapping_file}")
+                cls._classification_name_mapping = mapping
+                return mapping
+            
+            df = pd.read_excel(mapping_file, sheet_name='이름 축약', header=None)
+            
+            # 광공업 (열 0-1)
+            for i in range(4, len(df)):
+                original = str(df.iloc[i][0]).strip() if pd.notna(df.iloc[i][0]) else ''
+                shortened = str(df.iloc[i][1]).strip() if pd.notna(df.iloc[i][1]) else ''
+                if original:
+                    # 축약이름이 없으면 기존 이름 사용
+                    mapping['광공업'][original] = shortened if shortened else original
+            
+            # 서비스업 (열 3-4)
+            for i in range(4, len(df)):
+                original = str(df.iloc[i][3]).strip() if pd.notna(df.iloc[i][3]) else ''
+                shortened = str(df.iloc[i][4]).strip() if pd.notna(df.iloc[i][4]) else ''
+                if original:
+                    mapping['서비스업'][original] = shortened if shortened else original
+            
+            # 수출 (열 6-7)
+            for i in range(4, len(df)):
+                original = str(df.iloc[i][6]).strip() if pd.notna(df.iloc[i][6]) else ''
+                shortened = str(df.iloc[i][7]).strip() if pd.notna(df.iloc[i][7]) else ''
+                if original:
+                    mapping['수출'][original] = shortened if shortened else original
+            
+            # 수입은 수출과 동일한 매핑 사용 (일단)
+            mapping['수입'] = mapping['수출'].copy()
+            
+            # 소비, 건설, 물가는 서비스업과 동일한 매핑 사용 (일단)
+            # TODO: 실제 파일에 해당 컬럼이 있으면 별도로 로드
+            mapping['소비'] = mapping['서비스업'].copy()
+            mapping['건설'] = mapping['서비스업'].copy()
+            mapping['물가'] = mapping['서비스업'].copy()
+            
+            cls._classification_name_mapping = mapping
+            print(f"[BaseExtractor] 분류 이름 축약 매핑 로드 완료: 광공업 {len(mapping['광공업'])}개, 서비스업 {len(mapping['서비스업'])}개, 수출 {len(mapping['수출'])}개")
+            
+        except Exception as e:
+            print(f"[BaseExtractor] 분류 이름 축약 파일 로드 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            cls._classification_name_mapping = mapping
+        
+        return mapping
+    
+    def get_shortened_name(self, original_name: str, category: str) -> str:
+        """원본 이름을 축약 이름으로 변환
+        
+        Args:
+            original_name: 원본 분류 이름
+            category: 카테고리 ('광공업', '서비스업', '수출', '수입', '소비', '건설', '물가')
+            
+        Returns:
+            축약된 이름 (매칭되지 않으면 원본 이름 반환)
+        """
+        if not original_name:
+            return original_name
+        
+        mapping = self.load_classification_name_mapping()
+        category_mapping = mapping.get(category, {})
+        
+        # 정확한 매칭 시도
+        if original_name in category_mapping:
+            return category_mapping[original_name]
+        
+        # 공백 제거 후 매칭 시도
+        normalized_original = original_name.replace(' ', '').replace('·', '·')
+        for key, value in category_mapping.items():
+            normalized_key = key.replace(' ', '').replace('·', '·')
+            if normalized_original == normalized_key:
+                return value
+        
+        # 부분 매칭 시도 (원본 이름이 키를 포함하는 경우)
+        for key, value in category_mapping.items():
+            if key in original_name or original_name in key:
+                return value
+        
+        # 매칭 실패 시 원본 반환
+        return original_name

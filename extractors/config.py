@@ -61,14 +61,14 @@ SHEET_KEYWORDS: Dict[str, List[str]] = {
 # 기초자료 시트별 분기 열 매핑 (동적 확장 지원)
 RAW_SHEET_QUARTER_COLS: Dict[str, Dict] = {
     "광공업생산": {
-        'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
+        'region_col': 1, 'level_col': 2, 'name_col': 5, 'weight_col': 3, 'header_row': 2,
         '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
         '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
         '2025_1Q': 63, '2025_2Q': 64, '2025_3Q': 65, '2025_4Q': 66,
         '2026_1Q': 67, '2026_2Q': 68, '2026_3Q': 69, '2026_4Q': 70
     },
     "서비스업생산": {
-        'region_col': 1, 'level_col': 2, 'name_col': 5, 'header_row': 2,
+        'region_col': 1, 'level_col': 2, 'name_col': 5, 'weight_col': 3, 'header_row': 2,
         '2023_1Q': 55, '2023_2Q': 56, '2023_3Q': 57, '2023_4Q': 58,
         '2024_1Q': 59, '2024_2Q': 60, '2024_3Q': 61, '2024_4Q': 62,
         '2025_1Q': 63, '2025_2Q': 64, '2025_3Q': 65, '2025_4Q': 66,

@@ -55,6 +55,11 @@ class ProductionExtractor(BaseExtractor):
     
     def _extract_production_data(self, sheet_name: str, title: str) -> Dict[str, Any]:
         """생산 관련 보도자료 공통 추출 로직"""
+        # 키워드 기반으로 시트 찾기
+        actual_sheet_name = self._find_production_sheet(sheet_name)
+        if actual_sheet_name:
+            sheet_name = actual_sheet_name
+        
         report_data = self._create_base_report_data(title)
         
         # 증감률 추출
@@ -67,10 +72,16 @@ class ProductionExtractor(BaseExtractor):
         # 전국 데이터
         national_rate = current_data.get('전국')
         report_data['national_summary'] = self._create_national_summary(national_rate)
-        report_data['nationwide_data'] = self._create_nationwide_data(national_rate)
+        
+        # 카테고리 결정 (광공업/서비스업)
+        category = '광공업' if '광공업' in sheet_name else '서비스업'
+        
+        # 전국 level=1 업종 추출
+        national_industries = self._extract_level_industries(sheet_name, '전국', category, level=1)
+        report_data['nationwide_data'] = self._create_nationwide_data(national_rate, national_industries)
         
         # 지역별 데이터
-        regional_list = self._process_regional_data(current_data)
+        regional_list = self._process_regional_data(current_data, sheet_name, category)
         increase_regions, decrease_regions = self._classify_regions(regional_list)
         
         report_data['top3_increase_regions'] = increase_regions[:3]
@@ -209,15 +220,34 @@ class ProductionExtractor(BaseExtractor):
         trend = '확대' if rate > 0 else ('축소' if rate < 0 else '유지')
         return {'growth_rate': rate, 'direction': direction, 'trend': trend}
     
-    def _create_nationwide_data(self, rate: Optional[float]) -> Dict[str, Any]:
+    def _create_nationwide_data(self, rate: Optional[float], industries: List[Dict] = None) -> Dict[str, Any]:
         """전국 데이터 (템플릿 호환용) 생성"""
+        # 증가/감소 업종 분리
+        increase_industries = []
+        decrease_industries = []
+        
+        if industries:
+            for industry in industries:
+                growth_rate = industry.get('growth_rate')
+                if growth_rate is not None:
+                    if growth_rate > 0:
+                        increase_industries.append(industry)
+                    elif growth_rate < 0:
+                        decrease_industries.append(industry)
+            
+            # 기여도 절대값 기준으로 정렬
+            increase_industries.sort(key=lambda x: abs(x.get('contribution', 0)) if x.get('contribution') is not None else 0, reverse=True)
+            decrease_industries.sort(key=lambda x: abs(x.get('contribution', 0)) if x.get('contribution') is not None else 0, reverse=True)
+        
         return {
             'production_index': None,
             'growth_rate': rate if rate is not None else None,
-            'main_industries': [],
+            'main_industries': industries or [],  # 호환성
+            'main_increase_industries': increase_industries[:5],  # 상위 5개
+            'main_decrease_industries': decrease_industries[:5],  # 상위 5개
         }
     
-    def _process_regional_data(self, current_data: Dict) -> List[Dict]:
+    def _process_regional_data(self, current_data: Dict, sheet_name: str, category: str) -> List[Dict]:
         """지역별 데이터 처리"""
         regional_list = []
         for region in ALL_REGIONS:
@@ -228,11 +258,16 @@ class ProductionExtractor(BaseExtractor):
                 continue
             
             direction = '증가' if rate > 0 else ('감소' if rate < 0 else '보합')
+            
+            # 지역별 level=2 업종 추출
+            top_industries = self._extract_level_industries(sheet_name, region, category, level=2)
+            
             regional_list.append({
                 'region': region,
                 'growth_rate': rate,
                 'direction': direction,
-                'industries': [],
+                'top_industries': top_industries,
+                'industries': top_industries,  # 호환성
             })
         return regional_list
     
@@ -247,6 +282,115 @@ class ProductionExtractor(BaseExtractor):
             key=lambda x: x['growth_rate']
         )
         return increase, decrease
+    
+    def _extract_level_industries(self, sheet_name: str, region: str, category: str, level: int = 2) -> List[Dict]:
+        """level별 업종 추출 (기여도 기준 상위 3개)
+        
+        Args:
+            sheet_name: 시트 이름
+            region: 지역명
+            category: 카테고리 ('광공업' 또는 '서비스업')
+            level: 분류단계 (1 또는 2, 전국은 1, 지역별은 2)
+            
+        Returns:
+            [{'name': '축약이름', 'growth_rate': 증감률, 'contribution': 기여도}, ...]
+        """
+        df = self._load_sheet(sheet_name)
+        if df is None:
+            return []
+        
+        config = RAW_SHEET_QUARTER_COLS.get(sheet_name, {})
+        region_col = config.get('region_col', 1)
+        level_col = config.get('level_col', 2)
+        name_col = config.get('name_col', 7)  # 산업이름 컬럼
+        
+        # 현재 분기 컬럼
+        current_key = f"{self.current_year}_{self.current_quarter}Q"
+        prev_key = f"{self.current_year - 1}_{self.current_quarter}Q"
+        current_col = config.get(current_key)
+        prev_col = config.get(prev_key)
+        
+        if current_col is None or prev_col is None:
+            return []
+        
+        industries = []
+        
+        for row_idx in range(len(df)):
+            try:
+                row_region = str(df.iloc[row_idx, region_col]).strip()
+                row_region = self.normalize_region(row_region)
+                
+                if row_region != region:
+                    continue
+                
+                row_level = df.iloc[row_idx, level_col]
+                if pd.isna(row_level) or str(row_level).strip() != str(level):
+                    continue
+                
+                # 산업 이름 추출
+                industry_name = str(df.iloc[row_idx, name_col]).strip() if name_col < len(df.columns) and pd.notna(df.iloc[row_idx, name_col]) else ''
+                if not industry_name:
+                    continue
+                
+                # 증감률 계산
+                current_val = self.safe_float(df.iloc[row_idx, current_col])
+                prev_val = self.safe_float(df.iloc[row_idx, prev_col])
+                growth_rate = self.calculate_growth_rate(current_val, prev_val)
+                
+                # 기여도 계산 (증감률 * 가중치 또는 증감 * 가중치)
+                weight_col = config.get('weight_col', 3)  # 기본값 3
+                weight = self.safe_float(df.iloc[row_idx, weight_col]) if weight_col < len(df.columns) else None
+                
+                # 기여도 = 증감률 * 가중치 (또는 증감 * 가중치)
+                contribution = None
+                if growth_rate is not None:
+                    if weight is not None:
+                        # 기여도 = 증감률 * 가중치 / 100 (가중치가 백분율인 경우)
+                        contribution = growth_rate * weight / 100.0
+                    else:
+                        # 가중치가 없으면 증감률 자체를 기여도로 사용
+                        contribution = growth_rate
+                
+                # 축약 이름 매칭
+                shortened_name = self.get_shortened_name(industry_name, category)
+                
+                industries.append({
+                    'name': shortened_name,
+                    'growth_rate': growth_rate,
+                    'contribution': contribution,
+                })
+            except (IndexError, ValueError):
+                continue
+        
+        # 기여도 절대값 기준으로 정렬 (상위 3개)
+        industries.sort(key=lambda x: abs(x['contribution']) if x['contribution'] is not None else 0, reverse=True)
+        
+        return industries[:3]
+    
+    def _find_production_sheet(self, default_sheet_name: str) -> Optional[str]:
+        """생산 시트 찾기 ('산업 이름' 키워드 사용)
+        
+        Args:
+            default_sheet_name: 기본 시트명 ('광공업생산' 또는 '서비스업생산')
+            
+        Returns:
+            찾은 시트명 또는 None
+        """
+        # 시트 이름 키워드 결정
+        if '광공업' in default_sheet_name:
+            sheet_keywords = ['광공업']
+        elif '서비스' in default_sheet_name:
+            sheet_keywords = ['서비스']
+        else:
+            sheet_keywords = None
+        
+        # 내용 키워드: '산업 이름'
+        found_sheet = self.find_sheet_by_content_keyword(
+            content_keywords=['산업 이름'],
+            sheet_name_keywords=sheet_keywords
+        )
+        
+        return found_sheet
     
     # =========================================================================
     # 요약 테이블 생성
