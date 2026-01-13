@@ -885,7 +885,6 @@ class StatisticsTableGenerator:
             "grdp": grdp_data,
             "appendix": appendix,
             "page_numbers": {
-                "toc": 21,
                 "appendix_1": page_num + 2,  # GRDP 2페이지 후
                 "appendix_2": page_num + 3
             }

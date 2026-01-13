@@ -172,14 +172,6 @@ REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS
 # ===== 통계표 보도자료 목록 =====
 STATISTICS_REPORTS = [
     {
-        'id': 'stat_toc',
-        'name': '통계표-목차',
-        'table_name': None,
-        'template': 'statistics_table_toc_template.html',
-        'icon': '📋',
-        'category': 'statistics'
-    },
-    {
         'id': 'stat_mining',
         'name': '통계표-광공업생산지수',
         'table_name': '광공업생산지수',
@@ -339,7 +331,6 @@ PAGE_CONFIG = {
     
     # 통계표 섹션 페이지 수 (52~페이지)
     'statistics': {
-        'toc': 1,           # 통계표 목차
         'per_table': 1,     # 각 통계표당 페이지 수
         'count': 11,        # 통계표 개수 (광공업, 서비스업, 소매판매, 건설수주, 고용률, 실업률, 인구이동, 수출, 수입, 소비자물가, GRDP)
     },
@@ -348,36 +339,5 @@ PAGE_CONFIG = {
     'appendix': 1,
 }
 
-# ===== 목차용 항목 정의 (원본 이미지 기준) =====
-# 부문별 7개 항목 (일부는 통합 표시)
-TOC_SECTOR_ITEMS = [
-    {'number': 1, 'name': '생산', 'start_from': 'manufacturing'},  # 광공업 시작 페이지
-    {'number': 2, 'name': '소비', 'start_from': 'consumption'},
-    {'number': 3, 'name': '건설', 'start_from': 'construction'},
-    {'number': 4, 'name': '수출입', 'start_from': 'export'},       # 수출 시작 페이지
-    {'number': 5, 'name': '물가', 'start_from': 'price'},
-    {'number': 6, 'name': '고용', 'start_from': 'employment'},     # 고용률 시작 페이지
-    {'number': 7, 'name': '국내 인구이동', 'start_from': 'population'},
-]
-
-# 시도별 17개 항목 (원본 이미지 기준 - 띄어쓰기 없음)
-TOC_REGION_ITEMS = [
-    {'number': 1, 'name': '서울'},
-    {'number': 2, 'name': '부산'},
-    {'number': 3, 'name': '대구'},
-    {'number': 4, 'name': '인천'},
-    {'number': 5, 'name': '광주'},
-    {'number': 6, 'name': '대전'},
-    {'number': 7, 'name': '울산'},
-    {'number': 8, 'name': '세종'},
-    {'number': 9, 'name': '경기'},
-    {'number': 10, 'name': '강원'},
-    {'number': 11, 'name': '충북'},
-    {'number': 12, 'name': '충남'},
-    {'number': 13, 'name': '전북'},
-    {'number': 14, 'name': '전남'},
-    {'number': 15, 'name': '경북'},
-    {'number': 16, 'name': '경남'},
-    {'number': 17, 'name': '제주'},
-]
+# 목차 관련 상수 제거됨 (사용자 요청)
 
