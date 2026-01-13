@@ -336,13 +336,14 @@ def _get_nationwide_from_raw_data(df):
     else:
         growth_rate = 0.0
     
-    # 업종별 데이터 추출 (분류단계 1 또는 2)
+    # 업종별 데이터 추출 (분류단계 자동 감지, 0 제외)
     industries = []
     for i in range(header_row + 1, len(df)):
         row = df.iloc[i]
         region = str(row[1]).strip() if pd.notna(row[1]) else ''
         classification = str(row[2]).strip() if pd.notna(row[2]) else ''
-        if region == '전국' and classification in ['1', '2']:
+        # 분류단계가 0이 아닌 모든 행 추출
+        if region == '전국' and classification not in ['0', '0.0', '총지수', '계']:
             current = safe_float(row[current_quarter_col], None)
             prev = safe_float(row[prev_year_col], None)
             if current is not None and prev is not None and prev != 0:
@@ -401,12 +402,13 @@ def get_regional_data(df_analysis, df_index):
                 index_2024 = 0
                 index_2025 = 0
             
-            # 업종별 기여도 (컬럼 26)
+            # 업종별 기여도 (컬럼 26, 분류단계 자동 감지, 0 제외)
             industries = []
             for i in range(start_idx + 1, min(start_idx + 14, len(df_analysis))):
                 row = df_analysis.iloc[i]
                 classification = str(row[4]).strip() if pd.notna(row[4]) else ''
-                if classification != '1':  # 분류단계가 1이 아니면 스킵
+                # 분류단계가 0이 아닌 모든 행 추출
+                if classification in ['0', '0.0', '총지수', '계']:
                     continue
                 industry_name = row[7] if pd.notna(row[7]) else ''
                 industry_growth = safe_float(row[20], 0)

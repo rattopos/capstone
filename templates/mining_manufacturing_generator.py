@@ -210,12 +210,18 @@ class 광공업생산Generator:
         if nationwide_total is None:
             return self._extract_nationwide_from_aggregation()
         
-        # 전국 중분류 데이터 (분류단계 2)
+        # 전국 업종 데이터 (분류단계 자동 감지, 0 제외)
         class_col = 4 + col_offset
         contrib_col = 28 + col_offset if 28 + col_offset < len(df.columns) else 28
         
         try:
-            nationwide_industries = df[(df[region_col] == '전국') & (df[class_col].astype(str) == '2') & (pd.notna(df[contrib_col]))]
+            # 분류단계가 0이 아닌 모든 행 추출
+            nationwide_industries = df[
+                (df[region_col] == '전국') & 
+                (df[class_col].astype(str) != '0') & 
+                (df[class_col].astype(str) != '0.0') &
+                (pd.notna(df[contrib_col]))
+            ]
             sorted_industries = nationwide_industries.sort_values(contrib_col, ascending=False)
             increase_industries = sorted_industries[sorted_industries[contrib_col] > 0]
             decrease_industries = sorted_industries[sorted_industries[contrib_col] < 0].sort_values(contrib_col, ascending=True)
@@ -280,8 +286,12 @@ class 광공업생산Generator:
         else:
             growth_rate = 0.0
         
-        # 전국 중분류 업종별 데이터 (분류단계 2)
-        nationwide_industries = df[(df[4] == '전국') & (df[5].astype(str) == '2')]
+        # 전국 업종별 데이터 (분류단계 자동 감지, 0 제외)
+        nationwide_industries = df[
+            (df[4] == '전국') & 
+            (df[5].astype(str) != '0') & 
+            (df[5].astype(str) != '0.0')
+        ]
         
         industries = []
         for _, row in nationwide_industries.iterrows():
@@ -530,8 +540,12 @@ class 광공업생산Generator:
             else:
                 growth_rate = 0.0
             
-            # 해당 지역 업종별 데이터 (분류단계 2)
-            region_industries = df[(df[4] == region) & (df[5].astype(str) == '2')]
+            # 해당 지역 업종별 데이터 (분류단계 자동 감지, 0 제외)
+            region_industries = df[
+                (df[4] == region) & 
+                (df[5].astype(str) != '0') & 
+                (df[5].astype(str) != '0.0')
+            ]
             
             industries = []
             for _, row in region_industries.iterrows():
@@ -638,13 +652,14 @@ class 광공업생산Generator:
             else:
                 growth_rate = 0.0
             
-            # 해당 지역의 업종별 데이터 (분류단계 2)
+            # 해당 지역의 업종별 데이터 (분류단계 자동 감지, 0 제외)
             industries = []
             for i in range(header_row + 1, len(df)):
                 row = df.iloc[i]
                 r_name = str(row[1]).strip() if pd.notna(row[1]) else ''
                 classification = str(row[2]).strip() if pd.notna(row[2]) else ''
-                if r_name == region and classification == '2':
+                # 분류단계가 0이 아닌 모든 행 추출
+                if r_name == region and classification not in ['0', '0.0', '총지수', '계']:
                     current = safe_float(row[current_quarter_col], None)
                     prev = safe_float(row[prev_year_col], None)
                     if current is not None and prev is not None and prev != 0:
