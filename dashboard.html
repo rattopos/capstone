@@ -1235,9 +1235,6 @@
                     <input type="hidden" id="yearSelect" value="2025">
                     <input type="hidden" id="quarterSelect" value="2">
                 </div>
-                <button class="btn btn-secondary" id="weightInfoBtn" onclick="openWeightSettingsModal()" title="가중치 설정">
-                    ⚖️ 가중치 설정
-                </button>
                 <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
                     ⚙️ 담당자 설정
                 </button>
@@ -1550,70 +1547,6 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeContactModal()">취소</button>
                 <button class="btn btn-primary" onclick="saveContactInfo()">💾 저장</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Weight Settings Modal (가중치 설정) - 단순화 버전 -->
-    <div class="modal-overlay" id="weightSettingsModal">
-        <div class="modal" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2 class="modal-title">
-                    <span>⚖️</span>
-                    <span>가중치 결측치 설정</span>
-                </h2>
-                <button class="modal-close" onclick="closeWeightSettingsModal()">×</button>
-            </div>
-            
-            <!-- 안내 메시지 -->
-            <div style="padding: 1rem; background: var(--bg-tertiary); border-radius: 10px; margin-bottom: 1.5rem; border-left: 3px solid var(--accent-primary);">
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
-                    <strong style="color: var(--text-primary);">💡 가중치 처리 방식</strong><br>
-                    • 가중치는 <strong>기초자료 수집표</strong>에서 입력합니다.<br>
-                    • 가중치가 <strong>공란 또는 0</strong>인 경우 아래 기본값으로 대체됩니다.<br>
-                    • 고용률, 실업, 건설, 수출, 수입, 인구이동은 가중치 없음
-                </div>
-            </div>
-            
-            <!-- 결측치 기본값 설정 -->
-            <div style="padding: 1.25rem; background: var(--bg-card); border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid var(--accent-secondary);">
-                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>🔧</span> 결측치(공란/0) 대체값
-                </h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    기초자료에서 가중치가 비어있거나 0인 경우 아래 값으로 대체합니다.
-                </p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="missing-field-item">
-                        <label class="missing-field-label">🏭 광공업생산</label>
-                        <input type="number" class="missing-field-input" id="miningDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
-                    </div>
-                    <div class="missing-field-item">
-                        <label class="missing-field-label">🏢 서비스업생산</label>
-                        <input type="number" class="missing-field-input" id="serviceDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
-                    </div>
-                    <div class="missing-field-item">
-                        <label class="missing-field-label">🛒 소비(소매)</label>
-                        <input type="number" class="missing-field-input" id="consumptionDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
-                    </div>
-                    <div class="missing-field-item">
-                        <label class="missing-field-label">💰 물가</label>
-                        <input type="number" class="missing-field-input" id="priceDefaultWeight" value="1" min="0" step="0.1" placeholder="1">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 안내 -->
-            <div style="padding: 0.75rem 1rem; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 1rem;">
-                <div style="font-size: 0.8rem; color: var(--text-muted);">
-                    <strong style="color: var(--text-secondary);">📝 참고</strong><br>
-                    가중치 값을 직접 수정하려면 <strong>기초자료 수집표</strong>의 해당 시트에서 입력하세요.
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeWeightSettingsModal()">취소</button>
-                <button class="btn btn-primary" onclick="saveWeightSettings()">💾 저장</button>
             </div>
         </div>
     </div>
@@ -1990,13 +1923,6 @@
                 customs_department: '관세청 정보데이터기획담당관',
                 customs_phone: '042-481-7845'
             },
-            // 가중치 설정 (결측치 대체값만)
-            weightSettings: {
-                mining: { mode: 'auto', default_value: 1 },      // 광공업생산
-                service: { mode: 'auto', default_value: 1 },     // 서비스업생산
-                consumption: { mode: 'auto', default_value: 1 }, // 소비(소매)
-                price: { mode: 'auto', default_value: 1 }        // 물가
-            },
             // 가중치 누락 검증 결과
             weightValidation: null,
             // 가중치 누락 시 진행 여부 (사용자 선택)
@@ -2150,51 +2076,6 @@
             
             closeContactModal();
             showToast('담당자 정보가 저장되었습니다.', 'success');
-        }
-
-        // ===== 가중치 설정 모달 함수 (단순화 버전) =====
-        function openWeightSettingsModal() {
-            // 현재 기본값 로드
-            document.getElementById('miningDefaultWeight').value = state.weightSettings.mining.default_value || 1;
-            document.getElementById('serviceDefaultWeight').value = state.weightSettings.service.default_value || 1;
-            document.getElementById('consumptionDefaultWeight').value = state.weightSettings.consumption?.default_value || 1;
-            document.getElementById('priceDefaultWeight').value = state.weightSettings.price?.default_value || 1;
-            
-            document.getElementById('weightSettingsModal').classList.add('active');
-        }
-        
-        function closeWeightSettingsModal() {
-            document.getElementById('weightSettingsModal').classList.remove('active');
-        }
-        
-        function saveWeightSettings() {
-            // 결측치 대체값 저장
-            const miningDefault = parseFloat(document.getElementById('miningDefaultWeight').value) || 1;
-            const serviceDefault = parseFloat(document.getElementById('serviceDefaultWeight').value) || 1;
-            const consumptionDefault = parseFloat(document.getElementById('consumptionDefaultWeight').value) || 1;
-            const priceDefault = parseFloat(document.getElementById('priceDefaultWeight').value) || 1;
-            
-            state.weightSettings = {
-                mining: {
-                    mode: 'auto',  // 항상 기초자료에서 추출
-                    default_value: miningDefault  // 결측치 대체값
-                },
-                service: {
-                    mode: 'auto',
-                    default_value: serviceDefault
-                },
-                consumption: {
-                    mode: 'auto',
-                    default_value: consumptionDefault
-                },
-                price: {
-                    mode: 'auto',
-                    default_value: priceDefault
-                }
-            };
-            
-            closeWeightSettingsModal();
-            showToast('가중치 결측치 설정이 저장되었습니다.', 'success');
         }
 
         // Tab switching

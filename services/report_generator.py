@@ -198,6 +198,7 @@ def _ensure_template_compatibility(data, report_id):
             data['summary_table']['regions'] = data['summary_table']['rows']
     
     # summary_box 기본값 (부문별 템플릿용)
+    # 스키마: summary_box.main_increase_regions[].industries는 항상 string[] 타입
     regional_data = data.get('regional_data', {})
     increase_regions = regional_data.get('increase_regions', [])
     decrease_regions = regional_data.get('decrease_regions', [])
@@ -206,8 +207,173 @@ def _ensure_template_compatibility(data, report_id):
         data['summary_box'] = {}
     
     sb = data['summary_box']
-    sb.setdefault('main_increase_regions', increase_regions[:3] if increase_regions else [])
-    sb.setdefault('main_decrease_regions', decrease_regions[:3] if decrease_regions else [])
+    
+    # 헬퍼 함수: 업종명/품목명을 문자열 리스트로 변환 (스키마 준수)
+    def _extract_item_names(region_data, field_name='industries', max_count=2):
+        """지역 데이터에서 업종명/품목명을 문자열 리스트로 추출
+        
+        Args:
+            region_data: 지역 데이터 딕셔너리
+            field_name: 추출할 필드명 ('industries', 'products', 'top_industries', 'top_businesses' 등)
+            max_count: 최대 추출 개수
+            
+        Returns:
+            업종명/품목명 문자열 리스트
+        """
+        items = []
+        
+        # 특정 필드명으로 직접 확인
+        if field_name in region_data and region_data[field_name]:
+            for item in region_data[field_name][:max_count]:
+                if isinstance(item, dict) and 'name' in item:
+                    items.append(str(item['name']))
+                elif isinstance(item, str):
+                    items.append(item)
+            if items:
+                return items
+        
+        # top_industries 필드 확인 (광공업, 서비스업)
+        if 'top_industries' in region_data and region_data['top_industries']:
+            for ind in region_data['top_industries'][:max_count]:
+                if isinstance(ind, dict) and 'name' in ind:
+                    items.append(str(ind['name']))
+                elif isinstance(ind, str):
+                    items.append(ind)
+            if items:
+                return items
+        
+        # products 필드 확인 (수출, 수입)
+        if 'products' in region_data and region_data['products']:
+            for prod in region_data['products'][:max_count]:
+                if isinstance(prod, dict) and 'name' in prod:
+                    items.append(str(prod['name']))
+                elif isinstance(prod, str):
+                    items.append(prod)
+            if items:
+                return items
+        
+        # top_businesses 필드 확인 (소비)
+        if 'top_businesses' in region_data and region_data['top_businesses']:
+            for bus in region_data['top_businesses'][:max_count]:
+                if isinstance(bus, dict) and 'name' in bus:
+                    items.append(str(bus['name']))
+                elif isinstance(bus, str):
+                    items.append(bus)
+            if items:
+                return items
+        
+        # industries 필드 확인 (이미 문자열 리스트일 수도 있음)
+        if 'industries' in region_data and region_data['industries']:
+            for ind in region_data['industries'][:max_count]:
+                if isinstance(ind, dict) and 'name' in ind:
+                    items.append(str(ind['name']))
+                elif isinstance(ind, str):
+                    items.append(ind)
+        
+        return items
+    
+    # 헬퍼 함수: summary_box의 리스트 필드를 문자열 리스트로 변환
+    def _normalize_summary_box_list_field(region_item, field_name):
+        """summary_box의 리스트 필드를 문자열 리스트로 정규화"""
+        if field_name not in region_item or not region_item[field_name]:
+            return
+        
+        field_value = region_item[field_name]
+        
+        # 이미 문자열 리스트인 경우 그대로 유지
+        if isinstance(field_value, list) and len(field_value) > 0:
+            if isinstance(field_value[0], str):
+                return  # 이미 올바른 타입
+            elif isinstance(field_value[0], dict):
+                # 딕셔너리 리스트인 경우 문자열 리스트로 변환
+                region_item[field_name] = [
+                    str(item.get('name', '')) for item in field_value[:2]
+                    if isinstance(item, dict) and 'name' in item
+                ]
+            else:
+                # 예상치 못한 타입인 경우 빈 리스트로 초기화
+                region_item[field_name] = []
+    
+    # main_increase_regions: 이미 있으면 절대 덮어쓰지 않음 (generator에서 생성한 경우)
+    # 없을 때만 생성하고, 각 보도자료 타입에 맞게 처리
+    if 'main_increase_regions' not in sb:
+        main_increase = []
+        for r in increase_regions[:3]:
+            region_item = {'region': r.get('region', r.get('name', ''))}
+            
+            # 보도자료 타입별 필드 처리
+            # 수출/수입: products
+            if report_id in ('export', 'import'):
+                product_names = _extract_item_names(r, 'products', max_count=2)
+                region_item['products'] = product_names
+            # 소비: main_business (단일 문자열)
+            elif report_id == 'consumption':
+                if 'top_businesses' in r and r['top_businesses']:
+                    region_item['main_business'] = str(r['top_businesses'][0].get('name', '')) if isinstance(r['top_businesses'][0], dict) else str(r['top_businesses'][0])
+                else:
+                    region_item['main_business'] = ''
+            # 건설: main_type, sub_type (단일 문자열)
+            elif report_id == 'construction':
+                # 건설은 generator에서 이미 올바르게 생성하므로 여기서는 건너뜀
+                continue
+            # 고용률/실업률: 지역명만 (이미 generator에서 처리)
+            elif report_id in ('employment', 'unemployment'):
+                # 고용률/실업률은 generator에서 이미 올바르게 생성하므로 여기서는 건너뜀
+                continue
+            # 광공업/서비스업: industries
+            else:
+                industry_names = _extract_item_names(r, 'industries', max_count=2)
+                region_item['industries'] = industry_names
+            
+            main_increase.append(region_item)
+        
+        if main_increase:
+            sb['main_increase_regions'] = main_increase
+    else:
+        # 이미 있는 경우, 각 필드가 올바른 타입인지 확인하고 변환
+        for region_item in sb['main_increase_regions']:
+            # industries 필드 정규화
+            if 'industries' in region_item:
+                _normalize_summary_box_list_field(region_item, 'industries')
+            # products 필드 정규화
+            if 'products' in region_item:
+                _normalize_summary_box_list_field(region_item, 'products')
+            # main_business는 이미 문자열이므로 그대로 유지
+    
+    # main_decrease_regions: 동일한 로직 적용
+    if 'main_decrease_regions' not in sb:
+        main_decrease = []
+        for r in decrease_regions[:3]:
+            region_item = {'region': r.get('region', r.get('name', ''))}
+            
+            # 보도자료 타입별 필드 처리
+            if report_id in ('export', 'import'):
+                product_names = _extract_item_names(r, 'products', max_count=2)
+                region_item['products'] = product_names
+            elif report_id == 'consumption':
+                if 'top_businesses' in r and r['top_businesses']:
+                    region_item['main_business'] = str(r['top_businesses'][0].get('name', '')) if isinstance(r['top_businesses'][0], dict) else str(r['top_businesses'][0])
+                else:
+                    region_item['main_business'] = ''
+            elif report_id == 'construction':
+                continue
+            elif report_id in ('employment', 'unemployment'):
+                continue
+            else:
+                industry_names = _extract_item_names(r, 'industries', max_count=2)
+                region_item['industries'] = industry_names
+            
+            main_decrease.append(region_item)
+        
+        if main_decrease:
+            sb['main_decrease_regions'] = main_decrease
+    else:
+        # 이미 있는 경우, 각 필드가 올바른 타입인지 확인하고 변환
+        for region_item in sb['main_decrease_regions']:
+            if 'industries' in region_item:
+                _normalize_summary_box_list_field(region_item, 'industries')
+            if 'products' in region_item:
+                _normalize_summary_box_list_field(region_item, 'products')
     sb.setdefault('region_count', len(decrease_regions))
     sb.setdefault('increase_count', len(increase_regions))
     sb.setdefault('decrease_count', len(decrease_regions))

@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from src.utils.excel_heuristic_parser import ExcelHeuristicParser
+from utils.column_detector import get_column_mapping
 
 
 class 광공업생산Generator(BaseGenerator):
@@ -177,13 +178,37 @@ class 광공업생산Generator(BaseGenerator):
             parser.close()
         
     def _get_industry_display_name(self, raw_name: str) -> str:
-        """업종명을 보도자료 표기명으로 변환"""
+        """업종명을 보도자료 표기명으로 변환
+        
+        우선순위:
+        1. 분류 이름 축약.xlsx 파일의 매핑 (BaseExtractor 사용)
+        2. 하드코딩된 INDUSTRY_NAME_MAP
+        3. 원본 이름 그대로 반환
+        """
+        if not raw_name:
+            return raw_name
+        
         # 공백 제거
         cleaned = raw_name.strip().replace("\u3000", "").replace("　", "")
         
+        # 1. 분류 이름 축약.xlsx 파일의 매핑 사용 (우선)
+        try:
+            from extractors.base import BaseExtractor
+            mapping = BaseExtractor.load_classification_name_mapping()
+            if '광공업' in mapping and cleaned in mapping['광공업']:
+                shortened = mapping['광공업'][cleaned]
+                if shortened:  # 축약 이름이 있으면 사용
+                    return shortened
+        except Exception as e:
+            # 매핑 파일 로드 실패 시 하드코딩된 매핑 사용
+            pass
+        
+        # 2. 하드코딩된 매핑 사용
         for key, value in self.INDUSTRY_NAME_MAP.items():
             if key in cleaned or cleaned in key:
                 return value
+        
+        # 3. 원본 이름 반환
         return cleaned
     
     def _get_region_display_name(self, raw_name: str) -> str:
@@ -239,10 +264,19 @@ class 광공업생산Generator(BaseGenerator):
             increase_industries = pd.DataFrame()
             decrease_industries = pd.DataFrame()
         
-        # 광공업생산지수 (집계 시트에서)
+        # 광공업생산지수 (집계 시트에서) - 동적 컬럼 감지 적용
         df_agg = self.df_aggregation
-        nationwide_agg = df_agg[(df_agg[4] == '전국') & (df_agg[7] == 'BCD')].iloc[0]
-        production_index = nationwide_agg[26]  # 2025.2/4p 컬럼
+        column_mapping = get_column_mapping(df_agg, self.year, self.quarter)
+        region_col = column_mapping['region_col']
+        code_col = column_mapping['code_col']
+        current_quarter_col = column_mapping.get('current_quarter_col')
+        
+        nationwide_agg_rows = df_agg[(df_agg[region_col] == '전국') & (df_agg[code_col] == 'BCD')]
+        if nationwide_agg_rows.empty:
+            production_index = None
+        else:
+            nationwide_agg = nationwide_agg_rows.iloc[0]
+            production_index = self.safe_float(nationwide_agg[current_quarter_col], None) if current_quarter_col is not None else None
         
         growth_col = 21 + col_offset if 21 + col_offset < len(nationwide_total) else 21
         growth_rate = self.safe_float(nationwide_total[growth_col], None) if growth_col < len(nationwide_total) else None  # PM 요구사항: None으로 처리
@@ -840,10 +874,17 @@ class 광공업생산Generator(BaseGenerator):
         
         main_regions = []
         for r in top_increase:
-            industries = [ind["name"] for ind in r["top_industries"][:2]]
+            # 스키마 준수: industries는 항상 string[] 타입
+            industries = []
+            if "top_industries" in r and r["top_industries"]:
+                for ind in r["top_industries"][:2]:
+                    if isinstance(ind, dict) and "name" in ind:
+                        industries.append(str(ind["name"]))
+                    elif isinstance(ind, str):
+                        industries.append(ind)
             main_regions.append({
                 "region": r["region"],
-                "industries": industries
+                "industries": industries  # 항상 string[]
             })
         
         return {

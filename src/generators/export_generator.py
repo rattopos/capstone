@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from src.utils.excel_heuristic_parser import ExcelHeuristicParser
+from utils.column_detector import get_column_mapping
 
 # 시도 순서
 SIDO_ORDER = [
@@ -438,13 +439,20 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     top_decrease = decrease_regions[:3]
     
     # main_increase_regions: 템플릿에서 사용하는 데이터 구조
+    # 스키마 준수: products는 항상 string[] 타입
     main_increase_regions = []
     for r in top_increase:
         products = r.get('products', [])
-        product_names = [p['name'] for p in products[:2]] if products else []
+        product_names = []
+        if products:
+            for p in products[:2]:
+                if isinstance(p, dict) and 'name' in p:
+                    product_names.append(str(p['name']))
+                elif isinstance(p, str):
+                    product_names.append(p)
         main_increase_regions.append({
             'region': r.get('region', r.get('name', '')),
-            'products': product_names
+            'products': product_names  # 항상 string[]
         })
     
     # 헤드라인
@@ -626,10 +634,40 @@ def generate_summary_table(analysis_df, summary_df, sido_data, excel_path=None):
     return {'rows': rows}
 
 
-def _generate_summary_table_from_aggregation(summary_df, sido_data):
-    """집계 시트에서 테이블 데이터 추출"""
-    # 집계 시트 구조: 3=지역이름, 4=분류단계
-    # 데이터 컬럼: 14=2022.2/4, 18=2023.2/4, 21=2024.1/4, 22=2024.2/4, 25=2025.1/4, 26=2025.2/4
+def _generate_summary_table_from_aggregation(summary_df, sido_data, year=None, quarter=None):
+    """집계 시트에서 테이블 데이터 추출 (동적 컬럼 감지 적용)"""
+    # 동적 컬럼 감지
+    column_mapping = get_column_mapping(summary_df, year, quarter)
+    region_col = column_mapping['region_col']
+    class_col = column_mapping['class_col']
+    col_2024_2q = column_mapping.get('col_2024_2q')
+    col_2025_2q = column_mapping.get('col_2025_2q')
+    col_2025_3q = column_mapping.get('col_2025_3q')
+    current_quarter_col = column_mapping.get('current_quarter_col')
+    
+    # 추가 분기 컬럼 찾기 (2022.2/4, 2023.2/4, 2024.1/4, 2025.1/4)
+    header_row_idx = column_mapping.get('header_row_idx', 0)
+    if header_row_idx >= len(summary_df):
+        header_row_idx = 0
+    header_row = summary_df.iloc[header_row_idx]
+    
+    col_2022_2q = None
+    col_2023_2q = None
+    col_2024_1q = None
+    col_2025_1q = None
+    
+    for col_idx in range(len(header_row)):
+        val = str(header_row[col_idx]) if pd.notna(header_row[col_idx]) else ''
+        val_clean = val.strip().replace('.', ' ').replace('p', '').replace('P', '')
+        
+        if '2022' in val_clean and '2/4' in val_clean:
+            col_2022_2q = col_idx
+        if '2023' in val_clean and '2/4' in val_clean:
+            col_2023_2q = col_idx
+        if '2024' in val_clean and '1/4' in val_clean:
+            col_2024_1q = col_idx
+        if '2025' in val_clean and '1/4' in val_clean:
+            col_2025_1q = col_idx
     
     rows = []
     region_display = {
@@ -644,26 +682,26 @@ def _generate_summary_table_from_aggregation(summary_df, sido_data):
     
     sido_table_data = {}
     for region in all_regions:
-        region_total = summary_df[(summary_df[3] == region) & (summary_df[4].astype(str) == '0')]
+        region_total = summary_df[(summary_df[region_col] == region) & (summary_df[class_col].astype(str) == '0')]
         if region_total.empty:
             continue
         
         row = region_total.iloc[0]
         
-        # 수출액 (백만달러 -> 억달러)
+        # 수출액 (백만달러 -> 억달러) - 현재 분기와 전년동분기 사용
         # PM 요구사항: 데이터가 없으면 None 반환
-        amount_2024_val = safe_float(row[22], None)
-        amount_2025_val = safe_float(row[26], None)
+        amount_2024_val = safe_float(row[col_2024_2q], None) if col_2024_2q is not None else None
+        amount_2025_val = safe_float(row[current_quarter_col], None) if current_quarter_col is not None else None
         amount_2024 = (amount_2024_val / 10) if amount_2024_val is not None else None
         amount_2025 = (amount_2025_val / 10) if amount_2025_val is not None else None
         
-        # 지수 값
-        idx_2022_2 = safe_float(row[14], None)  # PM 요구사항: None으로 처리
-        idx_2023_2 = safe_float(row[18], None)  # PM 요구사항: None으로 처리
-        idx_2024_1 = safe_float(row[21], None)  # PM 요구사항: None으로 처리
-        idx_2024_2 = safe_float(row[22], None)  # PM 요구사항: None으로 처리
-        idx_2025_1 = safe_float(row[25], None)  # PM 요구사항: None으로 처리
-        idx_2025_2 = safe_float(row[26], None)  # PM 요구사항: None으로 처리
+        # 지수 값 (동적 컬럼 사용)
+        idx_2022_2 = safe_float(row[col_2022_2q], None) if col_2022_2q is not None else None  # PM 요구사항: None으로 처리
+        idx_2023_2 = safe_float(row[col_2023_2q], None) if col_2023_2q is not None else None  # PM 요구사항: None으로 처리
+        idx_2024_1 = safe_float(row[col_2024_1q], None) if col_2024_1q is not None else None  # PM 요구사항: None으로 처리
+        idx_2024_2 = safe_float(row[col_2024_2q], None) if col_2024_2q is not None else None  # PM 요구사항: None으로 처리
+        idx_2025_1 = safe_float(row[col_2025_1q], None) if col_2025_1q is not None else None  # PM 요구사항: None으로 처리
+        idx_2025_2 = safe_float(row[current_quarter_col], None) if current_quarter_col is not None else None  # PM 요구사항: None으로 처리
         
         # 전년동분기비 증감률 계산
         # PM 요구사항: 데이터가 없으면 None 반환
@@ -728,7 +766,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     use_aggregation_only = analysis_df.attrs.get('use_aggregation_only', False)
     
     # ★ 1단계: 테이블 데이터를 먼저 생성 (이것이 Single Source of Truth)
-    summary_table = _generate_summary_table_from_aggregation(summary_df, {})
+    summary_table = _generate_summary_table_from_aggregation(summary_df, {}, year, quarter)
     
     # ★ 2단계: 테이블에서 시도별 증감률 추출 (나레이션용)
     sido_data = {}

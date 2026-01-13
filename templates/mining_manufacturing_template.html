@@ -264,7 +264,7 @@
             <div class="headline">◆ 광공업생산은 
                 {% if summary_box.main_increase_regions %}
                 {% for region in summary_box.main_increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') if region.industries else 'N/A' }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>{% if region.industries %}({{ region.industries | join(', ') }}){% else %}(N/A){% endif %}{% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
                 {% else %}

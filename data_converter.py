@@ -890,7 +890,7 @@ class DataConverter:
         연도/분기 범위에 맞는 열만 선택적으로 복사:
         - 연도: 당해 제외 최근 5개년
         - 분기: 최근 13개 분기
-        - 가중치: weight_settings에 따라 처리 (auto/manual/empty)
+        - 가중치: 기초자료에서 직접 읽어옴 (설정 없음)
         
         중요: 분석표 템플릿의 열 1~3은 조회용 컬럼이므로 건너뛰고, 
         기초자료의 메타데이터는 분석표의 열 4부터 매핑됨.
@@ -918,16 +918,7 @@ class DataConverter:
         target_weight_col = sheet_structure.get('weight_col')  # 1-based index
         raw_weight_col = sheet_structure.get('raw_weight_col')  # 0-based index
         
-        # 가중치 설정 결정 (raw_sheet에 따라)
-        weight_config = None
-        if weight_settings:
-            if raw_sheet == '광공업생산':
-                weight_config = weight_settings.get('mining', {})
-            elif raw_sheet == '서비스업생산':
-                weight_config = weight_settings.get('service', {})
-        
-        weight_mode = weight_config.get('mode', 'auto') if weight_config else 'auto'
-        manual_weight_values = weight_config.get('values', []) if weight_config else []
+        # 가중치는 항상 기초자료에서 직접 읽어옴 (설정 없음)
         
         # 열 매핑 생성: 기초자료 열 → 집계 시트 열
         col_mapping = {}
@@ -965,7 +956,7 @@ class DataConverter:
         print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.num_years - 1})")
         print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.num_quarters - 1})")
         if target_weight_col:
-            print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (모드: {weight_mode})")
+            print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (기초자료에서 직접 읽어옴)")
         
         copied_count = 0
         skipped_count = 0
@@ -1010,14 +1001,9 @@ class DataConverter:
                                 print(f"    [경고] 행 {row_idx+1}, 열 {target_col}: 숫자가 아닌 값 무시 '{value}'")
                             continue
                 
-                # 가중치 열 특별 처리
+                # 가중치 열 특별 처리: 기초자료에서 직접 읽어옴
                 if target_weight_col and target_col == target_weight_col:
-                    if weight_mode == 'empty':
-                        continue  # 가중치 공란 유지
-                    elif weight_mode == 'manual':
-                        # 수동 입력 모드는 아래에서 별도 처리
-                        continue
-                    # auto 모드: 기초자료에서 가져온 값 사용
+                    # 가중치는 기초자료에서 그대로 복사 (설정 없음)
                     if not isinstance(value, (int, float)):
                         try:
                             value = float(value)
@@ -1047,19 +1033,7 @@ class DataConverter:
                 except Exception:
                     skipped_count += 1
             
-            # 수동 가중치 처리
-            if target_weight_col and weight_mode == 'manual':
-                data_row_idx = row_idx - 3  # 헤더 3행 제외
-                if 0 <= data_row_idx < len(manual_weight_values):
-                    weight_value = manual_weight_values[data_row_idx]
-                    if weight_value is not None:
-                        try:
-                            weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
-                            if not isinstance(weight_cell, MergedCell):
-                                weight_cell.value = float(weight_value)
-                                copied_count += 1
-                        except Exception:
-                            skipped_count += 1
+            # 가중치는 기초자료에서 직접 읽어오므로 별도 처리 불필요
         
         print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀, {error_count}개 오류)")
     

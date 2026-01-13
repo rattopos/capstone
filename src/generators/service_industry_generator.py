@@ -161,9 +161,14 @@ def load_data(excel_path):
         parser.close()
 
 
-def get_region_indices(df_analysis):
-    """각 지역의 시작 인덱스 찾기"""
+def get_region_indices(df_analysis, year=None, quarter=None):
+    """각 지역의 시작 인덱스 찾기 (동적 컬럼 감지 적용)"""
     region_indices = {}
+    
+    # 동적 컬럼 감지
+    column_mapping = get_column_mapping(df_analysis, year, quarter)
+    region_col = column_mapping['region_col']
+    name_col = column_mapping['name_col']
     
     # 시도 목록
     VALID_REGIONS = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -172,11 +177,11 @@ def get_region_indices(df_analysis):
     for i in range(len(df_analysis)):
         try:
             row = df_analysis.iloc[i]
-            col7_val = str(row[7]).strip() if pd.notna(row[7]) else ''
-            col3_val = str(row[3]).strip() if pd.notna(row[3]) else ''
+            name_col_val = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+            region_col_val = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
             
-            if col7_val == '총지수' and col3_val in VALID_REGIONS:
-                region_indices[col3_val] = i
+            if name_col_val == '총지수' and region_col_val in VALID_REGIONS:
+                region_indices[region_col_val] = i
         except (IndexError, KeyError):
             continue
     
@@ -200,13 +205,19 @@ def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
         # 데이터가 부족한 경우 집계 시트에서 계산
         return _get_nationwide_from_aggregation(df_index, year, quarter)
     
-    # 전국 총지수 행 찾기 (컬럼 3이 '전국'이고 컬럼 7이 '총지수'인 행)
+    # 동적 컬럼 감지
+    analysis_column_mapping = get_column_mapping(df_analysis, year, quarter)
+    region_col_analysis = analysis_column_mapping['region_col']
+    name_col_analysis = analysis_column_mapping['name_col']
+    current_quarter_col_analysis = analysis_column_mapping.get('current_quarter_col')
+    
+    # 전국 총지수 행 찾기 (동적 컬럼 사용)
     nationwide_row = None
     nationwide_idx = None
     for i in range(len(df_analysis)):
         row = df_analysis.iloc[i]
-        if pd.notna(row[3]) and str(row[3]).strip() == '전국':
-            if pd.notna(row[7]) and str(row[7]).strip() == '총지수':
+        if pd.notna(row[region_col_analysis]) and str(row[region_col_analysis]).strip() == '전국':
+            if pd.notna(row[name_col_analysis]) and str(row[name_col_analysis]).strip() == '총지수':
                 nationwide_row = row
                 nationwide_idx = i
                 break
@@ -215,22 +226,35 @@ def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
         # 집계 시트에서 계산
         return _get_nationwide_from_aggregation(df_index, year, quarter)
     
-    # 분석 시트에서 증감률 읽기 (컬럼 20: 2025.2/4)
-    growth_rate = safe_float(nationwide_row[20], None)  # PM 요구사항: None으로 처리
+    # 분석 시트에서 증감률 읽기 (동적 컬럼 사용)
+    growth_rate = safe_float(nationwide_row[current_quarter_col_analysis], None) if current_quarter_col_analysis is not None else None  # PM 요구사항: None으로 처리
     growth_rate = round(growth_rate, 1) if growth_rate else 0.0
     
-    # 집계 시트에서 전국 지수 (데이터가 없으면 None으로 설정)
+    # 집계 시트에서 전국 지수 (동적 컬럼 감지 적용)
     production_index = None
     try:
-        if len(df_index) > 3:
-            index_row = df_index.iloc[3]
-            index_val = index_row[25]  # 2025.2/4p
+        # 집계 시트에서 동적 컬럼 감지
+        index_column_mapping = get_column_mapping(df_index, year, quarter)
+        region_col_index = index_column_mapping['region_col']
+        code_col_index = index_column_mapping['code_col']
+        current_quarter_col_index = index_column_mapping.get('current_quarter_col')
+        
+        # 전국 총지수 행 찾기
+        nationwide_index_rows = df_index[(df_index[region_col_index] == '전국') & (df_index[code_col_index] == 'E~S')]
+        if nationwide_index_rows.empty:
+            # 대체: 분류단계 0인 전국 행
+            class_col_index = index_column_mapping['class_col']
+            nationwide_index_rows = df_index[(df_index[region_col_index] == '전국') & (df_index[class_col_index].astype(str) == '0')]
+        
+        if not nationwide_index_rows.empty and current_quarter_col_index is not None:
+            index_row = nationwide_index_rows.iloc[0]
+            index_val = index_row[current_quarter_col_index]
             if pd.notna(index_val):
                 production_index = round(float(index_val), 1)
     except (IndexError, KeyError, ValueError, TypeError):
         pass
     
-    # 전국 주요 업종 (기여도 기준 상위 3개 - 양수만)
+    # 전국 주요 업종 (기여도 기준 상위 3개 - 양수만) - 동적 컬럼 사용
     industries = []
     start_idx = nationwide_idx + 1 if nationwide_idx is not None else 4
     end_idx = min(start_idx + 13, len(df_analysis))
@@ -238,8 +262,8 @@ def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
     for i in range(start_idx, end_idx):
         try:
             row = df_analysis.iloc[i]
-            industry_name = row[7] if pd.notna(row[7]) else ''
-            industry_growth = safe_float(row[20], None)  # PM 요구사항: None으로 처리
+            industry_name = row[name_col_analysis] if pd.notna(row[name_col_analysis]) else ''
+            industry_growth = safe_float(row[current_quarter_col_analysis], None) if current_quarter_col_analysis is not None else None  # PM 요구사항: None으로 처리
             if industry_growth is not None and str(industry_name).strip() != '총지수':
                 industries.append({
                     'name': INDUSTRY_MAPPING.get(str(industry_name).strip(), str(industry_name).strip()),
@@ -410,7 +434,34 @@ def get_regional_data(df_analysis, df_index, year=None, quarter=None):
     if use_raw:
         return _get_regional_from_raw_data(df_analysis)
     
-    region_indices = get_region_indices(df_analysis)
+    # 동적 컬럼 감지
+    analysis_column_mapping = get_column_mapping(df_analysis, year, quarter)
+    region_col_analysis = analysis_column_mapping['region_col']
+    class_col_analysis = analysis_column_mapping['class_col']
+    name_col_analysis = analysis_column_mapping['name_col']
+    current_quarter_col_analysis = analysis_column_mapping.get('current_quarter_col')
+    
+    # 기여도 컬럼 찾기 (보통 증감률 컬럼 다음에 위치)
+    contribution_col = None
+    if current_quarter_col_analysis is not None:
+        # 기여도 컬럼은 보통 증감률 컬럼 + 6 정도 위치
+        for offset in [6, 5, 7, 8]:
+            test_col = current_quarter_col_analysis + offset
+            if test_col < len(df_analysis.columns):
+                # 헤더에서 "기여" 또는 "기여도" 키워드 확인
+                header_row_idx = analysis_column_mapping.get('header_row_idx', 0)
+                if header_row_idx < len(df_analysis):
+                    header_val = str(df_analysis.iloc[header_row_idx, test_col]) if pd.notna(df_analysis.iloc[header_row_idx, test_col]) else ''
+                    if '기여' in header_val:
+                        contribution_col = test_col
+                        break
+    
+    index_column_mapping = get_column_mapping(df_index, year, quarter)
+    region_col_index = index_column_mapping['region_col']
+    col_2024_2q_index = index_column_mapping.get('col_2024_2q')
+    current_quarter_col_index = index_column_mapping.get('current_quarter_col')
+    
+    region_indices = get_region_indices(df_analysis, year, quarter)
     regions = []
     
     if not region_indices:
@@ -422,30 +473,30 @@ def get_regional_data(df_analysis, df_index, year=None, quarter=None):
             continue
         
         try:
-            # 총지수 행에서 증감률 (컬럼 20: 2025.2/4)
+            # 총지수 행에서 증감률 (동적 컬럼 사용)
             total_row = df_analysis.iloc[start_idx]
-            growth_rate_val = safe_float(total_row[20], None)  # PM 요구사항: None으로 처리
+            growth_rate_val = safe_float(total_row[current_quarter_col_analysis], None) if current_quarter_col_analysis is not None else None  # PM 요구사항: None으로 처리
             growth_rate = round(growth_rate_val, 1) if growth_rate_val else 0.0
             
-            # 집계 시트에서 지수
-            idx_row = df_index[df_index[3] == region]
+            # 집계 시트에서 지수 (동적 컬럼 사용)
+            idx_row = df_index[df_index[region_col_index] == region]
             if not idx_row.empty:
-                index_2024 = safe_float(idx_row.iloc[0][21], None)  # PM 요구사항: None으로 처리
-                index_2025 = safe_float(idx_row.iloc[0][25], None)  # PM 요구사항: None으로 처리
+                index_2024 = safe_float(idx_row.iloc[0][col_2024_2q_index], None) if col_2024_2q_index is not None else None  # PM 요구사항: None으로 처리
+                index_2025 = safe_float(idx_row.iloc[0][current_quarter_col_index], None) if current_quarter_col_index is not None else None  # PM 요구사항: None으로 처리
             else:
-                index_2024 = 0
-                index_2025 = 0
+                index_2024 = None
+                index_2025 = None
             
-            # 업종별 기여도 (컬럼 26)
+            # 업종별 기여도 (동적 컬럼 사용)
             industries = []
             for i in range(start_idx + 1, min(start_idx + 14, len(df_analysis))):
                 row = df_analysis.iloc[i]
-                classification = str(row[4]).strip() if pd.notna(row[4]) else ''
+                classification = str(row[class_col_analysis]).strip() if pd.notna(row[class_col_analysis]) else ''
                 if classification != '1':  # 분류단계가 1이 아니면 스킵
                     continue
-                industry_name = row[7] if pd.notna(row[7]) else ''
-                industry_growth = safe_float(row[20], None)  # PM 요구사항: None으로 처리
-                contribution = safe_float(row[26], None)  # PM 요구사항: None으로 처리
+                industry_name = row[name_col_analysis] if pd.notna(row[name_col_analysis]) else ''
+                industry_growth = safe_float(row[current_quarter_col_analysis], None) if current_quarter_col_analysis is not None else None  # PM 요구사항: None으로 처리
+                contribution = safe_float(row[contribution_col], None) if contribution_col is not None else None  # PM 요구사항: None으로 처리
                 
                 if contribution is not None:
                     industries.append({
@@ -694,10 +745,10 @@ def _get_regional_from_raw_data(df):
     }
 
 
-def get_growth_rates_table(df_analysis, df_index):
+def get_growth_rates_table(df_analysis, df_index, year=None, quarter=None):
     """표에 들어갈 증감률 및 지수 데이터 생성"""
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
-    region_indices = get_region_indices(df_analysis)
+    region_indices = get_region_indices(df_analysis, year, quarter)
     
     # 분석 시트가 비어있거나 지역 인덱스를 찾을 수 없으면 집계 시트에서 직접 계산
     if use_aggregation_only or len(region_indices) <= 1:
@@ -867,10 +918,17 @@ def get_summary_box_data(regional_data):
     
     main_regions = []
     for r in top3:
-        industries = [ind['name'] for ind in r['top_industries'][:2]]
+        # 스키마 준수: industries는 항상 string[] 타입
+        industries = []
+        if 'top_industries' in r and r['top_industries']:
+            for ind in r['top_industries'][:2]:
+                if isinstance(ind, dict) and 'name' in ind:
+                    industries.append(str(ind['name']))
+                elif isinstance(ind, str):
+                    industries.append(ind)
         main_regions.append({
             'region': r['region'],
-            'industries': industries
+            'industries': industries  # 항상 string[]
         })
     
     return {

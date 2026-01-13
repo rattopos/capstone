@@ -810,11 +810,17 @@ def get_summary_box_data(regional_data):
     
     main_regions = []
     for r in top3_decrease:
-        # 첫 번째 감소 업태
-        main_business = r['top_businesses'][0]['name'] if r['top_businesses'] else ''
+        # 첫 번째 감소 업태 (스키마 준수: main_business는 항상 string 타입)
+        main_business = ''
+        if r.get('top_businesses') and len(r['top_businesses']) > 0:
+            first_business = r['top_businesses'][0]
+            if isinstance(first_business, dict) and 'name' in first_business:
+                main_business = str(first_business['name'])
+            elif isinstance(first_business, str):
+                main_business = first_business
         main_regions.append({
             'region': r['region'],
-            'main_business': main_business
+            'main_business': main_business  # 항상 string
         })
     
     return {

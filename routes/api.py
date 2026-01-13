@@ -118,7 +118,7 @@ def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
         
         # 업로드 폴더의 모든 파일 확인
         deleted_count = 0
-        for file_path in UPLOAD_FOLDER.glob('*'):
+        for file_path in Config.UPLOAD_FOLDER.glob('*'):
             if file_path.is_file():
                 # 정리 대상인지 확인
                 should_delete = False
@@ -504,7 +504,7 @@ def upload_excel():
     
     # 파일 저장
     filename = safe_filename(file.filename)
-    filepath = Path(UPLOAD_FOLDER) / filename
+    filepath = Path(Config.UPLOAD_FOLDER) / filename
     file.save(str(filepath))
     
     saved_size = filepath.stat().st_size
@@ -623,7 +623,7 @@ def upload_grdp_file():
     if 'grdp' not in filename.lower() and 'GRDP' not in filename:
         filename = f"grdp_{filename}"
     
-    filepath = UPLOAD_FOLDER / filename
+    filepath = Config.UPLOAD_FOLDER / filename
     file.save(str(filepath))
     print(f"[GRDP 업로드] 파일 저장 완료: {filename}")
     
@@ -861,7 +861,7 @@ def download_analysis():
     
     try:
         converter = DataConverter(str(raw_excel_path))
-        analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+        analysis_output = str(Config.UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
         
         # 이미 유효한 분석표가 있는지 확인 (세션에서 생성된 파일)
         download_path = session.get('download_analysis_path')
@@ -924,15 +924,16 @@ def download_analysis():
 
 @api_bp.route('/generate-analysis-with-weights', methods=['POST'])
 def generate_analysis_with_weights():
-    """[레거시] 가중치 설정을 포함하여 분석표 생성 + 다운로드
+    """[레거시] 분석표 생성 + 다운로드
     
     주의: 이 API는 레거시 워크플로우 지원을 위해 유지됩니다.
-    트랙 1 (raw_direct)에서는 사용되지 않습니다.
+    가중치는 기초자료에서 직접 읽어오므로 weight_settings는 무시됩니다.
     """
     import time
     
     data = request.get_json()
-    weight_settings = data.get('weight_settings', {})  # {mining: {mode, values}, service: {mode, values}}
+    # weight_settings는 레거시 호환용으로 받지만 사용하지 않음
+    # 가중치는 기초자료에서 직접 읽어옴
     
     raw_excel_path = session.get('raw_excel_path')
     if not raw_excel_path or not Path(raw_excel_path).exists():
@@ -941,9 +942,9 @@ def generate_analysis_with_weights():
     try:
         converter = DataConverter(str(raw_excel_path))
         
-        # 분석표 생성 (가중치 설정 포함)
-        analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_settings=weight_settings)
+        # 분석표 생성 (가중치는 기초자료에서 직접 읽어옴)
+        analysis_output = str(Config.UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
         
         # 파일 저장 완료 대기 (파일 시스템 동기화)
         time.sleep(0.3)
@@ -1310,7 +1311,7 @@ def export_final_document():
         else:
             output_filename = f'지역경제동향_{year}년_{quarter}분기_PDF용.html'
         
-        output_path = UPLOAD_FOLDER / output_filename
+        output_path = Config.UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
@@ -1501,7 +1502,7 @@ def export_xlsx_document():
         
         # 파일 저장
         output_filename = f'지역경제동향_{year}년_{quarter}분기.xlsx'
-        output_path = UPLOAD_FOLDER / output_filename
+        output_path = Config.UPLOAD_FOLDER / output_filename
         
         wb.save(output_path)
         
@@ -1756,7 +1757,7 @@ def export_hwp_import():
         
         # 파일 저장
         output_filename = f'지역경제동향_{year}년_{quarter}분기_한글불러오기용.html'
-        output_path = UPLOAD_FOLDER / output_filename
+        output_path = Config.UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
@@ -2204,7 +2205,7 @@ def export_hwp_ready():
 '''
         
         output_filename = f'지역경제동향_{year}년_{quarter}분기_한글복붙용.html'
-        output_path = UPLOAD_FOLDER / output_filename
+        output_path = Config.UPLOAD_FOLDER / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
