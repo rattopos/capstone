@@ -4,11 +4,24 @@
 """
 
 import os
+import sys
 from pathlib import Path
 
 # 프로젝트 루트 설정
 BASE_DIR = Path(__file__).parent.parent
 TEMPLATES_DIR = BASE_DIR / 'templates'
+
+# Qt6 경로 설정 (Qt6 사용 시)
+try:
+    from PyQt6.QtCore import QStandardPaths
+    QT6_AVAILABLE = True
+    # Qt6 표준 경로 사용
+    APP_DATA_DIR = Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation))
+    USER_DOCUMENTS_DIR = Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
+except ImportError:
+    QT6_AVAILABLE = False
+    APP_DATA_DIR = BASE_DIR
+    USER_DOCUMENTS_DIR = BASE_DIR
 
 # Vercel 환경 감지 및 디렉토리 설정
 # Vercel 서버리스 환경에서는 /tmp 디렉토리만 쓰기 가능
