@@ -14,7 +14,8 @@ from werkzeug.utils import secure_filename
 import unicodedata
 import uuid
 
-from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER, EXPORT_FOLDER
+from config.config import Config
+from config.settings import BASE_DIR, EXPORT_FOLDER
 
 
 def safe_filename(filename):
@@ -321,7 +322,7 @@ def _handle_raw_data_upload(filepath: Path, filename: str):
     conversion_info = None
     if grdp_data:
         session['grdp_data'] = grdp_data
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+        grdp_json_path = Config.OUTPUT_FOLDER / 'grdp_extracted.json'
         try:
             with open(grdp_json_path, 'w', encoding='utf-8') as f:
                 json.dump(grdp_data, f, ensure_ascii=False, indent=2)
@@ -434,7 +435,7 @@ def _handle_analysis_upload(filepath: Path, filename: str):
     conversion_info = None
     if grdp_data:
         session['grdp_data'] = grdp_data
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+        grdp_json_path = Config.OUTPUT_FOLDER / 'grdp_extracted.json'
         try:
             with open(grdp_json_path, 'w', encoding='utf-8') as f:
                 json.dump(grdp_data, f, ensure_ascii=False, indent=2)
@@ -633,7 +634,7 @@ def upload_grdp_file():
     
     if grdp_data:
         session['grdp_data'] = grdp_data
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+        grdp_json_path = Config.OUTPUT_FOLDER / 'grdp_extracted.json'
         with open(grdp_json_path, 'w', encoding='utf-8') as f:
             json.dump(grdp_data, f, ensure_ascii=False, indent=2)
         
@@ -2466,7 +2467,7 @@ def save_html_to_project():
             'filename': output_filename,
             'path': str(output_path),
             'total_pages': len(pages),
-            'message': f'HTML 파일이 프로젝트 메인 디렉토리에 저장되었습니다: {output_filename}'
+            'message': f'HTML 파일이 output 폴더에 저장되었습니다: {output_filename}'
         })
         
     except Exception as e:

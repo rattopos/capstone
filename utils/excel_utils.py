@@ -5,14 +5,15 @@
 
 import importlib.util
 from pathlib import Path
+from typing import Optional, Any, Dict, Tuple
 import pandas as pd
 
-from config.settings import TEMPLATES_DIR
+from config.config import Config
 
 
-def load_generator_module(generator_name):
+def load_generator_module(generator_name: str) -> Optional[Any]:
     """동적으로 generator 모듈 로드"""
-    generator_path = TEMPLATES_DIR / generator_name
+    generator_path = Config.GENERATORS_DIR / generator_name
     if not generator_path.exists():
         return None
     
@@ -110,7 +111,7 @@ def extract_year_quarter_from_excel(filepath):
         return now.year, ((now.month - 1) // 3) + 1
 
 
-def extract_year_quarter_from_raw(filepath):
+def extract_year_quarter_from_raw(filepath: str) -> tuple[int, int]:
     """기초자료 수집표에서 연도와 분기 추출 (동적 감지)"""
     import re
     from datetime import datetime
@@ -267,7 +268,7 @@ def detect_file_type(filepath: str) -> str:
         return 'unknown'
 
 
-def get_file_type_details(filepath: str) -> dict:
+def get_file_type_details(filepath: str) -> Dict[str, Any]:
     """파일 유형과 상세 정보를 함께 반환
     
     Returns:
@@ -347,7 +348,7 @@ def get_file_type_details(filepath: str) -> dict:
         }
 
 
-def validate_sheet_structure(filepath: str, expected_type: str) -> dict:
+def validate_sheet_structure(filepath: str, expected_type: str) -> Dict[str, Any]:
     """파일의 시트 구조가 예상 유형과 일치하는지 검증
     
     Args:

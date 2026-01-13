@@ -8,7 +8,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, DEBUG_FOLDER, EXPORT_FOLDER, BASE_DIR
+from config.config import Config
+from config.settings import UPLOAD_FOLDER, DEBUG_FOLDER, EXPORT_FOLDER, BASE_DIR
 
 main_bp = Blueprint('main', __name__)
 
@@ -42,7 +43,7 @@ def index():
 @main_bp.route('/preview/infographic')
 def preview_infographic():
     """인포그래픽 미리보기 (직접 접근용)"""
-    output_path = TEMPLATES_DIR / 'infographic_output.html'
+    output_path = Config.OUTPUT_FOLDER / 'infographic_output.html'
     if output_path.exists():
         return send_file(output_path)
     return "인포그래픽이 아직 생성되지 않았습니다.", 404
@@ -104,7 +105,7 @@ def view_export_file(filepath):
 @main_bp.route('/templates/<filename>')
 def serve_template_file(filename):
     """templates 폴더의 정적 파일 제공 (이미지 등)"""
-    filepath = TEMPLATES_DIR / filename
+    filepath = Config.TEMPLATES_DIR / filename
     if filepath.exists() and filepath.is_file():
         # 이미지 파일
         if filename.endswith('.png'):

@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Blueprint, request, jsonify, session
 from jinja2 import Template
 
-from config.settings import TEMPLATES_DIR
+from config.config import Config
 from config.reports import (
     REPORT_ORDER, SUMMARY_REPORTS, REGIONAL_REPORTS, STATISTICS_REPORTS,
     PAGE_CONFIG, TOC_SECTOR_ITEMS, TOC_REGION_ITEMS
@@ -142,7 +142,7 @@ def generate_summary_preview():
                 return jsonify({'success': False, 'error': error_msg})
         
         # 템플릿 파일 존재 확인
-        template_path = TEMPLATES_DIR / template_name
+        template_path = Config.TEMPLATES_DIR / template_name
         if not template_path.exists():
             error_msg = f"템플릿 파일을 찾을 수 없습니다: {template_name}"
             print(f"[PREVIEW] {error_msg}")

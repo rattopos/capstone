@@ -6,11 +6,13 @@
 import importlib.util
 import json
 import inspect
+from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 from pathlib import Path
 from jinja2 import Template
 
-from config.settings import TEMPLATES_DIR, BASE_DIR, UPLOAD_FOLDER
+from config.config import Config
+from config.settings import BASE_DIR
 from utils.filters import is_missing, format_value, val, safe_format, safe_abs
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
@@ -20,7 +22,12 @@ from .grdp_service import (
 )
 
 
-def _extract_data_from_raw(raw_excel_path, report_id, year, quarter):
+def _extract_data_from_raw(
+    raw_excel_path: str,
+    report_id: str,
+    year: int,
+    quarter: int
+) -> Optional[Dict[str, Any]]:
     """기초자료에서 직접 보도자료 데이터 추출 (모듈화된 extractors 패키지 사용)
     
     Args:
@@ -350,11 +357,17 @@ def _ensure_template_compatibility(data, report_id):
     return data
 
 
-def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
+def _generate_from_schema(
+    template_name: str,
+    report_id: str,
+    year: int,
+    quarter: int,
+    custom_data: Optional[Dict[str, Any]] = None
+) -> Tuple[Optional[str], Optional[str], List[str]]:
     """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)"""
     try:
         # 스키마 파일에서 기본값 로드
-        schema_path = TEMPLATES_DIR / f"{report_id}_schema.json"
+        schema_path = Config.SCHEMAS_DIR / f"{report_id}_schema.json"
         if not schema_path.exists():
             return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
         
@@ -382,7 +395,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
                         break
         
         # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / template_name
+        template_path = Config.TEMPLATES_DIR / template_name
         if not template_path.exists():
             return None, f"템플릿 파일을 찾을 수 없습니다: {template_path}", []
         
@@ -445,7 +458,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 raw_data = _ensure_template_compatibility(raw_data, report_id)
                 
                 # 템플릿 렌더링
-                template_path = TEMPLATES_DIR / template_name
+                template_path = Config.TEMPLATES_DIR / template_name
                 if template_path.exists():
                     with open(template_path, 'r', encoding='utf-8') as f:
                         template_content = f.read()
@@ -549,7 +562,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         missing = check_missing_data(data, report_id)
         
         # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / template_name
+        template_path = Config.TEMPLATES_DIR / template_name
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
         
@@ -613,7 +626,7 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
                         region_name, '서비스업생산', 3)
                     
                     # 템플릿 렌더링
-                    template_path = TEMPLATES_DIR / 'regional_template.html'
+                    template_path = Config.TEMPLATES_DIR / 'regional_template.html'
                     if template_path.exists():
                         with open(template_path, 'r', encoding='utf-8') as f:
                             from jinja2 import Template
@@ -715,7 +728,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         
         # 2. 추출된 JSON 파일 확인
         if grdp_data is None:
-            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+            grdp_json_path = Config.OUTPUT_FOLDER / 'grdp_extracted.json'
             if grdp_json_path.exists():
                 with open(grdp_json_path, 'r', encoding='utf-8') as f:
                     grdp_data = json.load(f)
@@ -746,7 +759,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
                     grdp_data = kosis_grdp_data
                     if session_data is None:
                         session['grdp_data'] = grdp_data
-                    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
+                    grdp_json_path = Config.OUTPUT_FOLDER / 'grdp_extracted.json'
                     with open(grdp_json_path, 'w', encoding='utf-8') as f:
                         json.dump(grdp_data, f, ensure_ascii=False, indent=2)
                     print(f"[GRDP] KOSIS GRDP 파일에서 데이터 파싱 성공")
@@ -754,7 +767,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
         
         # 5. 참고_GRDP Generator 로드 시도
         if grdp_data is None:
-            grdp_generator_path = TEMPLATES_DIR / 'reference_grdp_generator.py'
+            grdp_generator_path = Config.GENERATORS_DIR / 'reference_grdp_generator.py'
             if grdp_generator_path.exists():
                 spec = importlib.util.spec_from_file_location('reference_grdp_generator', str(grdp_generator_path))
                 module = importlib.util.module_from_spec(spec)
@@ -788,7 +801,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
             }
         
         # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
+        template_path = Config.TEMPLATES_DIR / 'reference_grdp_template.html'
         if template_path.exists():
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = Template(f.read())
@@ -976,7 +989,7 @@ def _generate_default_grdp_html(grdp_data):
 def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=None):
     """통계표 보도자료 HTML 생성"""
     try:
-        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
+        generator_path = Config.GENERATORS_DIR / 'statistics_table_generator.py'
         if not generator_path.exists():
             return None, f"통계표 Generator를 찾을 수 없습니다"
         
@@ -990,7 +1003,7 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
             current_year=year,
             current_quarter=quarter
         )
-        template_path = TEMPLATES_DIR / 'statistics_table_template.html'
+        template_path = Config.TEMPLATES_DIR / 'statistics_table_template.html'
         
         html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
         
@@ -1012,7 +1025,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
         table_name = stat_config.get('table_name')
         
         # 통계표 Generator 모듈 로드
-        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
+        generator_path = Config.GENERATORS_DIR / 'statistics_table_generator.py'
         if generator_path.exists():
             spec = importlib.util.spec_from_file_location('statistics_table_generator', str(generator_path))
             module = importlib.util.module_from_spec(spec)
@@ -1156,7 +1169,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
             return None, f"알 수 없는 통계표 ID: {stat_id}"
         
         # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / template_name
+        template_path = Config.TEMPLATES_DIR / template_name
         if not template_path.exists():
             return None, f"템플릿을 찾을 수 없습니다: {template_name}"
         

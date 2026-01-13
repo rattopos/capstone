@@ -17,9 +17,13 @@ import threading
 
 from flask import Flask
 
-from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, UPLOAD_FOLDER, IS_FROZEN
+from config.config import Config
+from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, IS_FROZEN
 from utils.filters import register_filters
 from routes import main_bp, api_bp, preview_bp, debug_bp
+
+# 설정 초기화
+Config.init_directories()
 
 
 def create_app():
@@ -32,7 +36,9 @@ def create_app():
     
     # 설정
     app.secret_key = SECRET_KEY
-    app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
+    app.config['UPLOAD_FOLDER'] = str(Config.UPLOAD_FOLDER)
+    app.config['OUTPUT_FOLDER'] = str(Config.OUTPUT_FOLDER)
+    app.config['TEMPLATES_DIR'] = str(Config.TEMPLATES_DIR)
     app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
     
     # Jinja2 커스텀 필터 등록
@@ -43,6 +49,7 @@ def create_app():
     app.register_blueprint(api_bp)
     app.register_blueprint(preview_bp)
     app.register_blueprint(debug_bp)
+    app.register_blueprint(output_bp)
     
     return app
 
@@ -53,14 +60,14 @@ app = create_app()
 
 def open_browser():
     """기본 브라우저에서 애플리케이션 열기"""
-    webbrowser.open('http://localhost:5050')
+    webbrowser.open(f'http://localhost:{Config.DEFAULT_PORT}')
 
 
 if __name__ == '__main__':
     print("=" * 50)
     print("지역경제동향 보도자료 생성 시스템")
     print("=" * 50)
-    print(f"서버 시작: http://localhost:5050")
+    print(f"서버 시작: http://localhost:{Config.DEFAULT_PORT}")
     print("=" * 50)
     
     if IS_FROZEN:
@@ -69,7 +76,7 @@ if __name__ == '__main__':
         threading.Timer(1.5, open_browser).start()
         print("브라우저가 자동으로 열립니다...")
         print("종료하려면 이 창을 닫거나 Ctrl+C를 누르세요.")
-        app.run(debug=False, host='127.0.0.1', port=5050, threaded=True)
+        app.run(debug=False, host='127.0.0.1', port=Config.DEFAULT_PORT, threaded=True)
     else:
         # 개발 환경: Debug 모드
-        app.run(debug=True, host='0.0.0.0', port=5050)
+        app.run(debug=True, host='0.0.0.0', port=Config.DEFAULT_PORT)
