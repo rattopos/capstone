@@ -20,7 +20,7 @@ from flask import Flask
 from config.config import Config
 from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, IS_FROZEN
 from utils.filters import register_filters
-from routes import main_bp, api_bp, preview_bp, debug_bp
+from routes import main_bp, api_bp, preview_bp, debug_bp, output_bp
 
 # 설정 초기화
 Config.init_directories()

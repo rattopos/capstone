@@ -41,20 +41,19 @@ def load_data(excel_path):
     parser = ExcelHeuristicParser(excel_path)
     
     try:
-        # 분석 시트 찾기 (키워드 기반)
-        analysis_result = parser.get_sheet_by_fallback(
-            primary_keywords=['수출', '분석', 'G'],
-            fallback_keywords=['수출'],
+        # 수집표(기초자료) 시트만 찾기 (분석 시트 사용 안함)
+        analysis_result = parser.find_target_sheet(
+            keywords=['수출'],
             required_columns=['지역', '품목'],
             required_row_labels=['전국', '합계']
         )
         
         if not analysis_result:
-            raise ValueError(f"수출 분석 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
+            raise ValueError(f"수출 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
         
-        analysis_sheet_name, analysis_df, use_raw = analysis_result
-        if use_raw:
-            print(f"[시트 대체] 'G 분석' → '{analysis_sheet_name}' (기초자료)")
+        analysis_sheet_name, analysis_df = analysis_result
+        use_raw = True  # 수집표만 사용
+        print(f"[시트] 수집표 시트 사용: '{analysis_sheet_name}'")
         
         # 헤더 행 동적 찾기
         header_row = parser.locate_table_start(
@@ -90,10 +89,9 @@ def load_data(excel_path):
         else:
             reference_df = analysis_df.copy()
         
-        # 집계 시트 찾기
-        summary_result = parser.get_sheet_by_fallback(
-            primary_keywords=['수출', '집계', 'G'],
-            fallback_keywords=['수출'],
+        # 집계 시트 찾기 (수집표만 사용)
+        summary_result = parser.find_target_sheet(
+            keywords=['수출'],
             required_columns=['지역', '품목'],
             required_row_labels=['전국', '합계']
         )

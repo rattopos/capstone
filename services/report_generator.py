@@ -584,27 +584,15 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
     """보도자료 HTML 생성
     
     Args:
-        excel_path: 엑셀 파일 경로 (분석표 또는 기초자료)
+        excel_path: 엑셀 파일 경로 (사용 안함, 호환성 유지용)
         report_config: 보도자료 설정
         year: 연도
         quarter: 분기
         custom_data: 사용자 정의 데이터
-        raw_excel_path: 기초자료 파일 경로 (옵션)
-        file_type: 파일 유형 ('raw_direct', 'analysis', 'raw_with_analysis')
+        raw_excel_path: 기초자료 파일 경로 (필수)
+        file_type: 파일 유형 (사용 안함, 호환성 유지용)
     """
     try:
-        # 파일 존재 및 접근 가능 여부 확인
-        excel_path_obj = Path(excel_path)
-        if not excel_path_obj.exists():
-            error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
-            print(f"[ERROR] {error_msg}")
-            return None, error_msg, []
-        
-        if not excel_path_obj.is_file():
-            error_msg = f"유효한 파일이 아닙니다: {excel_path}"
-            print(f"[ERROR] {error_msg}")
-            return None, error_msg, []
-        
         generator_name = report_config['generator']
         template_name = report_config['template']
         report_name = report_config['name']
@@ -613,9 +601,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"\n[DEBUG] ========== {report_name} 보도자료 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
-        print(f"[DEBUG] File Type: {file_type}")
-        # ★ 항상 수집표(기초자료)에서 데이터 추출 (분석표 사용 안함)
-        if raw_excel_path:
+        
+        # ★ 수집표(기초자료)만 사용 (분석표 사용 안함)
+        if raw_excel_path and Path(raw_excel_path).exists():
             print(f"[DEBUG] 수집표(기초자료) 사용: {raw_excel_path}")
             raw_data = _extract_data_from_raw(raw_excel_path, report_id, year, quarter)
             if raw_data:
@@ -647,8 +635,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if generator_name is None:
             return _generate_from_schema(template_name, report_id, year, quarter, custom_data)
         
-        # 수집표가 없고 generator가 있는 경우 에러 (분석표 사용 안함)
-        error_msg = f"수집표(기초자료)가 제공되지 않았습니다. 분석표 기반 처리는 지원하지 않습니다."
+        # 수집표가 없는 경우 에러
+        error_msg = f"수집표(기초자료)가 제공되지 않았습니다."
         print(f"[ERROR] {error_msg}")
         return None, error_msg, []
         
@@ -753,7 +741,7 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
     """시도별 보도자료 HTML 생성
     
     Args:
-        excel_path: 분석표 엑셀 파일 경로
+        excel_path: 엑셀 파일 경로 (사용 안함, 호환성 유지용)
         region_name: 지역명 (예: '서울', '부산' 등)
         is_reference: 참고_GRDP 여부
         raw_excel_path: 기초자료 엑셀 파일 경로 (옵션)
@@ -761,22 +749,16 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
         quarter: 분기
     """
     try:
-        # 파일 존재 확인
-        excel_path_obj = Path(excel_path)
-        if not excel_path_obj.exists() or not excel_path_obj.is_file():
-            # 분석표가 없으면 기초자료 경로 사용
-            if raw_excel_path and Path(raw_excel_path).exists():
-                excel_path = raw_excel_path
-            else:
-                error_msg = f"엑셀 파일을 찾을 수 없습니다: {excel_path}"
-                print(f"[ERROR] {error_msg}")
-                return None, error_msg
+        # 수집표(기초자료)만 사용
+        if not raw_excel_path or not Path(raw_excel_path).exists():
+            error_msg = f"수집표(기초자료) 파일을 찾을 수 없습니다: {raw_excel_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg
         
         if region_name == '참고_GRDP' or is_reference:
-            return generate_grdp_reference_html(excel_path)
+            return generate_grdp_reference_html(raw_excel_path)
         
-        # 기초자료에서 직접 추출 시도
-        if raw_excel_path and Path(raw_excel_path).exists():
+        # 기초자료에서 직접 추출
             try:
                 from templates.raw_data_extractor import RawDataExtractor
                 
@@ -813,8 +795,8 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False,
                 traceback.print_exc()
                 return None, error_msg
         
-        # 수집표가 없으면 에러 (분석표 사용 안함)
-        error_msg = f"수집표(기초자료)가 제공되지 않았습니다. 분석표 기반 처리는 지원하지 않습니다."
+        # 수집표가 없으면 에러
+        error_msg = f"수집표(기초자료)가 제공되지 않았습니다."
         print(f"[ERROR] {error_msg}")
         return None, error_msg
         
@@ -1209,7 +1191,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
         PAGE2_REGIONS = ["경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
         
         # 통계표 - 개별 지표
-        elif table_name and table_name != 'GRDP' and generator:
+        if table_name and table_name != 'GRDP' and generator:
             table_order = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
                           '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수']
             try:

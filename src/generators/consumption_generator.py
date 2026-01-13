@@ -97,12 +97,15 @@ def load_data(excel_path):
     """엑셀 파일에서 데이터 로드"""
     xl = pd.ExcelFile(excel_path)
     
-    # 분석 시트 찾기
-    analysis_sheet, use_raw = find_sheet_with_fallback(
-        xl, 
-        ['C 분석', 'C분석'],
-        ['소비(소매, 추가)', '소비', '소매판매액지수']
-    )
+    # 수집표(기초자료) 시트만 찾기 (분석 시트 사용 안함)
+    analysis_sheet = None
+    use_raw = False
+    for name in ['소비(소매, 추가)', '소비', '소매판매액지수']:
+        if name in xl.sheet_names:
+            analysis_sheet = name
+            use_raw = True
+            print(f"[시트] 수집표 시트 사용: '{name}'")
+            break
     
     if analysis_sheet:
         df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)

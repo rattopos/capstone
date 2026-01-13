@@ -7,6 +7,7 @@ from .main import main_bp
 from .api import api_bp
 from .preview import preview_bp
 from .debug import debug_bp
+from .output import output_bp
 
-__all__ = ['main_bp', 'api_bp', 'preview_bp', 'debug_bp']
+__all__ = ['main_bp', 'api_bp', 'preview_bp', 'debug_bp', 'output_bp']
 

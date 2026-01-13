@@ -82,16 +82,21 @@ def load_data(excel_path):
     xl = pd.ExcelFile(excel_path)
     sheet_names = xl.sheet_names
     
-    # 분석 시트 찾기
+    # 수집표(기초자료)를 메인으로, 분석 시트는 폴백으로 찾기
     analysis_sheet = None
     use_raw = False
-    for name in ['D(고용률)분석', 'D(고용률) 분석', '고용률']:
-        if name in sheet_names:
-            analysis_sheet = name
-            if name == '고용률':
-                print(f"[시트 대체] 'D(고용률)분석' → '고용률' (기초자료)")
-                use_raw = True
-            break
+    # 1순위: 수집표 시트
+    if '고용률' in sheet_names:
+        analysis_sheet = '고용률'
+        use_raw = True
+        print(f"[시트 우선] 수집표 시트 사용: '고용률'")
+    # 2순위: 분석 시트
+    elif 'D(고용률)분석' in sheet_names:
+        analysis_sheet = 'D(고용률)분석'
+        print(f"[시트 폴백] 분석 시트 사용: 'D(고용률)분석'")
+    elif 'D(고용률) 분석' in sheet_names:
+        analysis_sheet = 'D(고용률) 분석'
+        print(f"[시트 폴백] 분석 시트 사용: 'D(고용률) 분석'")
     
     if not analysis_sheet:
         raise ValueError(f"고용률 분석 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")

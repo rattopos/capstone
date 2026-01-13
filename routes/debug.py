@@ -1137,8 +1137,8 @@ A4_FULL_REPORT_TEMPLATE = '''
 @debug_bp.route('/')
 def debug_page():
     """디버그 페이지 메인"""
-    excel_path = session.get('excel_path')
-    excel_loaded = excel_path and Path(excel_path).exists()
+    raw_excel_path = session.get('raw_excel_path')
+    excel_loaded = raw_excel_path and Path(raw_excel_path).exists()
     year = session.get('year', 2025)
     quarter = session.get('quarter', 2)
     
@@ -1178,22 +1178,22 @@ def generate_full_html():
         sections = []
         
         # 1. 요약 보도자료
-        summary_pages = _generate_summary_pages(excel_path, year, quarter)
+        summary_pages = _generate_summary_pages(raw_excel_path, year, quarter)
         pages.extend(summary_pages)
         sections.append({'name': '요약', 'count': len(summary_pages), 'pages': summary_pages})
         
         # 2. 부문별 보도자료
-        sector_pages = _generate_sector_pages(excel_path, year, quarter, raw_excel_path)
+        sector_pages = _generate_sector_pages(raw_excel_path, year, quarter, raw_excel_path)
         pages.extend(sector_pages)
         sections.append({'name': '부문별', 'count': len(sector_pages), 'pages': sector_pages})
         
         # 3. 시도별 보도자료
-        regional_pages = _generate_regional_pages(excel_path, year, quarter)
+        regional_pages = _generate_regional_pages(raw_excel_path, year, quarter)
         pages.extend(regional_pages)
         sections.append({'name': '시도별', 'count': len(regional_pages), 'pages': regional_pages})
         
         # 4. 통계표
-        statistics_pages = _generate_statistics_pages(excel_path, year, quarter, raw_excel_path)
+        statistics_pages = _generate_statistics_pages(raw_excel_path, year, quarter, raw_excel_path)
         pages.extend(statistics_pages)
         sections.append({'name': '통계표', 'count': len(statistics_pages), 'pages': statistics_pages})
         
@@ -1239,13 +1239,12 @@ def generate_section_html():
     data = request.get_json()
     section = data.get('section')
     
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    raw_excel_path = session.get('raw_excel_path')
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     year = session.get('year', 2025)
     quarter = session.get('quarter', 2)
-    raw_excel_path = session.get('raw_excel_path')
     
     start_time = datetime.now()
     
@@ -1254,16 +1253,16 @@ def generate_section_html():
         sections = []
         
         if section == 'summary':
-            pages = _generate_summary_pages(excel_path, year, quarter)
+            pages = _generate_summary_pages(raw_excel_path, year, quarter)
             sections.append({'name': '요약', 'count': len(pages), 'pages': pages})
         elif section == 'sector':
-            pages = _generate_sector_pages(excel_path, year, quarter, raw_excel_path)
+            pages = _generate_sector_pages(raw_excel_path, year, quarter, raw_excel_path)
             sections.append({'name': '부문별', 'count': len(pages), 'pages': pages})
         elif section == 'regional':
-            pages = _generate_regional_pages(excel_path, year, quarter)
+            pages = _generate_regional_pages(raw_excel_path, year, quarter)
             sections.append({'name': '시도별', 'count': len(pages), 'pages': pages})
         elif section == 'statistics':
-            pages = _generate_statistics_pages(excel_path, year, quarter, raw_excel_path)
+            pages = _generate_statistics_pages(raw_excel_path, year, quarter, raw_excel_path)
             sections.append({'name': '통계표', 'count': len(pages), 'pages': pages})
         else:
             return jsonify({'success': False, 'error': f'알 수 없는 섹션: {section}'})
@@ -1308,13 +1307,12 @@ def generate_single_html():
     data = request.get_json()
     report_id = data.get('report_id')
     
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    raw_excel_path = session.get('raw_excel_path')
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     year = session.get('year', 2025)
     quarter = session.get('quarter', 2)
-    raw_excel_path = session.get('raw_excel_path')
     
     try:
         pages = []
@@ -1324,7 +1322,7 @@ def generate_single_html():
         report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
         if report_config:
             section_name = '요약'
-            html, error, _ = _generate_single_summary(excel_path, report_config, year, quarter)
+            html, error, _ = _generate_single_summary(raw_excel_path, report_config, year, quarter)
             if html:
                 pages.append({'id': report_id, 'name': report_config['name'], 'section': section_name, 'content': html})
         
@@ -1333,7 +1331,7 @@ def generate_single_html():
             report_config = next((r for r in SECTOR_REPORTS if r['id'] == report_id), None)
             if report_config:
                 section_name = '부문별'
-                html, error, _ = generate_report_html(excel_path, report_config, year, quarter, None, raw_excel_path)
+                html, error, _ = generate_report_html(raw_excel_path, report_config, year, quarter, None, raw_excel_path)
                 if html:
                     pages.append({'id': report_id, 'name': report_config['name'], 'section': section_name, 'content': html})
         
@@ -1392,13 +1390,13 @@ def generate_single_html():
         return jsonify({'success': False, 'error': str(e)})
 
 
-def _generate_summary_pages(excel_path, year, quarter):
+def _generate_summary_pages(raw_excel_path, year, quarter):
     """요약 보도자료 페이지 생성"""
     pages = []
     
     for report in SUMMARY_REPORTS:
         try:
-            html, error, _ = _generate_single_summary(excel_path, report, year, quarter)
+            html, error, _ = _generate_single_summary(raw_excel_path, report, year, quarter)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)
@@ -1435,7 +1433,7 @@ def _generate_summary_pages(excel_path, year, quarter):
     return pages
 
 
-def _generate_single_summary(excel_path, report_config, year, quarter):
+def _generate_single_summary(raw_excel_path, report_config, year, quarter):
     """단일 요약 보도자료 생성 (preview.py와 동일한 로직 사용)"""
     try:
         template_name = report_config['template']
@@ -1469,7 +1467,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 
                 if hasattr(module, 'generate_report_data'):
                     try:
-                        generated_data = module.generate_report_data(excel_path)
+                        generated_data = module.generate_report_data(raw_excel_path, raw_excel_path, year, quarter)
                         if generated_data:
                             report_data.update(generated_data)
                             print(f"[DEBUG] Generator 데이터 생성 성공: {generator_name}")
@@ -1503,8 +1501,8 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 return None, error_msg, []
         elif report_id == 'summary_overview':
             try:
-                report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
-                report_data['table_data'] = get_summary_table_data(excel_path, year, quarter)
+                report_data['summary'] = get_summary_overview_data(raw_excel_path, year, quarter)
+                report_data['table_data'] = get_summary_table_data(raw_excel_path, year, quarter)
                 report_data['page_number'] = 1
             except Exception as e:
                 import traceback
@@ -1514,7 +1512,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 return None, error_msg, []
         elif report_id == 'summary_production':
             try:
-                report_data.update(get_production_summary_data(excel_path, year, quarter))
+                report_data.update(get_production_summary_data(raw_excel_path, year, quarter))
                 report_data['page_number'] = 2
             except Exception as e:
                 import traceback
@@ -1524,7 +1522,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 return None, error_msg, []
         elif report_id == 'summary_consumption':
             try:
-                report_data.update(get_consumption_construction_data(excel_path, year, quarter))
+                report_data.update(get_consumption_construction_data(raw_excel_path, year, quarter))
                 report_data['page_number'] = 3
             except Exception as e:
                 import traceback
@@ -1534,7 +1532,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 return None, error_msg, []
         elif report_id == 'summary_trade_price':
             try:
-                report_data.update(get_trade_price_data(excel_path, year, quarter))
+                report_data.update(get_trade_price_data(raw_excel_path, year, quarter))
                 report_data['page_number'] = 4
             except Exception as e:
                 import traceback
@@ -1544,7 +1542,7 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 return None, error_msg, []
         elif report_id == 'summary_employment':
             try:
-                report_data.update(get_employment_population_data(excel_path, year, quarter))
+                report_data.update(get_employment_population_data(raw_excel_path, year, quarter))
                 report_data['page_number'] = 5
             except Exception as e:
                 import traceback
@@ -1592,13 +1590,13 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
         return None, error_msg, []
 
 
-def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
+def _generate_sector_pages(raw_excel_path, year, quarter, raw_excel_path_legacy=None):
     """부문별 보도자료 페이지 생성"""
     pages = []
     
     for report in SECTOR_REPORTS:
         try:
-            html, error, _ = generate_report_html(excel_path, report, year, quarter, None, raw_excel_path)
+            html, error, _ = generate_report_html(raw_excel_path, report, year, quarter, None, raw_excel_path)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)
@@ -1634,14 +1632,14 @@ def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
     return pages
 
 
-def _generate_regional_pages(excel_path, year, quarter):
+def _generate_regional_pages(raw_excel_path, year, quarter):
     """시도별 보도자료 페이지 생성"""
     pages = []
     
     for region in REGIONAL_REPORTS:
         try:
             is_reference = region.get('is_reference', False)
-            html, error = generate_regional_report_html(excel_path, region['name'], is_reference)
+            html, error = generate_regional_report_html(raw_excel_path, region['name'], is_reference, raw_excel_path=raw_excel_path, year=year, quarter=quarter)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)
@@ -1677,13 +1675,13 @@ def _generate_regional_pages(excel_path, year, quarter):
     return pages
 
 
-def _generate_statistics_pages(excel_path, year, quarter, raw_excel_path=None):
+def _generate_statistics_pages(raw_excel_path, year, quarter, raw_excel_path_legacy=None):
     """통계표 페이지 생성"""
     pages = []
     
     for stat in STATISTICS_REPORTS:
         try:
-            html, error = generate_individual_statistics_html(excel_path, stat, year, quarter, raw_excel_path)
+            html, error = generate_individual_statistics_html(raw_excel_path, stat, year, quarter, raw_excel_path)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)

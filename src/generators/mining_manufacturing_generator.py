@@ -114,34 +114,31 @@ class 광공업생산Generator(BaseGenerator):
         parser = ExcelHeuristicParser(str(self.excel_path))
         
         try:
-            # 집계 시트 찾기 (키워드 기반)
-            agg_result = parser.get_sheet_by_fallback(
-                primary_keywords=['광공업생산', '집계', 'A'],
-                fallback_keywords=['광공업생산', '광공업생산지수'],
+            # 집계 시트 찾기 (수집표만 사용)
+            agg_result = parser.find_target_sheet(
+                keywords=['광공업생산', '광공업생산지수'],
                 required_columns=['지역', '분류', '산업'],
                 required_row_labels=['전국', 'BCD', '총지수']
             )
             
             if agg_result:
-                agg_sheet_name, self.df_aggregation, self.use_raw_data = agg_result
-                if self.use_raw_data:
-                    print(f"[시트 대체] 집계 시트 → '{agg_sheet_name}' (기초자료)")
+                agg_sheet_name, self.df_aggregation = agg_result
+                self.use_raw_data = True  # 수집표만 사용
+                print(f"[시트] 수집표 시트 사용: '{agg_sheet_name}'")
             else:
-                raise ValueError(f"광공업생산 집계 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
+                raise ValueError(f"광공업생산 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
             
-            # 분석 시트 찾기
-            analysis_result = parser.get_sheet_by_fallback(
-                primary_keywords=['광공업생산', '분석', 'A'],
-                fallback_keywords=['광공업생산', '광공업생산지수'],
+            # 분석 시트 찾기 (수집표만 사용)
+            analysis_result = parser.find_target_sheet(
+                keywords=['광공업생산', '광공업생산지수'],
                 required_columns=['지역', '분류', '산업'],
                 required_row_labels=['전국']
             )
             
             if analysis_result:
-                analysis_sheet_name, self.df_analysis, is_fallback = analysis_result
-                if is_fallback and not self.use_raw_data:
-                    self.use_raw_data = True
-                    print(f"[시트 대체] 분석 시트 → '{analysis_sheet_name}' (기초자료)")
+                analysis_sheet_name, self.df_analysis = analysis_result
+                self.use_raw_data = True  # 수집표만 사용
+                print(f"[시트] 수집표 시트 사용: '{analysis_sheet_name}'")
                 
                 # 헤더 행 동적 찾기
                 header_row = parser.locate_table_start(

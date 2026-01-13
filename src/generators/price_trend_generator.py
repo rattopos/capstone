@@ -75,16 +75,21 @@ def load_data(excel_path):
     xl = pd.ExcelFile(excel_path)
     sheet_names = xl.sheet_names
     
-    # 집계 시트 찾기
+    # 수집표(기초자료)를 메인으로, 집계 시트는 폴백으로 찾기
     summary_sheet = None
     use_raw = False
-    for name in ['E(품목성질물가)집계', 'E(품목성질물가) 집계', '품목성질별 물가']:
-        if name in sheet_names:
-            summary_sheet = name
-            if name == '품목성질별 물가':
-                print(f"[시트 대체] 'E(품목성질물가)집계' → '품목성질별 물가' (기초자료)")
-                use_raw = True
-            break
+    # 1순위: 수집표 시트
+    if '품목성질별 물가' in sheet_names:
+        summary_sheet = '품목성질별 물가'
+        use_raw = True
+        print(f"[시트 우선] 수집표 시트 사용: '품목성질별 물가'")
+    # 2순위: 집계 시트
+    elif 'E(품목성질물가)집계' in sheet_names:
+        summary_sheet = 'E(품목성질물가)집계'
+        print(f"[시트 폴백] 집계 시트 사용: 'E(품목성질물가)집계'")
+    elif 'E(품목성질물가) 집계' in sheet_names:
+        summary_sheet = 'E(품목성질물가) 집계'
+        print(f"[시트 폴백] 집계 시트 사용: 'E(품목성질물가) 집계'")
     
     if not summary_sheet:
         raise ValueError(f"물가동향 집계 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")

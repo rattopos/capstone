@@ -99,20 +99,19 @@ def load_data(excel_path):
     parser = ExcelHeuristicParser(excel_path)
     
     try:
-        # 분석 시트 찾기 (키워드 기반)
-        analysis_result = parser.get_sheet_by_fallback(
-            primary_keywords=['서비스업생산', '분석', 'B'],
-            fallback_keywords=['서비스업생산', '서비스업생산지수'],
+        # 수집표(기초자료) 시트만 찾기 (분석 시트 사용 안함)
+        analysis_result = parser.find_target_sheet(
+            keywords=['서비스업생산', '서비스업생산지수'],
             required_columns=['지역', '분류', '산업'],
             required_row_labels=['전국', 'E~S', '총지수']
         )
         
         if not analysis_result:
-            raise ValueError(f"서비스업생산 분석 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
+            raise ValueError(f"서비스업생산 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
         
-        analysis_sheet_name, df_analysis, use_raw = analysis_result
-        if use_raw:
-            print(f"[시트 대체] 'B 분석' → '{analysis_sheet_name}' (기초자료)")
+        analysis_sheet_name, df_analysis = analysis_result
+        use_raw = True  # 수집표만 사용
+        print(f"[시트] 수집표 시트 사용: '{analysis_sheet_name}'")
         
         # 헤더 행 동적 찾기
         header_row = parser.locate_table_start(
@@ -138,16 +137,15 @@ def load_data(excel_path):
         else:
             use_aggregation_only = False
         
-        # 집계 시트 찾기
-        agg_result = parser.get_sheet_by_fallback(
-            primary_keywords=['서비스업생산', '집계', 'B'],
-            fallback_keywords=['서비스업생산', '서비스업생산지수'],
+        # 집계 시트 찾기 (수집표만 사용)
+        agg_result = parser.find_target_sheet(
+            keywords=['서비스업생산', '서비스업생산지수'],
             required_columns=['지역', '분류', '산업'],
             required_row_labels=['전국', 'E~S']
         )
         
         if agg_result and agg_result[0] != analysis_sheet_name:
-            agg_sheet_name, df_index, _ = agg_result
+            agg_sheet_name, df_index = agg_result
         else:
             df_index = df_analysis.copy()
         

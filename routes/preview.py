@@ -41,24 +41,19 @@ def generate_preview():
     quarter = data.get('quarter', session.get('quarter', 2))
     custom_data = data.get('custom_data', {})
     
-    excel_path = session.get('excel_path')
     raw_excel_path = session.get('raw_excel_path')
-    file_type = session.get('file_type', 'analysis')
     
-    # 기초자료 또는 분석표 중 하나는 있어야 함
-    if not excel_path and not raw_excel_path:
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
-    # 분석표 경로가 없으면 기초자료 경로 사용
-    if not excel_path or not Path(excel_path).exists():
-        excel_path = raw_excel_path
+    # 수집표(기초자료) 필수
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     report_config = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
     if not report_config:
         return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'})
     
+    # excel_path는 호환성을 위해 raw_excel_path 전달 (실제로는 사용 안함)
     html_content, error, missing_fields = generate_report_html(
-        excel_path, report_config, year, quarter, custom_data, raw_excel_path, file_type
+        raw_excel_path, report_config, year, quarter, custom_data, raw_excel_path, None
     )
     
     if error:
@@ -86,10 +81,10 @@ def generate_summary_preview():
     # 표지, 일러두기는 엑셀 파일 없이도 생성 가능
     static_reports = ['cover', 'guide']
     
-    excel_path = session.get('excel_path')
+    raw_excel_path = session.get('raw_excel_path')
     if report_id not in static_reports:
-        if not excel_path or not Path(excel_path).exists():
-            return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+        if not raw_excel_path or not Path(raw_excel_path).exists():
+            return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
     if not report_config:
@@ -243,16 +238,11 @@ def generate_regional_preview():
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
     
-    excel_path = session.get('excel_path')
     raw_excel_path = session.get('raw_excel_path')
     
-    # 기초자료 또는 분석표 중 하나는 있어야 함
-    if not excel_path and not raw_excel_path:
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
-    # 분석표 경로가 없으면 기초자료 경로 사용
-    if not excel_path or not Path(excel_path).exists():
-        excel_path = raw_excel_path
+    # 수집표(기초자료) 필수
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     region_config = next((r for r in REGIONAL_REPORTS if r['id'] == region_id), None)
     if not region_config:
@@ -260,8 +250,9 @@ def generate_regional_preview():
     
     is_reference = region_config.get('is_reference', False)
     
+    # excel_path는 호환성을 위해 raw_excel_path 전달 (실제로는 사용 안함)
     html_content, error = generate_regional_report_html(
-        excel_path, 
+        raw_excel_path, 
         region_config['name'], 
         is_reference,
         raw_excel_path=raw_excel_path,
@@ -289,16 +280,16 @@ def generate_statistics_preview():
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
     
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+    raw_excel_path = session.get('raw_excel_path')
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
     
     stat_config = next((s for s in STATISTICS_REPORTS if s['id'] == stat_id), None)
     if not stat_config:
         return jsonify({'success': False, 'error': f'통계표를 찾을 수 없습니다: {stat_id}'})
     
-    raw_excel_path = session.get('raw_excel_path')
-    html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path)
+    # excel_path는 호환성을 위해 raw_excel_path 전달 (실제로는 사용 안함)
+    html_content, error = generate_individual_statistics_html(raw_excel_path, stat_config, year, quarter, raw_excel_path)
     
     if error:
         return jsonify({'success': False, 'error': error})
@@ -318,12 +309,12 @@ def generate_statistics_full_preview():
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
     
-    excel_path = session.get('excel_path')
-    if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
     raw_excel_path = session.get('raw_excel_path')
-    html_content, error = generate_statistics_report_html(excel_path, year, quarter, raw_excel_path)
+    if not raw_excel_path or not Path(raw_excel_path).exists():
+        return jsonify({'success': False, 'error': '수집표(기초자료) 파일을 먼저 업로드하세요'})
+    
+    # excel_path는 호환성을 위해 raw_excel_path 전달 (실제로는 사용 안함)
+    html_content, error = generate_statistics_report_html(raw_excel_path, year, quarter, raw_excel_path)
     
     if error:
         return jsonify({'success': False, 'error': error})

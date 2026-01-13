@@ -41,20 +41,22 @@ def load_data(excel_path):
     parser = ExcelHeuristicParser(excel_path)
     
     try:
-        # 분석 시트 찾기 (키워드 기반)
+        # 수집표(기초자료)를 메인으로, 분석 시트는 폴백으로 찾기
         analysis_result = parser.get_sheet_by_fallback(
-            primary_keywords=['수입', '분석', 'H'],
-            fallback_keywords=['수입'],
+            primary_keywords=['수입'],  # 수집표 시트 (메인)
+            fallback_keywords=['수입', '분석', 'H'],  # 분석 시트 (폴백)
             required_columns=['지역', '품목'],
             required_row_labels=['전국', '합계']
         )
         
         if not analysis_result:
-            raise ValueError(f"수입 분석 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
+            raise ValueError(f"수입 시트를 찾을 수 없습니다. 시트: {parser.xl.sheet_names}")
         
         analysis_sheet_name, analysis_df, use_raw = analysis_result
         if use_raw:
-            print(f"[시트 대체] 'H 분석' → '{analysis_sheet_name}' (기초자료)")
+            print(f"[시트 우선] 수집표 시트 사용: '{analysis_sheet_name}'")
+        else:
+            print(f"[시트 폴백] 분석 시트 사용: '{analysis_sheet_name}'")
         
         # 헤더 행 동적 찾기
         header_row = parser.locate_table_start(
