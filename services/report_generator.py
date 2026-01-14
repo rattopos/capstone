@@ -73,8 +73,14 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
 
 
 def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
-    """보도자료 HTML 생성"""
+    """보도자료 HTML 생성
+    
+    주의: 기초자료는 사용하지 않습니다. raw_excel_path는 항상 None입니다.
+    """
     try:
+        # 기초자료는 사용하지 않음
+        raw_excel_path = None
+        
         # 파일 존재 및 접근 가능 여부 확인
         excel_path_obj = Path(excel_path)
         if not excel_path_obj.exists():
@@ -95,8 +101,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         print(f"\n[DEBUG] ========== {report_name} 보도자료 생성 시작 ==========")
         print(f"[DEBUG] Generator: {generator_name}")
         print(f"[DEBUG] Template: {template_name}")
-        if raw_excel_path:
-            print(f"[DEBUG] 기초자료 사용: {raw_excel_path}")
         
         # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
         if generator_name is None:
@@ -124,39 +128,28 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         data = None
         
         # 방법 1: generate_report_data 함수 사용
+        # 주의: 기초자료는 사용하지 않으므로 raw_excel_path는 항상 None
         if hasattr(module, 'generate_report_data'):
             print(f"[DEBUG] generate_report_data 함수 사용")
             try:
-                if raw_excel_path:
-                    sig = inspect.signature(module.generate_report_data)
-                    params = sig.parameters
-                    if 'raw_excel_path' in params or 'use_raw_data' in params:
-                        data = module.generate_report_data(excel_path, raw_excel_path=raw_excel_path, 
-                                                         year=year, quarter=quarter)
-                    else:
-                        data = module.generate_report_data(excel_path)
-                else:
-                    data = module.generate_report_data(excel_path)
+                # 기초자료는 사용하지 않으므로 분석표만 사용
+                data = module.generate_report_data(excel_path)
             except TypeError:
                 data = module.generate_report_data(excel_path)
             except Exception as e:
-                print(f"[WARNING] 기초자료 추출 실패, 분석표 사용: {e}")
+                print(f"[WARNING] 데이터 생성 실패: {e}")
                 data = module.generate_report_data(excel_path)
             print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 2: generate_report 함수 직접 호출
+        # 주의: 기초자료는 사용하지 않으므로 raw_excel_path는 전달하지 않음
         elif hasattr(module, 'generate_report'):
             print(f"[DEBUG] generate_report 함수 직접 호출")
             template_path = TEMPLATES_DIR / template_name
             output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
             try:
-                sig = inspect.signature(module.generate_report)
-                params = sig.parameters
-                if 'raw_excel_path' in params:
-                    data = module.generate_report(excel_path, template_path, output_path, 
-                                                 raw_excel_path=raw_excel_path, year=year, quarter=quarter)
-                else:
-                    data = module.generate_report(excel_path, template_path, output_path)
+                # 기초자료는 사용하지 않으므로 분석표만 사용
+                data = module.generate_report(excel_path, template_path, output_path)
             except (TypeError, AttributeError):
                 data = module.generate_report(excel_path, template_path, output_path)
             print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
@@ -331,18 +324,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
                     grdp_data = json.load(f)
                 print(f"[GRDP] JSON 파일에서 GRDP 데이터 로드")
         
-        # 3. 기초자료 수집표에서 직접 추출 시도
-        if grdp_data is None and session_data is None:
-            raw_path = session.get('raw_excel_path')
-            if raw_path:
-                try:
-                    from data_converter import DataConverter
-                    converter = DataConverter(raw_path)
-                    grdp_data = converter.extract_grdp_data()
-                    session['grdp_data'] = grdp_data
-                    print(f"[GRDP] 기초자료에서 GRDP 데이터 추출")
-                except Exception as e:
-                    print(f"[GRDP] 기초자료 추출 실패: {e}")
+        # 3. 기초자료는 사용하지 않음 (분석표만 사용)
         
         # 4. uploads 폴더에서 KOSIS GRDP 파일 확인
         if grdp_data is None:

@@ -35,28 +35,46 @@ preview_bp = Blueprint('preview', __name__, url_prefix='/api')
 @preview_bp.route('/generate-preview', methods=['POST'])
 def generate_preview():
     """미리보기 생성"""
-    data = request.get_json()
+    from utils.excel_utils import extract_year_quarter_from_data
+    
+    data = request.get_json() or {}
     report_id = data.get('report_id')
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
+    
+    if not report_id:
+        return jsonify({'success': False, 'error': 'report_id가 필요합니다'}), 400
+    
+    year = data.get('year') or session.get('year')
+    quarter = data.get('quarter') or session.get('quarter')
     custom_data = data.get('custom_data', {})
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
+    
+    # 연도/분기가 없으면 데이터에서 추출
+    if not year or not quarter:
+        try:
+            year, quarter = extract_year_quarter_from_data(excel_path)
+            # 세션에 저장
+            session['year'] = year
+            session['quarter'] = quarter
+            print(f"[미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
+        except ValueError as e:
+            return jsonify({'success': False, 'error': f'연도/분기 정보를 추출할 수 없습니다: {str(e)}'}), 400
     
     report_config = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
     if not report_config:
-        return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'})
+        return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'}), 400
     
-    raw_excel_path = session.get('raw_excel_path')
+    # 기초자료는 사용하지 않음
+    raw_excel_path = None
     
     html_content, error, missing_fields = generate_report_html(
         excel_path, report_config, year, quarter, custom_data, raw_excel_path
     )
     
     if error:
-        return jsonify({'success': False, 'error': error})
+        return jsonify({'success': False, 'error': error}), 400
     
     return jsonify({
         'success': True,
@@ -70,10 +88,16 @@ def generate_preview():
 @preview_bp.route('/generate-summary-preview', methods=['POST'])
 def generate_summary_preview():
     """요약 보도자료 미리보기 생성 (표지, 목차, 인포그래픽 등)"""
-    data = request.get_json()
+    from utils.excel_utils import extract_year_quarter_from_data
+    
+    data = request.get_json() or {}
     report_id = data.get('report_id')
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
+    
+    if not report_id:
+        return jsonify({'success': False, 'error': 'report_id가 필요합니다'}), 400
+    
+    year = data.get('year') or session.get('year')
+    quarter = data.get('quarter') or session.get('quarter')
     custom_data = data.get('custom_data', {})
     contact_info_input = data.get('contact_info', {})
     
@@ -83,11 +107,21 @@ def generate_summary_preview():
     excel_path = session.get('excel_path')
     if report_id not in static_reports:
         if not excel_path or not Path(excel_path).exists():
-            return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+            return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
+        
+        # 연도/분기가 없으면 데이터에서 추출
+        if not year or not quarter:
+            try:
+                year, quarter = extract_year_quarter_from_data(excel_path)
+                session['year'] = year
+                session['quarter'] = quarter
+                print(f"[요약 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
+            except ValueError as e:
+                return jsonify({'success': False, 'error': f'연도/분기 정보를 추출할 수 없습니다: {str(e)}'}), 400
     
     report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)
     if not report_config:
-        return jsonify({'success': False, 'error': f'요약 보도자료를 찾을 수 없습니다: {report_id}'})
+        return jsonify({'success': False, 'error': f'요약 보도자료를 찾을 수 없습니다: {report_id}'}), 400
     
     try:
         template_name = report_config['template']
@@ -108,7 +142,7 @@ def generate_summary_preview():
                 if module is None:
                     error_msg = f"Generator 모듈을 로드할 수 없습니다: {generator_name}"
                     print(f"[PREVIEW] {error_msg}")
-                    return jsonify({'success': False, 'error': error_msg})
+                    return jsonify({'success': False, 'error': error_msg}), 400
                 
                 if hasattr(module, 'generate_report_data'):
                     try:
@@ -123,24 +157,24 @@ def generate_summary_preview():
                         error_msg = f"Generator 데이터 생성 오류 ({generator_name}): {str(e)}"
                         print(f"[PREVIEW] {error_msg}")
                         traceback.print_exc()
-                        return jsonify({'success': False, 'error': error_msg})
+                        return jsonify({'success': False, 'error': error_msg}), 400
                 else:
                     error_msg = f"Generator에 generate_report_data 함수가 없습니다: {generator_name}"
                     print(f"[PREVIEW] {error_msg}")
-                    return jsonify({'success': False, 'error': error_msg})
+                    return jsonify({'success': False, 'error': error_msg}), 400
             except Exception as e:
                 import traceback
                 error_msg = f"Generator 모듈 로드 오류 ({generator_name}): {str(e)}"
                 print(f"[PREVIEW] {error_msg}")
                 traceback.print_exc()
-                return jsonify({'success': False, 'error': error_msg})
+                return jsonify({'success': False, 'error': error_msg}), 400
         
         # 템플릿 파일 존재 확인
         template_path = TEMPLATES_DIR / template_name
         if not template_path.exists():
             error_msg = f"템플릿 파일을 찾을 수 없습니다: {template_name}"
             print(f"[PREVIEW] {error_msg}")
-            return jsonify({'success': False, 'error': error_msg})
+            return jsonify({'success': False, 'error': error_msg}), 400
         
         # 템플릿별 기본 데이터 제공
         if report_id == 'cover':
@@ -160,7 +194,7 @@ def generate_summary_preview():
                 error_msg = f"일러두기 데이터 생성 오류: {str(e)}"
                 print(f"[PREVIEW] {error_msg}")
                 traceback.print_exc()
-                return jsonify({'success': False, 'error': error_msg})
+                return jsonify({'success': False, 'error': error_msg}), 400
         
         elif report_id == 'summary_overview':
             report_data['summary'] = get_summary_overview_data(excel_path, year, quarter)
@@ -223,36 +257,39 @@ def generate_summary_preview():
             error_msg = f"템플릿 렌더링 오류 ({template_name}): {str(e)}"
             print(f"[PREVIEW] {error_msg}")
             traceback.print_exc()
-            return jsonify({'success': False, 'error': error_msg})
+            return jsonify({'success': False, 'error': error_msg}), 400
         
     except Exception as e:
         import traceback
         error_msg = f"요약 보도자료 생성 오류: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
-        return jsonify({'success': False, 'error': error_msg})
+        return jsonify({'success': False, 'error': error_msg}), 400
 
 
 @preview_bp.route('/generate-regional-preview', methods=['POST'])
 def generate_regional_preview():
     """시도별 보도자료 미리보기 생성"""
-    data = request.get_json()
+    data = request.get_json() or {}
     region_id = data.get('region_id')
+    
+    if not region_id:
+        return jsonify({'success': False, 'error': 'region_id가 필요합니다'}), 400
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
     
     region_config = next((r for r in REGIONAL_REPORTS if r['id'] == region_id), None)
     if not region_config:
-        return jsonify({'success': False, 'error': f'지역을 찾을 수 없습니다: {region_id}'})
+        return jsonify({'success': False, 'error': f'지역을 찾을 수 없습니다: {region_id}'}), 400
     
     is_reference = region_config.get('is_reference', False)
     
     html_content, error = generate_regional_report_html(excel_path, region_config['name'], is_reference)
     
     if error:
-        return jsonify({'success': False, 'error': error})
+        return jsonify({'success': False, 'error': error}), 400
     
     return jsonify({
         'success': True,
@@ -266,24 +303,41 @@ def generate_regional_preview():
 @preview_bp.route('/generate-statistics-preview', methods=['POST'])
 def generate_statistics_preview():
     """개별 통계표 보도자료 미리보기 생성"""
-    data = request.get_json()
+    from utils.excel_utils import extract_year_quarter_from_data
+    
+    data = request.get_json() or {}
     stat_id = data.get('stat_id')
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
+    
+    if not stat_id:
+        return jsonify({'success': False, 'error': 'stat_id가 필요합니다'}), 400
+    
+    year = data.get('year') or session.get('year')
+    quarter = data.get('quarter') or session.get('quarter')
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
+    
+    # 연도/분기가 없으면 데이터에서 추출
+    if not year or not quarter:
+        try:
+            year, quarter = extract_year_quarter_from_data(excel_path)
+            session['year'] = year
+            session['quarter'] = quarter
+            print(f"[통계표 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
+        except ValueError as e:
+            return jsonify({'success': False, 'error': f'연도/분기 정보를 추출할 수 없습니다: {str(e)}'}), 400
     
     stat_config = next((s for s in STATISTICS_REPORTS if s['id'] == stat_id), None)
     if not stat_config:
-        return jsonify({'success': False, 'error': f'통계표를 찾을 수 없습니다: {stat_id}'})
+        return jsonify({'success': False, 'error': f'통계표를 찾을 수 없습니다: {stat_id}'}), 400
     
-    raw_excel_path = session.get('raw_excel_path')
+    # 기초자료는 사용하지 않음
+    raw_excel_path = None
     html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path)
     
     if error:
-        return jsonify({'success': False, 'error': error})
+        return jsonify({'success': False, 'error': error}), 400
     
     return jsonify({
         'success': True,
@@ -296,19 +350,20 @@ def generate_statistics_preview():
 @preview_bp.route('/generate-statistics-full-preview', methods=['POST'])
 def generate_statistics_full_preview():
     """통계표 전체 보도자료 미리보기 생성"""
-    data = request.get_json()
+    data = request.get_json() or {}
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
+        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
     
-    raw_excel_path = session.get('raw_excel_path')
+    # 기초자료는 사용하지 않음
+    raw_excel_path = None
     html_content, error = generate_statistics_report_html(excel_path, year, quarter, raw_excel_path)
     
     if error:
-        return jsonify({'success': False, 'error': error})
+        return jsonify({'success': False, 'error': error}), 400
     
     return jsonify({
         'success': True,
