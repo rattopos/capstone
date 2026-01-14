@@ -11,48 +11,17 @@ import pandas as pd
 import json
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
+try:
+    from .base_generator import BaseGenerator
+except ImportError:
+    # 직접 실행 시 상대 import 실패 방지
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent))
+    from base_generator import BaseGenerator
 
 
-def safe_float(value, default=None):
-    """안전한 float 변환 함수 (NaN, '-' 체크 포함)"""
-    if value is None:
-        return default
-    try:
-        if pd.isna(value):
-            return default
-        if isinstance(value, str):
-            value = value.strip()
-            if value == '-' or value == '':
-                return default
-        result = float(value)
-        if pd.isna(result):
-            return default
-        return result
-    except (ValueError, TypeError):
-        return default
-
-
-def safe_round(value, decimals=1, default=None):
-    """안전한 반올림 함수"""
-    result = safe_float(value, default)
-    if result is None:
-        return default
-    return round(result, decimals)
-
-
-def find_sheet_with_fallback(xl, primary_sheets, fallback_sheets):
-    """시트 찾기 - 기본 시트가 없으면 대체 시트 사용"""
-    for sheet in primary_sheets:
-        if sheet in xl.sheet_names:
-            return sheet, False
-    for sheet in fallback_sheets:
-        if sheet in xl.sheet_names:
-            print(f"[시트 대체] '{primary_sheets[0]}' → '{sheet}' (기초자료)")
-            return sheet, True
-    return None, False
-
-
-class 광공업생산Generator:
+class 광공업생산Generator(BaseGenerator):
     """광공업생산 보도자료 생성 클래스"""
     
     # ========================================
@@ -167,9 +136,7 @@ class 광공업생산Generator:
             year: 연도 (선택사항)
             quarter: 분기 (선택사항)
         """
-        self.excel_path = excel_path
-        self.year = year
-        self.quarter = quarter
+        super().__init__(excel_path, year, quarter)
         self.df_analysis = None
         self.df_aggregation = None
         self.data = {}
@@ -177,35 +144,35 @@ class 광공업생산Generator:
         
     def load_data(self):
         """엑셀 데이터 로드"""
-        xl = pd.ExcelFile(self.excel_path)
+        xl = self.load_excel()
         
         # 집계 시트 찾기 (우선)
-        agg_sheet, _ = find_sheet_with_fallback(
-            xl,
+        agg_sheet, _ = self.find_sheet_with_fallback(
             ['A(광공업생산)집계', 'A 집계'],
             ['광공업생산', '광공업생산지수']
         )
         
         if agg_sheet:
-            self.df_aggregation = pd.read_excel(xl, sheet_name=agg_sheet, header=None)
+            self.df_aggregation = self.get_sheet(agg_sheet)
         else:
             raise ValueError(f"광공업생산 집계 시트를 찾을 수 없습니다. 시트: {xl.sheet_names}")
         
         # 분석 시트 찾기
-        analysis_sheet, self.use_raw_data = find_sheet_with_fallback(
-            xl, 
+        analysis_sheet, self.use_raw_data = self.find_sheet_with_fallback(
             ['A 분석', 'A분석'],
             ['광공업생산', '광공업생산지수']
         )
         
         if analysis_sheet:
-            self.df_analysis = pd.read_excel(xl, sheet_name=analysis_sheet, header=None)
+            self.df_analysis = self.get_sheet(analysis_sheet)
             # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
-            # 헤더 행을 건너뛰고 데이터 시작 행부터 확인
-            data_df = self.df_analysis.iloc[self.DATA_START_ROW:]
-            test_row = data_df[(data_df[self.COL_REGION_NAME] == '전국') | 
-                               (data_df.get(self.COL_REGION_NAME + 1, pd.Series()) == '전국')]
-            if test_row.empty or test_row.iloc[0].isna().sum() > 20:
+            test_conditions = {self.COL_REGION_NAME: '전국'}
+            has_data = self.check_sheet_has_data(
+                self.df_analysis.iloc[self.DATA_START_ROW:],
+                test_conditions,
+                max_empty_cells=20
+            )
+            if not has_data:
                 print(f"[광공업생산] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
                 self.use_aggregation_only = True
             else:
@@ -278,22 +245,22 @@ class 광공업생산Generator:
         growth_rate = nationwide_total[self.COL_GROWTH_RATE] if pd.notna(nationwide_total[self.COL_GROWTH_RATE]) else 0
         
         return {
-            "production_index": safe_float(production_index, 100.0),
-            "growth_rate": safe_round(growth_rate, 1, 0.0),
-            "growth_direction": "증가" if safe_float(growth_rate, 0) > 0 else "감소",
+            "production_index": self.safe_float(production_index, 100.0),
+            "growth_rate": self.safe_round(growth_rate, 1, 0.0),
+            "growth_direction": "증가" if self.safe_float(growth_rate, 0) > 0 else "감소",
             "main_increase_industries": [
                 {
                     "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
+                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
+                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
                 }
                 for _, row in increase_industries.head(5).iterrows()
             ],
             "main_decrease_industries": [
                 {
                     "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
+                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
+                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
                 }
                 for _, row in decrease_industries.head(5).iterrows()
             ]
@@ -317,8 +284,8 @@ class 광공업생산Generator:
         nationwide_total = nationwide_rows.iloc[0]
         
         # 당분기(2025.2/4)와 전년동분기(2024.2/4) 지수로 증감률 계산
-        current_index = safe_float(nationwide_total[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
-        prev_year_index = safe_float(nationwide_total[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
+        current_index = self.safe_float(nationwide_total[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
+        prev_year_index = self.safe_float(nationwide_total[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
         
         if prev_year_index and prev_year_index != 0:
             growth_rate = ((current_index - prev_year_index) / prev_year_index) * 100
@@ -331,9 +298,9 @@ class 광공업생산Generator:
         
         industries = []
         for _, row in nationwide_industries.iterrows():
-            curr = safe_float(row[self.AGG_COL_2025_2Q], None)
-            prev = safe_float(row[self.AGG_COL_2024_2Q], None)
-            weight = safe_float(row[self.AGG_COL_WEIGHT], 0)
+            curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
+            prev = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+            weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
             
             if curr is not None and prev is not None and prev != 0:
                 ind_growth = ((curr - prev) / prev) * 100
@@ -409,8 +376,8 @@ class 광공업생산Generator:
             return self._get_default_nationwide_data()
         
         # 증감률 계산
-        current_val = safe_float(nationwide_row[current_quarter_col], 100)
-        prev_val = safe_float(nationwide_row[prev_year_col], 100)
+        current_val = self.safe_float(nationwide_row[current_quarter_col], 100)
+        prev_val = self.safe_float(nationwide_row[prev_year_col], 100)
         if prev_val and prev_val != 0:
             growth_rate = ((current_val - prev_val) / prev_val) * 100
         else:
@@ -423,8 +390,8 @@ class 광공업생산Generator:
             region = str(row[1]).strip() if pd.notna(row[1]) else ''
             classification = str(row[2]).strip() if pd.notna(row[2]) else ''
             if region == '전국' and classification == '2':
-                current = safe_float(row[current_quarter_col], None)
-                prev = safe_float(row[prev_year_col], None)
+                current = self.safe_float(row[current_quarter_col], None)
+                prev = self.safe_float(row[prev_year_col], None)
                 if current is not None and prev is not None and prev != 0:
                     ind_growth = ((current - prev) / prev) * 100
                     industries.append({
@@ -485,7 +452,7 @@ class 광공업생산Generator:
                 continue
             region_total = region_total.iloc[0]
             
-            growth_rate = safe_float(region_total[self.COL_GROWTH_RATE], 0)
+            growth_rate = self.safe_float(region_total[self.COL_GROWTH_RATE], 0)
             
             # 해당 지역 업종별 데이터
             try:
@@ -507,8 +474,8 @@ class 광공업생산Generator:
                     if pd.notna(row[self.COL_INDUSTRY_NAME]) and str(row[self.COL_INDUSTRY_CODE]) != 'BCD':
                         top_industries.append({
                             "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME])),
-                            "growth_rate": safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                            "contribution": safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
+                            "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
+                            "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
                         })
                         industry_count += 1
             except Exception as e:
@@ -549,7 +516,7 @@ class 광공업생산Generator:
         # 전국 전년동분기 지수 (기여도 계산용)
         nationwide_rows = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
                             (df[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
-        nationwide_prev = safe_float(nationwide_rows.iloc[0][self.AGG_COL_2024_2Q], 100) if not nationwide_rows.empty else 100
+        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][self.AGG_COL_2024_2Q], 100) if not nationwide_rows.empty else 100
         
         regions_data = []
         
@@ -562,8 +529,8 @@ class 광공업생산Generator:
             region_total = region_total.iloc[0]
             
             # 증감률 계산
-            current = safe_float(region_total[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
-            prev = safe_float(region_total[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
+            current = self.safe_float(region_total[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
+            prev = self.safe_float(region_total[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
             
             if prev and prev != 0:
                 growth_rate = ((current - prev) / prev) * 100
@@ -576,9 +543,9 @@ class 광공업생산Generator:
             
             industries = []
             for _, row in region_industries.iterrows():
-                curr = safe_float(row[self.AGG_COL_2025_2Q], None)
-                prev_ind = safe_float(row[self.AGG_COL_2024_2Q], None)
-                weight = safe_float(row[self.AGG_COL_WEIGHT], 0)
+                curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
+                prev_ind = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+                weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
                 
                 if curr is not None and prev_ind is not None and prev_ind != 0:
                     ind_growth = ((curr - prev_ind) / prev_ind) * 100
@@ -671,8 +638,8 @@ class 광공업생산Generator:
                 continue
             
             # 증감률 계산
-            current_val = safe_float(region_row[current_quarter_col], None)
-            prev_val = safe_float(region_row[prev_year_col], None)
+            current_val = self.safe_float(region_row[current_quarter_col], None)
+            prev_val = self.safe_float(region_row[prev_year_col], None)
             
             if current_val is not None and prev_val is not None and prev_val != 0:
                 growth_rate = ((current_val - prev_val) / prev_val) * 100
@@ -686,8 +653,8 @@ class 광공업생산Generator:
                 r_name = str(row[1]).strip() if pd.notna(row[1]) else ''
                 classification = str(row[2]).strip() if pd.notna(row[2]) else ''
                 if r_name == region and classification == '2':
-                    current = safe_float(row[current_quarter_col], None)
-                    prev = safe_float(row[prev_year_col], None)
+                    current = self.safe_float(row[current_quarter_col], None)
+                    prev = self.safe_float(row[prev_year_col], None)
                     if current is not None and prev is not None and prev != 0:
                         ind_growth = ((current - prev) / prev) * 100
                         industries.append({
@@ -816,15 +783,15 @@ class 광공업생산Generator:
             region_agg = region_agg.iloc[0]
             
             # 지수 추출 (상수 사용)
-            idx_2023_2q = safe_float(region_agg[self.AGG_COL_2023_2Q], 100)  # 2023.2/4
-            idx_2024_2q = safe_float(region_agg[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
-            idx_2025_1q = safe_float(region_agg[self.AGG_COL_2025_1Q], 100)  # 2025.1/4
-            idx_2025_2q = safe_float(region_agg[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
+            idx_2023_2q = self.safe_float(region_agg[self.AGG_COL_2023_2Q], 100)  # 2023.2/4
+            idx_2024_2q = self.safe_float(region_agg[self.AGG_COL_2024_2Q], 100)  # 2024.2/4
+            idx_2025_1q = self.safe_float(region_agg[self.AGG_COL_2025_1Q], 100)  # 2025.1/4
+            idx_2025_2q = self.safe_float(region_agg[self.AGG_COL_2025_2Q], 100)  # 2025.2/4p
             
             # 전년동분기 지수로 증감률 계산
-            idx_2022_2q = safe_float(region_agg[self.AGG_COL_2022_2Q], 100)  # 2022.2/4 (2023.2/4의 전년동분기)
-            idx_2023_2q_for_2024 = safe_float(region_agg[self.AGG_COL_2023_2Q], 100)  # 2023.2/4 (2024.2/4의 전년동분기)
-            idx_2024_1q = safe_float(region_agg[self.AGG_COL_2024_1Q], 100)  # 2024.1/4 (2025.1/4의 전년동분기)
+            idx_2022_2q = self.safe_float(region_agg[self.AGG_COL_2022_2Q], 100)  # 2022.2/4 (2023.2/4의 전년동분기)
+            idx_2023_2q_for_2024 = self.safe_float(region_agg[self.AGG_COL_2023_2Q], 100)  # 2023.2/4 (2024.2/4의 전년동분기)
+            idx_2024_1q = self.safe_float(region_agg[self.AGG_COL_2024_1Q], 100)  # 2024.1/4 (2025.1/4의 전년동분기)
             
             def calc_growth(curr, prev):
                 if prev and prev != 0:

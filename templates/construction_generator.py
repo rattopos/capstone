@@ -923,7 +923,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     Returns:
         보도자료 데이터 딕셔너리
     """
-    # TODO: 향후 기초자료 직접 추출 지원
+    # 기초자료 직접 추출은 현재 사용하지 않음 (분석표만 사용)
     # if raw_excel_path and year and quarter:
     #     from raw_data_extractor import RawDataExtractor
     #     extractor = RawDataExtractor(raw_excel_path, year, quarter)

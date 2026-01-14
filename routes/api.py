@@ -10,7 +10,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, session, send_file, make_response
-from werkzeug.utils import secure_filename
 import unicodedata
 import uuid
 
@@ -842,7 +841,9 @@ def get_session_info():
 
 @api_bp.route('/generate-all', methods=['POST'])
 def generate_all_reports():
-    """모든 보도자료 일괄 생성"""
+    """모든 보도자료 일괄 생성 (최적화 버전 - 엑셀 파일 캐싱)"""
+    from services.excel_cache import get_excel_file, clear_excel_cache
+    
     data = request.get_json()
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
@@ -852,27 +853,35 @@ def generate_all_reports():
     if not excel_path or not Path(excel_path).exists():
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
     
+    # 엑셀 파일을 한 번만 로드하고 모든 Generator에 재사용 (캐싱)
+    excel_file = get_excel_file(excel_path, use_data_only=True)
+    
     generated_reports = []
     errors = []
     
-    for report_config in REPORT_ORDER:
-        custom_data = all_custom_data.get(report_config['id'], {})
-        
-        html_content, error, _ = generate_report_html(
-            excel_path, report_config, year, quarter, custom_data
-        )
-        
-        if error:
-            errors.append({'report_id': report_config['id'], 'error': error})
-        else:
-            output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            generated_reports.append({
-                'report_id': report_config['id'],
-                'name': report_config['name'],
-                'path': str(output_path)
-            })
+    try:
+        for report_config in REPORT_ORDER:
+            custom_data = all_custom_data.get(report_config['id'], {})
+            
+            # 캐시된 excel_file 전달
+            html_content, error, _ = generate_report_html(
+                excel_path, report_config, year, quarter, custom_data, excel_file=excel_file
+            )
+            
+            if error:
+                errors.append({'report_id': report_config['id'], 'error': error})
+            else:
+                output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                generated_reports.append({
+                    'report_id': report_config['id'],
+                    'name': report_config['name'],
+                    'path': str(output_path)
+                })
+    finally:
+        # 작업 완료 후 캐시 정리 (메모리 관리)
+        clear_excel_cache(excel_path)
     
     return jsonify({
         'success': len(errors) == 0,

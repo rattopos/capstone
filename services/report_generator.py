@@ -10,12 +10,12 @@ import pandas as pd
 from pathlib import Path
 from jinja2 import Template
 
-from config.settings import TEMPLATES_DIR, BASE_DIR, UPLOAD_FOLDER
+from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
 from utils.filters import is_missing, format_value
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
+from .excel_cache import get_excel_file, clear_excel_cache
 from .grdp_service import (
-    get_kosis_grdp_download_info,
     parse_kosis_grdp_file,
     get_default_grdp_data
 )
@@ -63,7 +63,6 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         template = Template(template_content)
         html_content = template.render(**data)
         
-        print(f"[DEBUG] 스키마 기반 보도자료 생성 완료: {report_id}")
         return html_content, None, []
         
     except Exception as e:
@@ -72,8 +71,8 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         return None, f"스키마 기반 보도자료 생성 오류: {str(e)}", []
 
 
-def generate_report_html(excel_path, report_config, year, quarter, custom_data=None):
-    """보도자료 HTML 생성
+def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, excel_file=None):
+    """보도자료 HTML 생성 (최적화 버전 - 엑셀 파일 캐싱 지원)
     
     Args:
         excel_path: 분석표 엑셀 파일 경로
@@ -81,6 +80,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         year: 연도
         quarter: 분기
         custom_data: 커스텀 데이터 (선택)
+        excel_file: 캐시된 ExcelFile 객체 (선택사항, 있으면 재사용)
     
     주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
     """
@@ -98,14 +98,16 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             print(f"[ERROR] {error_msg}")
             return None, error_msg, []
         
+        # 엑셀 파일 캐싱 (없으면 캐시에서 가져오기)
+        if excel_file is None:
+            excel_file = get_excel_file(excel_path, use_data_only=True)
+        
         generator_name = report_config['generator']
         template_name = report_config['template']
         report_name = report_config['name']
         report_id = report_config['id']
         
-        print(f"\n[DEBUG] ========== {report_name} 보도자료 생성 시작 ==========")
-        print(f"[DEBUG] Generator: {generator_name}")
-        print(f"[DEBUG] Template: {template_name}")
+        # 보도자료 생성 시작
         
         # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
         if generator_name is None:
@@ -119,7 +121,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # 사용 가능한 함수 확인
         available_funcs = [name for name in dir(module) if not name.startswith('_')]
-        print(f"[DEBUG] 모듈 내 함수/클래스: {[f for f in available_funcs if 'generate' in f.lower() or 'Generator' in f or f == 'load_data']}")
         
         # Generator 클래스 찾기
         generator_class = None
@@ -127,7 +128,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             obj = getattr(module, name)
             if isinstance(obj, type) and name.endswith('Generator'):
                 generator_class = obj
-                print(f"[DEBUG] Generator 클래스 발견: {name}")
                 break
         
         data = None
@@ -135,18 +135,26 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 방법 1: generate_report_data 함수 사용
         # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         if hasattr(module, 'generate_report_data'):
-            print(f"[DEBUG] generate_report_data 함수 사용")
             try:
-                # 함수 시그니처 확인하여 year, quarter 전달 시도
+                # 함수 시그니처 확인하여 year, quarter, excel_file 전달 시도
                 import inspect
                 sig = inspect.signature(module.generate_report_data)
                 params = list(sig.parameters.keys())
                 
-                if 'year' in params and 'quarter' in params:
-                    print(f"[DEBUG] year, quarter 전달: {year}년 {quarter}분기")
+                # 캐시된 excel_file 전달 시도
+                call_kwargs = {}
+                if 'excel_file' in params:
+                    call_kwargs['excel_file'] = excel_file
+                if 'year' in params:
+                    call_kwargs['year'] = year
+                if 'quarter' in params:
+                    call_kwargs['quarter'] = quarter
+                
+                if call_kwargs:
+                    data = module.generate_report_data(excel_path, **call_kwargs)
+                elif 'year' in params and 'quarter' in params:
                     data = module.generate_report_data(excel_path, year=year, quarter=quarter)
                 elif 'year' in params:
-                    print(f"[DEBUG] year 전달: {year}년")
                     data = module.generate_report_data(excel_path, year=year)
                 else:
                     # 분석표만 사용
@@ -163,12 +171,10 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     data = module.generate_report_data(excel_path, year=year, quarter=quarter)
                 except:
                     data = module.generate_report_data(excel_path)
-            print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 2: generate_report 함수 직접 호출
         # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         elif hasattr(module, 'generate_report'):
-            print(f"[DEBUG] generate_report 함수 직접 호출")
             template_path = TEMPLATES_DIR / template_name
             output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
             try:
@@ -176,22 +182,29 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 data = module.generate_report(excel_path, template_path, output_path)
             except (TypeError, AttributeError):
                 data = module.generate_report(excel_path, template_path, output_path)
-            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 3: Generator 클래스 사용
         elif generator_class:
-            print(f"[DEBUG] Generator 클래스 사용: {generator_class.__name__}")
             try:
-                # __init__ 시그니처 확인하여 year, quarter 전달 시도
+                # __init__ 시그니처 확인하여 year, quarter, excel_file 전달 시도
                 import inspect
                 sig = inspect.signature(generator_class.__init__)
                 params = list(sig.parameters.keys())
                 
-                if 'year' in params and 'quarter' in params:
-                    print(f"[DEBUG] Generator에 year, quarter 전달: {year}년 {quarter}분기")
+                # 캐시된 excel_file 전달 시도
+                init_kwargs = {}
+                if 'excel_file' in params:
+                    init_kwargs['excel_file'] = excel_file
+                if 'year' in params:
+                    init_kwargs['year'] = year
+                if 'quarter' in params:
+                    init_kwargs['quarter'] = quarter
+                
+                if init_kwargs:
+                    generator = generator_class(excel_path, **init_kwargs)
+                elif 'year' in params and 'quarter' in params:
                     generator = generator_class(excel_path, year=year, quarter=quarter)
                 elif 'year' in params:
-                    print(f"[DEBUG] Generator에 year 전달: {year}년")
                     generator = generator_class(excel_path, year=year)
                 else:
                     generator = generator_class(excel_path)
@@ -200,7 +213,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 generator = generator_class(excel_path)
             
             data = generator.extract_all_data()
-            print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         else:
             error_msg = f"유효한 Generator를 찾을 수 없습니다: {generator_name}"
@@ -258,7 +270,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     if 'age_groups' not in r:
                         r['age_groups'] = r.get('industries', [])
             
-            print(f"[DEBUG] Top3 regions 후처리 완료")
         
         # 커스텀 데이터 병합
         if custom_data:
@@ -299,7 +310,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
             data['report_info']['quarter'] = quarter if quarter is not None else 2
         
-        print(f"[DEBUG] report_info 설정: {data['report_info']}")
         
         # 결측치 확인
         missing = check_missing_data(data, report_id)
@@ -314,7 +324,6 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         html_content = template.render(**data)
         
-        print(f"[DEBUG] 보도자료 생성 성공!")
         return html_content, None, missing
         
     except Exception as e:

@@ -12,16 +12,21 @@ from typing import Optional, Tuple
 import platform
 
 
-def preprocess_excel(excel_path: str, output_path: Optional[str] = None) -> Tuple[str, bool, str]:
+def preprocess_excel(
+    excel_path: str, 
+    output_path: Optional[str] = None,
+    use_xlwings: bool = False
+) -> Tuple[str, bool, str]:
     """
-    엑셀 파일의 수식을 계산하여 새 파일로 저장
+    엑셀 파일의 수식을 계산하여 새 파일로 저장 (최적화 버전)
     
-    백엔드에서 직접 계산하는 방식을 우선 사용하여 빠른 처리를 목표로 합니다.
-    xlwings는 Excel 앱 실행이 필요하므로 마지막 fallback으로만 사용합니다.
+    openpyxl의 data_only=True를 최우선으로 사용하여 빠른 처리를 목표로 합니다.
+    xlwings는 기본적으로 사용하지 않으며, 명시적으로 요청할 때만 실행됩니다.
     
     Args:
         excel_path: 원본 엑셀 파일 경로
         output_path: 출력 파일 경로 (None이면 원본 덮어쓰기)
+        use_xlwings: xlwings 사용 여부 (기본값: False, Excel 앱 필요하고 느림)
     
     Returns:
         Tuple[str, bool, str]: (처리된 파일 경로, 성공 여부, 메시지)
@@ -29,38 +34,50 @@ def preprocess_excel(excel_path: str, output_path: Optional[str] = None) -> Tupl
     if output_path is None:
         output_path = excel_path
     
-    # 1. openpyxl로 직접 계산 시도 (가장 빠름 - 백엔드 직접 계산)
+    # 1. openpyxl data_only=True 사용 (가장 빠름 - 수식 계산된 값 직접 읽기)
+    result_path, success, message = _try_openpyxl_data_only(excel_path, output_path)
+    if success:
+        return result_path, True, message
+    
+    # 2. openpyxl로 직접 계산 시도 (백엔드 직접 계산 - 시트 간 참조 매핑)
     result_path, success, message = _try_openpyxl_calculation(excel_path, output_path)
     if success:
         return result_path, True, message
     
-    # 2. formulas 라이브러리 시도 (순수 Python - 복잡한 수식 지원)
-    result_path, success, message = _try_formulas(excel_path, output_path)
-    if success:
-        return result_path, True, message
+    # 3. formulas 라이브러리 시도 (선택적 - 복잡한 수식 지원, 하지만 느릴 수 있음)
+    # 주의: 대부분의 경우 위 두 방법으로 충분하므로, 필요시에만 사용
+    try:
+        import formulas
+        result_path, success, message = _try_formulas(excel_path, output_path)
+        if success:
+            return result_path, True, message
+    except ImportError:
+        pass  # formulas가 없으면 건너뛰기
     
-    # 3. xlwings 시도 (마지막 fallback - Excel 앱 필요, 느림)
-    # 직접 계산이 실패했을 때만 사용
-    result_path, success, message = _try_xlwings(excel_path, output_path)
-    if success:
-        return result_path, True, message
+    # 4. xlwings 시도 (명시적으로 요청한 경우만 - Excel 앱 필요, 매우 느림)
+    if use_xlwings:
+        result_path, success, message = _try_xlwings(excel_path, output_path)
+        if success:
+            return result_path, True, message
     
-    # 4. 모두 실패 시 원본 반환 (fallback 로직 사용)
+    # 5. 모두 실패 시 원본 반환 (fallback 로직 사용)
     print(f"[전처리] 수식 계산 실패 - 원본 파일 사용, generator fallback 로직 활성화")
-    return excel_path, False, "수식 계산 라이브러리 없음 - fallback 모드"
+    return excel_path, False, "수식 계산 실패 - fallback 모드"
 
 
 def _try_xlwings(excel_path: str, output_path: str) -> Tuple[str, bool, str]:
     """
-    xlwings를 사용하여 Excel 앱으로 수식 계산 (마지막 fallback)
+    xlwings를 사용하여 Excel 앱으로 수식 계산 (명시적 요청 시에만 사용)
     
-    주의: Excel 앱 실행이 필요하므로 느립니다.
-    백엔드 직접 계산이 실패했을 때만 사용됩니다.
+    주의: 
+    - Excel 앱 실행이 필요하므로 매우 느립니다.
+    - 기본 로직에서 제외되며, use_xlwings=True로 명시적으로 요청할 때만 실행됩니다.
+    - 대부분의 경우 openpyxl data_only=True로 충분합니다.
     """
     try:
         import xlwings as xw
         
-        print(f"[xlwings] Excel 앱으로 수식 계산 시작 (fallback 모드)...")
+        print(f"[xlwings] Excel 앱으로 수식 계산 시작 (명시적 요청)...")
         
         # Excel 앱을 백그라운드에서 실행
         app = xw.App(visible=False)
@@ -77,7 +94,7 @@ def _try_xlwings(excel_path: str, output_path: str) -> Tuple[str, bool, str]:
             wb.close()
             
             print(f"[xlwings] 수식 계산 완료: {output_path}")
-            return output_path, True, "xlwings로 수식 계산 완료 (fallback)"
+            return output_path, True, "xlwings로 수식 계산 완료"
             
         finally:
             app.quit()
@@ -115,33 +132,84 @@ def _try_formulas(excel_path: str, output_path: str) -> Tuple[str, bool, str]:
         return excel_path, False, f"formulas 오류: {str(e)}"
 
 
+def _try_openpyxl_data_only(excel_path: str, output_path: str) -> Tuple[str, bool, str]:
+    """
+    openpyxl의 data_only=True를 사용하여 수식 계산된 값 직접 읽기 (가장 빠름)
+    
+    엑셀 파일이 이미 수식이 계산된 상태라면, data_only=True로 읽으면
+    계산된 값이 바로 나옵니다. 별도 계산 과정이 필요 없어 가장 빠릅니다.
+    """
+    try:
+        import openpyxl
+        
+        print(f"[openpyxl] data_only=True로 값 읽기 시도...")
+        
+        # 원본 파일 복사 (원본 보존)
+        if excel_path != output_path:
+            shutil.copy2(excel_path, output_path)
+        
+        # data_only=True로 열어서 계산된 값 확인
+        wb = openpyxl.load_workbook(output_path, data_only=True)
+        
+        # 수식이 계산된 값이 있는지 확인 (첫 번째 시트의 일부 셀 확인)
+        has_calculated_values = False
+        for sheet_name in wb.sheetnames[:3]:  # 처음 3개 시트만 확인
+            ws = wb[sheet_name]
+            # 첫 10행, 첫 10열에서 값이 있는지 확인
+            for row in ws.iter_rows(min_row=1, max_row=min(10, ws.max_row), 
+                                   min_col=1, max_col=min(10, ws.max_column), 
+                                   values_only=True):
+                for cell_value in row:
+                    if cell_value is not None and not isinstance(cell_value, str):
+                        has_calculated_values = True
+                        break
+                if has_calculated_values:
+                    break
+            if has_calculated_values:
+                break
+        
+        wb.close()
+        
+        if has_calculated_values:
+            print(f"[openpyxl] data_only=True로 값 읽기 성공 (수식이 이미 계산된 상태)")
+            return output_path, True, "openpyxl data_only=True로 값 읽기 완료"
+        else:
+            # 계산된 값이 없으면 다음 방법 시도
+            return excel_path, False, "수식이 계산되지 않은 상태"
+        
+    except ImportError:
+        return excel_path, False, "openpyxl 미설치"
+    except Exception as e:
+        print(f"[openpyxl data_only] 오류: {e}")
+        return excel_path, False, f"openpyxl data_only 오류: {str(e)}"
+
+
 def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, bool, str]:
     """
-    openpyxl을 사용하여 시트 간 참조 수식 계산 (백엔드 직접 계산 - 가장 빠름)
+    openpyxl을 사용하여 시트 간 참조 수식 계산 (백엔드 직접 계산)
     
     분석 시트의 수식이 집계 시트를 참조하는 경우:
     ='시트이름'!셀주소 형태의 간단한 참조를 백엔드에서 직접 계산하여 매핑
+    
+    주의: 이 방법은 data_only=True로 읽을 수 없는 경우에만 사용됩니다.
+    대부분의 경우 _try_openpyxl_data_only가 더 빠르고 효율적입니다.
     """
     try:
         import openpyxl
         import re
         
-        print(f"[openpyxl] 백엔드 직접 계산 시작...")
+        print(f"[openpyxl] 백엔드 직접 계산 시작 (시트 간 참조 매핑)...")
         
         # 분석 시트 → 집계 시트 매핑
-        # 주의: I(순인구이동)은 분석 시트가 없고 집계 시트만 있음
         analysis_aggregate_mapping = {
             'A 분석': 'A(광공업생산)집계',
             'B 분석': 'B(서비스업생산)집계',
             'C 분석': 'C(소비)집계',
             'D(고용률)분석': 'D(고용률)집계',
             'D(실업)분석': 'D(실업)집계',
-            'E(지출목적물가) 분석': 'E(지출목적물가)집계',
-            'E(품목성질물가)분석': 'E(품목성질물가)집계',
             "F'분석": "F'(건설)집계",
             'G 분석': 'G(수출)집계',
             'H 분석': 'H(수입)집계',
-            # I(순인구이동)은 분석 시트가 없음 - 집계 시트만 사용
         }
         
         # 원본 파일 복사 (원본 보존)
@@ -151,18 +219,18 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
         # 수식 포함 모드로 열기
         wb = openpyxl.load_workbook(output_path, data_only=False)
         
-        # 집계 시트 데이터 캐싱 (값 모드로 다시 열어서 - 한 번만 읽기)
-        wb_data = openpyxl.load_workbook(output_path, data_only=True)
+        # 집계 시트 데이터 캐싱 (값 모드로 읽기)
+        wb_data = openpyxl.load_workbook(output_path, data_only=True, read_only=True)
         aggregate_cache = {}
         
-        # 필요한 집계 시트만 미리 캐싱 (성능 최적화)
+        # 필요한 집계 시트만 미리 캐싱
         required_aggregate_sheets = set(analysis_aggregate_mapping.values())
         for aggregate_sheet in required_aggregate_sheets:
             if aggregate_sheet in wb_data.sheetnames:
                 ws_agg = wb_data[aggregate_sheet]
                 sheet_data = {}
-                # 빈 셀은 건너뛰고 값이 있는 셀만 저장
-                for row in ws_agg.iter_rows(min_row=1, max_row=ws_agg.max_row, values_only=False):
+                # 값이 있는 셀만 저장 (성능 최적화)
+                for row in ws_agg.iter_rows(min_row=1, max_row=min(ws_agg.max_row, 1000), values_only=False):
                     for cell in row:
                         if cell.value is not None:
                             sheet_data[(cell.row, cell.column)] = cell.value
@@ -170,39 +238,33 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
         
         wb_data.close()
         
-        # 분석 시트의 수식을 값으로 대체 (백엔드에서 직접 계산)
+        # 분석 시트의 수식을 값으로 대체
         calculated_count = 0
         formula_count = 0
         
-        # 열 문자를 숫자로 변환하는 함수 (재사용)
+        # 열 문자를 숫자로 변환
         def col_letter_to_number(col_letter: str) -> int:
-            """열 문자(A, B, ..., Z, AA, AB, ...)를 숫자로 변환"""
             col = 0
             for i, c in enumerate(reversed(col_letter)):
                 col += (ord(c) - ord('A') + 1) * (26 ** i)
             return col
         
         for analysis_sheet, aggregate_sheet in analysis_aggregate_mapping.items():
-            if analysis_sheet not in wb.sheetnames:
-                continue
-            if aggregate_sheet not in aggregate_cache:
+            if analysis_sheet not in wb.sheetnames or aggregate_sheet not in aggregate_cache:
                 continue
             
             ws_analysis = wb[analysis_sheet]
             agg_data = aggregate_cache[aggregate_sheet]
             
-            # 수식이 있는 셀만 처리 (성능 최적화)
-            for row in ws_analysis.iter_rows(min_row=1, max_row=ws_analysis.max_row):
+            # 수식이 있는 셀만 처리
+            for row in ws_analysis.iter_rows(min_row=1, max_row=min(ws_analysis.max_row, 1000)):
                 for cell in row:
                     if cell.value is None:
                         continue
                     
                     val = str(cell.value)
-                    
-                    # 수식인 경우 (=로 시작)
                     if val.startswith('='):
                         formula_count += 1
-                        
                         # 집계 시트 참조 파싱: ='시트이름'!셀주소
                         match = re.match(r"^='?([^'!]+)'?!([A-Z]+)(\d+)$", val)
                         if match:
@@ -211,7 +273,6 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
                             ref_row = int(match.group(3))
                             ref_col = col_letter_to_number(ref_col_letter)
                             
-                            # 해당 집계 시트에서 값 가져오기 (백엔드에서 직접 매핑)
                             if ref_sheet in aggregate_cache:
                                 ref_value = aggregate_cache[ref_sheet].get((ref_row, ref_col))
                                 if ref_value is not None:
@@ -222,7 +283,7 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
         wb.close()
         
         if calculated_count > 0:
-            print(f"[openpyxl] 백엔드 직접 계산 완료: {calculated_count}개 셀 (총 {formula_count}개 수식)")
+            print(f"[openpyxl] 백엔드 직접 계산 완료: {calculated_count}개 셀")
             return output_path, True, f"백엔드 직접 계산 완료 ({calculated_count}개 수식)"
         else:
             return excel_path, False, "계산할 수식 없음"
@@ -230,10 +291,8 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
     except ImportError:
         return excel_path, False, "openpyxl 미설치"
     except Exception as e:
-        print(f"[openpyxl] 오류: {e}")
-        import traceback
-        traceback.print_exc()
-        return excel_path, False, f"openpyxl 오류: {str(e)}"
+        print(f"[openpyxl 계산] 오류: {e}")
+        return excel_path, False, f"openpyxl 계산 오류: {str(e)}"
 
 
 def check_available_methods() -> dict:
