@@ -5,9 +5,32 @@
 
 import importlib.util
 from pathlib import Path
+from datetime import datetime
 import pandas as pd
 
 from config.settings import TEMPLATES_DIR
+
+
+def get_previous_quarter():
+    """현재 시점의 바로 이전 분기를 계산하여 반환
+    
+    Returns:
+        (year, quarter) 튜플
+        예: 오늘이 2026년 1월이면 → (2025, 4)
+        예: 오늘이 2026년 5월이면 → (2026, 1)
+    """
+    now = datetime.now()
+    current_year = now.year
+    current_month = now.month
+    current_quarter = (current_month - 1) // 3 + 1
+    
+    # 이전 분기 계산
+    if current_quarter == 1:
+        # 1분기면 작년 4분기
+        return current_year - 1, 4
+    else:
+        # 2, 3, 4분기면 올해의 이전 분기
+        return current_year, current_quarter - 1
 
 
 def load_generator_module(generator_name):
@@ -266,23 +289,19 @@ def extract_year_quarter_from_excel(filepath, default_year=None, default_quarter
     
     # 현재 날짜 기준 이전 분기 계산
     try:
+        fallback_year, fallback_quarter = get_previous_quarter()
         now = datetime.now()
-        current_year = now.year
         current_quarter = (now.month - 1) // 3 + 1
-        
-        # 이전 분기 계산
-        if current_quarter == 1:
-            fallback_year = current_year - 1
-            fallback_quarter = 4
-        else:
-            fallback_year = current_year
-            fallback_quarter = current_quarter - 1
-        
-        print(f"[연도/분기 추출] ⚠️ 안전장치: 현재 날짜 기준 이전 분기 사용 - {fallback_year}년 {fallback_quarter}분기")
+        print(f"[연도/분기 추출] ⚠️ 안전장치: 현재 날짜 기준 이전 분기 사용 - {fallback_year}년 {fallback_quarter}분기 (현재: {now.year}년 {current_quarter}분기)")
         return fallback_year, fallback_quarter
     except Exception as e:
-        print(f"[연도/분기 추출] ⚠️ 안전장치 오류: {e}, 최종 기본값 사용 - 2025년 2분기")
-        return 2025, 2
+        print(f"[연도/분기 추출] ⚠️ 안전장치 오류: {e}, 최종 기본값 계산 시도")
+        # 최종 안전장치: get_previous_quarter 재시도
+        try:
+            return get_previous_quarter()
+        except:
+            # 모든 방법 실패 시 현재 연도 1분기 반환 (최소한의 안전장치)
+            return datetime.now().year, 1
 
 
 def extract_year_quarter_from_raw(filepath):
@@ -369,12 +388,20 @@ def extract_year_quarter_from_raw(filepath):
             print(f"[기초자료 연도/분기 추출] 최종 결과: {latest_year}년 {latest_quarter}분기")
             return latest_year, latest_quarter
         
-        # 기본값 (실패 시)
-        print(f"[경고] 기초자료 연도/분기 추출 실패, 기본값 사용: 2025년 2분기")
-        return 2025, 2
+        # 기본값 (실패 시): 현재 날짜 기준 이전 분기
+        try:
+            fallback_year, fallback_quarter = get_previous_quarter()
+            print(f"[경고] 기초자료 연도/분기 추출 실패, 현재 날짜 기준 이전 분기 사용: {fallback_year}년 {fallback_quarter}분기")
+            return fallback_year, fallback_quarter
+        except Exception as e2:
+            print(f"[경고] 이전 분기 계산 실패: {e2}, 최소 안전장치 사용")
+            return datetime.now().year, 1
     except Exception as e:
         print(f"[오류] 기초자료 연도/분기 추출 오류: {e}")
-        return 2025, 2
+        try:
+            return get_previous_quarter()
+        except:
+            return datetime.now().year, 1
 
 
 def detect_file_type(filepath: str) -> str:

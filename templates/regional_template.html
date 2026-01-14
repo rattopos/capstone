@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region | default('') }} ({{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기)</title>
+    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region | default('') }} ({% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %})</title>
     <style>
         * {
             margin: 0;

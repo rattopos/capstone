@@ -74,7 +74,9 @@ def generate_preview():
     # 연도/분기가 없으면 데이터에서 추출
     if not year or not quarter:
         try:
-            year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year, quarter = extract_year_quarter_from_data(excel_path, default_year=default_year, default_quarter=default_quarter)
             # 세션에 저장
             session['year'] = year
             session['quarter'] = quarter
@@ -151,7 +153,9 @@ def generate_summary_preview():
         # 연도/분기가 없으면 데이터에서 추출
         if not year or not quarter:
             try:
-                year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
+                from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year, quarter = extract_year_quarter_from_data(excel_path, default_year=default_year, default_quarter=default_quarter)
                 session['year'] = year
                 session['quarter'] = quarter
                 print(f"[요약 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
@@ -361,7 +365,9 @@ def generate_statistics_preview():
     # 연도/분기가 없으면 데이터에서 추출
     if not year or not quarter:
         try:
-            year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year, quarter = extract_year_quarter_from_data(excel_path, default_year=default_year, default_quarter=default_quarter)
             session['year'] = year
             session['quarter'] = quarter
             print(f"[통계표 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")

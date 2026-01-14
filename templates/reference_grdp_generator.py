@@ -47,8 +47,14 @@ class 참고_GRDP_Generator:
         self.year = year
         self.quarter = quarter
     
-    def generate_placeholder_data(self, year=2025, quarter=2):
+    def generate_placeholder_data(self, year=None, quarter=None):
         """플레이스홀더 데이터 생성 (모든 값이 결측치)"""
+        # year, quarter가 None이면 동적 기본값 사용
+        if year is None or quarter is None:
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year = year if year is not None else default_year
+            quarter = quarter if quarter is not None else default_quarter
         
         # 전국 요약 데이터 (플레이스홀더)
         national_summary = {
@@ -119,8 +125,14 @@ class 참고_GRDP_Generator:
             }
         }
     
-    def generate_sample_data(self, year=2025, quarter=2):
+    def generate_sample_data(self, year=None, quarter=None):
         """이미지 기준 샘플 데이터 생성 (테스트용)"""
+        # year, quarter가 None이면 동적 기본값 사용
+        if year is None or quarter is None:
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year = year if year is not None else default_year
+            quarter = quarter if quarter is not None else default_quarter
         
         # 전국 요약 데이터
         national_summary = {
@@ -214,15 +226,22 @@ class 참고_GRDP_Generator:
             }
         }
     
-    def render_html(self, template_path, year=2025, quarter=2, use_sample=False):
+    def render_html(self, template_path, year=None, quarter=None, use_sample=False):
         """HTML 렌더링
         
         Args:
             template_path: 템플릿 파일 경로
-            year: 연도
-            quarter: 분기
+            year: 연도 (None이면 동적 기본값 사용)
+            quarter: 분기 (None이면 동적 기본값 사용)
             use_sample: True면 샘플 데이터, False면 플레이스홀더
         """
+        # year, quarter가 None이면 동적 기본값 사용
+        if year is None or quarter is None:
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year = year if year is not None else default_year
+            quarter = quarter if quarter is not None else default_quarter
+        
         # 데이터 생성
         if use_sample:
             data = self.generate_sample_data(year, quarter)
@@ -235,8 +254,15 @@ class 참고_GRDP_Generator:
         
         return template.render(**data)
     
-    def save_json(self, output_path, year=2025, quarter=2, use_sample=False):
+    def save_json(self, output_path, year=None, quarter=None, use_sample=False):
         """JSON 데이터 저장"""
+        # year, quarter가 None이면 동적 기본값 사용
+        if year is None or quarter is None:
+            from utils.excel_utils import get_previous_quarter
+            default_year, default_quarter = get_previous_quarter()
+            year = year if year is not None else default_year
+            quarter = quarter if quarter is not None else default_quarter
+        
         if use_sample:
             data = self.generate_sample_data(year, quarter)
         else:
@@ -305,8 +331,24 @@ def _add_group_flags(regional_data):
     return sorted_data
 
 
-def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
+def generate_report_data(excel_path, year=None, quarter=None, use_sample=False):
     """보도자료 데이터 생성 함수 (app.py에서 호출)
+    
+    Args:
+        excel_path: 엑셀 파일 경로
+        year: 연도 (None이면 동적 기본값 사용)
+        quarter: 분기 (None이면 동적 기본값 사용)
+        use_sample: 샘플 데이터 사용 여부
+    
+    우선순위:
+    1. 추출된 GRDP JSON 파일이 있으면 사용
+    """
+    # year, quarter가 None이면 동적 기본값 사용
+    if year is None or quarter is None:
+        from utils.excel_utils import get_previous_quarter
+        default_year, default_quarter = get_previous_quarter()
+        year = year if year is not None else default_year
+        quarter = quarter if quarter is not None else default_quarter
     
     우선순위:
     1. 추출된 GRDP JSON 파일이 있으면 사용

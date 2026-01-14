@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통계표 - 참고 GRDP - {{ year }}년 {{ quarter }}분기 ({{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기)</title>
+    <title>통계표 - 참고 GRDP - {{ year }}년 {{ quarter }}분기 ({% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기)</title>
     
     {# 결측치 플레이스홀더 매크로 #}
     {% macro placeholder(value) %}
