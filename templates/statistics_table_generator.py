@@ -339,29 +339,56 @@ class StatisticsTableGenerator:
     
     def _load_sheet(self, sheet_name: str) -> pd.DataFrame:
         """엑셀 시트 로드 (캐싱, 파일 수정 시간 확인)"""
-        # 파일이 수정되었으면 캐시 무효화
-        if self._check_file_modified():
-            self._clear_cache()
-            try:
-                excel_path_obj = Path(self.excel_path)
-                self._file_mtime = excel_path_obj.stat().st_mtime
-            except OSError:
-                pass
-        
-        if sheet_name not in self.cached_sheets:
-            try:
-                # 시트 데이터 로드 (예외 발생 시 캐시에 저장하지 않음)
-                df = pd.read_excel(
-                    self.excel_path,
-                    sheet_name=sheet_name,
-                    header=None
-                )
-                # 정상 로드된 경우에만 캐시에 저장
-                self.cached_sheets[sheet_name] = df
-            except Exception as e:
-                print(f"시트 로드 실패: {sheet_name} - {e}")
+        try:
+            # 파일이 수정되었으면 캐시 무효화
+            if self._check_file_modified():
+                self._clear_cache()
+                try:
+                    excel_path_obj = Path(self.excel_path)
+                    if excel_path_obj.exists():
+                        self._file_mtime = excel_path_obj.stat().st_mtime
+                except OSError:
+                    pass
+            
+            if sheet_name not in self.cached_sheets:
+                try:
+                    # 시트 데이터 로드 (예외 발생 시 캐시에 저장하지 않음)
+                    excel_path_obj = Path(self.excel_path)
+                    if not excel_path_obj.exists():
+                        print(f"[통계표] 엑셀 파일이 존재하지 않음: {self.excel_path}")
+                        return None
+                    
+                    df = pd.read_excel(
+                        self.excel_path,
+                        sheet_name=sheet_name,
+                        header=None
+                    )
+                    
+                    # 빈 DataFrame 체크
+                    if df is None or df.empty:
+                        print(f"[통계표] 시트가 비어있음: {sheet_name}")
+                        return None
+                    
+                    # 정상 로드된 경우에만 캐시에 저장
+                    self.cached_sheets[sheet_name] = df
+                except FileNotFoundError:
+                    print(f"[통계표] 파일을 찾을 수 없음: {self.excel_path}")
+                    return None
+                except ValueError as e:
+                    # 시트가 없는 경우
+                    print(f"[통계표] 시트를 찾을 수 없음: {sheet_name} - {e}")
+                    return None
+                except Exception as e:
+                    print(f"[통계표] 시트 로드 실패: {sheet_name} - {e}")
+                    return None
+            
+            cached_df = self.cached_sheets.get(sheet_name)
+            if cached_df is None or cached_df.empty:
                 return None
-        return self.cached_sheets[sheet_name]
+            return cached_df
+        except Exception as e:
+            print(f"[통계표] 시트 로드 중 예외 발생: {sheet_name} - {e}")
+            return None
     
     def _extract_from_raw_data(self, raw_sheet_name: str, config: dict) -> Optional[Dict[str, Any]]:
         """기초자료에서 데이터 추출
@@ -377,69 +404,80 @@ class StatisticsTableGenerator:
             }
         """
         if not self.raw_extractor:
+            print(f"[통계표] 기초자료 추출기 없음: {raw_sheet_name}")
             return None
         
-        # 기초자료 시트별 컬럼 매핑 사용 (분석표 설정이 아닌 기초자료 구조에 맞춤)
-        raw_col_config = self.RAW_COLUMN_MAPPING.get(raw_sheet_name, {})
-        
-        region_column = raw_col_config.get("지역_컬럼", 1)
-        classification_column = raw_col_config.get("분류단계_컬럼", 2)
-        classification_value = raw_col_config.get("분류값", "0")
-        
-        calculation_method = raw_col_config.get("계산방식", "growth_rate")
-        
-        print(f"[통계표] 기초자료 추출 - 시트: {raw_sheet_name}, 지역컬럼: {region_column}, 분류컬럼: {classification_column}, 분류값: {classification_value}, 계산방식: {calculation_method}")
-        
-        # 계산방식에 따라 다른 함수 호출
-        if calculation_method == "difference":
-            # 차이 계산 (%p 단위)
-            yearly_data = self.raw_extractor.extract_yearly_difference(
-                raw_sheet_name,
-                start_year=2016,
-                region_column=region_column,
-                classification_column=classification_column,
-                classification_value=classification_value if classification_value else None
-            )
-            quarterly_data = self.raw_extractor.extract_quarterly_difference(
-                raw_sheet_name,
-                start_year=2016,
-                start_quarter=1,
-                region_column=region_column,
-                classification_column=classification_column,
-                classification_value=classification_value if classification_value else None
-            )
-        else:
-            # 전년동기비 계산 (% 단위)
-            yearly_data = self.raw_extractor.extract_yearly_growth_rate(
-                raw_sheet_name,
-                start_year=2016,
-                region_column=region_column,
-                classification_column=classification_column,
-                classification_value=classification_value if classification_value else None
-            )
-            quarterly_data = self.raw_extractor.extract_quarterly_growth_rate(
-                raw_sheet_name,
-                start_year=2016,
-                start_quarter=1,
-                region_column=region_column,
-                classification_column=classification_column,
-                classification_value=classification_value if classification_value else None
-            )
-        
-        print(f"[통계표] 기초자료 추출 결과 - 연도: {len(yearly_data)}개, 분기: {len(quarterly_data)}개")
-        
-        # 데이터 형식 변환 (분기 키 형식 통일)
-        # raw_data_extractor가 이미 "2025.2/4p" 형식으로 반환하므로 그대로 사용
-        quarterly_formatted = {}
-        for quarter_key, data in quarterly_data.items():
-            # 공백 형식("2016 1/4")인 경우 점 형식("2016.1/4")으로 변환
-            formatted_key = quarter_key.replace(" ", ".")
-            quarterly_formatted[formatted_key] = data
-        
-        return {
-            'yearly': yearly_data,
-            'quarterly': quarterly_formatted
-        }
+        try:
+            # 기초자료 시트별 컬럼 매핑 사용 (분석표 설정이 아닌 기초자료 구조에 맞춤)
+            raw_col_config = self.RAW_COLUMN_MAPPING.get(raw_sheet_name, {})
+            
+            region_column = raw_col_config.get("지역_컬럼", 1)
+            classification_column = raw_col_config.get("분류단계_컬럼", 2)
+            classification_value = raw_col_config.get("분류값", "0")
+            
+            calculation_method = raw_col_config.get("계산방식", "growth_rate")
+            
+            print(f"[통계표] 기초자료 추출 - 시트: {raw_sheet_name}, 지역컬럼: {region_column}, 분류컬럼: {classification_column}, 분류값: {classification_value}, 계산방식: {calculation_method}")
+            
+            # 계산방식에 따라 다른 함수 호출
+            if calculation_method == "difference":
+                # 차이 계산 (%p 단위)
+                yearly_data = self.raw_extractor.extract_yearly_difference(
+                    raw_sheet_name,
+                    start_year=2016,
+                    region_column=region_column,
+                    classification_column=classification_column,
+                    classification_value=classification_value if classification_value else None
+                )
+                quarterly_data = self.raw_extractor.extract_quarterly_difference(
+                    raw_sheet_name,
+                    start_year=2016,
+                    start_quarter=1,
+                    region_column=region_column,
+                    classification_column=classification_column,
+                    classification_value=classification_value if classification_value else None
+                )
+            else:
+                # 전년동기비 계산 (% 단위)
+                yearly_data = self.raw_extractor.extract_yearly_growth_rate(
+                    raw_sheet_name,
+                    start_year=2016,
+                    region_column=region_column,
+                    classification_column=classification_column,
+                    classification_value=classification_value if classification_value else None
+                )
+                quarterly_data = self.raw_extractor.extract_quarterly_growth_rate(
+                    raw_sheet_name,
+                    start_year=2016,
+                    start_quarter=1,
+                    region_column=region_column,
+                    classification_column=classification_column,
+                    classification_value=classification_value if classification_value else None
+                )
+            
+            # yearly_data와 quarterly_data가 None일 수 있음
+            if yearly_data is None:
+                yearly_data = {}
+            if quarterly_data is None:
+                quarterly_data = {}
+            
+            print(f"[통계표] 기초자료 추출 결과 - 연도: {len(yearly_data)}개, 분기: {len(quarterly_data)}개")
+            
+            # 데이터 형식 변환 (분기 키 형식 통일)
+            # raw_data_extractor가 이미 "2025.2/4p" 형식으로 반환하므로 그대로 사용
+            quarterly_formatted = {}
+            for quarter_key, data in quarterly_data.items():
+                # 공백 형식("2016 1/4")인 경우 점 형식("2016.1/4")으로 변환
+                formatted_key = quarter_key.replace(" ", ".")
+                quarterly_formatted[formatted_key] = data
+            
+            return {
+                'yearly': yearly_data,
+                'quarterly': quarterly_formatted
+            }
+        except Exception as e:
+            print(f"[통계표] 기초자료 추출 중 오류: {raw_sheet_name} - {e}")
+            return None
     
     # 지역명 매핑 (실업률 시트용)
     REGION_NAME_MAPPING = {
@@ -465,29 +503,44 @@ class StatisticsTableGenerator:
     
     def _get_total_row(self, df: pd.DataFrame, region: str, config: dict) -> Optional[pd.Series]:
         """특정 지역의 총지수 행 가져오기 (시트별 설정 사용)"""
-        region_col = config["지역_컬럼"]
-        id_col = config["총지수_식별"]["컬럼"]
-        id_val = config["총지수_식별"]["값"]
-        use_region_mapping = config.get("지역_매핑", False)
-        
-        # 값 타입에 따라 비교
         try:
-            df_region = df[region_col].astype(str).str.strip()
-            region_clean = str(region).strip()
+            if df is None or df.empty:
+                return None
             
-            # 지역명 매핑 사용 여부
-            if use_region_mapping:
-                region_variants = self.REGION_NAME_MAPPING.get(region_clean, [region_clean])
-                mask = df_region.isin(region_variants) & (df[id_col].astype(str).str.strip() == str(id_val).strip())
-            else:
-                mask = (df_region == region_clean) & (df[id_col].astype(str).str.strip() == str(id_val).strip())
+            region_col = config.get("지역_컬럼")
+            total_id_config = config.get("총지수_식별", {})
+            id_col = total_id_config.get("컬럼")
+            id_val = total_id_config.get("값")
+            use_region_mapping = config.get("지역_매핑", False)
             
-            result = df[mask]
+            if region_col is None or id_col is None or id_val is None:
+                return None
             
-            if not result.empty:
-                return result.iloc[0]
+            # 컬럼 인덱스 범위 확인
+            if region_col >= len(df.columns) or id_col >= len(df.columns):
+                return None
+            
+            # 값 타입에 따라 비교
+            try:
+                df_region = df.iloc[:, region_col].astype(str).str.strip()
+                region_clean = str(region).strip()
+                
+                # 지역명 매핑 사용 여부
+                if use_region_mapping:
+                    region_variants = self.REGION_NAME_MAPPING.get(region_clean, [region_clean])
+                    mask = df_region.isin(region_variants) & (df.iloc[:, id_col].astype(str).str.strip() == str(id_val).strip())
+                else:
+                    mask = (df_region == region_clean) & (df.iloc[:, id_col].astype(str).str.strip() == str(id_val).strip())
+                
+                result = df[mask]
+                
+                if not result.empty:
+                    return result.iloc[0]
+            except (KeyError, IndexError, ValueError, TypeError) as e:
+                print(f"[통계표] 행 검색 오류: {region} - {e}")
+                return None
         except Exception as e:
-            print(f"행 검색 오류: {region} - {e}")
+            print(f"[통계표] 총지수 행 검색 실패: {region} - {e}")
         
         return None
     
@@ -572,12 +625,17 @@ class StatisticsTableGenerator:
         2. JSON에 없는 분기만 기초자료/분석표에서 동적 추출
         3. auto_update_json이 True면 새 데이터를 JSON에 저장
         """
-        config = self.TABLE_CONFIG.get(table_name)
-        if not config:
-            raise ValueError(f"알 수 없는 통계표: {table_name}")
-        
-        # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
-        data = self._create_empty_table_data()
+        try:
+            config = self.TABLE_CONFIG.get(table_name)
+            if not config:
+                print(f"[통계표] 알 수 없는 통계표: {table_name}, 빈 데이터 반환")
+                return self._create_empty_table_data()
+            
+            # 데이터 구조 초기화 - 모든 연도/분기/지역에 기본값 '-' 설정
+            data = self._create_empty_table_data()
+        except Exception as e:
+            print(f"[통계표] 데이터 구조 초기화 실패: {table_name} - {e}")
+            return self._create_empty_table_data()
         
         # 1. 과거 데이터 JSON에서 로드 (우선순위 1)
         json_loaded = False
@@ -650,239 +708,340 @@ class StatisticsTableGenerator:
             
             # 기초자료 없으면 분석표 집계 시트에서 추출
             if not self.raw_extractor:
-                self._extract_from_aggregate_sheet(table_name, config, data)
+                try:
+                    self._extract_from_aggregate_sheet(table_name, config, data)
+                except Exception as e:
+                    print(f"[통계표] 집계 시트 추출 실패: {table_name} - {e}")
         
         # JSON 데이터가 없고 동적 추출도 실패한 경우 -> 전체 동적 추출 시도
         if not json_loaded and not missing_quarters:
             print(f"[통계표] JSON 없음, 전체 동적 추출: {table_name}")
-            self._extract_all_dynamic(table_name, config, data)
+            try:
+                self._extract_all_dynamic(table_name, config, data)
+            except Exception as e:
+                print(f"[통계표] 전체 동적 추출 실패: {table_name} - {e}")
         
         # 모든 지역이 "-"인 분기 제거 (해당 통계에서 데이터를 제공하지 않는 분기)
-        quarters_to_remove = []
-        for q_key, regions in data['quarterly'].items():
-            if all(v == '-' or v is None for v in regions.values()):
-                quarters_to_remove.append(q_key)
-        
-        for q_key in quarters_to_remove:
-            del data['quarterly'][q_key]
-            if q_key in data['quarterly_keys']:
-                data['quarterly_keys'].remove(q_key)
+        try:
+            quarters_to_remove = []
+            for q_key, regions in data.get('quarterly', {}).items():
+                if all(v == '-' or v is None or v == 'N/A' for v in regions.values()):
+                    quarters_to_remove.append(q_key)
+            
+            for q_key in quarters_to_remove:
+                if q_key in data.get('quarterly', {}):
+                    del data['quarterly'][q_key]
+                if q_key in data.get('quarterly_keys', []):
+                    data['quarterly_keys'].remove(q_key)
+        except Exception as e:
+            print(f"[통계표] 분기 정리 실패: {table_name} - {e}")
         
         return data
     
     def _extract_all_dynamic(self, table_name: str, config: dict, data: dict):
         """모든 데이터를 동적으로 추출 (JSON 없는 경우)"""
-        # 기초자료에서 직접 추출 (우선순위 1)
-        if self.raw_extractor:
-            raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
-            if raw_sheet_name:
-                try:
-                    print(f"[통계표] 기초자료에서 전체 추출: {table_name}")
-                    raw_data = self._extract_from_raw_data(raw_sheet_name, config)
-                    if raw_data:
-                        for year, regions in raw_data.get('yearly', {}).items():
-                            if year in data['yearly']:
-                                data['yearly'][year].update({k: v for k, v in regions.items() if v is not None})
-                        
-                        for quarter, regions in raw_data.get('quarterly', {}).items():
-                            if quarter in data['quarterly']:
-                                data['quarterly'][quarter].update({k: v for k, v in regions.items() if v is not None})
-                        return
-                except Exception as e:
-                    print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
-        
-        # 분석표 집계 시트에서 추출 (fallback)
-        self._extract_from_aggregate_sheet(table_name, config, data)
+        try:
+            # 기초자료에서 직접 추출 (우선순위 1)
+            if self.raw_extractor:
+                raw_sheet_name = self.RAW_SHEET_MAPPING.get(table_name)
+                if raw_sheet_name:
+                    try:
+                        print(f"[통계표] 기초자료에서 전체 추출: {table_name}")
+                        raw_data = self._extract_from_raw_data(raw_sheet_name, config)
+                        if raw_data:
+                            for year, regions in raw_data.get('yearly', {}).items():
+                                if year in data.get('yearly', {}):
+                                    data['yearly'][year].update({k: v for k, v in regions.items() if v is not None})
+                            
+                            for quarter, regions in raw_data.get('quarterly', {}).items():
+                                if quarter in data.get('quarterly', {}):
+                                    data['quarterly'][quarter].update({k: v for k, v in regions.items() if v is not None})
+                            return
+                    except Exception as e:
+                        print(f"[통계표] 기초자료 추출 실패: {table_name} - {e}")
+            
+            # 분석표 집계 시트에서 추출 (fallback)
+            try:
+                self._extract_from_aggregate_sheet(table_name, config, data)
+            except Exception as e:
+                print(f"[통계표] 집계 시트 추출 실패: {table_name} - {e}")
+        except Exception as e:
+            print(f"[통계표] 전체 동적 추출 실패: {table_name} - {e}")
     
     def _extract_from_aggregate_sheet(self, table_name: str, config: dict, data: dict):
         """분석표 집계 시트에서 데이터 추출"""
-        sheet_name = config.get("집계_시트")
-        if not sheet_name:
-            print(f"[통계표] 집계_시트 설정 없음: {table_name}")
-            return
+        try:
+            sheet_name = config.get("집계_시트")
+            if not sheet_name:
+                print(f"[통계표] 집계_시트 설정 없음: {table_name}")
+                return
+                
+            df = self._load_sheet(sheet_name)
+            if df is None or df.empty:
+                print(f"[통계표] 시트를 찾을 수 없거나 비어있음: {sheet_name}")
+                return
             
-        df = self._load_sheet(sheet_name)
-        if df is None:
-            print(f"[통계표] 시트를 찾을 수 없음: {sheet_name}")
-            return
-        
-        print(f"[통계표] 집계 시트에서 추출: {table_name} (시트: {sheet_name})")
-        
-        # 헤더 행에서 분기 컬럼 위치 파악
-        header_row = df.iloc[2]
-        quarter_col_map = {}
-        for col_idx, header in enumerate(header_row):
-            if pd.notna(header):
-                header_str = str(header).strip()
-                # "2022  2/4" 형식 파싱
-                match = re.match(r'(\d{4})\s+(\d)/4', header_str)
-                if match:
-                    year = match.group(1)
-                    q = match.group(2)
-                    quarter_key = f"{year}.{q}/4"
-                    quarter_col_map[quarter_key] = col_idx
-        
-        calculation_method = config.get("계산방식", "growth_rate")
-        
-        # 각 지역에 대해 데이터 추출
-        for region in self.ALL_REGIONS:
-            row = self._get_total_row(df, region, config)
-            if row is None:
-                continue
+            # DataFrame 크기 확인
+            if len(df) < 3:
+                print(f"[통계표] 시트 행 수 부족: {sheet_name} (최소 3행 필요, 현재 {len(df)}행)")
+                return
             
-            # 연도별 데이터 (전년동기비 계산)
-            for year in data["yearly_years"]:
-                # 이미 값이 있으면 스킵 (JSON에서 로드됨)
-                if data["yearly"].get(year, {}).get(region, "-") != "-":
-                    continue
-                
-                year_int = int(year)
-                prev_year = str(year_int - 1)
-                
-                curr_col = config["연도_컬럼"].get(year)
-                prev_col = config["연도_컬럼"].get(prev_year)
-                
-                if curr_col is not None and curr_col < len(row):
-                    curr_val = row.iloc[curr_col]
+            print(f"[통계표] 집계 시트에서 추출: {table_name} (시트: {sheet_name})")
+            
+            # 헤더 행에서 분기 컬럼 위치 파악
+            try:
+                header_row = df.iloc[2]
+                quarter_col_map = {}
+                for col_idx, header in enumerate(header_row):
+                    if pd.notna(header):
+                        header_str = str(header).strip()
+                        # "2022  2/4" 형식 파싱
+                        match = re.match(r'(\d{4})\s+(\d)/4', header_str)
+                        if match:
+                            year = match.group(1)
+                            q = match.group(2)
+                            quarter_key = f"{year}.{q}/4"
+                            quarter_col_map[quarter_key] = col_idx
+            except Exception as e:
+                print(f"[통계표] 헤더 행 파싱 실패: {sheet_name} - {e}")
+                quarter_col_map = {}
+        
+            calculation_method = config.get("계산방식", "growth_rate")
+            
+            # 각 지역에 대해 데이터 추출
+            for region in self.ALL_REGIONS:
+                try:
+                    row = self._get_total_row(df, region, config)
+                    if row is None or len(row) == 0:
+                        continue
                     
-                    if calculation_method == "absolute":
-                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
-                        if not pd.isna(curr_val):
-                            try:
-                                data["yearly"][year][region] = round(float(curr_val), 1)
-                            except (ValueError, TypeError):
-                                pass
-                    elif prev_col is not None and prev_col < len(row):
-                        prev_val = row.iloc[prev_col]
-                        
-                        if calculation_method == "difference":
-                            result = self._calculate_difference(curr_val, prev_val)
-                        else:
-                            result = self._calculate_yoy_growth(curr_val, prev_val)
-                        
-                        if result is not None:
-                            data["yearly"][year][region] = round(result, 1)
-            
-            # 분기별 데이터 (전년동기비 계산 또는 절대값)
-            for quarter_key in data["quarterly_keys"]:
-                # 이미 값이 있으면 스킵 (JSON에서 로드됨)
-                if data["quarterly"].get(quarter_key, {}).get(region, "-") != "-":
-                    continue
-                
-                match = re.match(r'(\d{4})\.(\d)/4(p?)', quarter_key)
-                if not match:
-                    continue
-                
-                year = int(match.group(1))
-                q = int(match.group(2))
-                prev_year_quarter_key = f"{year - 1}.{q}/4"
-                
-                curr_col = quarter_col_map.get(quarter_key.rstrip('p'))
-                prev_col = quarter_col_map.get(prev_year_quarter_key)
-                
-                if curr_col is not None and curr_col < len(row):
-                    curr_val = row.iloc[curr_col]
+                    # 연도별 데이터 (전년동기비 계산)
+                    for year in data.get("yearly_years", []):
+                        try:
+                            # 이미 값이 있으면 스킵 (JSON에서 로드됨)
+                            if data.get("yearly", {}).get(year, {}).get(region, "-") != "-":
+                                continue
+                            
+                            year_int = int(year)
+                            prev_year = str(year_int - 1)
+                            
+                            year_col_config = config.get("연도_컬럼", {})
+                            curr_col = year_col_config.get(year)
+                            prev_col = year_col_config.get(prev_year)
+                            
+                            if curr_col is not None and curr_col < len(row):
+                                try:
+                                    curr_val = row.iloc[curr_col]
+                                    
+                                    if calculation_method == "absolute":
+                                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
+                                        if not pd.isna(curr_val):
+                                            data["yearly"][year][region] = round(float(curr_val), 1)
+                                    elif prev_col is not None and prev_col < len(row):
+                                        prev_val = row.iloc[prev_col]
+                                        
+                                        if calculation_method == "difference":
+                                            result = self._calculate_difference(curr_val, prev_val)
+                                        else:
+                                            result = self._calculate_yoy_growth(curr_val, prev_val)
+                                        
+                                        if result is not None:
+                                            data["yearly"][year][region] = round(result, 1)
+                                except (ValueError, TypeError, IndexError) as e:
+                                    # 개별 연도 데이터 추출 실패는 무시하고 계속 진행
+                                    continue
+                        except Exception as e:
+                            # 개별 연도 처리 실패는 무시하고 계속 진행
+                            continue
                     
-                    if calculation_method == "absolute":
-                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
-                        if not pd.isna(curr_val):
-                            try:
-                                data["quarterly"][quarter_key][region] = round(float(curr_val), 1)
-                            except (ValueError, TypeError):
-                                pass
-                    elif prev_col is not None and prev_col < len(row):
-                        prev_val = row.iloc[prev_col]
-                        
-                        if calculation_method == "difference":
-                            result = self._calculate_difference(curr_val, prev_val)
-                        else:
-                            result = self._calculate_yoy_growth(curr_val, prev_val)
-                        
-                        if result is not None:
-                            data["quarterly"][quarter_key][region] = round(result, 1)
+                    # 분기별 데이터 (전년동기비 계산 또는 절대값)
+                    for quarter_key in data.get("quarterly_keys", []):
+                        try:
+                            # 이미 값이 있으면 스킵 (JSON에서 로드됨)
+                            if data.get("quarterly", {}).get(quarter_key, {}).get(region, "-") != "-":
+                                continue
+                            
+                            match = re.match(r'(\d{4})\.(\d)/4(p?)', quarter_key)
+                            if not match:
+                                continue
+                            
+                            year = int(match.group(1))
+                            q = int(match.group(2))
+                            prev_year_quarter_key = f"{year - 1}.{q}/4"
+                            
+                            curr_col = quarter_col_map.get(quarter_key.rstrip('p'))
+                            prev_col = quarter_col_map.get(prev_year_quarter_key)
+                            
+                            if curr_col is not None and curr_col < len(row):
+                                try:
+                                    curr_val = row.iloc[curr_col]
+                                    
+                                    if calculation_method == "absolute":
+                                        # 절대값: 전년동기비 계산 없이 현재 값 그대로 사용
+                                        if not pd.isna(curr_val):
+                                            data["quarterly"][quarter_key][region] = round(float(curr_val), 1)
+                                    elif prev_col is not None and prev_col < len(row):
+                                        prev_val = row.iloc[prev_col]
+                                        
+                                        if calculation_method == "difference":
+                                            result = self._calculate_difference(curr_val, prev_val)
+                                        else:
+                                            result = self._calculate_yoy_growth(curr_val, prev_val)
+                                        
+                                        if result is not None:
+                                            data["quarterly"][quarter_key][region] = round(result, 1)
+                                except (ValueError, TypeError, IndexError) as e:
+                                    # 개별 분기 데이터 추출 실패는 무시하고 계속 진행
+                                    continue
+                        except Exception as e:
+                            # 개별 분기 처리 실패는 무시하고 계속 진행
+                            continue
+                except Exception as e:
+                    # 개별 지역 처리 실패는 무시하고 계속 진행
+                    print(f"[통계표] 지역 데이터 추출 실패: {region} - {e}")
+                    continue
+        except Exception as e:
+            print(f"[통계표] 집계 시트 추출 중 오류: {table_name} - {e}")
+            # 에러가 나도 빈 데이터는 반환하므로 여기서는 return하지 않음
     
     def extract_all_tables(self, year: Optional[int] = None, quarter: Optional[int] = None) -> Dict[str, Any]:
         """모든 통계표 데이터 추출"""
-        if year is None:
-            year = self.current_year
-        if quarter is None:
-            quarter = self.current_quarter
-        tables = []
-        # 통계표 순서: 광공업생산지수-서비스업생산지수-소매판매액지수-건설수주액-고용률-실업률-국내인구이동-수출액-수입액-소비자물가지수
-        table_order = [
-            "광공업생산지수",
-            "서비스업생산지수",
-            "소매판매액지수",
-            "건설수주액",
-            "고용률",
-            "실업률",
-            "국내인구이동",
-            "수출액",
-            "수입액",
-            "소비자물가지수"
-        ]
-        
-        page_num = 22  # 시작 페이지 번호
-        
-        for idx, table_name in enumerate(table_order, 1):
-            config = self.TABLE_CONFIG[table_name]
-            data = self.extract_table_data(table_name)
-            
-            if data:
-                tables.append({
-                    "id": idx,
-                    "title": table_name,
-                    "unit": config["단위"],
-                    "data": data
-                })
-                page_num += 2
-        
-        # 부록 용어 정의
-        appendix = {
-            "terms": [
-                {
-                    "term": "불변지수",
-                    "definition": "불변지수는 가격 변동분이 제외된 수량 변동분만 포함되어 있음을 의미하며, 성장 수준 분석(전년동분기비)에 활용됨"
-                },
-                {
-                    "term": "광공업생산지수",
-                    "definition": "한국표준산업분류 상의 3개 대분류(B, C, D)를 대상으로 광업제조업동향조사의 월별 품목별 생산·출하(내수 및 수출)·재고 및 생산능력·가동률지수를 기초로 작성됨"
-                },
-                {
-                    "term": "서비스업생산지수",
-                    "definition": "한국표준산업분류 상의 13개 대분류(E, G, H, I, J, K, L, M, N, P, Q, R, S)를 대상으로 서비스업동향조사의 월별 매출액을 기초로 작성됨"
-                },
-                {
-                    "term": "소매판매액지수",
-                    "definition": "한국표준산업분류 상의 '자동차 판매업 중 승용차'와 '소매업'을 대상으로 서비스업동향조사의 월별 상품판매액을 기초로 작성됨"
-                },
-                {
-                    "term": "건설수주",
-                    "definition": "종합건설업 등록업체 중 전전년 「건설업조사」 결과를 기준으로 기성액 순위 상위 기업체(대표도: 54%)의 국내공사에 대한 건설수주액임"
-                },
-                {
-                    "term": "소비자물가지수",
-                    "definition": "가구에서 일상생활을 영위하기 위해 구입하는 상품과 서비스의 평균적인 가격변동을 측정한 지수임"
-                },
-                {
-                    "term": "지역내총생산",
-                    "definition": "일정 기간 동안에 일정 지역 내에서 새로이 창출된 최종생산물을 시장가격으로 평가한 가치의 합임"
-                }
+        try:
+            if year is None:
+                year = self.current_year
+            if quarter is None:
+                quarter = self.current_quarter
+            tables = []
+            # 통계표 순서: 광공업생산지수-서비스업생산지수-소매판매액지수-건설수주액-고용률-실업률-국내인구이동-수출액-수입액-소비자물가지수
+            table_order = [
+                "광공업생산지수",
+                "서비스업생산지수",
+                "소매판매액지수",
+                "건설수주액",
+                "고용률",
+                "실업률",
+                "국내인구이동",
+                "수출액",
+                "수입액",
+                "소비자물가지수"
             ]
-        }
-        
-        # GRDP 데이터 (현재 N/A로 처리)
-        grdp_data = self._create_grdp_placeholder()
-        
-        return {
-            "report_info": {
-                "year": year,
-                "quarter": quarter
-            },
-            "tables": tables,
-            "grdp": grdp_data,
-            "appendix": appendix
-        }
+            
+            page_num = 22  # 시작 페이지 번호
+            
+            for idx, table_name in enumerate(table_order, 1):
+                try:
+                    config = self.TABLE_CONFIG.get(table_name)
+                    if not config:
+                        print(f"[통계표] 설정 없음: {table_name}, 건너뜀")
+                        continue
+                    
+                    data = self.extract_table_data(table_name)
+                    
+                    # data가 None이거나 빈 딕셔너리여도 추가 (템플릿에서 "자료 없음" 표시)
+                    if data:
+                        tables.append({
+                            "id": idx,
+                            "title": table_name,
+                            "unit": config.get("단위", "[자료 없음]"),
+                            "data": data
+                        })
+                        page_num += 2
+                    else:
+                        # 빈 데이터라도 추가하여 "자료 없음" 표시
+                        empty_data = self._create_empty_table_data()
+                        tables.append({
+                            "id": idx,
+                            "title": table_name,
+                            "unit": config.get("단위", "[자료 없음]"),
+                            "data": empty_data
+                        })
+                        print(f"[통계표] 빈 데이터로 추가: {table_name}")
+                except Exception as e:
+                    print(f"[통계표] 통계표 추출 실패: {table_name} - {e}")
+                    # 실패한 통계표도 빈 데이터로 추가
+                    try:
+                        empty_data = self._create_empty_table_data()
+                        config = self.TABLE_CONFIG.get(table_name, {})
+                        tables.append({
+                            "id": idx,
+                            "title": table_name,
+                            "unit": config.get("단위", "[자료 없음]"),
+                            "data": empty_data
+                        })
+                    except:
+                        pass
+                    continue
+            
+            # 부록 용어 정의
+            appendix = {
+                "terms": [
+                    {
+                        "term": "불변지수",
+                        "definition": "불변지수는 가격 변동분이 제외된 수량 변동분만 포함되어 있음을 의미하며, 성장 수준 분석(전년동분기비)에 활용됨"
+                    },
+                    {
+                        "term": "광공업생산지수",
+                        "definition": "한국표준산업분류 상의 3개 대분류(B, C, D)를 대상으로 광업제조업동향조사의 월별 품목별 생산·출하(내수 및 수출)·재고 및 생산능력·가동률지수를 기초로 작성됨"
+                    },
+                    {
+                        "term": "서비스업생산지수",
+                        "definition": "한국표준산업분류 상의 13개 대분류(E, G, H, I, J, K, L, M, N, P, Q, R, S)를 대상으로 서비스업동향조사의 월별 매출액을 기초로 작성됨"
+                    },
+                    {
+                        "term": "소매판매액지수",
+                        "definition": "한국표준산업분류 상의 '자동차 판매업 중 승용차'와 '소매업'을 대상으로 서비스업동향조사의 월별 상품판매액을 기초로 작성됨"
+                    },
+                    {
+                        "term": "건설수주",
+                        "definition": "종합건설업 등록업체 중 전전년 「건설업조사」 결과를 기준으로 기성액 순위 상위 기업체(대표도: 54%)의 국내공사에 대한 건설수주액임"
+                    },
+                    {
+                        "term": "소비자물가지수",
+                        "definition": "가구에서 일상생활을 영위하기 위해 구입하는 상품과 서비스의 평균적인 가격변동을 측정한 지수임"
+                    },
+                    {
+                        "term": "지역내총생산",
+                        "definition": "일정 기간 동안에 일정 지역 내에서 새로이 창출된 최종생산물을 시장가격으로 평가한 가치의 합임"
+                    }
+                ]
+            }
+            
+            # GRDP 데이터 (현재 N/A로 처리)
+            try:
+                grdp_data = self._create_grdp_placeholder()
+            except Exception as e:
+                print(f"[통계표] GRDP 데이터 생성 실패: {e}")
+                grdp_data = {
+                    "title": "분기 지역내총생산(GRDP)",
+                    "unit": "[전년동기비, %]",
+                    "data": self._create_empty_table_data()
+                }
+            
+            return {
+                "report_info": {
+                    "year": year,
+                    "quarter": quarter
+                },
+                "tables": tables,
+                "grdp": grdp_data,
+                "appendix": appendix
+            }
+        except Exception as e:
+            print(f"[통계표] 전체 통계표 추출 실패: {e}")
+            # 최소한의 빈 구조라도 반환
+            return {
+                "report_info": {
+                    "year": year if year else self.current_year,
+                    "quarter": quarter if quarter else self.current_quarter
+                },
+                "tables": [],
+                "grdp": {
+                    "title": "분기 지역내총생산(GRDP)",
+                    "unit": "[전년동기비, %]",
+                    "data": self._create_empty_table_data()
+                },
+                "appendix": {"terms": []}
+            }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
         """GRDP 데이터 생성 - grdp_historical_data.json 및 grdp_extracted.json에서 데이터 로드

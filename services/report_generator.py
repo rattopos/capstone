@@ -314,6 +314,16 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 결측치 확인
         missing = check_missing_data(data, report_id)
         
+        # 템플릿 렌더링 전 데이터 키 로깅 (디버깅용)
+        print(f"[DEBUG] {report_name} 템플릿 렌더링 전 데이터 키: {list(data.keys()) if data else 'None'}")
+        if data:
+            # 주요 키의 타입과 크기 정보도 출력
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    print(f"  - {key}: {type(value).__name__} (크기: {len(value) if hasattr(value, '__len__') else 'N/A'})")
+                else:
+                    print(f"  - {key}: {type(value).__name__}")
+        
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
         with open(template_path, 'r', encoding='utf-8') as f:
@@ -759,7 +769,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
         #     }
         
         # 통계표 - 개별 지표
-        elif table_name and table_name != 'GRDP' and generator:
+        if table_name and table_name != 'GRDP' and generator:
             table_order = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
                           '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수']
             try:
@@ -767,44 +777,82 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
             except ValueError:
                 table_index = 1
             
-            config = generator.TABLE_CONFIG.get(table_name)
-            if config:
-                data = generator.extract_table_data(table_name)
-                
-                # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
-                yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
-                
-                # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
-                quarterly_keys = data.get('quarterly_keys', [])
-                if not quarterly_keys and data.get('quarterly'):
-                    # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
-                    quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
-                        int(x[:4]), int(x[5]) if len(x) > 5 else 0
-                    ))
-                
-                page_base = 22 + (table_index - 1) * 2
-                
-                template_data = {
-                    'year': year,
-                    'quarter': quarter,
-                    'index': table_index,
-                    'title': table_name,
-                    'unit': config['단위'],
-                    'data': data if data else {'yearly': {}, 'quarterly': {}},
-                    'page1_regions': PAGE1_REGIONS,
-                    'page2_regions': PAGE2_REGIONS,
-                    'yearly_years': yearly_years,
-                    'quarterly_keys': quarterly_keys
-                }
-            else:
-                return None, f"통계표 설정을 찾을 수 없습니다: {table_name}"
+            try:
+                config = generator.TABLE_CONFIG.get(table_name)
+                if not config:
+                    print(f"[통계표] 설정 없음: {table_name}, 빈 데이터 반환")
+                    data = generator._create_empty_table_data()
+                else:
+                    data = generator.extract_table_data(table_name)
+                    # data가 None이면 빈 데이터로 대체
+                    if data is None:
+                        print(f"[통계표] 데이터 추출 실패: {table_name}, 빈 데이터 반환")
+                        data = generator._create_empty_table_data()
+            except Exception as e:
+                import traceback
+                print(f"[통계표] 데이터 추출 중 오류: {table_name} - {e}")
+                traceback.print_exc()
+                # 오류 발생 시 빈 데이터 반환
+                try:
+                    data = generator._create_empty_table_data()
+                except:
+                    data = {
+                        'yearly': {},
+                        'quarterly': {},
+                        'yearly_years': [],
+                        'quarterly_keys': []
+                    }
+            
+            # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
+            yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
+            
+            # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
+            quarterly_keys = data.get('quarterly_keys', [])
+            if not quarterly_keys and data.get('quarterly'):
+                # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
+                quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
+                    int(x[:4]), int(x[5]) if len(x) > 5 else 0
+                ))
+            
+            page_base = 22 + (table_index - 1) * 2
+            
+            # config가 없어도 기본값 사용
+            unit = config.get('단위', '[자료 없음]') if config else '[자료 없음]'
+            
+            template_data = {
+                'year': year,
+                'quarter': quarter,
+                'index': table_index,
+                'title': table_name,
+                'unit': unit,
+                'data': data if data else {'yearly': {}, 'quarterly': {}, 'yearly_years': [], 'quarterly_keys': []},
+                'page1_regions': PAGE1_REGIONS,
+                'page2_regions': PAGE2_REGIONS,
+                'yearly_years': yearly_years,
+                'quarterly_keys': quarterly_keys
+            }
         
         # 통계표 - GRDP
         elif stat_id == 'stat_grdp':
             if generator:
-                grdp_data = generator._create_grdp_placeholder()
+                try:
+                    grdp_data = generator._create_grdp_placeholder()
+                except Exception as e:
+                    print(f"[통계표] GRDP 데이터 생성 실패: {e}")
+                    grdp_data = {
+                        'title': '분기 지역내총생산(GRDP)',
+                        'unit': '[전년동기비, %]',
+                        'data': {
+                            'yearly': {},
+                            'quarterly': {},
+                            'yearly_years': [],
+                            'quarterly_keys': []
+                        }
+                    }
             else:
                 grdp_data = {
+                    'title': '분기 지역내총생산(GRDP)',
+                    'unit': '[전년동기비, %]',
                     'data': {
                         'yearly': {},
                         'quarterly': {},

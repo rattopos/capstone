@@ -84,7 +84,7 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change) }}%p {% if employment.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
+                {{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change) }}%p {% if employment.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in employment.increase_regions[:3] %}
@@ -103,7 +103,7 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {{ report_info.year }}년 {{ report_info.quarter }}/4분기 <span class="highlight">시도별 인구순이동</span>은
+                {{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기 <span class="highlight">시도별 인구순이동</span>은
             </div>
             <div class="summary-sub">
                 {% for region in population.inflow_regions[:3] %}

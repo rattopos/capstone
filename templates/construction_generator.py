@@ -324,14 +324,14 @@ def get_nationwide_data(df_analysis, df_index):
         negative_types.sort(key=lambda x: x['growth_rate'] if x['growth_rate'] is not None else 0)
         main_types = negative_types[:3]
         main_category = "토목" if civil_growth is not None and civil_growth < 0 else "건축"
-        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_DECREASE
+        sub_types_text = None  # 실제 데이터에서 추출 필요 (비공개 데이터)
     else:
         # 증가 시 증가율이 큰 순
         positive_types = [t for t in construction_types if t['growth_rate'] is not None and t['growth_rate'] > 0]
         positive_types.sort(key=lambda x: x['growth_rate'] if x['growth_rate'] is not None else 0, reverse=True)
         main_types = positive_types[:3]
         main_category = "토목" if civil_growth is not None and civil_growth > 0 else "건축"
-        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_INCREASE
+        sub_types_text = None  # 실제 데이터에서 추출 필요 (비공개 데이터)
     
     # 기본값 사용하지 않음 (데이터 무결성 원칙)
     # civil_growth와 building_growth가 None이면 그대로 유지
@@ -368,7 +368,7 @@ def _get_nationwide_from_aggregation(df_index):
             'civil_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
             'building_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
             'main_category': '건축',
-            'sub_types_text': NATIONWIDE_CIVIL_SUBTYPES_INCREASE
+            'sub_types_text': None  # 실제 데이터에서 추출 필요 (비공개 데이터)
         }
     
     nationwide_total = nationwide_rows.iloc[0]
@@ -417,14 +417,14 @@ def _get_nationwide_from_aggregation(df_index):
         negative_types = [t for t in construction_types if t['growth_rate'] < 0]
         negative_types.sort(key=lambda x: x['growth_rate'])
         main_types = negative_types[:3]
-        main_category = "토목" if civil_growth < 0 else "건축"
-        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_DECREASE
+        main_category = "토목" if civil_growth is not None and civil_growth < 0 else "건축"
+        sub_types_text = None  # 실제 데이터에서 추출 필요 (비공개 데이터)
     else:
         positive_types = [t for t in construction_types if t['growth_rate'] > 0]
         positive_types.sort(key=lambda x: x['growth_rate'], reverse=True)
         main_types = positive_types[:3]
-        main_category = "토목" if civil_growth > 0 else "건축"
-        sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_INCREASE
+        main_category = "토목" if civil_growth is not None and civil_growth > 0 else "건축"
+        sub_types_text = None  # 실제 데이터에서 추출 필요 (비공개 데이터)
     
     return {
         'construction_index': current,

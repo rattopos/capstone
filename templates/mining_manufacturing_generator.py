@@ -237,33 +237,59 @@ class 광공업생산Generator(BaseGenerator):
         
         # 광공업생산지수 (집계 시트에서)
         df_agg = self.df_aggregation
-        nationwide_agg = df_agg[(df_agg[self.AGG_COL_REGION_NAME] == '전국') & 
-                               (df_agg[self.AGG_COL_INDUSTRY_CODE] == 'BCD')].iloc[0]
-        production_index = nationwide_agg[self.AGG_COL_2025_2Q]  # 2025.2/4p 컬럼
+        try:
+            nationwide_agg_rows = df_agg[(df_agg[self.AGG_COL_REGION_NAME] == '전국') & 
+                                         (df_agg[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
+            if nationwide_agg_rows.empty:
+                print(f"[광공업생산] 집계 시트에서 전국 데이터를 찾을 수 없음")
+                production_index = 100.0
+            else:
+                nationwide_agg = nationwide_agg_rows.iloc[0]
+                production_index = self.safe_float(nationwide_agg[self.AGG_COL_2025_2Q], 100.0)  # 2025.2/4p 컬럼
+        except Exception as e:
+            print(f"[광공업생산] 집계 시트 데이터 읽기 실패: {e}")
+            production_index = 100.0
         
         # 증감률 추출 (문서에 명시된 컬럼 인덱스 사용)
         growth_rate = nationwide_total[self.COL_GROWTH_RATE] if pd.notna(nationwide_total[self.COL_GROWTH_RATE]) else 0
         
+        # 업종별 데이터 안전하게 추출
+        main_increase_industries = []
+        try:
+            for _, row in increase_industries.head(5).iterrows():
+                try:
+                    main_increase_industries.append({
+                        "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
+                        "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
+                        "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
+                    })
+                except Exception as e:
+                    print(f"[광공업생산] 증가 업종 데이터 추출 실패: {e}")
+                    continue
+        except Exception as e:
+            print(f"[광공업생산] 증가 업종 목록 추출 실패: {e}")
+        
+        main_decrease_industries = []
+        try:
+            for _, row in decrease_industries.head(5).iterrows():
+                try:
+                    main_decrease_industries.append({
+                        "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
+                        "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
+                        "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
+                    })
+                except Exception as e:
+                    print(f"[광공업생산] 감소 업종 데이터 추출 실패: {e}")
+                    continue
+        except Exception as e:
+            print(f"[광공업생산] 감소 업종 목록 추출 실패: {e}")
+        
         return {
-            "production_index": self.safe_float(production_index, 100.0),
+            "production_index": production_index,
             "growth_rate": self.safe_round(growth_rate, 1, 0.0),
             "growth_direction": "증가" if self.safe_float(growth_rate, 0) > 0 else "감소",
-            "main_increase_industries": [
-                {
-                    "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
-                }
-                for _, row in increase_industries.head(5).iterrows()
-            ],
-            "main_decrease_industries": [
-                {
-                    "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
-                }
-                for _, row in decrease_industries.head(5).iterrows()
-            ]
+            "main_increase_industries": main_increase_industries,
+            "main_decrease_industries": main_decrease_industries
         }
     
     def _extract_nationwide_from_aggregation(self) -> dict:

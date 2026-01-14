@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - {{ year }}년 {{ quarter }}분기 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
+    <title>{{ title }} - {{ year }}년 {{ quarter }}분기 ({{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기)</title>
     
     {# 통계표 값 표시 매크로 - "-"는 데이터 없음을 의미하므로 그대로 표시 #}
     {% macro val(value) %}

@@ -186,57 +186,58 @@
         .main-container {
             position: relative;
             z-index: 10;
-            max-width: 1800px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0.75rem 1rem;
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 1rem;
-            height: calc(100vh - 60px);
-            overflow: hidden;
-        }
-
-        /* Sidebar */
-        .sidebar {
+            padding: 40px 20px;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            overflow-y: auto;
-            max-height: 100%;
+            gap: 20px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar - 제거됨 (인라인으로 통합) */
+        .sidebar {
+            display: contents; /* 그리드/플렉스 컨텍스트에서 제거 */
         }
 
         .upload-section {
+            width: 100%;
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 0.75rem;
+            padding: 2rem;
             transition: all 0.3s;
+            min-height: 200px;
         }
 
         .upload-section:hover {
             border-color: var(--border-hover);
+            background: var(--bg-card-hover);
         }
 
         .section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.5rem;
         }
 
         .upload-zone {
             border: 2px dashed var(--border);
-            border-radius: 8px;
-            padding: 1rem;
+            border-radius: 12px;
+            padding: 3rem 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             background: var(--bg-tertiary);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .upload-zone:hover {
@@ -256,20 +257,22 @@
         }
 
         .upload-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
         }
 
         .upload-text {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
         }
 
         .upload-hint {
-            color: var(--text-muted);
-            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
         .upload-filename {
@@ -282,13 +285,12 @@
 
         /* Report List */
         .report-list-section {
+            width: 100%;
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 0.75rem;
-            flex: 1;
-            overflow-y: auto;
-            min-height: 0;
+            padding: 1.5rem;
+            min-height: 400px;
         }
 
         /* Tab Buttons */
@@ -324,28 +326,32 @@
         }
 
         .report-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 1rem;
         }
 
         .report-item {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0.6rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
             user-select: none;
+            min-height: 100px;
         }
 
         .report-item:hover {
             background: var(--bg-card-hover);
             border-color: var(--border-hover);
-            transform: translateX(4px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .report-item.active {
@@ -368,15 +374,22 @@
             border-color: var(--accent-secondary);
         }
 
+        .report-item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
         .report-icon {
-            width: 28px;
-            height: 28px;
+            width: 40px;
+            height: 40px;
             background: var(--bg-card);
-            border-radius: 6px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 1.2rem;
             flex-shrink: 0;
         }
 
@@ -386,12 +399,15 @@
         }
 
         .report-name {
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-bottom: 0;
-            white-space: nowrap;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .report-sheet {
@@ -447,11 +463,11 @@
 
         /* Main Content */
         .main-content {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            min-height: 0;
-            overflow: hidden;
+            gap: 20px;
+            margin-top: 20px;
         }
 
         /* Control Bar - 미리보기 헤더에 통합됨 */
@@ -1312,28 +1328,45 @@
         /* Responsive */
         @media (max-width: 1200px) {
             .main-container {
-                grid-template-columns: 280px 1fr;
+                max-width: 100%;
+                padding: 30px 15px;
             }
 
             .header-content {
                 flex-wrap: wrap;
             }
+
+            .report-list {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
         }
 
         @media (max-width: 900px) {
             .main-container {
-                grid-template-columns: 1fr;
-                height: auto;
-                min-height: calc(100vh - 60px);
+                padding: 20px 15px;
+                gap: 15px;
             }
 
-            .sidebar {
-                max-height: 400px;
-                order: 2;
+            .upload-section {
+                padding: 1.5rem;
             }
 
-            .main-content {
-                order: 1;
+            .upload-zone {
+                padding: 2rem 1.5rem;
+                min-height: 150px;
+            }
+
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+
+            .upload-text {
+                font-size: 1rem;
+            }
+
+            .report-list {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 12px;
             }
 
             .header-content {
@@ -1414,10 +1447,8 @@
 
     <!-- Main Container -->
     <div class="main-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <!-- Upload Section -->
-            <div class="upload-section">
+        <!-- Upload Section -->
+        <div class="upload-section">
                 <div class="section-title">📁 분석표 업로드</div>
                 <div class="upload-zone" id="uploadZone" role="button" aria-label="분석표 파일 업로드" tabindex="0">
                     <div class="upload-icon">📄</div>
@@ -1487,10 +1518,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
+        </div>
 
-            <!-- Report List -->
-            <div class="report-list-section">
+        <!-- Report List -->
+        <div class="report-list-section">
                 <div class="section-title">📋 보도자료 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
                 
                 <!-- 전체 보도자료 통합 리스트 (순차적 페이지 넘김) -->
@@ -1519,8 +1550,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </aside>
+        </div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -2661,12 +2691,13 @@ ${currentPage.outerHTML}
                          onclick="selectGlobalReport(${globalIdx})"
                          data-report-id="${report.id}"
                          data-global-index="${globalIdx}">
-                        <div class="report-icon">${report.icon}</div>
-                        <div class="report-info">
-                            <div class="report-name">${report.name}</div>
-                            <div class="report-sheet">${report.sheet || '요약 페이지'}</div>
+                        <div class="report-item-header">
+                            <div class="report-icon">${report.icon}</div>
+                            <div class="report-info">
+                                <div class="report-name">${report.name}</div>
+                            </div>
+                            <div class="report-status ${statusClass}">${statusIcon}</div>
                         </div>
-                        <div class="report-status ${statusClass}">${statusIcon}</div>
                     </div>
                 `;
             });

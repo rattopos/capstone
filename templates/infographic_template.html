@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 인포그래픽 - {{ report_info.year }}년 {{ report_info.quarter }}/4분기</title>
+    <title>지역경제동향 인포그래픽 - {{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기</title>
     <style>
         @page {
             size: A4;
@@ -308,7 +308,7 @@
                 <img src="/templates/logo_mods.png" alt="국가데이터처" class="logo-img">
             </div>
             <div class="title-area">
-                <div class="title-year">{{ report_info.year }}년 {{ report_info.quarter }}/4분기</div>
+                <div class="title-year">{{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기</div>
                 <div class="title-main">지역경제동향</div>
             </div>
         </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향[요약]</title>
+    <title>{{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기 지역경제동향[요약]</title>
     <style>
         * {
             margin: 0;
@@ -174,7 +174,7 @@
     <div class="summary-container">
         <!-- 페이지 제목 -->
         <h1 class="page-title">
-            {{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향<span class="highlight">[요약]</span>
+            {{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기 지역경제동향<span class="highlight">[요약]</span>
         </h1>
         
         <!-- 요약 섹션 -->
@@ -244,7 +244,7 @@
         
         <!-- 주요 지표 표 -->
         <div class="table-section">
-            <div class="table-title">&lt;{{ report_info.year }}년 {{ report_info.quarter }}/4분기 주요 지역경제 지표&gt;</div>
+            <div class="table-title">&lt;{{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기 주요 지역경제 지표&gt;</div>
             <div class="table-subtitle">(전년동분기비, %)</div>
             
             <table class="data-table" style="border-collapse: collapse !important; border: 1px solid black !important;">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>목차 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
+    <title>목차 ({{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기)</title>
     <style>
         * {
             margin: 0;

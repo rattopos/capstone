@@ -861,24 +861,40 @@ def generate_all_reports():
     
     try:
         for report_config in REPORT_ORDER:
-            custom_data = all_custom_data.get(report_config['id'], {})
-            
-            # 캐시된 excel_file 전달
-            html_content, error, _ = generate_report_html(
-                excel_path, report_config, year, quarter, custom_data, excel_file=excel_file
-            )
-            
-            if error:
-                errors.append({'report_id': report_config['id'], 'error': error})
-            else:
-                output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
-                with open(output_path, 'w', encoding='utf-8') as f:
-                    f.write(html_content)
-                generated_reports.append({
+            try:
+                custom_data = all_custom_data.get(report_config['id'], {})
+                report_name = report_config.get('name', report_config.get('id', 'Unknown'))
+                
+                # 캐시된 excel_file 전달
+                html_content, error, _ = generate_report_html(
+                    excel_path, report_config, year, quarter, custom_data, excel_file=excel_file
+                )
+                
+                if error:
+                    import traceback
+                    print(f"[ERROR] {report_name} 생성 실패: {error}")
+                    traceback.print_exc()
+                    errors.append({'report_id': report_config['id'], 'error': error})
+                else:
+                    output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                    generated_reports.append({
+                        'report_id': report_config['id'],
+                        'name': report_config['name'],
+                        'path': str(output_path)
+                    })
+            except Exception as e:
+                import traceback
+                report_name = report_config.get('name', report_config.get('id', 'Unknown'))
+                error_message = str(e)
+                print(f"[ERROR] {report_name} 생성 중 예외 발생: {error_message}")
+                traceback.print_exc()
+                errors.append({
                     'report_id': report_config['id'],
-                    'name': report_config['name'],
-                    'path': str(output_path)
+                    'error': f"예외 발생: {error_message}"
                 })
+                continue  # 다음 보도자료 생성 계속 진행
     finally:
         # 작업 완료 후 캐시 정리 (메모리 관리)
         clear_excel_cache(excel_path)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region }} ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
+    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region | default('') }} ({{ report_info.year | default(2025) }}년 {{ report_info.quarter | default(2) }}/4분기)</title>
     <style>
         * {
             margin: 0;
@@ -180,12 +180,12 @@
 <body>
     <div class="page">
         <!-- 메인 헤더 (첫 페이지에만 표시) -->
-        {% if report_info.region_index == 1 %}
+        {% if report_info.region_index is defined and report_info.region_index == 1 %}
         <div class="main-header">Ⅱ. 시도별 경제동향</div>
         {% endif %}
         
         <!-- 지역 제목 -->
-        <div class="region-title">{{ report_info.region_index }}. {{ report_info.region }}</div>
+        <div class="region-title">{{ report_info.region_index | default(1) }}. {{ report_info.region | default('') }}</div>
         
         <!-- ===== 생산 섹션 ===== -->
         <div class="section-title">생산</div>
