@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 소비/건설</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
                 * {
             margin: 0;
@@ -82,10 +80,6 @@
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
         
-        .chart-container { margin: 20px 0; }
-        .chart-title { text-align: center; font-size: 11pt; margin-bottom: 10px; }
-        .chart-canvas-wrapper { position: relative; height: 280px; width: 100%; }
-        
         .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
         .footnote { font-size: 11pt; color: #666; margin-top: 5px; }
     </style>
@@ -109,14 +103,6 @@
             </div>
         </div>
         
-        <div class="chart-container">
-            <div class="chart-title">&lt;소매판매액지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="retailChart"></canvas>
-            </div>
-            <div class="footnote">* 전국은 무점포소매 포함, 시도는 무점포소매 제외</div>
-        </div>
-        
         <hr class="section-divider">
         
         <!-- 건설 섹션 -->
@@ -136,141 +122,6 @@
             </div>
         </div>
         
-        <div class="chart-container">
-            <div class="chart-title">&lt;건설수주액(백억원) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="constructionChart"></canvas>
-            </div>
-        </div>
-        
     
-    <script>
-        // Y축 범위 계산 함수
-        function calculateYAxisRange(data) {
-            const maxVal = Math.max(...data);
-            const minVal = Math.min(...data);
-            
-            if (minVal >= 0) {
-                const max = Math.ceil(maxVal / 5) * 5;
-                return { min: 0, max: max || 5 };
-            }
-            if (maxVal <= 0) {
-                const min = Math.floor(minVal / 5) * 5;
-                return { min: min || -5, max: 0 };
-            }
-            const absMax = Math.max(Math.abs(maxVal), Math.abs(minVal));
-            const range = Math.ceil(absMax / 5) * 5;
-            return { min: -range, max: range };
-        }
-        
-        function createComboChart(canvasId, chartData, maxY, isAmount) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            const labels = chartData.map(d => d.name);
-            const values = chartData.map(d => isAmount ? d.amount : d.index);
-            const changeData = chartData.map(d => d.change);
-            
-            const changeRange = calculateYAxisRange(changeData);
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'bar',
-                            label: isAmount ? '금액' : '지수',
-                            data: values,
-                            backgroundColor: '#90caf9',
-                            borderColor: '#64b5f6',
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            order: 2,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: -2,
-                                font: { size: 8 },
-                                color: '#333',
-                                formatter: (value) => isAmount ? value : value.toFixed(1)
-                            }
-                        },
-                        {
-                            type: 'line',
-                            label: '증감률',
-                            data: changeData,
-                            borderColor: 'transparent',
-                            backgroundColor: '#e65100',
-                            pointBackgroundColor: '#e65100',
-                            pointBorderColor: '#fff',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            borderWidth: 0,
-                            showLine: false,
-                            fill: false,
-                            yAxisID: 'y1',
-                            order: 1,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 2,
-                                font: { size: 8, weight: 'bold' },
-                                color: '#e65100',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: { display: true }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 9 } }
-                        },
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            min: 0,
-                            max: maxY,
-                            ticks: { font: { size: 9 } },
-                            grid: { color: '#e0e0e0' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            min: changeRange.min,
-                            max: changeRange.max,
-                            ticks: { font: { size: 9 }, color: '#e65100' },
-                            grid: { display: false }
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-        }
-        
-        const retailData = [
-            {% for region in retail_sales.chart_data %}
-            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        const constructionData = [
-            {% for region in construction.chart_data %}
-            { name: '{{ region.name }}', amount: {{ region.amount }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            createComboChart('retailChart', retailData, 120, false);
-            createComboChart('constructionChart', constructionData, 3000, true);
-        });
-    </script>
 </body>
 </html>

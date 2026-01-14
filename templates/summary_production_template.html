@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 생산</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
                 * {
             margin: 0;
@@ -94,23 +92,6 @@
             color: #1565c0;
         }
         
-        /* 차트 컨테이너 */
-        .chart-container {
-            margin: 20px 0;
-        }
-        
-        .chart-title {
-            text-align: center;
-            font-size: 11pt;
-            margin-bottom: 10px;
-        }
-        
-        .chart-canvas-wrapper {
-            position: relative;
-            height: 280px;
-            width: 100%;
-        }
-        
         /* 구분선 */
         .section-divider {
             border: none;
@@ -148,14 +129,6 @@
             </div>
         </div>
         
-        <!-- 광공업생산 차트 -->
-        <div class="chart-container">
-            <div class="chart-title">&lt;광공업생산지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="miningChart"></canvas>
-            </div>
-        </div>
-        
         <hr class="section-divider">
         
         <!-- 서비스업생산 -->
@@ -170,14 +143,6 @@
                 {% for region in service_production.increase_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %} 등 {{ service_production.increase_count }}개 시도는 <span class="increase">증가</span>
-            </div>
-        </div>
-        
-        <!-- 서비스업생산 차트 -->
-        <div class="chart-container">
-            <div class="chart-title">&lt;서비스업생산지수(2020=100) 및 전년동분기대비 증감률(%)&gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="serviceChart"></canvas>
             </div>
         </div>
         
@@ -203,126 +168,6 @@
             const range = Math.ceil(absMax / 5) * 5; // 5 단위로 올림
             return { min: -range, max: range };
         }
-        
-        // 공통 차트 생성 함수
-        function createProductionChart(canvasId, chartData, maxIndex) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            const labels = chartData.map(d => d.name);
-            const indexData = chartData.map(d => d.index);
-            const changeData = chartData.map(d => d.change);
-            
-            // 증감률 Y축 범위 동적 계산
-            const changeRange = calculateYAxisRange(changeData);
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'bar',
-                            label: '지수',
-                            data: indexData,
-                            backgroundColor: '#90caf9',
-                            borderColor: '#64b5f6',
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            order: 2,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: -2,
-                                font: { size: 8 },
-                                color: '#333',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        },
-                        {
-                            type: 'line',
-                            label: '증감률',
-                            data: changeData,
-                            borderColor: 'transparent',
-                            backgroundColor: '#e65100',
-                            pointBackgroundColor: '#e65100',
-                            pointBorderColor: '#fff',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            borderWidth: 0,
-                            showLine: false,
-                            fill: false,
-                            yAxisID: 'y1',
-                            order: 1,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 2,
-                                font: { size: 8, weight: 'bold' },
-                                color: '#e65100',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: { display: true }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 9 } }
-                        },
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            min: 0,
-                            max: maxIndex,
-                            ticks: { 
-                                font: { size: 9 },
-                                stepSize: 20
-                            },
-                            grid: { color: '#e0e0e0' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            min: changeRange.min,
-                            max: changeRange.max,
-                            ticks: { 
-                                font: { size: 9 },
-                                color: '#e65100',
-                                callback: (value) => value
-                            },
-                            grid: { display: false }
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-        }
-        
-        // 차트 데이터
-        const miningData = [
-            {% for region in mining_production.chart_data %}
-            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        const serviceData = [
-            {% for region in service_production.chart_data %}
-            { name: '{{ region.name }}', index: {{ region.index }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        // 차트 생성
-        document.addEventListener('DOMContentLoaded', function() {
-            createProductionChart('miningChart', miningData, 160);
-            createProductionChart('serviceChart', serviceData, 140);
-        });
     </script>
 </body>
 </html>

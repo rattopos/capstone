@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 고용/인구</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -76,10 +74,6 @@
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
         
-        .chart-container { margin: 20px 0; }
-        .chart-title { text-align: center; font-size: 11pt; margin-bottom: 10px; }
-        .chart-canvas-wrapper { position: relative; height: 280px; width: 100%; }
-        
         .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
     </style>
 </head>
@@ -102,13 +96,6 @@
             </div>
         </div>
         
-        <div class="chart-container">
-            <div class="chart-title">&lt;고용률(%) 및 전년동분기대비 증감(%p)&gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="employmentChart"></canvas>
-            </div>
-        </div>
-        
         <hr class="section-divider">
         
         <!-- 인구 섹션 -->
@@ -128,199 +115,6 @@
             </div>
         </div>
         
-        <div class="chart-container">
-            <div class="chart-title">&lt; 시도별 인구 순이동(천명) &gt;</div>
-            <div class="chart-canvas-wrapper">
-                <canvas id="populationChart"></canvas>
-            </div>
-        </div>
-        
     
-    <script>
-        // Y축 범위 계산 함수
-        function calculateYAxisRange(data) {
-            const maxVal = Math.max(...data);
-            const minVal = Math.min(...data);
-            
-            if (minVal >= 0) {
-                const max = Math.ceil(maxVal / 5) * 5;
-                return { min: 0, max: max || 5 };
-            }
-            if (maxVal <= 0) {
-                const min = Math.floor(minVal / 5) * 5;
-                return { min: min || -5, max: 0 };
-            }
-            const absMax = Math.max(Math.abs(maxVal), Math.abs(minVal));
-            const range = Math.ceil(absMax / 5) * 5;
-            return { min: -range, max: range };
-        }
-        
-        function createEmploymentChart(canvasId, chartData) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            const labels = chartData.map(d => d.name);
-            const rateData = chartData.map(d => d.rate);
-            const changeData = chartData.map(d => d.change);
-            
-            const changeRange = calculateYAxisRange(changeData);
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'bar',
-                            label: '고용률',
-                            data: rateData,
-                            backgroundColor: '#90caf9',
-                            borderColor: '#64b5f6',
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            order: 2,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: -2,
-                                font: { size: 8 },
-                                color: '#333',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        },
-                        {
-                            type: 'line',
-                            label: '증감',
-                            data: changeData,
-                            borderColor: 'transparent',
-                            backgroundColor: '#e65100',
-                            pointBackgroundColor: '#e65100',
-                            pointBorderColor: '#fff',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            borderWidth: 0,
-                            showLine: false,
-                            fill: false,
-                            yAxisID: 'y1',
-                            order: 1,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 2,
-                                font: { size: 8, weight: 'bold' },
-                                color: '#e65100',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: { display: true }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 9 } }
-                        },
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            min: 50,
-                            max: 80,
-                            ticks: { font: { size: 9 } },
-                            grid: { color: '#e0e0e0' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            min: changeRange.min,
-                            max: changeRange.max,
-                            ticks: { font: { size: 9 }, color: '#e65100' },
-                            grid: { display: false }
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-        }
-        
-        function createPopulationChart(canvasId, chartData) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            const labels = chartData.map(d => d.name);
-            // 값을 천명 단위로 변환 (명 → 천명)
-            const valueData = chartData.map(d => d.value / 1000);
-            
-            // 양수/음수에 따라 색상 결정
-            const barColors = valueData.map(v => v >= 0 ? '#90caf9' : '#ef9a9a');
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'bar',
-                            label: '순이동',
-                            data: valueData,
-                            backgroundColor: barColors,
-                            borderColor: barColors.map(c => c === '#90caf9' ? '#64b5f6' : '#ef5350'),
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            datalabels: {
-                                anchor: (context) => context.dataset.data[context.dataIndex] >= 0 ? 'end' : 'start',
-                                align: (context) => context.dataset.data[context.dataIndex] >= 0 ? 'top' : 'bottom',
-                                offset: -2,
-                                font: { size: 8 },
-                                color: '#333',
-                                formatter: (value) => value.toFixed(1)
-                            }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: { display: true }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 9 } }
-                        },
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            ticks: { font: { size: 9 } },
-                            grid: { color: '#e0e0e0' }
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-        }
-        
-        const employmentData = [
-            {% for region in employment.chart_data %}
-            { name: '{{ region.name }}', rate: {{ region.rate }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        const populationData = [
-            {% for region in population.chart_data %}
-            { name: '{{ region.name }}', value: {{ region.value }}, change: {{ region.change }} }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            createEmploymentChart('employmentChart', employmentData);
-            createPopulationChart('populationChart', populationData);
-        });
-    </script>
 </body>
 </html>

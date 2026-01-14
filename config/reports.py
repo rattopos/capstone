@@ -3,44 +3,9 @@
 보도자료 설정 및 상수 정의
 """
 
-# ===== 요약 보도자료 목록 (표지-일러두기-목차-인포그래픽-요약 순서) =====
+# ===== 요약 보도자료 목록 (요약만 포함) =====
+# 주의: 표지, 일러두기, 목차, 인포그래픽은 고객사 요구사항 변경으로 더 이상 생성하지 않음
 SUMMARY_REPORTS = [
-    {
-        'id': 'cover',
-        'name': '표지',
-        'sheet': None,
-        'generator': None,
-        'template': 'cover_template.html',
-        'icon': '📑',
-        'category': 'summary'
-    },
-    {
-        'id': 'guide',
-        'name': '일러두기',
-        'sheet': None,
-        'generator': None,
-        'template': 'guide_template.html',
-        'icon': '📖',
-        'category': 'summary'
-    },
-    {
-        'id': 'toc',
-        'name': '목차',
-        'sheet': None,
-        'generator': None,
-        'template': 'toc_template.html',
-        'icon': '📋',
-        'category': 'summary'
-    },
-    {
-        'id': 'infographic',
-        'name': '인포그래픽',
-        'sheet': 'multiple',
-        'generator': 'infographic_generator.py',
-        'template': 'infographic_template.html',
-        'icon': '📊',
-        'category': 'summary'
-    },
     {
         'id': 'summary_overview',
         'name': '요약-지역경제동향',
@@ -186,15 +151,8 @@ SECTOR_REPORTS = [
 REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS
 
 # ===== 통계표 보도자료 목록 =====
+# 주의: 통계표 목차는 고객사 요구사항 변경으로 더 이상 생성하지 않음
 STATISTICS_REPORTS = [
-    {
-        'id': 'stat_toc',
-        'name': '통계표-목차',
-        'table_name': None,
-        'template': 'statistics_table_toc_template.html',
-        'icon': '📋',
-        'category': 'statistics'
-    },
     {
         'id': 'stat_mining',
         'name': '통계표-광공업생산지수',
@@ -353,8 +311,9 @@ PAGE_CONFIG = {
     'reference_grdp': 2,
     
     # 통계표 섹션 페이지 수 (52~페이지)
+    # 주의: 통계표 목차는 더 이상 생성하지 않음
     'statistics': {
-        'toc': 1,           # 통계표 목차
+        'toc': 0,           # 통계표 목차 (생성하지 않음)
         'per_table': 1,     # 각 통계표당 페이지 수
         'count': 11,        # 통계표 개수 (광공업, 서비스업, 소매판매, 건설수주, 고용률, 실업률, 인구이동, 수출, 수입, 소비자물가, GRDP)
     },

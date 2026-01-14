@@ -738,25 +738,25 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
         PAGE1_REGIONS = ["전국", "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종"]
         PAGE2_REGIONS = ["경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
         
-        # 통계표 목차
-        if stat_id == 'stat_toc':
-            toc_items = [
-                {'number': 1, 'name': '광공업생산지수'},
-                {'number': 2, 'name': '서비스업생산지수'},
-                {'number': 3, 'name': '소매판매액지수'},
-                {'number': 4, 'name': '건설수주액'},
-                {'number': 5, 'name': '고용률'},
-                {'number': 6, 'name': '실업률'},
-                {'number': 7, 'name': '국내 인구이동'},
-                {'number': 8, 'name': '수출액'},
-                {'number': 9, 'name': '수입액'},
-                {'number': 10, 'name': '소비자물가지수'},
-            ]
-            template_data = {
-                'year': year,
-                'quarter': quarter,
-                'toc_items': toc_items
-            }
+        # 통계표 목차 (고객사 요구사항 변경으로 더 이상 생성하지 않음)
+        # if stat_id == 'stat_toc':
+        #     toc_items = [
+        #         {'number': 1, 'name': '광공업생산지수'},
+        #         {'number': 2, 'name': '서비스업생산지수'},
+        #         {'number': 3, 'name': '소매판매액지수'},
+        #         {'number': 4, 'name': '건설수주액'},
+        #         {'number': 5, 'name': '고용률'},
+        #         {'number': 6, 'name': '실업률'},
+        #         {'number': 7, 'name': '국내 인구이동'},
+        #         {'number': 8, 'name': '수출액'},
+        #         {'number': 9, 'name': '수입액'},
+        #         {'number': 10, 'name': '소비자물가지수'},
+        #     ]
+        #     template_data = {
+        #         'year': year,
+        #         'quarter': quarter,
+        #         'toc_items': toc_items
+        #     }
         
         # 통계표 - 개별 지표
         elif table_name and table_name != 'GRDP' and generator:
