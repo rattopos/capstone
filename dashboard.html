@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 보도자료 생성 시스템</title>
+    <title>지역경제동향 보도자료 생성 시스템 - 국가데이터처</title>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1259,25 +1259,107 @@
             border-radius: 2px;
         }
 
+        /* 접근성 개선 */
+        .upload-zone:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        /* 키보드 네비게이션 개선 */
+        .report-item:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: -2px;
+        }
+
+        /* 로딩 상태 개선 */
+        .upload-zone.processing {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .main-container {
-                grid-template-columns: 300px 1fr;
+                grid-template-columns: 280px 1fr;
+            }
+
+            .header-content {
+                flex-wrap: wrap;
             }
         }
 
         @media (max-width: 900px) {
             .main-container {
                 grid-template-columns: 1fr;
+                height: auto;
+                min-height: calc(100vh - 60px);
             }
 
             .sidebar {
-                max-height: 300px;
+                max-height: 400px;
+                order: 2;
+            }
+
+            .main-content {
+                order: 1;
             }
 
             .header-content {
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-controls {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .logo-text h1 {
+                font-size: 0.9rem;
+            }
+
+            .logo-text p {
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 0.5rem;
+            }
+
+            .upload-zone {
+                padding: 0.75rem;
+            }
+
+            .upload-text {
+                font-size: 0.75rem;
+            }
+
+            .control-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .action-btns {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
             }
         }
     </style>
@@ -1291,12 +1373,12 @@
             <div class="logo">
                 <div class="logo-icon">📊</div>
                 <div class="logo-text">
-                    <h1>지역경제동향 보도자료 시스템</h1>
-                    <p>Regional Economic Report Generator</p>
+                    <h1>지역경제동향 보도자료 생성 시스템</h1>
+                    <p>국가데이터처 · Ministry of Data and Statistics</p>
                 </div>
             </div>
             <div class="header-controls">
-                <div class="period-display" id="periodDisplay">
+                <div class="period-display" id="periodDisplay" title="분석표에서 자동으로 추출된 연도/분기 정보">
                     <span class="period-label">📅 기준시점</span>
                     <span class="period-value waiting" id="periodValue">파일 업로드 대기중...</span>
                     <input type="hidden" id="yearSelect" value="2025">
@@ -1315,12 +1397,13 @@
         <aside class="sidebar">
             <!-- Upload Section -->
             <div class="upload-section">
-                <div class="section-title">📁 데이터 업로드</div>
-                <div class="upload-zone" id="uploadZone">
+                <div class="section-title">📁 분석표 업로드</div>
+                <div class="upload-zone" id="uploadZone" role="button" aria-label="분석표 파일 업로드" tabindex="0">
                     <div class="upload-icon">📄</div>
-                    <p class="upload-text">엑셀 파일을 드래그하거나 클릭하세요</p>
-                    <p class="upload-hint" style="line-height: 1.4;">
-                        <span style="color: var(--success);">분석표</span> 업로드 → 보도자료 생성
+                    <p class="upload-text">분석표 파일을 드래그하거나 클릭하세요</p>
+                    <p class="upload-hint" style="line-height: 1.4; margin-top: 0.5rem;">
+                        <span style="color: var(--success); font-weight: 600;">✓ 분석표(.xlsx)</span> 파일만 업로드하세요<br>
+                        <span style="color: var(--text-muted); font-size: 0.7rem;">업로드 후 자동으로 보도자료가 생성됩니다</span>
                     </p>
                     <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
                 </div>
@@ -1369,10 +1452,17 @@
                     <!-- 분석표 다운로드 버튼 제거 (분석표만 업로드) -->
                     
                     <!-- 보도자료 생성 안내 (분석표 업로드 시에만 표시) -->
-                    <div id="reportGenerationHint" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--success);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
-                            <strong style="color: var(--success);">🎉 보도자료 생성 준비 완료</strong><br>
-                            우측 미리보기에서 보도자료를 확인하고 편집할 수 있습니다.
+                    <div id="reportGenerationHint" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05)); border-radius: 8px; border-left: 3px solid var(--success);">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); line-height: 1.6;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.2rem;">✅</span>
+                                <strong style="color: var(--success); font-size: 0.8rem;">보도자료 생성 준비 완료</strong>
+                            </div>
+                            <div style="padding-left: 1.7rem; color: var(--text-secondary);">
+                                • 우측 미리보기에서 보도자료 확인<br>
+                                • 필요시 직접 편집 가능<br>
+                                • 내보내기로 한글 파일 생성
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1386,10 +1476,25 @@
                 <div class="report-list" id="allReportsList">
                     <!-- 초기 상태 안내 -->
                     <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
-                        <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
-                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">파일을 업로드하세요</div>
-                        <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
-                            • <strong>분석표</strong> 업로드 → 보도자료 생성
+                        <div style="font-size: 2rem; margin-bottom: 0.75rem;">📋</div>
+                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem;">보도자료 목록</div>
+                        <div style="font-size: 0.75rem; line-height: 1.6; color: var(--text-muted); text-align: left; padding: 0 0.5rem;">
+                            <div style="margin-bottom: 0.5rem;">📌 <strong>사용 방법</strong></div>
+                            <div style="padding-left: 1rem; margin-bottom: 0.75rem;">
+                                1. 왼쪽에서 <strong style="color: var(--success);">분석표</strong> 업로드<br>
+                                2. 자동으로 보도자료 생성<br>
+                                3. 우측에서 미리보기 확인<br>
+                                4. 편집 후 내보내기
+                            </div>
+                            <div style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.75rem;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                    💡 <strong>보도자료 종류</strong><br>
+                                    • 요약 보도자료 (6개)<br>
+                                    • 부문별 보도자료 (9개)<br>
+                                    • 시도별 보도자료 (17개)<br>
+                                    • 통계표 (10개)
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1420,8 +1525,8 @@
                     <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
                 </div>
                 <div class="action-btns">
-                    <button class="btn btn-hwp-import" id="exportHwpReadyBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;">
-                        📄 내보내기
+                    <button class="btn btn-hwp-import" id="exportHwpReadyBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="모든 보도자료를 한글 파일용 HTML로 내보내기">
+                        📄 한글 파일로 내보내기
                     </button>
                 </div>
             </div>
@@ -1451,8 +1556,21 @@
                 <div class="preview-content" id="previewContent">
                     <div class="preview-placeholder" id="previewPlaceholder">
                         <div class="preview-placeholder-icon">📊</div>
-                        <h3>보도자료를 선택하세요</h3>
-                        <p>엑셀 파일을 업로드하면 자동으로 보도자료가 생성됩니다.</p>
+                        <h3>보도자료 미리보기</h3>
+                        <p style="line-height: 1.6; margin-top: 1rem;">
+                            <strong>1단계:</strong> 왼쪽에서 분석표 파일을 업로드하세요<br>
+                            <strong>2단계:</strong> 자동으로 생성된 보도자료 목록을 확인하세요<br>
+                            <strong>3단계:</strong> 보도자료를 선택하여 미리보기에서 확인하세요<br>
+                            <strong>4단계:</strong> 필요시 편집 후 한글 파일로 내보내세요
+                        </p>
+                        <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--accent-secondary); margin-bottom: 0.5rem;">💡 안내사항</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;">
+                                • 분석표 파일만 업로드하면 모든 보도자료가 자동 생성됩니다<br>
+                                • 미리보기에서 내용을 확인하고 직접 편집할 수 있습니다<br>
+                                • 내보내기 버튼으로 한글(HWP) 파일에 붙여넣을 수 있는 HTML을 생성합니다
+                            </div>
+                        </div>
                     </div>
                     <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
                     <!-- 편집 모드용 에디터 -->
@@ -3390,25 +3508,14 @@ ${currentPage.outerHTML}
             
             // 로딩 표시
             console.log('[내보내기] 로딩 UI 요소 확인 중...');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingTitle = document.getElementById('loadingTitle');
-            const loadingProgress = document.getElementById('loadingProgress');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const loadingCurrent = document.getElementById('loadingCurrent');
             
-            console.log('[내보내기] - loadingOverlay:', loadingOverlay ? '✅' : '❌');
-            console.log('[내보내기] - loadingTitle:', loadingTitle ? '✅' : '❌');
-            console.log('[내보내기] - loadingProgress:', loadingProgress ? '✅' : '❌');
-            console.log('[내보내기] - loadingPercent:', loadingPercent ? '✅' : '❌');
-            console.log('[내보내기] - loadingCurrent:', loadingCurrent ? '✅' : '❌');
-            
-            if (!loadingOverlay || !loadingTitle || !loadingProgress || !loadingPercent || !loadingCurrent) {
+            if (!elements.loadingOverlay || !elements.loadingTitle || !elements.loadingProgressFill || !elements.loadingProgressPercent || !elements.loadingCurrentText) {
                 console.error('[내보내기] ❌ 로딩 UI 요소를 찾을 수 없습니다.');
-                console.error('[내보내기] - loadingOverlay:', loadingOverlay);
-                console.error('[내보내기] - loadingTitle:', loadingTitle);
-                console.error('[내보내기] - loadingProgress:', loadingProgress);
-                console.error('[내보내기] - loadingPercent:', loadingPercent);
-                console.error('[내보내기] - loadingCurrent:', loadingCurrent);
+                console.error('[내보내기] - loadingOverlay:', elements.loadingOverlay);
+                console.error('[내보내기] - loadingTitle:', elements.loadingTitle);
+                console.error('[내보내기] - loadingProgressFill:', elements.loadingProgressFill);
+                console.error('[내보내기] - loadingProgressPercent:', elements.loadingProgressPercent);
+                console.error('[내보내기] - loadingCurrentText:', elements.loadingCurrentText);
                 showToast('로딩 UI 오류가 발생했습니다.', 'error');
                 if (elements.exportHwpReadyBtn) {
                     elements.exportHwpReadyBtn.disabled = false;
@@ -3420,11 +3527,11 @@ ${currentPage.outerHTML}
             
             console.log('[내보내기] ✅ 로딩 UI 요소 확인 완료');
             
-            loadingOverlay.style.display = 'flex';
-            loadingTitle.textContent = '📄 한글 불러오기용 HTML 문서 생성 중...';
-            loadingCurrent.textContent = '페이지 수집 중';
-            loadingProgress.style.width = '0%';
-            loadingPercent.textContent = '0%';
+            elements.loadingOverlay.style.display = 'flex';
+            elements.loadingTitle.textContent = '📄 한글 불러오기용 HTML 문서 생성 중...';
+            elements.loadingCurrentText.textContent = '페이지 수집 중';
+            elements.loadingProgressFill.style.width = '0%';
+            elements.loadingProgressPercent.textContent = '0%';
             
             try {
                 console.log('[내보내기] ===== HTML 수집 시작 =====');
@@ -3535,7 +3642,7 @@ ${currentPage.outerHTML}
                     console.error('[내보내기] - sectoralReports:', state.sectoralReports);
                     console.error('[내보내기] - regionalReports:', state.regionalReports);
                     console.error('[내보내기] - statisticsReports:', state.statisticsReports);
-                    loadingOverlay.style.display = 'none';
+                    elements.loadingOverlay.style.display = 'none';
                     showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
                     if (elements.exportHwpReadyBtn) {
                         elements.exportHwpReadyBtn.disabled = false;
@@ -3545,9 +3652,9 @@ ${currentPage.outerHTML}
                     return;
                 }
                 
-                loadingCurrent.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 변환 중...`;
-                loadingProgress.style.width = '20%';
-                loadingPercent.textContent = '20%';
+                elements.loadingCurrentText.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 변환 중...`;
+                elements.loadingProgressFill.style.width = '20%';
+                elements.loadingProgressPercent.textContent = '20%';
                 
                 console.log('[내보내기] ===== 차트 변환 시작 =====');
                 // Canvas를 이미지로 변환 (각 페이지 순차 처리)
@@ -3556,9 +3663,9 @@ ${currentPage.outerHTML}
                     const page = rawPages[i];
                     console.log(`[내보내기] 페이지 ${i + 1}/${rawPages.length} 처리 중: ${page.title}`);
                     const progress = 20 + Math.floor((i / rawPages.length) * 60);
-                    loadingProgress.style.width = `${progress}%`;
-                    loadingPercent.textContent = `${progress}%`;
-                    loadingCurrent.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
+                    elements.loadingProgressFill.style.width = `${progress}%`;
+                    elements.loadingProgressPercent.textContent = `${progress}%`;
+                    elements.loadingCurrentText.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
                     
                     // Canvas가 포함된 페이지만 변환 처리
                     let convertedHtml = page.html;
@@ -3588,9 +3695,9 @@ ${currentPage.outerHTML}
                 }
                 console.log(`[내보내기] ===== 차트 변환 완료: 총 ${pages.length}개 페이지 =====`);
                 
-                loadingCurrent.textContent = `${pages.length}개 페이지 변환 완료, 한글 불러오기용 HTML 생성 중...`;
-                loadingProgress.style.width = '85%';
-                loadingPercent.textContent = '85%';
+                elements.loadingCurrentText.textContent = `${pages.length}개 페이지 변환 완료, 한글 불러오기용 HTML 생성 중...`;
+                elements.loadingProgressFill.style.width = '85%';
+                elements.loadingProgressPercent.textContent = '85%';
                 
                 // 연도/분기 가져오기
                 const year = parseInt(elements.yearSelect.value) || 2025;
@@ -3639,15 +3746,15 @@ ${currentPage.outerHTML}
                 }
                 console.log(`[내보내기] - 응답 전체:`, result);
                 
-                loadingProgress.style.width = '100%';
-                loadingPercent.textContent = '100%';
+                elements.loadingProgressFill.style.width = '100%';
+                elements.loadingProgressPercent.textContent = '100%';
                 
                 if (result.success) {
                     console.log(`[내보내기] ✅ API 호출 성공`);
-                    loadingCurrent.textContent = '저장 위치 선택 중...';
+                    elements.loadingCurrentText.textContent = '저장 위치 선택 중...';
                     
                     // 로딩 오버레이 숨기고 파일 저장 대화상자 표시
-                    loadingOverlay.style.display = 'none';
+                    elements.loadingOverlay.style.display = 'none';
                     
                     // 파일 저장 (사용자가 위치 선택)
                     console.log(`[내보내기] ===== 파일 저장 시작 =====`);
@@ -3786,7 +3893,7 @@ ${currentPage.outerHTML}
                     }
                 } else {
                     console.error(`[내보내기] ❌ API 호출 실패`);
-                    loadingOverlay.style.display = 'none';
+                    elements.loadingOverlay.style.display = 'none';
                     const errorMsg = result.error || '문서 생성 실패';
                     console.error('[내보내기] 문서 생성 실패:', errorMsg);
                     console.error('[내보내기] 전체 응답:', result);
@@ -3798,9 +3905,8 @@ ${currentPage.outerHTML}
                 console.error('[내보내기] 오류 메시지:', err.message);
                 console.error('[내보내기] 스택 트레이스:', err.stack);
                 console.error('[내보내기] 전체 오류 객체:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
+                if (elements.loadingOverlay) {
+                    elements.loadingOverlay.style.display = 'none';
                 }
                 showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
             } finally {

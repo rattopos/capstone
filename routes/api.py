@@ -2033,7 +2033,7 @@ def export_hwp_ready():
     <div id="hwp-content">
 '''
         
-        # 제목과 목차 제외할 report_id 목록
+        # 표지와 목차 제외할 report_id 목록
         excluded_report_ids = {'cover', 'toc', 'stat_toc'}
         
         for idx, page in enumerate(pages, 1):
@@ -2042,7 +2042,7 @@ def export_hwp_ready():
             category = page.get('category', '')
             report_id = page.get('report_id', '')
             
-            # 제목(표지)과 목차는 제외
+            # 표지와 목차는 제외
             if report_id in excluded_report_ids:
                 print(f"[HTML 내보내기] 제외: {report_id} ({page_title})")
                 continue

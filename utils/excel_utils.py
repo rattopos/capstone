@@ -28,27 +28,45 @@ def load_generator_module(generator_name):
 def extract_year_quarter_from_data(excel_path):
     """데이터 처리 시점에 실제 데이터에서 최신 연도/분기 추출
     
-    광공업 증감률 계산에 사용된 가장 마지막 분기 데이터에서만 추출
-    - A(광공업생산)집계 시트의 컬럼 26 (1-based, 0-based: 25) = 광공업 증감률 계산에 사용된 가장 마지막 분기
-    - 헤더 행: 2-3행 (0-based: 1-2행)
-    - 기본값 사용하지 않음 (데이터 무결성 원칙)
-    - 컬럼 26에서 찾지 못하면 다른 컬럼들도 확인
+    여러 방법을 시도하여 연도/분기 추출:
+    1. 파일명에서 추출 (가장 확실)
+    2. A(광공업생산)집계 시트의 헤더에서 최신 연도 컬럼 찾고, 이후 분기 컬럼 확인
+    3. A 분석 시트에서 "해당분기" 관련 텍스트 근처 확인
+    4. 모든 시트의 헤더에서 연도/분기 패턴 검색
     """
     import re
+    from pathlib import Path
     
     try:
+        # 1. 파일명에서 추출 시도 (가장 확실한 방법)
+        filename = Path(excel_path).stem
+        print(f"[데이터에서 연도/분기 추출] 파일명: {filename}")
+        
+        filename_patterns = [
+            r'(\d{4})년[_\s-]*(\d)분기',      # 2025년 3분기, 2025년_3분기, 2025년-3분기
+            r'(\d{2})년[_\s-]*(\d)분기',      # 25년 3분기, 25년_3분기
+            r'(\d{4})[년\s_-]+(\d)분기',     # 2025년_3분기, 2025 3분기
+            r'(\d{2})[년\s_-]+(\d)분기',     # 25년_3분기, 25 3분기
+            r'(\d{4})[_\s-](\d)[분]',        # 2025_3, 2025 3분
+            r'(\d{2})[_\s-](\d)[분]',        # 25_3, 25 3분
+        ]
+        
+        for pattern in filename_patterns:
+            match = re.search(pattern, filename)
+            if match:
+                year_str = match.group(1)
+                quarter = int(match.group(2))
+                
+                if len(year_str) == 2:
+                    year = 2000 + int(year_str)
+                else:
+                    year = int(year_str)
+                
+                print(f"[데이터에서 연도/분기 추출] ✅ 파일명에서 추출: {year}년 {quarter}분기")
+                return year, quarter
+        
+        # 2. 엑셀 파일 내부에서 추출 시도
         xl = pd.ExcelFile(excel_path)
-        
-        # A(광공업생산)집계 시트에서 광공업 증감률 계산에 사용된 컬럼 26의 헤더 확인
-        target_sheet = 'A(광공업생산)집계'
-        if target_sheet not in xl.sheet_names:
-            raise ValueError(f"A(광공업생산)집계 시트를 찾을 수 없습니다.")
-        
-        # 헤더 행만 읽기 (2-3행, 0-based: 1-2행)
-        df = pd.read_excel(xl, sheet_name=target_sheet, header=None, nrows=3)
-        
-        if len(df) < 2:
-            raise ValueError(f"A(광공업생산)집계 시트에 헤더 행이 없습니다.")
         
         # 패턴 정의
         patterns = [
@@ -57,69 +75,147 @@ def extract_year_quarter_from_data(excel_path):
             r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
             r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
             r'(\d{4})_(\d)Q',                # 2025_2Q
-            r'(\d{4})_(\d)',                 # 2025_2
-            r'(\d{2})_(\d)',                 # 25_3
+            r'(\d{4})[_\s-](\d)',            # 2025_2, 2025-2, 2025 2
+            r'(\d{2})[_\s-](\d)',            # 25_3, 25-3, 25 3
         ]
         
-        # 1. 먼저 컬럼 26 (0-based: 25) 확인
-        if len(df.columns) >= 26:
-            growth_calc_col = 25  # 0-based 인덱스
-            for row_idx in [1, 2]:
-                if row_idx < len(df):
-                    cell_value = df.iloc[row_idx, growth_calc_col]
+        # 2-1. A(광공업생산)집계 시트에서 최신 연도 컬럼 찾기
+        target_sheet = 'A(광공업생산)집계'
+        if target_sheet in xl.sheet_names:
+            df = pd.read_excel(xl, sheet_name=target_sheet, header=None, nrows=5)
+            
+            if len(df) >= 3:
+                # 헤더 행(3행, 0-based: 2)에서 연도 컬럼 찾기
+                latest_year_col = None
+                latest_year = 0
+                
+                for col_idx in range(len(df.columns)):
+                    cell_value = df.iloc[2, col_idx]  # 3행 (0-based: 2)
                     if pd.notna(cell_value):
                         cell_str = str(cell_value).strip()
-                        print(f"[데이터에서 연도/분기 추출] {target_sheet} 시트 컬럼 26 (증감률 계산용) 헤더: '{cell_str}'")
-                        
-                        for pattern in patterns:
-                            match = re.search(pattern, cell_str)
-                            if match:
-                                year_str = match.group(1)
-                                quarter = int(match.group(2))
-                                
-                                if len(year_str) == 2:
-                                    year = 2000 + int(year_str)
-                                else:
-                                    year = int(year_str)
-                                
-                                print(f"[데이터에서 연도/분기 추출] 광공업 증감률 계산용 분기: {year}년 {quarter}분기")
-                                return year, quarter
+                        # 연도 패턴 확인 (2020-2099)
+                        year_match = re.match(r'^(20\d{2})$', cell_str)
+                        if year_match:
+                            year = int(cell_str)
+                            if year > latest_year:
+                                latest_year = year
+                                latest_year_col = col_idx
+                
+                if latest_year_col is not None:
+                    print(f"[데이터에서 연도/분기 추출] 최신 연도 컬럼 발견: 열{latest_year_col + 1} ({latest_year}년)")
+                    
+                    # 최신 연도 컬럼 이후의 분기 컬럼 찾기
+                    for col_idx in range(latest_year_col + 1, min(latest_year_col + 20, len(df.columns))):
+                        for row_idx in [1, 2, 3, 4]:  # 2-5행 확인
+                            if row_idx < len(df):
+                                cell_value = df.iloc[row_idx, col_idx]
+                                if pd.notna(cell_value):
+                                    cell_str = str(cell_value).strip()
+                                    if cell_str.startswith('='):
+                                        continue
+                                    
+                                    for pattern in patterns:
+                                        match = re.search(pattern, cell_str)
+                                        if match:
+                                            year_str = match.group(1)
+                                            quarter = int(match.group(2))
+                                            
+                                            if len(year_str) == 2:
+                                                year = 2000 + int(year_str)
+                                            else:
+                                                year = int(year_str)
+                                            
+                                            # 최신 연도와 일치하는 분기만
+                                            if year == latest_year:
+                                                print(f"[데이터에서 연도/분기 추출] ✅ {target_sheet} 시트 열{col_idx + 1}에서 발견: {year}년 {quarter}분기")
+                                                return year, quarter
         
-        # 2. 컬럼 26에서 찾지 못하면 최신 분기 컬럼 찾기 (뒤에서부터 검색)
-        print(f"[데이터에서 연도/분기 추출] 컬럼 26에서 찾지 못함, 최신 분기 컬럼 검색 중...")
+        # 2-2. A 분석 시트에서 추출 시도
+        if 'A 분석' in xl.sheet_names:
+            df_analysis = pd.read_excel(xl, sheet_name='A 분석', header=None, nrows=5)
+            
+            # "해당분기", "동분기" 등의 텍스트 근처에서 찾기
+            latest_year = 0
+            latest_quarter = 0
+            
+            for row_idx in range(min(5, len(df_analysis))):
+                for col_idx in range(min(50, len(df_analysis.columns))):
+                    cell_value = df_analysis.iloc[row_idx, col_idx]
+                    if pd.notna(cell_value):
+                        cell_str = str(cell_value).strip()
+                        if cell_str.startswith('='):
+                            continue
+                        
+                        # "분기" 텍스트가 있는 경우 근처 컬럼 확인
+                        if '분기' in cell_str or '동분기' in cell_str:
+                            # 같은 행의 다른 컬럼들 확인
+                            for nearby_col in range(max(0, col_idx - 5), min(len(df_analysis.columns), col_idx + 6)):
+                                nearby_cell = df_analysis.iloc[row_idx, nearby_col]
+                                if pd.notna(nearby_cell):
+                                    nearby_str = str(nearby_cell).strip()
+                                    if nearby_str.startswith('='):
+                                        continue
+                                    
+                                    for pattern in patterns:
+                                        match = re.search(pattern, nearby_str)
+                                        if match:
+                                            year_str = match.group(1)
+                                            quarter = int(match.group(2))
+                                            
+                                            if len(year_str) == 2:
+                                                year = 2000 + int(year_str)
+                                            else:
+                                                year = int(year_str)
+                                            
+                                            if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                                latest_year = year
+                                                latest_quarter = quarter
+            
+            if latest_year > 0 and latest_quarter > 0:
+                print(f"[데이터에서 연도/분기 추출] ✅ A 분석 시트에서 발견: {latest_year}년 {latest_quarter}분기")
+                return latest_year, latest_quarter
+        
+        # 2-3. 모든 시트의 헤더에서 연도/분기 패턴 검색
+        print(f"[데이터에서 연도/분기 추출] 모든 시트 헤더 검색 중...")
         latest_year = 0
         latest_quarter = 0
         
-        # 뒤에서부터 최신 분기 찾기 (컬럼 9부터 시작, 연도 컬럼들)
-        for col_idx in range(len(df.columns) - 1, 8, -1):  # 9번째 컬럼(2020)부터 뒤로
-            for row_idx in [1, 2]:
-                if row_idx < len(df):
-                    cell_value = df.iloc[row_idx, col_idx]
-                    if pd.notna(cell_value):
-                        cell_str = str(cell_value).strip()
-                        
-                        for pattern in patterns:
-                            match = re.search(pattern, cell_str)
-                            if match:
-                                year_str = match.group(1)
-                                quarter = int(match.group(2))
+        for sheet_name in xl.sheet_names:
+            if '집계' in sheet_name or '분석' in sheet_name:
+                try:
+                    df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=5)
+                    
+                    for row_idx in range(min(5, len(df))):
+                        for col_idx in range(min(100, len(df.columns))):
+                            cell_value = df.iloc[row_idx, col_idx]
+                            if pd.notna(cell_value):
+                                cell_str = str(cell_value).strip()
+                                if cell_str.startswith('='):
+                                    continue
                                 
-                                if len(year_str) == 2:
-                                    year = 2000 + int(year_str)
-                                else:
-                                    year = int(year_str)
-                                
-                                # 가장 최신 연도/분기 저장
-                                if year > latest_year or (year == latest_year and quarter > latest_quarter):
-                                    latest_year = year
-                                    latest_quarter = quarter
-                                    print(f"[데이터에서 연도/분기 추출] {target_sheet} 시트 컬럼 {col_idx+1}에서 발견: {year}년 {quarter}분기")
+                                for pattern in patterns:
+                                    match = re.search(pattern, cell_str)
+                                    if match:
+                                        year_str = match.group(1)
+                                        quarter = int(match.group(2))
+                                        
+                                        if len(year_str) == 2:
+                                            year = 2000 + int(year_str)
+                                        else:
+                                            year = int(year_str)
+                                        
+                                        if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                            latest_year = year
+                                            latest_quarter = quarter
+                                            print(f"[데이터에서 연도/분기 추출] {sheet_name} 시트 행{row_idx+1}, 열{col_idx+1}에서 발견: {year}년 {quarter}분기")
+                except:
+                    continue
         
         if latest_year > 0 and latest_quarter > 0:
-            print(f"[데이터에서 연도/분기 추출] 최신 분기: {latest_year}년 {latest_quarter}분기")
+            print(f"[데이터에서 연도/분기 추출] ✅ 최신 분기: {latest_year}년 {latest_quarter}분기")
             return latest_year, latest_quarter
         
-        raise ValueError(f"A(광공업생산)집계 시트의 헤더에서 연도/분기 정보를 찾을 수 없습니다.")
+        raise ValueError(f"엑셀 파일에서 연도/분기 정보를 찾을 수 없습니다. 파일명이나 시트 헤더에 연도/분기 정보가 있는지 확인하세요.")
         
     except ValueError:
         raise
