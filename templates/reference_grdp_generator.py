@@ -324,6 +324,7 @@ def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
             # 연도/분기 업데이트
             data['report_info']['year'] = year
             data['report_info']['quarter'] = quarter
+            data['report_info']['page_number'] = ''  # 페이지 번호는 더 이상 사용하지 않음
             
             # is_group_start와 group_size 플래그 추가 (JSON에 없을 수 있음)
             data['regional_data'] = _add_group_flags(data['regional_data'])

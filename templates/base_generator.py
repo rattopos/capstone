@@ -355,5 +355,6 @@ class BaseGenerator(ABC):
             "year": self.year or 2025,
             "quarter": self.quarter or 2,
             "organization": "국가데이터처",
-            "department": "경제통계심의관"
+            "department": "경제통계심의관",
+            "page_number": ""  # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         }

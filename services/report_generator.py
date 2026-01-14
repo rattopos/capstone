@@ -36,7 +36,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         data = schema.get('example', {})
         
         # 연도/분기 정보 추가
-        data['report_info'] = {'year': year, 'quarter': quarter}
+        data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
         
         # 일러두기의 경우 담당자 정보에서 관세청 정보 업데이트
         if report_id == 'guide' and custom_data:
@@ -310,6 +310,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
             data['report_info']['quarter'] = quarter if quarter is not None else 2
         
+        # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
+        data['report_info']['page_number'] = ""
+        
         
         # 결측치 확인
         missing = check_missing_data(data, report_id)
@@ -449,6 +452,7 @@ def generate_grdp_reference_html(excel_path, session_data=None):
             grdp_data['report_info'] = {}
         grdp_data['report_info']['year'] = year
         grdp_data['report_info']['quarter'] = quarter
+        grdp_data['report_info']['page_number'] = ''  # 페이지 번호는 더 이상 사용하지 않음
         
         # chart_config 기본값 추가 (누락된 경우)
         if 'chart_config' not in grdp_data:
@@ -654,49 +658,10 @@ def generate_statistics_report_html(excel_path, year, quarter):
         year: 연도
         quarter: 분기
     
-    주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
+    주의: 고객사 요청으로 통계표 섹션 전체를 생성하지 않기로 결정됨
     """
-    try:
-        generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
-        if not generator_path.exists():
-            return None, f"통계표 Generator를 찾을 수 없습니다"
-        
-        spec = importlib.util.spec_from_file_location('통계표_generator', str(generator_path))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        
-        # Generator 초기화 시그니처 확인하여 raw_excel_path 파라미터 제거
-        import inspect
-        sig = inspect.signature(module.통계표Generator.__init__)
-        params = list(sig.parameters.keys())
-        
-        if 'raw_excel_path' in params:
-            # raw_excel_path 파라미터가 있으면 None으로 전달 (하위 호환성)
-            generator = module.통계표Generator(
-                excel_path,
-                raw_excel_path=None,
-                current_year=year,
-                current_quarter=quarter
-            )
-        else:
-            # raw_excel_path 파라미터가 없으면 제거된 버전
-            generator = module.통계표Generator(
-                excel_path,
-                current_year=year,
-                current_quarter=quarter
-            )
-        template_path = TEMPLATES_DIR / 'statistics_table_template.html'
-        
-        html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
-        
-        return html_content, None
-        
-    except Exception as e:
-        import traceback
-        error_msg = f"통계표 보도자료 생성 오류: {str(e)}"
-        print(f"[ERROR] {error_msg}")
-        traceback.print_exc()
-        return None, error_msg
+    # 통계표 생성 비활성화
+    return None, "통계표 생성이 비활성화되었습니다."
 
 
 def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
@@ -708,9 +673,10 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
         year: 연도
         quarter: 분기
     
-    주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
+    주의: 고객사 요청으로 통계표 섹션 전체를 생성하지 않기로 결정됨
     """
-    try:
+    # 통계표 생성 비활성화
+    return None, "통계표 생성이 비활성화되었습니다."
         stat_id = stat_config['id']
         template_name = stat_config['template']
         table_name = stat_config.get('table_name')
@@ -814,7 +780,8 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                     int(x[:4]), int(x[5]) if len(x) > 5 else 0
                 ))
             
-            page_base = 22 + (table_index - 1) * 2
+            # page_base 계산 제거 (페이지 번호는 더 이상 사용하지 않음, 목차 생성 중단)
+            # page_base = 22 + (table_index - 1) * 2
             
             # config가 없어도 기본값 사용
             unit = config.get('단위', '[자료 없음]') if config else '[자료 없음]'
