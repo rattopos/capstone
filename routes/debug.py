@@ -1556,20 +1556,20 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 traceback.print_exc()
                 return None, error_msg, []
         
-        # 기본 연락처 정보
+        # 기본 연락처 정보 (기본값 없음 - 실무자가 직접 입력해야 함)
         report_data['release_info'] = {
-            'release_datetime': f'{year}. 8. 12.(화) 12:00',
-            'distribution_datetime': f'{year}. 8. 12.(화) 08:30'
+            'release_datetime': '',
+            'distribution_datetime': ''
         }
         report_data['contact_info'] = {
-            'department': '국가데이터처 경제통계국',
-            'division': '소득통계과',
-            'manager_title': '과 장',
-            'manager_name': '정선경',
-            'manager_phone': '042-481-2206',
-            'staff_title': '사무관',
-            'staff_name': '윤민희',
-            'staff_phone': '042-481-2226'
+            'department': '',
+            'division': '',
+            'manager_title': '',
+            'manager_name': '',
+            'manager_phone': '',
+            'staff_title': '',
+            'staff_name': '',
+            'staff_phone': ''
         }
         
         # 템플릿 렌더링
@@ -1877,7 +1877,7 @@ def _get_guide_data(year, quarter):
             'purpose': '지역경제의 동향 파악과 지역개발정책 수립 및 평가의 기초자료로 활용하고자 작성합니다.'
         },
         'content': {
-            'description': f'본 보도자료는 {year}년 {quarter}/4분기 시·도별 지역경제동향을 수록하였습니다.',
+            'description': f'본 보도자료는 {year if year else "[연도]"}년 {quarter if quarter else "[분기]"}/4분기 시·도별 지역경제동향을 수록하였습니다.' if year and quarter else '본 보도자료는 [연도/분기 입력 필요] 시·도별 지역경제동향을 수록하였습니다.',
             'indicator_note': '수록 지표는 총 7개 부문으로 다음과 같습니다.',
             'indicators': [
                 {'type': '생산', 'stat_items': ['광공업생산지수', '서비스업생산지수']},
@@ -1890,18 +1890,17 @@ def _get_guide_data(year, quarter):
             ]
         },
         'contacts': [
-            {'category': '생산', 'statistics_name': '광공업생산지수', 'department': '광업제조업동향과', 'phone': '042-481-2183'},
-            {'category': '생산', 'statistics_name': '서비스업생산지수', 'department': '서비스업동향과', 'phone': '042-481-2196'},
-            {'category': '소비', 'statistics_name': '소매판매액지수', 'department': '서비스업동향과', 'phone': '042-481-2199'},
-            {'category': '건설', 'statistics_name': '건설수주액', 'department': '건설동향과', 'phone': '042-481-2556'},
-            {'category': '수출입', 'statistics_name': '수출입액', 'department': '관세청 정보데이터기획담당관', 'phone': '042-481-7845'},
-            {'category': '물가', 'statistics_name': '소비자물가지수', 'department': '물가동향과', 'phone': '042-481-2532'},
-            {'category': '고용', 'statistics_name': '고용률, 실업률', 'department': '고용통계과', 'phone': '042-481-2264'},
-            {'category': '인구', 'statistics_name': '국내인구이동', 'department': '인구동향과', 'phone': '042-481-2252'}
+            {'category': '생산', 'statistics_name': '광공업생산지수', 'department': '산업동향과', 'phone': '042-481-2161'},
+            {'category': '생산', 'statistics_name': '서비스업생산지수', 'department': '서비스업동향과', 'phone': '042-481-2190'},
+            {'category': '소비', 'statistics_name': '소매판매액지수', 'department': '서비스업동향과', 'phone': '042-481-2197'},
+            {'category': '건설', 'statistics_name': '건설수주액', 'department': '산업동향과', 'phone': '042-481-2158'},
+            {'category': '수출입', 'statistics_name': '수출·수입', 'department': '관세청 정보데이터기획담당관', 'phone': '042-481-7845'},
+            {'category': '물가', 'statistics_name': '소비자물가지수', 'department': '물가동향과', 'phone': '042-481-2531'},
+            {'category': '고용', 'statistics_name': '고용률, 실업률', 'department': '고용통계과', 'phone': '042-481-2265'},
+            {'category': '인구', 'statistics_name': '국내인구이동', 'department': '인구추계팀', 'phone': '042-481-2514'}
         ],
         'references': [
-            {'content': '본 자료는 국가데이터처 홈페이지(http://kostat.go.kr)에서 확인하실 수 있습니다.'},
-            {'content': '관련 통계표는 KOSIS(국가통계포털, http://kosis.kr)에서 이용하실 수 있습니다.'}
+            {'content': '본문에 수록된 자료는 국가데이터처 홈페이지(http://mods.go.kr) 및 국가통계포털(http://kosis.kr)을 통해 이용할 수 있습니다.'}
         ],
         'notes': [
             '자료에 수록된 값은 잠정치이므로 추후 수정될 수 있습니다.'

@@ -2000,9 +2000,9 @@ def export_hwp_ready():
     <style>
         /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
         body {{
-            font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
             font-size: 10pt;
-            line-height: 1.6;
+            line-height: 1.5;
             color: #000;
             background: #fff;
             padding: 20px;
@@ -2071,11 +2071,12 @@ def export_hwp_ready():
             # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식) - 함초롱바탕 14pt 적용
             body_content = _add_table_inline_styles(body_content)
             
-            # 페이지 구분 (인라인 스타일로) - 함초롱바탕 14pt 적용
+            # 페이지 구분 (인라인 스타일로) - STYLE_GUIDE 적용
+            # STYLE_GUIDE: Container padding: 20mm 15mm, Font: 'Malgun Gothic', 'Dotum', sans-serif
             final_html += f'''
         <!-- 페이지 {idx}: {page_title} -->
-        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; page-break-after: always;">
-            <div style="font-family: '함초롱바탕', 'HCR Batang', '바탕', 'Batang', serif; font-size: 14pt; line-height: 1.6;">
+        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; page-break-after: always; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 {body_content}
             </div>
         </div>
@@ -2174,15 +2175,19 @@ def save_html_to_project():
         }}
         
         body {{
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #000;
         }}
         
-        /* PDF 출력용 페이지 스타일 */
+        /* PDF 출력용 페이지 스타일 - STYLE_GUIDE 적용 */
+        /* STYLE_GUIDE: Container width: 210mm; min-height: 297mm; padding: 20mm 15mm; */
         .pdf-page {{
             width: 210mm;
             min-height: 297mm;
             max-height: 297mm;
-            padding: 12mm 15mm 15mm 15mm;
+            padding: 20mm 15mm;
             margin: 0 auto 5mm auto;
             background: white;
             position: relative;
@@ -2266,6 +2271,10 @@ def save_html_to_project():
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }}
+            
+            .pdf-page {{
+                padding: 20mm 15mm !important; /* STYLE_GUIDE: padding: 20mm 15mm */
+            }}
         }}
         
         @page {{
@@ -2273,22 +2282,38 @@ def save_html_to_project():
             margin: 0;
         }}
         
-        /* 표 스타일 공통 */
+        /* 표 스타일 공통 - STYLE_GUIDE 적용 */
+        /* STYLE_GUIDE: Table Borders - Top/Bottom 2px solid #000, Header Separator 1px solid #888, Inner Grid 1px solid #DDDDDD */
         table {{
             border-collapse: collapse;
             width: 100%;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
         }}
         
         th, td {{
-            border: 1px solid #333;
+            border-left: 1px solid #DDDDDD;
+            border-right: 1px solid #DDDDDD;
             padding: 4px 6px;
-            font-size: 9pt;
-            text-align: center;
+            font-size: 11pt; /* STYLE_GUIDE: Table Body 11pt */
+            vertical-align: middle;
         }}
         
         th {{
-            background: #f5f5f5;
-            font-weight: 600;
+            border-top: 1px solid #888;
+            border-bottom: 1px solid #888;
+            background: #F5F7FA; /* STYLE_GUIDE: Background (Th): #F5F7FA */
+            text-align: center; /* STYLE_GUIDE: th Center / Middle */
+            font-weight: normal;
+        }}
+        
+        td {{
+            text-align: center; /* STYLE_GUIDE: td (Text): Center (default) */
+        }}
+        
+        td.number, td[data-type="number"] {{
+            text-align: right; /* STYLE_GUIDE: td (Number): Right */
+            padding-right: 4px;
         }}
         
         /* 차트 크기 조정 */
@@ -2383,78 +2408,82 @@ def save_html_to_project():
 
 
 def _add_table_inline_styles(html_content):
-    """표에 인라인 스타일 추가 (한글 복붙 최적화) - 함초롱바탕 14pt"""
+    """표에 인라인 스타일 추가 (한글 복붙 최적화) - STYLE_GUIDE_FROM_PNG.md 적용"""
     # table 태그에 인라인 스타일 추가
+    # STYLE_GUIDE: Font Family: 'Malgun Gothic', 'Dotum', sans-serif
+    # STYLE_GUIDE: Base Size: 10pt (Body), 11pt (Table Body), 9pt (Dense Table)
     html_content = re.sub(
         r'<table([^>]*)>',
-        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; border-top: 2px solid #000000; border-bottom: 2px solid #000000; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">',
         html_content
     )
     
     # th 태그에 인라인 스타일 추가
+    # STYLE_GUIDE: Background (Th): #F5F7FA, Header Separator: 1px solid #888
+    # STYLE_GUIDE: Alignment: th Center / Middle
     html_content = re.sub(
         r'<th([^>]*)>',
-        r'<th\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        r'<th\1 style="border-top: 1px solid #888; border-bottom: 1px solid #888; border-left: 1px solid #DDDDDD; border-right: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; background-color: #F5F7FA; font-weight: normal; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">',
         html_content
     )
     
     # td 태그에 인라인 스타일 추가
+    # STYLE_GUIDE: Inner Grid: 1px solid #DDDDDD
+    # STYLE_GUIDE: td (Text): Center, td (Number): Right (padding-right: 4px)
     html_content = re.sub(
         r'<td([^>]*)>',
-        r'<td\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        r'<td\1 style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">',
         html_content
     )
     
-    # 제목 태그들에 인라인 스타일 추가 - 함초롱바탕 14pt
+    # 제목 태그들에 인라인 스타일 추가 - STYLE_GUIDE 적용
+    # STYLE_GUIDE: Font Family: 'Malgun Gothic', 'Dotum', sans-serif
+    # STYLE_GUIDE: Primary (Header): #2B4E88 or #000000
     html_content = re.sub(
         r'<h1([^>]*)>',
-        r'<h1\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        r'<h1\1 style="font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 14pt; font-weight: bold; color: #000000; margin: 15px 0 10px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h2([^>]*)>',
-        r'<h2\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        r'<h2\1 style="font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 13pt; font-weight: bold; color: #000000; margin: 15px 0 10px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h3([^>]*)>',
-        r'<h3\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 10px 0 8px 0;">',
+        r'<h3\1 style="font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11.5pt; font-weight: bold; color: #000000; border-bottom: 1px solid #000000; padding-bottom: 3px; margin: 10px 0 8px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h4([^>]*)>',
-        r'<h4\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 10px 0 5px 0;">',
+        r'<h4\1 style="font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; font-weight: bold; color: #000000; margin: 10px 0 5px 0;">',
         html_content
     )
     
-    # p 태그에 스타일 추가 - 함초롱바탕 14pt
+    # p 태그에 스타일 추가 - STYLE_GUIDE: Base Size 10pt, Line Height 1.5 ~ 1.6
     html_content = re.sub(
         r'<p([^>]*)>',
-        r'<p\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; margin: 5px 0; line-height: 1.6;">',
+        r'<p\1 style="font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 10pt; margin: 5px 0; line-height: 1.5;">',
         html_content
     )
     
-    # ul, ol 태그에 스타일 추가 - 함초롱바탕 14pt
+    # ul, ol 태그에 스타일 추가
     html_content = re.sub(
         r'<ul([^>]*)>',
-        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 10pt;">',
         html_content
     )
     html_content = re.sub(
         r'<ol([^>]*)>',
-        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 10pt;">',
         html_content
     )
     
-    # td, th 태그에도 함초롱바탕 14pt 적용
+    # 숫자 셀에 대해 right align 적용 (STYLE_GUIDE: td Number Right, padding-right: 4px)
+    # 숫자 패턴이 포함된 td에 text-align: right 추가
     html_content = re.sub(
-        r'<td([^>]*)style="([^"]*)"',
-        lambda m: f'<td{m.group(1)}style="{m.group(2)} font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;"',
-        html_content
-    )
-    html_content = re.sub(
-        r'<th([^>]*)style="([^"]*)"',
-        lambda m: f'<th{m.group(1)}style="{m.group(2)} font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;"',
+        r'<td([^>]*style="[^"]*)"([^>]*)>(-?\d+[\.%]?)',
+        r'<td\1 text-align: right; padding-right: 4px;"\2>\3',
         html_content
     )
     html_content = re.sub(

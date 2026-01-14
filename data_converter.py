@@ -200,9 +200,8 @@ class DataConverter:
                 print(f"[자동감지] 파일명에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
                 return
         
-        # 3. 기본값 (실패 시)
-        self.year, self.quarter = 2025, 2
-        print(f"[경고] 연도/분기 추출 실패, 기본값 사용: {self.year}년 {self.quarter}분기")
+        # 3. 추출 실패 (기본값 사용 안 함 - 데이터 무결성 원칙)
+        raise ValueError(f"연도/분기 추출에 실패했습니다. 파일명이나 시트에서 연도/분기 정보를 찾을 수 없습니다.")
     
     def _get_target_years(self) -> List[int]:
         """당해 제외 최근 5개년 리스트 반환
@@ -900,30 +899,34 @@ class DataConverter:
                 continue
             
             values = region_values[region]
-            total = values.get('total', {'current': 0, 'prev_year': 0})
+            total = values.get('total')
             if total is None:
-                total = {'current': 0, 'prev_year': 0}
-            
-            total_current = total['current']
-            total_prev = total['prev_year']
-            
-            # 성장률 계산
-            if total_prev > 0:
-                growth_rate = round(((total_current - total_prev) / total_prev) * 100, 1)
+                growth_rate = None
+                manufacturing_contrib = None
+                construction_contrib = None
+                service_contrib = None
+                other_contrib = None
             else:
-                growth_rate = 0.0
-            
-            # 산업별 기여도 계산
-            manufacturing_contrib = 0.0
-            construction_contrib = 0.0
-            service_contrib = 0.0
-            other_contrib = 0.0
-            
-            for industry in values.get('industries', []):
-                item_name = industry.get('item', '')
-                contrib = self._calculate_contribution(
-                    industry['current'], industry['prev_year'], total_prev
-                )
+                total_current = total.get('current')
+                total_prev = total.get('prev_year')
+                
+                # 성장률 계산 (데이터 무결성 원칙: None 값이 있으면 None 반환)
+                if total_current is None or total_prev is None or total_prev == 0:
+                    growth_rate = None
+                else:
+                    growth_rate = round(((total_current - total_prev) / total_prev) * 100, 1)
+                
+                # 산업별 기여도 계산
+                manufacturing_contrib = None
+                construction_contrib = None
+                service_contrib = None
+                other_contrib = None
+                
+                for industry in values.get('industries', []):
+                    item_name = industry.get('item', '')
+                    contrib = self._calculate_contribution(
+                        industry.get('current'), industry.get('prev_year'), total_prev
+                    )
                 
                 if '제조' in item_name or '광업' in item_name:
                     manufacturing_contrib = contrib
@@ -1001,19 +1004,19 @@ class DataConverter:
             'data_missing': False
         }
     
-    def _safe_float(self, val) -> float:
-        """안전하게 float으로 변환"""
+    def _safe_float(self, val):
+        """안전하게 float으로 변환 (데이터 무결성 원칙 준수: 결측치/파싱 실패 시 None 반환)"""
         if pd.isna(val):
-            return 0.0
+            return None
         try:
             return float(val)
         except (ValueError, TypeError):
-            return 0.0
+            return None
     
-    def _calculate_contribution(self, current: float, prev: float, total_prev: float) -> float:
-        """산업별 기여도 계산"""
-        if total_prev == 0:
-            return 0.0
+    def _calculate_contribution(self, current, prev, total_prev):
+        """산업별 기여도 계산 (데이터 무결성 원칙: None 값이 있으면 None 반환)"""
+        if current is None or prev is None or total_prev is None or total_prev == 0:
+            return None
         return round(((current - prev) / total_prev) * 100, 1)
     
     def _get_placeholder_grdp(self) -> Dict:

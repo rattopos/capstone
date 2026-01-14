@@ -209,7 +209,7 @@
         <!-- 메인 타이틀 -->
         <div class="main-title-box">
             <h1 class="main-title">
-                <span class="year-quarter">{{ report_info.year }}년 {{ report_info.quarter }}/4분기</span>
+                <span class="year-quarter">{% if report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %}</span>
                 <span class="report-name">지역경제동향</span>
             </h1>
         </div>

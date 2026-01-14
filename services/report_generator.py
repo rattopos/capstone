@@ -556,7 +556,7 @@ def _generate_default_grdp_html(grdp_data):
         </div>
         
         <div class="footnote">
-            자료: 통계청, 지역소득(GRDP)
+            자료: 국가데이터처, 지역소득(GRDP)
         </div>
     </div>
 </body>

@@ -454,17 +454,24 @@
             overflow: hidden;
         }
 
-        /* Control Bar */
+        /* Control Bar - 미리보기 헤더에 통합됨 */
         .control-bar {
+            display: none; /* 미리보기 헤더에 통합되어 숨김 */
+        }
+
+        /* 미리보기 헤더 내 네비게이션 컨트롤 */
+        .preview-header .nav-controls {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.5rem 1rem;
-            flex-shrink: 0;
+            gap: 0.5rem;
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--border);
+        }
+
+        .preview-header .action-btns {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .nav-controls {
@@ -621,6 +628,20 @@
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
+            gap: 1rem;
+        }
+
+        .preview-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .preview-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .preview-title {
@@ -1212,13 +1233,13 @@
             font-size: 0.75rem;
         }
 
-        /* 생성 완료 상태 */
+        /* 생성 완료 상태 - 더 컴팩트하게 */
         .generation-status {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1rem;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
             display: none;
         }
 
@@ -1230,7 +1251,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .generation-status-title {
@@ -1517,28 +1538,27 @@
                 </div>
             </div>
 
-            <!-- Control Bar -->
-            <div class="control-bar">
-                <div class="nav-controls">
-                    <button class="nav-btn" id="prevBtn" disabled title="이전">◀</button>
-                    <span class="page-indicator" id="pageIndicator">0 / 0</span>
-                    <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
-                </div>
-                <div class="action-btns">
-                    <button class="btn btn-hwp-import" id="exportHwpReadyBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="모든 보도자료를 한글 파일용 HTML로 내보내기">
-                        📄 한글 파일로 내보내기
-                    </button>
-                </div>
-            </div>
-
             <!-- Preview Area -->
             <div class="preview-area">
                 <div class="preview-header">
-                    <div class="preview-title" id="previewTitle">
-                        <span>📄</span>
-                        <span>미리보기</span>
+                    <div class="preview-header-left">
+                        <div class="preview-title" id="previewTitle">
+                            <span>📄</span>
+                            <span>미리보기</span>
+                        </div>
+                        <div class="nav-controls">
+                            <button class="nav-btn" id="prevBtn" disabled title="이전">◀</button>
+                            <span class="page-indicator" id="pageIndicator">0 / 0</span>
+                            <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
+                        </div>
                     </div>
-                    <div class="preview-actions">
+                    <div class="preview-header-right">
+                        <div class="action-btns">
+                            <button class="btn btn-hwp-import" id="exportHwpReadyBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="모든 보도자료를 한글 파일용 HTML로 내보내기">
+                                📄 내보내기
+                            </button>
+                        </div>
+                        <div class="preview-actions">
                         <button class="btn btn-edit" id="editBtn" style="display: none;" title="편집 모드">
                             ✏️ 편집
                         </button>
@@ -1551,6 +1571,7 @@
                         <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
                             ✓ 검토 완료
                         </button>
+                        </div>
                     </div>
                 </div>
                 <div class="preview-content" id="previewContent">
@@ -1609,12 +1630,12 @@
                     <div class="missing-field-item">
                         <label class="missing-field-label">보도시점</label>
                         <input type="text" class="missing-field-input" id="releaseDateTime" 
-                               placeholder="예: 2025. 8. 12.(화) 12:00" value="2025. 8. 12.(화) 12:00">
+                               placeholder="예: 2025. 11. 17.(월) 12:00" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">배포일시</label>
                         <input type="text" class="missing-field-input" id="distributionDateTime" 
-                               placeholder="예: 2025. 8. 12.(화) 08:30" value="2025. 8. 12.(화) 08:30">
+                               placeholder="예: 2025. 11. 17.(월) 08:30" value="">
                     </div>
                 </div>
             </div>
@@ -1628,12 +1649,12 @@
                     <div class="missing-field-item">
                         <label class="missing-field-label">부서명</label>
                         <input type="text" class="missing-field-input" id="department" 
-                               placeholder="예: 국가데이터처 경제통계국" value="국가데이터처 경제통계국">
+                               placeholder="예: 국가데이터처 경제통계국" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">과명</label>
                         <input type="text" class="missing-field-input" id="division" 
-                               placeholder="예: 소득통계과" value="소득통계과">
+                               placeholder="예: 소득통계과" value="">
                     </div>
                 </div>
             </div>
@@ -1647,17 +1668,17 @@
                     <div class="missing-field-item">
                         <label class="missing-field-label">직책</label>
                         <input type="text" class="missing-field-input" id="managerTitle" 
-                               placeholder="예: 과 장" value="과 장">
+                               placeholder="예: 과 장" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">이름</label>
                         <input type="text" class="missing-field-input" id="managerName" 
-                               placeholder="예: 홍길동" value="정선경">
+                               placeholder="예: 홍길동" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">전화번호</label>
                         <input type="text" class="missing-field-input" id="managerPhone" 
-                               placeholder="예: 042-481-2206" value="042-481-2206">
+                               placeholder="예: 042-481-2206" value="">
                     </div>
                 </div>
             </div>
@@ -1671,17 +1692,17 @@
                     <div class="missing-field-item">
                         <label class="missing-field-label">직책</label>
                         <input type="text" class="missing-field-input" id="staffTitle" 
-                               placeholder="예: 사무관" value="사무관">
+                               placeholder="예: 사무관" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">이름</label>
                         <input type="text" class="missing-field-input" id="staffName" 
-                               placeholder="예: 김철수" value="윤민희">
+                               placeholder="예: 김철수" value="">
                     </div>
                     <div class="missing-field-item">
                         <label class="missing-field-label">전화번호</label>
                         <input type="text" class="missing-field-input" id="staffPhone" 
-                               placeholder="예: 042-481-2226" value="042-481-2226">
+                               placeholder="예: 042-481-2226" value="">
                     </div>
                 </div>
             </div>
@@ -1981,20 +2002,20 @@
                 failed: 0,
                 startTime: null
             },
-            // 담당자 정보
+            // 담당자 정보 (기본값 없음 - 실무자가 직접 입력해야 함)
             contactInfo: {
-                release_datetime: '2025. 8. 12.(화) 12:00',
-                distribution_datetime: '2025. 8. 12.(화) 08:30',
-                department: '국가데이터처 경제통계국',
-                division: '소득통계과',
-                manager_title: '과 장',
-                manager_name: '정선경',
-                manager_phone: '042-481-2206',
-                staff_title: '사무관',
-                staff_name: '윤민희',
-                staff_phone: '042-481-2226',
-                customs_department: '관세청 정보데이터기획담당관',
-                customs_phone: '042-481-7845'
+                release_datetime: '',
+                distribution_datetime: '',
+                department: '',
+                division: '',
+                manager_title: '',
+                manager_name: '',
+                manager_phone: '',
+                staff_title: '',
+                staff_name: '',
+                staff_phone: '',
+                customs_department: '',
+                customs_phone: ''
             },
         };
 
@@ -3366,20 +3387,61 @@ ${currentPage.outerHTML}
             return true;
         }
         
-        // ===== A4 크기에 맞게 HTML 최적화 =====
-        function optimizeForA4(html) {
-            // A4 사이즈: 210mm x 297mm (콘텐츠 영역: 180mm x 265mm)
+        // ===== JavaScript로 생성된 차트/그래프 요소 제거 =====
+        function removeJavaScriptElements(html) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            // 이미지 최적화
-            doc.querySelectorAll('img').forEach(img => {
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-                img.style.objectFit = 'contain';
+            // 1. Canvas 요소 제거
+            doc.querySelectorAll('canvas').forEach(canvas => {
+                console.log('[내보내기] Canvas 요소 제거:', canvas.className || canvas.id || 'unnamed');
+                canvas.remove();
             });
             
-            // 표 최적화
+            // 2. Chart.js 관련 스크립트 태그 제거
+            doc.querySelectorAll('script').forEach(script => {
+                const src = script.getAttribute('src') || '';
+                const content = script.textContent || '';
+                if (src.includes('chart') || src.includes('Chart.js') || 
+                    content.includes('Chart') || content.includes('chart.js') ||
+                    content.includes('new Chart') || content.includes('Chart.register')) {
+                    console.log('[내보내기] Chart.js 스크립트 제거:', src || 'inline script');
+                    script.remove();
+                }
+            });
+            
+            // 3. 차트 컨테이너 제거 (canvas를 포함하는 컨테이너)
+            doc.querySelectorAll('.chart-container, .chart-wrapper, .chart-area, [class*="chart"], [id*="chart"]').forEach(container => {
+                // Canvas가 포함되어 있으면 제거
+                if (container.querySelector('canvas')) {
+                    console.log('[내보내기] 차트 컨테이너 제거:', container.className || container.id || 'unnamed');
+                    container.remove();
+                }
+            });
+            
+            // 4. Chart.js 관련 스타일 태그 제거
+            doc.querySelectorAll('style').forEach(style => {
+                const content = style.textContent || '';
+                if (content.includes('chart') || content.includes('canvas')) {
+                    // 차트 관련 스타일만 제거하거나 전체 스타일 태그 제거
+                    // 여기서는 차트 관련 스타일이 포함된 경우만 제거
+                    if (content.match(/\.chart|canvas\s*\{/i)) {
+                        console.log('[내보내기] 차트 관련 스타일 제거');
+                        style.remove();
+                    }
+                }
+            });
+            
+            // 5. JavaScript 이벤트 핸들러 속성 제거 (onclick, onload 등)
+            doc.querySelectorAll('*').forEach(element => {
+                Array.from(element.attributes).forEach(attr => {
+                    if (attr.name.startsWith('on') || attr.name.startsWith('data-chart')) {
+                        element.removeAttribute(attr.name);
+                    }
+                });
+            });
+            
+            // 6. A4 크기에 맞게 표 최적화
             doc.querySelectorAll('table').forEach(table => {
                 table.style.width = '100%';
                 table.style.tableLayout = 'fixed';
@@ -3387,74 +3449,14 @@ ${currentPage.outerHTML}
                 table.style.borderCollapse = 'collapse';
             });
             
-            // SVG 최적화
-            doc.querySelectorAll('svg').forEach(svg => {
-                svg.style.maxWidth = '100%';
-                svg.style.height = 'auto';
-            });
-            
-            // 차트 컨테이너 최적화
-            doc.querySelectorAll('.chart-container, .chart-wrapper, .chart-area').forEach(container => {
-                container.style.maxWidth = '100%';
-                container.style.overflow = 'hidden';
+            // 7. 이미지 최적화
+            doc.querySelectorAll('img').forEach(img => {
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.objectFit = 'contain';
             });
             
             return doc.documentElement.outerHTML;
-        }
-        
-        // ===== Canvas를 이미지로 변환하는 헬퍼 함수 =====
-        function convertCanvasToImageInHtml(html) {
-            return new Promise((resolve) => {
-                // 임시 iframe 생성하여 HTML 렌더링
-                const tempIframe = document.createElement('iframe');
-                tempIframe.style.cssText = 'position: absolute; left: -9999px; width: 210mm; height: 297mm; visibility: hidden;';
-                document.body.appendChild(tempIframe);
-                
-                const iframeDoc = tempIframe.contentDocument || tempIframe.contentWindow.document;
-                iframeDoc.open();
-                iframeDoc.write(html);
-                iframeDoc.close();
-                
-                // Chart.js 렌더링 대기 후 Canvas 변환
-                setTimeout(() => {
-                    try {
-                        const canvases = iframeDoc.querySelectorAll('canvas');
-                        
-                        canvases.forEach((canvas, idx) => {
-                            try {
-                                // Canvas가 실제로 렌더링되었는지 확인
-                                if (canvas.width > 0 && canvas.height > 0) {
-                                    const dataUrl = canvas.toDataURL('image/png', 1.0);
-                                    
-                                    // Canvas를 img 태그로 대체
-                                    const img = iframeDoc.createElement('img');
-                                    img.src = dataUrl;
-                                    img.style.cssText = canvas.style.cssText || '';
-                                    img.style.maxWidth = '100%';
-                                    img.style.height = 'auto';
-                                    img.className = canvas.className;
-                                    img.setAttribute('data-converted-from', 'canvas');
-                                    
-                                    if (canvas.parentNode) {
-                                        canvas.parentNode.replaceChild(img, canvas);
-                                    }
-                                }
-                            } catch (e) {
-                                console.warn(`Canvas ${idx} 변환 실패:`, e);
-                            }
-                        });
-                        
-                        // 변환된 HTML 추출
-                        const convertedHtml = iframeDoc.documentElement.outerHTML;
-                        document.body.removeChild(tempIframe);
-                        resolve(convertedHtml);
-                    } catch (e) {
-                        console.warn('Canvas 변환 오류:', e);
-                        document.body.removeChild(tempIframe);
-                        resolve(html); // 변환 실패 시 원본 반환
-                    }
-                }, 1500); // Chart.js 렌더링을 위해 1.5초 대기
-            });
         }
         
         // ===== 한글 불러오기용 HTML 내보내기 =====
@@ -3652,12 +3654,12 @@ ${currentPage.outerHTML}
                     return;
                 }
                 
-                elements.loadingCurrentText.textContent = `${rawPages.length}개 페이지 수집 완료, 차트 변환 중...`;
+                elements.loadingCurrentText.textContent = `${rawPages.length}개 페이지 수집 완료, JavaScript 요소 제거 중...`;
                 elements.loadingProgressFill.style.width = '20%';
                 elements.loadingProgressPercent.textContent = '20%';
                 
-                console.log('[내보내기] ===== 차트 변환 시작 =====');
-                // Canvas를 이미지로 변환 (각 페이지 순차 처리)
+                console.log('[내보내기] ===== JavaScript 요소 제거 시작 =====');
+                // JavaScript로 생성된 차트/그래프 제거 (각 페이지 순차 처리)
                 const pages = [];
                 for (let i = 0; i < rawPages.length; i++) {
                     const page = rawPages[i];
@@ -3665,35 +3667,34 @@ ${currentPage.outerHTML}
                     const progress = 20 + Math.floor((i / rawPages.length) * 60);
                     elements.loadingProgressFill.style.width = `${progress}%`;
                     elements.loadingProgressPercent.textContent = `${progress}%`;
-                    elements.loadingCurrentText.textContent = `차트 변환 중... (${i + 1}/${rawPages.length}) ${page.title}`;
+                    elements.loadingCurrentText.textContent = `JavaScript 요소 제거 중... (${i + 1}/${rawPages.length}) ${page.title}`;
                     
-                    // Canvas가 포함된 페이지만 변환 처리
-                    let convertedHtml = page.html;
+                    // JavaScript로 생성된 차트/그래프 요소 제거
+                    let cleanedHtml = page.html;
                     const hasCanvas = page.html.includes('<canvas');
-                    console.log(`[내보내기] - Canvas 포함 여부: ${hasCanvas}`);
+                    const hasChart = page.html.includes('chart') || page.html.includes('Chart');
+                    console.log(`[내보내기] - Canvas 포함 여부: ${hasCanvas}, Chart 포함 여부: ${hasChart}`);
                     
-                    if (hasCanvas) {
+                    if (hasCanvas || hasChart) {
                         try {
-                            console.log(`[내보내기] - Canvas 변환 시작...`);
-                            convertedHtml = await convertCanvasToImageInHtml(page.html);
-                            console.log(`[내보내기] ✅ Canvas 변환 완료`);
+                            console.log(`[내보내기] - JavaScript 요소 제거 시작...`);
+                            cleanedHtml = removeJavaScriptElements(page.html);
+                            console.log(`[내보내기] ✅ JavaScript 요소 제거 완료`);
                         } catch (e) {
-                            console.warn(`[내보내기] ⚠️ 페이지 ${i + 1} 변환 실패:`, e);
+                            console.warn(`[내보내기] ⚠️ 페이지 ${i + 1} 처리 실패:`, e);
+                            // 실패 시 원본 사용
+                            cleanedHtml = page.html;
                         }
                     }
                     
-                    // A4 크기에 맞게 최적화
-                    console.log(`[내보내기] - A4 최적화 중...`);
-                    convertedHtml = optimizeForA4(convertedHtml);
-                    
                     pages.push({
-                        html: convertedHtml,
+                        html: cleanedHtml,
                         title: page.title,
                         category: page.category
                     });
                     console.log(`[내보내기] ✅ 페이지 ${i + 1} 처리 완료`);
                 }
-                console.log(`[내보내기] ===== 차트 변환 완료: 총 ${pages.length}개 페이지 =====`);
+                console.log(`[내보내기] ===== JavaScript 요소 제거 완료: 총 ${pages.length}개 페이지 =====`);
                 
                 elements.loadingCurrentText.textContent = `${pages.length}개 페이지 변환 완료, 한글 불러오기용 HTML 생성 중...`;
                 elements.loadingProgressFill.style.width = '85%';

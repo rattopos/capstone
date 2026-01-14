@@ -100,9 +100,11 @@ def parse_kosis_grdp_file(file_path, year=None, quarter=None):
         xl = pd.ExcelFile(file_path)
         print(f"[KOSIS] 시트 목록: {xl.sheet_names}")
         
-        # 연도/분기 기본값
-        target_year = year or 2025
-        target_quarter = quarter or 2
+        # 연도/분기 검증 (기본값 사용 안 함 - 데이터 무결성 원칙)
+        if not year or not quarter:
+            raise ValueError(f"연도/분기 정보가 필요합니다. year={year}, quarter={quarter}")
+        target_year = year
+        target_quarter = quarter
         
         regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
@@ -170,13 +172,14 @@ def _parse_grdp_from_sheets(file_path, year, quarter, regions, region_groups):
         regional_data = []
         national_data = None
         
-        def safe_float(val, default=0.0):
+        def safe_float(val):
+            """안전하게 float으로 변환 (데이터 무결성 원칙 준수: 결측치/파싱 실패 시 None 반환)"""
             try:
                 if pd.isna(val):
-                    return default
+                    return None
                 return round(float(val), 1)
-            except:
-                return default
+            except (ValueError, TypeError):
+                return None
         
         current_region = None
         region_values = {}

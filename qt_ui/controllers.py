@@ -211,18 +211,17 @@ class AppController:
                 ]
             },
             'contacts': [
-                {'category': '생산', 'statistics_name': '광공업생산지수', 'department': '광업제조업동향과', 'phone': '042-481-2183'},
-                {'category': '생산', 'statistics_name': '서비스업생산지수', 'department': '서비스업동향과', 'phone': '042-481-2196'},
-                {'category': '소비', 'statistics_name': '소매판매액지수', 'department': '서비스업동향과', 'phone': '042-481-2199'},
-                {'category': '건설', 'statistics_name': '건설수주액', 'department': '건설동향과', 'phone': '042-481-2556'},
-                {'category': '수출입', 'statistics_name': '수출입액', 'department': '관세청 정보데이터기획담당관', 'phone': '042-481-7845'},
-                {'category': '물가', 'statistics_name': '소비자물가지수', 'department': '물가동향과', 'phone': '042-481-2532'},
-                {'category': '고용', 'statistics_name': '고용률, 실업률', 'department': '고용통계과', 'phone': '042-481-2264'},
-                {'category': '인구', 'statistics_name': '국내인구이동', 'department': '인구동향과', 'phone': '042-481-2252'}
+                {'category': '생산', 'statistics_name': '광공업생산지수', 'department': '산업동향과', 'phone': '042-481-2161'},
+                {'category': '생산', 'statistics_name': '서비스업생산지수', 'department': '서비스업동향과', 'phone': '042-481-2190'},
+                {'category': '소비', 'statistics_name': '소매판매액지수', 'department': '서비스업동향과', 'phone': '042-481-2197'},
+                {'category': '건설', 'statistics_name': '건설수주액', 'department': '산업동향과', 'phone': '042-481-2158'},
+                {'category': '수출입', 'statistics_name': '수출·수입', 'department': '관세청 정보데이터기획담당관', 'phone': '042-481-7845'},
+                {'category': '물가', 'statistics_name': '소비자물가지수', 'department': '물가동향과', 'phone': '042-481-2531'},
+                {'category': '고용', 'statistics_name': '고용률, 실업률', 'department': '고용통계과', 'phone': '042-481-2265'},
+                {'category': '인구', 'statistics_name': '국내인구이동', 'department': '인구추계팀', 'phone': '042-481-2514'}
             ],
             'references': [
-                {'content': '본 자료는 통계청 홈페이지(http://kostat.go.kr)에서 확인하실 수 있습니다.'},
-                {'content': '관련 통계표는 KOSIS(국가통계포털, http://kosis.kr)에서 이용하실 수 있습니다.'}
+                {'content': '본문에 수록된 자료는 국가데이터처 홈페이지(http://mods.go.kr) 및 국가통계포털(http://kosis.kr)을 통해 이용할 수 있습니다.'}
             ],
             'notes': [
                 '자료에 수록된 값은 잠정치이므로 추후 수정될 수 있습니다.'
