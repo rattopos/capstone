@@ -2504,8 +2504,7 @@ class RegionalGenerator:
                 "region": region,
                 "region_full_name": region_info.full_name,
                 "region_code": region_info.code,
-                "region_index": region_info.index,
-                "page_number": 15 + region_info.index  # 페이지 번호 계산
+                "region_index": region_info.index
             },
             "production": {
                 "manufacturing": self.extract_manufacturing_data(region),

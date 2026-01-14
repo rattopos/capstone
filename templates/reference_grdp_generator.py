@@ -105,8 +105,7 @@ class 참고_GRDP_Generator:
         return {
             "report_info": {
                 "year": year,
-                "quarter": quarter,
-                "page_number": 20
+                "quarter": quarter
             },
             "national_summary": national_summary,
             "top_region": top_region,
@@ -201,8 +200,7 @@ class 참고_GRDP_Generator:
         return {
             "report_info": {
                 "year": year,
-                "quarter": quarter,
-                "page_number": 20
+                "quarter": quarter
             },
             "national_summary": national_summary,
             "top_region": top_region,

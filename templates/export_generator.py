@@ -789,7 +789,6 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
             'main_section_title': '수출입 동향',
             'section_number': '가',
             'section_title': '수출',
-            'page_number': '- 10 -'
         },
         'nationwide_data': nationwide_data,
         'regional_data': {

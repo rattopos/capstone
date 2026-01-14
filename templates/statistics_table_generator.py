@@ -833,9 +833,7 @@ class StatisticsTableGenerator:
                     "id": idx,
                     "title": table_name,
                     "unit": config["단위"],
-                    "data": data,
-                    "page_number_1": page_num,
-                    "page_number_2": page_num + 1
+                    "data": data
                 })
                 page_num += 2
         
@@ -883,12 +881,7 @@ class StatisticsTableGenerator:
             },
             "tables": tables,
             "grdp": grdp_data,
-            "appendix": appendix,
-            "page_numbers": {
-                "toc": 21,
-                "appendix_1": page_num + 2,  # GRDP 2페이지 후
-                "appendix_2": page_num + 3
-            }
+            "appendix": appendix
         }
     
     def _create_grdp_placeholder(self) -> Dict[str, Any]:
@@ -1005,8 +998,6 @@ class StatisticsTableGenerator:
         return {
             "title": "분기 지역내총생산(GRDP)",
             "unit": "[전년동기비, %]",
-            "page_number_1": 42,
-            "page_number_2": 43,
             "data": {
                 "yearly": yearly,
                 "quarterly": quarterly,

@@ -644,8 +644,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     return {
         'report_info': {
             'section_number': '5',
-            'section_title': '물가 동향',
-            'page_number': '- 12 -'
+            'section_title': '물가 동향'
         },
         'nationwide_data': nationwide_data,
         'regional_data': {

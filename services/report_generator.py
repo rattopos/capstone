@@ -755,8 +755,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
             template_data = {
                 'year': year,
                 'quarter': quarter,
-                'toc_items': toc_items,
-                'page_number': 21
+                'toc_items': toc_items
             }
         
         # 통계표 - 개별 지표
@@ -795,9 +794,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                     'page1_regions': PAGE1_REGIONS,
                     'page2_regions': PAGE2_REGIONS,
                     'yearly_years': yearly_years,
-                    'quarterly_keys': quarterly_keys,
-                    'page_number_1': page_base,
-                    'page_number_2': page_base + 1
+                    'quarterly_keys': quarterly_keys
                 }
             else:
                 return None, f"통계표 설정을 찾을 수 없습니다: {table_name}"
@@ -828,9 +825,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                 'page1_regions': PAGE1_REGIONS,
                 'page2_regions': PAGE2_REGIONS,
                 'yearly_years': yearly_years,
-                'quarterly_keys': quarterly_keys,
-                'page_number_1': 42,
-                'page_number_2': 43
+                'quarterly_keys': quarterly_keys
             }
         
         # 부록 - 주요 용어 정의
@@ -856,9 +851,7 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                 'year': year,
                 'quarter': quarter,
                 'terms_page1': terms_page1,
-                'terms_page2': terms_page2,
-                'page_number_1': 44,
-                'page_number_2': 45
+                'terms_page2': terms_page2
             }
         
         else:

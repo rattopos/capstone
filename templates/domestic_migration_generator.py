@@ -338,7 +338,6 @@ class DomesticMigrationGenerator:
                 'quarter': self.quarter,
                 'main_section_number': '7',
                 'main_section_title': '국내 인구이동',
-                'page_number': '- 15 -'
             },
             'inflow_regions': inflow_regions,
             'outflow_regions': outflow_regions,

@@ -81,11 +81,6 @@
         .chart-canvas-wrapper { position: relative; height: 280px; width: 100%; }
         
         .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
-        .page-number { display: none; }
-        
-        @media print {
-            .summary-container { width: 210mm; height: 297mm; }
-        }
     </style>
 </head>
 <body>
@@ -140,8 +135,6 @@
             </div>
         </div>
         
-        <div class="page-number">- {{ page_number }} -</div>
-    </div>
     
     <script>
         // Y축 범위 계산 함수
