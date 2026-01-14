@@ -19,53 +19,9 @@ CONSTRUCTION_TYPE_MAPPING = {
     '건축': '건축',
 }
 
-# 세부 품목 기본값 (비공개 데이터를 위한 플레이스홀더)
-# 원본 보도자료 기준으로 설정
-
-# 증가 지역용
-INCREASE_CIVIL_SUBTYPES = [
-    "철도·궤도, 도로·교량",
-    "항만·공항, 도로·교량",
-    "철도·궤도, 기계설치",
-    "도로·교량, 항만·공항"
-]
-INCREASE_BUILDING_SUBTYPES = [
-    "주택, 관공서 등",
-    "사무실·점포, 주택",
-    "주택, 사무실·점포",
-    "관공서, 주택 등"
-]
-
-# 감소 지역용
-DECREASE_CIVIL_SUBTYPES = [
-    "토지조성, 치산·치수",
-    "도로·교량, 토지조성",
-    "기계설치, 항만·공항",
-    "치산·치수, 철도·궤도"
-]
-DECREASE_BUILDING_SUBTYPES = [
-    "사무실·점포, 관공서 등",
-    "주택, 사무실·점포",
-    "사무실·점포, 주택",
-    "관공서, 사무실·점포 등"
-]
-
-# 전국용 세부 품목
-NATIONWIDE_CIVIL_SUBTYPES_INCREASE = "철도·궤도, 기계설치"
-NATIONWIDE_CIVIL_SUBTYPES_DECREASE = "철도·궤도, 기계설치"
-NATIONWIDE_BUILDING_SUBTYPES = "주택, 관공서 등"
-
-# 원본 보도자료 기준 토목/건축 증감률 (2025년 2분기 기준)
-# 비공개 데이터라서 원본에서 추출한 값 사용
-DEFAULT_CIVIL_BUILDING_RATES = {
-    '전국': {'civil': -44.2, 'building': 9.0},
-    '대구': {'civil': 411.5, 'building': 356.7},
-    '경남': {'civil': 99.3, 'building': 81.4},
-    '부산': {'civil': 120.5, 'building': 45.2},  # 추정값
-    '제주': {'civil': -71.7, 'building': -70.1},
-    '세종': {'civil': 158.5, 'building': -80.5},
-    '광주': {'civil': -60.2, 'building': -52.8},  # 추정값
-}
+# 하드코딩된 세부 품목 및 기본값 제거됨
+# 모든 데이터는 실제 엑셀 파일에서 동적으로 추출
+# 결측치는 None 또는 'N/A'로 표시 (데이터 무결성 원칙)
 
 # 지역명 매핑 (표 표시용)
 REGION_DISPLAY_MAPPING = {
@@ -377,12 +333,8 @@ def get_nationwide_data(df_analysis, df_index):
         main_category = "토목" if civil_growth is not None and civil_growth > 0 else "건축"
         sub_types_text = NATIONWIDE_CIVIL_SUBTYPES_INCREASE
     
-    # 기본값 적용 (비공개 데이터)
-    default_nationwide = DEFAULT_CIVIL_BUILDING_RATES.get('전국', {'civil': -44.2, 'building': 9.0})
-    if civil_growth is None:
-        civil_growth = default_nationwide['civil']
-    if building_growth is None:
-        building_growth = default_nationwide['building']
+    # 기본값 사용하지 않음 (데이터 무결성 원칙)
+    # civil_growth와 building_growth가 None이면 그대로 유지
     
     return {
         'construction_index': construction_index if construction_index is not None else 0.0,
@@ -391,8 +343,8 @@ def get_nationwide_data(df_analysis, df_index):
         'main_types': main_types if main_types else construction_types[:3],
         'civil_growth': civil_growth,
         'building_growth': building_growth,
-        'civil_subtypes': NATIONWIDE_CIVIL_SUBTYPES_DECREASE if growth_rate and growth_rate < 0 else NATIONWIDE_CIVIL_SUBTYPES_INCREASE,
-        'building_subtypes': NATIONWIDE_BUILDING_SUBTYPES,
+        'civil_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
+        'building_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
         'main_category': main_category,
         'sub_types_text': sub_types_text
     }
@@ -413,8 +365,8 @@ def _get_nationwide_from_aggregation(df_index):
             'main_types': [],
             'civil_growth': 0.0,
             'building_growth': 0.0,
-            'civil_subtypes': NATIONWIDE_CIVIL_SUBTYPES_DECREASE,
-            'building_subtypes': NATIONWIDE_BUILDING_SUBTYPES,
+            'civil_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
+            'building_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
             'main_category': '건축',
             'sub_types_text': NATIONWIDE_CIVIL_SUBTYPES_INCREASE
         }
@@ -457,12 +409,8 @@ def _get_nationwide_from_aggregation(df_index):
             elif '건축' in type_name:
                 building_growth = round(type_growth, 1)
     
-    # 기본값 적용
-    default_nationwide = DEFAULT_CIVIL_BUILDING_RATES.get('전국', {'civil': -44.2, 'building': 9.0})
-    if civil_growth is None:
-        civil_growth = default_nationwide['civil']
-    if building_growth is None:
-        building_growth = default_nationwide['building']
+    # 기본값 사용하지 않음 (데이터 무결성 원칙)
+    # civil_growth와 building_growth가 None이면 그대로 유지
     
     # 증감 큰 순으로 정렬
     if growth_rate < 0:
@@ -485,8 +433,8 @@ def _get_nationwide_from_aggregation(df_index):
         'main_types': main_types if main_types else construction_types[:3],
         'civil_growth': civil_growth,
         'building_growth': building_growth,
-        'civil_subtypes': NATIONWIDE_CIVIL_SUBTYPES_DECREASE if growth_rate < 0 else NATIONWIDE_CIVIL_SUBTYPES_INCREASE,
-        'building_subtypes': NATIONWIDE_BUILDING_SUBTYPES,
+        'civil_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
+        'building_subtypes': None,  # 실제 데이터에서 추출 필요 (비공개 데이터)
         'main_category': main_category,
         'sub_types_text': sub_types_text
     }
@@ -920,32 +868,39 @@ def get_summary_box_data(regional_data):
     top3_increase = regional_data['increase_regions'][:3]
     top3_decrease = regional_data['decrease_regions'][:3]
     
-    # 세부 품목 목록 (비공개 데이터를 대체)
-    increase_subtypes = ["주택", "항만·공항", "도로·교량", "사무실·점포", "철도·궤도"]
-    decrease_subtypes = ["사무실·점포", "주택", "도로·교량", "토지조성", "관공서"]
-    
+    # 실제 데이터에서 세부 품목 추출 (비공개 데이터는 None으로 표시)
     main_increase_regions = []
-    for i, r in enumerate(top3_increase):
-        main_type = ''
-        sub_type = increase_subtypes[i % len(increase_subtypes)]
+    for r in top3_increase:
+        main_type = None
+        sub_type = None  # 비공개 데이터 - 실제 데이터에서 추출 필요
+        
+        # 실제 데이터에서 공종명 추출 시도
         if r.get('top_types') and len(r['top_types']) > 0:
-            main_type = r['top_types'][0].get('name', '')
+            main_type = r['top_types'][0].get('name', None)
+            if not main_type or main_type == '':
+                main_type = None
+        
         main_increase_regions.append({
             'region': r['region'],
-            'main_type': main_type if main_type else '건축',
-            'sub_type': sub_type
+            'main_type': main_type,  # None이면 템플릿에서 처리
+            'sub_type': sub_type  # 비공개 데이터 - None으로 표시
         })
     
     main_decrease_regions = []
-    for i, r in enumerate(top3_decrease):
-        main_type = ''
-        sub_type = decrease_subtypes[i % len(decrease_subtypes)]
+    for r in top3_decrease:
+        main_type = None
+        sub_type = None  # 비공개 데이터 - 실제 데이터에서 추출 필요
+        
+        # 실제 데이터에서 공종명 추출 시도
         if r.get('top_types') and len(r['top_types']) > 0:
-            main_type = r['top_types'][0].get('name', '')
+            main_type = r['top_types'][0].get('name', None)
+            if not main_type or main_type == '':
+                main_type = None
+        
         main_decrease_regions.append({
             'region': r['region'],
-            'main_type': main_type if main_type else '건축',
-            'sub_type': sub_type
+            'main_type': main_type,  # None이면 템플릿에서 처리
+            'sub_type': sub_type  # 비공개 데이터 - None으로 표시
         })
     
     return {
@@ -987,38 +942,39 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     table_data = get_growth_rates_table(df_analysis, df_index, regional_data, nationwide_data)
     
     # Top 3 증가/감소 지역 (토목/건축 증감률 및 세부 품목 포함)
+    # 기본값 사용하지 않음 (데이터 무결성 원칙)
     top3_increase = []
-    for i, r in enumerate(regional_data['increase_regions'][:3]):
+    for r in regional_data['increase_regions'][:3]:
         region = r['region']
-        default_rates = DEFAULT_CIVIL_BUILDING_RATES.get(region, {'civil': 0.0, 'building': 0.0})
-        civil_growth = r.get('civil_growth') if r.get('civil_growth') is not None else default_rates['civil']
-        building_growth = r.get('building_growth') if r.get('building_growth') is not None else default_rates['building']
+        # 실제 데이터에서 추출한 값만 사용, 없으면 None
+        civil_growth = r.get('civil_growth')  # None이면 그대로 유지
+        building_growth = r.get('building_growth')  # None이면 그대로 유지
         
         top3_increase.append({
             'region': region,
             'growth_rate': r['growth_rate'],
             'types': r['top_types'],
-            'civil_growth': civil_growth,
-            'building_growth': building_growth,
-            'civil_subtypes': INCREASE_CIVIL_SUBTYPES[i % len(INCREASE_CIVIL_SUBTYPES)],
-            'building_subtypes': INCREASE_BUILDING_SUBTYPES[i % len(INCREASE_BUILDING_SUBTYPES)]
+            'civil_growth': civil_growth,  # None일 수 있음
+            'building_growth': building_growth,  # None일 수 있음
+            'civil_subtypes': None,  # 비공개 데이터 - 실제 데이터에서 추출 필요
+            'building_subtypes': None  # 비공개 데이터 - 실제 데이터에서 추출 필요
         })
     
     top3_decrease = []
-    for i, r in enumerate(regional_data['decrease_regions'][:3]):
+    for r in regional_data['decrease_regions'][:3]:
         region = r['region']
-        default_rates = DEFAULT_CIVIL_BUILDING_RATES.get(region, {'civil': 0.0, 'building': 0.0})
-        civil_growth = r.get('civil_growth') if r.get('civil_growth') is not None else default_rates['civil']
-        building_growth = r.get('building_growth') if r.get('building_growth') is not None else default_rates['building']
+        # 실제 데이터에서 추출한 값만 사용, 없으면 None
+        civil_growth = r.get('civil_growth')  # None이면 그대로 유지
+        building_growth = r.get('building_growth')  # None이면 그대로 유지
         
         top3_decrease.append({
             'region': region,
             'growth_rate': r['growth_rate'],
             'types': r['top_types'],
-            'civil_growth': civil_growth,
-            'building_growth': building_growth,
-            'civil_subtypes': DECREASE_CIVIL_SUBTYPES[i % len(DECREASE_CIVIL_SUBTYPES)],
-            'building_subtypes': DECREASE_BUILDING_SUBTYPES[i % len(DECREASE_BUILDING_SUBTYPES)]
+            'civil_growth': civil_growth,  # None일 수 있음
+            'building_growth': building_growth,  # None일 수 있음
+            'civil_subtypes': None,  # 비공개 데이터 - 실제 데이터에서 추출 필요
+            'building_subtypes': None  # 비공개 데이터 - 실제 데이터에서 추출 필요
         })
     
     # 증가/감소 공종 텍스트 생성
@@ -1038,9 +994,10 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
                 decrease_types.add(type_name)
     decrease_types_text = ', '.join([str(t) for t in list(decrease_types)[:3]]) if decrease_types else ''
     
-    # 세부 품목 텍스트 생성 (원본 형식)
-    increase_sub_types_text = "주택, 항만·공항"
-    decrease_sub_types_text = "사무실·점포, 주택, 도로·교량"
+    # 세부 품목 텍스트 - 실제 데이터에서 추출 필요 (비공개 데이터)
+    # 하드코딩 제거됨 (데이터 무결성 원칙)
+    increase_sub_types_text = None  # 실제 데이터에서 추출 필요
+    decrease_sub_types_text = None  # 실제 데이터에서 추출 필요
     
     # 템플릿 데이터
     return {

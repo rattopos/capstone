@@ -113,44 +113,68 @@ class DataConverter:
         """기초자료에서 연도/분기 자동 추출"""
         import re
         
+        latest_year = 0
+        latest_quarter = 0
+        
         # 1. 먼저 기초자료 헤더에서 추출 시도
         try:
             xl = pd.ExcelFile(self.raw_excel_path)
             
             # 광공업생산 시트 또는 첫 번째 데이터 시트에서 헤더 확인
-            for sheet_name in ['광공업생산', '서비스업생산', '소비(소매, 추가)']:
-                if sheet_name in xl.sheet_names:
-                    df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=4)
+            target_sheets = ['광공업생산', '서비스업생산', '소비(소매, 추가)', '고용률', '실업자 수']
+            
+            for sheet_name in target_sheets:
+                if sheet_name not in xl.sheet_names:
+                    continue
                     
-                    # 헤더 행(3행)에서 가장 최신 분기 찾기
-                    latest_year = 0
-                    latest_quarter = 0
+                try:
+                    df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=10)
                     
-                    for col_idx in range(len(df.columns)):
-                        header_val = str(df.iloc[2, col_idx]) if not pd.isna(df.iloc[2, col_idx]) else ''
-                        
-                        # "2025  2/4p" 또는 "2025 2/4" 패턴 찾기
-                        match = re.search(r'(\d{4})\s*(\d)/4', header_val)
-                        if match:
-                            year = int(match.group(1))
-                            quarter = int(match.group(2))
+                    # 헤더 행에서 가장 최신 분기 찾기 (여러 행 확인)
+                    for row_idx in range(min(10, len(df))):
+                        for col_idx in range(len(df.columns)):
+                            header_val = str(df.iloc[row_idx, col_idx]) if not pd.isna(df.iloc[row_idx, col_idx]) else ''
                             
-                            # 가장 최신 연도/분기 저장
-                            if year > latest_year or (year == latest_year and quarter > latest_quarter):
-                                latest_year = year
-                                latest_quarter = quarter
-                    
-                    if latest_year > 0 and latest_quarter > 0:
-                        self.year = latest_year
-                        self.quarter = latest_quarter
-                        print(f"[자동감지] 기초자료에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
-                        return
-                    break
+                            # "2025  2/4p", "2025 2/4", "2025.2/4", "25.2/4" 등 패턴 찾기
+                            patterns = [
+                                r'(\d{4})\s*\.?\s*(\d)/4',  # 2025 2/4, 2025.2/4, 2025  2/4p
+                                r'(\d{2})\s*\.?\s*(\d)/4',   # 25 2/4, 25.2/4
+                                r'(\d{4})년\s*(\d)분기',      # 2025년 2분기
+                                r'(\d{2})년\s*(\d)분기',       # 25년 2분기
+                            ]
+                            
+                            for pattern in patterns:
+                                match = re.search(pattern, header_val)
+                                if match:
+                                    year_str = match.group(1)
+                                    quarter = int(match.group(2))
+                                    
+                                    # 2자리 연도 처리
+                                    if len(year_str) == 2:
+                                        year = 2000 + int(year_str)
+                                    else:
+                                        year = int(year_str)
+                                    
+                                    # 가장 최신 연도/분기 저장
+                                    if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                        latest_year = year
+                                        latest_quarter = quarter
+                                        print(f"[자동감지] {sheet_name} 시트에서 발견: {year}년 {quarter}분기")
+                except Exception as e:
+                    print(f"[경고] {sheet_name} 시트 읽기 실패: {e}")
+                    continue
+            
+            if latest_year > 0 and latest_quarter > 0:
+                self.year = latest_year
+                self.quarter = latest_quarter
+                print(f"[자동감지] 기초자료에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
+                return
         except Exception as e:
             print(f"[경고] 기초자료에서 연도/분기 추출 실패: {e}")
         
         # 2. 파일명에서 추출 시도
         filename = self.raw_excel_path.stem
+        print(f"[자동감지] 파일명에서 추출 시도: {filename}")
         
         # 다양한 패턴 매칭
         patterns = [
@@ -176,9 +200,9 @@ class DataConverter:
                 print(f"[자동감지] 파일명에서 연도/분기 추출: {self.year}년 {self.quarter}분기")
                 return
         
-        # 3. 기본값
+        # 3. 기본값 (실패 시)
         self.year, self.quarter = 2025, 2
-        print(f"[기본값] 연도/분기: {self.year}년 {self.quarter}분기")
+        print(f"[경고] 연도/분기 추출 실패, 기본값 사용: {self.year}년 {self.quarter}분기")
     
     def _get_target_years(self) -> List[int]:
         """당해 제외 최근 5개년 리스트 반환
@@ -250,9 +274,7 @@ class DataConverter:
         
         Args:
             output_path: 출력 파일 경로 (None이면 자동 생성)
-            weight_settings: 가중치 설정 {mining: {mode, values}, service: {mode, values}}
-                - mode: 'auto' (기초자료에서 추출), 'manual' (수동입력), 'empty' (공란)
-                - values: 수동입력 시 가중치 배열
+            weight_settings: 더 이상 사용하지 않음 (None으로 전달, 결측치는 N/A로 표시)
             
         Returns:
             생성된 분석표 파일 경로
@@ -471,7 +493,7 @@ class DataConverter:
             "F'분석": "F'(건설)집계",
             'G 분석': 'G(수출)집계',
             'H 분석': 'H(수입)집계',
-            'I(순인구이동)분석': 'I(순인구이동)집계',
+            # I(순인구이동)은 분석 시트가 없음 - 집계 시트만 사용
         }
         
         calc_count = 0
@@ -606,16 +628,7 @@ class DataConverter:
         target_weight_col = sheet_structure.get('weight_col')  # 1-based index
         raw_weight_col = sheet_structure.get('raw_weight_col')  # 0-based index
         
-        # 가중치 설정 결정 (raw_sheet에 따라)
-        weight_config = None
-        if weight_settings:
-            if raw_sheet == '광공업생산':
-                weight_config = weight_settings.get('mining', {})
-            elif raw_sheet == '서비스업생산':
-                weight_config = weight_settings.get('service', {})
-        
-        weight_mode = weight_config.get('mode', 'auto') if weight_config else 'auto'
-        manual_weight_values = weight_config.get('values', []) if weight_config else []
+        # 가중치 설정 제거: 기본값 없이 기초자료에서 그대로 복사, 결측치는 N/A로 표시
         
         # 열 매핑 생성: 기초자료 열 → 집계 시트 열
         col_mapping = {}
@@ -653,7 +666,7 @@ class DataConverter:
         print(f"    연도 범위: {target_years[0]}~{target_years[-1]} (열 {target_year_start_col}~{target_year_start_col + self.NUM_YEARS - 1})")
         print(f"    분기 범위: {target_quarters[0]}~{target_quarters[-1]} (열 {target_quarter_start_col}~{target_quarter_start_col + self.NUM_QUARTERS - 1})")
         if target_weight_col:
-            print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (모드: {weight_mode})")
+            print(f"    가중치 열: 기초자료 열 {raw_weight_col} → 분석표 열 {target_weight_col} (결측치는 N/A로 표시)")
         
         copied_count = 0
         skipped_count = 0
@@ -684,19 +697,16 @@ class DataConverter:
                                 print(f"    [경고] 행 {row_idx+1}, 열 {target_col}: 숫자가 아닌 값 무시 '{value}'")
                             continue
                 
-                # 가중치 열 특별 처리
+                # 가중치 열 특별 처리: 결측치는 N/A로 표시
                 if target_weight_col and target_col == target_weight_col:
-                    if weight_mode == 'empty':
-                        continue  # 가중치 공란 유지
-                    elif weight_mode == 'manual':
-                        # 수동 입력 모드는 아래에서 별도 처리
-                        continue
-                    # auto 모드: 기초자료에서 가져온 값 사용
-                    if not isinstance(value, (int, float)):
+                    # 기초자료에서 가져온 값 사용 (결측치는 N/A로 표시)
+                    if pd.isna(value) or value == '' or value == 0:
+                        value = 'N/A'  # 결측치는 N/A로 표시
+                    elif not isinstance(value, (int, float)):
                         try:
                             value = float(value)
                         except (ValueError, TypeError):
-                            continue  # 숫자가 아니면 건너뛰기
+                            value = 'N/A'  # 숫자가 아니면 N/A로 표시
                 
                 # openpyxl은 1-based 인덱스
                 cell = target_ws.cell(row=row_idx + 1, column=target_col)
@@ -713,19 +723,12 @@ class DataConverter:
                 except Exception:
                     skipped_count += 1
             
-            # 수동 가중치 처리
-            if target_weight_col and weight_mode == 'manual':
-                data_row_idx = row_idx - 3  # 헤더 3행 제외
-                if 0 <= data_row_idx < len(manual_weight_values):
-                    weight_value = manual_weight_values[data_row_idx]
-                    if weight_value is not None:
-                        try:
-                            weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
-                            if not isinstance(weight_cell, MergedCell):
-                                weight_cell.value = float(weight_value)
-                                copied_count += 1
-                        except Exception:
-                            skipped_count += 1
+            # 가중치 결측치 처리: 기초자료에서 가져온 값이 없거나 0이면 N/A로 표시
+            if target_weight_col:
+                weight_cell = target_ws.cell(row=row_idx + 1, column=target_weight_col)
+                if not isinstance(weight_cell, MergedCell):
+                    if weight_cell.value is None or weight_cell.value == '' or (isinstance(weight_cell.value, (int, float)) and weight_cell.value == 0):
+                        weight_cell.value = 'N/A'
         
         print(f"  → {copied_count}개 셀 복사 ({skipped_count}개 건너뜀, {error_count}개 오류)")
     
@@ -747,7 +750,7 @@ class DataConverter:
             ("F'분석", "F'(건설)집계"),
             ('G 분석', 'G(수출)집계'),
             ('H 분석', 'H(수입)집계'),
-            ('I(순인구이동)분석', 'I(순인구이동)집계'),
+            # I(순인구이동)은 분석 시트가 없음 - 집계 시트만 사용
         ]
         
         for analysis_sheet, source_sheet in analysis_sheets:

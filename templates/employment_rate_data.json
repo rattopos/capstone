@@ -2,46 +2,56 @@
   "summary_box": {
     "main_increase_regions": [
       "대전",
-      "부산",
-      "강원"
+      "충북",
+      "경북"
     ],
-    "region_count": 11
+    "region_count": 12
   },
   "nationwide_data": {
     "employment_rate": 63.5,
     "change": 0.2,
     "main_age_groups": [
       {
-        "name": "30 - 39세",
-        "display_name": "30~39세",
+        "name": "60세이상",
+        "display_name": "70세이상",
         "change": 0.9
       },
       {
         "name": "40 - 49세",
         "display_name": "40~49세",
-        "change": 0.9
+        "change": 0.7
       },
       {
-        "name": "60세이상",
-        "display_name": "70세이상",
-        "change": 0.8
+        "name": "30 - 39세",
+        "display_name": "30~39세",
+        "change": 0.6
+      },
+      {
+        "name": "50 - 59세",
+        "display_name": "50~59세",
+        "change": 0.1
       }
     ],
     "top_age_groups": [
       {
-        "name": "30 - 39세",
-        "display_name": "30~39세",
+        "name": "60세이상",
+        "display_name": "70세이상",
         "change": 0.9
       },
       {
         "name": "40 - 49세",
         "display_name": "40~49세",
-        "change": 0.9
+        "change": 0.7
       },
       {
-        "name": "60세이상",
-        "display_name": "70세이상",
-        "change": 0.8
+        "name": "30 - 39세",
+        "display_name": "30~39세",
+        "change": 0.6
+      },
+      {
+        "name": "50 - 59세",
+        "display_name": "50~59세",
+        "change": 0.1
       }
     ]
   },
@@ -49,190 +59,82 @@
     "increase_regions": [
       {
         "region": "대전",
-        "change": 1.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": -0.6,
-        "change_2025_1": 0.5,
-        "rate_2024": 61.3,
-        "rate_2025": 62.5,
-        "rate_20_29": 46.0,
+        "change": 2.2,
+        "change_2023_2": -0.3,
+        "change_2024_2": -1.1,
+        "change_2025_1": 1.2,
+        "rate_2024": 60.5,
+        "rate_2025": 62.7,
+        "rate_20_29": 46.3,
         "top_age_groups": [
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 2.8
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 2.4
+            "change": 3.5
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 2.3
+            "change": 3.2
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 3.2
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": 2.4
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 2.3
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -2.1
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -0.5
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.8
-          }
-        ]
-      },
-      {
-        "region": "부산",
-        "change": 1.0,
-        "change_2023_2": 0.7,
-        "change_2024_2": 0.0,
-        "change_2025_1": 0.1,
-        "rate_2024": 57.9,
-        "rate_2025": 58.9,
-        "rate_20_29": 44.0,
-        "top_age_groups": [
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 3.6
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.8
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.6
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.8
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 3.6
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
-          }
-        ]
-      },
-      {
-        "region": "강원",
-        "change": 1.0,
-        "change_2023_2": 2.2,
-        "change_2024_2": 0.0,
-        "change_2025_1": 1.3,
-        "rate_2024": 65.7,
-        "rate_2025": 66.7,
-        "rate_20_29": 46.6,
-        "top_age_groups": [
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.9
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
             "change": 2.1
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 0.1
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -1.8
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 0.1
+            "change": 3.2
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": -1.2
+            "change": -1.4
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": 2.1
+            "change": 3.2
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 2.9
+            "change": 3.5
           }
         ]
       },
       {
         "region": "충북",
-        "change": 0.8,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.8,
-        "change_2025_1": 1.2,
-        "rate_2024": 67.3,
+        "change": 1.5,
+        "change_2023_2": 0.5,
+        "change_2024_2": 0.4,
+        "change_2025_1": 0.8,
+        "rate_2024": 66.6,
         "rate_2025": 68.1,
-        "rate_20_29": 47.5,
+        "rate_20_29": 48.2,
         "top_age_groups": [
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 2.3
-          },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.8
+            "change": 4.6
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 3.5
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.0
+            "change": 1.4
           }
         ],
         "all_age_groups": [
@@ -244,66 +146,12 @@
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.8
+            "change": 4.6
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 2.3
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -0.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          }
-        ]
-      },
-      {
-        "region": "충남",
-        "change": 0.7,
-        "change_2023_2": 1.4,
-        "change_2024_2": -0.3,
-        "change_2025_1": 1.9,
-        "rate_2024": 66.2,
-        "rate_2025": 66.9,
-        "rate_20_29": 47.6,
-        "top_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 3.9
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.2
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 3.9
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.2
+            "change": 3.5
           },
           {
             "name": "50 - 59세",
@@ -313,123 +161,25 @@
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": -1.8
+            "change": 1.4
           }
         ]
       },
       {
         "region": "경북",
-        "change": 0.5,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.3,
-        "change_2025_1": 0.4,
-        "rate_2024": 65.0,
-        "rate_2025": 65.5,
-        "rate_20_29": 41.7,
+        "change": 1.5,
+        "change_2023_2": 0.2,
+        "change_2024_2": 0.8,
+        "change_2025_1": 0.5,
+        "rate_2024": 64.8,
+        "rate_2025": 66.3,
+        "rate_20_29": 45.7,
         "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.8
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
-          }
-        ],
-        "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": 0.6
+            "change": 3.1
           },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.8
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.8
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          }
-        ]
-      },
-      {
-        "region": "제주",
-        "change": 0.5,
-        "change_2023_2": 0.0,
-        "change_2024_2": 0.5,
-        "change_2025_1": -0.3,
-        "rate_2024": 69.7,
-        "rate_2025": 70.2,
-        "rate_20_29": 42.6,
-        "top_age_groups": [
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 3.5
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.5
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -1.6
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.5
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -2.1
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -0.1
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 3.5
-          }
-        ]
-      },
-      {
-        "region": "인천",
-        "change": 0.4,
-        "change_2023_2": 0.7,
-        "change_2024_2": -0.1,
-        "change_2025_1": 0.6,
-        "rate_2024": 63.4,
-        "rate_2025": 63.8,
-        "rate_20_29": 45.1,
-        "top_age_groups": [
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
@@ -438,19 +188,14 @@
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 2.2
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
+            "change": 2.0
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -2.3
+            "change": 3.1
           },
           {
             "name": "30 - 39세",
@@ -460,169 +205,61 @@
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 0.9
+            "change": 1.3
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": -1.6
+            "change": -0.8
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 2.2
+            "change": 2.0
           }
         ]
       },
       {
         "region": "경남",
-        "change": 0.3,
+        "change": 1.5,
         "change_2023_2": 1.2,
-        "change_2024_2": -0.1,
-        "change_2025_1": 0.9,
-        "rate_2024": 63.0,
-        "rate_2025": 63.3,
-        "rate_20_29": 37.0,
+        "change_2024_2": -0.3,
+        "change_2025_1": 0.3,
+        "rate_2024": 62.1,
+        "rate_2025": 63.6,
+        "rate_20_29": 39.0,
         "top_age_groups": [
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 2.3
+            "change": 4.3
           },
           {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.0
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.3
+            "change": 1.2
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -0.6
+            "change": 2.0
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.3
+            "change": 1.2
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 2.3
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.0
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
-          }
-        ]
-      },
-      {
-        "region": "울산",
-        "change": 0.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.3,
-        "change_2025_1": 0.8,
-        "rate_2024": 60.4,
-        "rate_2025": 60.6,
-        "rate_20_29": 43.7,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 5.2
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 1.8
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 0.2
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 1.8
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 5.2
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -0.8
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 0.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.3
-          }
-        ]
-      },
-      {
-        "region": "경기",
-        "change": 0.1,
-        "change_2023_2": -0.4,
-        "change_2024_2": 0.2,
-        "change_2025_1": 0.4,
-        "rate_2024": 64.6,
-        "rate_2025": 64.7,
-        "rate_20_29": 48.0,
-        "top_age_groups": [
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.6
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.1
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 0.7
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.7
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.6
+            "change": 4.3
           },
           {
             "name": "50 - 59세",
@@ -632,303 +269,142 @@
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 0.7
-          }
-        ]
-      }
-    ],
-    "decrease_regions": [
-      {
-        "region": "전북",
-        "change": -1.0,
-        "change_2023_2": 0.4,
-        "change_2024_2": 1.1,
-        "change_2025_1": -0.8,
-        "rate_2024": 64.8,
-        "rate_2025": 63.8,
-        "rate_20_29": 37.0,
-        "top_age_groups": [
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -2.5
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -1.4
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -1.1
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -1.1
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.4
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
             "change": 1.2
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -1.4
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -2.5
           }
         ]
       },
       {
         "region": "광주",
-        "change": -0.4,
-        "change_2023_2": 1.6,
-        "change_2024_2": 1.2,
-        "change_2025_1": -1.2,
-        "rate_2024": 61.4,
-        "rate_2025": 61.0,
-        "rate_20_29": 37.1,
+        "change": 1.1,
+        "change_2023_2": 1.4,
+        "change_2024_2": 0.1,
+        "change_2025_1": -0.4,
+        "rate_2024": 60.5,
+        "rate_2025": 61.6,
+        "rate_20_29": 37.6,
         "top_age_groups": [
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -4.2
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.0
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -2.0
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.0
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -2.0
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 4.0
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -4.2
-          },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.4
-          }
-        ]
-      },
-      {
-        "region": "서울",
-        "change": -0.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.7,
-        "change_2025_1": -1.1,
-        "rate_2024": 62.0,
-        "rate_2025": 61.8,
-        "rate_20_29": 50.2,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -1.8
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -0.7
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -0.1
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -0.7
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -1.8
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -0.1
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 0.1
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.3
-          }
-        ]
-      },
-      {
-        "region": "전남",
-        "change": -0.2,
-        "change_2023_2": 1.2,
-        "change_2024_2": -1.5,
-        "change_2025_1": -0.5,
-        "rate_2024": 66.8,
-        "rate_2025": 66.6,
-        "rate_20_29": 45.2,
-        "top_age_groups": [
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.8
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 5.2
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 0.7
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.3
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.8
-          }
-        ]
-      }
-    ],
-    "all_regions": [
-      {
-        "region": "서울",
-        "change": -0.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.7,
-        "change_2025_1": -1.1,
-        "rate_2024": 62.0,
-        "rate_2025": 61.8,
-        "rate_20_29": 50.2,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -1.8
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -0.7
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -0.1
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -0.7
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -1.8
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -0.1
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 0.1
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.3
-          }
-        ]
-      },
-      {
-        "region": "부산",
-        "change": 1.0,
-        "change_2023_2": 0.7,
-        "change_2024_2": 0.0,
-        "change_2025_1": 0.1,
-        "rate_2024": 57.9,
-        "rate_2025": 58.9,
-        "rate_20_29": 44.0,
-        "top_age_groups": [
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
             "change": 3.6
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 1.8
+            "change": 2.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.0
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -1.2
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.0
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 2.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -1.3
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.4
+            "change": 3.6
+          }
+        ]
+      },
+      {
+        "region": "서울",
+        "change": 0.5,
+        "change_2023_2": 0.4,
+        "change_2024_2": 0.6,
+        "change_2025_1": -0.2,
+        "rate_2024": 61.8,
+        "rate_2025": 62.3,
+        "rate_20_29": 49.8,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 1.9
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.8
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.8
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -0.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -0.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.8
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.8
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 1.9
+          }
+        ]
+      },
+      {
+        "region": "부산",
+        "change": 0.4,
+        "change_2023_2": 0.4,
+        "change_2024_2": 0.1,
+        "change_2025_1": 1.0,
+        "rate_2024": 58.3,
+        "rate_2025": 58.7,
+        "rate_20_29": 44.1,
+        "top_age_groups": [
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 3.4
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.1
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 0.7
           }
         ],
         "all_age_groups": [
@@ -945,51 +421,159 @@
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 1.8
+            "change": 3.4
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": 3.6
+            "change": 0.2
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.4
+            "change": 0.7
           }
         ]
       },
       {
-        "region": "대구",
-        "change": 0.0,
-        "change_2023_2": 1.7,
-        "change_2024_2": -2.5,
-        "change_2025_1": -0.5,
-        "rate_2024": 58.5,
-        "rate_2025": 58.5,
-        "rate_20_29": 40.7,
+        "region": "충남",
+        "change": 0.4,
+        "change_2023_2": -0.1,
+        "change_2024_2": -0.2,
+        "change_2025_1": 0.7,
+        "rate_2024": 66.1,
+        "rate_2025": 66.5,
+        "rate_20_29": 46.1,
         "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.8
+          },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
             "change": 1.3
           },
           {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 1.2
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.5
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": 1.2
+            "change": 2.8
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
             "change": 1.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.5
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -0.2
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -1.0
+          }
+        ]
+      },
+      {
+        "region": "제주",
+        "change": 0.4,
+        "change_2023_2": -0.3,
+        "change_2024_2": -0.4,
+        "change_2025_1": 0.5,
+        "rate_2024": 69.5,
+        "rate_2025": 69.9,
+        "rate_20_29": 43.6,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 3.2
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.2
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 3.2
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -1.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.0
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.1
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.2
+          }
+        ]
+      },
+      {
+        "region": "강원",
+        "change": 0.3,
+        "change_2023_2": 1.3,
+        "change_2024_2": 0.8,
+        "change_2025_1": 1.0,
+        "rate_2024": 66.2,
+        "rate_2025": 66.5,
+        "rate_20_29": 44.5,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.9
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 1.4
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 0.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -5.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 0.5
           },
           {
             "name": "40 - 49세",
@@ -999,6 +583,170 @@
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
+            "change": 1.4
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.9
+          }
+        ]
+      },
+      {
+        "region": "대구",
+        "change": 0.1,
+        "change_2023_2": 0.5,
+        "change_2024_2": -2.3,
+        "change_2025_1": 0.0,
+        "rate_2024": 58.0,
+        "rate_2025": 58.1,
+        "rate_20_29": 39.4,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.8
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.0
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 0.3
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -1.6
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.0
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -1.4
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 0.3
+          }
+        ]
+      },
+      {
+        "region": "전북",
+        "change": 0.1,
+        "change_2023_2": 0.9,
+        "change_2024_2": 0.2,
+        "change_2025_1": -1.0,
+        "rate_2024": 64.8,
+        "rate_2025": 64.9,
+        "rate_20_29": 38.9,
+        "top_age_groups": [
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.2
+          },
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 0.9
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 0.9
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.2
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.5
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.4
+          }
+        ]
+      }
+    ],
+    "decrease_regions": [
+      {
+        "region": "세종",
+        "change": -1.0,
+        "change_2023_2": 0.6,
+        "change_2024_2": 0.6,
+        "change_2025_1": 0.0,
+        "rate_2024": 65.8,
+        "rate_2025": 64.8,
+        "rate_20_29": 33.4,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -0.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.5
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.2
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
             "change": -0.5
           },
           {
@@ -1010,266 +758,50 @@
       },
       {
         "region": "인천",
-        "change": 0.4,
-        "change_2023_2": 0.7,
-        "change_2024_2": -0.1,
-        "change_2025_1": 0.6,
-        "rate_2024": 63.4,
-        "rate_2025": 63.8,
-        "rate_20_29": 45.1,
+        "change": -0.7,
+        "change_2023_2": 0.5,
+        "change_2024_2": 0.4,
+        "change_2025_1": 0.4,
+        "rate_2024": 64.4,
+        "rate_2025": 63.7,
+        "rate_20_29": 44.4,
         "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.0
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.2
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
-          }
-        ],
-        "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -2.3
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.0
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
+            "change": -4.8
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": -1.6
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.2
-          }
-        ]
-      },
-      {
-        "region": "광주",
-        "change": -0.4,
-        "change_2023_2": 1.6,
-        "change_2024_2": 1.2,
-        "change_2025_1": -1.2,
-        "rate_2024": 61.4,
-        "rate_2025": 61.0,
-        "rate_20_29": 37.1,
-        "top_age_groups": [
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -4.2
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.0
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -2.0
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -2.0
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": -2.0
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 4.0
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -4.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
-          }
-        ]
-      },
-      {
-        "region": "대전",
-        "change": 1.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": -0.6,
-        "change_2025_1": 0.5,
-        "rate_2024": 61.3,
-        "rate_2025": 62.5,
-        "rate_20_29": 46.0,
-        "top_age_groups": [
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.8
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 2.4
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 2.3
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 2.4
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 2.3
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
             "change": -2.1
           },
           {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -0.5
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.8
-          }
-        ]
-      },
-      {
-        "region": "울산",
-        "change": 0.2,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.3,
-        "change_2025_1": 0.8,
-        "rate_2024": 60.4,
-        "rate_2025": 60.6,
-        "rate_20_29": 43.7,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 5.2
-          },
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 1.8
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 0.2
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.5
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": 1.8
+            "change": -4.8
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 5.2
+            "change": 1.9
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": -0.8
+            "change": -1.5
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": 0.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.3
-          }
-        ]
-      },
-      {
-        "region": "세종",
-        "change": 0.0,
-        "change_2023_2": 0.9,
-        "change_2024_2": -0.1,
-        "change_2025_1": 0.7,
-        "rate_2024": 65.6,
-        "rate_2025": 65.6,
-        "rate_20_29": 34.5,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 2.9
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 2.4
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 1.6
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -1.7
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 2.9
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": -3.9
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 1.6
+            "change": -2.1
           },
           {
             "name": "60세이상",
@@ -1280,18 +812,182 @@
       },
       {
         "region": "경기",
-        "change": 0.1,
-        "change_2023_2": -0.4,
-        "change_2024_2": 0.2,
-        "change_2025_1": 0.4,
-        "rate_2024": 64.6,
-        "rate_2025": 64.7,
-        "rate_20_29": 48.0,
+        "change": -0.7,
+        "change_2023_2": 0.0,
+        "change_2024_2": 0.1,
+        "change_2025_1": 0.1,
+        "rate_2024": 64.7,
+        "rate_2025": 64.0,
+        "rate_20_29": 46.5,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.4
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.1
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.4
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 0.1
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.1
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.9
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.3
+          }
+        ]
+      },
+      {
+        "region": "전남",
+        "change": -0.5,
+        "change_2023_2": 0.4,
+        "change_2024_2": -0.7,
+        "change_2025_1": -0.2,
+        "rate_2024": 66.6,
+        "rate_2025": 66.1,
+        "rate_20_29": 43.7,
+        "top_age_groups": [
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.0
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -0.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 1.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -0.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.0
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.3
+          }
+        ]
+      }
+    ],
+    "all_regions": [
+      {
+        "region": "서울",
+        "change": 0.5,
+        "change_2023_2": 0.4,
+        "change_2024_2": 0.6,
+        "change_2025_1": -0.2,
+        "rate_2024": 61.8,
+        "rate_2025": 62.3,
+        "rate_20_29": 49.8,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 1.9
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.8
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.8
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -0.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -0.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.8
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.8
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 1.9
+          }
+        ]
+      },
+      {
+        "region": "부산",
+        "change": 0.4,
+        "change_2023_2": 0.4,
+        "change_2024_2": 0.1,
+        "change_2025_1": 1.0,
+        "rate_2024": 58.3,
+        "rate_2025": 58.7,
+        "rate_20_29": 44.1,
         "top_age_groups": [
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 1.6
+            "change": 3.4
           },
           {
             "name": "30 - 39세",
@@ -1308,7 +1004,7 @@
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -2.7
+            "change": -2.6
           },
           {
             "name": "30 - 39세",
@@ -1318,12 +1014,12 @@
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 1.6
+            "change": 3.4
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": 0.3
+            "change": 0.2
           },
           {
             "name": "60세이상",
@@ -1333,36 +1029,355 @@
         ]
       },
       {
-        "region": "강원",
-        "change": 1.0,
-        "change_2023_2": 2.2,
-        "change_2024_2": 0.0,
-        "change_2025_1": 1.3,
-        "rate_2024": 65.7,
-        "rate_2025": 66.7,
-        "rate_20_29": 46.6,
+        "region": "대구",
+        "change": 0.1,
+        "change_2023_2": 0.5,
+        "change_2024_2": -2.3,
+        "change_2025_1": 0.0,
+        "rate_2024": 58.0,
+        "rate_2025": 58.1,
+        "rate_20_29": 39.4,
         "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.8
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.0
+          },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 2.9
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": 2.1
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 0.1
+            "change": 0.3
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -1.8
+            "change": 2.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -1.6
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.0
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -1.4
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 0.3
+          }
+        ]
+      },
+      {
+        "region": "인천",
+        "change": -0.7,
+        "change_2023_2": 0.5,
+        "change_2024_2": 0.4,
+        "change_2025_1": 0.4,
+        "rate_2024": 64.4,
+        "rate_2025": 63.7,
+        "rate_20_29": 44.4,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -4.8
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.1
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -4.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.9
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.5
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.1
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.4
+          }
+        ]
+      },
+      {
+        "region": "광주",
+        "change": 1.1,
+        "change_2023_2": 1.4,
+        "change_2024_2": 0.1,
+        "change_2025_1": -0.4,
+        "rate_2024": 60.5,
+        "rate_2025": 61.6,
+        "rate_20_29": 37.6,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 3.6
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 2.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.0
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -1.2
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.0
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 2.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -1.3
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 3.6
+          }
+        ]
+      },
+      {
+        "region": "대전",
+        "change": 2.2,
+        "change_2023_2": -0.3,
+        "change_2024_2": -1.1,
+        "change_2025_1": 1.2,
+        "rate_2024": 60.5,
+        "rate_2025": 62.7,
+        "rate_20_29": 46.3,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 3.5
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.2
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 3.2
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.1
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.2
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.4
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 3.2
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 3.5
+          }
+        ]
+      },
+      {
+        "region": "울산",
+        "change": 0.0,
+        "change_2023_2": 0.0,
+        "change_2024_2": 0.3,
+        "change_2025_1": 0.2,
+        "rate_2024": 60.2,
+        "rate_2025": 60.2,
+        "rate_20_29": 43.2,
+        "top_age_groups": [
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 4.8
+          },
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.4
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.4
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 4.8
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.1
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.2
+          }
+        ]
+      },
+      {
+        "region": "세종",
+        "change": -1.0,
+        "change_2023_2": 0.6,
+        "change_2024_2": 0.6,
+        "change_2025_1": 0.0,
+        "rate_2024": 65.8,
+        "rate_2025": 64.8,
+        "rate_20_29": 33.4,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -0.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.5
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.2
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.7
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -0.5
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.2
+          }
+        ]
+      },
+      {
+        "region": "경기",
+        "change": -0.7,
+        "change_2023_2": 0.0,
+        "change_2024_2": 0.1,
+        "change_2025_1": 0.1,
+        "rate_2024": 64.7,
+        "rate_2025": 64.0,
+        "rate_20_29": 46.5,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.4
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.1
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -3.4
           },
           {
             "name": "30 - 39세",
@@ -1372,12 +1387,66 @@
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": -1.2
+            "change": -0.1
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": 2.1
+            "change": 0.9
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -0.3
+          }
+        ]
+      },
+      {
+        "region": "강원",
+        "change": 0.3,
+        "change_2023_2": 1.3,
+        "change_2024_2": 0.8,
+        "change_2025_1": 1.0,
+        "rate_2024": 66.2,
+        "rate_2025": 66.5,
+        "rate_20_29": 44.5,
+        "top_age_groups": [
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.9
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 1.4
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 0.5
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": -5.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 0.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.9
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 1.4
           },
           {
             "name": "60세이상",
@@ -1388,28 +1457,28 @@
       },
       {
         "region": "충북",
-        "change": 0.8,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.8,
-        "change_2025_1": 1.2,
-        "rate_2024": 67.3,
+        "change": 1.5,
+        "change_2023_2": 0.5,
+        "change_2024_2": 0.4,
+        "change_2025_1": 0.8,
+        "rate_2024": 66.6,
         "rate_2025": 68.1,
-        "rate_20_29": 47.5,
+        "rate_20_29": 48.2,
         "top_age_groups": [
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 2.3
-          },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.8
+            "change": 4.6
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 3.5
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.0
+            "change": 1.4
           }
         ],
         "all_age_groups": [
@@ -1421,66 +1490,12 @@
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.8
+            "change": 4.6
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 2.3
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -0.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          }
-        ]
-      },
-      {
-        "region": "충남",
-        "change": 0.7,
-        "change_2023_2": 1.4,
-        "change_2024_2": -0.3,
-        "change_2025_1": 1.9,
-        "rate_2024": 66.2,
-        "rate_2025": 66.9,
-        "rate_20_29": 47.6,
-        "top_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 3.9
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.2
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 3.9
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.1
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 1.2
+            "change": 3.5
           },
           {
             "name": "50 - 59세",
@@ -1490,46 +1505,100 @@
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": -1.8
+            "change": 1.4
           }
         ]
       },
       {
-        "region": "전북",
-        "change": -1.0,
-        "change_2023_2": 0.4,
-        "change_2024_2": 1.1,
-        "change_2025_1": -0.8,
-        "rate_2024": 64.8,
-        "rate_2025": 63.8,
-        "rate_20_29": 37.0,
+        "region": "충남",
+        "change": 0.4,
+        "change_2023_2": -0.1,
+        "change_2024_2": -0.2,
+        "change_2025_1": 0.7,
+        "rate_2024": 66.1,
+        "rate_2025": 66.5,
+        "rate_20_29": 46.1,
         "top_age_groups": [
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -2.5
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -1.4
-          },
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -1.1
+            "change": 2.8
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.5
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -1.1
+            "change": 2.8
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.4
+            "change": 1.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 0.5
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -0.2
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": -1.0
+          }
+        ]
+      },
+      {
+        "region": "전북",
+        "change": 0.1,
+        "change_2023_2": 0.9,
+        "change_2024_2": 0.2,
+        "change_2025_1": -1.0,
+        "rate_2024": 64.8,
+        "rate_2025": 64.9,
+        "rate_20_29": 38.9,
+        "top_age_groups": [
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.3
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 1.2
+          },
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 0.9
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 0.9
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 3.3
           },
           {
             "name": "40 - 49세",
@@ -1539,159 +1608,56 @@
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": -1.4
+            "change": -2.5
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": -2.5
+            "change": -0.4
           }
         ]
       },
       {
         "region": "전남",
-        "change": -0.2,
-        "change_2023_2": 1.2,
-        "change_2024_2": -1.5,
-        "change_2025_1": -0.5,
-        "rate_2024": 66.8,
-        "rate_2025": 66.6,
-        "rate_20_29": 45.2,
+        "change": -0.5,
+        "change_2023_2": 0.4,
+        "change_2024_2": -0.7,
+        "change_2025_1": -0.2,
+        "rate_2024": 66.6,
+        "rate_2025": 66.1,
+        "rate_20_29": 43.7,
         "top_age_groups": [
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": -2.2
+            "change": -2.0
           },
           {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.8
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -0.7
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -0.5
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": 5.2
+            "change": 1.7
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 0.7
+            "change": -0.5
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": 1.3
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.2
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": -1.8
-          }
-        ]
-      },
-      {
-        "region": "경북",
-        "change": 0.5,
-        "change_2023_2": 0.6,
-        "change_2024_2": 0.3,
-        "change_2025_1": 0.4,
-        "rate_2024": 65.0,
-        "rate_2025": 65.5,
-        "rate_20_29": 41.7,
-        "top_age_groups": [
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.8
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": 0.6
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 3.8
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 0.9
-          },
-          {
-            "name": "50 - 59세",
-            "display_name": "50~59세",
-            "change": -2.8
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.0
-          }
-        ]
-      },
-      {
-        "region": "경남",
-        "change": 0.3,
-        "change_2023_2": 1.2,
-        "change_2024_2": -0.1,
-        "change_2025_1": 0.9,
-        "rate_2024": 63.0,
-        "rate_2025": 63.3,
-        "rate_20_29": 37.0,
-        "top_age_groups": [
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 2.3
-          },
-          {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 1.4
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.3
-          }
-        ],
-        "all_age_groups": [
-          {
-            "name": "15 - 29세",
-            "display_name": "20~29세",
-            "change": -0.6
-          },
-          {
-            "name": "30 - 39세",
-            "display_name": "30~39세",
-            "change": 1.3
-          },
-          {
-            "name": "40 - 49세",
-            "display_name": "40~49세",
-            "change": 2.3
+            "change": -0.7
           },
           {
             "name": "50 - 59세",
@@ -1701,56 +1667,164 @@
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 1.4
+            "change": -0.3
           }
         ]
       },
       {
-        "region": "제주",
-        "change": 0.5,
-        "change_2023_2": 0.0,
-        "change_2024_2": 0.5,
-        "change_2025_1": -0.3,
-        "rate_2024": 69.7,
-        "rate_2025": 70.2,
-        "rate_20_29": 42.6,
+        "region": "경북",
+        "change": 1.5,
+        "change_2023_2": 0.2,
+        "change_2024_2": 0.8,
+        "change_2025_1": 0.5,
+        "rate_2024": 64.8,
+        "rate_2025": 66.3,
+        "rate_20_29": 45.7,
         "top_age_groups": [
           {
-            "name": "60세이상",
-            "display_name": "70세이상",
-            "change": 3.5
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 3.1
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.5
+            "change": 3.0
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.0
           }
         ],
         "all_age_groups": [
           {
             "name": "15 - 29세",
             "display_name": "20~29세",
-            "change": -1.6
+            "change": 3.1
           },
           {
             "name": "30 - 39세",
             "display_name": "30~39세",
-            "change": 1.5
+            "change": 3.0
           },
           {
             "name": "40 - 49세",
             "display_name": "40~49세",
-            "change": -2.1
+            "change": 1.3
           },
           {
             "name": "50 - 59세",
             "display_name": "50~59세",
-            "change": -0.1
+            "change": -0.8
           },
           {
             "name": "60세이상",
             "display_name": "70세이상",
-            "change": 3.5
+            "change": 2.0
+          }
+        ]
+      },
+      {
+        "region": "경남",
+        "change": 1.5,
+        "change_2023_2": 1.2,
+        "change_2024_2": -0.3,
+        "change_2025_1": 0.3,
+        "rate_2024": 62.1,
+        "rate_2025": 63.6,
+        "rate_20_29": 39.0,
+        "top_age_groups": [
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 4.3
+          },
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.0
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.2
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 2.0
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": 1.2
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": 4.3
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": 0.3
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 1.2
+          }
+        ]
+      },
+      {
+        "region": "제주",
+        "change": 0.4,
+        "change_2023_2": -0.3,
+        "change_2024_2": -0.4,
+        "change_2025_1": 0.5,
+        "rate_2024": 69.5,
+        "rate_2025": 69.9,
+        "rate_20_29": 43.6,
+        "top_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 3.2
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.2
+          }
+        ],
+        "all_age_groups": [
+          {
+            "name": "15 - 29세",
+            "display_name": "20~29세",
+            "change": 3.2
+          },
+          {
+            "name": "30 - 39세",
+            "display_name": "30~39세",
+            "change": -1.5
+          },
+          {
+            "name": "40 - 49세",
+            "display_name": "40~49세",
+            "change": -1.0
+          },
+          {
+            "name": "50 - 59세",
+            "display_name": "50~59세",
+            "change": -2.1
+          },
+          {
+            "name": "60세이상",
+            "display_name": "70세이상",
+            "change": 2.2
           }
         ]
       }
@@ -1759,38 +1833,38 @@
   "top3_increase_regions": [
     {
       "region": "대전",
-      "change": 1.2,
+      "change": 2.2,
       "age_groups": [
         {
           "name": "60세이상",
           "display_name": "70세이상",
-          "change": 2.8
-        },
-        {
-          "name": "15 - 29세",
-          "display_name": "20~29세",
-          "change": 2.4
+          "change": 3.5
         },
         {
           "name": "30 - 39세",
           "display_name": "30~39세",
-          "change": 2.3
+          "change": 3.2
+        },
+        {
+          "name": "50 - 59세",
+          "display_name": "50~59세",
+          "change": 3.2
         }
       ]
     },
     {
-      "region": "부산",
-      "change": 1.0,
+      "region": "충북",
+      "change": 1.5,
       "age_groups": [
         {
-          "name": "50 - 59세",
-          "display_name": "50~59세",
-          "change": 3.6
+          "name": "30 - 39세",
+          "display_name": "30~39세",
+          "change": 4.6
         },
         {
           "name": "40 - 49세",
           "display_name": "40~49세",
-          "change": 1.8
+          "change": 3.5
         },
         {
           "name": "60세이상",
@@ -1800,83 +1874,83 @@
       ]
     },
     {
-      "region": "강원",
-      "change": 1.0,
+      "region": "경북",
+      "change": 1.5,
       "age_groups": [
         {
-          "name": "60세이상",
-          "display_name": "70세이상",
-          "change": 2.9
-        },
-        {
-          "name": "50 - 59세",
-          "display_name": "50~59세",
-          "change": 2.1
+          "name": "15 - 29세",
+          "display_name": "20~29세",
+          "change": 3.1
         },
         {
           "name": "30 - 39세",
           "display_name": "30~39세",
-          "change": 0.1
+          "change": 3.0
+        },
+        {
+          "name": "60세이상",
+          "display_name": "70세이상",
+          "change": 2.0
         }
       ]
     }
   ],
   "top3_decrease_regions": [
     {
-      "region": "전북",
+      "region": "세종",
       "change": -1.0,
       "age_groups": [
         {
+          "name": "15 - 29세",
+          "display_name": "20~29세",
+          "change": -3.5
+        },
+        {
+          "name": "40 - 49세",
+          "display_name": "40~49세",
+          "change": -1.7
+        },
+        {
+          "name": "50 - 59세",
+          "display_name": "50~59세",
+          "change": -0.5
+        }
+      ]
+    },
+    {
+      "region": "인천",
+      "change": -0.7,
+      "age_groups": [
+        {
+          "name": "15 - 29세",
+          "display_name": "20~29세",
+          "change": -4.8
+        },
+        {
+          "name": "50 - 59세",
+          "display_name": "50~59세",
+          "change": -2.1
+        },
+        {
+          "name": "40 - 49세",
+          "display_name": "40~49세",
+          "change": -1.5
+        }
+      ]
+    },
+    {
+      "region": "경기",
+      "change": -0.7,
+      "age_groups": [
+        {
+          "name": "15 - 29세",
+          "display_name": "20~29세",
+          "change": -3.4
+        },
+        {
           "name": "60세이상",
           "display_name": "70세이상",
-          "change": -2.5
-        },
-        {
-          "name": "50 - 59세",
-          "display_name": "50~59세",
-          "change": -1.4
-        },
-        {
-          "name": "15 - 29세",
-          "display_name": "20~29세",
-          "change": -1.1
-        }
-      ]
-    },
-    {
-      "region": "광주",
-      "change": -0.4,
-      "age_groups": [
-        {
-          "name": "50 - 59세",
-          "display_name": "50~59세",
-          "change": -4.2
-        },
-        {
-          "name": "15 - 29세",
-          "display_name": "20~29세",
-          "change": -2.0
-        },
-        {
-          "name": "30 - 39세",
-          "display_name": "30~39세",
-          "change": -2.0
-        }
-      ]
-    },
-    {
-      "region": "서울",
-      "change": -0.2,
-      "age_groups": [
-        {
-          "name": "30 - 39세",
-          "display_name": "30~39세",
-          "change": -1.8
-        },
-        {
-          "name": "15 - 29세",
-          "display_name": "20~29세",
-          "change": -0.7
+          "change": -0.3
         },
         {
           "name": "40 - 49세",
@@ -1906,7 +1980,7 @@
         "rowspan": null,
         "region": "전 국",
         "changes": [
-          0.5,
+          0.4,
           0.1,
           0.2,
           0.2
@@ -1914,21 +1988,21 @@
         "rates": [
           63.3,
           63.5,
-          45.7
+          45.3
         ]
       },
       {
         "region": "서 울",
         "changes": [
+          0.4,
           0.6,
-          0.7,
-          -1.1,
-          -0.2
+          -0.2,
+          0.5
         ],
         "rates": [
-          62.0,
           61.8,
-          50.2
+          62.3,
+          49.8
         ],
         "group": "경인",
         "rowspan": 3
@@ -1936,15 +2010,15 @@
       {
         "region": "인 천",
         "changes": [
-          0.7,
-          -0.1,
-          0.6,
-          0.4
+          0.5,
+          0.4,
+          0.4,
+          -0.7
         ],
         "rates": [
-          63.4,
-          63.8,
-          45.1
+          64.4,
+          63.7,
+          44.4
         ],
         "group": null,
         "rowspan": null
@@ -1952,15 +2026,15 @@
       {
         "region": "경 기",
         "changes": [
-          -0.4,
-          0.2,
-          0.4,
-          0.1
+          0.0,
+          0.1,
+          0.1,
+          -0.7
         ],
         "rates": [
-          64.6,
           64.7,
-          48.0
+          64.0,
+          46.5
         ],
         "group": null,
         "rowspan": null
@@ -1968,15 +2042,15 @@
       {
         "region": "대 전",
         "changes": [
-          0.6,
-          -0.6,
-          0.5,
-          1.2
+          -0.3,
+          -1.1,
+          1.2,
+          2.2
         ],
         "rates": [
-          61.3,
-          62.5,
-          46.0
+          60.5,
+          62.7,
+          46.3
         ],
         "group": "충청",
         "rowspan": 4
@@ -1984,15 +2058,15 @@
       {
         "region": "세 종",
         "changes": [
-          0.9,
-          -0.1,
-          0.7,
-          0.0
+          0.6,
+          0.6,
+          0.0,
+          -1.0
         ],
         "rates": [
-          65.6,
-          65.6,
-          34.5
+          65.8,
+          64.8,
+          33.4
         ],
         "group": null,
         "rowspan": null
@@ -2000,15 +2074,15 @@
       {
         "region": "충 북",
         "changes": [
-          0.6,
+          0.5,
+          0.4,
           0.8,
-          1.2,
-          0.8
+          1.5
         ],
         "rates": [
-          67.3,
+          66.6,
           68.1,
-          47.5
+          48.2
         ],
         "group": null,
         "rowspan": null
@@ -2016,15 +2090,15 @@
       {
         "region": "충 남",
         "changes": [
-          1.4,
-          -0.3,
-          1.9,
-          0.7
+          -0.1,
+          -0.2,
+          0.7,
+          0.4
         ],
         "rates": [
-          66.2,
-          66.9,
-          47.6
+          66.1,
+          66.5,
+          46.1
         ],
         "group": null,
         "rowspan": null
@@ -2032,15 +2106,15 @@
       {
         "region": "광 주",
         "changes": [
-          1.6,
-          1.2,
-          -1.2,
-          -0.4
+          1.4,
+          0.1,
+          -0.4,
+          1.1
         ],
         "rates": [
-          61.4,
-          61.0,
-          37.1
+          60.5,
+          61.6,
+          37.6
         ],
         "group": "호남",
         "rowspan": 4
@@ -2048,15 +2122,15 @@
       {
         "region": "전 북",
         "changes": [
-          0.4,
-          1.1,
-          -0.8,
-          -1.0
+          0.9,
+          0.2,
+          -1.0,
+          0.1
         ],
         "rates": [
           64.8,
-          63.8,
-          37.0
+          64.9,
+          38.9
         ],
         "group": null,
         "rowspan": null
@@ -2064,15 +2138,15 @@
       {
         "region": "전 남",
         "changes": [
-          1.2,
-          -1.5,
-          -0.5,
-          -0.2
+          0.4,
+          -0.7,
+          -0.2,
+          -0.5
         ],
         "rates": [
-          66.8,
           66.6,
-          45.2
+          66.1,
+          43.7
         ],
         "group": null,
         "rowspan": null
@@ -2080,15 +2154,15 @@
       {
         "region": "제 주",
         "changes": [
-          0.0,
-          0.5,
           -0.3,
-          0.5
+          -0.4,
+          0.5,
+          0.4
         ],
         "rates": [
-          69.7,
-          70.2,
-          42.6
+          69.5,
+          69.9,
+          43.6
         ],
         "group": null,
         "rowspan": null
@@ -2096,15 +2170,15 @@
       {
         "region": "대 구",
         "changes": [
-          1.7,
-          -2.5,
-          -0.5,
-          0.0
+          0.5,
+          -2.3,
+          0.0,
+          0.1
         ],
         "rates": [
-          58.5,
-          58.5,
-          40.7
+          58.0,
+          58.1,
+          39.4
         ],
         "group": "동북",
         "rowspan": 3
@@ -2112,15 +2186,15 @@
       {
         "region": "경 북",
         "changes": [
-          0.6,
-          0.3,
-          0.4,
-          0.5
+          0.2,
+          0.8,
+          0.5,
+          1.5
         ],
         "rates": [
-          65.0,
-          65.5,
-          41.7
+          64.8,
+          66.3,
+          45.7
         ],
         "group": null,
         "rowspan": null
@@ -2128,15 +2202,15 @@
       {
         "region": "강 원",
         "changes": [
-          2.2,
-          0.0,
           1.3,
-          1.0
+          0.8,
+          1.0,
+          0.3
         ],
         "rates": [
-          65.7,
-          66.7,
-          46.6
+          66.2,
+          66.5,
+          44.5
         ],
         "group": null,
         "rowspan": null
@@ -2144,15 +2218,15 @@
       {
         "region": "부 산",
         "changes": [
-          0.7,
-          0.0,
+          0.4,
           0.1,
-          1.0
+          1.0,
+          0.4
         ],
         "rates": [
-          57.9,
-          58.9,
-          44.0
+          58.3,
+          58.7,
+          44.1
         ],
         "group": "동남",
         "rowspan": 3
@@ -2160,15 +2234,15 @@
       {
         "region": "울 산",
         "changes": [
-          0.6,
+          0.0,
           0.3,
-          0.8,
-          0.2
+          0.2,
+          0.0
         ],
         "rates": [
-          60.4,
-          60.6,
-          43.7
+          60.2,
+          60.2,
+          43.2
         ],
         "group": null,
         "rowspan": null
@@ -2177,14 +2251,14 @@
         "region": "경 남",
         "changes": [
           1.2,
-          -0.1,
-          0.9,
-          0.3
+          -0.3,
+          0.3,
+          1.5
         ],
         "rates": [
-          63.0,
-          63.3,
-          37.0
+          62.1,
+          63.6,
+          39.0
         ],
         "group": null,
         "rowspan": null

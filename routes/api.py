@@ -76,7 +76,7 @@ def send_file_with_korean_filename(filepath, filename, mimetype):
     
     return response
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
-from utils.excel_utils import extract_year_quarter_from_excel, extract_year_quarter_from_raw, detect_file_type
+from utils.excel_utils import extract_year_quarter_from_excel
 from services.report_generator import (
     generate_report_html,
     generate_regional_report_html,
@@ -248,10 +248,9 @@ def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
 
 @api_bp.route('/upload', methods=['POST'])
 def upload_excel():
-    """엑셀 파일 업로드
+    """분석표 파일 업로드
     
-    프로세스 1: 기초자료 수집표 → 분석표 생성
-    프로세스 2: 분석표 → GRDP 결합 → 지역경제동향 생성
+    분석표 → GRDP 결합 → 지역경제동향 생성
     """
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '파일이 없습니다'})
@@ -273,15 +272,12 @@ def upload_excel():
     
     # 저장된 파일 크기 확인 (데이터 유실 방지)
     saved_size = filepath.stat().st_size
-    print(f"[업로드] 파일 저장 완료: {filename} ({saved_size:,} bytes)")
+    print(f"[업로드] 분석표 파일 저장 완료: {filename} ({saved_size:,} bytes)")
     
-    # 파일 유형 자동 감지
-    file_type = detect_file_type(str(filepath))
-    
-    # ===== 프로세스 2: 분석표 업로드 → GRDP 결합 → 지역경제동향 생성 =====
-    if file_type == 'analysis':
+    # ===== 분석표 업로드 → GRDP 결합 → 지역경제동향 생성 =====
+    try:
         print(f"\n{'='*50}")
-        print(f"[프로세스 2] 분석표 업로드: {filename}")
+        print(f"[업로드] 분석표 업로드: {filename}")
         print(f"{'='*50}")
         
         # 수식 계산 전처리 (분석 시트의 수식을 계산)
@@ -295,8 +291,15 @@ def upload_excel():
         else:
             print(f"[전처리] {preprocess_msg} - generator fallback 로직 사용")
         
-        # 연도/분기 추출
-        year, quarter = extract_year_quarter_from_excel(str(filepath))
+        # 연도/분기 추출 (선택적 - 실패해도 계속 진행, 실제 데이터 처리 시 추출)
+        year, quarter = None, None
+        try:
+            year, quarter = extract_year_quarter_from_excel(str(filepath))
+            print(f"[업로드] 연도/분기 추출 성공: {year}년 {quarter}분기")
+        except (ValueError, Exception) as e:
+            # 연도/분기 추출 실패해도 계속 진행 (보도자료 생성 시 데이터에서 추출)
+            print(f"[업로드] 연도/분기 추출 실패 (계속 진행): {str(e)}")
+            print(f"[업로드] 보도자료 생성 시 데이터에서 연도/분기를 추출합니다.")
         
         # GRDP 시트 존재 여부 확인 및 데이터 추출
         has_grdp = False
@@ -313,10 +316,13 @@ def upload_excel():
                     grdp_sheet_found = sheet_name
                     print(f"[GRDP] 시트 발견: {sheet_name}")
                     
-                    # GRDP 시트에서 데이터 추출
-                    grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
-                    if grdp_data:
-                        print(f"[GRDP] 데이터 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
+                    # GRDP 시트에서 데이터 추출 (year, quarter가 None이면 추출 시도하지 않음)
+                    if year and quarter:
+                        grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
+                        if grdp_data:
+                            print(f"[GRDP] 데이터 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
+                    else:
+                        print(f"[GRDP] 연도/분기 정보가 없어 GRDP 데이터 추출 건너뜀 (보도자료 생성 시 추출)")
                     break
             wb.close()
         except Exception as e:
@@ -363,134 +369,14 @@ def upload_excel():
             }
         })
     
-    # ===== 프로세스 1: 기초자료 수집표 → 내부 분석표 생성 → 바로 보도자료 생성 =====
-    print(f"\n{'='*50}")
-    print(f"[프로세스 1] 기초자료 수집표 업로드: {filename}")
-    print(f"  → 내부 분석표 자동 생성 + 바로 보도자료 생성 가능")
-    print(f"{'='*50}")
-    
-    try:
-        converter = DataConverter(str(filepath))
-        year = converter.year
-        quarter = converter.quarter
-        
-        # 내부적으로 분석표 생성 (보도자료 생성에 사용)
-        analysis_output = str(UPLOAD_FOLDER / f"분석표_{year}년_{quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
-        
-        print(f"[변환] 내부 분석표 생성 완료: {analysis_path}")
-        
-        # 수식 계산 전처리
-        processed_path, preprocess_success, preprocess_msg = preprocess_excel(analysis_path)
-        if preprocess_success:
-            print(f"[전처리] 성공: {preprocess_msg}")
-            analysis_path = processed_path
-        
-        # GRDP 데이터 추출 시도
-        has_grdp = False
-        grdp_data = None
-        grdp_sheet_found = None
-        needs_review = True  # 기여율 수정 필요 여부
-        
-        # 1. 기초자료에서 GRDP 추출 시도
-        try:
-            grdp_data = converter.extract_grdp_data()
-            if grdp_data and not grdp_data.get('national_summary', {}).get('placeholder', True):
-                has_grdp = True
-                needs_review = False
-                print(f"[GRDP] 기초자료에서 GRDP 추출 성공 - 전국: {grdp_data['national_summary']['growth_rate']}%")
-                # 추출된 기여율 저장
-                save_extracted_contributions(grdp_data)
-        except Exception as e:
-            print(f"[GRDP] 기초자료에서 GRDP 추출 실패: {e}")
-        
-        # 2. 분석표에서 GRDP 시트 확인
-        if not has_grdp:
-            try:
-                grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
-                wb = openpyxl.load_workbook(analysis_path, read_only=True, data_only=True)
-                
-                for sheet_name in grdp_sheet_names:
-                    if sheet_name in wb.sheetnames:
-                        has_grdp = True
-                        grdp_sheet_found = sheet_name
-                        grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
-                        if grdp_data:
-                            needs_review = grdp_data.get('needs_review', True)
-                            print(f"[GRDP] 분석표에서 GRDP 추출 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
-                        break
-                wb.close()
-            except Exception as e:
-                print(f"[경고] GRDP 시트 확인 실패: {e}")
-        
-        # 3. GRDP 데이터가 없으면 기본값 사용
-        if grdp_data is None:
-            grdp_data = get_default_grdp_data(year, quarter, use_default_contributions=True)
-            needs_review = True
-            print(f"[GRDP] 기본값 사용 (기여율 수정 필요)")
-        
-        # 분석표 파일명 (다운로드용)
-        analysis_filename = f"분석표_{year}년_{quarter}분기_자동생성.xlsx"
-        
-        conversion_info = {
-            'original_file': filename,
-            'analysis_file': analysis_filename,
-            'year': year,
-            'quarter': quarter
-        }
-        
-        print(f"[결과] 보도자료 생성 준비 완료")
-        
     except Exception as e:
         import traceback
-        print(f"[오류] 기초자료 처리 실패: {e}")
+        print(f"[오류] 분석표 처리 실패: {e}")
         traceback.print_exc()
         return jsonify({
             'success': False,
-            'error': f'기초자료 처리 중 오류가 발생했습니다: {str(e)}'
+            'error': f'분석표 처리 중 오류가 발생했습니다: {str(e)}'
         })
-    
-    # 세션에 저장 (분석표 경로 포함!)
-    session['raw_excel_path'] = str(filepath)
-    session['excel_path'] = analysis_path  # 내부 생성된 분석표 경로
-    session['year'] = year
-    session['quarter'] = quarter
-    session['file_type'] = 'raw_with_analysis'  # 기초자료+내부분석표
-    
-    if grdp_data:
-        session['grdp_data'] = grdp_data
-        # JSON 파일로도 저장
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-        try:
-            with open(grdp_json_path, 'w', encoding='utf-8') as f:
-                json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"[경고] GRDP JSON 저장 실패: {e}")
-    
-    try:
-        session['raw_file_mtime'] = Path(filepath).stat().st_mtime
-    except OSError:
-        pass
-    
-    return jsonify({
-        'success': True,
-        'filename': filename,
-        'file_type': 'raw_with_analysis',  # 바로 보도자료 생성 가능
-        'year': year,
-        'quarter': quarter,
-        'reports': REPORT_ORDER,
-        'regional_reports': REGIONAL_REPORTS,
-        'conversion_info': conversion_info,
-        'has_grdp': has_grdp,
-        'grdp_sheet': grdp_sheet_found,
-        'needs_grdp': not has_grdp,
-        'needs_review': needs_review,  # 기여율 수정 필요 여부
-        'preprocessing': {
-            'success': preprocess_success if 'preprocess_success' in dir() else True,
-            'message': preprocess_msg if 'preprocess_msg' in dir() else '분석표 생성 완료',
-            'method': get_recommended_method()
-        }
-    })
 
 
 def _extract_grdp_from_analysis_sheet(ws, year, quarter):
@@ -878,11 +764,11 @@ def download_analysis():
 
 @api_bp.route('/generate-analysis-with-weights', methods=['POST'])
 def generate_analysis_with_weights():
-    """가중치 설정을 포함하여 분석표 생성 + 다운로드"""
+    """분석표 생성 + 다운로드 (가중치 기본값 제거, 결측치는 N/A로 표시)"""
     import time
     
     data = request.get_json()
-    weight_settings = data.get('weight_settings', {})  # {mining: {mode, values}, service: {mode, values}}
+    # weight_settings는 더 이상 사용하지 않음 (기본값 없이 결측치는 N/A로 표시)
     
     raw_excel_path = session.get('raw_excel_path')
     if not raw_excel_path or not Path(raw_excel_path).exists():
@@ -891,9 +777,9 @@ def generate_analysis_with_weights():
     try:
         converter = DataConverter(str(raw_excel_path))
         
-        # 분석표 생성 (가중치 설정 포함)
+        # 분석표 생성 (가중치 기본값 없이, 결측치는 N/A로 표시)
         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_settings=weight_settings)
+        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
         
         # 파일 저장 완료 대기 (파일 시스템 동기화)
         time.sleep(0.3)
@@ -2147,10 +2033,19 @@ def export_hwp_ready():
     <div id="hwp-content">
 '''
         
+        # 제목과 목차 제외할 report_id 목록
+        excluded_report_ids = {'cover', 'toc', 'stat_toc'}
+        
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
             page_title = page.get('title', f'페이지 {idx}')
             category = page.get('category', '')
+            report_id = page.get('report_id', '')
+            
+            # 제목(표지)과 목차는 제외
+            if report_id in excluded_report_ids:
+                print(f"[HTML 내보내기] 제외: {report_id} ({page_title})")
+                continue
             
             # body 내용 추출
             body_content = page_html
@@ -2173,29 +2068,16 @@ def export_hwp_ready():
             # SVG 제거 (복잡한 차트)
             body_content = re.sub(r'<svg[^>]*>.*?</svg>', chart_placeholder, body_content, flags=re.DOTALL)
             
-            # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식)
+            # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식) - 함초롱바탕 14pt 적용
             body_content = _add_table_inline_styles(body_content)
             
-            # 카테고리 한글명
-            category_names = {
-                'summary': '요약',
-                'sectoral': '부문별',
-                'regional': '시도별',
-                'statistics': '통계표'
-            }
-            category_name = category_names.get(category, '')
-            
-            # 페이지 구분 (인라인 스타일로)
+            # 페이지 구분 (인라인 스타일로) - 함초롱바탕 14pt 적용
             final_html += f'''
         <!-- 페이지 {idx}: {page_title} -->
         <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; page-break-after: always;">
-            <h2 style="font-family: '맑은 고딕', sans-serif; font-size: 14pt; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; padding: 8px 12px; background-color: #e8e8e8; border-left: 4px solid #0066cc;">
-                [{category_name}] {page_title}
-            </h2>
-            <div style="font-family: '맑은 고딕', sans-serif; font-size: 10pt; line-height: 1.6;">
+            <div style="font-family: '함초롱바탕', 'HCR Batang', '바탕', 'Batang', serif; font-size: 14pt; line-height: 1.6;">
 {body_content}
             </div>
-            <p style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">- {idx} / {len(pages)} -</p>
         </div>
 '''
         
@@ -2501,66 +2383,78 @@ def save_html_to_project():
 
 
 def _add_table_inline_styles(html_content):
-    """표에 인라인 스타일 추가 (한글 복붙 최적화)"""
+    """표에 인라인 스타일 추가 (한글 복붙 최적화) - 함초롱바탕 14pt"""
     # table 태그에 인라인 스타일 추가
     html_content = re.sub(
         r'<table([^>]*)>',
-        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-family: \'맑은 고딕\', sans-serif; font-size: 9pt;">',
+        r'<table\1 style="border-collapse: collapse; width: 100%; margin: 10px 0; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
         html_content
     )
     
     # th 태그에 인라인 스타일 추가
     html_content = re.sub(
         r'<th([^>]*)>',
-        r'<th\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold;">',
+        r'<th\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; background-color: #d9d9d9; font-weight: bold; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
         html_content
     )
     
     # td 태그에 인라인 스타일 추가
     html_content = re.sub(
         r'<td([^>]*)>',
-        r'<td\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle;">',
+        r'<td\1 style="border: 1px solid #000; padding: 5px 8px; text-align: center; vertical-align: middle; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
         html_content
     )
     
-    # 제목 태그들에 인라인 스타일 추가
+    # 제목 태그들에 인라인 스타일 추가 - 함초롱바탕 14pt
     html_content = re.sub(
         r'<h1([^>]*)>',
-        r'<h1\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 16pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        r'<h1\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h2([^>]*)>',
-        r'<h2\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
+        r'<h2\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h3([^>]*)>',
-        r'<h3\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 12pt; font-weight: bold; margin: 10px 0 8px 0;">',
+        r'<h3\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 10px 0 8px 0;">',
         html_content
     )
     html_content = re.sub(
         r'<h4([^>]*)>',
-        r'<h4\1 style="font-family: \'맑은 고딕\', sans-serif; font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0;">',
+        r'<h4\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; font-weight: bold; margin: 10px 0 5px 0;">',
         html_content
     )
     
-    # p 태그에 스타일 추가
+    # p 태그에 스타일 추가 - 함초롱바탕 14pt
     html_content = re.sub(
         r'<p([^>]*)>',
-        r'<p\1 style="font-family: \'맑은 고딕\', sans-serif; margin: 5px 0; line-height: 1.6;">',
+        r'<p\1 style="font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt; margin: 5px 0; line-height: 1.6;">',
         html_content
     )
     
-    # ul, ol 태그에 스타일 추가
+    # ul, ol 태그에 스타일 추가 - 함초롱바탕 14pt
     html_content = re.sub(
         r'<ul([^>]*)>',
-        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
+        r'<ul\1 style="margin: 10px 0 10px 25px; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
         html_content
     )
     html_content = re.sub(
         r'<ol([^>]*)>',
-        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'맑은 고딕\', sans-serif;">',
+        r'<ol\1 style="margin: 10px 0 10px 25px; font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;">',
+        html_content
+    )
+    
+    # td, th 태그에도 함초롱바탕 14pt 적용
+    html_content = re.sub(
+        r'<td([^>]*)style="([^"]*)"',
+        lambda m: f'<td{m.group(1)}style="{m.group(2)} font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;"',
+        html_content
+    )
+    html_content = re.sub(
+        r'<th([^>]*)style="([^"]*)"',
+        lambda m: f'<th{m.group(1)}style="{m.group(2)} font-family: \'함초롱바탕\', \'HCR Batang\', \'바탕\', \'Batang\', serif; font-size: 14pt;"',
         html_content
     )
     html_content = re.sub(

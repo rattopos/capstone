@@ -37,18 +37,38 @@ def generate_preview():
     """미리보기 생성"""
     from utils.excel_utils import extract_year_quarter_from_data
     
-    data = request.get_json() or {}
+    try:
+        data = request.get_json()
+        if data is None:
+            print(f"[미리보기] ❌ JSON 파싱 실패: Content-Type={request.content_type}")
+            return jsonify({'success': False, 'error': 'JSON 형식이 올바르지 않습니다'}), 400
+    except Exception as e:
+        print(f"[미리보기] ❌ JSON 파싱 예외: {e}")
+        return jsonify({'success': False, 'error': f'요청 데이터 파싱 오류: {str(e)}'}), 400
+    
     report_id = data.get('report_id')
     
     if not report_id:
+        print(f"[미리보기] ❌ report_id 없음: data={data}")
         return jsonify({'success': False, 'error': 'report_id가 필요합니다'}), 400
     
-    year = data.get('year') or session.get('year')
-    quarter = data.get('quarter') or session.get('quarter')
+    print(f"[미리보기] 요청: report_id={report_id}, year={data.get('year')}, quarter={data.get('quarter')}")
+    
+    # year/quarter가 None이거나 0이면 세션에서 가져오거나 추출
+    year = data.get('year')
+    quarter = data.get('quarter')
+    
+    # None이거나 0이면 세션에서 가져오기
+    if not year or year == 0:
+        year = session.get('year')
+    if not quarter or quarter == 0:
+        quarter = session.get('quarter')
+    
     custom_data = data.get('custom_data', {})
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
+        print(f"[미리보기] ❌ 엑셀 파일 없음: excel_path={excel_path}")
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
     
     # 연도/분기가 없으면 데이터에서 추출
@@ -60,6 +80,7 @@ def generate_preview():
             session['quarter'] = quarter
             print(f"[미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
         except ValueError as e:
+            print(f"[미리보기] ❌ 연도/분기 추출 실패: {e}")
             return jsonify({'success': False, 'error': f'연도/분기 정보를 추출할 수 없습니다: {str(e)}'}), 400
     
     report_config = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
@@ -90,14 +111,33 @@ def generate_summary_preview():
     """요약 보도자료 미리보기 생성 (표지, 목차, 인포그래픽 등)"""
     from utils.excel_utils import extract_year_quarter_from_data
     
-    data = request.get_json() or {}
+    try:
+        data = request.get_json()
+        if data is None:
+            print(f"[요약 미리보기] ❌ JSON 파싱 실패: Content-Type={request.content_type}")
+            return jsonify({'success': False, 'error': 'JSON 형식이 올바르지 않습니다'}), 400
+    except Exception as e:
+        print(f"[요약 미리보기] ❌ JSON 파싱 예외: {e}")
+        return jsonify({'success': False, 'error': f'요청 데이터 파싱 오류: {str(e)}'}), 400
+    
     report_id = data.get('report_id')
     
     if not report_id:
+        print(f"[요약 미리보기] ❌ report_id 없음: data={data}")
         return jsonify({'success': False, 'error': 'report_id가 필요합니다'}), 400
     
-    year = data.get('year') or session.get('year')
-    quarter = data.get('quarter') or session.get('quarter')
+    print(f"[요약 미리보기] 요청: report_id={report_id}, year={data.get('year')}, quarter={data.get('quarter')}")
+    
+    # year/quarter가 None이거나 0이면 세션에서 가져오거나 추출
+    year = data.get('year')
+    quarter = data.get('quarter')
+    
+    # None이거나 0이면 세션에서 가져오기
+    if not year or year == 0:
+        year = session.get('year')
+    if not quarter or quarter == 0:
+        quarter = session.get('quarter')
+    
     custom_data = data.get('custom_data', {})
     contact_info_input = data.get('contact_info', {})
     
@@ -107,6 +147,7 @@ def generate_summary_preview():
     excel_path = session.get('excel_path')
     if report_id not in static_reports:
         if not excel_path or not Path(excel_path).exists():
+            print(f"[요약 미리보기] ❌ 엑셀 파일 없음: excel_path={excel_path}")
             return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
         
         # 연도/분기가 없으면 데이터에서 추출
@@ -117,6 +158,7 @@ def generate_summary_preview():
                 session['quarter'] = quarter
                 print(f"[요약 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
             except ValueError as e:
+                print(f"[요약 미리보기] ❌ 연도/분기 추출 실패: {e}")
                 return jsonify({'success': False, 'error': f'연도/분기 정보를 추출할 수 없습니다: {str(e)}'}), 400
     
     report_config = next((r for r in SUMMARY_REPORTS if r['id'] == report_id), None)

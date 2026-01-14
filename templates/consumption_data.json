@@ -2,523 +2,164 @@
   "summary_box": {
     "main_decrease_regions": [
       {
-        "region": "제주",
-        "main_business": "면세점"
-      },
-      {
         "region": "서울",
         "main_business": "면세점"
       },
       {
-        "region": "경북",
+        "region": "세종",
+        "main_business": "슈퍼마켓·잡화점·편의점"
+      },
+      {
+        "region": "제주",
         "main_business": "대형마트"
       }
     ],
-    "region_count": 6
+    "region_count": 7
   },
   "nationwide_data": {
-    "sales_index": 101.8,
-    "growth_rate": -0.2,
+    "sales_index": 102.8,
+    "growth_rate": 1.5,
     "main_businesses": [
       {
         "name": "면세점",
-        "growth_rate": -12.2
+        "growth_rate": -16.8
       },
       {
         "name": "대형마트",
-        "growth_rate": -3.7
+        "growth_rate": -9.2
       },
       {
         "name": "슈퍼마켓·잡화점",
-        "growth_rate": -3.6
+        "growth_rate": -7.4
       }
     ]
   },
   "regional_data": {
     "increase_regions": [
       {
-        "region": "울산",
-        "growth_rate": 5.4,
-        "growth_2023_2": 3.7,
-        "growth_2024_2": -7.6,
-        "growth_2025_1": 3.9,
-        "index_2024": 93.7,
-        "index_2025": 98.8,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 13.5
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 13.2
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -9.4
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -5.0
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 13.2
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 13.5
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 0.0
-          }
-        ]
-      },
-      {
         "region": "인천",
-        "growth_rate": 4.9,
-        "growth_2023_2": -0.2,
-        "growth_2024_2": -6.2,
-        "growth_2025_1": 2.8,
-        "index_2024": 97.5,
-        "index_2025": 102.3,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 18.1
-          },
-          {
-            "name": "면세점",
-            "growth_rate": 15.5
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": 3.9
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": 3.9
-          },
-          {
-            "name": "면세점",
-            "growth_rate": 15.5
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -5.5
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 18.1
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -3.3
-          }
-        ]
-      },
-      {
-        "region": "세종",
-        "growth_rate": 2.8,
-        "growth_2023_2": 2.1,
-        "growth_2024_2": 1.3,
-        "growth_2025_1": 8.3,
-        "index_2024": 109.8,
-        "index_2025": 112.9,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 17.6
-          },
-          {
-            "name": "총지수",
-            "growth_rate": 3.5
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": 3.4
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "총지수",
-            "growth_rate": 3.5
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": 3.4
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.2
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 17.6
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -1.5
-          }
-        ]
-      },
-      {
-        "region": "광주",
-        "growth_rate": 2.1,
-        "growth_2023_2": -4.0,
-        "growth_2024_2": -2.2,
-        "growth_2025_1": 1.6,
-        "index_2024": 96.8,
-        "index_2025": 98.8,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 8.0
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 3.5
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -3.7
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -9.0
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -2.6
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 8.0
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 3.5
-          }
-        ]
-      },
-      {
-        "region": "충북",
-        "growth_rate": 1.4,
-        "growth_2023_2": 2.3,
-        "growth_2024_2": 0.6,
-        "growth_2025_1": 0.7,
-        "index_2024": 103.7,
+        "growth_rate": 5.5,
+        "growth_2023_2": 1.4,
+        "growth_2024_2": -3.8,
+        "growth_2025_1": 5.3,
+        "index_2024": 99.7,
         "index_2025": 105.2,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.6
+            "growth_rate": 16.3
           },
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 2.4
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -7.6
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 2.4
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 4.6
+            "name": "면세점",
+            "growth_rate": 14.6
           },
           {
             "name": "전문소매점",
-            "growth_rate": -0.3
-          }
-        ]
-      },
-      {
-        "region": "경남",
-        "growth_rate": 1.4,
-        "growth_2023_2": 1.8,
-        "growth_2024_2": -5.6,
-        "growth_2025_1": 4.7,
-        "index_2024": 97.5,
-        "index_2025": 98.9,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 9.7
+            "growth_rate": 0.3
           }
         ],
         "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -7.5
-          },
           {
             "name": "대형마트",
             "growth_rate": -2.7
           },
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -2.6
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 9.7
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -2.2
-          }
-        ]
-      },
-      {
-        "region": "대전",
-        "growth_rate": 1.2,
-        "growth_2023_2": 4.8,
-        "growth_2024_2": -5.6,
-        "growth_2025_1": -2.8,
-        "index_2024": 106.0,
-        "index_2025": 107.3,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 11.0
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -2.0
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -4.7
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.3
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 11.0
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -0.1
-          }
-        ]
-      },
-      {
-        "region": "부산",
-        "growth_rate": 1.0,
-        "growth_2023_2": 3.3,
-        "growth_2024_2": -2.8,
-        "growth_2025_1": 4.6,
-        "index_2024": 108.0,
-        "index_2025": 109.1,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 7.4
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 2.3
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -3.7
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -3.2
-          },
-          {
             "name": "면세점",
-            "growth_rate": -40.3
+            "growth_rate": 14.6
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.8
+            "growth_rate": -4.6
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 7.4
+            "growth_rate": 16.3
           },
           {
             "name": "전문소매점",
-            "growth_rate": 2.3
+            "growth_rate": 0.3
           }
         ]
       },
       {
-        "region": "전남",
-        "growth_rate": 0.4,
-        "growth_2023_2": -3.4,
-        "growth_2024_2": -5.5,
-        "growth_2025_1": 0.3,
-        "index_2024": 95.1,
-        "index_2025": 95.5,
+        "region": "대구",
+        "growth_rate": 5.3,
+        "growth_2023_2": -5.8,
+        "growth_2024_2": -2.3,
+        "growth_2025_1": -1.4,
+        "index_2024": 93.2,
+        "index_2025": 98.1,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 11.9
+            "growth_rate": 17.4
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 1.6
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -7.4
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 1.6
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 11.9
+            "growth_rate": 6.1
           },
           {
             "name": "전문소매점",
-            "growth_rate": -10.3
-          }
-        ]
-      },
-      {
-        "region": "경기",
-        "growth_rate": 0.3,
-        "growth_2023_2": -1.9,
-        "growth_2024_2": -5.7,
-        "growth_2025_1": 0.2,
-        "index_2024": 96.2,
-        "index_2025": 96.5,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 6.3
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 1.2
+            "growth_rate": 4.0
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -4.0
+            "growth_rate": -3.1
           },
           {
             "name": "대형마트",
-            "growth_rate": -3.9
+            "growth_rate": -9.4
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": 6.1
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 17.4
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 4.0
+          }
+        ]
+      },
+      {
+        "region": "울산",
+        "growth_rate": 2.9,
+        "growth_2023_2": 1.4,
+        "growth_2024_2": -2.8,
+        "growth_2025_1": 5.8,
+        "index_2024": 95.7,
+        "index_2025": 98.5,
+        "top_businesses": [
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": 11.4
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 8.7
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
             "growth_rate": -5.5
           },
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 6.3
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 1.2
-          }
-        ]
-      },
-      {
-        "region": "전북",
-        "growth_rate": 0.1,
-        "growth_2023_2": 2.6,
-        "growth_2024_2": -2.9,
-        "growth_2025_1": 0.8,
-        "index_2024": 100.3,
-        "index_2025": 100.4,
-        "top_businesses": [
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 4.2
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 0.5
-          }
-        ],
-        "all_businesses": [
-          {
             "name": "대형마트",
-            "growth_rate": -5.0
+            "growth_rate": -11.3
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 0.5
+            "growth_rate": 11.4
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.2
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -1.2
-          }
-        ]
-      }
-    ],
-    "decrease_regions": [
-      {
-        "region": "제주",
-        "growth_rate": -2.3,
-        "growth_2023_2": -5.6,
-        "growth_2024_2": -3.1,
-        "growth_2025_1": -6.6,
-        "index_2024": 102.2,
-        "index_2025": 99.9,
-        "top_businesses": [
-          {
-            "name": "면세점",
-            "growth_rate": -14.9
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -8.2
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.0
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -8.2
-          },
-          {
-            "name": "면세점",
-            "growth_rate": -14.9
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.0
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 4.8
+            "growth_rate": 8.7
           },
           {
             "name": "전문소매점",
@@ -527,207 +168,162 @@
         ]
       },
       {
-        "region": "서울",
-        "growth_rate": -1.8,
-        "growth_2023_2": -2.4,
-        "growth_2024_2": -7.6,
-        "growth_2025_1": -3.4,
-        "index_2024": 96.2,
-        "index_2025": 94.5,
-        "top_businesses": [
-          {
-            "name": "면세점",
-            "growth_rate": -16.0
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.3
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.0
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -1.9
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.0
-          },
-          {
-            "name": "면세점",
-            "growth_rate": -16.0
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.3
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 7.1
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -0.4
-          }
-        ]
-      },
-      {
-        "region": "경북",
-        "growth_rate": -1.8,
-        "growth_2023_2": 5.3,
-        "growth_2024_2": -1.7,
-        "growth_2025_1": -0.5,
-        "index_2024": 104.7,
-        "index_2025": 102.8,
-        "top_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -10.9
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.6
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -3.8
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -10.9
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.6
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 5.1
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -3.8
-          }
-        ]
-      },
-      {
-        "region": "대구",
-        "growth_rate": -1.4,
-        "growth_2023_2": -4.9,
-        "growth_2024_2": -2.2,
-        "growth_2025_1": -1.8,
-        "index_2024": 97.7,
-        "index_2025": 96.3,
-        "top_businesses": [
-          {
-            "name": "전문소매점",
-            "growth_rate": -7.4
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -5.5
-          },
-          {
-            "name": "백화점",
-            "growth_rate": -4.7
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "백화점",
-            "growth_rate": -4.7
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -5.5
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -1.2
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 11.6
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": -7.4
-          }
-        ]
-      },
-      {
-        "region": "강원",
-        "growth_rate": -0.9,
-        "growth_2023_2": 6.9,
-        "growth_2024_2": -5.4,
-        "growth_2025_1": 0.2,
-        "index_2024": 103.4,
-        "index_2025": 102.5,
+        "region": "충북",
+        "growth_rate": 2.7,
+        "growth_2023_2": 1.3,
+        "growth_2024_2": 2.3,
+        "growth_2025_1": 1.7,
+        "index_2024": 104.2,
+        "index_2025": 107.0,
         "top_businesses": [
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.9
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -7.6
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "대형마트",
-            "growth_rate": -7.6
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.9
-          },
-          {
-            "name": "승용차·연료소매점",
             "growth_rate": 4.4
           },
           {
-            "name": "전문소매점",
-            "growth_rate": 4.7
-          }
-        ]
-      },
-      {
-        "region": "충남",
-        "growth_rate": -0.5,
-        "growth_2023_2": -0.4,
-        "growth_2024_2": 0.6,
-        "growth_2025_1": 1.1,
-        "index_2024": 101.4,
-        "index_2025": 100.9,
-        "top_businesses": [
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.7
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.7
+            "name": "승용차·연료소매점",
+            "growth_rate": 3.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.9
+            "growth_rate": 1.2
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -2.7
+            "growth_rate": -15.7
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.7
+            "growth_rate": 4.4
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 3.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.2
+          }
+        ]
+      },
+      {
+        "region": "대전",
+        "growth_rate": 2.3,
+        "growth_2023_2": 1.9,
+        "growth_2024_2": -2.9,
+        "growth_2025_1": 1.7,
+        "index_2024": 104.5,
+        "index_2025": 106.9,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 12.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.5
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": -1.7
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -9.9
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -0.2
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 12.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.5
+          }
+        ]
+      },
+      {
+        "region": "경남",
+        "growth_rate": 2.3,
+        "growth_2023_2": -4.2,
+        "growth_2024_2": 1.6,
+        "growth_2025_1": 1.5,
+        "index_2024": 100.2,
+        "index_2025": 102.5,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 16.0
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": -1.0
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -10.6
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -5.3
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 16.0
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -2.7
+          }
+        ]
+      },
+      {
+        "region": "부산",
+        "growth_rate": 1.9,
+        "growth_2023_2": 2.1,
+        "growth_2024_2": 1.1,
+        "growth_2025_1": 1.5,
+        "index_2024": 109.5,
+        "index_2025": 111.6,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 4.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 3.7
+          },
+          {
+            "name": "백화점",
+            "growth_rate": 1.5
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": 1.5
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -9.1
+          },
+          {
+            "name": "면세점",
+            "growth_rate": -14.0
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -0.6
           },
           {
             "name": "승용차·연료소매점",
@@ -735,7 +331,419 @@
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.9
+            "growth_rate": 3.7
+          }
+        ]
+      },
+      {
+        "region": "충남",
+        "growth_rate": 0.9,
+        "growth_2023_2": -4.2,
+        "growth_2024_2": 3.6,
+        "growth_2025_1": -0.6,
+        "index_2024": 101.1,
+        "index_2025": 102.0,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 7.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.0
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -10.2
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -3.4
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 7.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.0
+          }
+        ]
+      },
+      {
+        "region": "경기",
+        "growth_rate": 0.5,
+        "growth_2023_2": -4.5,
+        "growth_2024_2": -3.1,
+        "growth_2025_1": 0.4,
+        "index_2024": 96.0,
+        "index_2025": 96.5,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 9.1
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 3.2
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": -0.3
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -8.2
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -9.7
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 9.1
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 3.2
+          }
+        ]
+      },
+      {
+        "region": "전남",
+        "growth_rate": 0.2,
+        "growth_2023_2": -6.2,
+        "growth_2024_2": 0.7,
+        "growth_2025_1": 0.4,
+        "index_2024": 97.2,
+        "index_2025": 97.4,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 11.9
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -17.3
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -5.6
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 11.9
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -2.8
+          }
+        ]
+      }
+    ],
+    "decrease_regions": [
+      {
+        "region": "서울",
+        "growth_rate": -2.7,
+        "growth_2023_2": -5.0,
+        "growth_2024_2": -3.9,
+        "growth_2025_1": -1.8,
+        "index_2024": 95.9,
+        "index_2025": 93.3,
+        "top_businesses": [
+          {
+            "name": "면세점",
+            "growth_rate": -24.5
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -8.0
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -7.6
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": 2.6
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -7.6
+          },
+          {
+            "name": "면세점",
+            "growth_rate": -24.5
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -8.0
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 2.9
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 0.8
+          }
+        ]
+      },
+      {
+        "region": "세종",
+        "growth_rate": -2.4,
+        "growth_2023_2": 3.6,
+        "growth_2024_2": 3.8,
+        "growth_2025_1": 2.8,
+        "index_2024": 116.5,
+        "index_2025": 113.7,
+        "top_businesses": [
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -9.6
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -2.0
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "총지수",
+            "growth_rate": 8.8
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -2.0
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -9.6
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 37.4
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 2.5
+          }
+        ]
+      },
+      {
+        "region": "제주",
+        "growth_rate": -1.3,
+        "growth_2023_2": -6.2,
+        "growth_2024_2": -2.5,
+        "growth_2025_1": -2.2,
+        "index_2024": 98.2,
+        "index_2025": 96.9,
+        "top_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -8.7
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -4.4
+          },
+          {
+            "name": "면세점",
+            "growth_rate": -2.1
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -8.7
+          },
+          {
+            "name": "면세점",
+            "growth_rate": -2.1
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -4.4
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 4.3
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -0.8
+          }
+        ]
+      },
+      {
+        "region": "전북",
+        "growth_rate": -1.0,
+        "growth_2023_2": -2.1,
+        "growth_2024_2": -0.6,
+        "growth_2025_1": 0.3,
+        "index_2024": 99.0,
+        "index_2025": 98.0,
+        "top_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -17.0
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -1.6
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -0.8
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -17.0
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -1.6
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 3.3
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -0.8
+          }
+        ]
+      },
+      {
+        "region": "경북",
+        "growth_rate": -0.9,
+        "growth_2023_2": 0.6,
+        "growth_2024_2": -0.9,
+        "growth_2025_1": -1.5,
+        "index_2024": 103.3,
+        "index_2025": 102.4,
+        "top_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -16.3
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.2
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -3.6
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -16.3
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.2
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 11.7
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -3.6
+          }
+        ]
+      },
+      {
+        "region": "강원",
+        "growth_rate": -0.6,
+        "growth_2023_2": 2.2,
+        "growth_2024_2": -2.6,
+        "growth_2025_1": -1.0,
+        "index_2024": 107.8,
+        "index_2025": 107.2,
+        "top_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -11.1
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.3
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -11.1
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.3
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 7.6
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 2.1
+          }
+        ]
+      },
+      {
+        "region": "광주",
+        "growth_rate": -0.1,
+        "growth_2023_2": -1.5,
+        "growth_2024_2": -1.0,
+        "growth_2025_1": 2.7,
+        "index_2024": 97.3,
+        "index_2025": 97.2,
+        "top_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -15.6
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.7
+          },
+          {
+            "name": "백화점",
+            "growth_rate": -4.6
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "백화점",
+            "growth_rate": -4.6
+          },
+          {
+            "name": "대형마트",
+            "growth_rate": -15.6
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.7
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 9.1
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.4
           }
         ]
       }
@@ -743,571 +751,579 @@
     "all_regions": [
       {
         "region": "서울",
-        "growth_rate": -1.8,
-        "growth_2023_2": -2.4,
-        "growth_2024_2": -7.6,
-        "growth_2025_1": -3.4,
-        "index_2024": 96.2,
-        "index_2025": 94.5,
+        "growth_rate": -2.7,
+        "growth_2023_2": -5.0,
+        "growth_2024_2": -3.9,
+        "growth_2025_1": -1.8,
+        "index_2024": 95.9,
+        "index_2025": 93.3,
         "top_businesses": [
           {
             "name": "면세점",
-            "growth_rate": -16.0
+            "growth_rate": -24.5
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.3
+            "growth_rate": -8.0
           },
           {
             "name": "대형마트",
-            "growth_rate": -2.0
+            "growth_rate": -7.6
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -1.9
+            "growth_rate": 2.6
           },
           {
             "name": "대형마트",
-            "growth_rate": -2.0
+            "growth_rate": -7.6
           },
           {
             "name": "면세점",
-            "growth_rate": -16.0
+            "growth_rate": -24.5
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.3
+            "growth_rate": -8.0
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 7.1
+            "growth_rate": 2.9
           },
           {
             "name": "전문소매점",
-            "growth_rate": -0.4
+            "growth_rate": 0.8
           }
         ]
       },
       {
         "region": "부산",
-        "growth_rate": 1.0,
-        "growth_2023_2": 3.3,
-        "growth_2024_2": -2.8,
-        "growth_2025_1": 4.6,
-        "index_2024": 108.0,
-        "index_2025": 109.1,
+        "growth_rate": 1.9,
+        "growth_2023_2": 2.1,
+        "growth_2024_2": 1.1,
+        "growth_2025_1": 1.5,
+        "index_2024": 109.5,
+        "index_2025": 111.6,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 7.4
+            "growth_rate": 4.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": 2.3
+            "growth_rate": 3.7
+          },
+          {
+            "name": "백화점",
+            "growth_rate": 1.5
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -3.7
+            "growth_rate": 1.5
           },
           {
             "name": "대형마트",
-            "growth_rate": -3.2
+            "growth_rate": -9.1
           },
           {
             "name": "면세점",
-            "growth_rate": -40.3
+            "growth_rate": -14.0
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.8
+            "growth_rate": -0.6
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 7.4
+            "growth_rate": 4.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": 2.3
+            "growth_rate": 3.7
           }
         ]
       },
       {
         "region": "대구",
-        "growth_rate": -1.4,
-        "growth_2023_2": -4.9,
-        "growth_2024_2": -2.2,
-        "growth_2025_1": -1.8,
-        "index_2024": 97.7,
-        "index_2025": 96.3,
+        "growth_rate": 5.3,
+        "growth_2023_2": -5.8,
+        "growth_2024_2": -2.3,
+        "growth_2025_1": -1.4,
+        "index_2024": 93.2,
+        "index_2025": 98.1,
         "top_businesses": [
           {
+            "name": "승용차·연료소매점",
+            "growth_rate": 17.4
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": 6.1
+          },
+          {
             "name": "전문소매점",
-            "growth_rate": -7.4
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -5.5
-          },
-          {
-            "name": "백화점",
-            "growth_rate": -4.7
+            "growth_rate": 4.0
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -4.7
+            "growth_rate": -3.1
           },
           {
             "name": "대형마트",
-            "growth_rate": -5.5
+            "growth_rate": -9.4
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -1.2
+            "growth_rate": 6.1
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 11.6
+            "growth_rate": 17.4
           },
           {
             "name": "전문소매점",
-            "growth_rate": -7.4
+            "growth_rate": 4.0
           }
         ]
       },
       {
         "region": "인천",
-        "growth_rate": 4.9,
-        "growth_2023_2": -0.2,
-        "growth_2024_2": -6.2,
-        "growth_2025_1": 2.8,
-        "index_2024": 97.5,
-        "index_2025": 102.3,
+        "growth_rate": 5.5,
+        "growth_2023_2": 1.4,
+        "growth_2024_2": -3.8,
+        "growth_2025_1": 5.3,
+        "index_2024": 99.7,
+        "index_2025": 105.2,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 18.1
+            "growth_rate": 16.3
           },
           {
             "name": "면세점",
-            "growth_rate": 15.5
+            "growth_rate": 14.6
           },
           {
-            "name": "대형마트",
-            "growth_rate": 3.9
+            "name": "전문소매점",
+            "growth_rate": 0.3
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": 3.9
+            "growth_rate": -2.7
           },
           {
             "name": "면세점",
-            "growth_rate": 15.5
+            "growth_rate": 14.6
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -5.5
+            "growth_rate": -4.6
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 18.1
+            "growth_rate": 16.3
           },
           {
             "name": "전문소매점",
-            "growth_rate": -3.3
+            "growth_rate": 0.3
           }
         ]
       },
       {
         "region": "광주",
-        "growth_rate": 2.1,
-        "growth_2023_2": -4.0,
-        "growth_2024_2": -2.2,
-        "growth_2025_1": 1.6,
-        "index_2024": 96.8,
-        "index_2025": 98.8,
+        "growth_rate": -0.1,
+        "growth_2023_2": -1.5,
+        "growth_2024_2": -1.0,
+        "growth_2025_1": 2.7,
+        "index_2024": 97.3,
+        "index_2025": 97.2,
         "top_businesses": [
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 8.0
+            "name": "대형마트",
+            "growth_rate": -15.6
           },
           {
-            "name": "전문소매점",
-            "growth_rate": 3.5
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.7
+          },
+          {
+            "name": "백화점",
+            "growth_rate": -4.6
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -3.7
+            "growth_rate": -4.6
           },
           {
             "name": "대형마트",
-            "growth_rate": -9.0
+            "growth_rate": -15.6
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -2.6
+            "growth_rate": -7.7
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 8.0
+            "growth_rate": 9.1
           },
           {
             "name": "전문소매점",
-            "growth_rate": 3.5
+            "growth_rate": 1.4
           }
         ]
       },
       {
         "region": "대전",
-        "growth_rate": 1.2,
-        "growth_2023_2": 4.8,
-        "growth_2024_2": -5.6,
-        "growth_2025_1": -2.8,
-        "index_2024": 106.0,
-        "index_2025": 107.3,
+        "growth_rate": 2.3,
+        "growth_2023_2": 1.9,
+        "growth_2024_2": -2.9,
+        "growth_2025_1": 1.7,
+        "index_2024": 104.5,
+        "index_2025": 106.9,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 11.0
+            "growth_rate": 12.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.5
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -2.0
+            "growth_rate": -1.7
           },
           {
             "name": "대형마트",
-            "growth_rate": -4.7
+            "growth_rate": -9.9
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.3
+            "growth_rate": -0.2
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 11.0
+            "growth_rate": 12.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": -0.1
+            "growth_rate": 1.5
           }
         ]
       },
       {
         "region": "울산",
-        "growth_rate": 5.4,
-        "growth_2023_2": 3.7,
-        "growth_2024_2": -7.6,
-        "growth_2025_1": 3.9,
-        "index_2024": 93.7,
-        "index_2025": 98.8,
+        "growth_rate": 2.9,
+        "growth_2023_2": 1.4,
+        "growth_2024_2": -2.8,
+        "growth_2025_1": 5.8,
+        "index_2024": 95.7,
+        "index_2025": 98.5,
         "top_businesses": [
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 13.5
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": 11.4
           },
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 13.2
+            "name": "승용차·연료소매점",
+            "growth_rate": 8.7
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -9.4
+            "growth_rate": -5.5
           },
           {
             "name": "대형마트",
-            "growth_rate": -5.0
+            "growth_rate": -11.3
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 13.2
+            "growth_rate": 11.4
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 13.5
+            "growth_rate": 8.7
           },
           {
             "name": "전문소매점",
-            "growth_rate": 0.0
+            "growth_rate": -1.4
           }
         ]
       },
       {
         "region": "세종",
-        "growth_rate": 2.8,
-        "growth_2023_2": 2.1,
-        "growth_2024_2": 1.3,
-        "growth_2025_1": 8.3,
-        "index_2024": 109.8,
-        "index_2025": 112.9,
+        "growth_rate": -2.4,
+        "growth_2023_2": 3.6,
+        "growth_2024_2": 3.8,
+        "growth_2025_1": 2.8,
+        "index_2024": 116.5,
+        "index_2025": 113.7,
         "top_businesses": [
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 17.6
-          },
-          {
-            "name": "총지수",
-            "growth_rate": 3.5
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -9.6
           },
           {
             "name": "대형마트",
-            "growth_rate": 3.4
+            "growth_rate": -2.0
           }
         ],
         "all_businesses": [
           {
             "name": "총지수",
-            "growth_rate": 3.5
+            "growth_rate": 8.8
           },
           {
             "name": "대형마트",
-            "growth_rate": 3.4
+            "growth_rate": -2.0
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.2
+            "growth_rate": -9.6
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 17.6
+            "growth_rate": 37.4
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.5
+            "growth_rate": 2.5
           }
         ]
       },
       {
         "region": "경기",
-        "growth_rate": 0.3,
-        "growth_2023_2": -1.9,
-        "growth_2024_2": -5.7,
-        "growth_2025_1": 0.2,
-        "index_2024": 96.2,
+        "growth_rate": 0.5,
+        "growth_2023_2": -4.5,
+        "growth_2024_2": -3.1,
+        "growth_2025_1": 0.4,
+        "index_2024": 96.0,
         "index_2025": 96.5,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 6.3
+            "growth_rate": 9.1
           },
           {
             "name": "전문소매점",
-            "growth_rate": 1.2
+            "growth_rate": 3.2
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -4.0
+            "growth_rate": -0.3
           },
           {
             "name": "대형마트",
-            "growth_rate": -3.9
+            "growth_rate": -8.2
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -5.5
+            "growth_rate": -9.7
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 6.3
+            "growth_rate": 9.1
           },
           {
             "name": "전문소매점",
-            "growth_rate": 1.2
+            "growth_rate": 3.2
           }
         ]
       },
       {
         "region": "강원",
-        "growth_rate": -0.9,
-        "growth_2023_2": 6.9,
-        "growth_2024_2": -5.4,
-        "growth_2025_1": 0.2,
-        "index_2024": 103.4,
-        "index_2025": 102.5,
+        "growth_rate": -0.6,
+        "growth_2023_2": 2.2,
+        "growth_2024_2": -2.6,
+        "growth_2025_1": -1.0,
+        "index_2024": 107.8,
+        "index_2025": 107.2,
         "top_businesses": [
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.9
+            "name": "대형마트",
+            "growth_rate": -11.1
           },
           {
-            "name": "대형마트",
-            "growth_rate": -7.6
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -7.3
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -7.6
+            "growth_rate": -11.1
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -8.9
+            "growth_rate": -7.3
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.4
+            "growth_rate": 7.6
           },
           {
             "name": "전문소매점",
-            "growth_rate": 4.7
+            "growth_rate": 2.1
           }
         ]
       },
       {
         "region": "충북",
-        "growth_rate": 1.4,
-        "growth_2023_2": 2.3,
-        "growth_2024_2": 0.6,
-        "growth_2025_1": 0.7,
-        "index_2024": 103.7,
-        "index_2025": 105.2,
+        "growth_rate": 2.7,
+        "growth_2023_2": 1.3,
+        "growth_2024_2": 2.3,
+        "growth_2025_1": 1.7,
+        "index_2024": 104.2,
+        "index_2025": 107.0,
         "top_businesses": [
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 4.6
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": 4.4
           },
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 2.4
+            "name": "승용차·연료소매점",
+            "growth_rate": 3.8
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 1.2
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -7.6
+            "growth_rate": -15.7
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 2.4
+            "growth_rate": 4.4
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.6
+            "growth_rate": 3.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": -0.3
+            "growth_rate": 1.2
           }
         ]
       },
       {
         "region": "충남",
-        "growth_rate": -0.5,
-        "growth_2023_2": -0.4,
-        "growth_2024_2": 0.6,
-        "growth_2025_1": 1.1,
-        "index_2024": 101.4,
-        "index_2025": 100.9,
+        "growth_rate": 0.9,
+        "growth_2023_2": -4.2,
+        "growth_2024_2": 3.6,
+        "growth_2025_1": -0.6,
+        "index_2024": 101.1,
+        "index_2025": 102.0,
         "top_businesses": [
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.7
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.7
+            "name": "승용차·연료소매점",
+            "growth_rate": 7.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.9
+            "growth_rate": 1.0
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -2.7
+            "growth_rate": -10.2
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -3.7
+            "growth_rate": -3.4
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.8
+            "growth_rate": 7.8
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.9
+            "growth_rate": 1.0
           }
         ]
       },
       {
         "region": "전북",
-        "growth_rate": 0.1,
-        "growth_2023_2": 2.6,
-        "growth_2024_2": -2.9,
-        "growth_2025_1": 0.8,
-        "index_2024": 100.3,
-        "index_2025": 100.4,
+        "growth_rate": -1.0,
+        "growth_2023_2": -2.1,
+        "growth_2024_2": -0.6,
+        "growth_2025_1": 0.3,
+        "index_2024": 99.0,
+        "index_2025": 98.0,
         "top_businesses": [
           {
-            "name": "승용차·연료소매점",
-            "growth_rate": 4.2
+            "name": "대형마트",
+            "growth_rate": -17.0
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 0.5
+            "growth_rate": -1.6
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": -0.8
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -5.0
+            "growth_rate": -17.0
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 0.5
+            "growth_rate": -1.6
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.2
+            "growth_rate": 3.3
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.2
+            "growth_rate": -0.8
           }
         ]
       },
       {
         "region": "전남",
-        "growth_rate": 0.4,
-        "growth_2023_2": -3.4,
-        "growth_2024_2": -5.5,
-        "growth_2025_1": 0.3,
-        "index_2024": 95.1,
-        "index_2025": 95.5,
+        "growth_rate": 0.2,
+        "growth_2023_2": -6.2,
+        "growth_2024_2": 0.7,
+        "growth_2025_1": 0.4,
+        "index_2024": 97.2,
+        "index_2025": 97.4,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
             "growth_rate": 11.9
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 1.6
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -7.4
+            "growth_rate": -17.3
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": 1.6
+            "growth_rate": -5.6
           },
           {
             "name": "승용차·연료소매점",
@@ -1315,130 +1331,130 @@
           },
           {
             "name": "전문소매점",
-            "growth_rate": -10.3
+            "growth_rate": -2.8
           }
         ]
       },
       {
         "region": "경북",
-        "growth_rate": -1.8,
-        "growth_2023_2": 5.3,
-        "growth_2024_2": -1.7,
-        "growth_2025_1": -0.5,
-        "index_2024": 104.7,
-        "index_2025": 102.8,
+        "growth_rate": -0.9,
+        "growth_2023_2": 0.6,
+        "growth_2024_2": -0.9,
+        "growth_2025_1": -1.5,
+        "index_2024": 103.3,
+        "index_2025": 102.4,
         "top_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -10.9
+            "growth_rate": -16.3
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.6
+            "growth_rate": -7.2
           },
           {
             "name": "전문소매점",
-            "growth_rate": -3.8
+            "growth_rate": -3.6
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -10.9
+            "growth_rate": -16.3
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.6
+            "growth_rate": -7.2
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 5.1
+            "growth_rate": 11.7
           },
           {
             "name": "전문소매점",
-            "growth_rate": -3.8
+            "growth_rate": -3.6
           }
         ]
       },
       {
         "region": "경남",
-        "growth_rate": 1.4,
-        "growth_2023_2": 1.8,
-        "growth_2024_2": -5.6,
-        "growth_2025_1": 4.7,
-        "index_2024": 97.5,
-        "index_2025": 98.9,
+        "growth_rate": 2.3,
+        "growth_2023_2": -4.2,
+        "growth_2024_2": 1.6,
+        "growth_2025_1": 1.5,
+        "index_2024": 100.2,
+        "index_2025": 102.5,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 9.7
+            "growth_rate": 16.0
           }
         ],
         "all_businesses": [
           {
             "name": "백화점",
-            "growth_rate": -7.5
+            "growth_rate": -1.0
           },
           {
             "name": "대형마트",
-            "growth_rate": -2.7
+            "growth_rate": -10.6
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -2.6
+            "growth_rate": -5.3
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 9.7
+            "growth_rate": 16.0
           },
           {
             "name": "전문소매점",
-            "growth_rate": -2.2
+            "growth_rate": -2.7
           }
         ]
       },
       {
         "region": "제주",
-        "growth_rate": -2.3,
-        "growth_2023_2": -5.6,
-        "growth_2024_2": -3.1,
-        "growth_2025_1": -6.6,
-        "index_2024": 102.2,
-        "index_2025": 99.9,
+        "growth_rate": -1.3,
+        "growth_2023_2": -6.2,
+        "growth_2024_2": -2.5,
+        "growth_2025_1": -2.2,
+        "index_2024": 98.2,
+        "index_2025": 96.9,
         "top_businesses": [
           {
-            "name": "면세점",
-            "growth_rate": -14.9
-          },
-          {
             "name": "대형마트",
-            "growth_rate": -8.2
+            "growth_rate": -8.7
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.0
+            "growth_rate": -4.4
+          },
+          {
+            "name": "면세점",
+            "growth_rate": -2.1
           }
         ],
         "all_businesses": [
           {
             "name": "대형마트",
-            "growth_rate": -8.2
+            "growth_rate": -8.7
           },
           {
             "name": "면세점",
-            "growth_rate": -14.9
+            "growth_rate": -2.1
           },
           {
             "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -4.0
+            "growth_rate": -4.4
           },
           {
             "name": "승용차·연료소매점",
-            "growth_rate": 4.8
+            "growth_rate": 4.3
           },
           {
             "name": "전문소매점",
-            "growth_rate": -1.4
+            "growth_rate": -0.8
           }
         ]
       }
@@ -1446,86 +1462,82 @@
   },
   "top3_increase_regions": [
     {
-      "region": "울산",
-      "growth_rate": 5.4,
-      "businesses": [
-        {
-          "name": "승용차·연료소매점",
-          "growth_rate": 13.5
-        },
-        {
-          "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": 13.2
-        }
-      ]
-    },
-    {
       "region": "인천",
-      "growth_rate": 4.9,
+      "growth_rate": 5.5,
       "businesses": [
         {
           "name": "승용차·연료소매점",
-          "growth_rate": 18.1
+          "growth_rate": 16.3
         },
         {
           "name": "면세점",
-          "growth_rate": 15.5
+          "growth_rate": 14.6
         },
         {
-          "name": "대형마트",
-          "growth_rate": 3.9
+          "name": "전문소매점",
+          "growth_rate": 0.3
         }
       ]
     },
     {
-      "region": "세종",
-      "growth_rate": 2.8,
+      "region": "대구",
+      "growth_rate": 5.3,
       "businesses": [
         {
           "name": "승용차·연료소매점",
-          "growth_rate": 17.6
+          "growth_rate": 17.4
         },
         {
-          "name": "총지수",
-          "growth_rate": 3.5
+          "name": "슈퍼마켓·잡화점·편의점",
+          "growth_rate": 6.1
         },
         {
-          "name": "대형마트",
-          "growth_rate": 3.4
+          "name": "전문소매점",
+          "growth_rate": 4.0
+        }
+      ]
+    },
+    {
+      "region": "울산",
+      "growth_rate": 2.9,
+      "businesses": [
+        {
+          "name": "슈퍼마켓·잡화점·편의점",
+          "growth_rate": 11.4
+        },
+        {
+          "name": "승용차·연료소매점",
+          "growth_rate": 8.7
         }
       ]
     }
   ],
   "top3_decrease_regions": [
     {
-      "region": "제주",
-      "growth_rate": -2.3,
+      "region": "서울",
+      "growth_rate": -2.7,
       "businesses": [
         {
           "name": "면세점",
-          "growth_rate": -14.9
-        },
-        {
-          "name": "대형마트",
-          "growth_rate": -8.2
+          "growth_rate": -24.5
         },
         {
           "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": -4.0
+          "growth_rate": -8.0
+        },
+        {
+          "name": "대형마트",
+          "growth_rate": -7.6
         }
       ]
     },
     {
-      "region": "서울",
-      "growth_rate": -1.8,
+      "region": "세종",
+      "growth_rate": -2.4,
       "businesses": [
         {
-          "name": "면세점",
-          "growth_rate": -16.0
-        },
-        {
           "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": -4.3
+          "growth_rate": -9.6
         },
         {
           "name": "대형마트",
@@ -1534,26 +1546,26 @@
       ]
     },
     {
-      "region": "경북",
-      "growth_rate": -1.8,
+      "region": "제주",
+      "growth_rate": -1.3,
       "businesses": [
         {
           "name": "대형마트",
-          "growth_rate": -10.9
+          "growth_rate": -8.7
         },
         {
           "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": -4.6
+          "growth_rate": -4.4
         },
         {
-          "name": "전문소매점",
-          "growth_rate": -3.8
+          "name": "면세점",
+          "growth_rate": -2.1
         }
       ]
     }
   ],
-  "increase_businesses_text": "면세점, 총지수, 승용차·연료소매점",
-  "decrease_businesses_text": "슈퍼마켓·잡화점·편의점, 면세점, 대형마트",
+  "increase_businesses_text": "승용차·연료소매점, 슈퍼마켓·잡화점·편의점, 면세점",
+  "decrease_businesses_text": "슈퍼마켓·잡화점·편의점, 대형마트, 면세점",
   "summary_table": {
     "base_year": 2020,
     "columns": {
@@ -1572,14 +1584,14 @@
       {
         "region": "전 국",
         "growth_rates": [
-          -0.4,
-          -3.1,
-          -0.3,
-          -0.2
+          -2.6,
+          -1.5,
+          0.0,
+          1.5
         ],
         "indices": [
-          102.0,
-          101.8
+          101.3,
+          102.8
         ],
         "group": null,
         "rowspan": null
@@ -1587,14 +1599,14 @@
       {
         "region": "서 울",
         "growth_rates": [
-          -2.4,
-          -7.6,
-          -3.4,
-          -1.8
+          -5.0,
+          -3.9,
+          -1.8,
+          -2.7
         ],
         "indices": [
-          96.2,
-          94.5
+          95.9,
+          93.3
         ],
         "group": "경인",
         "rowspan": 3
@@ -1602,14 +1614,14 @@
       {
         "region": "인 천",
         "growth_rates": [
-          -0.2,
-          -6.2,
-          2.8,
-          4.9
+          1.4,
+          -3.8,
+          5.3,
+          5.5
         ],
         "indices": [
-          97.5,
-          102.3
+          99.7,
+          105.2
         ],
         "group": null,
         "rowspan": null
@@ -1617,13 +1629,13 @@
       {
         "region": "경 기",
         "growth_rates": [
-          -1.9,
-          -5.7,
-          0.2,
-          0.3
+          -4.5,
+          -3.1,
+          0.4,
+          0.5
         ],
         "indices": [
-          96.2,
+          96.0,
           96.5
         ],
         "group": null,
@@ -1632,14 +1644,14 @@
       {
         "region": "대 전",
         "growth_rates": [
-          4.8,
-          -5.6,
-          -2.8,
-          1.2
+          1.9,
+          -2.9,
+          1.7,
+          2.3
         ],
         "indices": [
-          106.0,
-          107.3
+          104.5,
+          106.9
         ],
         "group": "충청",
         "rowspan": 4
@@ -1647,14 +1659,14 @@
       {
         "region": "세 종",
         "growth_rates": [
-          2.1,
-          1.3,
-          8.3,
-          2.8
+          3.6,
+          3.8,
+          2.8,
+          -2.4
         ],
         "indices": [
-          109.8,
-          112.9
+          116.5,
+          113.7
         ],
         "group": null,
         "rowspan": null
@@ -1662,14 +1674,14 @@
       {
         "region": "충 북",
         "growth_rates": [
+          1.3,
           2.3,
-          0.6,
-          0.7,
-          1.4
+          1.7,
+          2.7
         ],
         "indices": [
-          103.7,
-          105.2
+          104.2,
+          107.0
         ],
         "group": null,
         "rowspan": null
@@ -1677,14 +1689,14 @@
       {
         "region": "충 남",
         "growth_rates": [
-          -0.4,
-          0.6,
-          1.1,
-          -0.5
+          -4.2,
+          3.6,
+          -0.6,
+          0.9
         ],
         "indices": [
-          101.4,
-          100.9
+          101.1,
+          102.0
         ],
         "group": null,
         "rowspan": null
@@ -1692,14 +1704,14 @@
       {
         "region": "광 주",
         "growth_rates": [
-          -4.0,
-          -2.2,
-          1.6,
-          2.1
+          -1.5,
+          -1.0,
+          2.7,
+          -0.1
         ],
         "indices": [
-          96.8,
-          98.8
+          97.3,
+          97.2
         ],
         "group": "호남",
         "rowspan": 4
@@ -1707,14 +1719,14 @@
       {
         "region": "전 북",
         "growth_rates": [
-          2.6,
-          -2.9,
-          0.8,
-          0.1
+          -2.1,
+          -0.6,
+          0.3,
+          -1.0
         ],
         "indices": [
-          100.3,
-          100.4
+          99.0,
+          98.0
         ],
         "group": null,
         "rowspan": null
@@ -1722,14 +1734,14 @@
       {
         "region": "전 남",
         "growth_rates": [
-          -3.4,
-          -5.5,
-          0.3,
-          0.4
+          -6.2,
+          0.7,
+          0.4,
+          0.2
         ],
         "indices": [
-          95.1,
-          95.5
+          97.2,
+          97.4
         ],
         "group": null,
         "rowspan": null
@@ -1737,14 +1749,14 @@
       {
         "region": "제 주",
         "growth_rates": [
-          -5.6,
-          -3.1,
-          -6.6,
-          -2.3
+          -6.2,
+          -2.5,
+          -2.2,
+          -1.3
         ],
         "indices": [
-          102.2,
-          99.9
+          98.2,
+          96.9
         ],
         "group": null,
         "rowspan": null
@@ -1752,14 +1764,14 @@
       {
         "region": "대 구",
         "growth_rates": [
-          -4.9,
-          -2.2,
-          -1.8,
-          -1.4
+          -5.8,
+          -2.3,
+          -1.4,
+          5.3
         ],
         "indices": [
-          97.7,
-          96.3
+          93.2,
+          98.1
         ],
         "group": "동북",
         "rowspan": 3
@@ -1767,14 +1779,14 @@
       {
         "region": "경 북",
         "growth_rates": [
-          5.3,
-          -1.7,
-          -0.5,
-          -1.8
+          0.6,
+          -0.9,
+          -1.5,
+          -0.9
         ],
         "indices": [
-          104.7,
-          102.8
+          103.3,
+          102.4
         ],
         "group": null,
         "rowspan": null
@@ -1782,14 +1794,14 @@
       {
         "region": "강 원",
         "growth_rates": [
-          6.9,
-          -5.4,
-          0.2,
-          -0.9
+          2.2,
+          -2.6,
+          -1.0,
+          -0.6
         ],
         "indices": [
-          103.4,
-          102.5
+          107.8,
+          107.2
         ],
         "group": null,
         "rowspan": null
@@ -1797,14 +1809,14 @@
       {
         "region": "부 산",
         "growth_rates": [
-          3.3,
-          -2.8,
-          4.6,
-          1.0
+          2.1,
+          1.1,
+          1.5,
+          1.9
         ],
         "indices": [
-          108.0,
-          109.1
+          109.5,
+          111.6
         ],
         "group": "동남",
         "rowspan": 3
@@ -1812,14 +1824,14 @@
       {
         "region": "울 산",
         "growth_rates": [
-          3.7,
-          -7.6,
-          3.9,
-          5.4
+          1.4,
+          -2.8,
+          5.8,
+          2.9
         ],
         "indices": [
-          93.7,
-          98.8
+          95.7,
+          98.5
         ],
         "group": null,
         "rowspan": null
@@ -1827,14 +1839,14 @@
       {
         "region": "경 남",
         "growth_rates": [
-          1.8,
-          -5.6,
-          4.7,
-          1.4
+          -4.2,
+          1.6,
+          1.5,
+          2.3
         ],
         "indices": [
-          97.5,
-          98.9
+          100.2,
+          102.5
         ],
         "group": null,
         "rowspan": null

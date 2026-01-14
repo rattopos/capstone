@@ -1860,6 +1860,7 @@
             generationStats: {
                 total: 0,
                 completed: 0,
+                failed: 0,
                 startTime: null
             },
             // 담당자 정보
@@ -2080,6 +2081,7 @@
 
             // 초기화
             state.generationStats.completed = 0;
+            state.generationStats.failed = 0;
             state.generationStats.startTime = Date.now();
             
             showLoadingProgress();
@@ -2100,10 +2102,16 @@
                 updateLoadingProgress(i + 1, allItems.length, item.report.icon || '📄', item.report.name);
                 
                 try {
-                    await generateSingleReport(item.type, item.report);
-                    state.generationStats.completed++;
+                    const result = await generateSingleReport(item.type, item.report);
+                    if (result && result.success) {
+                        state.generationStats.completed++;
+                    } else {
+                        console.error(`[보도자료 생성 실패] ${item.report.name} (${item.type}):`, result?.error || '알 수 없는 오류');
+                        state.generationStats.failed++;
+                    }
                 } catch (err) {
-                    console.error(`${item.report.name} 생성 오류:`, err);
+                    console.error(`[보도자료 생성 예외] ${item.report.name} (${item.type}):`, err);
+                    state.generationStats.failed++;
                 }
             }
 
@@ -2189,8 +2197,13 @@
         }
 
         async function generateSingleReport(type, report) {
-            const year = parseInt(elements.yearSelect.value);
-            const quarter = parseInt(elements.quarterSelect.value);
+            // year/quarter 유효성 검사 - NaN이거나 없으면 undefined로 설정 (서버에서 추출하도록)
+            let year = parseInt(elements.yearSelect.value);
+            let quarter = parseInt(elements.quarterSelect.value);
+            
+            // NaN이면 undefined로 설정 (서버에서 세션이나 데이터에서 추출하도록)
+            if (isNaN(year)) year = undefined;
+            if (isNaN(quarter)) quarter = undefined;
             
             let endpoint, body;
             
@@ -2217,22 +2230,41 @@
                     break;
             }
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
 
-            const data = await response.json();
+                // 응답 상태 확인
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (e) {
+                        errorData = { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                    console.error(`[보도자료 생성 실패] ${report.name} (${type}):`, errorData.error || '알 수 없는 오류');
+                    return errorData;
+                }
 
-            if (data.success) {
-                // HTML 캐싱
-                state.cachedHtml[type][report.id] = data.html;
-                state.htmlCache[`${type}_${report.id}`] = data.html;  // 최종 문서용 캐시
-                state.generatedReports[type].add(report.id);
+                const data = await response.json();
+
+                if (data.success) {
+                    // HTML 캐싱
+                    state.cachedHtml[type][report.id] = data.html;
+                    state.htmlCache[`${type}_${report.id}`] = data.html;  // 최종 문서용 캐시
+                    state.generatedReports[type].add(report.id);
+                } else {
+                    console.error(`[보도자료 생성 실패] ${report.name} (${type}):`, data.error || '알 수 없는 오류');
+                }
+                
+                return data;
+            } catch (err) {
+                console.error(`[보도자료 생성 예외] ${report.name} (${type}):`, err);
+                return { success: false, error: `네트워크 오류: ${err.message}` };
             }
-            
-            return data;
         }
 
         // ===== 로딩 진행률 표시 =====
@@ -3430,7 +3462,8 @@ ${currentPage.outerHTML}
                         rawPages.push({
                             html: html,
                             title: report.name,
-                            category: 'summary'
+                            category: 'summary',
+                            report_id: report.id
                         });
                         console.log(`[내보내기] ✅ 요약 추가: ${report.name}`);
                     } else {
@@ -3447,7 +3480,8 @@ ${currentPage.outerHTML}
                         rawPages.push({
                             html: html,
                             title: report.name,
-                            category: 'sectoral'
+                            category: 'sectoral',
+                            report_id: report.id
                         });
                         console.log(`[내보내기] ✅ 부문별 추가: ${report.name}`);
                     } else {
@@ -3629,13 +3663,107 @@ ${currentPage.outerHTML}
                     
                     if (saved) {
                         console.log(`[내보내기] ✅ 파일 저장 완료`);
-                        showToast(
-                            `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
-                            `한글에서 열기:\n` +
-                            `파일 → 불러오기 → 저장한 HTML 파일 선택`,
-                            'success',
-                            8000
-                        );
+                        
+                        // 클립보드에 자동 복사
+                        try {
+                            console.log(`[내보내기] 클립보드 복사 시도 중...`);
+                            
+                            // HTML 내용을 클립보드에 복사
+                            const htmlContent = result.html;
+                            
+                            // 임시 div 생성하여 HTML 내용 삽입
+                            const tempDiv = document.createElement('div');
+                            tempDiv.style.position = 'fixed';
+                            tempDiv.style.left = '-9999px';
+                            tempDiv.style.top = '-9999px';
+                            tempDiv.innerHTML = htmlContent;
+                            document.body.appendChild(tempDiv);
+                            
+                            // 전체 선택
+                            const range = document.createRange();
+                            range.selectNodeContents(tempDiv);
+                            const selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            // 클립보드에 복사
+                            let copySuccess = false;
+                            
+                            // Clipboard API 시도 (HTML 형식 지원)
+                            if (navigator.clipboard && navigator.clipboard.write) {
+                                try {
+                                    // HTML과 텍스트 모두 복사
+                                    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+                                    const textBlob = new Blob([htmlContent], { type: 'text/plain' });
+                                    
+                                    // ClipboardItem이 지원되는 경우
+                                    if (typeof ClipboardItem !== 'undefined') {
+                                        const clipboardItem = new ClipboardItem({
+                                            'text/html': htmlBlob,
+                                            'text/plain': textBlob
+                                        });
+                                        await navigator.clipboard.write([clipboardItem]);
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (ClipboardItem)`);
+                                    } else {
+                                        // ClipboardItem이 없는 경우 텍스트로 복사
+                                        await navigator.clipboard.writeText(htmlContent);
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (writeText)`);
+                                    }
+                                } catch (e) {
+                                    console.warn(`[내보내기] Clipboard API 실패, execCommand 시도:`, e);
+                                }
+                            }
+                            
+                            // Fallback: execCommand 사용
+                            if (!copySuccess) {
+                                try {
+                                    const success = document.execCommand('copy');
+                                    if (success) {
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (execCommand)`);
+                                    }
+                                } catch (e) {
+                                    console.warn(`[내보내기] execCommand 실패:`, e);
+                                }
+                            }
+                            
+                            // 선택 해제 및 임시 요소 제거
+                            selection.removeAllRanges();
+                            document.body.removeChild(tempDiv);
+                            
+                            if (copySuccess) {
+                                showToast(
+                                    `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                    `📋 클립보드에 자동으로 복사되었습니다!\n\n` +
+                                    `한글에서 붙여넣기:\n` +
+                                    `Ctrl+V (또는 Cmd+V)로 붙여넣으세요.\n\n` +
+                                    `또는 파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                    'success',
+                                    10000
+                                );
+                            } else {
+                                showToast(
+                                    `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                    `⚠️ 클립보드 복사 실패\n\n` +
+                                    `한글에서 열기:\n` +
+                                    `파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                    'success',
+                                    8000
+                                );
+                            }
+                        } catch (err) {
+                            console.warn(`[내보내기] ⚠️ 클립보드 복사 중 오류:`, err);
+                            showToast(
+                                `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                `⚠️ 클립보드 복사 실패\n\n` +
+                                `한글에서 열기:\n` +
+                                `파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                'success',
+                                8000
+                            );
+                        }
                         
                         // 작업 완료 후 업로드 폴더 정리
                         setTimeout(async () => {

@@ -25,77 +25,269 @@ def load_generator_module(generator_name):
     return module
 
 
+def extract_year_quarter_from_data(excel_path):
+    """데이터 처리 시점에 실제 데이터에서 최신 연도/분기 추출
+    
+    광공업 증감률 계산에 사용된 가장 마지막 분기 데이터에서만 추출
+    - A(광공업생산)집계 시트의 컬럼 26 (1-based, 0-based: 25) = 광공업 증감률 계산에 사용된 가장 마지막 분기
+    - 헤더 행: 2-3행 (0-based: 1-2행)
+    - 기본값 사용하지 않음 (데이터 무결성 원칙)
+    - 컬럼 26에서 찾지 못하면 다른 컬럼들도 확인
+    """
+    import re
+    
+    try:
+        xl = pd.ExcelFile(excel_path)
+        
+        # A(광공업생산)집계 시트에서 광공업 증감률 계산에 사용된 컬럼 26의 헤더 확인
+        target_sheet = 'A(광공업생산)집계'
+        if target_sheet not in xl.sheet_names:
+            raise ValueError(f"A(광공업생산)집계 시트를 찾을 수 없습니다.")
+        
+        # 헤더 행만 읽기 (2-3행, 0-based: 1-2행)
+        df = pd.read_excel(xl, sheet_name=target_sheet, header=None, nrows=3)
+        
+        if len(df) < 2:
+            raise ValueError(f"A(광공업생산)집계 시트에 헤더 행이 없습니다.")
+        
+        # 패턴 정의
+        patterns = [
+            r'(\d{4})\s*\.?\s*(\d)/4',      # 2025 2/4, 2025.2/4, 2025.2/4p
+            r'(\d{2})\s*\.?\s*(\d)/4',       # 25 2/4, 25.2/4, 25.2/4p
+            r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
+            r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
+            r'(\d{4})_(\d)Q',                # 2025_2Q
+            r'(\d{4})_(\d)',                 # 2025_2
+            r'(\d{2})_(\d)',                 # 25_3
+        ]
+        
+        # 1. 먼저 컬럼 26 (0-based: 25) 확인
+        if len(df.columns) >= 26:
+            growth_calc_col = 25  # 0-based 인덱스
+            for row_idx in [1, 2]:
+                if row_idx < len(df):
+                    cell_value = df.iloc[row_idx, growth_calc_col]
+                    if pd.notna(cell_value):
+                        cell_str = str(cell_value).strip()
+                        print(f"[데이터에서 연도/분기 추출] {target_sheet} 시트 컬럼 26 (증감률 계산용) 헤더: '{cell_str}'")
+                        
+                        for pattern in patterns:
+                            match = re.search(pattern, cell_str)
+                            if match:
+                                year_str = match.group(1)
+                                quarter = int(match.group(2))
+                                
+                                if len(year_str) == 2:
+                                    year = 2000 + int(year_str)
+                                else:
+                                    year = int(year_str)
+                                
+                                print(f"[데이터에서 연도/분기 추출] 광공업 증감률 계산용 분기: {year}년 {quarter}분기")
+                                return year, quarter
+        
+        # 2. 컬럼 26에서 찾지 못하면 최신 분기 컬럼 찾기 (뒤에서부터 검색)
+        print(f"[데이터에서 연도/분기 추출] 컬럼 26에서 찾지 못함, 최신 분기 컬럼 검색 중...")
+        latest_year = 0
+        latest_quarter = 0
+        
+        # 뒤에서부터 최신 분기 찾기 (컬럼 9부터 시작, 연도 컬럼들)
+        for col_idx in range(len(df.columns) - 1, 8, -1):  # 9번째 컬럼(2020)부터 뒤로
+            for row_idx in [1, 2]:
+                if row_idx < len(df):
+                    cell_value = df.iloc[row_idx, col_idx]
+                    if pd.notna(cell_value):
+                        cell_str = str(cell_value).strip()
+                        
+                        for pattern in patterns:
+                            match = re.search(pattern, cell_str)
+                            if match:
+                                year_str = match.group(1)
+                                quarter = int(match.group(2))
+                                
+                                if len(year_str) == 2:
+                                    year = 2000 + int(year_str)
+                                else:
+                                    year = int(year_str)
+                                
+                                # 가장 최신 연도/분기 저장
+                                if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                    latest_year = year
+                                    latest_quarter = quarter
+                                    print(f"[데이터에서 연도/분기 추출] {target_sheet} 시트 컬럼 {col_idx+1}에서 발견: {year}년 {quarter}분기")
+        
+        if latest_year > 0 and latest_quarter > 0:
+            print(f"[데이터에서 연도/분기 추출] 최신 분기: {latest_year}년 {latest_quarter}분기")
+            return latest_year, latest_quarter
+        
+        raise ValueError(f"A(광공업생산)집계 시트의 헤더에서 연도/분기 정보를 찾을 수 없습니다.")
+        
+    except ValueError:
+        raise
+    except Exception as e:
+        print(f"[오류] 데이터에서 연도/분기 추출 오류: {e}")
+        raise ValueError(f"데이터에서 연도/분기 추출 중 오류: {str(e)}")
+
+
 def extract_year_quarter_from_excel(filepath):
-    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용)"""
+    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용) - 선택적 추출
+    
+    광공업 증감률 계산에 사용된 컬럼 26에서만 추출
+    업로드 시점에 빠르게 시도하지만, 실패해도 계속 진행
+    실제 연도/분기는 보도자료 생성 시 데이터에서 추출됨
+    """
+    import re
+    
     try:
         xl = pd.ExcelFile(filepath)
-        # A 분석 시트에서 연도/분기 정보 추출 시도
-        df = pd.read_excel(xl, sheet_name='A 분석', header=None)
         
-        # 일반적으로 컬럼 헤더에서 연도/분기 정보를 찾음
-        for row_idx in range(min(5, len(df))):
-            for col_idx in range(len(df.columns)):
-                cell = str(df.iloc[row_idx, col_idx])
-                if '2025.2/4' in cell or '25.2/4' in cell:
-                    return 2025, 2
-                elif '2025.1/4' in cell or '25.1/4' in cell:
-                    return 2025, 1
-                elif '2024.4/4' in cell or '24.4/4' in cell:
-                    return 2024, 4
+        # A(광공업생산)집계 시트에서 광공업 증감률 계산에 사용된 컬럼 26의 헤더 확인
+        target_sheet = 'A(광공업생산)집계'
+        if target_sheet not in xl.sheet_names:
+            print(f"[연도/분기 추출] {target_sheet} 시트를 찾을 수 없습니다.")
+            raise ValueError(f"{target_sheet} 시트를 찾을 수 없습니다.")
         
-        # 파일명에서 추출 시도
-        filename = Path(filepath).stem
-        if '25년' in filename and '2분기' in filename:
-            return 2025, 2
-        elif '25년' in filename and '1분기' in filename:
-            return 2025, 1
+        # 헤더 행만 읽기 (2-3행, 0-based: 1-2행)
+        df = pd.read_excel(xl, sheet_name=target_sheet, header=None, nrows=3)
         
-        return 2025, 2  # 기본값
+        if len(df) < 2 or len(df.columns) < 27:
+            print(f"[연도/분기 추출] {target_sheet} 시트에 컬럼 26이 없습니다. (현재 컬럼 수: {len(df.columns)})")
+            raise ValueError(f"{target_sheet} 시트에 컬럼 26이 없습니다.")
+        
+        # 광공업 증감률 계산에 사용된 컬럼 26 (1-based, 0-based: 25)
+        growth_calc_col = 25  # 0-based 인덱스
+        
+        # 헤더 행(1-2행, 0-based)에서 컬럼 26의 값 확인
+        for row_idx in [1, 2]:
+            if row_idx < len(df):
+                cell_value = df.iloc[row_idx, growth_calc_col]
+                if pd.notna(cell_value):
+                    cell_str = str(cell_value).strip()
+                    print(f"[연도/분기 추출] {target_sheet} 시트 컬럼 26 (증감률 계산용) 헤더: '{cell_str}'")
+                    
+                    patterns = [
+                        r'(\d{4})\s*\.?\s*(\d)/4',      # 2025 2/4, 2025.2/4, 2025.2/4p
+                        r'(\d{2})\s*\.?\s*(\d)/4',       # 25 2/4, 25.2/4, 25.2/4p
+                        r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
+                        r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
+                        r'(\d{4})_(\d)Q',                # 2025_2Q
+                        r'(\d{4})_(\d)',                 # 2025_2
+                        r'(\d{2})_(\d)',                 # 25_3
+                    ]
+                    
+                    for pattern in patterns:
+                        match = re.search(pattern, cell_str)
+                        if match:
+                            year_str = match.group(1)
+                            quarter = int(match.group(2))
+                            
+                            if len(year_str) == 2:
+                                year = 2000 + int(year_str)
+                            else:
+                                year = int(year_str)
+                            
+                            print(f"[연도/분기 추출] 광공업 증감률 계산용 분기: {year}년 {quarter}분기")
+                            return year, quarter
+        
+        print(f"[연도/분기 추출] {target_sheet} 시트 컬럼 26에서 패턴을 찾지 못했습니다.")
+        raise ValueError(f"{target_sheet} 시트의 컬럼 26 헤더에서 연도/분기 정보를 찾을 수 없습니다.")
+        
+    except ValueError:
+        # ValueError는 그대로 전파 (기본값 사용하지 않음)
+        raise
     except Exception as e:
-        print(f"연도/분기 추출 오류: {e}")
-        return 2025, 2
+        print(f"[오류] 연도/분기 추출 오류: {e}")
+        raise ValueError(f"연도/분기 추출 중 오류가 발생했습니다: {str(e)}")
 
 
 def extract_year_quarter_from_raw(filepath):
     """기초자료 수집표에서 연도와 분기 추출"""
+    import re
+    
     try:
+        latest_year = 0
+        latest_quarter = 0
+        
         # 먼저 파일명에서 추출 시도
         filename = Path(filepath).stem
-        import re
+        print(f"[기초자료 연도/분기 추출] 파일명: {filename}")
         
         # 파일명 패턴: "기초자료 수집표_2025년 2분기" 또는 "25년_2분기" 등
-        year_match = re.search(r'(20\d{2}|25|24)년?', filename)
-        quarter_match = re.search(r'(\d)분기', filename)
+        patterns = [
+            r'(\d{4})년\s*(\d)분기',  # 2025년 2분기
+            r'(\d{2})년\s*(\d)분기',   # 25년 2분기
+            r'(\d{4})_(\d)',           # 2025_2
+        ]
         
-        if year_match and quarter_match:
-            year = int(year_match.group(1))
-            if year < 100:
-                year += 2000
-            quarter = int(quarter_match.group(1))
-            return year, quarter
+        for pattern in patterns:
+            match = re.search(pattern, filename)
+            if match:
+                year_str = match.group(1)
+                quarter = int(match.group(2))
+                
+                if len(year_str) == 2:
+                    year = 2000 + int(year_str)
+                else:
+                    year = int(year_str)
+                
+                print(f"[기초자료 연도/분기 추출] 파일명에서 추출: {year}년 {quarter}분기")
+                return year, quarter
         
         # 시트에서 연도/분기 정보 추출 시도
         xl = pd.ExcelFile(filepath)
         
-        # 기초자료 수집표의 첫 번째 시트에서 헤더 확인
-        for sheet_name in xl.sheet_names[:3]:
+        # 기초자료 수집표의 주요 시트에서 헤더 확인
+        target_sheets = ['광공업생산', '서비스업생산', '소비(소매, 추가)', '고용률']
+        
+        for sheet_name in target_sheets:
+            if sheet_name not in xl.sheet_names:
+                continue
+                
             try:
                 df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=10)
+                
                 for row_idx in range(min(10, len(df))):
-                    for col_idx in range(min(20, len(df.columns))):
+                    for col_idx in range(min(30, len(df.columns))):
                         cell = str(df.iloc[row_idx, col_idx])
-                        if '2025.2/4' in cell or '25.2/4' in cell or '2025년 2분기' in cell:
-                            return 2025, 2
-                        elif '2025.1/4' in cell or '25.1/4' in cell or '2025년 1분기' in cell:
-                            return 2025, 1
-                        elif '2024.4/4' in cell or '24.4/4' in cell or '2024년 4분기' in cell:
-                            return 2024, 4
-            except:
+                        if pd.isna(df.iloc[row_idx, col_idx]):
+                            continue
+                        
+                        # "2025 2/4", "2025.2/4", "25.2/4", "2025년 2분기" 등 패턴 찾기
+                        patterns = [
+                            r'(\d{4})\s*\.?\s*(\d)/4',  # 2025 2/4, 2025.2/4
+                            r'(\d{2})\s*\.?\s*(\d)/4',   # 25 2/4, 25.2/4
+                            r'(\d{4})년\s*(\d)분기',      # 2025년 2분기
+                            r'(\d{2})년\s*(\d)분기',       # 25년 2분기
+                        ]
+                        
+                        for pattern in patterns:
+                            match = re.search(pattern, cell)
+                            if match:
+                                year_str = match.group(1)
+                                quarter = int(match.group(2))
+                                
+                                if len(year_str) == 2:
+                                    year = 2000 + int(year_str)
+                                else:
+                                    year = int(year_str)
+                                
+                                # 가장 최신 연도/분기 저장
+                                if year > latest_year or (year == latest_year and quarter > latest_quarter):
+                                    latest_year = year
+                                    latest_quarter = quarter
+                                    print(f"[기초자료 연도/분기 추출] {sheet_name}에서 발견: {year}년 {quarter}분기")
+            except Exception as e:
+                print(f"[경고] {sheet_name} 시트 읽기 실패: {e}")
                 continue
         
-        return 2025, 2  # 기본값
+        if latest_year > 0 and latest_quarter > 0:
+            print(f"[기초자료 연도/분기 추출] 최종 결과: {latest_year}년 {latest_quarter}분기")
+            return latest_year, latest_quarter
+        
+        # 기본값 (실패 시)
+        print(f"[경고] 기초자료 연도/분기 추출 실패, 기본값 사용: 2025년 2분기")
+        return 2025, 2
     except Exception as e:
-        print(f"기초자료 연도/분기 추출 오류: {e}")
+        print(f"[오류] 기초자료 연도/분기 추출 오류: {e}")
         return 2025, 2
 
 
@@ -113,27 +305,37 @@ def detect_file_type(filepath: str) -> str:
         'unknown': 알 수 없는 형식
     """
     try:
+        print(f"[파일 유형 분석] 시작: {Path(filepath).name}")
+        
         # ========================================
         # 1단계: 파일명으로 빠른 판정 (가장 빠름)
         # ========================================
         filename = Path(filepath).stem.lower()
+        print(f"[파일 유형 분석] 1단계: 파일명 확인 - {filename}")
         if '기초' in filename or '수집' in filename or 'raw' in filename:
+            print(f"[파일 유형 분석] 파일명으로 판정: raw")
             return 'raw'
         elif '분석' in filename or 'analysis' in filename:
+            print(f"[파일 유형 분석] 파일명으로 판정: analysis")
             return 'analysis'
         
         # ========================================
         # 2단계: 시트명만 빠르게 읽기 (openpyxl 사용 - pandas보다 빠름)
         # ========================================
+        print(f"[파일 유형 분석] 2단계: 시트명 읽기 시작...")
         try:
             import openpyxl
+            print(f"[파일 유형 분석] openpyxl로 파일 열기 시도...")
             wb = openpyxl.load_workbook(filepath, read_only=True, data_only=False)
             sheet_names = set(wb.sheetnames)
+            print(f"[파일 유형 분석] 시트명 읽기 완료: {len(sheet_names)}개 시트")
             wb.close()
-        except:
+        except Exception as e:
+            print(f"[파일 유형 분석] openpyxl 실패, pandas 사용: {e}")
             # openpyxl 실패 시 pandas 사용 (fallback)
             xl = pd.ExcelFile(filepath)
             sheet_names = set(xl.sheet_names)
+            print(f"[파일 유형 분석] pandas로 시트명 읽기 완료: {len(sheet_names)}개 시트")
         
         sheet_count = len(sheet_names)
         
@@ -155,15 +357,19 @@ def detect_file_type(filepath: str) -> str:
         }
         
         # 핵심 시트 매칭 확인 (첫 매칭 시 즉시 반환)
+        print(f"[파일 유형 분석] 3단계: 핵심 시트 매칭 확인...")
         for sheet in sheet_names:
             if sheet in ANALYSIS_KEY_SHEETS:
+                print(f"[파일 유형 분석] 분석표 핵심 시트 발견: {sheet} → analysis")
                 return 'analysis'
             if sheet in RAW_KEY_SHEETS:
+                print(f"[파일 유형 분석] 기초자료 핵심 시트 발견: {sheet} → raw")
                 return 'raw'
         
         # ========================================
         # 4단계: 패턴 매칭 (빠른 확인)
         # ========================================
+        print(f"[파일 유형 분석] 4단계: 패턴 매칭 확인...")
         # 분석표 패턴: '집계', '분석', '참고' 키워드
         analysis_pattern_count = 0
         raw_pattern_count = 0
@@ -172,24 +378,31 @@ def detect_file_type(filepath: str) -> str:
             if '집계' in sheet or '분석' in sheet or '참고' in sheet:
                 analysis_pattern_count += 1
                 if analysis_pattern_count >= 2:  # 2개만 찾으면 충분
+                    print(f"[파일 유형 분석] 분석표 패턴 매칭 ({analysis_pattern_count}개) → analysis")
                     return 'analysis'
             # 기초자료는 한글 시트명이 많고 특별한 패턴이 없으므로 패턴 매칭 생략
         
         # ========================================
         # 5단계: 시트 개수로 추정 (빠른 판정)
         # ========================================
+        print(f"[파일 유형 분석] 5단계: 시트 개수로 추정 (시트 수: {sheet_count})...")
         if sheet_count <= 20:
             # 기초자료일 가능성 높음 (~17개)
+            print(f"[파일 유형 분석] 시트 개수로 판정: raw")
             return 'raw'
         elif sheet_count >= 30:
             # 분석표일 가능성 높음 (~42개)
+            print(f"[파일 유형 분석] 시트 개수로 판정: analysis")
             return 'analysis'
         
         # 기본값: 분석표 (더 복잡한 처리가 필요하므로)
+        print(f"[파일 유형 분석] 기본값으로 판정: analysis")
         return 'analysis'
             
     except Exception as e:
+        import traceback
         print(f"[오류] 파일 유형 감지 실패: {e}")
+        traceback.print_exc()
         return 'unknown'
 
 

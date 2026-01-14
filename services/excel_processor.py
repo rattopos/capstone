@@ -129,6 +129,7 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
         print(f"[openpyxl] 백엔드 직접 계산 시작...")
         
         # 분석 시트 → 집계 시트 매핑
+        # 주의: I(순인구이동)은 분석 시트가 없고 집계 시트만 있음
         analysis_aggregate_mapping = {
             'A 분석': 'A(광공업생산)집계',
             'B 분석': 'B(서비스업생산)집계',
@@ -140,7 +141,7 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
             "F'분석": "F'(건설)집계",
             'G 분석': 'G(수출)집계',
             'H 분석': 'H(수입)집계',
-            'I(순인구이동)분석': 'I(순인구이동)집계',
+            # I(순인구이동)은 분석 시트가 없음 - 집계 시트만 사용
         }
         
         # 원본 파일 복사 (원본 보존)
