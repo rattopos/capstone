@@ -505,11 +505,11 @@ def get_default_grdp_data(year, quarter, use_default_contributions=True):
             regional_data.append({
                 'region': region,
                 'region_group': region_groups.get(region, ''),
-                'growth_rate': region_contrib.get('growth_rate', 0.0),
-                'manufacturing': region_contrib.get('manufacturing', 0.0),
-                'construction': region_contrib.get('construction', 0.0),
-                'service': region_contrib.get('service', 0.0),
-                'other': region_contrib.get('other', 0.0),
+                'growth_rate': region_contrib.get('growth_rate'),
+                'manufacturing': region_contrib.get('manufacturing'),
+                'construction': region_contrib.get('construction'),
+                'service': region_contrib.get('service'),
+                'other': region_contrib.get('other'),
                 'placeholder': region_contrib.get('is_placeholder', True),
                 'needs_review': region_contrib.get('is_placeholder', True)  # 수정 필요 표시
             })
@@ -517,33 +517,33 @@ def get_default_grdp_data(year, quarter, use_default_contributions=True):
             regional_data.append({
                 'region': region,
                 'region_group': region_groups.get(region, ''),
-                'growth_rate': 0.0,
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0,
+                'growth_rate': None,
+                'manufacturing': None,
+                'construction': None,
+                'service': None,
+                'other': None,
                 'placeholder': True,
                 'needs_review': True
             })
     
     # 전국 기여율 기본값
-    national_growth = 0.0
-    national_contributions = {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
+    national_growth = None
+    national_contributions = {'manufacturing': None, 'construction': None, 'service': None, 'other': None}
     national_placeholder = True
     
     if default_contributions:
         national = default_contributions.get('national', {})
-        national_growth = national.get('growth_rate', 0.0)
+        national_growth = national.get('growth_rate')
         national_contributions = national.get('contributions', national_contributions)
         national_placeholder = national.get('is_placeholder', True)
     
     # 1위 지역 찾기
-    non_national = [r for r in regional_data if r['region'] != '전국']
+    non_national = [r for r in regional_data if r['region'] != '전국' and r.get('growth_rate') is not None]
     if non_national:
-        top_region = max(non_national, key=lambda x: x['growth_rate'])
+        top_region = max(non_national, key=lambda x: x.get('growth_rate', 0) or 0)
     else:
-        top_region = {'region': '-', 'growth_rate': 0.0, 'manufacturing': 0.0, 
-                     'construction': 0.0, 'service': 0.0, 'other': 0.0, 'placeholder': True}
+        top_region = {'region': '-', 'growth_rate': None, 'manufacturing': None, 
+                     'construction': None, 'service': None, 'other': None, 'placeholder': True}
     
     kosis_info = get_kosis_grdp_download_info()
     
@@ -555,7 +555,7 @@ def get_default_grdp_data(year, quarter, use_default_contributions=True):
         },
         'national_summary': {
             'growth_rate': national_growth,
-            'direction': '증가' if national_growth >= 0 else '감소',
+            'direction': '증가' if national_growth is not None and national_growth >= 0 else ('감소' if national_growth is not None else None),
             'contributions': national_contributions,
             'placeholder': national_placeholder,
             'needs_review': national_placeholder

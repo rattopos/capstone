@@ -83,13 +83,13 @@ def _convert_table_to_narration(table_data):
     
     def extract_sector_data(key, is_employment=False):
         """특정 지표의 나레이션 데이터 추출"""
-        nationwide_val = nationwide.get(key, 0.0)
+        nationwide_val = nationwide.get(key)
         
         increase_regions = []
         decrease_regions = []
         
         for region in all_regions:
-            val = region.get(key, 0.0)
+            val = region.get(key)
             if val is None:
                 continue
             
@@ -109,13 +109,13 @@ def _convert_table_to_narration(table_data):
         decrease_regions.sort(key=lambda x: x['value'])
         
         return {
-            'nationwide': round(nationwide_val, 1) if nationwide_val else 0.0,
-            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
-            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'nationwide': round(nationwide_val, 1) if nationwide_val is not None else None,
+            'increase_regions': increase_regions[:3] if increase_regions else [],
+            'decrease_regions': decrease_regions[:3] if decrease_regions else [],
             'increase_count': len(increase_regions),
             'decrease_count': len(decrease_regions),
-            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
-            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+            'above_regions': increase_regions[:3] if increase_regions else [],
+            'below_regions': decrease_regions[:3] if decrease_regions else [],
             'above_count': len(increase_regions),
             'below_count': len(decrease_regions)
         }
@@ -236,7 +236,7 @@ def _extract_sector_summary(xl, sheet_name):
         
         increase_regions = []
         decrease_regions = []
-        nationwide = 0.0
+        nationwide = None
         
         for i, row in df.iterrows():
             try:
@@ -254,17 +254,17 @@ def _extract_sector_summary(xl, sheet_name):
                 
                 if is_total_row:
                     # 전년동기비 계산
-                    curr_val = safe_float(row[curr_col], 0)
-                    prev_val = safe_float(row[prev_col], 0)
+                    curr_val = safe_float(row[curr_col])
+                    prev_val = safe_float(row[prev_col])
                     
                     # 계산 방식에 따라 증감률 또는 차이 계산
                     if calc_type == 'difference':
-                        change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                        change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else None
                     else:  # growth_rate
                         if prev_val is not None and prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
-                            change = 0.0
+                            change = None
                     
                     if region == '전국':
                         nationwide = change
@@ -307,7 +307,7 @@ def _extract_price_summary_from_aggregate(xl, regions):
         
         increase_regions = []
         decrease_regions = []
-        nationwide = 0.0
+        nationwide = None
         
         for i, row in df.iterrows():
             try:
@@ -318,14 +318,14 @@ def _extract_price_summary_from_aggregate(xl, regions):
                 # 총지수 행 (division == '0')
                 if division == '0':
                     # 2025 2/4분기 지수 (열 24)와 2024 2/4분기 지수 (열 20)
-                    curr_val = safe_float(row[24], 0)
-                    prev_val = safe_float(row[20], 0)
+                    curr_val = safe_float(row[24])
+                    prev_val = safe_float(row[20])
                     
                     # 전년동분기 대비 증감률 계산
                     if prev_val is not None and prev_val != 0:
                         change = round((curr_val - prev_val) / prev_val * 100, 1)
                     else:
-                        change = 0.0
+                        change = None
                     
                     if region == '전국':
                         nationwide = change
@@ -368,7 +368,7 @@ def _extract_employment_summary_from_aggregate(xl, regions):
         
         increase_regions = []
         decrease_regions = []
-        nationwide = 0.0
+        nationwide = None
         
         for i, row in df.iterrows():
             try:
@@ -380,11 +380,11 @@ def _extract_employment_summary_from_aggregate(xl, regions):
                 # 총계 행 (division == '0' 또는 industry == '계')
                 if division == '0' or industry == '계':
                     # 2025 2/4분기 고용률 (열 24)와 2024 2/4분기 고용률 (열 20)
-                    curr_val = safe_float(row[24], 0)
-                    prev_val = safe_float(row[20], 0)
+                    curr_val = safe_float(row[24])
+                    prev_val = safe_float(row[20])
                     
                     # 전년동분기 대비 증감 (고용률은 %p 단위)
-                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else 0.0
+                    change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else None
                     
                     if region == '전국':
                         nationwide = change
@@ -435,13 +435,13 @@ def _get_default_summary_data():
 def _get_default_sector_summary():
     """기본 부문 요약 데이터"""
     return {
-        'nationwide': 0.0,
-        'increase_regions': [{'name': '-', 'value': 0.0}],
-        'decrease_regions': [{'name': '-', 'value': 0.0}],
+        'nationwide': None,
+        'increase_regions': [],
+        'decrease_regions': [],
         'increase_count': 0,
         'decrease_count': 0,
-        'above_regions': [{'name': '-', 'value': 0.0}],
-        'below_regions': [{'name': '-', 'value': 0.0}],
+        'above_regions': [],
+        'below_regions': [],
         'above_count': 0,
         'below_count': 0
     }
@@ -537,12 +537,12 @@ def get_summary_table_data(excel_path):
         }
         
         nationwide_data = {
-            'mining_production': 0.0, 'service_production': 0.0, 'retail_sales': 0.0,
-            'exports': 0.0, 'price': 0.0, 'employment': 0.0
+            'mining_production': None, 'service_production': None, 'retail_sales': None,
+            'exports': None, 'price': None, 'employment': None
         }
         
-        region_data = {r: {'name': r, 'mining_production': 0.0, 'service_production': 0.0,
-                          'retail_sales': 0.0, 'exports': 0.0, 'price': 0.0, 'employment': 0.0}
+        region_data = {r: {'name': r, 'mining_production': None, 'service_production': None,
+                          'retail_sales': None, 'exports': None, 'price': None, 'employment': None}
                       for r in all_regions}
         
         for key in raw_sheet_configs.keys():
@@ -586,8 +586,8 @@ def get_summary_table_data(excel_path):
                             is_total_row = (division == total_code)
                         
                         if is_total_row:
-                            curr_val = safe_float(row[curr_col], 0)
-                            prev_val = safe_float(row[prev_col], 0)
+                            curr_val = safe_float(row[curr_col])
+                            prev_val = safe_float(row[prev_col])
                             
                             # 계산 방식에 따라 증감률 또는 차이 계산
                             if calc_type == 'difference':
@@ -691,14 +691,14 @@ def _extract_construction_chart_data(xl):
                     # 총계 행 (code == '0')
                     if code == '0':
                         # 현재 분기 값 (열 19)과 전년동분기 값 (열 15)
-                        curr_val = safe_float(row[19], 0)
-                        prev_val = safe_float(row[15], 0)
+                        curr_val = safe_float(row[19])
+                        prev_val = safe_float(row[15])
                         
                         # 증감률 계산
                         if prev_val is not None and prev_val != 0:
                             change = round((curr_val - prev_val) / prev_val * 100, 1)
                         else:
-                            change = 0.0
+                            change = None
                         
                         # 금액 (백억원 단위)
                         amount = int(round(curr_val / 10, 0))
@@ -801,15 +801,15 @@ def get_employment_population_data(excel_path, year, quarter):
                 if division == '0' and region in regions and region not in processed_regions:
                     try:
                         # 2025 2/4분기 데이터 (열 25)와 2024 2/4분기 데이터 (열 21)
-                        curr_value = safe_float(row[25], 0)
-                        prev_value = safe_float(row[21], 0)
+                        curr_value = safe_float(row[25])
+                        prev_value = safe_float(row[21])
                         value = int(curr_value) if curr_value is not None else 0
                         
                         # 전년동분기대비 증감률 계산 (천명 단위이므로 직접 비교)
                         if prev_value is not None and prev_value != 0:
                             change = round((curr_value - prev_value) / abs(prev_value) * 100, 1)
                         else:
-                            change = 0.0
+                            change = None
                         
                         processed_regions.add(region)
                         region_data[region] = {'value': value, 'change': change}
@@ -1100,9 +1100,9 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             is_total = (division == rate_total_code)
                         
                         if is_total:
-                            rate_val = safe_float(row[rate_value_col], 60.0)
-                            prev_rate = safe_float(row[prev_rate_col], rate_val if rate_val is not None else 60.0)
-                            change_val = round(rate_val - prev_rate, 1) if (rate_val is not None and prev_rate is not None) else 0.0
+                            rate_val = safe_float(row[rate_value_col])
+                            prev_rate = safe_float(row[prev_rate_col])
+                            change_val = round(rate_val - prev_rate, 1) if (rate_val is not None and prev_rate is not None) else None
                             
                             if region == '전국':
                                 nationwide['rate'] = round(rate_val, 1)
@@ -1175,7 +1175,7 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                             division = str(row[4]).strip() if pd.notna(row[4]) else ''
                             if division == '0':
                                 # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
-                                amount_val = safe_float(row[26], 0)
+                                amount_val = safe_float(row[26])
                                 amount_val = amount_val if amount_val is not None else 0
                                 amount_in_billion = round(amount_val / 100, 0)  # 백만달러 → 억달러
                                 if region == '전국':
@@ -1416,12 +1416,12 @@ def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
 def _get_default_chart_data():
     """기본 차트 데이터"""
     return {
-        'nationwide': {'index': 100.0, 'change': 0.0},
-        'increase_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0}],
-        'decrease_regions': [{'name': '-', 'value': 0.0, 'index': 100.0, 'change': 0.0}],
+        'nationwide': {'index': None, 'change': None},
+        'increase_regions': [],
+        'decrease_regions': [],
         'increase_count': 0, 'decrease_count': 0,
-        'above_regions': [{'name': '-', 'value': 0.0}],
-        'below_regions': [{'name': '-', 'value': 0.0}],
+        'above_regions': [],
+        'below_regions': [],
         'above_count': 0, 'below_count': 0,
         'chart_data': []
     }
@@ -1430,9 +1430,9 @@ def _get_default_chart_data():
 def _get_default_trade_data():
     """기본 수출입 데이터"""
     return {
-        'nationwide': {'amount': 0, 'change': 0.0},
-        'increase_regions': [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
-        'decrease_regions': [{'name': '-', 'value': 0.0, 'amount': 0, 'amount_normalized': 0}],
+        'nationwide': {'amount': None, 'change': None},
+        'increase_regions': [],
+        'decrease_regions': [],
         'increase_count': 0, 'decrease_count': 0,
         'chart_data': []
     }
@@ -1441,9 +1441,9 @@ def _get_default_trade_data():
 def _get_default_employment_data():
     """기본 고용 데이터"""
     return {
-        'nationwide': {'rate': 60.0, 'change': 0.0},
-        'increase_regions': [{'name': '-', 'value': 0.0, 'rate': 60.0, 'change': 0.0}],
-        'decrease_regions': [{'name': '-', 'value': 0.0, 'rate': 60.0, 'change': 0.0}],
+        'nationwide': {'rate': None, 'change': None},
+        'increase_regions': [],
+        'decrease_regions': [],
         'increase_count': 0, 'decrease_count': 0,
         'chart_data': []
     }

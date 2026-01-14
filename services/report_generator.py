@@ -464,11 +464,11 @@ def _add_grdp_group_flags(regional_data):
             # 없으면 플레이스홀더 생성
             item = {
                 'region': region,
-                'growth_rate': 0.0,
-                'manufacturing': 0.0,
-                'construction': 0.0,
-                'service': 0.0,
-                'other': 0.0,
+                'growth_rate': None,
+                'manufacturing': None,
+                'construction': None,
+                'service': None,
+                'other': None,
                 'placeholder': True
             }
         else:
