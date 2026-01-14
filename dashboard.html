@@ -1752,11 +1752,6 @@
                     <span class="step-text">분석표 업로드</span>
                     <span class="step-status"></span>
                 </div>
-                <div class="upload-step" id="uploadStep3">
-                    <span class="step-icon">⏳</span>
-                    <span class="step-text">분석표 변환</span>
-                    <span class="step-status"></span>
-                </div>
                 <div class="upload-step" id="uploadStep4">
                     <span class="step-icon">⏳</span>
                     <span class="step-text">GRDP 데이터 추출</span>
@@ -1944,8 +1939,6 @@
             totalPagesInReport: 1,   // 현재 보도자료의 총 페이지 수
             allReports: [],  // 모든 보도자료 통합 배열
             fileType: 'analysis',  // 분석표만 업로드
-            analysisFilename: null,  // 생성된 분석표 파일명
-            analysisReady: false,  // 분석표 생성 완료 여부
             reports: [],
             summaryReports: [],
             sectoralReports: [],
@@ -2879,7 +2872,7 @@ ${currentPage.outerHTML}
             document.getElementById('uploadResult').style.display = 'none';
             
             // 모든 스텝 초기화 및 표시
-            ['uploadStep1', 'uploadStep2', 'uploadStep3', 'uploadStep4'].forEach(id => {
+            ['uploadStep1', 'uploadStep2', 'uploadStep4'].forEach(id => {
                 const step = document.getElementById(id);
                 step.className = 'upload-step';
                 step.style.display = ''; // 표시 상태로 초기화
@@ -2913,10 +2906,8 @@ ${currentPage.outerHTML}
                 statusEl.textContent = statusText || '실패';
             }
             
-            // 진행률 업데이트 (Step 3이 숨겨진 경우 고려)
-            const step3 = document.getElementById('uploadStep3');
-            const step3Hidden = step3 && step3.style.display === 'none';
-            const totalSteps = step3Hidden ? 3 : 4;
+            // 진행률 업데이트 (3단계 기준)
+            const totalSteps = 3;
             const progress = (stepNum / totalSteps) * 100;
             document.getElementById('uploadProgressFill').style.width = `${progress}%`;
         }
@@ -2965,12 +2956,6 @@ ${currentPage.outerHTML}
                 if (data.success) {
                     // Step 2 완료
                     updateUploadStep(2, 'completed', '분석표');
-                    
-                    // Step 3 숨기기 (분석표 직접 업로드 시 변환 불필요)
-                    const step3 = document.getElementById('uploadStep3');
-                    if (step3) {
-                        step3.style.display = 'none';
-                    }
                     
                     // GRDP 확인
                     if (data.has_grdp) {
@@ -3026,10 +3011,6 @@ ${currentPage.outerHTML}
                     
                     // UI 상태 업데이트 (분석표 모드)
                     updateUIForFileType('analysis');
-                    
-                    // 분석표 다운로드 버튼 숨기기 (직접 업로드한 분석표는 다운로드 불필요)
-                    state.analysisFilename = null;
-                    state.analysisReady = false;
                     
                     // 보도자료 생성 준비 완료 힌트 표시
                     const reportGenerationHint = document.getElementById('reportGenerationHint');
@@ -4080,38 +4061,6 @@ ${currentPage.outerHTML}
             }
         });
 
-        // ===== 분석표 관련 함수 =====
-        // 분석표 버튼 상태 업데이트
-        function updateAnalysisButton(ready, text, hide = false) {
-            const btn = document.getElementById('downloadAnalysisBtn');
-            const icon = document.getElementById('downloadAnalysisIcon');
-            const textEl = document.getElementById('downloadAnalysisText');
-            
-            // 분석표 업로드 시 버튼 숨기기
-            if (hide) {
-                btn.style.display = 'none';
-                return;
-            } else {
-                btn.style.display = 'flex';
-            }
-            
-            if (ready) {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-                btn.style.animation = 'pulse 2s infinite';
-                icon.textContent = '📥';
-                textEl.textContent = text || '분석표 다운로드';
-            } else {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-                btn.style.animation = 'none';
-                icon.textContent = '⏳';
-                textEl.textContent = text || '분석표 생성 중...';
-            }
-        }
-        
         // UI 상태 업데이트 (파일 타입에 따라)
         function updateUIForFileType(fileType) {
             const reportListSection = document.querySelector('.report-list-section');
@@ -4119,7 +4068,6 @@ ${currentPage.outerHTML}
             const previewPlaceholder = document.getElementById('previewPlaceholder');
             const weightInfoHint = document.getElementById('weightInfoHint');
             const reportGenerationHint = document.getElementById('reportGenerationHint');
-            const downloadAnalysisBtn = document.getElementById('downloadAnalysisBtn');
             
             // 기초자료 관련 코드 제거 (분석표만 업로드)
             
@@ -4127,167 +4075,11 @@ ${currentPage.outerHTML}
                 // ===== 분석표 업로드 → 보도자료 생성 모드 =====
                 reportListSection.style.opacity = '1';
                 
-                // 분석표 다운로드 버튼 숨기기
-                if (downloadAnalysisBtn) downloadAnalysisBtn.style.display = 'none';
-                
                 // 힌트 표시 상태
                 if (weightInfoHint) weightInfoHint.style.display = 'none';
                 if (reportGenerationHint) reportGenerationHint.style.display = 'block';
             }
         }
-        
-        // 분석표 백그라운드 생성 (미리보기와 병렬 실행)
-        async function generateAnalysisInBackground() {
-            if (!state.analysisFilename) {
-                updateAnalysisButton(false, '분석표 없음');
-                return;
-            }
-            
-            // 로딩 모달 표시
-            elements.loadingOverlay.classList.add('active');
-            elements.loadingIcon.textContent = '📊';
-            elements.loadingTitle.textContent = '분석표 생성 중';
-            elements.loadingSubtitle.textContent = '분석표를 처리하고 있습니다. 잠시만 기다려주세요.';
-            elements.loadingProgressFill.style.width = '0%';
-            elements.loadingProgressText.textContent = '처리 중...';
-            elements.loadingProgressPercent.textContent = '';
-            elements.loadingCurrentIcon.textContent = '⏳';
-            elements.loadingCurrentText.textContent = '데이터 변환 중...';
-            
-            // 진행률 애니메이션 (가짜 진행률)
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                if (progress < 90) {
-                    progress += Math.random() * 15;
-                    if (progress > 90) progress = 90;
-                    elements.loadingProgressFill.style.width = `${progress}%`;
-                    
-                    // 진행 상태 텍스트 업데이트
-                    if (progress < 30) {
-                        elements.loadingCurrentText.textContent = '템플릿 복사 중...';
-                    } else if (progress < 50) {
-                        elements.loadingCurrentText.textContent = '광공업/서비스업 데이터 처리 중...';
-                    } else if (progress < 70) {
-                        elements.loadingCurrentText.textContent = '고용/물가/수출입 데이터 처리 중...';
-                    } else {
-                        elements.loadingCurrentText.textContent = '수식 계산 및 검증 중...';
-                    }
-                }
-            }, 500);
-            
-            try {
-                const response = await fetch('/api/generate-analysis-with-weights', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ weight_settings: null })
-                });
-                
-                const result = await response.json();
-                
-                clearInterval(progressInterval);
-                
-                if (result.success) {
-                    // 완료 표시
-                    elements.loadingProgressFill.style.width = '100%';
-                    elements.loadingCurrentIcon.textContent = '✅';
-                    elements.loadingCurrentText.textContent = '분석표 생성 완료!';
-                    
-                    state.analysisReady = true;
-                    updateAnalysisButton(true, '분석표 다운로드');
-                    
-                    // 1초 후 로딩 모달 닫기
-                    setTimeout(() => {
-                        elements.loadingOverlay.classList.remove('active');
-                        showToast('📊 분석표가 준비되었습니다. 다운로드 버튼을 클릭하세요.', 'success');
-                    }, 1000);
-                    
-                    // 시스템 알림: 분석표 생성 완료
-                    sendSystemNotification('📊 분석표 생성 완료', '분석표가 준비되었습니다. 다운로드 버튼을 클릭하세요.');
-                } else {
-                    elements.loadingCurrentIcon.textContent = '❌';
-                    elements.loadingCurrentText.textContent = '생성 실패';
-                    
-                    setTimeout(() => {
-                        elements.loadingOverlay.classList.remove('active');
-                    }, 1500);
-                    
-                    updateAnalysisButton(false, '생성 실패');
-                    showToast(result.error || '분석표 생성 실패', 'error');
-                }
-            } catch (err) {
-                clearInterval(progressInterval);
-                console.error('분석표 생성 오류:', err);
-                
-                elements.loadingCurrentIcon.textContent = '❌';
-                elements.loadingCurrentText.textContent = '오류 발생';
-                
-                setTimeout(() => {
-                    elements.loadingOverlay.classList.remove('active');
-                }, 1500);
-                
-                updateAnalysisButton(false, '생성 실패');
-                showToast('분석표 생성 중 오류가 발생했습니다.', 'error');
-            }
-        }
-        
-        // 분석표 다운로드 함수 (이미 생성된 파일 다운로드)
-        async function downloadAnalysisFile() {
-            if (!state.analysisReady) {
-                showToast('분석표가 아직 생성 중입니다. 잠시 후 다시 시도하세요.', 'warning');
-                return;
-            }
-            
-            // 다운로드 준비 로딩 표시
-            elements.loadingOverlay.classList.add('active');
-            elements.loadingIcon.textContent = '📥';
-            elements.loadingTitle.textContent = '분석표 다운로드 준비 중';
-            elements.loadingSubtitle.textContent = '분석표 파일을 준비하고 있습니다...';
-            elements.loadingProgressFill.style.width = '50%';
-            elements.loadingProgressText.textContent = '';
-            elements.loadingProgressPercent.textContent = '';
-            elements.loadingCurrentIcon.textContent = '⏳';
-            elements.loadingCurrentText.textContent = '파일 준비 중...';
-            
-            try {
-                // 다운로드 시작
-                const downloadLink = document.createElement('a');
-                downloadLink.href = '/api/download-analysis';
-                downloadLink.download = state.analysisFilename;
-                document.body.appendChild(downloadLink);
-                
-                // 완료 표시
-                elements.loadingProgressFill.style.width = '100%';
-                elements.loadingCurrentIcon.textContent = '✅';
-                elements.loadingCurrentText.textContent = '다운로드 시작!';
-                
-                // 짧은 딜레이 후 다운로드 실행
-                await new Promise(r => setTimeout(r, 500));
-                
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-                
-                // 로딩 모달 닫기
-                setTimeout(() => {
-                    elements.loadingOverlay.classList.remove('active');
-                    showToast('📥 분석표 다운로드가 시작되었습니다.', 'success');
-                }, 500);
-                
-            } catch (err) {
-                console.error('분석표 다운로드 오류:', err);
-                
-                elements.loadingCurrentIcon.textContent = '❌';
-                elements.loadingCurrentText.textContent = '다운로드 실패';
-                
-                setTimeout(() => {
-                    elements.loadingOverlay.classList.remove('active');
-                }, 1500);
-                
-                showToast('분석표 다운로드 중 오류가 발생했습니다.', 'error');
-            }
-        }
-        
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;

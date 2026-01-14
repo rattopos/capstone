@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region }}</title>
+    <title>Ⅱ. 시도별 경제동향 - {{ report_info.region }} ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -14,8 +14,8 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', 'Times New Roman', serif;
-            font-size: 10.5pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             line-height: 1.4;
             color: #000;
             background: #fff;
@@ -38,8 +38,8 @@
         
         /* 대제목 헤더 */
         .main-header {
-            font-family: '돋움', 'Dotum', sans-serif;
-            font-size: 14pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             font-weight: bold;
             text-align: center;
             padding: 6px 40px;
@@ -50,15 +50,15 @@
         
         /* 지역 제목 */
         .region-title {
-            font-family: '돋움', 'Dotum', sans-serif;
-            font-size: 13pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             font-weight: bold;
             margin-bottom: 12px;
         }
         
         /* 섹션 제목 */
         .section-title {
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             font-weight: bold;
             margin: 12px 0 8px 0;
@@ -121,7 +121,7 @@
         
         .chart-title {
             text-align: center;
-            font-size: 9pt;
+            font-size: 11pt;
             margin-bottom: 3px;
         }
         
@@ -141,7 +141,7 @@
             border: 1px solid #ccc;
             padding: 1px 4px;
             cursor: pointer;
-            font-size: 7pt;
+            font-size: 11pt;
             border-radius: 2px;
             z-index: 50;
         }
@@ -156,7 +156,7 @@
             padding: 6px;
             border-radius: 3px;
             z-index: 100;
-            font-size: 7pt;
+            font-size: 11pt;
         }
         
         .chart-settings.visible {
@@ -188,13 +188,13 @@
             text-align: center;
             font-weight: bold;
             font-size: 11pt;
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: "Malgun Gothic", serif;
             margin-bottom: 5px;
         }
         
         .table-subtitle {
             text-align: right;
-            font-size: 8pt;
+            font-size: 11pt;
             color: #333;
             margin-bottom: 3px;
         }
@@ -202,7 +202,7 @@
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5pt;
+            font-size: 11pt;
         }
         
         .summary-table th,
@@ -229,7 +229,7 @@
         
         .page-number {
             text-align: center;
-            font-size: 10pt;
+            font-size: 11pt;
             margin-top: 15px;
         }
         
@@ -534,39 +534,39 @@
         <div class="summary-table-container">
             <div class="table-title">《 {{ summary_table.title }} 》</div>
             <div class="table-subtitle">[전년동분기대비, %]</div>
-            <table class="summary-table">
-                <thead>
+            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="summary-table">
+                <thead style="border: 1px solid black !important;">
                     <tr>
-                        <th rowspan="2"></th>
-                        <th rowspan="2">광공업<br>생산</th>
-                        <th rowspan="2">서비스업<br>생산</th>
-                        <th rowspan="2">소매<br>판매</th>
-                        <th rowspan="2">건설<br>수주</th>
-                        <th rowspan="2">수출</th>
-                        <th rowspan="2">수입</th>
-                        <th rowspan="2">소비자<br>물가</th>
-                        <th rowspan="2">고용률<br>(%p)</th>
-                        <th colspan="2">인구순이동<br>(천명)</th>
+                        <th rowspan="2" style="border: 1px solid black !important;"></th>
+                        <th rowspan="2" style="border: 1px solid black !important;">광공업<br>생산</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">서비스업<br>생산</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">소매<br>판매</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">건설<br>수주</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">수출</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">수입</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">소비자<br>물가</th>
+                        <th rowspan="2" style="border: 1px solid black !important;">고용률<br>(%p)</th>
+                        <th colspan="2" style="border: 1px solid black !important;">인구순이동<br>(천명)</th>
                     </tr>
                     <tr>
-                        <th>전체</th>
-                        <th>20-29</th>
+                        <th style="border: 1px solid black !important;">전체</th>
+                        <th style="border: 1px solid black !important;">20-29</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in summary_table.rows %}
                     <tr>
-                        <td class="period-col">{{ row.period }}</td>
-                        <td>{{ "%.1f"|format(row.manufacturing) }}</td>
-                        <td>{{ "%.1f"|format(row.service) }}</td>
-                        <td>{{ "%.1f"|format(row.retail) }}</td>
-                        <td>{{ "%.1f"|format(row.construction) }}</td>
-                        <td>{{ "%.1f"|format(row.export) }}</td>
-                        <td>{{ "%.1f"|format(row.import) }}</td>
-                        <td>{{ "%.1f"|format(row.consumer_price) }}</td>
-                        <td>{{ "%.1f"|format(row.employment_rate) }}</td>
-                        <td>{{ "%.1f"|format(row.migration_total) }}</td>
-                        <td>{{ "%.1f"|format(row.migration_20_29) }}</td>
+                        <td class="period-col" style="border: 1px solid black !important;">{{ row.period }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.manufacturing) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.service) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.retail) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.construction) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.export) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.import) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.consumer_price) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.employment_rate) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.migration_total) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.migration_20_29) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

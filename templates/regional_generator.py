@@ -315,9 +315,18 @@ class RegionalGenerator:
         },
     }
     
-    def __init__(self, excel_path: str):
-        """초기화"""
+    def __init__(self, excel_path: str, year=None, quarter=None):
+        """
+        초기화
+        
+        Args:
+            excel_path: 엑셀 파일 경로
+            year: 연도 (선택사항)
+            quarter: 분기 (선택사항)
+        """
         self.excel_path = excel_path
+        self.year = year
+        self.quarter = quarter
         self.cache = DataCache(excel_path)
         self.cache.preload_all_sheets()
         self._nationwide_data: Dict[str, Any] = {}

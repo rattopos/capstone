@@ -90,7 +90,7 @@ from services.grdp_service import (
     save_extracted_contributions
 )
 from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
-from data_converter import DataConverter
+# from data_converter import DataConverter  # 레거시 모듈 - 더 이상 사용하지 않음
 import openpyxl
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -108,12 +108,10 @@ def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
         protected_files = set()
         if keep_current_files:
             excel_path = session.get('excel_path')
-            raw_excel_path = session.get('raw_excel_path')
+            # 기초자료 수집표는 사용하지 않으므로 보호 목록에서 제외
             
             if excel_path:
                 protected_files.add(Path(excel_path).name)
-            if raw_excel_path:
-                protected_files.add(Path(raw_excel_path).name)
         
         # 업로드 폴더의 모든 파일 확인
         deleted_count = 0
@@ -688,125 +686,127 @@ def _add_placeholder_grdp_sheet(analysis_path: str, grdp_data: dict) -> bool:
         return False
 
 
-@api_bp.route('/download-analysis', methods=['GET'])
-def download_analysis():
-    """분석표 다운로드 (다운로드 시점에 생성 + 수식 계산)"""
-    import time
-    import zipfile
-    
-    raw_excel_path = session.get('raw_excel_path')
-    
-    if not raw_excel_path or not Path(raw_excel_path).exists():
-        return jsonify({'success': False, 'error': '기초자료 파일을 찾을 수 없습니다. 먼저 기초자료를 업로드해주세요.'}), 404
-    
-    try:
-        converter = DataConverter(str(raw_excel_path))
-        analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        
-        # 이미 유효한 분석표가 있는지 확인 (세션에서 생성된 파일)
-        download_path = session.get('download_analysis_path')
-        raw_file_mtime = session.get('raw_file_mtime')  # 원본 파일 수정 시간
-        need_regenerate = True
-        
-        if download_path and Path(download_path).exists():
-            # 원본 파일이 변경되었는지 확인
-            current_raw_mtime = Path(raw_excel_path).stat().st_mtime if Path(raw_excel_path).exists() else None
-            file_changed = (raw_file_mtime is None or current_raw_mtime is None or 
-                          abs(current_raw_mtime - raw_file_mtime) > 1.0)  # 1초 이상 차이
-            
-            if file_changed:
-                print(f"[다운로드] 원본 파일이 변경되었습니다, 재생성 필요")
-                need_regenerate = True
-            else:
-                # 기존 파일 유효성 검사
-                try:
-                    with zipfile.ZipFile(download_path, 'r') as zf:
-                        # zip 파일이 유효한지 테스트
-                        if zf.testzip() is None:
-                            need_regenerate = False
-                            analysis_output = download_path
-                            print(f"[다운로드] 기존 분석표 재사용: {download_path}")
-                except (zipfile.BadZipFile, EOFError):
-                    print(f"[다운로드] 기존 파일 손상됨, 재생성 필요")
-                    need_regenerate = True
-        
-        if need_regenerate:
-            # 분석표 생성
-            analysis_path = converter.convert_all(analysis_output, weight_settings=None)
-            
-            # 파일 저장 완료 대기 (파일 시스템 동기화)
-            time.sleep(0.3)
-            
-            # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
-            _calculate_analysis_sheets(analysis_path)
-            
-            # 세션에 저장 (원본 파일 수정 시간 포함)
-            session['download_analysis_path'] = analysis_path
-            try:
-                session['raw_file_mtime'] = Path(raw_excel_path).stat().st_mtime
-            except OSError:
-                pass  # 파일 시간 확인 실패는 무시
-        else:
-            analysis_path = analysis_output
-        
-        filename = Path(analysis_path).name
-        
-        return send_file_with_korean_filename(
-            analysis_path,
-            filename,
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': f'분석표 생성 실패: {str(e)}'}), 500
+# 레거시 엔드포인트 - data_converter 모듈이 제거되어 비활성화됨
+# @api_bp.route('/download-analysis', methods=['GET'])
+# def download_analysis():
+#     """분석표 다운로드 (다운로드 시점에 생성 + 수식 계산)"""
+#     import time
+#     import zipfile
+#     
+#     raw_excel_path = session.get('raw_excel_path')
+#     
+#     if not raw_excel_path or not Path(raw_excel_path).exists():
+#         return jsonify({'success': False, 'error': '기초자료 파일을 찾을 수 없습니다. 먼저 기초자료를 업로드해주세요.'}), 404
+#     
+#     try:
+#         converter = DataConverter(str(raw_excel_path))
+#         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+#         
+#         # 이미 유효한 분석표가 있는지 확인 (세션에서 생성된 파일)
+#         download_path = session.get('download_analysis_path')
+#         raw_file_mtime = session.get('raw_file_mtime')  # 원본 파일 수정 시간
+#         need_regenerate = True
+#         
+#         if download_path and Path(download_path).exists():
+#             # 원본 파일이 변경되었는지 확인
+#             current_raw_mtime = Path(raw_excel_path).stat().st_mtime if Path(raw_excel_path).exists() else None
+#             file_changed = (raw_file_mtime is None or current_raw_mtime is None or 
+#                           abs(current_raw_mtime - raw_file_mtime) > 1.0)  # 1초 이상 차이
+#             
+#             if file_changed:
+#                 print(f"[다운로드] 원본 파일이 변경되었습니다, 재생성 필요")
+#                 need_regenerate = True
+#             else:
+#                 # 기존 파일 유효성 검사
+#                 try:
+#                     with zipfile.ZipFile(download_path, 'r') as zf:
+#                         # zip 파일이 유효한지 테스트
+#                         if zf.testzip() is None:
+#                             need_regenerate = False
+#                             analysis_output = download_path
+#                             print(f"[다운로드] 기존 분석표 재사용: {download_path}")
+#                 except (zipfile.BadZipFile, EOFError):
+#                     print(f"[다운로드] 기존 파일 손상됨, 재생성 필요")
+#                     need_regenerate = True
+#         
+#         if need_regenerate:
+#             # 분석표 생성
+#             analysis_path = converter.convert_all(analysis_output, weight_settings=None)
+#             
+#             # 파일 저장 완료 대기 (파일 시스템 동기화)
+#             time.sleep(0.3)
+#             
+#             # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
+#             _calculate_analysis_sheets(analysis_path)
+#             
+#             # 세션에 저장 (원본 파일 수정 시간 포함)
+#             session['download_analysis_path'] = analysis_path
+#             try:
+#                 session['raw_file_mtime'] = Path(raw_excel_path).stat().st_mtime
+#             except OSError:
+#                 pass  # 파일 시간 확인 실패는 무시
+#         else:
+#             analysis_path = analysis_output
+#         
+#         filename = Path(analysis_path).name
+#         
+#         return send_file_with_korean_filename(
+#             analysis_path,
+#             filename,
+#             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+#         )
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({'success': False, 'error': f'분석표 생성 실패: {str(e)}'}), 500
 
 
-@api_bp.route('/generate-analysis-with-weights', methods=['POST'])
-def generate_analysis_with_weights():
-    """분석표 생성 + 다운로드 (가중치 기본값 제거, 결측치는 N/A로 표시)"""
-    import time
-    
-    data = request.get_json()
-    # weight_settings는 더 이상 사용하지 않음 (기본값 없이 결측치는 N/A로 표시)
-    
-    raw_excel_path = session.get('raw_excel_path')
-    if not raw_excel_path or not Path(raw_excel_path).exists():
-        return jsonify({'success': False, 'error': '기초자료 파일을 찾을 수 없습니다.'}), 404
-    
-    try:
-        converter = DataConverter(str(raw_excel_path))
-        
-        # 분석표 생성 (가중치 기본값 없이, 결측치는 N/A로 표시)
-        analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
-        analysis_path = converter.convert_all(analysis_output, weight_settings=None)
-        
-        # 파일 저장 완료 대기 (파일 시스템 동기화)
-        time.sleep(0.3)
-        
-        # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
-        _calculate_analysis_sheets(analysis_path)
-        
-        # 파일 무결성 확인
-        import zipfile
-        try:
-            with zipfile.ZipFile(analysis_path, 'r') as zf:
-                if zf.testzip() is not None:
-                    raise Exception("생성된 파일이 손상되었습니다.")
-        except zipfile.BadZipFile:
-            raise Exception("생성된 파일이 손상되었습니다. 다시 시도해주세요.")
-        
-        session['download_analysis_path'] = analysis_path
-        
-        return jsonify({
-            'success': True,
-            'filename': Path(analysis_path).name,
-            'message': '분석표가 성공적으로 생성되었습니다.'
-        })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': f'분석표 생성 실패: {str(e)}'}), 500
+# 레거시 엔드포인트 - data_converter 모듈이 제거되어 비활성화됨
+# @api_bp.route('/generate-analysis-with-weights', methods=['POST'])
+# def generate_analysis_with_weights():
+#     """분석표 생성 + 다운로드 (가중치 기본값 제거, 결측치는 N/A로 표시)"""
+#     import time
+#     
+#     data = request.get_json()
+#     # weight_settings는 더 이상 사용하지 않음 (기본값 없이 결측치는 N/A로 표시)
+#     
+#     raw_excel_path = session.get('raw_excel_path')
+#     if not raw_excel_path or not Path(raw_excel_path).exists():
+#         return jsonify({'success': False, 'error': '기초자료 파일을 찾을 수 없습니다.'}), 404
+#     
+#     try:
+#         converter = DataConverter(str(raw_excel_path))
+#         
+#         # 분석표 생성 (가중치 기본값 없이, 결측치는 N/A로 표시)
+#         analysis_output = str(UPLOAD_FOLDER / f"분석표_{converter.year}년_{converter.quarter}분기_자동생성.xlsx")
+#         analysis_path = converter.convert_all(analysis_output, weight_settings=None)
+#         
+#         # 파일 저장 완료 대기 (파일 시스템 동기화)
+#         time.sleep(0.3)
+#         
+#         # 분석 시트 수식 계산 (집계 시트 값을 분석 시트로 복사)
+#         _calculate_analysis_sheets(analysis_path)
+#         
+#         # 파일 무결성 확인
+#         import zipfile
+#         try:
+#             with zipfile.ZipFile(analysis_path, 'r') as zf:
+#                 if zf.testzip() is not None:
+#                     raise Exception("생성된 파일이 손상되었습니다.")
+#         except zipfile.BadZipFile:
+#             raise Exception("생성된 파일이 손상되었습니다. 다시 시도해주세요.")
+#         
+#         session['download_analysis_path'] = analysis_path
+#         
+#         return jsonify({
+#             'success': True,
+#             'filename': Path(analysis_path).name,
+#             'message': '분석표가 성공적으로 생성되었습니다.'
+#         })
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({'success': False, 'error': f'분석표 생성 실패: {str(e)}'}), 500
 
 
 @api_bp.route('/report-order', methods=['GET'])
@@ -857,10 +857,9 @@ def generate_all_reports():
     
     for report_config in REPORT_ORDER:
         custom_data = all_custom_data.get(report_config['id'], {})
-        raw_excel_path = session.get('raw_excel_path')
         
         html_content, error, _ = generate_report_html(
-            excel_path, report_config, year, quarter, custom_data, raw_excel_path
+            excel_path, report_config, year, quarter, custom_data
         )
         
         if error:
@@ -1505,103 +1504,104 @@ def render_chart_image():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@api_bp.route('/get-industry-weights', methods=['GET'])
-def get_industry_weights():
-    """기초자료에서 업종별 가중치 정보 추출"""
-    import pandas as pd
-    
-    sheet_type = request.args.get('sheet_type', '광공업생산')
-    raw_excel_path = session.get('raw_excel_path')
-    
-    if not raw_excel_path or not Path(raw_excel_path).exists():
-        return jsonify({
-            'success': False, 
-            'error': '기초자료 파일을 찾을 수 없습니다. 먼저 파일을 업로드하세요.'
-        })
-    
-    try:
-        xl = pd.ExcelFile(raw_excel_path)
-        
-        # 시트 매핑
-        sheet_mapping = {
-            '광공업생산': '광공업생산',
-            '서비스업생산': '서비스업생산'
-        }
-        
-        sheet_name = sheet_mapping.get(sheet_type)
-        if not sheet_name or sheet_name not in xl.sheet_names:
-            return jsonify({
-                'success': False,
-                'error': f'시트를 찾을 수 없습니다: {sheet_type}'
-            })
-        
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
-        
-        # 업종별 정보 추출 (열 구조에 따라 다름)
-        industries = []
-        
-        if sheet_type == '광공업생산':
-            # 광공업생산 시트: 열 4=업종명, 열 8=가중치 (또는 해당 열 확인 필요)
-            name_col = 4  # 업종명 열
-            weight_col = 8  # 가중치 열
-            
-            for i, row in df.iterrows():
-                if i < 3:  # 헤더 행 건너뛰기
-                    continue
-                    
-                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
-                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
-                    continue
-                    
-                weight = None
-                if weight_col < len(row) and pd.notna(row[weight_col]):
-                    try:
-                        weight = float(row[weight_col])
-                    except (ValueError, TypeError):
-                        pass
-                
-                industries.append({
-                    'row': i + 1,
-                    'name': name,
-                    'weight': weight
-                })
-                
-        elif sheet_type == '서비스업생산':
-            # 서비스업생산 시트: 열 4=업종명, 열 8=가중치
-            name_col = 4  # 업종명 열
-            weight_col = 8  # 가중치 열
-            
-            for i, row in df.iterrows():
-                if i < 3:  # 헤더 행 건너뛰기
-                    continue
-                    
-                name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
-                if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
-                    continue
-                    
-                weight = None
-                if weight_col < len(row) and pd.notna(row[weight_col]):
-                    try:
-                        weight = float(row[weight_col])
-                    except (ValueError, TypeError):
-                        pass
-                
-                industries.append({
-                    'row': i + 1,
-                    'name': name,
-                    'weight': weight
-                })
-        
-        return jsonify({
-            'success': True,
-            'sheet_type': sheet_type,
-            'industries': industries[:100]  # 최대 100개
-        })
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
+# 레거시 엔드포인트 - 기초자료 수집표는 사용하지 않으므로 비활성화됨
+# @api_bp.route('/get-industry-weights', methods=['GET'])
+# def get_industry_weights():
+#     """기초자료에서 업종별 가중치 정보 추출"""
+#     import pandas as pd
+#     
+#     sheet_type = request.args.get('sheet_type', '광공업생산')
+#     raw_excel_path = session.get('raw_excel_path')
+#     
+#     if not raw_excel_path or not Path(raw_excel_path).exists():
+#         return jsonify({
+#             'success': False, 
+#             'error': '기초자료 파일을 찾을 수 없습니다. 먼저 파일을 업로드하세요.'
+#         })
+#     
+#     try:
+#         xl = pd.ExcelFile(raw_excel_path)
+#         
+#         # 시트 매핑
+#         sheet_mapping = {
+#             '광공업생산': '광공업생산',
+#             '서비스업생산': '서비스업생산'
+#         }
+#         
+#         sheet_name = sheet_mapping.get(sheet_type)
+#         if not sheet_name or sheet_name not in xl.sheet_names:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'시트를 찾을 수 없습니다: {sheet_type}'
+#             })
+#         
+#         df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+#         
+#         # 업종별 정보 추출 (열 구조에 따라 다름)
+#         industries = []
+#         
+#         if sheet_type == '광공업생산':
+#             # 광공업생산 시트: 열 4=업종명, 열 8=가중치 (또는 해당 열 확인 필요)
+#             name_col = 4  # 업종명 열
+#             weight_col = 8  # 가중치 열
+#             
+#             for i, row in df.iterrows():
+#                 if i < 3:  # 헤더 행 건너뛰기
+#                     continue
+#                     
+#                 name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+#                 if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
+#                     continue
+#                     
+#                 weight = None
+#                 if weight_col < len(row) and pd.notna(row[weight_col]):
+#                     try:
+#                         weight = float(row[weight_col])
+#                     except (ValueError, TypeError):
+#                         pass
+#                 
+#                 industries.append({
+#                     'row': i + 1,
+#                     'name': name,
+#                     'weight': weight
+#                 })
+#                 
+#         elif sheet_type == '서비스업생산':
+#             # 서비스업생산 시트: 열 4=업종명, 열 8=가중치
+#             name_col = 4  # 업종명 열
+#             weight_col = 8  # 가중치 열
+#             
+#             for i, row in df.iterrows():
+#                 if i < 3:  # 헤더 행 건너뛰기
+#                     continue
+#                     
+#                 name = str(row[name_col]).strip() if pd.notna(row[name_col]) else ''
+#                 if not name or name in ['nan', 'NaN', '업종이름', '업종명']:
+#                     continue
+#                     
+#                 weight = None
+#                 if weight_col < len(row) and pd.notna(row[weight_col]):
+#                     try:
+#                         weight = float(row[weight_col])
+#                     except (ValueError, TypeError):
+#                         pass
+#                 
+#                 industries.append({
+#                     'row': i + 1,
+#                     'name': name,
+#                     'weight': weight
+#                 })
+#         
+#         return jsonify({
+#             'success': True,
+#             'sheet_type': sheet_type,
+#             'industries': industries[:100]  # 최대 100개
+#         })
+#         
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({'success': False, 'error': f'업종 정보 추출 실패: {str(e)}'})
 
 
 @api_bp.route('/export-hwp-import', methods=['POST'])
@@ -2055,10 +2055,12 @@ def export_hwp_ready():
                     body_content = body_match.group(1)
             
             # 한글 복붙에 불필요한 요소 제거
+            # 주의: 로고 이미지(img 태그, 특히 logo_mods.png)는 보존됨
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<link[^>]*>', '', body_content)
             body_content = re.sub(r'<meta[^>]*>', '', body_content)
+            # img 태그는 제거하지 않음 (국가데이터처 로고 등 이미지 보존)
             
             # canvas를 차트 플레이스홀더로 대체 (인라인 스타일)
             chart_placeholder = '<div style="border: 2px dashed #666; padding: 15px; text-align: center; background: #f5f5f5; margin: 10px 0;">📊 [차트 영역 - 별도 이미지 삽입]</div>'

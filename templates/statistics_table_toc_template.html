@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통계표 목차 - {{ year }}년 {{ quarter }}분기</title>
+    <title>통계표 목차 - {{ year }}년 {{ quarter }}분기 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', 'Times New Roman', serif;
+            font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             line-height: 1.4;
             color: #000;
@@ -48,8 +48,8 @@
         .header-title {
             background: #cccccc;
             color: #000;
-            font-family: '돋움', 'Dotum', sans-serif;
-            font-size: 18pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             font-weight: bold;
             letter-spacing: 25px;
             padding: 10px 80px 10px 100px;
@@ -63,7 +63,7 @@
         }
         
         .toc-list li {
-            font-size: 12pt;
+            font-size: 11pt;
             padding: 15px 0;
             display: flex;
             align-items: baseline;
@@ -109,7 +109,7 @@
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 9pt;
+            font-size: 11pt;
         }
         
         @media print {

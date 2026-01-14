@@ -1001,6 +1001,10 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     
     # 템플릿 데이터
     return {
+        'report_info': {
+            'year': year,
+            'quarter': quarter
+        },
         'summary_box': summary_box,
         'nationwide_data': nationwide_data,
         'regional_data': regional_data,

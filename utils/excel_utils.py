@@ -25,11 +25,19 @@ def load_generator_module(generator_name):
     return module
 
 
-def extract_year_quarter_from_data(excel_path):
+def extract_year_quarter_from_data(excel_path, default_year=None, default_quarter=None):
     """파일명에서 연도/분기 추출
     
     파일명에서만 연도/분기 정보를 추출합니다.
-    폴백 로직은 추후 구현 예정입니다.
+    추출 실패 시 기본값을 반환하거나 예외를 발생시킵니다.
+    
+    Args:
+        excel_path: 엑셀 파일 경로
+        default_year: 추출 실패 시 사용할 기본 연도 (None이면 예외 발생)
+        default_quarter: 추출 실패 시 사용할 기본 분기 (None이면 예외 발생)
+    
+    Returns:
+        (year, quarter) 튜플
     """
     import re
     from pathlib import Path
@@ -63,84 +71,218 @@ def extract_year_quarter_from_data(excel_path):
                 return year, quarter
         
         # 파일명에서 찾지 못한 경우
-        raise ValueError(f"파일명에서 연도/분기 정보를 찾을 수 없습니다. 파일명에 '2025년 3분기' 형식의 정보가 포함되어 있는지 확인하세요.")
-        
+        if default_year is not None and default_quarter is not None:
+            print(f"[경고] 파일명에서 연도/분기 정보를 찾을 수 없습니다. 기본값 사용: {default_year}년 {default_quarter}분기")
+            return default_year, default_quarter
+        else:
+            raise ValueError(f"파일명에서 연도/분기 정보를 찾을 수 없습니다. 파일명에 '2025년 3분기' 형식의 정보가 포함되어 있는지 확인하세요.")
+    
     except ValueError:
+        # 기본값이 있으면 반환, 없으면 예외 전파
+        if default_year is not None and default_quarter is not None:
+            print(f"[경고] 연도/분기 추출 실패. 기본값 사용: {default_year}년 {default_quarter}분기")
+            return default_year, default_quarter
         raise
     except Exception as e:
         print(f"[오류] 데이터에서 연도/분기 추출 오류: {e}")
+        if default_year is not None and default_quarter is not None:
+            print(f"[경고] 기본값 사용: {default_year}년 {default_quarter}분기")
+            return default_year, default_quarter
         raise ValueError(f"데이터에서 연도/분기 추출 중 오류: {str(e)}")
 
 
-def extract_year_quarter_from_excel(filepath):
-    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용) - 선택적 추출
+def extract_year_quarter_from_excel(filepath, default_year=None, default_quarter=None):
+    """엑셀 파일에서 최신 연도와 분기 추출 (분석표용) - 전면 재작성 버전
     
-    광공업 증감률 계산에 사용된 컬럼 26에서만 추출
-    업로드 시점에 빠르게 시도하지만, 실패해도 계속 진행
-    실제 연도/분기는 보도자료 생성 시 데이터에서 추출됨
+    우선순위:
+    1. 파일명 분석 (가장 정확)
+    2. '이용관련' 시트의 K17(연도), M17(분기) 셀 확인
+    3. 데이터 시트 헤더(2~3행)에서 '20xx' 패턴 찾기
+    4. 안전장치: 현재 날짜 기준 이전 분기 또는 기본값 반환
+    
+    Args:
+        filepath: 엑셀 파일 경로
+        default_year: 추출 실패 시 사용할 기본 연도 (None이면 안전장치 사용)
+        default_quarter: 추출 실패 시 사용할 기본 분기 (None이면 안전장치 사용)
+    
+    Returns:
+        (year, quarter) 튜플
     """
     import re
+    from datetime import datetime
     
+    # ========================================
+    # 1순위: 파일명 분석 (가장 정확)
+    # ========================================
+    try:
+        filename = Path(filepath).stem
+        print(f"[연도/분기 추출] 1순위: 파일명 분석 시작 - '{filename}'")
+        
+        # 파일명 패턴 (다양한 형식 지원)
+        filename_patterns = [
+            r'(\d{4})년[_\s-]*(\d)분기',      # 2025년 3분기, 2025년_3분기, 2025년-3분기
+            r'(\d{2})년[_\s-]*(\d)분기',      # 25년 3분기, 25년_3분기
+            r'(\d{4})[년\s_-]+(\d)분기',     # 2025년_3분기, 2025 3분기
+            r'(\d{2})[년\s_-]+(\d)분기',     # 25년_3분기, 25 3분기
+            r'(\d{4})[_\s-](\d)[Qq]',        # 2025_3Q, 2025 3q, 2025-3Q
+            r'(\d{2})[_\s-](\d)[Qq]',        # 25_3Q, 25 3q
+            r'(\d{4})[_\s-](\d)[분]',        # 2025_3, 2025 3분
+            r'(\d{2})[_\s-](\d)[분]',        # 25_3, 25 3분
+            r'(\d{4})[_\s-](\d)',            # 2025_3, 2025 3
+            r'(\d{2})[_\s-](\d)',            # 25_3, 25 3
+        ]
+        
+        for pattern in filename_patterns:
+            match = re.search(pattern, filename)
+            if match:
+                year_str = match.group(1)
+                quarter = int(match.group(2))
+                
+                # 2자리 연도 처리
+                if len(year_str) == 2:
+                    year = 2000 + int(year_str)
+                else:
+                    year = int(year_str)
+                
+                # 분기 유효성 검사
+                if 1 <= quarter <= 4:
+                    print(f"[연도/분기 추출] ✅ 1순위 성공: 파일명에서 추출 - {year}년 {quarter}분기")
+                    return year, quarter
+        
+        print(f"[연도/분기 추출] 1순위 실패: 파일명에서 패턴을 찾지 못했습니다.")
+    except Exception as e:
+        print(f"[연도/분기 추출] 1순위 오류: {e}")
+    
+    # ========================================
+    # 2순위: 엑셀 시트 정밀 탐색
+    # ========================================
     try:
         xl = pd.ExcelFile(filepath)
+        print(f"[연도/분기 추출] 2순위: 엑셀 시트 탐색 시작")
         
-        # A(광공업생산)집계 시트에서 광공업 증감률 계산에 사용된 컬럼 26의 헤더 확인
-        target_sheet = 'A(광공업생산)집계'
-        if target_sheet not in xl.sheet_names:
-            print(f"[연도/분기 추출] {target_sheet} 시트를 찾을 수 없습니다.")
-            raise ValueError(f"{target_sheet} 시트를 찾을 수 없습니다.")
-        
-        # 헤더 행만 읽기 (2-3행, 0-based: 1-2행)
-        df = pd.read_excel(xl, sheet_name=target_sheet, header=None, nrows=3)
-        
-        if len(df) < 2 or len(df.columns) < 27:
-            print(f"[연도/분기 추출] {target_sheet} 시트에 컬럼 26이 없습니다. (현재 컬럼 수: {len(df.columns)})")
-            raise ValueError(f"{target_sheet} 시트에 컬럼 26이 없습니다.")
-        
-        # 광공업 증감률 계산에 사용된 컬럼 26 (1-based, 0-based: 25)
-        growth_calc_col = 25  # 0-based 인덱스
-        
-        # 헤더 행(1-2행, 0-based)에서 컬럼 26의 값 확인
-        for row_idx in [1, 2]:
-            if row_idx < len(df):
-                cell_value = df.iloc[row_idx, growth_calc_col]
-                if pd.notna(cell_value):
-                    cell_str = str(cell_value).strip()
-                    print(f"[연도/분기 추출] {target_sheet} 시트 컬럼 26 (증감률 계산용) 헤더: '{cell_str}'")
-                    
-                    patterns = [
-                        r'(\d{4})\s*\.?\s*(\d)/4',      # 2025 2/4, 2025.2/4, 2025.2/4p
-                        r'(\d{2})\s*\.?\s*(\d)/4',       # 25 2/4, 25.2/4, 25.2/4p
-                        r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
-                        r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
-                        r'(\d{4})_(\d)Q',                # 2025_2Q
-                        r'(\d{4})_(\d)',                 # 2025_2
-                        r'(\d{2})_(\d)',                 # 25_3
-                    ]
-                    
-                    for pattern in patterns:
-                        match = re.search(pattern, cell_str)
-                        if match:
-                            year_str = match.group(1)
-                            quarter = int(match.group(2))
+        # 2-1. '이용관련' 시트의 K17(연도), M17(분기) 확인
+        if '이용관련' in xl.sheet_names:
+            print(f"[연도/분기 추출] 2-1: '이용관련' 시트 확인 중...")
+            try:
+                df_info = pd.read_excel(xl, sheet_name='이용관련', header=None)
+                
+                # K17 셀 (0-based: 행 16, 열 10)
+                if len(df_info) > 16 and len(df_info.columns) > 10:
+                    year_cell = df_info.iloc[16, 10]  # K17
+                    if pd.notna(year_cell):
+                        year_str = str(year_cell).strip()
+                        # 연도 추출 (숫자만)
+                        year_match = re.search(r'(\d{4})', year_str)
+                        if year_match:
+                            year = int(year_match.group(1))
                             
-                            if len(year_str) == 2:
-                                year = 2000 + int(year_str)
-                            else:
-                                year = int(year_str)
+                            # M17 셀 (0-based: 행 16, 열 12)
+                            if len(df_info.columns) > 12:
+                                quarter_cell = df_info.iloc[16, 12]  # M17
+                                if pd.notna(quarter_cell):
+                                    quarter_str = str(quarter_cell).strip()
+                                    # 분기 추출 (1-4 숫자)
+                                    quarter_match = re.search(r'(\d)', quarter_str)
+                                    if quarter_match:
+                                        quarter = int(quarter_match.group(1))
+                                        if 1 <= quarter <= 4:
+                                            print(f"[연도/분기 추출] ✅ 2-1 성공: '이용관련' 시트 K17/M17에서 추출 - {year}년 {quarter}분기")
+                                            return year, quarter
+                
+                print(f"[연도/분기 추출] 2-1 실패: '이용관련' 시트의 K17/M17에서 추출 실패")
+            except Exception as e:
+                print(f"[연도/분기 추출] 2-1 오류: {e}")
+        
+        # 2-2. 데이터 시트 헤더(2~3행)에서 '20xx' 패턴 찾기
+        print(f"[연도/분기 추출] 2-2: 데이터 시트 헤더 탐색 중...")
+        target_sheets = ['A 분석', 'B 분석', 'A(광공업생산)집계', 'B(서비스업생산)집계']
+        
+        for sheet_name in target_sheets:
+            if sheet_name not in xl.sheet_names:
+                continue
+            
+            try:
+                # 헤더 행만 읽기 (2-3행, 0-based: 1-2행)
+                df = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=3)
+                
+                if len(df) < 2:
+                    continue
+                
+                # 헤더 행(1-2행, 0-based)에서 연도/분기 패턴 찾기
+                for row_idx in [1, 2]:
+                    if row_idx >= len(df):
+                        continue
+                    
+                    # 모든 컬럼을 순회하며 패턴 찾기 (최대 30개 컬럼)
+                    for col_idx in range(min(30, len(df.columns))):
+                        cell_value = df.iloc[row_idx, col_idx]
+                        if pd.notna(cell_value):
+                            cell_str = str(cell_value).strip()
                             
-                            print(f"[연도/분기 추출] 광공업 증감률 계산용 분기: {year}년 {quarter}분기")
-                            return year, quarter
+                            # 연도/분기 패턴
+                            patterns = [
+                                r'(\d{4})\s*\.?\s*(\d)/4',      # 2025 2/4, 2025.2/4
+                                r'(\d{2})\s*\.?\s*(\d)/4',       # 25 2/4, 25.2/4
+                                r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
+                                r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
+                                r'(\d{4})[_\s-](\d)[Qq]',        # 2025_2Q, 2025 2q
+                                r'(\d{2})[_\s-](\d)[Qq]',        # 25_2Q, 25 2q
+                                r'(\d{4})[_\s-](\d)',            # 2025_2, 2025 2
+                                r'(\d{2})[_\s-](\d)',            # 25_2, 25 2
+                            ]
+                            
+                            for pattern in patterns:
+                                match = re.search(pattern, cell_str)
+                                if match:
+                                    year_str = match.group(1)
+                                    quarter = int(match.group(2))
+                                    
+                                    if len(year_str) == 2:
+                                        year = 2000 + int(year_str)
+                                    else:
+                                        year = int(year_str)
+                                    
+                                    # 분기 유효성 검사
+                                    if 1 <= quarter <= 4:
+                                        print(f"[연도/분기 추출] ✅ 2-2 성공: '{sheet_name}' 시트 헤더에서 추출 - {year}년 {quarter}분기")
+                                        return year, quarter
+            except Exception as e:
+                print(f"[연도/분기 추출] 2-2 오류 ({sheet_name}): {e}")
+                continue
         
-        print(f"[연도/분기 추출] {target_sheet} 시트 컬럼 26에서 패턴을 찾지 못했습니다.")
-        raise ValueError(f"{target_sheet} 시트의 컬럼 26 헤더에서 연도/분기 정보를 찾을 수 없습니다.")
-        
-    except ValueError:
-        # ValueError는 그대로 전파 (기본값 사용하지 않음)
-        raise
+        print(f"[연도/분기 추출] 2순위 실패: 모든 시트 탐색 실패")
     except Exception as e:
-        print(f"[오류] 연도/분기 추출 오류: {e}")
-        raise ValueError(f"연도/분기 추출 중 오류가 발생했습니다: {str(e)}")
+        print(f"[연도/분기 추출] 2순위 오류: {e}")
+    
+    # ========================================
+    # 3순위: 안전장치 (Fallback)
+    # ========================================
+    print(f"[연도/분기 추출] 3순위: 안전장치 실행")
+    
+    # 기본값이 제공된 경우 사용
+    if default_year is not None and default_quarter is not None:
+        print(f"[연도/분기 추출] ⚠️ 안전장치: 제공된 기본값 사용 - {default_year}년 {default_quarter}분기")
+        return default_year, default_quarter
+    
+    # 현재 날짜 기준 이전 분기 계산
+    try:
+        now = datetime.now()
+        current_year = now.year
+        current_quarter = (now.month - 1) // 3 + 1
+        
+        # 이전 분기 계산
+        if current_quarter == 1:
+            fallback_year = current_year - 1
+            fallback_quarter = 4
+        else:
+            fallback_year = current_year
+            fallback_quarter = current_quarter - 1
+        
+        print(f"[연도/분기 추출] ⚠️ 안전장치: 현재 날짜 기준 이전 분기 사용 - {fallback_year}년 {fallback_quarter}분기")
+        return fallback_year, fallback_quarter
+    except Exception as e:
+        print(f"[연도/분기 추출] ⚠️ 안전장치 오류: {e}, 최종 기본값 사용 - 2025년 2분기")
+        return 2025, 2
 
 
 def extract_year_quarter_from_raw(filepath):

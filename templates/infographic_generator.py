@@ -40,15 +40,29 @@ REGIONS_17 = ['서울', '부산', '대구', '인천', '광주', '대전', '울�
 class 인포그래픽Generator:
     """인포그래픽 데이터 생성기"""
     
-    def __init__(self, excel_path):
+    def __init__(self, excel_path, year=None, quarter=None):
         """
         Args:
             excel_path: 분석 엑셀 파일 경로
+            year: 연도 (None이면 파일명에서 추출 시도)
+            quarter: 분기 (None이면 파일명에서 추출 시도)
         """
         self.excel_path = excel_path
         self.xl = pd.ExcelFile(excel_path)
-        self.year = 2025
-        self.quarter = 2
+        
+        # year, quarter가 제공되지 않으면 파일명에서 추출 시도
+        if year is None or quarter is None:
+            try:
+                from utils.excel_utils import extract_year_quarter_from_data
+                extracted_year, extracted_quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
+                self.year = year if year is not None else extracted_year
+                self.quarter = quarter if quarter is not None else extracted_quarter
+            except:
+                self.year = year if year is not None else 2025
+                self.quarter = quarter if quarter is not None else 2
+        else:
+            self.year = year
+            self.quarter = quarter
         
     def normalize_region(self, region_name):
         """지역명 정규화"""
@@ -592,13 +606,13 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     #     # 기초자료에서 인포그래픽 데이터 직접 추출
     #     # return extract_from_raw_data(extractor, ...)
     
-    generator = 인포그래픽Generator(excel_path)
+    generator = 인포그래픽Generator(excel_path, year=year, quarter=quarter)
     return generator.extract_all_data()
 
 
-def generate_report(excel_path, template_path, output_path=None):
+def generate_report(excel_path, template_path, output_path=None, year=None, quarter=None):
     """보도자료 HTML 생성"""
-    generator = 인포그래픽Generator(excel_path)
+    generator = 인포그래픽Generator(excel_path, year=year, quarter=quarter)
     html = generator.render_html(template_path, output_path)
     data = generator.extract_all_data()
     return data

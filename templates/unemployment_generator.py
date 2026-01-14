@@ -379,6 +379,8 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     
     return {
         'report_info': {
+            'year': year,
+            'quarter': quarter,
             'section_number': '나',
             'section_title': '실업률',
             'page_number': '- 14 -'

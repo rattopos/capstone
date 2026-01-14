@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 
-from data_converter import DataConverter
+# from data_converter import DataConverter  # 레거시 모듈 - 더 이상 사용하지 않음
 from utils.excel_utils import extract_year_quarter_from_raw
 from services.report_generator import (
     generate_report_html,
@@ -59,17 +59,17 @@ class AppController:
             # 연도/분기 추출
             year, quarter = extract_year_quarter_from_raw(str(filepath))
             
-            # DataConverter로 검증
-            try:
-                converter = DataConverter(str(filepath))
+            # DataConverter는 더 이상 사용하지 않음 (레거시 모듈)
+            # 파일 검증은 extract_year_quarter_from_raw로 충분
+            if year and quarter:
                 self.raw_excel_path = str(filepath)
                 self.year = year
                 self.quarter = quarter
                 self.file_type = 'raw_direct'
                 
                 return True, f"파일 업로드 완료: {year}년 {quarter}분기"
-            except Exception as e:
-                return False, f"파일 처리 오류: {str(e)}"
+            else:
+                return False, "연도/분기 정보를 추출할 수 없습니다."
                 
         except Exception as e:
             return False, f"파일 업로드 실패: {str(e)}"
@@ -139,8 +139,7 @@ class AppController:
                     self.raw_excel_path,
                     report_config,
                     self.year,
-                    self.quarter,
-                    raw_excel_path=self.raw_excel_path
+                    self.quarter
                 )
                 # 반환값이 (html_content, error) 또는 (html_content, error, missing_fields)일 수 있음
                 if len(result) == 2:
@@ -156,8 +155,7 @@ class AppController:
                     report_config,
                     self.year,
                     self.quarter,
-                    custom_data=None,
-                    raw_excel_path=self.raw_excel_path
+                    custom_data=None
                 )
         except Exception as e:
             import traceback

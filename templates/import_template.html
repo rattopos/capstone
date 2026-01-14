@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅰ. 부문별 지역경제동향 - 수입</title>
+    <title>Ⅰ. 부문별 지역경제동향 - 수입 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     
     {# 결측치 플레이스홀더 매크로 #}
     {% macro val(value, format="%.1f", suffix="") %}
@@ -23,8 +23,8 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', 'Times New Roman', serif;
-            font-size: 10.5pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             line-height: 1.4;
             color: #000;
             background: #fff;
@@ -47,7 +47,7 @@
         
         /* 소제목 */
         .subsection-title {
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             font-weight: bold;
             margin-bottom: 10px;
@@ -99,7 +99,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 10pt;
+            font-size: 11pt;
         }
         
         .detail-box .item {
@@ -124,20 +124,20 @@
             font-weight: bold;
             margin-bottom: 6px;
             font-size: 11pt;
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: "Malgun Gothic", serif;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 6px;
-            font-size: 9pt;
+            font-size: 11pt;
             table-layout: fixed;
         }
         
         .data-table th,
         .data-table td {
-            border: 1px solid #000;
+            
             padding: 2px 3px;
             text-align: center;
             vertical-align: middle;
@@ -173,14 +173,14 @@
         }
         
         .footnote {
-            font-size: 8pt;
+            font-size: 11pt;
             color: #333;
             margin-top: 4px;
         }
         
         .page-number {
             text-align: center;
-            font-size: 10pt;
+            font-size: 11pt;
             margin-top: 15px;
         }
         
@@ -281,40 +281,40 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 수입액 및 증감률 》</div>
-            <table class="data-table">
-                <thead>
+            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+                <thead style="border: 1px solid black !important;">
                     <tr>
-                        <th rowspan="2" colspan="2" style="width: 60px;"></th>
-                        <th colspan="4">전년동분기대비 증감률(%)</th>
-                        <th colspan="2" class="amount-section">수입액(억달러)</th>
+                        <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
+                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
+                        <th colspan="2" class="amount-section" style="border: 1px solid black !important;">수입액(억달러)</th>
                     </tr>
                     <tr>
-                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "2023.2/4" }}</th>
-                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "2024.2/4" }}</th>
-                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "2025.1/4" }}</th>
-                        <th style="width: 58px;">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
-                        <th class="amount-section" style="width: 70px;">{{ summary_table.columns.amount_columns[0] if summary_table.columns else "2024.2/4" }}</th>
-                        <th class="amount-section" style="width: 70px;">{{ summary_table.columns.amount_columns[1] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "2023.2/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "2024.2/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "2025.1/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[0] if summary_table.columns else "2024.2/4" }}</th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[1] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in summary_table.rows %}
                     <tr>
                         {% if row.region_group %}
-                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}">{{ row.region_group }}</td>
-                        <td class="region-name">{{ row.sido }}</td>
+                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}" style="border: 1px solid black !important;">{{ row.region_group }}</td>
+                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
                         {% elif '전' in row.sido and '국' in row.sido %}
-                        <td colspan="2">{{ row.sido }}</td>
+                        <td colspan="2" style="border: 1px solid black !important;">{{ row.sido }}</td>
                         {% else %}
-                        <td class="region-name">{{ row.sido }}</td>
+                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
                         {% endif %}
                         {% for change in row.changes %}
-                        <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}">
+                        <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(change) }}
                         </td>
                         {% endfor %}
                         {% for amount in row.amounts %}
-                        <td class="amount-section {% if amount is none or amount == '' or amount == '-' %}missing-cell{% endif %}">
+                        <td class="amount-section {% if amount is none or amount == '' or amount == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(amount) }}
                         </td>
                         {% endfor %}

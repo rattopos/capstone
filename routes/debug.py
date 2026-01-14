@@ -1193,7 +1193,7 @@ def generate_full_html():
         sections.append({'name': '시도별', 'count': len(regional_pages), 'pages': regional_pages})
         
         # 4. 통계표
-        statistics_pages = _generate_statistics_pages(excel_path, year, quarter, raw_excel_path)
+        statistics_pages = _generate_statistics_pages(excel_path, year, quarter)
         pages.extend(statistics_pages)
         sections.append({'name': '통계표', 'count': len(statistics_pages), 'pages': statistics_pages})
         
@@ -1263,7 +1263,7 @@ def generate_section_html():
             pages = _generate_regional_pages(excel_path, year, quarter)
             sections.append({'name': '시도별', 'count': len(pages), 'pages': pages})
         elif section == 'statistics':
-            pages = _generate_statistics_pages(excel_path, year, quarter, raw_excel_path)
+            pages = _generate_statistics_pages(excel_path, year, quarter)
             sections.append({'name': '통계표', 'count': len(pages), 'pages': pages})
         else:
             return jsonify({'success': False, 'error': f'알 수 없는 섹션: {section}'})
@@ -1333,7 +1333,7 @@ def generate_single_html():
             report_config = next((r for r in SECTOR_REPORTS if r['id'] == report_id), None)
             if report_config:
                 section_name = '부문별'
-                html, error, _ = generate_report_html(excel_path, report_config, year, quarter, None, raw_excel_path)
+                html, error, _ = generate_report_html(excel_path, report_config, year, quarter, None)
                 if html:
                     pages.append({'id': report_id, 'name': report_config['name'], 'section': section_name, 'content': html})
         
@@ -1352,7 +1352,7 @@ def generate_single_html():
             stat_config = next((s for s in STATISTICS_REPORTS if s['id'] == report_id), None)
             if stat_config:
                 section_name = '통계표'
-                html, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path)
+                html, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter)
                 if html:
                     pages.append({'id': report_id, 'name': stat_config['name'], 'section': section_name, 'content': html})
         
@@ -1601,7 +1601,7 @@ def _generate_sector_pages(excel_path, year, quarter, raw_excel_path=None):
     
     for report in SECTOR_REPORTS:
         try:
-            html, error, _ = generate_report_html(excel_path, report, year, quarter, None, raw_excel_path)
+            html, error, _ = generate_report_html(excel_path, report, year, quarter, None)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)
@@ -1680,13 +1680,13 @@ def _generate_regional_pages(excel_path, year, quarter):
     return pages
 
 
-def _generate_statistics_pages(excel_path, year, quarter, raw_excel_path=None):
+def _generate_statistics_pages(excel_path, year, quarter):
     """통계표 페이지 생성"""
     pages = []
     
     for stat in STATISTICS_REPORTS:
         try:
-            html, error = generate_individual_statistics_html(excel_path, stat, year, quarter, raw_excel_path)
+            html, error = generate_individual_statistics_html(excel_path, stat, year, quarter)
             if html:
                 # HTML 컨텐츠 정제 (body 내용만 추출)
                 content, _ = extract_body_content(html)

@@ -72,14 +72,19 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         return None, f"스키마 기반 보도자료 생성 오류: {str(e)}", []
 
 
-def generate_report_html(excel_path, report_config, year, quarter, custom_data=None, raw_excel_path=None):
+def generate_report_html(excel_path, report_config, year, quarter, custom_data=None):
     """보도자료 HTML 생성
     
-    주의: 기초자료는 사용하지 않습니다. raw_excel_path는 항상 None입니다.
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        report_config: 보도자료 설정 딕셔너리
+        year: 연도
+        quarter: 분기
+        custom_data: 커스텀 데이터 (선택)
+    
+    주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
     """
     try:
-        # 기초자료는 사용하지 않음
-        raw_excel_path = None
         
         # 파일 존재 및 접근 가능 여부 확인
         excel_path_obj = Path(excel_path)
@@ -128,27 +133,46 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         data = None
         
         # 방법 1: generate_report_data 함수 사용
-        # 주의: 기초자료는 사용하지 않으므로 raw_excel_path는 항상 None
+        # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         if hasattr(module, 'generate_report_data'):
             print(f"[DEBUG] generate_report_data 함수 사용")
             try:
-                # 기초자료는 사용하지 않으므로 분석표만 사용
-                data = module.generate_report_data(excel_path)
-            except TypeError:
-                data = module.generate_report_data(excel_path)
+                # 함수 시그니처 확인하여 year, quarter 전달 시도
+                import inspect
+                sig = inspect.signature(module.generate_report_data)
+                params = list(sig.parameters.keys())
+                
+                if 'year' in params and 'quarter' in params:
+                    print(f"[DEBUG] year, quarter 전달: {year}년 {quarter}분기")
+                    data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                elif 'year' in params:
+                    print(f"[DEBUG] year 전달: {year}년")
+                    data = module.generate_report_data(excel_path, year=year)
+                else:
+                    # 분석표만 사용
+                    data = module.generate_report_data(excel_path)
+            except TypeError as e:
+                # 파라미터가 맞지 않으면 기본 호출 시도
+                try:
+                    data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                except TypeError:
+                    data = module.generate_report_data(excel_path)
             except Exception as e:
                 print(f"[WARNING] 데이터 생성 실패: {e}")
-                data = module.generate_report_data(excel_path)
+                try:
+                    data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                except:
+                    data = module.generate_report_data(excel_path)
             print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         # 방법 2: generate_report 함수 직접 호출
-        # 주의: 기초자료는 사용하지 않으므로 raw_excel_path는 전달하지 않음
+        # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         elif hasattr(module, 'generate_report'):
             print(f"[DEBUG] generate_report 함수 직접 호출")
             template_path = TEMPLATES_DIR / template_name
             output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
             try:
-                # 기초자료는 사용하지 않으므로 분석표만 사용
+                # 분석표만 사용
                 data = module.generate_report(excel_path, template_path, output_path)
             except (TypeError, AttributeError):
                 data = module.generate_report(excel_path, template_path, output_path)
@@ -157,9 +181,26 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 방법 3: Generator 클래스 사용
         elif generator_class:
             print(f"[DEBUG] Generator 클래스 사용: {generator_class.__name__}")
-            generator = generator_class(excel_path)
+            try:
+                # __init__ 시그니처 확인하여 year, quarter 전달 시도
+                import inspect
+                sig = inspect.signature(generator_class.__init__)
+                params = list(sig.parameters.keys())
+                
+                if 'year' in params and 'quarter' in params:
+                    print(f"[DEBUG] Generator에 year, quarter 전달: {year}년 {quarter}분기")
+                    generator = generator_class(excel_path, year=year, quarter=quarter)
+                elif 'year' in params:
+                    print(f"[DEBUG] Generator에 year 전달: {year}년")
+                    generator = generator_class(excel_path, year=year)
+                else:
+                    generator = generator_class(excel_path)
+            except (TypeError, AttributeError):
+                # 시그니처 확인 실패 시 기본 초기화
+                generator = generator_class(excel_path)
+            
             data = generator.extract_all_data()
-            print(f"[DEBUG] 추출된 데이터 키: {list(data.keys()) if data else 'None'}")
+            print(f"[DEBUG] 데이터 키: {list(data.keys()) if data else 'None'}")
         
         else:
             error_msg = f"유효한 Generator를 찾을 수 없습니다: {generator_name}"
@@ -238,6 +279,27 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     obj[name][int(idx)] = value
                 else:
                     obj[final_key] = value
+        
+        # report_info 강제 추가/업데이트 (연도/분기 보장)
+        if data is None:
+            data = {}
+        
+        if 'report_info' not in data:
+            data['report_info'] = {}
+        
+        # year, quarter가 None이 아니면 업데이트
+        if year is not None:
+            data['report_info']['year'] = year
+        if quarter is not None:
+            data['report_info']['quarter'] = quarter
+        
+        # report_info에 year나 quarter가 없으면 기본값 사용
+        if 'year' not in data['report_info'] or data['report_info']['year'] is None:
+            data['report_info']['year'] = year if year is not None else 2025
+        if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
+            data['report_info']['quarter'] = quarter if quarter is not None else 2
+        
+        print(f"[DEBUG] report_info 설정: {data['report_info']}")
         
         # 결측치 확인
         missing = check_missing_data(data, report_id)
@@ -565,8 +627,16 @@ def _generate_default_grdp_html(grdp_data):
     return html
 
 
-def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=None):
-    """통계표 보도자료 HTML 생성"""
+def generate_statistics_report_html(excel_path, year, quarter):
+    """통계표 보도자료 HTML 생성
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        year: 연도
+        quarter: 분기
+    
+    주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
+    """
     try:
         generator_path = TEMPLATES_DIR / 'statistics_table_generator.py'
         if not generator_path.exists():
@@ -576,12 +646,26 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         
-        generator = module.통계표Generator(
-            excel_path,
-            raw_excel_path=raw_excel_path,
-            current_year=year,
-            current_quarter=quarter
-        )
+        # Generator 초기화 시그니처 확인하여 raw_excel_path 파라미터 제거
+        import inspect
+        sig = inspect.signature(module.통계표Generator.__init__)
+        params = list(sig.parameters.keys())
+        
+        if 'raw_excel_path' in params:
+            # raw_excel_path 파라미터가 있으면 None으로 전달 (하위 호환성)
+            generator = module.통계표Generator(
+                excel_path,
+                raw_excel_path=None,
+                current_year=year,
+                current_quarter=quarter
+            )
+        else:
+            # raw_excel_path 파라미터가 없으면 제거된 버전
+            generator = module.통계표Generator(
+                excel_path,
+                current_year=year,
+                current_quarter=quarter
+            )
         template_path = TEMPLATES_DIR / 'statistics_table_template.html'
         
         html_content = generator.render_html(str(template_path), year=year, quarter=quarter)
@@ -596,8 +680,17 @@ def generate_statistics_report_html(excel_path, year, quarter, raw_excel_path=No
         return None, error_msg
 
 
-def generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path=None):
-    """개별 통계표 HTML 생성"""
+def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
+    """개별 통계표 HTML 생성
+    
+    Args:
+        excel_path: 분석표 엑셀 파일 경로
+        stat_config: 통계표 설정 딕셔너리
+        year: 연도
+        quarter: 분기
+    
+    주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
+    """
     try:
         stat_id = stat_config['id']
         template_name = stat_config['template']
@@ -609,12 +702,27 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter, 
             spec = importlib.util.spec_from_file_location('statistics_table_generator', str(generator_path))
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            generator = module.StatisticsTableGenerator(
-                excel_path,
-                raw_excel_path=raw_excel_path,
-                current_year=year,
-                current_quarter=quarter
-            )
+            
+            # Generator 초기화 시그니처 확인하여 raw_excel_path 파라미터 제거
+            import inspect
+            sig = inspect.signature(module.StatisticsTableGenerator.__init__)
+            params = list(sig.parameters.keys())
+            
+            if 'raw_excel_path' in params:
+                # raw_excel_path 파라미터가 있으면 None으로 전달 (하위 호환성)
+                generator = module.StatisticsTableGenerator(
+                    excel_path,
+                    raw_excel_path=None,
+                    current_year=year,
+                    current_quarter=quarter
+                )
+            else:
+                # raw_excel_path 파라미터가 없으면 제거된 버전
+                generator = module.StatisticsTableGenerator(
+                    excel_path,
+                    current_year=year,
+                    current_quarter=quarter
+                )
         else:
             generator = None
         

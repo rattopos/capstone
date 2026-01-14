@@ -74,7 +74,7 @@ def generate_preview():
     # 연도/분기가 없으면 데이터에서 추출
     if not year or not quarter:
         try:
-            year, quarter = extract_year_quarter_from_data(excel_path)
+            year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
             # 세션에 저장
             session['year'] = year
             session['quarter'] = quarter
@@ -87,11 +87,9 @@ def generate_preview():
     if not report_config:
         return jsonify({'success': False, 'error': f'보도자료를 찾을 수 없습니다: {report_id}'}), 400
     
-    # 기초자료는 사용하지 않음
-    raw_excel_path = None
-    
+    # 기초자료 수집표는 사용하지 않음 (분석표만 사용)
     html_content, error, missing_fields = generate_report_html(
-        excel_path, report_config, year, quarter, custom_data, raw_excel_path
+        excel_path, report_config, year, quarter, custom_data
     )
     
     if error:
@@ -153,7 +151,7 @@ def generate_summary_preview():
         # 연도/분기가 없으면 데이터에서 추출
         if not year or not quarter:
             try:
-                year, quarter = extract_year_quarter_from_data(excel_path)
+                year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
                 session['year'] = year
                 session['quarter'] = quarter
                 print(f"[요약 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
@@ -363,7 +361,7 @@ def generate_statistics_preview():
     # 연도/분기가 없으면 데이터에서 추출
     if not year or not quarter:
         try:
-            year, quarter = extract_year_quarter_from_data(excel_path)
+            year, quarter = extract_year_quarter_from_data(excel_path, default_year=2025, default_quarter=2)
             session['year'] = year
             session['quarter'] = quarter
             print(f"[통계표 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
@@ -374,9 +372,8 @@ def generate_statistics_preview():
     if not stat_config:
         return jsonify({'success': False, 'error': f'통계표를 찾을 수 없습니다: {stat_id}'}), 400
     
-    # 기초자료는 사용하지 않음
-    raw_excel_path = None
-    html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter, raw_excel_path)
+    # 기초자료 수집표는 사용하지 않음 (분석표만 사용)
+    html_content, error = generate_individual_statistics_html(excel_path, stat_config, year, quarter)
     
     if error:
         return jsonify({'success': False, 'error': error}), 400
@@ -400,9 +397,8 @@ def generate_statistics_full_preview():
     if not excel_path or not Path(excel_path).exists():
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'}), 400
     
-    # 기초자료는 사용하지 않음
-    raw_excel_path = None
-    html_content, error = generate_statistics_report_html(excel_path, year, quarter, raw_excel_path)
+    # 기초자료 수집표는 사용하지 않음 (분석표만 사용)
+    html_content, error = generate_statistics_report_html(excel_path, year, quarter)
     
     if error:
         return jsonify({'success': False, 'error': error}), 400

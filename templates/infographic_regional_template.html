@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 인포그래픽</title>
+    <title>지역경제동향 인포그래픽 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-        
-        * {
+                * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -27,7 +25,7 @@
         }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
+            font-family: "Malgun Gothic", serif;
             background: var(--pale-blue);
             color: var(--dark-gray);
             min-height: 100vh;
@@ -68,13 +66,13 @@
         }
         
         .period {
-            font-size: 20px;
+            font-size: 11pt;
             font-weight: 700;
             color: var(--kostat-navy);
         }
         
         .main-title {
-            font-size: 36px;
+            font-size: 11pt;
             font-weight: 900;
             color: var(--kostat-navy);
             letter-spacing: -1px;
@@ -117,13 +115,13 @@
         }
         
         .card-title {
-            font-size: 16px;
+            font-size: 11pt;
             font-weight: 700;
             color: white;
         }
         
         .card-subtitle {
-            font-size: 10px;
+            font-size: 11pt;
             color: rgba(255,255,255,0.8);
         }
         
@@ -221,7 +219,7 @@
         }
         
         .ranking-label {
-            font-size: 11px;
+            font-size: 11pt;
             font-weight: 700;
             padding: 3px 10px;
             border-radius: 10px;
@@ -244,7 +242,7 @@
             align-items: center;
             gap: 5px;
             margin-bottom: 4px;
-            font-size: 13px;
+            font-size: 11pt;
             color: var(--dark-gray);
         }
         
@@ -263,7 +261,7 @@
         .region-value.decrease { color: #89BEDE; } /* Sky Blue */
         
         .arrow {
-            font-size: 10px;
+            font-size: 11pt;
             font-weight: 700;
         }
         
@@ -280,12 +278,12 @@
         }
         
         .national-label {
-            font-size: 11px;
+            font-size: 11pt;
             color: var(--medium-gray);
         }
         
         .national-value {
-            font-size: 14px;
+            font-size: 11pt;
             font-weight: 700;
             color: var(--dark-gray);
         }
@@ -299,7 +297,7 @@
             justify-content: center;
             gap: 15px;
             margin-top: 8px;
-            font-size: 10px;
+            font-size: 11pt;
         }
         
         .legend-item {

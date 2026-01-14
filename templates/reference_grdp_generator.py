@@ -36,12 +36,16 @@ class 참고_GRDP_Generator:
         {"group": "동남", "region": "경남"},
     ]
     
-    def __init__(self, excel_path=None):
+    def __init__(self, excel_path=None, year=None, quarter=None):
         """
         Args:
             excel_path: 분석표 엑셀 파일 경로 (GRDP는 결측치이므로 사용하지 않음)
+            year: 연도 (선택사항)
+            quarter: 분기 (선택사항)
         """
         self.excel_path = excel_path
+        self.year = year
+        self.quarter = quarter
     
     def generate_placeholder_data(self, year=2025, quarter=2):
         """플레이스홀더 데이터 생성 (모든 값이 결측치)"""
@@ -332,7 +336,7 @@ def generate_report_data(excel_path, year=2025, quarter=2, use_sample=False):
             print(f"[GRDP Generator] JSON 로드 실패: {e}")
     
     # 2. Generator 사용
-    generator = 참고_GRDP_Generator(excel_path)
+    generator = 참고_GRDP_Generator(excel_path, year=year, quarter=quarter)
     
     if use_sample:
         return generator.generate_sample_data(year, quarter)

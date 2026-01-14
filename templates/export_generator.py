@@ -783,6 +783,8 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     
     return {
         'report_info': {
+            'year': year,
+            'quarter': quarter,
             'main_section_number': '4',
             'main_section_title': '수출입 동향',
             'section_number': '가',

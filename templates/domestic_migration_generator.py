@@ -290,14 +290,18 @@ def generate_summary_table(sido_data, sido_age_data):
 class DomesticMigrationGenerator:
     """국내인구이동 보도자료 생성 클래스"""
     
-    def __init__(self, excel_path: str):
+    def __init__(self, excel_path: str, year=None, quarter=None):
         """
         초기화
         
         Args:
             excel_path: 엑셀 파일 경로
+            year: 연도 (선택사항)
+            quarter: 분기 (선택사항)
         """
         self.excel_path = excel_path
+        self.year = year
+        self.quarter = quarter
         self.summary_df = None
         self.reference_df = None
         self.sido_data = None
@@ -330,6 +334,8 @@ class DomesticMigrationGenerator:
         
         return {
             'report_info': {
+                'year': self.year,
+                'quarter': self.quarter,
                 'main_section_number': '7',
                 'main_section_title': '국내 인구이동',
                 'page_number': '- 15 -'
@@ -352,7 +358,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
         year: 현재 연도 (선택사항)
         quarter: 현재 분기 (선택사항)
     """
-    generator = DomesticMigrationGenerator(excel_path)
+    generator = DomesticMigrationGenerator(excel_path, year=year, quarter=quarter)
     return generator.extract_all_data()
 
 def render_template(data, template_path, output_path):

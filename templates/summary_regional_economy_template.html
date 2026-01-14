@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향[요약]</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
@@ -14,8 +12,8 @@
         }
         
         body {
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
-            font-size: 10pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             line-height: 1.6;
             color: #000;
             background: #fff;
@@ -31,7 +29,7 @@
         /* 페이지 제목 */
         .page-title {
             text-align: center;
-            font-size: 18pt;
+            font-size: 11pt;
             font-weight: 700;
             margin-bottom: 25px;
             padding-bottom: 10px;
@@ -53,7 +51,7 @@
             margin-bottom: 12px;
             padding-left: 25px;
             position: relative;
-            font-size: 10pt;
+            font-size: 11pt;
             line-height: 1.7;
         }
         
@@ -95,7 +93,7 @@
         
         .nationwide-ref {
             color: #666;
-            font-size: 9pt;
+            font-size: 11pt;
         }
         
         /* 표 섹션 */
@@ -105,14 +103,14 @@
         
         .table-title {
             text-align: center;
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: 700;
             margin-bottom: 10px;
         }
         
         .table-subtitle {
             text-align: right;
-            font-size: 9pt;
+            font-size: 11pt;
             color: #666;
             margin-bottom: 5px;
         }
@@ -120,12 +118,11 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 11pt;
         }
         
         .data-table th,
         .data-table td {
-            border: 1px solid #000;
             padding: 5px 6px;
             text-align: center;
         }
@@ -163,11 +160,9 @@
             color: #1565c0;
         }
         
-        /* 페이지 번호 */
+        /* 페이지 번호 (숨김) */
         .page-number {
-            text-align: center;
-            font-size: 10pt;
-            margin-top: 15px;
+            display: none;
         }
         
         @media print {
@@ -255,28 +250,28 @@
             <div class="table-title">&lt;{{ report_info.year }}년 {{ report_info.quarter }}/4분기 주요 지역경제 지표&gt;</div>
             <div class="table-subtitle">(전년동분기비, %)</div>
             
-            <table class="data-table">
-                <thead>
+            <table class="data-table" style="border-collapse: collapse !important; border: 1px solid black !important;">
+                <thead style="border: 1px solid black !important;">
                     <tr>
-                        <th colspan="2"></th>
-                        <th class="value-cell">광공업생산</th>
-                        <th class="value-cell">서비스업생산</th>
-                        <th class="value-cell">소매판매</th>
-                        <th class="value-cell">수출</th>
-                        <th class="value-cell">소비자물가</th>
-                        <th class="value-cell">고용률(%p)</th>
+                        <th colspan="2" style="border: 1px solid black !important;"></th>
+                        <th class="value-cell" style="border: 1px solid black !important;">광공업생산</th>
+                        <th class="value-cell" style="border: 1px solid black !important;">서비스업생산</th>
+                        <th class="value-cell" style="border: 1px solid black !important;">소매판매</th>
+                        <th class="value-cell" style="border: 1px solid black !important;">수출</th>
+                        <th class="value-cell" style="border: 1px solid black !important;">소비자물가</th>
+                        <th class="value-cell" style="border: 1px solid black !important;">고용률(%p)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- 전국 -->
                     <tr class="nationwide-row">
-                        <td colspan="2">전 국</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.mining_production) }}</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.service_production) }}</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.retail_sales) }}</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.exports) }}</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.price) }}</td>
-                        <td>{{ "%.1f"|format(table_data.nationwide.employment) }}</td>
+                        <td colspan="2" style="border: 1px solid black !important;">전 국</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.mining_production) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.service_production) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.retail_sales) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.exports) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.price) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(table_data.nationwide.employment) }}</td>
                     </tr>
                     
                     <!-- 시도별 데이터 -->
@@ -284,15 +279,15 @@
                     {% for region in group.regions %}
                     <tr>
                         {% if loop.first %}
-                        <td class="region-group" rowspan="{{ group.regions|length }}">{{ group.name }}</td>
+                        <td class="region-group" rowspan="{{ group.regions|length }}" style="border: 1px solid black !important;">{{ group.name }}</td>
                         {% endif %}
-                        <td class="region-name">{{ region.name }}</td>
-                        <td class="{% if region.mining_production >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.mining_production) }}</td>
-                        <td class="{% if region.service_production >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.service_production) }}</td>
-                        <td class="{% if region.retail_sales >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.retail_sales) }}</td>
-                        <td class="{% if region.exports >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.exports) }}</td>
-                        <td>{{ "%.1f"|format(region.price) }}</td>
-                        <td class="{% if region.employment >= 0 %}positive{% else %}negative{% endif %}">{{ "%.1f"|format(region.employment) }}</td>
+                        <td class="region-name" style="border: 1px solid black !important;">{{ region.name }}</td>
+                        <td class="{% if region.mining_production  style="border: 1px solid black !important;">= 0 %}positive{% else %}negative{% endif %}" style="border: 1px solid black !important;">{{ "%.1f"|format(region.mining_production) }}</td>
+                        <td class="{% if region.service_production  style="border: 1px solid black !important;">= 0 %}positive{% else %}negative{% endif %}" style="border: 1px solid black !important;">{{ "%.1f"|format(region.service_production) }}</td>
+                        <td class="{% if region.retail_sales  style="border: 1px solid black !important;">= 0 %}positive{% else %}negative{% endif %}" style="border: 1px solid black !important;">{{ "%.1f"|format(region.retail_sales) }}</td>
+                        <td class="{% if region.exports  style="border: 1px solid black !important;">= 0 %}positive{% else %}negative{% endif %}" style="border: 1px solid black !important;">{{ "%.1f"|format(region.exports) }}</td>
+                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(region.price) }}</td>
+                        <td class="{% if region.employment  style="border: 1px solid black !important;">= 0 %}positive{% else %}negative{% endif %}" style="border: 1px solid black !important;">{{ "%.1f"|format(region.employment) }}</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}

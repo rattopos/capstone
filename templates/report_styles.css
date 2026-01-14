@@ -280,11 +280,9 @@ h3, .h3-title {
     line-height: 1.3;
 }
 
-/* 페이지 번호 */
+/* 페이지 번호 (숨김) */
 .page-number {
-    text-align: center;
-    font-size: 10pt;
-    margin-top: 20px;
+    display: none;
 }
 
 /* ===== 시도별 경제동향 페이지 (TYPE B: Regional Dashboard) ===== */

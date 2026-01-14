@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일러두기</title>
+    <title>일러두기 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
-        
-        * {
+                * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
         body {
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
+            font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             line-height: 1.8;
             color: #000;
@@ -30,7 +28,7 @@
         
         .guide-title {
             text-align: center;
-            font-size: 20pt;
+            font-size: 11pt;
             font-weight: 700;
             margin-bottom: 30px;
             border-bottom: 3px double #000;
@@ -114,7 +112,7 @@
         
         .note {
             margin-left: 60px;
-            font-size: 10pt;
+            font-size: 11pt;
         }
         
         .note::before {
@@ -132,7 +130,7 @@
         .contact-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10pt;
+            font-size: 11pt;
             margin-bottom: 20px;
         }
         
@@ -166,7 +164,7 @@
         
         .reference-note {
             margin-left: 20px;
-            font-size: 10pt;
+            font-size: 11pt;
         }
         
         .reference-note::before {
@@ -222,22 +220,22 @@
         
         <!-- 담당자 연락처 표 -->
         <div class="contact-table-title">&lt; 통계부문별 담당자 연락처 &gt;</div>
-        <table class="contact-table">
-            <thead>
+        <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="contact-table">
+            <thead style="border: 1px solid black !important;">
                 <tr>
-                    <th>부문</th>
-                    <th>통계명</th>
-                    <th>담당부서</th>
-                    <th>전화번호</th>
+                    <th style="border: 1px solid black !important;">부문</th>
+                    <th style="border: 1px solid black !important;">통계명</th>
+                    <th style="border: 1px solid black !important;">담당부서</th>
+                    <th style="border: 1px solid black !important;">전화번호</th>
                 </tr>
             </thead>
             <tbody>
                 {% for contact in contacts %}
                 <tr>
-                    <td>{{ contact.category }}</td>
-                    <td>{{ contact.statistics_name }}</td>
-                    <td>{{ contact.department }}</td>
-                    <td>☎ {{ contact.phone }}</td>
+                    <td style="border: 1px solid black !important;">{{ contact.category }}</td>
+                    <td style="border: 1px solid black !important;">{{ contact.statistics_name }}</td>
+                    <td style="border: 1px solid black !important;">{{ contact.department }}</td>
+                    <td style="border: 1px solid black !important;">☎ {{ contact.phone }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

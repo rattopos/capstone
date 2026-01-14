@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - {{ year }}년 {{ quarter }}분기</title>
+    <title>{{ title }} - {{ year }}년 {{ quarter }}분기 ({{ report_info.year }}년 {{ report_info.quarter }}/4분기)</title>
     
     {# 통계표 값 표시 매크로 - "-"는 데이터 없음을 의미하므로 그대로 표시 #}
     {% macro val(value) %}
@@ -22,8 +22,8 @@
         }
         
         body {
-            font-family: '바탕', 'Batang', serif;
-            font-size: 8pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             line-height: 1.15;
             color: #000;
             background: #fff;
@@ -38,7 +38,7 @@
         }
         
         .page-title {
-            font-family: '돋움', 'Dotum', sans-serif;
+            font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             font-weight: bold;
             margin-bottom: 3px;
@@ -47,7 +47,7 @@
         
         .unit-label {
             float: right;
-            font-size: 8pt;
+            font-size: 11pt;
             font-weight: normal;
             color: #000;
             text-decoration: none;
@@ -56,14 +56,14 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 7.5pt;
+            font-size: 11pt;
             margin-bottom: 0;
             table-layout: fixed;
         }
         
         .data-table th,
         .data-table td {
-            border: none;
+            
             border-bottom: 1px solid #ccc;
             padding: 1px 2px;
             text-align: right;
@@ -114,7 +114,7 @@
         
         .data-table .quarter-cell {
             font-weight: normal;
-            font-size: 7.5pt;
+            font-size: 11pt;
         }
         
         .data-table .separator-row td {
@@ -124,12 +124,7 @@
         }
         
         .page-number {
-            position: absolute;
-            bottom: 6mm;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 9pt;
+            display: none;
         }
         
         /* 편집 가능한 플레이스홀더 (결측치) */
@@ -144,7 +139,7 @@
             display: inline-block;
             min-width: 20px;
             text-align: center;
-            font-size: 6pt;
+            font-size: 11pt;
         }
         
         .editable-placeholder:hover {
@@ -181,12 +176,12 @@
             <span class="unit-label">{{ unit }}</span>
         </div>
         
-        <table class="data-table">
-            <thead>
+        <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+            <thead style="border: 1px solid black !important;">
                 <tr>
-                    <th></th>
+                    <th style="border: 1px solid black !important;"></th>
                     {% for region in page1_regions %}
-                    <th>{{ region }}</th>
+                    <th style="border: 1px solid black !important;">{{ region }}</th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -194,24 +189,24 @@
                 <!-- 연도별 데이터 -->
                 {% for year_key in yearly_years %}
                 <tr class="year-row">
-                    <td class="row-header year-cell">{{ year_key }}</td>
+                    <td class="row-header year-cell" style="border: 1px solid black !important;">{{ year_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ val(data.yearly[year_key][region]) }}</td>
+                    <td style="border: 1px solid black !important;">{{ val(data.yearly[year_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
                 
                 <!-- 구분선 -->
                 <tr class="separator-row">
-                    <td colspan="{{ page1_regions | length + 1 }}"></td>
+                    <td colspan="{{ page1_regions | length + 1 }}" style="border: 1px solid black !important;"></td>
                 </tr>
                 
                 <!-- 분기별 데이터 -->
                 {% for quarter_key in quarterly_keys %}
                 <tr class="quarter-row">
-                    <td class="row-header quarter-cell">{{ quarter_key }}</td>
+                    <td class="row-header quarter-cell" style="border: 1px solid black !important;">{{ quarter_key }}</td>
                     {% for region in page1_regions %}
-                    <td>{{ val(data.quarterly[quarter_key][region]) }}</td>
+                    <td style="border: 1px solid black !important;">{{ val(data.quarterly[quarter_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -228,12 +223,12 @@
             <span class="unit-label">{{ unit }}</span>
         </div>
         
-        <table class="data-table">
-            <thead>
+        <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+            <thead style="border: 1px solid black !important;">
                 <tr>
-                    <th></th>
+                    <th style="border: 1px solid black !important;"></th>
                     {% for region in page2_regions %}
-                    <th>{{ region }}</th>
+                    <th style="border: 1px solid black !important;">{{ region }}</th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -241,24 +236,24 @@
                 <!-- 연도별 데이터 -->
                 {% for year_key in yearly_years %}
                 <tr class="year-row">
-                    <td class="row-header year-cell">{{ year_key }}</td>
+                    <td class="row-header year-cell" style="border: 1px solid black !important;">{{ year_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ val(data.yearly[year_key][region]) }}</td>
+                    <td style="border: 1px solid black !important;">{{ val(data.yearly[year_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
                 
                 <!-- 구분선 -->
                 <tr class="separator-row">
-                    <td colspan="{{ page2_regions | length + 1 }}"></td>
+                    <td colspan="{{ page2_regions | length + 1 }}" style="border: 1px solid black !important;"></td>
                 </tr>
                 
                 <!-- 분기별 데이터 -->
                 {% for quarter_key in quarterly_keys %}
                 <tr class="quarter-row">
-                    <td class="row-header quarter-cell">{{ quarter_key }}</td>
+                    <td class="row-header quarter-cell" style="border: 1px solid black !important;">{{ quarter_key }}</td>
                     {% for region in page2_regions %}
-                    <td>{{ val(data.quarterly[quarter_key][region]) }}</td>
+                    <td style="border: 1px solid black !important;">{{ val(data.quarterly[quarter_key][region]) }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}

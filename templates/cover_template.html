@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ report_info.year }}년 {{ report_info.quarter }}/4분기 지역경제동향 - 표지</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
@@ -14,8 +12,8 @@
         }
         
         body {
-            font-family: 'Noto Sans KR', '맑은 고딕', sans-serif;
-            font-size: 10pt;
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
             line-height: 1.6;
             color: #000;
             background: #fff;
@@ -56,7 +54,7 @@
         
         
         .doc-type {
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: 500;
         }
         
@@ -69,7 +67,7 @@
             display: flex;
             justify-content: center;
             gap: 50px;
-            font-size: 10pt;
+            font-size: 11pt;
         }
         
         .date-item {
@@ -90,7 +88,7 @@
         }
         
         .main-title {
-            font-size: 28pt;
+            font-size: 11pt;
             font-weight: 700;
             color: #1e88e5;
             line-height: 1.4;
@@ -116,12 +114,11 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
-            font-size: 9pt;
+            font-size: 11pt;
         }
         
         .contact-table td {
             padding: 5px 10px;
-            border: 1px solid #000;
         }
         
         .contact-table .label {
@@ -157,7 +154,7 @@
         }
         
         .footer-logo {
-            font-size: 10pt;
+            font-size: 11pt;
             color: #666;
         }
         
@@ -169,7 +166,7 @@
         .open-gov {
             padding: 3px 8px;
             border: 1px solid #666;
-            font-size: 9pt;
+            font-size: 11pt;
         }
         
         @media print {
@@ -216,18 +213,18 @@
         
         <!-- 하단 정보 -->
         <div class="footer">
-            <table class="contact-table">
+            <table class="contact-table" style="border-collapse: collapse !important; border: 1px solid black !important;">
                 <tr>
-                    <td class="label" rowspan="2">담당 부서</td>
-                    <td class="department" rowspan="2">{{ contact_info.department }}<br>{{ contact_info.division }}</td>
-                    <td class="role-label">책임자</td>
-                    <td class="role-value">{{ contact_info.manager_title }}</td>
-                    <td class="contact-info">{{ contact_info.manager_name }} ({{ contact_info.manager_phone }})</td>
+                    <td class="label" rowspan="2" style="border: 1px solid black !important;">담당 부서</td>
+                    <td class="department" rowspan="2" style="border: 1px solid black !important;">{{ contact_info.department }}<br>{{ contact_info.division }}</td>
+                    <td class="role-label" style="border: 1px solid black !important;">책임자</td>
+                    <td class="role-value" style="border: 1px solid black !important;">{{ contact_info.manager_title }}</td>
+                    <td class="contact-info" style="border: 1px solid black !important;">{{ contact_info.manager_name }} ({{ contact_info.manager_phone }})</td>
                 </tr>
                 <tr>
-                    <td class="role-label">담당자</td>
-                    <td class="role-value">{{ contact_info.staff_title }}</td>
-                    <td class="contact-info">{{ contact_info.staff_name }} ({{ contact_info.staff_phone }})</td>
+                    <td class="role-label" style="border: 1px solid black !important;">담당자</td>
+                    <td class="role-value" style="border: 1px solid black !important;">{{ contact_info.staff_title }}</td>
+                    <td class="contact-info" style="border: 1px solid black !important;">{{ contact_info.staff_name }} ({{ contact_info.staff_phone }})</td>
                 </tr>
             </table>
             
