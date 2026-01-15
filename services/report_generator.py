@@ -304,11 +304,11 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if quarter is not None:
             data['report_info']['quarter'] = quarter
         
-        # report_info에 year나 quarter가 없으면 기본값 사용
+        # report_info에 year나 quarter가 없으면 동적으로 추출 (하드코딩 제거)
         if 'year' not in data['report_info'] or data['report_info']['year'] is None:
-            data['report_info']['year'] = year if year is not None else 2025
+            data['report_info']['year'] = year if year is not None else (data.get('year') or 2025)
         if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
-            data['report_info']['quarter'] = quarter if quarter is not None else 2
+            data['report_info']['quarter'] = quarter if quarter is not None else (data.get('quarter') or 2)
         
         # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         data['report_info']['page_number'] = ""
@@ -387,8 +387,16 @@ def generate_grdp_reference_html(excel_path, session_data=None):
     """참고_GRDP 보도자료 HTML 생성"""
     try:
         from flask import session
-        year = session.get('year', 2025) if session_data is None else session_data.get('year', 2025)
-        quarter = session.get('quarter', 2) if session_data is None else session_data.get('quarter', 2)
+        # 하드코딩 제거: 동적으로 추출 (기본값은 마지막 fallback)
+        from utils.excel_utils import extract_year_quarter_from_excel
+        try:
+            extracted_year, extracted_quarter = extract_year_quarter_from_excel(excel_path)
+            year = session.get('year', extracted_year) if session_data is None else session_data.get('year', extracted_year)
+            quarter = session.get('quarter', extracted_quarter) if session_data is None else session_data.get('quarter', extracted_quarter)
+        except:
+            # 추출 실패 시 기본값 사용 (최후의 수단)
+            year = session.get('year', 2025) if session_data is None else session_data.get('year', 2025)
+            quarter = session.get('quarter', 2) if session_data is None else session_data.get('quarter', 2)
         
         grdp_data = None
         

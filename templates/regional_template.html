@@ -14,7 +14,7 @@
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.6;
             color: #000;
             background: #fff;
         }
@@ -34,46 +34,49 @@
             }
         }
         
-        /* 대제목 헤더 */
+        /* Level 1: 대제목 헤더 (배너 스타일) */
         .main-header {
             font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             font-weight: bold;
             text-align: center;
-            padding: 6px 40px;
-            background: #e0e0e0;
-            margin-bottom: 18px;
-            letter-spacing: 3px;
+            padding: 8px 40px;
+            background: #4a4a4a;
+            color: #ffffff;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
         }
         
-        /* 지역 제목 */
+        /* Level 2: 지역 제목 (크게 강조) */
         .region-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 15pt;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 18px;
+            margin-top: 10px;
         }
         
-        /* 섹션 제목 */
+        /* 섹션 제목 (네모 불릿) */
         .section-title {
             font-family: "Malgun Gothic", serif;
             font-size: 11pt;
             font-weight: bold;
-            margin: 12px 0 8px 0;
-            padding-left: 16px;
-            text-indent: -16px;
+            margin: 15px 0 10px 0;
+            padding-left: 20px;
+            text-indent: -20px;
         }
         
         .section-title::before {
             content: "□ ";
         }
         
-        /* 본문 항목 */
+        /* 본문 항목 (동그라미 불릿) */
         .item {
-            margin-bottom: 5px;
-            padding-left: 20px;
-            text-indent: -20px;
-            line-height: 1.5;
+            margin-bottom: 8px;
+            padding-left: 25px;
+            text-indent: -25px;
+            line-height: 1.6;
+            width: 100%;
         }
         
         .item::before {
@@ -88,8 +91,14 @@
             font-weight: bold;
         }
         
-        .increase, .decrease {
+        .increase {
             font-weight: bold;
+            color: #c62828;
+        }
+        
+        .decrease {
+            font-weight: bold;
+            color: #1565c0;
         }
         
         /* 플레이스홀더 */
@@ -104,9 +113,44 @@
             min-width: 30px;
         }
         
+        /* 섹션별 미니 테이블 */
+        .mini-table-container {
+            margin-top: 12px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        
+        .mini-table-title {
+            font-size: 10pt;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        
+        .mini-table th,
+        .mini-table td {
+            border: 1px solid #000;
+            padding: 3px 5px;
+            text-align: center;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .mini-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
         /* 요약 테이블 */
         .summary-table-container {
-            margin-top: 15px;
+            margin-top: 20px;
+            width: 100%;
         }
         
         .table-title {
@@ -144,14 +188,9 @@
             font-weight: normal;
         }
         
-        .summary-table thead tr:first-child th {
-            border-bottom: 1px dotted #999;
-        }
-        
         .summary-table .period-col {
             background-color: #f5f5f5;
         }
-        
         
         /* 인쇄 최적화 */
         @media print {
@@ -167,8 +206,6 @@
                 box-shadow: none;
             }
             
-            }
-            
             .summary-table th {
                 background-color: #e6e0ec !important;
                 -webkit-print-color-adjust: exact;
@@ -179,12 +216,12 @@
 </head>
 <body>
     <div class="page">
-        <!-- 메인 헤더 (첫 페이지에만 표시) -->
+        <!-- Level 1: 메인 헤더 (첫 페이지에만 표시) -->
         {% if report_info.region_index is defined and report_info.region_index == 1 %}
         <div class="main-header">Ⅱ. 시도별 경제동향</div>
         {% endif %}
         
-        <!-- 지역 제목 -->
+        <!-- Level 2: 지역 제목 (크게 강조) -->
         <div class="region-title">{{ report_info.region_index | default(1) }}. {{ report_info.region | default('') }}</div>
         
         <!-- ===== 생산 섹션 ===== -->
@@ -324,7 +361,7 @@
         
         <!-- ===== 주요지표 요약 테이블 ===== -->
         <div class="summary-table-container">
-            <div class="table-title">《 {{ summary_table.title }} 》</div>
+            <div class="table-title">《 {{ summary_table.title | default('주요 지역경제 지표') }} 》</div>
             <div class="table-subtitle">[전년동분기대비, %]</div>
             <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="summary-table">
                 <thead style="border: 1px solid black !important;">
@@ -349,21 +386,22 @@
                     {% for row in summary_table.rows %}
                     <tr>
                         <td class="period-col" style="border: 1px solid black !important;">{{ row.period }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.manufacturing) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.service) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.retail) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.construction) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.export) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.import) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.consumer_price) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.employment_rate) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.migration_total) }}</td>
-                        <td style="border: 1px solid black !important;">{{ "%.1f"|format(row.migration_20_29) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.manufacturing) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.service) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.retail) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.construction) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.export) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.import) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.consumer_price) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.employment_rate) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.migration_total) }}</td>
+                        <td style="border: 1px solid black !important; text-align: right;">{{ "%.1f"|format(row.migration_20_29) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         
+    </div>
 </body>
 </html>

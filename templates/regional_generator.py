@@ -565,7 +565,7 @@ class RegionalGenerator:
         
         return result
     
-    def extract_manufacturing_data(self, region: str) -> Dict[str, Any]:
+    def extract_manufacturing_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """광공업생산 데이터 추출 (집계 시트 fallback 포함)"""
         df = self.cache.get_sheet('A 분석')
         
@@ -677,7 +677,7 @@ class RegionalGenerator:
             "decrease_industries": decrease_industries[:2]
         }
     
-    def extract_service_data(self, region: str) -> Dict[str, Any]:
+    def extract_service_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """서비스업생산 데이터 추출 (집계 시트 fallback 포함)"""
         df = self.cache.get_sheet('B 분석')
         
@@ -726,8 +726,13 @@ class RegionalGenerator:
         if len(increase_industries) == 0 and len(decrease_industries) == 0:
             return self._extract_service_from_aggregation(region, growth_rate)
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        # region_stat가 제공되면 그 값을 사용 (SSOT)
+        if region_stat is not None and 'service' in region_stat:
+            growth_rate = region_stat['service']  # region_stat에서 가져온 값 사용
+        
         return {
-            "total_growth_rate": growth_rate,
+            "total_growth_rate": growth_rate,  # region_stat에서 가져온 값
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_industries": increase_industries,
             "decrease_industries": decrease_industries
@@ -790,7 +795,7 @@ class RegionalGenerator:
             "decrease_industries": decrease_industries[:2]
         }
     
-    def extract_retail_data(self, region: str) -> Dict[str, Any]:
+    def extract_retail_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """소매판매 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet('C 분석')
         
@@ -911,8 +916,12 @@ class RegionalGenerator:
         if growth_rate == 0.0 and len(increase_categories) == 0 and len(decrease_categories) == 0:
             return self._extract_retail_from_aggregation(region)
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        if region_stat is not None and 'retail' in region_stat:
+            growth_rate = region_stat['retail']  # region_stat에서 가져온 값 사용
+        
         return {
-            "total_growth_rate": growth_rate,
+            "total_growth_rate": growth_rate,  # region_stat에서 가져온 값
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_categories": increase_categories,
             "decrease_categories": decrease_categories
@@ -994,7 +1003,7 @@ class RegionalGenerator:
             "decrease_categories": decrease_categories[:2] if decrease_categories else []
         }
     
-    def extract_construction_data(self, region: str) -> Dict[str, Any]:
+    def extract_construction_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """건설수주 데이터 추출 (분석 시트 또는 기초자료)"""
         df = self.cache.get_sheet("F'분석")
         
@@ -1092,8 +1101,12 @@ class RegionalGenerator:
         if len(decrease_categories) == 0:
             decrease_categories.append({"name": "", "growth_rate": 0, "placeholder": True})
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        if region_stat is not None and 'construction' in region_stat:
+            growth_rate = region_stat['construction']  # region_stat에서 가져온 값 사용
+        
         return {
-            "total_growth_rate": growth_rate,
+            "total_growth_rate": growth_rate,  # region_stat에서 가져온 값
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_categories": sorted([c for c in increase_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'], reverse=True)[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}],
             "decrease_categories": sorted([c for c in decrease_categories if not c.get('placeholder')], key=lambda x: x['growth_rate'])[:2] or [{"name": "", "growth_rate": 0, "placeholder": True}]
@@ -1180,7 +1193,7 @@ class RegionalGenerator:
             "decrease_categories": decrease_categories[:2]
         }
     
-    def extract_export_data(self, region: str) -> Dict[str, Any]:
+    def extract_export_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """수출 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('G 분석')
         
@@ -1271,8 +1284,12 @@ class RegionalGenerator:
         if len(decrease_items) == 0:
             decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        if region_stat is not None and 'export' in region_stat:
+            growth_rate = region_stat['export']  # region_stat에서 가져온 값 사용
+        
         return {
-            "total_growth_rate": growth_rate,
+            "total_growth_rate": growth_rate,  # region_stat에서 가져온 값
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_items": increase_items,
             "decrease_items": decrease_items
@@ -1349,8 +1366,12 @@ class RegionalGenerator:
         if len(decrease_items) == 0:
             decrease_items.append({"name": "", "growth_rate": 0, "placeholder": True})
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        if region_stat is not None and 'import' in region_stat:
+            growth_rate = region_stat['import']  # region_stat에서 가져온 값 사용
+        
         return {
-            "total_growth_rate": growth_rate,
+            "total_growth_rate": growth_rate,  # region_stat에서 가져온 값
             "direction": "증가" if growth_rate > 0 else "감소",
             "increase_items": increase_items,
             "decrease_items": decrease_items
@@ -1408,7 +1429,7 @@ class RegionalGenerator:
         
         return increase_items, decrease_items
     
-    def extract_import_data(self, region: str) -> Dict[str, Any]:
+    def extract_import_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """수입 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('H 분석')
         
@@ -1504,7 +1525,7 @@ class RegionalGenerator:
             "decrease_items": decrease_items
         }
     
-    def extract_consumer_price_data(self, region: str) -> Dict[str, Any]:
+    def extract_consumer_price_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """소비자물가 데이터 추출 (분석 시트 또는 집계 시트)"""
         df = self.cache.get_sheet('E(지출목적물가) 분석')
         
@@ -2492,11 +2513,23 @@ class RegionalGenerator:
         }
     
     def extract_all_data(self, region: str) -> Dict[str, Any]:
-        """지역별 모든 데이터 추출"""
+        """
+        지역별 모든 데이터 추출
+        
+        ★ 핵심 원칙: [지역 데이터 객체(DTO) 생성 -> 문장 생성] 순서
+        - Step 1: 지역 데이터 객체(region_stat) 생성 - 특정 시도의 모든 지표를 하나의 딕셔너리로 모음
+        - Step 2: 문장 생성 - 나레이션 작성 시 region_stat 딕셔너리의 값만 참조
+        """
         region_info = next((r for r in REGIONS if r.name == region), None)
         if not region_info:
             raise ValueError(f"Unknown region: {region}")
         
+        # Step 1: 지역 데이터 객체(DTO) 생성
+        # 특정 시도의 모든 지표(생산, 소비, 고용, 물가 등)를 엑셀의 각 시트에서 찾아 하나의 딕셔너리로 모음
+        region_stat = self._build_region_stat_dto(region)
+        
+        # Step 2: 문장 생성
+        # 본문의 나레이션을 작성할 때, region_stat 딕셔너리의 값만 참조
         return {
             "report_info": {
                 "year": 2025,
@@ -2506,26 +2539,162 @@ class RegionalGenerator:
                 "region_code": region_info.code,
                 "region_index": region_info.index
             },
+            # region_stat를 각 extract 메서드에 전달하여 일관성 유지
             "production": {
-                "manufacturing": self.extract_manufacturing_data(region),
-                "service": self.extract_service_data(region)
+                "manufacturing": self.extract_manufacturing_data(region, region_stat),
+                "service": self.extract_service_data(region, region_stat)
             },
             "consumption_construction": {
-                "retail": self.extract_retail_data(region),
-                "construction": self.extract_construction_data(region)
+                "retail": self.extract_retail_data(region, region_stat),
+                "construction": self.extract_construction_data(region, region_stat)
             },
             "export_import_price": {
-                "export": self.extract_export_data(region),
-                "import": self.extract_import_data(region),
-                "consumer_price": self.extract_consumer_price_data(region)
+                "export": self.extract_export_data(region, region_stat),
+                "import": self.extract_import_data(region, region_stat),
+                "consumer_price": self.extract_consumer_price_data(region, region_stat)
             },
             "employment_migration": {
-                "employment_rate": self.extract_employment_data(region),
-                "population_migration": self.extract_migration_data(region)
+                "employment_rate": self.extract_employment_data(region, region_stat),
+                "population_migration": self.extract_migration_data(region, region_stat)
             },
             "summary_table": self.extract_summary_table(region),
-            "charts": self.extract_chart_data(region)
+            "charts": self.extract_chart_data(region),
+            # region_stat를 템플릿에서 직접 사용할 수 있도록 추가
+            "region_stat": region_stat
         }
+    
+    def _build_region_stat_dto(self, region: str) -> Dict[str, float]:
+        """
+        Step 1: 지역 데이터 객체(DTO) 생성
+        특정 시도의 모든 지표를 엑셀의 각 시트에서 찾아 하나의 딕셔너리로 모음
+        
+        반환 형식:
+        {
+            'mining': -10.1,      # 광공업생산 증감률
+            'service': 2.3,       # 서비스업생산 증감률
+            'retail': -1.8,       # 소매판매 증감률
+            'construction': 5.2,  # 건설수주 증감률
+            'export': 3.1,        # 수출 증감률
+            'import': -2.5,       # 수입 증감률
+            'price': 1.2,         # 소비자물가 증감률
+            'employment': 0.3,    # 고용률 증감(%p)
+            ...
+        }
+        """
+        region_stat = {}
+        
+        # 광공업생산 증감률 (2025.2/4 기준)
+        try:
+            df = self.cache.get_sheet('A 분석')
+            mfg_row = df[(df[3] == region) & (df[6] == 'BCD')]
+            if len(mfg_row) > 0:
+                val = self._get_quarter_value(mfg_row.iloc[0], 'A 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('A(광공업생산)집계', region, 4, 7, 'BCD', '2025_2Q')
+                region_stat['mining'] = round(val, 1)
+            else:
+                region_stat['mining'] = round(self._get_summary_value_from_aggregation('A(광공업생산)집계', region, 4, 7, 'BCD', '2025_2Q'), 1)
+        except:
+            region_stat['mining'] = 0.0
+        
+        # 서비스업생산 증감률
+        try:
+            df = self.cache.get_sheet('B 분석')
+            svc_row = df[(df[3] == region) & (df[6] == 'E~S')]
+            if len(svc_row) > 0:
+                val = self._get_quarter_value(svc_row.iloc[0], 'B 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('B(서비스업생산)집계', region, 3, 6, 'E~S', '2025_2Q')
+                region_stat['service'] = round(val, 1)
+            else:
+                region_stat['service'] = round(self._get_summary_value_from_aggregation('B(서비스업생산)집계', region, 3, 6, 'E~S', '2025_2Q'), 1)
+        except:
+            region_stat['service'] = 0.0
+        
+        # 소매판매 증감률
+        try:
+            df = self.cache.get_sheet('C 분석')
+            retail_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
+            if len(retail_row) > 0:
+                val = self._get_quarter_value(retail_row.iloc[0], 'C 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('C(소비)집계', region, 2, 3, '0', '2025_2Q')
+                region_stat['retail'] = round(val, 1)
+            else:
+                region_stat['retail'] = round(self._get_summary_value_from_aggregation('C(소비)집계', region, 2, 3, '0', '2025_2Q'), 1)
+        except:
+            region_stat['retail'] = 0.0
+        
+        # 건설수주 증감률
+        try:
+            df = self.cache.get_sheet("F'분석")
+            const_row = df[(df[2] == region) & (df[3].astype(str) == '0')]
+            if len(const_row) > 0:
+                try:
+                    val = const_row.iloc[0][self.QUARTER_COLS["F'분석"]['2025_2Q']]
+                    if pd.isna(val) or val == '없음' or val == '-':
+                        val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', '2025_2Q')
+                    else:
+                        val = round(float(val), 1)
+                        if val == 0.0:
+                            val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', '2025_2Q')
+                except:
+                    val = self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', '2025_2Q')
+                region_stat['construction'] = round(val, 1)
+            else:
+                region_stat['construction'] = round(self._get_summary_value_from_aggregation("F'(건설)집계", region, 1, 3, '0', '2025_2Q'), 1)
+        except:
+            region_stat['construction'] = 0.0
+        
+        # 수출 증감률
+        try:
+            df = self.cache.get_sheet('G 분석')
+            exp_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
+            if len(exp_row) > 0:
+                val = self._get_quarter_value(exp_row.iloc[0], 'G 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('G(수출)집계', region, 3, 4, '0', '2025_2Q')
+                region_stat['export'] = round(val, 1)
+            else:
+                region_stat['export'] = round(self._get_summary_value_from_aggregation('G(수출)집계', region, 3, 4, '0', '2025_2Q'), 1)
+        except:
+            region_stat['export'] = 0.0
+        
+        # 수입 증감률
+        try:
+            df = self.cache.get_sheet('H 분석')
+            imp_row = df[(df[3] == region) & (df[4].astype(str) == '0')]
+            if len(imp_row) > 0:
+                val = self._get_quarter_value(imp_row.iloc[0], 'H 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('H(수입)집계', region, 3, 4, '0', '2025_2Q')
+                region_stat['import'] = round(val, 1)
+            else:
+                region_stat['import'] = round(self._get_summary_value_from_aggregation('H(수입)집계', region, 3, 4, '0', '2025_2Q'), 1)
+        except:
+            region_stat['import'] = 0.0
+        
+        # 소비자물가 증감률
+        try:
+            df = self.cache.get_sheet('E(지출목적물가) 분석')
+            price_row = df[(df[3] == region) & (df[4].astype(str) == '0') & (df[8] == '총지수')]
+            if len(price_row) > 0:
+                val = self._get_quarter_value(price_row.iloc[0], 'E(지출목적물가) 분석', '2025_2Q')
+                if val == 0.0:
+                    val = self._get_summary_value_from_aggregation('E(지출목적물가)집계', region, 2, 3, '0', '2025_2Q')
+                region_stat['price'] = round(val, 1)
+            else:
+                region_stat['price'] = round(self._get_summary_value_from_aggregation('E(지출목적물가)집계', region, 2, 3, '0', '2025_2Q'), 1)
+        except:
+            region_stat['price'] = 0.0
+        
+        # 고용률 증감(%p)
+        try:
+            region_stat['employment'] = round(self._get_employment_change_from_aggregation(region, '2025_2Q'), 1)
+        except:
+            region_stat['employment'] = 0.0
+        
+        return region_stat
     
     def render_html(self, region: str, template_path: str, output_path: str = None) -> str:
         """HTML 보도자료 렌더링"""

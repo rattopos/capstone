@@ -53,18 +53,23 @@ def normalize_region_name(name):
 
 
 def get_summary_overview_data(excel_path, year, quarter):
-    """요약-지역경제동향 데이터 추출
+    """
+    요약-지역경제동향 데이터 추출
     
-    ★ 핵심 원칙: 모든 나레이션 데이터는 테이블(get_summary_table_data)에서 가져옴
-    - 테이블 데이터가 Single Source of Truth
-    - 데이터 불일치 원천 차단
+    ★ 핵심 원칙: [행렬 데이터 구축 -> 열 단위 분석 -> 문장 생성] 순서
+    - Step 1: 통합 매트릭스(comprehensive_table) 생성 (SSOT)
+    - Step 2: 부문별(Column) 분석 - comprehensive_table에서 각 부문 데이터 추출
+    - Step 3: 부문별 요약 문장 생성 - 추출된 데이터로 나레이션 생성
     """
     try:
-        # ★ 테이블 데이터를 먼저 가져옴 (Single Source of Truth)
-        table_data = get_summary_table_data(excel_path)
+        # Step 1: 통합 매트릭스 생성 (SSOT)
+        comprehensive_table = _build_comprehensive_table(excel_path)
         
-        # ★ 테이블 데이터에서 나레이션용 구조로 변환
-        return _convert_table_to_narration(table_data)
+        # Step 2: 부문별(Column) 분석
+        sector_columns = _extract_sector_columns(comprehensive_table)
+        
+        # Step 3: 부문별 요약 문장 생성
+        return _generate_sector_narrations(sector_columns)
         
     except Exception as e:
         print(f"요약 데이터 추출 오류: {e}")
@@ -73,33 +78,134 @@ def get_summary_overview_data(excel_path, year, quarter):
         return _get_default_summary_data()
 
 
-def _convert_table_to_narration(table_data):
-    """테이블 데이터를 나레이션용 구조로 변환
-    
-    테이블의 각 지표별 값을 증가/감소 지역으로 분류
+def _build_comprehensive_table(excel_path):
     """
+    Step 1: 통합 매트릭스 생성
+    17개 시도별로 [광공업, 서비스업, 소비, 수출, 물가, 고용] 데이터를 모두 담은 리스트 생성
+    이 리스트가 요약 페이지 하단의 '주요 지역경제 지표' 테이블이 됩니다.
+    
+    반환 형식:
+    [
+        {'name': '서울', 'mining_production': 2.1, 'service_production': 1.5, ...},
+        {'name': '부산', 'mining_production': -1.2, 'service_production': 0.8, ...},
+        ...
+    ]
+    """
+    # 기존 get_summary_table_data를 활용하되, comprehensive_table 형태로 변환
+    table_data = get_summary_table_data(excel_path)
+    
     nationwide = table_data.get('nationwide', {})
     region_groups = table_data.get('region_groups', [])
     
-    # 모든 지역 데이터를 flat list로 변환
-    all_regions = []
+    # 모든 지역 데이터를 flat list로 변환 (comprehensive_table)
+    comprehensive_table = []
+    
+    # 전국 데이터 추가 (참고용)
+    comprehensive_table.append({
+        'name': '전국',
+        'mining_production': nationwide.get('mining_production'),
+        'service_production': nationwide.get('service_production'),
+        'retail_sales': nationwide.get('retail_sales'),
+        'exports': nationwide.get('exports'),
+        'price': nationwide.get('price'),
+        'employment': nationwide.get('employment')
+    })
+    
+    # 지역별 데이터 추가
     for group in region_groups:
         for region in group.get('regions', []):
-            all_regions.append(region)
+            comprehensive_table.append({
+                'name': region.get('name', ''),
+                'mining_production': region.get('mining_production'),
+                'service_production': region.get('service_production'),
+                'retail_sales': region.get('retail_sales'),
+                'exports': region.get('exports'),
+                'price': region.get('price'),
+                'employment': region.get('employment')
+            })
     
-    def extract_sector_data(key, is_employment=False):
-        """특정 지표의 나레이션 데이터 추출"""
-        nationwide_val = nationwide.get(key)
+    return comprehensive_table
+
+
+def _extract_sector_columns(comprehensive_table):
+    """
+    Step 2: 부문별(Column) 분석
+    comprehensive_table을 순회하면서 각 부문별로 데이터를 리스트로 추출
+    
+    반환 형식:
+    {
+        'mining_production': [{'name': '서울', 'value': 2.1}, {'name': '부산', 'value': -1.2}, ...],
+        'service_production': [...],
+        ...
+    }
+    """
+    sector_columns = {
+        'mining_production': [],
+        'service_production': [],
+        'retail_sales': [],
+        'exports': [],
+        'price': [],
+        'employment': []
+    }
+    
+    # 전국 데이터 추출
+    nationwide_row = next((row for row in comprehensive_table if row['name'] == '전국'), None)
+    nationwide_data = {
+        'mining_production': nationwide_row.get('mining_production') if nationwide_row else None,
+        'service_production': nationwide_row.get('service_production') if nationwide_row else None,
+        'retail_sales': nationwide_row.get('retail_sales') if nationwide_row else None,
+        'exports': nationwide_row.get('exports') if nationwide_row else None,
+        'price': nationwide_row.get('price') if nationwide_row else None,
+        'employment': nationwide_row.get('employment') if nationwide_row else None
+    }
+    
+    # 각 부문별로 데이터 추출 (전국 제외)
+    for row in comprehensive_table:
+        if row['name'] == '전국':
+            continue
         
+        region_name = row.get('name', '')
+        
+        # 각 부문별 데이터 추출
+        for sector_key in sector_columns.keys():
+            value = row.get(sector_key)
+            if value is not None:  # None이 아닐 때만 추가
+                sector_columns[sector_key].append({
+                    'name': region_name,
+                    'value': value  # Step 1에서 가져온 값 그대로 사용 (반올림 완료)
+                })
+    
+    return {
+        'nationwide': nationwide_data,
+        'columns': sector_columns
+    }
+
+
+def _generate_sector_narrations(sector_columns):
+    """
+    Step 3: 부문별 요약 문장 생성
+    추출된 각 부문 리스트(Step 2)를 사용하여 최고/최저 지역을 찾고 나레이션을 생성
+    
+    주의: 문장에 들어가는 수치는 반드시 Step 1의 테이블 데이터와 동일해야 합니다.
+    """
+    nationwide_data = sector_columns.get('nationwide', {})
+    columns = sector_columns.get('columns', {})
+    
+    def generate_sector_summary(sector_key, is_employment=False):
+        """특정 부문의 요약 데이터 생성"""
+        sector_list = columns.get(sector_key, [])
+        nationwide_val = nationwide_data.get(sector_key)
+        
+        # 증가/감소 지역 분류 (Step 2에서 추출한 데이터 사용)
         increase_regions = []
         decrease_regions = []
         
-        for region in all_regions:
-            val = region.get(key)
+        for item in sector_list:
+            val = item.get('value')
             if val is None:
                 continue
             
-            region_data = {'name': region['name'], 'value': val}
+            region_data = {'name': item['name'], 'value': val}  # Step 1의 값 그대로 사용
             
             if val > 0:
                 increase_regions.append(region_data)
@@ -110,7 +216,7 @@ def _convert_table_to_narration(table_data):
                 if not is_employment:
                     decrease_regions.append(region_data)
         
-        # 정렬
+        # 정렬 (값 기준)
         increase_regions.sort(key=lambda x: x['value'], reverse=True)
         decrease_regions.sort(key=lambda x: x['value'])
         
@@ -128,13 +234,13 @@ def _convert_table_to_narration(table_data):
     
     return {
         'production': {
-            'mining': extract_sector_data('mining_production'),
-            'service': extract_sector_data('service_production')
+            'mining': generate_sector_summary('mining_production'),
+            'service': generate_sector_summary('service_production')
         },
-        'consumption': extract_sector_data('retail_sales'),
-        'exports': extract_sector_data('exports'),
-        'price': extract_sector_data('price'),
-        'employment': extract_sector_data('employment', is_employment=True)
+        'consumption': generate_sector_summary('retail_sales'),
+        'exports': generate_sector_summary('exports'),
+        'price': generate_sector_summary('price'),
+        'employment': generate_sector_summary('employment', is_employment=True)
     }
 
 
