@@ -154,8 +154,8 @@ def generate_summary_preview():
         if not year or not quarter:
             try:
                 from utils.excel_utils import get_previous_quarter
-            default_year, default_quarter = get_previous_quarter()
-            year, quarter = extract_year_quarter_from_data(excel_path, default_year=default_year, default_quarter=default_quarter)
+                default_year, default_quarter = get_previous_quarter()
+                year, quarter = extract_year_quarter_from_data(excel_path, default_year=default_year, default_quarter=default_quarter)
                 session['year'] = year
                 session['quarter'] = quarter
                 print(f"[요약 미리보기] 데이터에서 연도/분기 추출: {year}년 {quarter}분기")
@@ -176,7 +176,8 @@ def generate_summary_preview():
                 'year': year,
                 'quarter': quarter,
                 'organization': '국가데이터처',
-                'department': '경제통계심의관'
+                'department': '경제동향통계심의관 지역경제동향과',
+                'contact_phone': '042-481-xxxx'
             }
         }
         

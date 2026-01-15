@@ -1447,8 +1447,8 @@
 
     <!-- Main Container -->
     <div class="main-container">
-        <!-- Upload Section -->
-        <div class="upload-section">
+            <!-- Upload Section -->
+            <div class="upload-section">
                 <div class="section-title">📁 분석표 업로드</div>
                 <div class="upload-zone" id="uploadZone" role="button" aria-label="분석표 파일 업로드" tabindex="0">
                     <div class="upload-icon">📄</div>
@@ -1518,10 +1518,10 @@
                         </div>
                     </div>
                 </div>
-        </div>
+            </div>
 
-        <!-- Report List -->
-        <div class="report-list-section">
+            <!-- Report List -->
+            <div class="report-list-section">
                 <div class="section-title">📋 보도자료 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
                 
                 <!-- 전체 보도자료 통합 리스트 (순차적 페이지 넘김) -->
@@ -1550,7 +1550,7 @@
                         </div>
                     </div>
                 </div>
-        </div>
+            </div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -2692,11 +2692,11 @@ ${currentPage.outerHTML}
                          data-report-id="${report.id}"
                          data-global-index="${globalIdx}">
                         <div class="report-item-header">
-                            <div class="report-icon">${report.icon}</div>
-                            <div class="report-info">
-                                <div class="report-name">${report.name}</div>
-                            </div>
-                            <div class="report-status ${statusClass}">${statusIcon}</div>
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
                         </div>
                     </div>
                 `;

@@ -104,17 +104,24 @@ def get_unemployment_rate_data(summary_df):
         if sido not in rate_data:
             rate_data[sido] = {}
         
-        rate_2025_24 = safe_float(row[19] if len(row) > 19 else None, 0)
-        rate_2024_24 = safe_float(row[15] if len(row) > 15 else None, 0)
+        # D(실업)집계 분기시작열: 13 (1-based) = 12 (0-based)
+        # 분기별 컬럼 매핑 (0-based): 2022.2/4=12, 2023.2/4=16, 2024.2/4=20, 2025.1/4=23, 2025.2/4=24
+        # 문서 기준: 분기시작열 13부터 시작, 13개 분기 데이터
+        # 2022.2/4=13(1-based)=12(0-based), 2023.2/4=17(1-based)=16(0-based), 
+        # 2024.2/4=21(1-based)=20(0-based), 2025.1/4=24(1-based)=23(0-based), 2025.2/4=25(1-based)=24(0-based)
+        rate_2025_24 = safe_float(row[24] if len(row) > 24 else None, 0)  # 2025.2/4 (수정: 19 -> 24)
+        rate_2024_24 = safe_float(row[20] if len(row) > 20 else None, 0)  # 2024.2/4 (수정: 15 -> 20)
+        rate_2023_24 = safe_float(row[16] if len(row) > 16 else None, 0)  # 2023.2/4 (수정: 11 -> 16)
+        rate_2025_14 = safe_float(row[23] if len(row) > 23 else None, 0)  # 2025.1/4 (수정: 18 -> 23)
         
         change = rate_2025_24 - rate_2024_24 if rate_2025_24 is not None and rate_2024_24 is not None else 0
         
         rate_data[sido][age_group] = {
-            'rate_2023_24': safe_float(row[11] if len(row) > 11 else None, 0),
+            'rate_2023_24': rate_2023_24,
             'rate_2024_24': rate_2024_24,
-            'rate_2025_14': safe_float(row[18] if len(row) > 18 else None, 0),
+            'rate_2025_14': rate_2025_14,
             'rate_2025_24': rate_2025_24,
-            'change': change
+            'change': change  # 원본 그대로 (반올림 없이)
         }
     
     return rate_data
@@ -182,6 +189,7 @@ def get_regional_data(rate_data):
             'age_groups': age_groups
         }
         
+        # change가 0이 아닌 경우만 분류 (0인 경우는 제외)
         if change > 0:
             # 증가 지역: 양수 변화가 큰 연령대 순
             region_info['age_groups'] = sorted(age_groups, key=lambda x: -x['change'])
@@ -190,6 +198,7 @@ def get_regional_data(rate_data):
             # 감소 지역: 음수 변화가 큰 연령대 순 (절대값 기준)
             region_info['age_groups'] = sorted(age_groups, key=lambda x: x['change'])
             decrease_regions.append(region_info)
+        # change == 0인 경우는 증가/감소 어느 쪽에도 포함하지 않음
     
     # 증가 지역: 증가율이 큰 순서로 정렬 (동일 증감률인 경우 이미지 순서: 광주, 세종, 경북)
     # 이미지 순서에 맞추기 위해 SIDO_ORDER 인덱스로 정렬
@@ -252,9 +261,9 @@ def generate_summary_table(summary_df, rate_data):
         'region_group': None,  # 전국은 region_group 없음
         'sido': '전 국',  # sido에 '전 국' 표시 (colspan 처리용)
         'changes': [
-            summary_df.iloc[80, 11] - summary_df.iloc[80, 7],   # 2023.2/4 증감 
-            summary_df.iloc[80, 15] - summary_df.iloc[80, 11],  # 2024.2/4 증감
-            summary_df.iloc[80, 18] - summary_df.iloc[80, 17],  # 2025.1/4 증감
+            safe_float(summary_df.iloc[80, 16], 0) - safe_float(summary_df.iloc[80, 12], 0) if len(summary_df) > 80 and len(summary_df.iloc[80]) > 16 else 0,   # 2023.2/4 증감 (수정: 11-7 -> 16-12)
+            safe_float(summary_df.iloc[80, 20], 0) - safe_float(summary_df.iloc[80, 16], 0) if len(summary_df) > 80 and len(summary_df.iloc[80]) > 20 else 0,  # 2024.2/4 증감 (수정: 15-11 -> 20-16)
+            safe_float(summary_df.iloc[80, 23], 0) - safe_float(summary_df.iloc[80, 22], 0) if len(summary_df) > 80 and len(summary_df.iloc[80]) > 23 else 0,  # 2025.1/4 증감 (수정: 18-17 -> 23-22)
             total.get('change', 0)                               # 2025.2/4 증감
         ],
         'rates': [
@@ -284,11 +293,11 @@ def generate_summary_table(summary_df, rate_data):
             if row_idx is None:
                 continue
             
-            # 증감 계산
+            # 증감 계산 (컬럼 인덱스 수정: 분기시작열 13 기준)
             changes = [
-                summary_df.iloc[row_idx, 11] - summary_df.iloc[row_idx, 7] if pd.notna(summary_df.iloc[row_idx, 11]) and pd.notna(summary_df.iloc[row_idx, 7]) else None,
-                summary_df.iloc[row_idx, 15] - summary_df.iloc[row_idx, 11] if pd.notna(summary_df.iloc[row_idx, 15]) and pd.notna(summary_df.iloc[row_idx, 11]) else None,
-                summary_df.iloc[row_idx, 18] - summary_df.iloc[row_idx, 17] if pd.notna(summary_df.iloc[row_idx, 18]) and pd.notna(summary_df.iloc[row_idx, 17]) else None,
+                safe_float(summary_df.iloc[row_idx, 16], 0) - safe_float(summary_df.iloc[row_idx, 12], 0) if len(summary_df.iloc[row_idx]) > 16 and pd.notna(summary_df.iloc[row_idx, 16]) and pd.notna(summary_df.iloc[row_idx, 12]) else None,  # 2023.2/4 증감 (수정: 11-7 -> 16-12)
+                safe_float(summary_df.iloc[row_idx, 20], 0) - safe_float(summary_df.iloc[row_idx, 16], 0) if len(summary_df.iloc[row_idx]) > 20 and pd.notna(summary_df.iloc[row_idx, 20]) and pd.notna(summary_df.iloc[row_idx, 16]) else None,  # 2024.2/4 증감 (수정: 15-11 -> 20-16)
+                safe_float(summary_df.iloc[row_idx, 23], 0) - safe_float(summary_df.iloc[row_idx, 22], 0) if len(summary_df.iloc[row_idx]) > 23 and pd.notna(summary_df.iloc[row_idx, 23]) and pd.notna(summary_df.iloc[row_idx, 22]) else None,  # 2025.1/4 증감 (수정: 18-17 -> 23-22)
                 total.get('change', None)
             ]
             

@@ -117,7 +117,11 @@
         <!-- 광공업생산 -->
         <div class="summary-box">
             <div class="summary-main">
-                {% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %} <span class="highlight">전국 광공업생산</span>({{ "%.1f"|format(mining_production.nationwide.index) }})은 전년동분기대비 <span class="{% if mining_production.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(mining_production.nationwide.change) }}% {% if mining_production.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+                {% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %} <span class="highlight">전국 광공업생산</span>({{ "%.1f"|format(mining_production.nationwide.index) }})은 
+                {% if mining_production.main_increase_industries is defined and mining_production.main_increase_industries | length > 0 %}
+                {{ mining_production.main_increase_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어
+                {% endif %}
+                전년동분기대비 <span class="{% if mining_production.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(mining_production.nationwide.change) }}% {% if mining_production.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in mining_production.decrease_regions[:3] %}

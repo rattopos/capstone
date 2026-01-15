@@ -1454,7 +1454,8 @@ def _generate_single_summary(excel_path, report_config, year, quarter):
                 'year': year,
                 'quarter': quarter,
                 'organization': '국가데이터처',
-                'department': '경제통계심의관'
+                'department': '경제동향통계심의관 지역경제동향과',
+                'contact_phone': '042-481-xxxx'
             }
         }
         

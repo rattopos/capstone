@@ -228,12 +228,12 @@ def generate_summary_box(inflow_regions, outflow_regions):
     
     headline = f"◆ 국내 인구이동은 {inflow_names} 등 <span class='bold'>{inflow_count}개</span> 시도 인구 <span class='bold'>순유입</span>, {outflow_names} 등 <span class='bold'>{outflow_count}개</span> 시도 인구 <span class='bold'>순유출</span>"
     
-    # 유입 요약
-    inflow_str = ", ".join([f"<span class='bold'>{r['name']}</span>({r['net_migration']:,.0f}명)" for r in top_inflow])
+    # 유입 요약 (음수 기호 보존)
+    inflow_str = ", ".join([f"<span class='bold'>{r['name']}</span>({r['net_migration']:+,.0f}명)" for r in top_inflow])
     inflow_summary = f"국내 인구 <span class='bold'>순유입지역</span>은 {inflow_str} 등 {inflow_count}개 시도임"
     
-    # 유출 요약
-    outflow_str = ", ".join([f"<span class='bold'>{r['name']}</span>({r['net_migration']:,.0f}명)" for r in top_outflow])
+    # 유출 요약 (음수 기호 보존, + 기호로 음수 표시)
+    outflow_str = ", ".join([f"<span class='bold'>{r['name']}</span>({r['net_migration']:+,.0f}명)" for r in top_outflow])
     outflow_summary = f"국내 인구 <span class='bold'>순유출지역</span>은 {outflow_str} 등 {outflow_count}개 시도임"
     
     return {

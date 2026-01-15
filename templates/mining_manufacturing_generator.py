@@ -211,11 +211,11 @@ class 광공업생산Generator(BaseGenerator):
         
         # 전국 총지수 행 찾기 (문서에 명시된 컬럼 인덱스 사용)
         nationwide_total = None
-        try:
+            try:
             filtered = data_df[(data_df[self.COL_REGION_NAME] == '전국') & 
                               (data_df[self.COL_INDUSTRY_CODE] == 'BCD')]
-            if not filtered.empty:
-                nationwide_total = filtered.iloc[0]
+                if not filtered.empty:
+                    nationwide_total = filtered.iloc[0]
         except Exception as e:
             print(f"[광공업생산] 전국 데이터 찾기 실패: {e}")
         

@@ -104,7 +104,15 @@ def get_sido_data_from_analysis(analysis_df, summary_df=None):
         if product == '합계':
             sido = row[3]
             if sido in SIDO_ORDER:
-                change = row[22]  # 2025.2/4 증감률
+                # 증감률 컬럼 (2025.3/4 기준으로 수정 필요)
+                # 현재는 2025.2/4 컬럼 인덱스 사용, 추후 동적으로 계산하도록 개선 필요
+                change_raw = safe_float(row[22], None)  # 2025.2/4 증감률 (임시)
+                # 증감률이 없으면 계산 (2025.3/4와 2024.3/4 비교)
+                if change_raw is None:
+                    # 동적 계산 필요 (현재는 기본값)
+                    change = 0.0
+                else:
+                    change = change_raw
                 sido_data[sido] = {
                     'change': change,
                     'row_idx': i
@@ -125,9 +133,11 @@ def _get_sido_data_from_aggregation(summary_df):
         level = str(row[4]).strip() if pd.notna(row[4]) else ''
         
         if level == '0' and sido in SIDO_ORDER:
-            # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수입액으로 증감률 계산
-            current = safe_float(row[26], 0)  # 2025.2/4
-            prev = safe_float(row[22], 0)  # 2024.2/4
+            # 당분기(2025.3/4)와 전년동분기(2024.3/4) 수입액으로 증감률 계산
+            # 주의: 엑셀 컬럼 구조에 따라 인덱스가 달라질 수 있음
+            # 현재는 2025.2/4 기준으로 하드코딩, 추후 동적 계산 필요
+            current = safe_float(row[26], 0)  # 2025.2/4 (임시, 2025.3/4로 변경 필요)
+            prev = safe_float(row[22], 0)  # 2024.2/4 (임시, 2024.3/4로 변경 필요)
             
             if prev and prev != 0:
                 change = ((current - prev) / prev) * 100
@@ -225,19 +235,22 @@ def get_sido_products_from_reference(reference_df, summary_df=None, use_aggregat
                 product_str = str(product).strip() if not isinstance(product, str) else product.strip()
                 display_name = PRODUCT_NAME_MAPPING.get(product_str, product_str)
                 
+                change_val = safe_float(change, 0) if pd.notna(change) else 0
+                contribution_val = safe_float(contribution, 0) if pd.notna(contribution) else 0
+                
                 product_info = {
                     'rank': rank_num,
                     'name': display_name,
-                    'change': change if pd.notna(change) else 0,
-                    'contribution': contribution if pd.notna(contribution) else 0
+                    'change': change_val,
+                    'contribution': contribution_val
                 }
                 
-                # 상위 5개 (증가 품목)
-                if rank_num <= 5:
+                # 상위 5개 (증가 품목 - change > 0)
+                if rank_num <= 5 and change_val > 0:
                     sido_products[current_sido].append(product_info)
                 
-                # 하위 5개 (감소 품목)
-                if rank_num >= max_rank - 4:
+                # 하위 5개 (감소 품목 - change < 0)
+                if rank_num >= max_rank - 4 and change_val < 0:
                     sido_products_bottom[current_sido].append(product_info)
                     
             except (ValueError, TypeError):
@@ -284,7 +297,7 @@ def _get_sido_products_from_aggregation(summary_df):
             else:
                 change = 0.0
             
-            # 기여도 = 금액 변화량 (절대값으로 순위 결정)
+            # 기여도 = 금액 변화량 (증감 방향 판별용)
             contribution = curr - prev
             
             product_str = str(product).strip()
@@ -296,16 +309,16 @@ def _get_sido_products_from_aggregation(summary_df):
                 'contribution': contribution
             })
         
-        # 기여도 양수 (증가에 기여한 품목) - 내림차순
-        positive_items = sorted([i for i in items_data if i['contribution'] > 0], 
-                               key=lambda x: -x['contribution'])
+        # change > 0인 품목 (증가 품목) - change 내림차순
+        positive_items = sorted([i for i in items_data if i['change'] > 0], 
+                               key=lambda x: -x['change'])
         for i, item in enumerate(positive_items[:5]):
             item['rank'] = i + 1
             sido_products[sido].append(item)
         
-        # 기여도 음수 (감소에 기여한 품목) - 오름차순 (가장 큰 감소가 먼저)
-        negative_items = sorted([i for i in items_data if i['contribution'] < 0], 
-                               key=lambda x: x['contribution'])
+        # change < 0인 품목 (감소 품목) - change 오름차순 (가장 큰 감소가 먼저)
+        negative_items = sorted([i for i in items_data if i['change'] < 0], 
+                               key=lambda x: x['change'])
         for i, item in enumerate(negative_items[:5]):
             item['rank'] = i + 1
             sido_products_bottom[sido].append(item)

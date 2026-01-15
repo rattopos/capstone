@@ -677,6 +677,10 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
     """
     # 통계표 생성 비활성화
     return None, "통계표 생성이 비활성화되었습니다."
+    
+    # 아래 코드는 통계표 생성이 비활성화되어 실행되지 않음
+    # 필요시 주석을 해제하여 다시 활성화 가능
+    """
         stat_id = stat_config['id']
         template_name = stat_config['template']
         table_name = stat_config.get('table_name')
@@ -744,12 +748,12 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                 table_index = 1
             
             try:
-                config = generator.TABLE_CONFIG.get(table_name)
+            config = generator.TABLE_CONFIG.get(table_name)
                 if not config:
                     print(f"[통계표] 설정 없음: {table_name}, 빈 데이터 반환")
                     data = generator._create_empty_table_data()
                 else:
-                    data = generator.extract_table_data(table_name)
+                data = generator.extract_table_data(table_name)
                     # data가 None이면 빈 데이터로 대체
                     if data is None:
                         print(f"[통계표] 데이터 추출 실패: {table_name}, 빈 데이터 반환")
@@ -768,42 +772,42 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                         'yearly_years': [],
                         'quarterly_keys': []
                     }
-            
-            # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
-            yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
-            
-            # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
-            quarterly_keys = data.get('quarterly_keys', [])
-            if not quarterly_keys and data.get('quarterly'):
-                # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
-                quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
-                    int(x[:4]), int(x[5]) if len(x) > 5 else 0
-                ))
-            
+                
+                # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
+                yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
+                
+                # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
+                quarterly_keys = data.get('quarterly_keys', [])
+                if not quarterly_keys and data.get('quarterly'):
+                    # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
+                    quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
+                        int(x[:4]), int(x[5]) if len(x) > 5 else 0
+                    ))
+                
             # page_base 계산 제거 (페이지 번호는 더 이상 사용하지 않음, 목차 생성 중단)
             # page_base = 22 + (table_index - 1) * 2
             
             # config가 없어도 기본값 사용
             unit = config.get('단위', '[자료 없음]') if config else '[자료 없음]'
-            
-            template_data = {
-                'year': year,
-                'quarter': quarter,
-                'index': table_index,
-                'title': table_name,
+                
+                template_data = {
+                    'year': year,
+                    'quarter': quarter,
+                    'index': table_index,
+                    'title': table_name,
                 'unit': unit,
                 'data': data if data else {'yearly': {}, 'quarterly': {}, 'yearly_years': [], 'quarterly_keys': []},
-                'page1_regions': PAGE1_REGIONS,
-                'page2_regions': PAGE2_REGIONS,
-                'yearly_years': yearly_years,
+                    'page1_regions': PAGE1_REGIONS,
+                    'page2_regions': PAGE2_REGIONS,
+                    'yearly_years': yearly_years,
                 'quarterly_keys': quarterly_keys
-            }
+                }
         
         # 통계표 - GRDP
         elif stat_id == 'stat_grdp':
             if generator:
                 try:
-                    grdp_data = generator._create_grdp_placeholder()
+                grdp_data = generator._create_grdp_placeholder()
                 except Exception as e:
                     print(f"[통계표] GRDP 데이터 생성 실패: {e}")
                     grdp_data = {
@@ -889,4 +893,4 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
-
+    """

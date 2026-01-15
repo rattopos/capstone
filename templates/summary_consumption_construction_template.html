@@ -91,7 +91,22 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는 전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change) }}% {% if retail_sales.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는 
+                {% if retail_sales.nationwide.change is defined and retail_sales.qoq_change is defined %}
+                    {% if retail_sales.nationwide.change >= 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change < 0 %}
+                        전년동분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.nationwide.change) }}% 증가</span>하였으나 전분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.qoq_change | abs) }}% 감소</span>
+                    {% elif retail_sales.nationwide.change >= 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change >= 0 %}
+                        전년동분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.nationwide.change) }}% 증가</span>하고 전분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.qoq_change) }}% 증가</span>
+                    {% elif retail_sales.nationwide.change < 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change >= 0 %}
+                        전년동분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% 감소</span>하였으나 전분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.qoq_change) }}% 증가</span>
+                    {% elif retail_sales.nationwide.change < 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change < 0 %}
+                        전년동분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% 감소</span>하고 전분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.qoq_change | abs) }}% 감소</span>
+                    {% else %}
+                        전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {% if retail_sales.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+                    {% endif %}
+                {% else %}
+                    전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {% if retail_sales.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+                {% endif %}
             </div>
             <div class="summary-sub">
                 {% for region in retail_sales.increase_regions[:3] %}

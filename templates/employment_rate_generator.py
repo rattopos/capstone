@@ -17,7 +17,8 @@ AGE_GROUP_MAPPING = {
     '30 - 39세': '30~39세',
     '40 - 49세': '40~49세',
     '50 - 59세': '50~59세',
-    '60세이상': '70세이상'
+    '60세이상': '60세이상',  # 수정: 70세이상이 아닌 60세이상으로 표시
+    '70세이상': '70세이상'  # 엑셀에 70세이상 컬럼이 있는 경우를 대비
 }
 
 # 지역명 매핑 (표 표시용)
@@ -147,9 +148,9 @@ def get_nationwide_data(df_analysis, df_index):
         if len(df_analysis) <= 3:
             print(f"[고용률] 분석 시트 행 수 부족: {len(df_analysis)}")
             return _get_nationwide_data_from_aggregation(df_index)
-        nationwide_row = df_analysis.iloc[3]
+    nationwide_row = df_analysis.iloc[3]
         change = safe_float(nationwide_row[18] if len(nationwide_row) > 18 else None, 0)
-        change = round(change, 1) if change is not None else 0.0
+    change = round(change, 1) if change is not None else 0.0
     except Exception as e:
         print(f"[고용률] 전국 데이터 읽기 실패: {e}")
         return _get_nationwide_data_from_aggregation(df_index)
@@ -160,7 +161,7 @@ def get_nationwide_data(df_analysis, df_index):
             print(f"[고용률] 집계 시트 행 수 부족: {len(df_index)}")
             employment_rate = 60.0
         else:
-            index_row = df_index.iloc[3]
+    index_row = df_index.iloc[3]
             employment_rate = safe_float(index_row[21] if len(index_row) > 21 else None, 60.0)  # 2025.2/4
     except Exception as e:
         print(f"[고용률] 집계 시트 데이터 읽기 실패: {e}")
@@ -171,15 +172,15 @@ def get_nationwide_data(df_analysis, df_index):
     try:
         for i in range(4, min(9, len(df_analysis))):
             try:
-                row = df_analysis.iloc[i]
+        row = df_analysis.iloc[i]
                 age_name = row[5] if len(row) > 5 and pd.notna(row[5]) else ''
                 age_change = safe_float(row[18] if len(row) > 18 else None, None)
-                if age_change is not None:
-                    age_groups.append({
-                        'name': age_name,
-                        'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
-                        'change': round(age_change, 1)
-                    })
+        if age_change is not None:
+            age_groups.append({
+                'name': age_name,
+                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                'change': round(age_change, 1)
+            })
             except Exception as e:
                 print(f"[고용률] 연령별 데이터 추출 실패 (행 {i}): {e}")
                 continue
@@ -222,13 +223,20 @@ def _get_nationwide_data_from_aggregation(df_index):
     change = round(rate_2025_2 - rate_2024_2, 1)
     
     # 연령별 데이터 추출
-    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상']
+    # 60세이상과 70세이상 모두 체크 (엑셀 구조에 따라 다를 수 있음)
+    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상', '70세이상']
     age_groups = []
     
     for age_name in age_names:
         age_row = df_index[(df_index[1] == '전국') & (df_index[3] == age_name)]
         if age_row.empty:
-            continue
+            # 60세이상이 없으면 70세이상으로 시도
+            if age_name == '60세이상':
+                age_row = df_index[(df_index[1] == '전국') & (df_index[3] == '70세이상')]
+                if not age_row.empty:
+                    age_name = '70세이상'  # 실제 엑셀의 연령대명 사용
+            else:
+                continue
         
         arow = age_row.iloc[0]
         age_rate_2024 = safe_float(arow[17], 0)
@@ -359,7 +367,8 @@ def get_regional_data(df_analysis, df_index):
 def _get_regional_data_from_aggregation(df_index):
     """집계 시트에서 시도별 데이터 추출"""
     regions = []
-    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상']
+    # 60세이상과 70세이상 모두 체크
+    age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상', '70세이상']
     
     for region in VALID_REGIONS:
         region_total = df_index[(df_index[1] == region) & (df_index[3] == '계')]
@@ -391,7 +400,15 @@ def _get_regional_data_from_aggregation(df_index):
         for age_name in age_names:
             age_data = df_index[(df_index[1] == region) & (df_index[3] == age_name)]
             if age_data.empty:
-                continue
+                # 60세이상이 없으면 70세이상으로 시도
+                if age_name == '60세이상':
+                    age_data = df_index[(df_index[1] == region) & (df_index[3] == '70세이상')]
+                    if not age_data.empty:
+                        age_name = '70세이상'  # 실제 엑셀의 연령대명 사용
+                    else:
+                        continue
+                else:
+                    continue
             
             arow = age_data.iloc[0]
             age_rate_2024 = safe_float(arow[17], 0)

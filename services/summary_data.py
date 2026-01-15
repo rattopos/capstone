@@ -4,6 +4,8 @@
 """
 
 import pandas as pd
+from pathlib import Path
+from utils.excel_utils import load_generator_module
 
 
 def safe_float(value, default=None):
@@ -36,6 +38,10 @@ REGION_NAME_MAP = {
     # 추가 변형 (강원특별자치도 등)
     '강원특별자치도': '강원', '전북특별자치도': '전북',
 }
+
+# 17개 시도 목록 (상수)
+VALID_REGIONS = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                  '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
 
 
 def normalize_region_name(name):
@@ -135,8 +141,7 @@ def _convert_table_to_narration(table_data):
 def _extract_sector_summary(xl, sheet_name):
     """시트에서 요약 데이터 추출 (기초자료 또는 집계 시트에서 전년동기비 계산)"""
     try:
-        regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        regions = VALID_REGIONS.copy()
         
         # 기초자료 시트 설정 (우선 사용)
         raw_config = {
@@ -266,6 +271,11 @@ def _extract_sector_summary(xl, sheet_name):
                         else:
                             change = None
                     
+                    # change가 None이 아닐 때만 카운트
+                    if change is None:
+                        continue
+                    
+                    # 지역명이 정규화된 후에도 regions 리스트에 있는지 확인
                     if region == '전국':
                         nationwide = change
                     elif region in regions:
@@ -327,6 +337,10 @@ def _extract_price_summary_from_aggregate(xl, regions):
                     else:
                         change = None
                     
+                    # change가 None이 아닐 때만 카운트
+                    if change is None:
+                        continue
+                    
                     if region == '전국':
                         nationwide = change
                     elif region in regions:
@@ -385,6 +399,10 @@ def _extract_employment_summary_from_aggregate(xl, regions):
                     
                     # 전년동분기 대비 증감 (고용률은 %p 단위)
                     change = round(curr_val - prev_val, 1) if (curr_val is not None and prev_val is not None) else None
+                    
+                    # change가 None이 아닐 때만 카운트
+                    if change is None:
+                        continue
                     
                     if region == '전국':
                         nationwide = change
@@ -453,8 +471,7 @@ def get_summary_table_data(excel_path):
         print(f"[DEBUG] get_summary_table_data - excel_path: {excel_path}")
         xl = pd.ExcelFile(excel_path)
         print(f"[DEBUG] 시트 목록: {xl.sheet_names[:5]}...")
-        all_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                       '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        all_regions = VALID_REGIONS.copy()
         
         # 기초자료 시트 설정 (우선 사용)
         raw_sheet_configs = {
@@ -629,18 +646,57 @@ def get_summary_table_data(excel_path):
 
 
 def get_production_summary_data(excel_path, year, quarter):
-    """요약-생산 데이터"""
+    """요약-생산 데이터 (각 Generator에서 검증된 데이터 가져오기)"""
     try:
+        # 광공업생산 Generator에서 데이터 가져오기
+        mining_data = None
+        try:
+            module = load_generator_module('mining_manufacturing_generator')
+            if module:
+                generator_class = None
+                for name in dir(module):
+                    obj = getattr(module, name)
+                    if isinstance(obj, type) and name.endswith('Generator'):
+                        generator_class = obj
+                        break
+                
+                if generator_class:
+                    gen = generator_class(excel_path, year=year, quarter=quarter)
+                    full_data = gen.extract_all_data()
+                    nationwide_data = full_data.get('nationwide_data', {})
+                    
+                    # 품목 데이터 추출
+                    main_increase_industries = nationwide_data.get('main_increase_industries', [])
+                    main_decrease_industries = nationwide_data.get('main_decrease_industries', [])
+                    
+                    # 기존 차트 데이터 구조 유지하면서 품목 추가
+                    xl = pd.ExcelFile(excel_path)
+                    mining = _extract_chart_data(xl, 'A 분석')
+                    mining['main_increase_industries'] = main_increase_industries[:5]  # Top 5 품목
+                    mining['main_decrease_industries'] = main_decrease_industries[:5]  # Top 5 품목
+                    mining_data = mining
+        except Exception as e:
+            print(f"[요약] 광공업생산 Generator 호출 실패, 기본 추출 사용: {e}")
+        
+        # Generator 호출 실패 시 기본 추출 사용
+        if mining_data is None:
+            xl = pd.ExcelFile(excel_path)
+            mining_data = _extract_chart_data(xl, 'A 분석')
+            mining_data['main_increase_industries'] = []
+            mining_data['main_decrease_industries'] = []
+        
+        # 서비스업생산은 기존 방식 유지
         xl = pd.ExcelFile(excel_path)
-        mining = _extract_chart_data(xl, 'A 분석')
         service = _extract_chart_data(xl, 'B 분석')
         
         return {
-            'mining_production': mining,
+            'mining_production': mining_data,
             'service_production': service
         }
     except Exception as e:
         print(f"생산 요약 데이터 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'mining_production': _get_default_chart_data(),
             'service_production': _get_default_chart_data()
@@ -648,20 +704,98 @@ def get_production_summary_data(excel_path, year, quarter):
 
 
 def get_consumption_construction_data(excel_path, year, quarter):
-    """요약-소비건설 데이터"""
+    """요약-소비건설 데이터 (각 Generator에서 검증된 데이터 가져오기)"""
     try:
+        # 소비 데이터: 전년동분기대비와 전분기대비 모두 추출
         xl = pd.ExcelFile(excel_path)
         retail = _extract_chart_data(xl, 'C 분석')
         
-        # 건설 데이터 추출
-        construction = _extract_construction_chart_data(xl)
+        # 전분기대비 데이터 추가 추출
+        try:
+            df = pd.read_excel(xl, sheet_name='C 분석', header=None)
+            if df is not None and len(df) > 0:
+                # 전년동분기대비는 이미 retail에 있음
+                # 전분기대비는 2025.1/4와 2025.2/4 비교
+                # 집계 시트에서 직접 계산
+                if 'C(소비)집계' in xl.sheet_names:
+                    df_agg = pd.read_excel(xl, sheet_name='C(소비)집계', header=None)
+                    # 전국 총지수 행 찾기
+                    for i, row in df_agg.iterrows():
+                        region = str(row[2]).strip() if pd.notna(row[2]) else ''
+                        code = str(row[6]).strip() if pd.notna(row[6]) else ''
+                        if region == '전국' and code == '총지수':
+                            curr_q = safe_float(row[24])  # 2025.2/4
+                            prev_q = safe_float(row[23])  # 2025.1/4
+                            if prev_q is not None and prev_q != 0:
+                                qoq_change = round((curr_q - prev_q) / prev_q * 100, 1)
+                                retail['qoq_change'] = qoq_change  # 전분기대비 증감률
+                            break
+        except Exception as e:
+            print(f"[요약] 소비 전분기대비 데이터 추출 실패: {e}")
+            retail['qoq_change'] = None
+        
+        # 건설 데이터: ConstructionGenerator에서 가져오기
+        construction_data = None
+        try:
+            module = load_generator_module('construction_generator')
+            if module:
+                # construction_generator는 함수 기반이므로 직접 호출
+                if hasattr(module, 'generate_report_data'):
+                    full_data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                    if full_data:
+                        nationwide_data = full_data.get('nationwide_data', {})
+                        summary_box = full_data.get('summary_box', {})
+                        
+                        # 건설 데이터 구조 변환
+                        construction_data = {
+                            'nationwide': {
+                                'amount': int(round(nationwide_data.get('amount', 0) / 10, 0)),  # 백억원 단위
+                                'change': nationwide_data.get('growth_rate', 0.0)
+                            },
+                            'increase_regions': [],
+                            'decrease_regions': [],
+                            'increase_count': summary_box.get('increase_count', 0),
+                            'decrease_count': summary_box.get('decrease_count', 0),
+                            'chart_data': []
+                        }
+                        
+                        # 지역별 데이터 변환
+                        regional_data = full_data.get('regional_data', {})
+                        increase_regions_list = regional_data.get('increase_regions', [])
+                        decrease_regions_list = regional_data.get('decrease_regions', [])
+                        
+                        for region in increase_regions_list[:3]:
+                            construction_data['increase_regions'].append({
+                                'name': region.get('region', ''),
+                                'value': region.get('growth_rate', 0.0),
+                                'amount': int(round(region.get('amount', 0) / 10, 0)),
+                                'amount_normalized': min(100, max(0, region.get('amount', 0) / 30))
+                            })
+                        
+                        for region in decrease_regions_list[:3]:
+                            construction_data['decrease_regions'].append({
+                                'name': region.get('region', ''),
+                                'value': region.get('growth_rate', 0.0),
+                                'amount': int(round(region.get('amount', 0) / 10, 0)),
+                                'amount_normalized': min(100, max(0, region.get('amount', 0) / 30))
+                            })
+        except Exception as e:
+            print(f"[요약] 건설 Generator 호출 실패, 기본 추출 사용: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Generator 호출 실패 시 기본 추출 사용
+        if construction_data is None:
+            construction_data = _extract_construction_chart_data(xl)
         
         return {
             'retail_sales': retail,
-            'construction': construction
+            'construction': construction_data
         }
     except Exception as e:
         print(f"소비건설 요약 데이터 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'retail_sales': _get_default_chart_data(),
             'construction': _get_default_construction_data()
@@ -671,8 +805,7 @@ def get_consumption_construction_data(excel_path, year, quarter):
 def _extract_construction_chart_data(xl):
     """건설수주액 차트 데이터 추출"""
     try:
-        regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        regions = VALID_REGIONS.copy()
         
         nationwide = {'amount': 0, 'change': 0.0}
         increase_regions = []
@@ -785,8 +918,7 @@ def get_employment_population_data(excel_path, year, quarter):
         }
         try:
             df = pd.read_excel(xl, sheet_name='I(순인구이동)집계', header=None)
-            regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                       '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+            regions = VALID_REGIONS.copy()
             
             # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기, col21=2024 2/4분기
             # 합계(분류단계 0) 행만 추출
@@ -863,8 +995,7 @@ def get_employment_population_data(excel_path, year, quarter):
 def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
     """차트용 데이터 추출 (시트별 열 설정 적용, 분석 시트 없으면 기초자료에서 직접 계산)"""
     try:
-        regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+        regions = VALID_REGIONS.copy()
         
         # 기초자료 시트 설정 (분석 시트 없을 때 fallback)
         raw_sheet_config = {
