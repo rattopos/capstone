@@ -6,15 +6,15 @@
         "main_business": "면세점"
       },
       {
-        "region": "세종",
-        "main_business": "슈퍼마켓·잡화점·편의점"
+        "region": "제주",
+        "main_business": "대형마트"
       },
       {
-        "region": "제주",
+        "region": "전북",
         "main_business": "대형마트"
       }
     ],
-    "region_count": 7
+    "region_count": 6
   },
   "nationwide_data": {
     "sales_index": 102.8,
@@ -37,12 +37,49 @@
   "regional_data": {
     "increase_regions": [
       {
+        "region": "세종",
+        "growth_rate": 8.8,
+        "growth_2023_2": -0.1,
+        "growth_2024_2": 0.8,
+        "growth_2025_1": 2.7,
+        "index_2024": 108.6,
+        "index_2025": 113.9,
+        "top_businesses": [
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 37.4
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 2.5
+          }
+        ],
+        "all_businesses": [
+          {
+            "name": "대형마트",
+            "growth_rate": -2.0
+          },
+          {
+            "name": "슈퍼마켓·잡화점·편의점",
+            "growth_rate": -9.6
+          },
+          {
+            "name": "승용차·연료소매점",
+            "growth_rate": 37.4
+          },
+          {
+            "name": "전문소매점",
+            "growth_rate": 2.5
+          }
+        ]
+      },
+      {
         "region": "인천",
         "growth_rate": 5.5,
         "growth_2023_2": 1.4,
         "growth_2024_2": -3.8,
         "growth_2025_1": 5.3,
-        "index_2024": 99.7,
+        "index_2024": 98.1,
         "index_2025": 105.2,
         "top_businesses": [
           {
@@ -87,7 +124,7 @@
         "growth_2023_2": -5.8,
         "growth_2024_2": -2.3,
         "growth_2025_1": -1.4,
-        "index_2024": 93.2,
+        "index_2024": 97.5,
         "index_2025": 98.1,
         "top_businesses": [
           {
@@ -132,7 +169,7 @@
         "growth_2023_2": 1.4,
         "growth_2024_2": -2.8,
         "growth_2025_1": 5.8,
-        "index_2024": 95.7,
+        "index_2024": 96.7,
         "index_2025": 98.5,
         "top_businesses": [
           {
@@ -173,8 +210,8 @@
         "growth_2023_2": 1.3,
         "growth_2024_2": 2.3,
         "growth_2025_1": 1.7,
-        "index_2024": 104.2,
-        "index_2025": 107.0,
+        "index_2024": 105.5,
+        "index_2025": 107,
         "top_businesses": [
           {
             "name": "슈퍼마켓·잡화점·편의점",
@@ -214,7 +251,7 @@
         "growth_2023_2": 1.9,
         "growth_2024_2": -2.9,
         "growth_2025_1": 1.7,
-        "index_2024": 104.5,
+        "index_2024": 109.4,
         "index_2025": 106.9,
         "top_businesses": [
           {
@@ -255,7 +292,7 @@
         "growth_2023_2": -4.2,
         "growth_2024_2": 1.6,
         "growth_2025_1": 1.5,
-        "index_2024": 100.2,
+        "index_2024": 104.6,
         "index_2025": 102.5,
         "top_businesses": [
           {
@@ -292,7 +329,7 @@
         "growth_2023_2": 2.1,
         "growth_2024_2": 1.1,
         "growth_2025_1": 1.5,
-        "index_2024": 109.5,
+        "index_2024": 113.2,
         "index_2025": 111.6,
         "top_businesses": [
           {
@@ -341,8 +378,8 @@
         "growth_2023_2": -4.2,
         "growth_2024_2": 3.6,
         "growth_2025_1": -0.6,
-        "index_2024": 101.1,
-        "index_2025": 102.0,
+        "index_2024": 104.3,
+        "index_2025": 102,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
@@ -378,7 +415,7 @@
         "growth_2023_2": -4.5,
         "growth_2024_2": -3.1,
         "growth_2025_1": 0.4,
-        "index_2024": 96.0,
+        "index_2024": 97.5,
         "index_2025": 96.5,
         "top_businesses": [
           {
@@ -419,7 +456,7 @@
         "growth_2023_2": -6.2,
         "growth_2024_2": 0.7,
         "growth_2025_1": 0.4,
-        "index_2024": 97.2,
+        "index_2024": 96.9,
         "index_2025": 97.4,
         "top_businesses": [
           {
@@ -454,7 +491,7 @@
         "growth_2023_2": -5.0,
         "growth_2024_2": -3.9,
         "growth_2025_1": -1.8,
-        "index_2024": 95.9,
+        "index_2024": 100.8,
         "index_2025": 93.3,
         "top_businesses": [
           {
@@ -498,53 +535,12 @@
         ]
       },
       {
-        "region": "세종",
-        "growth_rate": -2.4,
-        "growth_2023_2": 3.6,
-        "growth_2024_2": 3.8,
-        "growth_2025_1": 2.8,
-        "index_2024": 116.5,
-        "index_2025": 113.7,
-        "top_businesses": [
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -9.6
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.0
-          }
-        ],
-        "all_businesses": [
-          {
-            "name": "총지수",
-            "growth_rate": 8.8
-          },
-          {
-            "name": "대형마트",
-            "growth_rate": -2.0
-          },
-          {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -9.6
-          },
-          {
-            "name": "승용차·연료소매점",
-            "growth_rate": 37.4
-          },
-          {
-            "name": "전문소매점",
-            "growth_rate": 2.5
-          }
-        ]
-      },
-      {
         "region": "제주",
         "growth_rate": -1.3,
         "growth_2023_2": -6.2,
         "growth_2024_2": -2.5,
         "growth_2025_1": -2.2,
-        "index_2024": 98.2,
+        "index_2024": 99.7,
         "index_2025": 96.9,
         "top_businesses": [
           {
@@ -589,8 +585,8 @@
         "growth_2023_2": -2.1,
         "growth_2024_2": -0.6,
         "growth_2025_1": 0.3,
-        "index_2024": 99.0,
-        "index_2025": 98.0,
+        "index_2024": 102.1,
+        "index_2025": 98,
         "top_businesses": [
           {
             "name": "대형마트",
@@ -630,7 +626,7 @@
         "growth_2023_2": 0.6,
         "growth_2024_2": -0.9,
         "growth_2025_1": -1.5,
-        "index_2024": 103.3,
+        "index_2024": 105.7,
         "index_2025": 102.4,
         "top_businesses": [
           {
@@ -671,7 +667,7 @@
         "growth_2023_2": 2.2,
         "growth_2024_2": -2.6,
         "growth_2025_1": -1.0,
-        "index_2024": 107.8,
+        "index_2024": 104.6,
         "index_2025": 107.2,
         "top_businesses": [
           {
@@ -708,7 +704,7 @@
         "growth_2023_2": -1.5,
         "growth_2024_2": -1.0,
         "growth_2025_1": 2.7,
-        "index_2024": 97.3,
+        "index_2024": 99.5,
         "index_2025": 97.2,
         "top_businesses": [
           {
@@ -755,7 +751,7 @@
         "growth_2023_2": -5.0,
         "growth_2024_2": -3.9,
         "growth_2025_1": -1.8,
-        "index_2024": 95.9,
+        "index_2024": 100.8,
         "index_2025": 93.3,
         "top_businesses": [
           {
@@ -804,7 +800,7 @@
         "growth_2023_2": 2.1,
         "growth_2024_2": 1.1,
         "growth_2025_1": 1.5,
-        "index_2024": 109.5,
+        "index_2024": 113.2,
         "index_2025": 111.6,
         "top_businesses": [
           {
@@ -853,7 +849,7 @@
         "growth_2023_2": -5.8,
         "growth_2024_2": -2.3,
         "growth_2025_1": -1.4,
-        "index_2024": 93.2,
+        "index_2024": 97.5,
         "index_2025": 98.1,
         "top_businesses": [
           {
@@ -898,7 +894,7 @@
         "growth_2023_2": 1.4,
         "growth_2024_2": -3.8,
         "growth_2025_1": 5.3,
-        "index_2024": 99.7,
+        "index_2024": 98.1,
         "index_2025": 105.2,
         "top_businesses": [
           {
@@ -943,7 +939,7 @@
         "growth_2023_2": -1.5,
         "growth_2024_2": -1.0,
         "growth_2025_1": 2.7,
-        "index_2024": 97.3,
+        "index_2024": 99.5,
         "index_2025": 97.2,
         "top_businesses": [
           {
@@ -988,7 +984,7 @@
         "growth_2023_2": 1.9,
         "growth_2024_2": -2.9,
         "growth_2025_1": 1.7,
-        "index_2024": 104.5,
+        "index_2024": 109.4,
         "index_2025": 106.9,
         "top_businesses": [
           {
@@ -1029,7 +1025,7 @@
         "growth_2023_2": 1.4,
         "growth_2024_2": -2.8,
         "growth_2025_1": 5.8,
-        "index_2024": 95.7,
+        "index_2024": 96.7,
         "index_2025": 98.5,
         "top_businesses": [
           {
@@ -1066,27 +1062,23 @@
       },
       {
         "region": "세종",
-        "growth_rate": -2.4,
-        "growth_2023_2": 3.6,
-        "growth_2024_2": 3.8,
-        "growth_2025_1": 2.8,
-        "index_2024": 116.5,
-        "index_2025": 113.7,
+        "growth_rate": 8.8,
+        "growth_2023_2": -0.1,
+        "growth_2024_2": 0.8,
+        "growth_2025_1": 2.7,
+        "index_2024": 108.6,
+        "index_2025": 113.9,
         "top_businesses": [
           {
-            "name": "슈퍼마켓·잡화점·편의점",
-            "growth_rate": -9.6
+            "name": "승용차·연료소매점",
+            "growth_rate": 37.4
           },
           {
-            "name": "대형마트",
-            "growth_rate": -2.0
+            "name": "전문소매점",
+            "growth_rate": 2.5
           }
         ],
         "all_businesses": [
-          {
-            "name": "총지수",
-            "growth_rate": 8.8
-          },
           {
             "name": "대형마트",
             "growth_rate": -2.0
@@ -1111,7 +1103,7 @@
         "growth_2023_2": -4.5,
         "growth_2024_2": -3.1,
         "growth_2025_1": 0.4,
-        "index_2024": 96.0,
+        "index_2024": 97.5,
         "index_2025": 96.5,
         "top_businesses": [
           {
@@ -1152,7 +1144,7 @@
         "growth_2023_2": 2.2,
         "growth_2024_2": -2.6,
         "growth_2025_1": -1.0,
-        "index_2024": 107.8,
+        "index_2024": 104.6,
         "index_2025": 107.2,
         "top_businesses": [
           {
@@ -1189,8 +1181,8 @@
         "growth_2023_2": 1.3,
         "growth_2024_2": 2.3,
         "growth_2025_1": 1.7,
-        "index_2024": 104.2,
-        "index_2025": 107.0,
+        "index_2024": 105.5,
+        "index_2025": 107,
         "top_businesses": [
           {
             "name": "슈퍼마켓·잡화점·편의점",
@@ -1230,8 +1222,8 @@
         "growth_2023_2": -4.2,
         "growth_2024_2": 3.6,
         "growth_2025_1": -0.6,
-        "index_2024": 101.1,
-        "index_2025": 102.0,
+        "index_2024": 104.3,
+        "index_2025": 102,
         "top_businesses": [
           {
             "name": "승용차·연료소매점",
@@ -1267,8 +1259,8 @@
         "growth_2023_2": -2.1,
         "growth_2024_2": -0.6,
         "growth_2025_1": 0.3,
-        "index_2024": 99.0,
-        "index_2025": 98.0,
+        "index_2024": 102.1,
+        "index_2025": 98,
         "top_businesses": [
           {
             "name": "대형마트",
@@ -1308,7 +1300,7 @@
         "growth_2023_2": -6.2,
         "growth_2024_2": 0.7,
         "growth_2025_1": 0.4,
-        "index_2024": 97.2,
+        "index_2024": 96.9,
         "index_2025": 97.4,
         "top_businesses": [
           {
@@ -1341,7 +1333,7 @@
         "growth_2023_2": 0.6,
         "growth_2024_2": -0.9,
         "growth_2025_1": -1.5,
-        "index_2024": 103.3,
+        "index_2024": 105.7,
         "index_2025": 102.4,
         "top_businesses": [
           {
@@ -1382,7 +1374,7 @@
         "growth_2023_2": -4.2,
         "growth_2024_2": 1.6,
         "growth_2025_1": 1.5,
-        "index_2024": 100.2,
+        "index_2024": 104.6,
         "index_2025": 102.5,
         "top_businesses": [
           {
@@ -1419,7 +1411,7 @@
         "growth_2023_2": -6.2,
         "growth_2024_2": -2.5,
         "growth_2025_1": -2.2,
-        "index_2024": 98.2,
+        "index_2024": 99.7,
         "index_2025": 96.9,
         "top_businesses": [
           {
@@ -1462,6 +1454,20 @@
   },
   "top3_increase_regions": [
     {
+      "region": "세종",
+      "growth_rate": 8.8,
+      "businesses": [
+        {
+          "name": "승용차·연료소매점",
+          "growth_rate": 37.4
+        },
+        {
+          "name": "전문소매점",
+          "growth_rate": 2.5
+        }
+      ]
+    },
+    {
       "region": "인천",
       "growth_rate": 5.5,
       "businesses": [
@@ -1496,20 +1502,6 @@
           "growth_rate": 4.0
         }
       ]
-    },
-    {
-      "region": "울산",
-      "growth_rate": 2.9,
-      "businesses": [
-        {
-          "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": 11.4
-        },
-        {
-          "name": "승용차·연료소매점",
-          "growth_rate": 8.7
-        }
-      ]
     }
   ],
   "top3_decrease_regions": [
@@ -1532,20 +1524,6 @@
       ]
     },
     {
-      "region": "세종",
-      "growth_rate": -2.4,
-      "businesses": [
-        {
-          "name": "슈퍼마켓·잡화점·편의점",
-          "growth_rate": -9.6
-        },
-        {
-          "name": "대형마트",
-          "growth_rate": -2.0
-        }
-      ]
-    },
-    {
       "region": "제주",
       "growth_rate": -1.3,
       "businesses": [
@@ -1562,10 +1540,28 @@
           "growth_rate": -2.1
         }
       ]
+    },
+    {
+      "region": "전북",
+      "growth_rate": -1.0,
+      "businesses": [
+        {
+          "name": "대형마트",
+          "growth_rate": -17.0
+        },
+        {
+          "name": "슈퍼마켓·잡화점·편의점",
+          "growth_rate": -1.6
+        },
+        {
+          "name": "전문소매점",
+          "growth_rate": -0.8
+        }
+      ]
     }
   ],
-  "increase_businesses_text": "슈퍼마켓·잡화점·편의점, 면세점, 승용차·연료소매점",
-  "decrease_businesses_text": "슈퍼마켓·잡화점·편의점, 대형마트, 면세점",
+  "increase_businesses_text": "전문소매점, 슈퍼마켓·잡화점·편의점, 승용차·연료소매점",
+  "decrease_businesses_text": "대형마트, 면세점, 슈퍼마켓·잡화점·편의점",
   "summary_table": {
     "base_year": 2020,
     "columns": {
@@ -1582,6 +1578,8 @@
     },
     "regions": [
       {
+        "group": null,
+        "rowspan": null,
         "region": "전 국",
         "growth_rates": [
           -2.6,
@@ -1590,11 +1588,9 @@
           1.5
         ],
         "indices": [
-          101.3,
+          104.7,
           102.8
-        ],
-        "group": null,
-        "rowspan": null
+        ]
       },
       {
         "region": "서 울",
@@ -1605,7 +1601,7 @@
           -2.7
         ],
         "indices": [
-          95.9,
+          100.8,
           93.3
         ],
         "group": "경인",
@@ -1620,7 +1616,7 @@
           5.5
         ],
         "indices": [
-          99.7,
+          98.1,
           105.2
         ],
         "group": null,
@@ -1635,7 +1631,7 @@
           0.5
         ],
         "indices": [
-          96.0,
+          97.5,
           96.5
         ],
         "group": null,
@@ -1650,7 +1646,7 @@
           2.3
         ],
         "indices": [
-          104.5,
+          109.4,
           106.9
         ],
         "group": "충청",
@@ -1659,14 +1655,14 @@
       {
         "region": "세 종",
         "growth_rates": [
-          3.6,
-          3.8,
-          2.8,
-          -2.4
+          -0.1,
+          0.8,
+          2.7,
+          8.8
         ],
         "indices": [
-          116.5,
-          113.7
+          108.6,
+          113.9
         ],
         "group": null,
         "rowspan": null
@@ -1680,8 +1676,8 @@
           2.7
         ],
         "indices": [
-          104.2,
-          107.0
+          105.5,
+          107
         ],
         "group": null,
         "rowspan": null
@@ -1695,8 +1691,8 @@
           0.9
         ],
         "indices": [
-          101.1,
-          102.0
+          104.3,
+          102
         ],
         "group": null,
         "rowspan": null
@@ -1710,7 +1706,7 @@
           -0.1
         ],
         "indices": [
-          97.3,
+          99.5,
           97.2
         ],
         "group": "호남",
@@ -1725,8 +1721,8 @@
           -1.0
         ],
         "indices": [
-          99.0,
-          98.0
+          102.1,
+          98
         ],
         "group": null,
         "rowspan": null
@@ -1740,7 +1736,7 @@
           0.2
         ],
         "indices": [
-          97.2,
+          96.9,
           97.4
         ],
         "group": null,
@@ -1755,7 +1751,7 @@
           -1.3
         ],
         "indices": [
-          98.2,
+          99.7,
           96.9
         ],
         "group": null,
@@ -1770,7 +1766,7 @@
           5.3
         ],
         "indices": [
-          93.2,
+          97.5,
           98.1
         ],
         "group": "동북",
@@ -1785,7 +1781,7 @@
           -0.9
         ],
         "indices": [
-          103.3,
+          105.7,
           102.4
         ],
         "group": null,
@@ -1800,7 +1796,7 @@
           -0.6
         ],
         "indices": [
-          107.8,
+          104.6,
           107.2
         ],
         "group": null,
@@ -1815,7 +1811,7 @@
           1.9
         ],
         "indices": [
-          109.5,
+          113.2,
           111.6
         ],
         "group": "동남",
@@ -1830,7 +1826,7 @@
           2.9
         ],
         "indices": [
-          95.7,
+          96.7,
           98.5
         ],
         "group": null,
@@ -1845,7 +1841,7 @@
           2.3
         ],
         "indices": [
-          100.2,
+          104.6,
           102.5
         ],
         "group": null,

@@ -442,45 +442,45 @@ def extract_year_quarter_from_excel(filepath, default_year=None, default_quarter
                 
                 if len(df) < 2:
                     continue
-        
+                
                 # 헤더 행(1-2행, 0-based)에서 연도/분기 패턴 찾기
-        for row_idx in [1, 2]:
+                for row_idx in [1, 2]:
                     if row_idx >= len(df):
                         continue
                     
                     # 모든 컬럼을 순회하며 패턴 찾기 (최대 30개 컬럼)
                     for col_idx in range(min(30, len(df.columns))):
                         cell_value = df.iloc[row_idx, col_idx]
-                if pd.notna(cell_value):
-                    cell_str = str(cell_value).strip()
+                        if pd.notna(cell_value):
+                            cell_str = str(cell_value).strip()
                             
                             # 연도/분기 패턴
-                    patterns = [
+                            patterns = [
                                 r'(\d{4})\s*\.?\s*(\d)/4',      # 2025 2/4, 2025.2/4
                                 r'(\d{2})\s*\.?\s*(\d)/4',       # 25 2/4, 25.2/4
-                        r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
-                        r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
+                                r'(\d{4})년[_\s]*(\d)분기',      # 2025년 2분기
+                                r'(\d{2})년[_\s]*(\d)분기',      # 25년 2분기
                                 r'(\d{4})[_\s-](\d)[Qq]',        # 2025_2Q, 2025 2q
                                 r'(\d{2})[_\s-](\d)[Qq]',        # 25_2Q, 25 2q
                                 r'(\d{4})[_\s-](\d)',            # 2025_2, 2025 2
                                 r'(\d{2})[_\s-](\d)',            # 25_2, 25 2
-                    ]
-                    
-                    for pattern in patterns:
-                        match = re.search(pattern, cell_str)
-                        if match:
-                            year_str = match.group(1)
-                            quarter = int(match.group(2))
+                            ]
                             
-                            if len(year_str) == 2:
-                                year = 2000 + int(year_str)
-                            else:
-                                year = int(year_str)
-                            
+                            for pattern in patterns:
+                                match = re.search(pattern, cell_str)
+                                if match:
+                                    year_str = match.group(1)
+                                    quarter = int(match.group(2))
+                                    
+                                    if len(year_str) == 2:
+                                        year = 2000 + int(year_str)
+                                    else:
+                                        year = int(year_str)
+                                    
                                     # 분기 유효성 검사
                                     if 1 <= quarter <= 4:
                                         print(f"[연도/분기 추출] ✅ 2-2 성공: '{sheet_name}' 시트 헤더에서 추출 - {year}년 {quarter}분기")
-                            return year, quarter
+                                        return year, quarter
             except Exception as e:
                 print(f"[연도/분기 추출] 2-2 오류 ({sheet_name}): {e}")
                 continue
@@ -495,9 +495,9 @@ def extract_year_quarter_from_excel(filepath, default_year=None, default_quarter
     print(f"[연도/분기 추출] 3순위: 안전장치 실행")
     
     # 기본값이 제공된 경우 사용
-        if default_year is not None and default_quarter is not None:
+    if default_year is not None and default_quarter is not None:
         print(f"[연도/분기 추출] ⚠️ 안전장치: 제공된 기본값 사용 - {default_year}년 {default_quarter}분기")
-            return default_year, default_quarter
+        return default_year, default_quarter
     
     # 현재 날짜 기준 이전 분기 계산
     try:

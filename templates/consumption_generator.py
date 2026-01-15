@@ -864,6 +864,11 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     
     # 템플릿 데이터
     template_data = {
+        'report_info': {
+            'year': year if year else 2025,
+            'quarter': quarter if quarter else 2,
+            'data_source': '국가데이터처 국가통계포털(KOSIS), 소비동향조사'
+        },
         'summary_box': summary_box,
         'nationwide_data': nationwide_data,
         'regional_data': regional_data,

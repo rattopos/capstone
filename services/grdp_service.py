@@ -585,6 +585,7 @@ def get_default_grdp_data(year, quarter, use_default_contributions=True):
         },
         'kosis_info': kosis_info,
         'data_missing': national_placeholder,
-        'needs_review': national_placeholder  # 전체 데이터가 수정 필요한지 표시
+        'needs_review': national_placeholder,  # 전체 데이터가 수정 필요한지 표시
+        'status': 'default' if national_placeholder else 'extracted'  # 기본값인지 추출된 데이터인지 표시
     }
 

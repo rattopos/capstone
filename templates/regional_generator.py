@@ -1678,7 +1678,7 @@ class RegionalGenerator:
         
         return increase_items, decrease_items
     
-    def extract_employment_data(self, region: str) -> Dict[str, Any]:
+    def extract_employment_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """고용률 데이터 추출 - 집계 시트에서 전년동기대비 증감(%p) 계산"""
         try:
             df = self.cache.get_sheet('D(고용률)집계')
@@ -1757,12 +1757,16 @@ class RegionalGenerator:
                 elif change < 0:
                     decrease_groups.append({"name": display_name, "change": change})
         
+        # Step 2: 문장 생성 - region_stat 딕셔너리의 값만 참조
+        if region_stat is not None and 'employment' in region_stat:
+            total_change = region_stat['employment']  # region_stat에서 가져온 값 사용
+        
         # 정렬
         increase_groups = sorted(increase_groups, key=lambda x: x['change'], reverse=True)[:2]
         decrease_groups = sorted(decrease_groups, key=lambda x: x['change'])[:2]
         
         return {
-            "total_change": total_change,
+            "total_change": total_change,  # region_stat에서 가져온 값
             "direction": "상승" if total_change > 0 else "하락",
             "increase_age_groups": increase_groups,
             "decrease_age_groups": decrease_groups

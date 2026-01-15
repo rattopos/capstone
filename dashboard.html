@@ -1841,7 +1841,8 @@
         </div>
     </div>
 
-    <!-- GRDP Upload Modal -->
+    <!-- GRDP Upload Modal - 영구 제거됨 (모달 없이 자동으로 기본값 사용) -->
+    <!--
     <div class="upload-modal-overlay" id="grdpModal">
         <div class="upload-modal-content" style="max-width: 450px;">
             <div class="upload-modal-icon" style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
@@ -1938,6 +1939,7 @@
             </p>
         </div>
     </div>
+    -->
     
     <style>
         @keyframes spin {
@@ -3049,34 +3051,20 @@ ${currentPage.outerHTML}
                         reportGenerationHint.style.display = 'block';
                     }
                     
-                    if (data.needs_grdp) {
-                        // GRDP가 없는 경우 → GRDP 모달 표시
-                        if (grdpInfo) grdpInfo.style.display = 'none';
-                        if (grdpMissing) grdpMissing.style.display = 'none';
-                        
-                        document.getElementById('uploadModalIcon').textContent = '✅';
-                        document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                        document.getElementById('uploadModalSubtitle').textContent = 'GRDP 데이터를 추가로 업로드해주세요.';
-                        
-                        updateUploadStep(4, 'active', 'GRDP 추가 필요');
-                        
-                        hideUploadModal(1500);
-                        setTimeout(() => {
-                            showGrdpModal();
-                        }, 1600);
-                    } else {
-                        // GRDP가 있는 경우 → 바로 보도자료 생성
-                        if (grdpInfo) grdpInfo.style.display = 'block';
-                        if (grdpMissing) grdpMissing.style.display = 'none';
-                        
-                        document.getElementById('uploadModalIcon').textContent = '✅';
-                        document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                        document.getElementById('uploadModalSubtitle').textContent = 'GRDP 시트가 포함되어 있습니다.';
-                        
-                        // Step 3은 이미 숨김 처리됨
-                        updateUploadStep(4, 'completed', 'GRDP 포함');
-                        
-                        hideUploadModal(2000);
+                    // GRDP 모달 제거: 항상 성공 케이스로 진행 (GRDP 없어도 자동으로 기본값 사용)
+                    if (grdpInfo) grdpInfo.style.display = data.has_grdp ? 'block' : 'none';
+                    if (grdpMissing) grdpMissing.style.display = 'none';
+                    
+                    document.getElementById('uploadModalIcon').textContent = '✅';
+                    document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
+                    document.getElementById('uploadModalSubtitle').textContent = data.has_grdp 
+                        ? 'GRDP 시트가 포함되어 있습니다.' 
+                        : 'GRDP 데이터는 기본값으로 자동 설정됩니다.';
+                    
+                    // Step 3은 이미 숨김 처리됨
+                    updateUploadStep(4, 'completed', data.has_grdp ? 'GRDP 포함' : '기본값 사용');
+                    
+                    hideUploadModal(2000);
                         setTimeout(() => {
                             generateAllReports();
                         }, 2100);

@@ -148,9 +148,9 @@ def get_nationwide_data(df_analysis, df_index):
         if len(df_analysis) <= 3:
             print(f"[고용률] 분석 시트 행 수 부족: {len(df_analysis)}")
             return _get_nationwide_data_from_aggregation(df_index)
-    nationwide_row = df_analysis.iloc[3]
+        nationwide_row = df_analysis.iloc[3]
         change = safe_float(nationwide_row[18] if len(nationwide_row) > 18 else None, 0)
-    change = round(change, 1) if change is not None else 0.0
+        change = round(change, 1) if change is not None else 0.0
     except Exception as e:
         print(f"[고용률] 전국 데이터 읽기 실패: {e}")
         return _get_nationwide_data_from_aggregation(df_index)
@@ -161,7 +161,7 @@ def get_nationwide_data(df_analysis, df_index):
             print(f"[고용률] 집계 시트 행 수 부족: {len(df_index)}")
             employment_rate = 60.0
         else:
-    index_row = df_index.iloc[3]
+            index_row = df_index.iloc[3]
             employment_rate = safe_float(index_row[21] if len(index_row) > 21 else None, 60.0)  # 2025.2/4
     except Exception as e:
         print(f"[고용률] 집계 시트 데이터 읽기 실패: {e}")
@@ -172,15 +172,15 @@ def get_nationwide_data(df_analysis, df_index):
     try:
         for i in range(4, min(9, len(df_analysis))):
             try:
-        row = df_analysis.iloc[i]
+                row = df_analysis.iloc[i]
                 age_name = row[5] if len(row) > 5 and pd.notna(row[5]) else ''
                 age_change = safe_float(row[18] if len(row) > 18 else None, None)
-        if age_change is not None:
-            age_groups.append({
-                'name': age_name,
-                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
-                'change': round(age_change, 1)
-            })
+                if age_change is not None:
+                    age_groups.append({
+                        'name': age_name,
+                        'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                        'change': round(age_change, 1)
+                    })
             except Exception as e:
                 print(f"[고용률] 연령별 데이터 추출 실패 (행 {i}): {e}")
                 continue

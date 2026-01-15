@@ -335,6 +335,7 @@ def upload_excel():
         except OSError:
             pass  # 파일 시간 확인 실패는 무시
         
+        # Step 2: 백엔드 응답 조작 - GRDP 데이터가 없으면 기본값을 자동으로 세션에 저장
         if grdp_data:
             session['grdp_data'] = grdp_data
             # JSON 파일로도 저장
@@ -344,8 +345,19 @@ def upload_excel():
                     json.dump(grdp_data, f, ensure_ascii=False, indent=2)
             except Exception as e:
                 print(f"[경고] GRDP JSON 저장 실패: {e}")
+        else:
+            # GRDP 데이터가 없으면 기본값을 자동으로 생성하여 세션에 저장
+            if year and quarter:
+                try:
+                    default_grdp = get_default_grdp_data(year, quarter)
+                    session['grdp_data'] = default_grdp
+                    print(f"[GRDP] 기본값 자동 주입 완료 - 연도: {year}, 분기: {quarter}")
+                except Exception as e:
+                    print(f"[경고] GRDP 기본값 생성 실패: {e}")
+                    # 실패해도 계속 진행 (빈 데이터 구조라도 저장)
+                    session['grdp_data'] = {'status': 'empty', 'data': []}
         
-        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → {'바로 보도자료 생성' if has_grdp else 'GRDP 모달 표시'}")
+        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → 자동으로 기본값 주입 후 바로 보도자료 생성")
         
         return jsonify({
             'success': True,
@@ -355,7 +367,7 @@ def upload_excel():
             'quarter': quarter,
             'reports': REPORT_ORDER,
             'regional_reports': REGIONAL_REPORTS,
-            'needs_grdp': not has_grdp,
+            'needs_grdp': False,  # 항상 False로 설정 (프론트엔드가 모달을 띄우지 않도록)
             'has_grdp': has_grdp,
             'grdp_sheet': grdp_sheet_found,
             'conversion_info': None,
@@ -860,30 +872,30 @@ def generate_all_reports():
     errors = []
     
     try:
-    for report_config in REPORT_ORDER:
+        for report_config in REPORT_ORDER:
             try:
-        custom_data = all_custom_data.get(report_config['id'], {})
+                custom_data = all_custom_data.get(report_config['id'], {})
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
-        
+                
                 # 캐시된 excel_file 전달
-        html_content, error, _ = generate_report_html(
+                html_content, error, _ = generate_report_html(
                     excel_path, report_config, year, quarter, custom_data, excel_file=excel_file
-        )
-        
-        if error:
+                )
+                
+                if error:
                     import traceback
                     print(f"[ERROR] {report_name} 생성 실패: {error}")
                     traceback.print_exc()
-            errors.append({'report_id': report_config['id'], 'error': error})
-        else:
-            output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            generated_reports.append({
-                'report_id': report_config['id'],
-                'name': report_config['name'],
-                'path': str(output_path)
-            })
+                    errors.append({'report_id': report_config['id'], 'error': error})
+                else:
+                    output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                    generated_reports.append({
+                        'report_id': report_config['id'],
+                        'name': report_config['name'],
+                        'path': str(output_path)
+                    })
             except Exception as e:
                 import traceback
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))

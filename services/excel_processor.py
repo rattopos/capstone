@@ -48,15 +48,15 @@ def preprocess_excel(
     # 주의: 대부분의 경우 위 두 방법으로 충분하므로, 필요시에만 사용
     try:
         import formulas
-    result_path, success, message = _try_formulas(excel_path, output_path)
-    if success:
-        return result_path, True, message
+        result_path, success, message = _try_formulas(excel_path, output_path)
+        if success:
+            return result_path, True, message
     except ImportError:
         pass  # formulas가 없으면 건너뛰기
     
     # 4. xlwings 시도 (명시적으로 요청한 경우만 - Excel 앱 필요, 매우 느림)
     if use_xlwings:
-    result_path, success, message = _try_xlwings(excel_path, output_path)
+        result_path, success, message = _try_xlwings(excel_path, output_path)
     if success:
         return result_path, True, message
     
