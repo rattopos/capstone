@@ -363,12 +363,28 @@ def generate_summary_box(nationwide_data, above_regions, below_regions):
     change = nationwide_data.get('change', 0) or 0
     factors = ", ".join([c['name'] for c in categories[:2]]) if categories else '농산물, 개인서비스'
     
-    nationwide_summary = f"전국 소비자물가(<span class='bold'>{index:.1f}</span>)는 {factors} 등이 올라 전년동분기대비 <span class='bold'>{change:.1f}%</span> 상승"
+    from utils.text_utils import get_josa
+    전국_josa = get_josa("전국", "Topic")
+    nationwide_summary = f"전국{전국_josa} 소비자물가(<span class='bold'>{index:.1f}</span>)는 {factors} 등이 올라 전년동분기대비 <span class='bold'>{change:.1f}%</span> 상승"
     
-    # 시도 요약
-    below_names = ", ".join([f"<span class='bold'>{r['name']}</span>({r['change']:.1f}%)" for r in below_regions[:3]])
+    # 시도 요약 - 지역명에 조사 붙이기
+    from utils.text_utils import get_josa
+    
+    def format_region_with_josa(region_list):
+        """지역명 리스트를 조사와 함께 포맷팅"""
+        if not region_list:
+            return ""
+        formatted = []
+        for r in region_list:
+            region_name = r['name']
+            josa = get_josa(region_name, "Topic")
+            formatted.append(f"<span class='bold'>{region_name}{josa}</span>({r['change']:.1f}%)")
+        return ", ".join(formatted)
+    
+    below_names = format_region_with_josa(below_regions[:3])
     above_name = above_regions[0]['name'] if above_regions else ''
     above_rate = above_regions[0]['change'] if above_regions else 0
+    above_josa = get_josa(above_name, "Topic") if above_name else "은"
     
     # 낮은 지역의 하락 요인 찾기
     if below_regions:
@@ -384,7 +400,7 @@ def generate_summary_box(nationwide_data, above_regions, below_regions):
     else:
         above_factor = '외식제외개인서비스'
     
-    regional_summary = f"{below_names}은 {below_factor} 등이 내려 전국보다 상승률이 낮았으나, <span class='bold'>{above_name}</span>({above_rate:.1f}%)은 {above_factor} 등이 올라 전국보다 높음"
+    regional_summary = f"{below_names} {below_factor} 등이 내려 전국보다 상승률이 낮았으나, <span class='bold'>{above_name}{above_josa}</span>({above_rate:.1f}%) {above_factor} 등이 올라 전국보다 높음"
     
     return {
         'headline': headline,
@@ -641,10 +657,20 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     main_items = [c['name'] for c in categories[:2]] if categories else ['농산물', '개인서비스']
     summary_box['main_items'] = main_items
     
+    # 푸터 정보 생성
+    from utils.text_utils import get_footer_source
+    footer_source = get_footer_source('price')
+    
     return {
         'report_info': {
             'section_number': '5',
-            'section_title': '물가 동향'
+            'section_title': '물가 동향',
+            'year': year,
+            'quarter': quarter
+        },
+        'footer_info': {
+            'source': footer_source,
+            'page_num': '- 1 -'
         },
         'nationwide_data': nationwide_data,
         'regional_data': {

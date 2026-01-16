@@ -82,12 +82,6 @@ from services.report_generator import (
     generate_statistics_report_html,
     generate_individual_statistics_html
 )
-from services.grdp_service import (
-    get_kosis_grdp_download_info, 
-    parse_kosis_grdp_file,
-    get_default_grdp_data,
-    save_extracted_contributions
-)
 from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
 # from data_converter import DataConverter  # 레거시 모듈 - 더 이상 사용하지 않음
 import openpyxl
@@ -247,7 +241,7 @@ def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
 def upload_excel():
     """분석표 파일 업로드
     
-    분석표 → GRDP 결합 → 지역경제동향 생성
+    분석표 → 지역경제동향 생성
     """
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '파일이 없습니다'})
@@ -271,7 +265,7 @@ def upload_excel():
     saved_size = filepath.stat().st_size
     print(f"[업로드] 분석표 파일 저장 완료: {filename} ({saved_size:,} bytes)")
     
-    # ===== 분석표 업로드 → GRDP 결합 → 지역경제동향 생성 =====
+        # ===== 분석표 업로드 → 지역경제동향 생성 =====
     try:
         print(f"\n{'='*50}")
         print(f"[업로드] 분석표 업로드: {filename}")
@@ -298,33 +292,6 @@ def upload_excel():
             print(f"[업로드] 연도/분기 추출 실패 (계속 진행): {str(e)}")
             print(f"[업로드] 보도자료 생성 시 데이터에서 연도/분기를 추출합니다.")
         
-        # GRDP 시트 존재 여부 확인 및 데이터 추출
-        has_grdp = False
-        grdp_data = None
-        grdp_sheet_found = None
-        
-        try:
-            grdp_sheet_names = ['I GRDP', 'GRDP', 'grdp', 'I(GRDP)', '분기 GRDP']
-            wb = openpyxl.load_workbook(str(filepath), read_only=True, data_only=True)
-            
-            for sheet_name in grdp_sheet_names:
-                if sheet_name in wb.sheetnames:
-                    has_grdp = True
-                    grdp_sheet_found = sheet_name
-                    print(f"[GRDP] 시트 발견: {sheet_name}")
-                    
-                    # GRDP 시트에서 데이터 추출 (year, quarter가 None이면 추출 시도하지 않음)
-                    if year and quarter:
-                        grdp_data = _extract_grdp_from_analysis_sheet(wb[sheet_name], year, quarter)
-                        if grdp_data:
-                            print(f"[GRDP] 데이터 추출 성공 - 전국: {grdp_data.get('national_summary', {}).get('growth_rate', 0)}%")
-                    else:
-                        print(f"[GRDP] 연도/분기 정보가 없어 GRDP 데이터 추출 건너뜀 (보도자료 생성 시 추출)")
-                    break
-            wb.close()
-        except Exception as e:
-            print(f"[경고] GRDP 시트 확인 실패: {e}")
-        
         # 세션에 저장 (파일 수정 시간 포함)
         session['excel_path'] = str(filepath)
         session['year'] = year
@@ -335,30 +302,6 @@ def upload_excel():
         except OSError:
             pass  # 파일 시간 확인 실패는 무시
         
-        # Step 2: 백엔드 응답 조작 - GRDP 데이터가 없으면 기본값을 자동으로 세션에 저장
-        if grdp_data:
-            session['grdp_data'] = grdp_data
-            # JSON 파일로도 저장
-            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-            try:
-                with open(grdp_json_path, 'w', encoding='utf-8') as f:
-                    json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-            except Exception as e:
-                print(f"[경고] GRDP JSON 저장 실패: {e}")
-        else:
-            # GRDP 데이터가 없으면 기본값을 자동으로 생성하여 세션에 저장
-            if year and quarter:
-                try:
-                    default_grdp = get_default_grdp_data(year, quarter)
-                    session['grdp_data'] = default_grdp
-                    print(f"[GRDP] 기본값 자동 주입 완료 - 연도: {year}, 분기: {quarter}")
-                except Exception as e:
-                    print(f"[경고] GRDP 기본값 생성 실패: {e}")
-                    # 실패해도 계속 진행 (빈 데이터 구조라도 저장)
-                    session['grdp_data'] = {'status': 'empty', 'data': []}
-        
-        print(f"[결과] GRDP {'있음' if has_grdp else '없음'} → 자동으로 기본값 주입 후 바로 보도자료 생성")
-        
         return jsonify({
             'success': True,
             'filename': filename,
@@ -367,9 +310,6 @@ def upload_excel():
             'quarter': quarter,
             'reports': REPORT_ORDER,
             'regional_reports': REGIONAL_REPORTS,
-            'needs_grdp': False,  # 항상 False로 설정 (프론트엔드가 모달을 띄우지 않도록)
-            'has_grdp': has_grdp,
-            'grdp_sheet': grdp_sheet_found,
             'conversion_info': None,
             'preprocessing': {
                 'success': preprocess_success,
@@ -386,315 +326,6 @@ def upload_excel():
             'success': False,
             'error': f'분석표 처리 중 오류가 발생했습니다: {str(e)}'
         })
-
-
-def _extract_grdp_from_analysis_sheet(ws, year, quarter):
-    """분석표의 GRDP 시트에서 데이터 추출"""
-    import pandas as pd
-    
-    try:
-        # 시트 데이터를 DataFrame으로 변환
-        data = []
-        for row in ws.iter_rows(values_only=True):
-            data.append(row)
-        
-        if not data:
-            return None
-        
-        df = pd.DataFrame(data)
-        
-        regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
-        
-        region_groups = {
-            '서울': '경인', '인천': '경인', '경기': '경인',
-            '대전': '충청', '세종': '충청', '충북': '충청', '충남': '충청',
-            '광주': '호남', '전북': '호남', '전남': '호남', '제주': '호남',
-            '대구': '동북', '경북': '동북', '강원': '동북',
-            '부산': '동남', '울산': '동남', '경남': '동남'
-        }
-        
-        regional_data = []
-        national_growth = 0.0
-        top_region = {'name': '-', 'growth_rate': 0.0}
-        
-        # 지역별 성장률 추출
-        for i, row in df.iterrows():
-            for j, val in enumerate(row):
-                if pd.notna(val) and str(val).strip() in regions:
-                    region_name = str(val).strip()
-                    growth_rate = 0.0
-                    
-                    # 다음 컬럼에서 성장률 찾기
-                    for k in range(j+1, min(j+10, len(row))):
-                        try:
-                            growth_rate = float(row.iloc[k])
-                            break
-                        except:
-                            continue
-                    
-                    if region_name == '전국':
-                        national_growth = growth_rate
-                    else:
-                        regional_data.append({
-                            'region': region_name,
-                            'region_group': region_groups.get(region_name, ''),
-                            'growth_rate': growth_rate,
-                            'manufacturing': 0.0,
-                            'construction': 0.0,
-                            'service': 0.0,
-                            'other': 0.0
-                        })
-                        
-                        if growth_rate > top_region['growth_rate']:
-                            top_region = {'name': region_name, 'growth_rate': growth_rate}
-        
-        if not regional_data and national_growth == 0.0:
-            return None
-        
-        return {
-            'report_info': {'year': year, 'quarter': quarter, 'page_number': ''},
-            'national_summary': {
-                'growth_rate': national_growth,
-                'direction': '증가' if national_growth > 0 else '감소',
-                'contributions': {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
-            },
-            'top_region': {
-                'name': top_region['name'],
-                'growth_rate': top_region['growth_rate'],
-                'contributions': {'manufacturing': 0.0, 'construction': 0.0, 'service': 0.0, 'other': 0.0}
-            },
-            'regional_data': regional_data,
-            'source': 'analysis_sheet'
-        }
-        
-    except Exception as e:
-        print(f"[GRDP] 시트 데이터 추출 오류: {e}")
-        return None
-
-
-@api_bp.route('/check-grdp', methods=['GET'])
-def check_grdp_status():
-    """GRDP 데이터 상태 확인"""
-    grdp_data = session.get('grdp_data')
-    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-    
-    if grdp_data:
-        return jsonify({
-            'success': True,
-            'has_grdp': True,
-            'source': grdp_data.get('source', 'session'),
-            'national_growth_rate': grdp_data.get('national_summary', {}).get('growth_rate', 0)
-        })
-    elif grdp_json_path.exists():
-        return jsonify({
-            'success': True,
-            'has_grdp': True,
-            'source': 'json_file'
-        })
-    else:
-        kosis_info = get_kosis_grdp_download_info()
-        return jsonify({
-            'success': True,
-            'has_grdp': False,
-            'kosis_info': kosis_info
-        })
-
-
-@api_bp.route('/upload-grdp', methods=['POST'])
-def upload_grdp_file():
-    """KOSIS GRDP 파일 업로드 및 파싱 + 분석표에 GRDP 시트 추가"""
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': '파일이 없습니다.'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'success': False, 'error': '파일이 선택되지 않았습니다.'}), 400
-    
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다.'}), 400
-    
-    filename = safe_filename(file.filename)
-    if 'grdp' not in filename.lower() and 'GRDP' not in filename:
-        filename = f"grdp_{filename}"
-    
-    filepath = UPLOAD_FOLDER / filename
-    file.save(str(filepath))
-    print(f"[GRDP 업로드] 파일 저장 완료: {filename}")
-    
-    year = session.get('year', 2025)
-    quarter = session.get('quarter', 2)
-    
-    grdp_data = parse_kosis_grdp_file(str(filepath), year, quarter)
-    
-    if grdp_data:
-        session['grdp_data'] = grdp_data
-        grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-        with open(grdp_json_path, 'w', encoding='utf-8') as f:
-            json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-        
-        # 분석표에 GRDP 시트 추가 (분석표가 업로드된 경우)
-        analysis_path = session.get('excel_path')
-        grdp_sheet_added = False
-        
-        if analysis_path and Path(analysis_path).exists():
-            try:
-                grdp_sheet_added = _add_grdp_sheet_to_analysis(analysis_path, str(filepath), year, quarter)
-                if grdp_sheet_added:
-                    print(f"[GRDP] 분석표에 GRDP 시트 추가 완료: {analysis_path}")
-            except Exception as e:
-                print(f"[GRDP] 분석표에 GRDP 시트 추가 실패: {e}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'GRDP 데이터가 성공적으로 업로드되었습니다.',
-            'national_growth_rate': grdp_data.get('national_summary', {}).get('growth_rate', 0),
-            'top_region': grdp_data.get('top_region', {}).get('name', '-'),
-            'grdp_sheet_added': grdp_sheet_added
-        })
-    else:
-        return jsonify({
-            'success': False,
-            'error': 'GRDP 데이터를 파싱할 수 없습니다. 올바른 KOSIS GRDP 파일인지 확인하세요.'
-        }), 400
-
-
-def _add_grdp_sheet_to_analysis(analysis_path: str, grdp_file_path: str, year: int, quarter: int) -> bool:
-    """분석표에 GRDP 시트 추가 (KOSIS 파일에서 시트 복사)"""
-    import pandas as pd
-    from openpyxl import load_workbook
-    from openpyxl.utils.dataframe import dataframe_to_rows
-    
-    try:
-        # GRDP 파일에서 데이터 읽기
-        grdp_df = pd.read_excel(grdp_file_path, header=None)
-        
-        # 분석표 열기
-        wb = load_workbook(analysis_path)
-        
-        # 기존 GRDP 시트가 있으면 삭제
-        grdp_sheet_names = ['I GRDP', 'GRDP', '분기 GRDP']
-        for sheet_name in grdp_sheet_names:
-            if sheet_name in wb.sheetnames:
-                del wb[sheet_name]
-        
-        # 새 GRDP 시트 생성
-        ws = wb.create_sheet('I GRDP')
-        
-        # 데이터 복사
-        for r_idx, row in enumerate(dataframe_to_rows(grdp_df, index=False, header=False), 1):
-            for c_idx, value in enumerate(row, 1):
-                ws.cell(row=r_idx, column=c_idx, value=value)
-        
-        # 저장
-        wb.save(analysis_path)
-        wb.close()
-        
-        print(f"[GRDP] 'I GRDP' 시트 추가 완료 ({len(grdp_df)}행)")
-        return True
-        
-    except Exception as e:
-        import traceback
-        print(f"[GRDP] 시트 추가 오류: {e}")
-        traceback.print_exc()
-        return False
-
-
-@api_bp.route('/use-default-grdp', methods=['POST'])
-def use_default_grdp():
-    """GRDP 파일이 없을 때 기본값(placeholder) 사용"""
-    from services.grdp_service import get_default_grdp_data
-    
-    year = session.get('year', 2025)
-    quarter = session.get('quarter', 2)
-    
-    # 기본 GRDP 데이터 생성 (placeholder)
-    grdp_data = get_default_grdp_data(year, quarter)
-    
-    # 세션에 저장
-    session['grdp_data'] = grdp_data
-    
-    # JSON 파일로도 저장
-    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-    with open(grdp_json_path, 'w', encoding='utf-8') as f:
-        json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-    
-    # 분석표에 플레이스홀더 GRDP 시트 추가 (분석표가 업로드된 경우)
-    analysis_path = session.get('excel_path')
-    grdp_sheet_added = False
-    
-    if analysis_path and Path(analysis_path).exists():
-        try:
-            grdp_sheet_added = _add_placeholder_grdp_sheet(analysis_path, grdp_data)
-            if grdp_sheet_added:
-                print(f"[GRDP] 분석표에 플레이스홀더 GRDP 시트 추가 완료")
-        except Exception as e:
-            print(f"[GRDP] 분석표에 GRDP 시트 추가 실패: {e}")
-    
-    print(f"[GRDP] 기본값 사용 - {year}년 {quarter}분기")
-    
-    return jsonify({
-        'success': True,
-        'message': 'GRDP 기본값이 설정되었습니다. 나중에 실제 데이터로 업데이트할 수 있습니다.',
-        'is_placeholder': True,
-        'national_growth_rate': 0.0,
-        'kosis_info': grdp_data.get('kosis_info', {}),
-        'grdp_sheet_added': grdp_sheet_added
-    })
-
-
-def _add_placeholder_grdp_sheet(analysis_path: str, grdp_data: dict) -> bool:
-    """분석표에 플레이스홀더 GRDP 시트 추가"""
-    from openpyxl import load_workbook
-    
-    try:
-        wb = load_workbook(analysis_path)
-        
-        # 기존 GRDP 시트가 있으면 삭제
-        grdp_sheet_names = ['I GRDP', 'GRDP', '분기 GRDP']
-        for sheet_name in grdp_sheet_names:
-            if sheet_name in wb.sheetnames:
-                del wb[sheet_name]
-        
-        # 새 GRDP 시트 생성
-        ws = wb.create_sheet('I GRDP')
-        
-        # 헤더 행
-        year = grdp_data.get('report_info', {}).get('year', 2025)
-        quarter = grdp_data.get('report_info', {}).get('quarter', 2)
-        
-        ws['A1'] = '지역'
-        ws['B1'] = f'{year}년 {quarter}분기 성장률(%)'
-        ws['C1'] = '제조업'
-        ws['D1'] = '건설업'
-        ws['E1'] = '서비스업'
-        ws['F1'] = '기타'
-        
-        # 전국 데이터
-        ws['A2'] = '전국'
-        ws['B2'] = grdp_data.get('national_summary', {}).get('growth_rate', 0.0)
-        
-        # 지역별 데이터
-        regional_data = grdp_data.get('regional_data', [])
-        for i, region in enumerate(regional_data, start=3):
-            ws[f'A{i}'] = region.get('region', '')
-            ws[f'B{i}'] = region.get('growth_rate', 0.0)
-            ws[f'C{i}'] = region.get('manufacturing', 0.0)
-            ws[f'D{i}'] = region.get('construction', 0.0)
-            ws[f'E{i}'] = region.get('service', 0.0)
-            ws[f'F{i}'] = region.get('other', 0.0)
-        
-        wb.save(analysis_path)
-        wb.close()
-        
-        print(f"[GRDP] 플레이스홀더 'I GRDP' 시트 추가 완료")
-        return True
-        
-    except Exception as e:
-        import traceback
-        print(f"[GRDP] 플레이스홀더 시트 추가 오류: {e}")
-        traceback.print_exc()
-        return False
 
 
 # 레거시 엔드포인트 - data_converter 모듈이 제거되어 비활성화됨

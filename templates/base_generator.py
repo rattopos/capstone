@@ -124,6 +124,7 @@ class BaseGenerator(ABC):
     def safe_float(value: Any, default: Optional[float] = None) -> Optional[float]:
         """
         안전한 float 변환 함수 (NaN, '-' 체크 포함)
+        근본 수정: parse_excel_value와 동일한 로직으로 콤마, 특수문자 처리
         
         Args:
             value: 변환할 값
@@ -139,14 +140,25 @@ class BaseGenerator(ABC):
                 return default
             if isinstance(value, str):
                 value = value.strip()
+                # 근본 수정: '-' (통계표의 0) -> 0.0
                 if value == '-' or value == '' or value == 'N/A':
-                    return default
+                    return 0.0 if default is None else default
+                # 근본 수정: 콤마 제거 후 실수 변환 ('1,234.5' -> 1234.5)
+                # 정규표현식으로 숫자, 점(.), 음수 부호(-), 지수 표기(e, E)만 남기기
+                import re
+                # 숫자, 점(.), 음수 부호(-), 지수 표기(e, E)만 남기기 (콤마는 자동 제거됨)
+                cleaned = re.sub(r'[^\d\.\-\+\eE]', '', value)
+                # 빈 문자열이면 default 반환
+                if not cleaned:
+                    return 0.0 if default is None else default
+                value = cleaned
             result = float(value)
             if pd.isna(result):
                 return default
             return result
         except (ValueError, TypeError):
-            return default
+            # 근본 수정: 변환 불가능한 문자(예: '...')가 있어도 에러 내지 말고 0 처리
+            return 0.0 if default is None else default
     
     @staticmethod
     def safe_round(value: Any, decimals: int = 1, default: Optional[float] = None) -> Optional[float]:
@@ -359,3 +371,78 @@ class BaseGenerator(ABC):
             "contact_phone": "042-481-xxxx",
             "page_number": ""  # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         }
+    
+    def find_target_col_index(
+        self,
+        header_row: Any,
+        target_year: int,
+        target_quarter: int
+    ) -> int:
+        """
+        헤더 행을 순회하며 목표 연도와 분기가 모두 포함된 열의 인덱스를 동적으로 찾음
+        
+        Args:
+            header_row: 헤더 행 (pandas Series, 리스트, 튜플 등)
+            target_year: 찾을 연도 (예: 2025)
+            target_quarter: 찾을 분기 (예: 3)
+            
+        Returns:
+            컬럼 인덱스 (0-based), 찾지 못하면 -1
+        """
+        import logging
+        
+        # header_row를 리스트로 변환
+        if isinstance(header_row, pd.Series):
+            header_list = header_row.tolist()
+        elif isinstance(header_row, (list, tuple)):
+            header_list = list(header_row)
+        else:
+            # openpyxl Cell 객체나 다른 타입 처리
+            try:
+                # cell.value 속성이 있는 경우 (openpyxl 스타일)
+                if hasattr(header_row, '__iter__') and not isinstance(header_row, str):
+                    header_list = [cell.value if hasattr(cell, 'value') else cell for cell in header_row]
+                else:
+                    header_list = [header_row]
+            except:
+                header_list = [header_row]
+        
+        # 검색 키워드 정규화
+        year_str = str(target_year)
+        quarter_patterns = [
+            f"{target_quarter}/4",      # '3/4'
+            f"{target_quarter}분기",    # '3분기'
+            f"{target_quarter}4",      # '34' (연속 표기)
+            str(target_quarter),       # '3'
+            f"Q{target_quarter}",      # 'Q3'
+            f"{target_quarter}Q",      # '3Q'
+        ]
+        
+        # 헤더 행을 순회하며 연도와 분기가 모두 포함된 셀 찾기
+        for idx, cell in enumerate(header_list):
+            # 셀 값 추출 (다양한 타입 지원)
+            if pd.isna(cell):
+                continue
+            
+            # cell.value 속성이 있는 경우 (openpyxl 스타일)
+            if hasattr(cell, 'value'):
+                cell_value = cell.value
+            else:
+                cell_value = cell
+            
+            # 셀 값을 문자열로 변환
+            if cell_value is None:
+                continue
+            
+            val = str(cell_value).strip()
+            
+            # 연도와 분기 표기가 동시에 존재하는지 확인
+            if year_str in val and any(q_pattern in val for q_pattern in quarter_patterns):
+                return idx
+        
+        # 찾지 못한 경우
+        logging.warning(
+            f"헤더에서 연도 {target_year}년 {target_quarter}분기 컬럼을 찾을 수 없습니다. "
+            f"헤더 행 샘플: {[str(v)[:20] if pd.notna(v) else 'NaN' for v in header_list[:10]]}"
+        )
+        return -1

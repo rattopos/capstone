@@ -433,15 +433,30 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     change_val = change if change is not None else 0
     direction = "감소" if change_val < 0 else "증가"
     verb = "줄어" if change_val < 0 else "늘어"
-    nationwide_summary = f"전국 수입(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수입이 {verb} 전년동분기대비 <span class='bold'>{abs(change_val):.1f}%</span> {direction}"
+    from utils.text_utils import get_josa
+    전국_josa = get_josa("전국", "Topic")
+    nationwide_summary = f"전국{전국_josa} 수입(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수입이 {verb} 전년동분기대비 <span class='bold'>{abs(change_val):.1f}%</span> {direction}"
     
     # 시도 요약 - None 값 안전 처리
     def safe_change(r):
         c = r.get('change')
         return f"{c:.1f}" if c is not None else "-"
     
-    increase_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_increase])
-    decrease_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_decrease])
+    # 지역명에 조사 붙이기
+    
+    def format_region_with_josa(region_list):
+        """지역명 리스트를 조사와 함께 포맷팅"""
+        if not region_list:
+            return ""
+        formatted = []
+        for r in region_list:
+            region_name = r.get('region', r.get('name', ''))
+            josa = get_josa(region_name, "Topic")
+            formatted.append(f"<span class='bold'>{region_name}{josa}</span>({safe_change(r)}%)")
+        return ", ".join(formatted)
+    
+    increase_names = format_region_with_josa(top_increase)
+    decrease_names = format_region_with_josa(top_decrease)
     
     # 증가 지역의 품목
     if top_increase:
@@ -468,10 +483,10 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     # 전국 방향에 따라 regional_summary 생성
     if change_val < 0:
         # 전국이 감소일 때: "증가하였으나...감소"
-        regional_summary = f"{increase_names}은 {increase_product_str} 등의 수입이 늘었으나, {decrease_names}은 {decrease_product_str} 등의 수입이 줄어 감소"
+        regional_summary = f"{increase_names} {increase_product_str} 등의 수입이 늘었으나, {decrease_names} {decrease_product_str} 등의 수입이 줄어 감소"
     else:
         # 전국이 증가일 때: "감소하였으나...증가"
-        regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수입이 줄었으나, {increase_names}은 {increase_product_str} 등의 수입이 늘어 증가"
+        regional_summary = f"{decrease_names} {decrease_product_str} 등의 수입이 줄었으나, {increase_names} {increase_product_str} 등의 수입이 늘어 증가"
     
     return {
         'headline': headline,

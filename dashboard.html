@@ -208,6 +208,8 @@
             padding: 2rem;
             transition: all 0.3s;
             min-height: 200px;
+            display: block !important;
+            visibility: visible !important;
         }
 
         .upload-section:hover {
@@ -1467,40 +1469,6 @@
                 <!-- Conversion Info (사용하지 않음 - 분석표만 업로드) -->
                 <div class="conversion-info" id="conversionInfo" style="display: none;"></div>
                     
-                    <!-- GRDP 추출 결과 -->
-                    <div class="grdp-info" id="grdpInfo" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-secondary); margin-bottom: 0.5rem;">📊 GRDP 추출 완료</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.75rem;">
-                            <div>
-                                <span style="color: var(--text-muted);">전국 성장률:</span>
-                                <span id="grdpNational" style="color: var(--text-primary); font-weight: 600;"></span>
-                            </div>
-                            <div>
-                                <span style="color: var(--text-muted);">1위 지역:</span>
-                                <span id="grdpTopRegion" style="color: var(--text-primary); font-weight: 600;"></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- GRDP 누락 안내 (간소화) -->
-                    <div class="grdp-missing" id="grdpMissing" style="display: none; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid #f59e0b;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <div style="font-size: 0.8rem; font-weight: 600; color: #f59e0b;">⚠️ GRDP 데이터 누락</div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">참고_GRDP 보도자료에 영향</div>
-                            </div>
-                            <button onclick="showGrdpModal()" style="
-                                padding: 0.4rem 0.75rem;
-                                background: #f59e0b;
-                                color: white;
-                                border: none;
-                                border-radius: 6px;
-                                font-size: 0.75rem;
-                                cursor: pointer;
-                            ">추가</button>
-                        </div>
-                    </div>
-                    
                     <!-- 분석표 다운로드 버튼 제거 (분석표만 업로드) -->
                     
                     <!-- 보도자료 생성 안내 (분석표 업로드 시에만 표시) -->
@@ -1784,7 +1752,7 @@
                 </div>
                 <div class="upload-step" id="uploadStep4">
                     <span class="step-icon">⏳</span>
-                    <span class="step-text">GRDP 데이터 추출</span>
+                    <span class="step-text">보도자료 생성 준비</span>
                     <span class="step-status"></span>
                 </div>
             </div>
@@ -1799,8 +1767,6 @@
                     <span class="result-value" id="resultPeriod"></span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">전국 GRDP:</span>
-                    <span class="result-value" id="resultGrdp"></span>
                 </div>
             </div>
         </div>
@@ -1841,119 +1807,9 @@
         </div>
     </div>
 
-    <!-- GRDP Upload Modal - 영구 제거됨 (모달 없이 자동으로 기본값 사용) -->
-    <!--
-    <div class="upload-modal-overlay" id="grdpModal">
-        <div class="upload-modal-content" style="max-width: 450px;">
-            <div class="upload-modal-icon" style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-            <h2 class="upload-modal-title" style="color: #f59e0b;">GRDP 데이터 필요</h2>
-            <p class="upload-modal-subtitle" style="margin-bottom: 1.5rem;">
-                분석표에 GRDP 데이터가 포함되어 있지 않습니다.<br>
-                GRDP 파일을 업로드해주세요.
-            </p>
-            
-            <!-- GRDP 파일 업로드 영역 -->
-            <div class="grdp-upload-area" style="
-                border: 2px dashed var(--border);
-                border-radius: 12px;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-                cursor: pointer;
-                transition: all 0.3s;
-            " onclick="document.getElementById('grdpModalFileInput').click()">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">GRDP 엑셀 파일을 드래그하거나 클릭하세요</p>
-                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">분기 지역내총생산 (*.xlsx)</p>
-                <input type="file" id="grdpModalFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleGrdpModalUpload(this)">
-            </div>
-            
-            <!-- 업로드 진행 상태 (초기에는 숨김) -->
-            <div id="grdpUploadProgress" style="display: none; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-secondary);">
-                    <span class="spinner" style="
-                        width: 16px;
-                        height: 16px;
-                        border: 2px solid var(--border);
-                        border-top-color: var(--accent-primary);
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                    "></span>
-                    <span id="grdpUploadStatus">업로드 중...</span>
-                </div>
-            </div>
-            
-            <!-- 버튼 영역 -->
-            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
-                <button onclick="useDefaultGrdp()" style="
-                    width: 100%;
-                    padding: 0.75rem 1rem;
-                    background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                ">
-                    <span>🚀</span> GRDP 없이 진행 (기본값 사용)
-                </button>
-                <div style="display: flex; gap: 0.75rem;">
-                    <button onclick="openKosisGrdpPage()" style="
-                        flex: 1;
-                        padding: 0.6rem 0.75rem;
-                        background: transparent;
-                        color: var(--text-secondary);
-                        border: 1px solid var(--border);
-                        border-radius: 8px;
-                        font-size: 0.8rem;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    ">
-                        📥 KOSIS에서 다운로드
-                    </button>
-                    <button onclick="closeGrdpModalWithoutGenerate()" style="
-                        flex: 1;
-                        padding: 0.6rem 0.75rem;
-                        background: var(--bg-tertiary);
-                        color: var(--text-primary);
-                        border: 1px solid var(--border);
-                        border-radius: 8px;
-                        font-size: 0.8rem;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    ">
-                        ✕ 나중에 추가
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 안내 문구 -->
-            <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 1rem; text-align: center;">
-                * GRDP 없이도 다른 보도자료는 정상적으로 생성됩니다<br>
-                * 기본값 사용 시 GRDP 관련 차트는 0으로 표시됩니다
-            </p>
-        </div>
-    </div>
-    -->
-    
     <style>
         @keyframes spin {
             to { transform: rotate(360deg); }
-        }
-        
-        .grdp-upload-area:hover {
-            border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-        
-        .grdp-upload-area.dragover {
-            border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.1);
         }
     </style>
 
@@ -1975,21 +1831,7 @@
             summaryReports: [],
             sectoralReports: [],
             regionalReports: [],
-            statisticsReports: [
-                { id: 'stat_toc', name: '통계표-목차', icon: '📋', description: '통계표 목차' },
-                { id: 'stat_mining', name: '통계표-광공업생산지수', icon: '🏭', description: '광공업생산지수' },
-                { id: 'stat_service', name: '통계표-서비스업생산지수', icon: '🏢', description: '서비스업생산지수' },
-                { id: 'stat_retail', name: '통계표-소매판매액지수', icon: '🛒', description: '소매판매액지수' },
-                { id: 'stat_construction', name: '통계표-건설수주액', icon: '🏗️', description: '건설수주액' },
-                { id: 'stat_employment', name: '통계표-고용률', icon: '👔', description: '고용률' },
-                { id: 'stat_unemployment', name: '통계표-실업률', icon: '📉', description: '실업률' },
-                { id: 'stat_population', name: '통계표-국내인구이동', icon: '👥', description: '국내인구이동' },
-                { id: 'stat_export', name: '통계표-수출액', icon: '📦', description: '수출액' },
-                { id: 'stat_import', name: '통계표-수입액', icon: '🚢', description: '수입액' },
-                { id: 'stat_price', name: '통계표-소비자물가지수', icon: '💰', description: '소비자물가지수' },
-                { id: 'stat_grdp', name: '통계표-참고-GRDP', icon: '📊', description: 'GRDP 참고' },
-                { id: 'stat_appendix', name: '부록-주요용어정의', icon: '📖', description: '주요 용어 정의' }
-            ],
+            statisticsReports: [],  // 통계표 기능 비활성화
             // 캐시된 HTML
             cachedHtml: {
                 summary: {},
@@ -2114,7 +1956,10 @@
         }
 
         function setupEventListeners() {
-            // File upload
+            // File upload - DOM이 로드된 후 요소를 다시 찾기
+            elements.uploadZone = document.getElementById('uploadZone');
+            elements.fileInput = document.getElementById('fileInput');
+            
             if (!elements.uploadZone || !elements.fileInput) {
                 console.error('[초기화] 업로드 요소를 찾을 수 없습니다:', {
                     uploadZone: !!elements.uploadZone,
@@ -2123,9 +1968,14 @@
                 return;
             }
             
+            console.log('[초기화] 업로드 이벤트 리스너 등록');
             elements.uploadZone.addEventListener('click', () => {
                 console.log('[업로드] 업로드 영역 클릭');
-                elements.fileInput.click();
+                if (elements.fileInput) {
+                    elements.fileInput.click();
+                } else {
+                    console.error('[업로드] fileInput이 없습니다.');
+                }
             });
             elements.fileInput.addEventListener('change', (e) => {
                 console.log('[업로드] 파일 선택:', e.target.files[0]?.name);
@@ -2254,12 +2104,19 @@
             const allItems = [
                 ...state.summaryReports.map(r => ({ type: 'summary', report: r })),
                 ...state.sectoralReports.map(r => ({ type: 'sectoral', report: r })),
-                ...state.regionalReports.map(r => ({ type: 'regional', report: r })),
-                ...state.statisticsReports.map(r => ({ type: 'statistics', report: r }))
+                ...state.regionalReports.map(r => ({ type: 'regional', report: r }))
+                // 통계표 기능 비활성화 - statisticsReports 제외
             ];
 
             for (let i = 0; i < allItems.length; i++) {
                 const item = allItems[i];
+                
+                // 통계표 건너뛰기 필터링
+                if (item.type === 'statistics') {
+                    console.log('[건너뛰기] 통계표는 생성하지 않습니다:', item.report.name);
+                    continue;
+                }
+                
                 const progress = ((i + 1) / allItems.length) * 100;
                 
                 // 현재 항목 표시
@@ -2389,9 +2246,9 @@
                     body = { region_id: report.id };
                     break;
                 case 'statistics':
-                    endpoint = '/api/generate-statistics-preview';
-                    body = { stat_id: report.id, year, quarter };
-                    break;
+                    // 통계표 기능 비활성화 - 요청 건너뛰기
+                    console.log('[통계표 건너뛰기] 통계표 생성 기능이 비활성화되어 있습니다:', report.name);
+                    return { success: false, error: '통계표 생성 기능이 비활성화되어 있습니다.' };
             }
 
             try {
@@ -2631,8 +2488,8 @@ ${currentPage.outerHTML}
             state.allReports = [
                 ...state.summaryReports.map((r, idx) => ({ ...r, type: 'summary', originalIndex: idx })),
                 ...state.sectoralReports.map((r, idx) => ({ ...r, type: 'sectoral', originalIndex: idx })),
-                ...state.regionalReports.map((r, idx) => ({ ...r, type: 'regional', originalIndex: idx, name: `${r.index}. ${r.name}`, sheet: r.full_name })),
-                ...state.statisticsReports.map((r, idx) => ({ ...r, type: 'statistics', originalIndex: idx, sheet: r.description }))
+                ...state.regionalReports.map((r, idx) => ({ ...r, type: 'regional', originalIndex: idx, name: `${r.index}. ${r.name}`, sheet: r.full_name }))
+                // 통계표 기능 비활성화 - statisticsReports 제외
             ];
             if (elements.reportCountBadge) {
                 elements.reportCountBadge.textContent = `(총 ${state.allReports.length}개)`;
@@ -2663,8 +2520,13 @@ ${currentPage.outerHTML}
             let html = '';
             
             state.allReports.forEach((report, globalIdx) => {
+                // 통계표 건너뛰기 필터링
+                if (report.type === 'statistics') {
+                    return;  // continue와 동일하게 작동
+                }
+                
                 // 섹션 헤더 추가
-                const sectionNames = { summary: '📋 요약', sectoral: '📊 부문별', regional: '🗺️ 시도별', statistics: '📈 통계표' };
+                const sectionNames = { summary: '📋 요약', sectoral: '📊 부문별', regional: '🗺️ 시도별' };
                 if (report.type !== currentSection) {
                     currentSection = report.type;
                     html += `<div style="font-size: 0.75rem; color: var(--accent-primary); padding: 0.5rem 0.75rem; margin-top: ${globalIdx > 0 ? '0.5rem' : '0'}; background: rgba(99, 102, 241, 0.1); border-radius: 4px;">${sectionNames[report.type]}</div>`;
@@ -2990,13 +2852,6 @@ ${currentPage.outerHTML}
                     // Step 2 완료
                     updateUploadStep(2, 'completed', '분석표');
                     
-                    // GRDP 확인
-                    if (data.has_grdp) {
-                        updateUploadStep(4, 'completed', `GRDP 시트: ${data.grdp_sheet || '발견됨'}`);
-                    } else {
-                        updateUploadStep(4, 'active', 'GRDP 추가 필요');
-                    }
-                    
                     // 완료 상태 표시
                     document.getElementById('uploadModalIcon').textContent = '✅';
                     document.getElementById('uploadModalTitle').textContent = '업로드 완료!';
@@ -3007,13 +2862,6 @@ ${currentPage.outerHTML}
                     const resultDiv = document.getElementById('uploadResult');
                     resultDiv.style.display = 'block';
                     document.getElementById('resultPeriod').textContent = `${data.year}년 ${data.quarter}분기`;
-                    
-                    if (data.conversion_info && data.conversion_info.grdp_extracted) {
-                        document.getElementById('resultGrdp').textContent = 
-                            `${data.conversion_info.national_growth_rate}% (1위: ${data.conversion_info.top_region})`;
-                    } else {
-                        document.getElementById('resultGrdp').textContent = '-';
-                    }
                     
                     // 기존 UI 업데이트
                     state.fileUploaded = true;
@@ -3034,8 +2882,6 @@ ${currentPage.outerHTML}
                     
                     // 변환 정보 표시
                     const conversionInfo = document.getElementById('conversionInfo');
-                    const grdpInfo = document.getElementById('grdpInfo');
-                    const grdpMissing = document.getElementById('grdpMissing');
                     
                     // 변환 정보 숨김 (분석표만 업로드)
                     if (conversionInfo) {
@@ -3051,24 +2897,17 @@ ${currentPage.outerHTML}
                         reportGenerationHint.style.display = 'block';
                     }
                     
-                    // GRDP 모달 제거: 항상 성공 케이스로 진행 (GRDP 없어도 자동으로 기본값 사용)
-                    if (grdpInfo) grdpInfo.style.display = data.has_grdp ? 'block' : 'none';
-                    if (grdpMissing) grdpMissing.style.display = 'none';
-                    
                     document.getElementById('uploadModalIcon').textContent = '✅';
                     document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
-                    document.getElementById('uploadModalSubtitle').textContent = data.has_grdp 
-                        ? 'GRDP 시트가 포함되어 있습니다.' 
-                        : 'GRDP 데이터는 기본값으로 자동 설정됩니다.';
+                    document.getElementById('uploadModalSubtitle').textContent = '보도자료를 생성할 준비가 되었습니다.';
                     
                     // Step 3은 이미 숨김 처리됨
-                    updateUploadStep(4, 'completed', data.has_grdp ? 'GRDP 포함' : '기본값 사용');
+                    updateUploadStep(4, 'completed', '보도자료 생성 준비 완료');
                     
                     hideUploadModal(2000);
-                        setTimeout(() => {
-                            generateAllReports();
-                        }, 2100);
-                    }
+                    setTimeout(() => {
+                        generateAllReports();
+                    }, 2100);
                     
                     // 시스템 알림: 엑셀 파일 업로드 완료
                     sendSystemNotification('📁 파일 업로드 완료', `${data.filename || '파일'}이 성공적으로 업로드되었습니다.`);
@@ -3615,22 +3454,9 @@ ${currentPage.outerHTML}
                     }
                 }
                 
-                // 4. 통계표
-                console.log('[내보내기] 4. 통계표 수집 중...');
-                console.log('[내보내기] - statisticsReports 개수:', state.statisticsReports?.length || 0);
-                for (const stat of state.statisticsReports) {
-                    const html = getHtmlContent('statistics', stat.id);
-                    if (html) {
-                        rawPages.push({
-                            html: html,
-                            title: stat.name,
-                            category: 'statistics'
-                        });
-                        console.log(`[내보내기] ✅ 통계표 추가: ${stat.name}`);
-                    } else {
-                        console.warn(`[내보내기] ⚠️ 통계표 HTML 없음: ${stat.name} (id: ${stat.id})`);
-                    }
-                }
+                // 4. 통계표 - 비활성화됨
+                // 통계표 기능이 비활성화되어 있어 수집하지 않습니다
+                console.log('[내보내기] 4. 통계표 건너뛰기 (비활성화됨)');
                 
                 console.log(`[내보내기] ===== HTML 수집 완료: 총 ${rawPages.length}개 페이지 =====`);
                 
@@ -3921,164 +3747,6 @@ ${currentPage.outerHTML}
                 }
             }
         }
-
-        // ===== GRDP 모달 함수 =====
-        function showGrdpModal() {
-            const modal = document.getElementById('grdpModal');
-            modal.classList.add('active');
-            
-            // 초기화
-            document.getElementById('grdpUploadProgress').style.display = 'none';
-            document.getElementById('grdpModalFileInput').value = '';
-        }
-        
-        function closeGrdpModal() {
-            document.getElementById('grdpModal').classList.remove('active');
-            // GRDP 모달 닫힌 후 자동 미리보기 생성
-            if (!state.allGenerated) {
-                setTimeout(() => {
-                    generateAllReports();
-                }, 500);
-            }
-        }
-        
-        function closeGrdpModalWithoutGenerate() {
-            // GRDP 모달만 닫고 생성하지 않음 (나중에 추가)
-            document.getElementById('grdpModal').classList.remove('active');
-            showToast('GRDP 데이터 없이 진행합니다. 나중에 GRDP를 추가할 수 있습니다.', 'info');
-            
-            // 미리보기 생성은 시작
-            if (!state.allGenerated) {
-                setTimeout(() => {
-                    generateAllReports();
-                }, 500);
-            }
-        }
-        
-        async function useDefaultGrdp() {
-            // 기본 GRDP 데이터(placeholder) 사용
-            document.getElementById('grdpUploadProgress').style.display = 'block';
-            document.getElementById('grdpUploadStatus').textContent = '기본값 설정 중...';
-            
-            try {
-                const response = await fetch('/api/use-default-grdp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('grdpUploadStatus').textContent = '✅ 기본값 설정 완료!';
-                    
-                    // GRDP 정보 업데이트
-                    document.getElementById('grdpMissing').style.display = 'none';
-                    document.getElementById('grdpInfo').style.display = 'block';
-                    document.getElementById('grdpNational').textContent = '기본값 (0%)';
-                    document.getElementById('grdpTopRegion').textContent = '-';
-                    
-                    showToast('GRDP 기본값이 설정되었습니다.', 'success');
-                    
-                    // 1초 후 모달 닫고 보도자료 생성
-                    setTimeout(() => {
-                        closeGrdpModal();
-                    }, 1000);
-                } else {
-                    document.getElementById('grdpUploadStatus').textContent = '❌ 설정 실패';
-                    showToast(data.error || 'GRDP 기본값 설정 실패', 'error');
-                }
-            } catch (error) {
-                document.getElementById('grdpUploadStatus').textContent = '❌ 오류 발생';
-                showToast('GRDP 기본값 설정 중 오류가 발생했습니다.', 'error');
-                console.error('Default GRDP error:', error);
-            }
-        }
-        
-        function openKosisGrdpPage() {
-            // KOSIS 실험적통계 페이지 열기
-            window.open('https://kosis.kr/statisticsList/experimentStatistical.do#down23', '_blank');
-            showToast('KOSIS 페이지가 새 탭에서 열렸습니다. 다운로드 후 업로드해주세요.', 'info');
-        }
-        
-        async function handleGrdpModalUpload(input) {
-            if (!input.files || input.files.length === 0) return;
-            
-            const file = input.files[0];
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            // 진행 상태 표시
-            document.getElementById('grdpUploadProgress').style.display = 'block';
-            document.getElementById('grdpUploadStatus').textContent = '파일 분석 중...';
-            
-            try {
-                const response = await fetch('/api/upload-grdp', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('grdpUploadStatus').textContent = '✅ GRDP 추출 완료!';
-                    
-                    // GRDP 정보 업데이트
-                    document.getElementById('grdpMissing').style.display = 'none';
-                    document.getElementById('grdpInfo').style.display = 'block';
-                    document.getElementById('grdpNational').textContent = `${data.national_growth_rate}%`;
-                    document.getElementById('grdpTopRegion').textContent = data.top_region;
-                    
-                    showToast('GRDP 데이터가 성공적으로 추출되었습니다.', 'success');
-                    
-                    // 1.5초 후 모달 닫기
-                    setTimeout(() => {
-                        closeGrdpModal();
-                    }, 1500);
-                } else {
-                    document.getElementById('grdpUploadStatus').textContent = '❌ 추출 실패';
-                    showToast(data.error || 'GRDP 파일 파싱 실패', 'error');
-                }
-            } catch (error) {
-                document.getElementById('grdpUploadStatus').textContent = '❌ 오류 발생';
-                showToast('GRDP 업로드 중 오류가 발생했습니다.', 'error');
-                console.error('GRDP upload error:', error);
-            }
-            
-            // 파일 입력 초기화
-            input.value = '';
-        }
-        
-        // 사이드바 GRDP 업로드 (기존 호환)
-        async function uploadGrdpFile(input) {
-            await handleGrdpModalUpload(input);
-        }
-        
-        // GRDP 모달 드래그 앤 드롭 설정
-        document.addEventListener('DOMContentLoaded', function() {
-            const grdpUploadArea = document.querySelector('.grdp-upload-area');
-            if (grdpUploadArea) {
-                grdpUploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    grdpUploadArea.classList.add('dragover');
-                });
-                
-                grdpUploadArea.addEventListener('dragleave', () => {
-                    grdpUploadArea.classList.remove('dragover');
-                });
-                
-                grdpUploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    grdpUploadArea.classList.remove('dragover');
-                    
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        const input = document.getElementById('grdpModalFileInput');
-                        input.files = files;
-                        handleGrdpModalUpload(input);
-                    }
-                });
-            }
-        });
 
         // UI 상태 업데이트 (파일 타입에 따라)
         function updateUIForFileType(fileType) {

@@ -1772,7 +1772,7 @@ class RegionalGenerator:
             "decrease_age_groups": decrease_groups
         }
     
-    def extract_migration_data(self, region: str) -> Dict[str, Any]:
+    def extract_migration_data(self, region: str, region_stat: Dict[str, float] = None) -> Dict[str, Any]:
         """인구이동 데이터 추출 (집계 시트 또는 기초자료)"""
         df = self.cache.get_sheet('I(순인구이동)집계')
         
@@ -2534,10 +2534,14 @@ class RegionalGenerator:
         
         # Step 2: 문장 생성
         # 본문의 나레이션을 작성할 때, region_stat 딕셔너리의 값만 참조
+        # 기본값(2025, 2)을 제거하고, 전달받은 값을 우선 사용
+        report_year = self.year if self.year else 2025
+        report_quarter = self.quarter if self.quarter else 2
+        
         return {
             "report_info": {
-                "year": 2025,
-                "quarter": 2,
+                "year": report_year,
+                "quarter": report_quarter,
                 "region": region,
                 "region_full_name": region_info.full_name,
                 "region_code": region_info.code,

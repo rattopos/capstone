@@ -697,8 +697,19 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
             'age_groups': r['top_age_groups']
         })
     
+    # report_info 생성
+    from utils.excel_utils import extract_year_quarter_from_excel
+    year, quarter = extract_year_quarter_from_excel(excel_path)
+    
+    report_info = {
+        'year': year,
+        'quarter': quarter,
+        'data_source': '국가데이터처'
+    }
+    
     # 템플릿 데이터
     template_data = {
+        'report_info': report_info,
         'summary_box': summary_box,
         'nationwide_data': nationwide_data,
         'regional_data': regional_data,

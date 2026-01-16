@@ -9,6 +9,8 @@ Jinja2 템플릿을 사용하여 HTML 보도자료를 생성합니다.
 
 import pandas as pd
 import json
+import re
+from typing import Optional, Dict, Any
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 try:
@@ -21,8 +23,10 @@ except ImportError:
     from base_generator import BaseGenerator
 
 
-class 광공업생산Generator(BaseGenerator):
+class MiningManufacturingGenerator(BaseGenerator):
     """광공업생산 보도자료 생성 클래스"""
+    
+    # 하위 호환성을 위한 별칭 (클래스 정의 후 파일 끝에서 할당)
     
     # ========================================
     # 분석 시트 컬럼 인덱스 (0-based, 문서 7.2 참조)
@@ -44,7 +48,7 @@ class 광공업생산Generator(BaseGenerator):
     # 연도시작열: 10 (1-based) → 9 (0-based)
     # 분기시작열: 15 (1-based) → 14 (0-based)
     # 가중치열: 7 (1-based) → 6 (0-based)
-    AGG_COL_REGION_NAME = 3    # 지역이름 (메타시작열 4의 0-based: 3)
+    AGG_COL_REGION_NAME = 4    # 지역이름 (로그 기반 근본 수정: Index 4 확정)
     AGG_COL_CLASSIFICATION = 4  # 분류단계 (메타시작열 + 1)
     AGG_COL_WEIGHT = 6         # 가중치 (가중치열 7의 0-based: 6)
     AGG_COL_INDUSTRY_CODE = 6  # 산업코드 (가중치열과 동일 위치 또는 다음 위치, 실제 확인 필요)
@@ -136,7 +140,9 @@ class 광공업생산Generator(BaseGenerator):
             year: 연도 (선택사항)
             quarter: 분기 (선택사항)
         """
+        # 부모 생성자 호출 필수
         super().__init__(excel_path, year, quarter)
+        self.report_id = 'mining'  # 보고서 ID (푸터 출처 매핑용)
         self.df_analysis = None
         self.df_aggregation = None
         self.data = {}
@@ -259,46 +265,131 @@ class 광공업생산Generator(BaseGenerator):
         df = self.df_analysis
         data_df = df.iloc[self.DATA_START_ROW:].copy()
         
+        # Step 2: 동적 컬럼 매핑 - 헤더에서 컬럼 찾기
+        print(f"\n[광공업생산 분석시트] ===== 헤더 정보 분석 =====")
+        for header_row_idx in range(min(5, len(df))):
+            header_row = df.iloc[header_row_idx]
+            header_values = [str(v) if pd.notna(v) else 'NaN' for v in header_row.values[:35]]
+            print(f"[광공업생산 분석시트] 헤더 행 {header_row_idx}: {header_values}")
+        
+        # 동적으로 컬럼 인덱스 찾기
+        growth_rate_col = self._find_column_by_header(df, ['증감률', 'growth', 'rate'], search_rows=5)
+        contribution_col = self._find_column_by_header(df, ['기여도', 'contribution', '기여'], search_rows=5)
+        weight_col = self._find_column_by_header(df, ['가중치', 'weight', '비중'], search_rows=5)
+        
+        # fallback: 기존 하드코딩된 인덱스 사용
+        if growth_rate_col is None:
+            growth_rate_col = self.COL_GROWTH_RATE
+            print(f"[광공업생산 분석시트] ⚠️ 증감률 컬럼 fallback: {growth_rate_col}")
+        else:
+            print(f"[광공업생산 분석시트] ✅ 증감률 컬럼 발견: {growth_rate_col} (기존: {self.COL_GROWTH_RATE})")
+        
+        if contribution_col is None:
+            contribution_col = self.COL_CONTRIBUTION
+            print(f"[광공업생산 분석시트] ⚠️ 기여도 컬럼 fallback: {contribution_col}")
+        else:
+            print(f"[광공업생산 분석시트] ✅ 기여도 컬럼 발견: {contribution_col} (기존: {self.COL_CONTRIBUTION})")
+        
+        if weight_col is None:
+            weight_col = self.COL_WEIGHT
+            print(f"[광공업생산 분석시트] ⚠️ 가중치 컬럼 fallback: {weight_col}")
+        else:
+            print(f"[광공업생산 분석시트] ✅ 가중치 컬럼 발견: {weight_col} (기존: {self.COL_WEIGHT})")
+        
+        # 소비재 필터링 목록
+        consumer_goods = ['식료품', '음료']
+        
         try:
             nationwide_industries = data_df[(data_df[self.COL_REGION_NAME] == '전국') & 
-                                            (data_df[self.COL_CLASSIFICATION].astype(str) == '2') & 
-                                            (pd.notna(data_df[self.COL_CONTRIBUTION]))]
-            sorted_industries = nationwide_industries.sort_values(self.COL_CONTRIBUTION, ascending=False)
-            increase_industries = sorted_industries[sorted_industries[self.COL_CONTRIBUTION] > 0]
-            decrease_industries = sorted_industries[sorted_industries[self.COL_CONTRIBUTION] < 0].sort_values(self.COL_CONTRIBUTION, ascending=True)
+                                            (data_df[self.COL_CLASSIFICATION].astype(str) == '2')]
+            
+            industries = []
+            for _, row in nationwide_industries.iterrows():
+                raw_growth = row[growth_rate_col] if growth_rate_col < len(row) else None
+                raw_weight = row[weight_col] if weight_col < len(row) else None
+                
+                growth_rate = self.safe_float(raw_growth, None)
+                weight = self.safe_float(raw_weight, 0)
+                
+                if growth_rate is None:
+                    continue
+                
+                industry_name = self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else '')
+                industry_code = str(row[self.COL_INDUSTRY_CODE]) if self.COL_INDUSTRY_CODE < len(row) and pd.notna(row[self.COL_INDUSTRY_CODE]) else ''
+                
+                # 소비재 필터링
+                if any(consumer in industry_name for consumer in consumer_goods):
+                    continue
+                
+                # 가중치가 없거나 0인 경우 하드코딩 가중치 사용
+                if weight == 0 or weight is None:
+                    weight = self._get_industry_weight_fallback(industry_name, industry_code)
+                    print(f"[광공업생산] 가중치 없음 - {industry_name}에 하드코딩 가중치 {weight} 적용")
+                
+                # 기여도 절대값 = (증감률 × 가중치)의 절대값
+                # 가중치가 이미 퍼센트 단위이므로 100으로 나누지 않고 직접 곱셈
+                contribution_abs = abs(growth_rate * weight / 100)
+                
+                industries.append({
+                    "name": industry_name,
+                    "growth_rate": self.safe_round(growth_rate, 1, 0.0),
+                    "contribution": self.safe_round(raw_weight, 6, 0.0) if raw_weight is not None else 0.0,  # 기존 호환성
+                    "contribution_abs": contribution_abs  # 정렬용 절대값
+                })
+            
+            # 기여도 절대값 순 정렬
+            increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
+                                        key=lambda x: x['contribution_abs'], reverse=True)[:2]
+            decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
+                                        key=lambda x: x['contribution_abs'], reverse=True)[:2]
+            
         except Exception as e:
             print(f"[광공업생산] 업종별 데이터 추출 실패: {e}")
+            import traceback
+            traceback.print_exc()
             return {"increase": [], "decrease": []}
         
-        main_increase_industries = []
-        for _, row in increase_industries.head(5).iterrows():
-            try:
-                main_increase_industries.append({
-                    "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
-                })
-            except Exception as e:
-                print(f"[광공업생산] 증가 업종 데이터 추출 실패: {e}")
-                continue
-        
-        main_decrease_industries = []
-        for _, row in decrease_industries.head(5).iterrows():
-            try:
-                main_decrease_industries.append({
-                    "name": self._get_industry_display_name(str(row[self.COL_INDUSTRY_NAME]) if pd.notna(row[self.COL_INDUSTRY_NAME]) else ''),
-                    "growth_rate": self.safe_round(row[self.COL_GROWTH_RATE], 1, 0.0) if self.COL_GROWTH_RATE < len(row) else 0.0,
-                    "contribution": self.safe_round(row[self.COL_CONTRIBUTION], 6, 0.0) if self.COL_CONTRIBUTION < len(row) else 0.0
-                })
-            except Exception as e:
-                print(f"[광공업생산] 감소 업종 데이터 추출 실패: {e}")
-                continue
-        
-        return {"increase": main_increase_industries, "decrease": main_decrease_industries}
+        return {"increase": increase_industries, "decrease": decrease_industries}
+    
+    def _find_column_by_header(self, df: pd.DataFrame, patterns: list, search_rows: int = 5) -> Optional[int]:
+        """헤더에서 패턴으로 컬럼 인덱스 찾기"""
+        for row_idx in range(min(search_rows, len(df))):
+            row = df.iloc[row_idx]
+            for col_idx in range(len(row)):
+                cell_value = row.iloc[col_idx] if hasattr(row, 'iloc') else row[col_idx]
+                if pd.notna(cell_value):
+                    cell_str = str(cell_value).strip()
+                    for pattern in patterns:
+                        if pattern in cell_str:
+                            return col_idx
+        return None
     
     def _extract_nationwide_industries_from_aggregation(self) -> dict:
         """집계 시트에서 전국 업종별 데이터 추출"""
         df = self.df_aggregation
+        
+        # 헤더 행 찾기
+        header_row_idx = None
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
+                break
+        
+        if header_row_idx is None:
+            header_row_idx = 2
+        
+        header_row = df.iloc[header_row_idx]
+        
+        # 동적으로 타겟 컬럼 인덱스 찾기
+        target_col_idx = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if target_col_idx == -1:
+            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+            target_col_idx = self.AGG_COL_2025_2Q
+        
+        # 전년동분기 인덱스 계산 (상대적 위치 -4)
+        prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col_idx - 1)
         
         # 전국 중분류 업종별 데이터 (분류단계 2)
         nationwide_industries = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
@@ -307,28 +398,42 @@ class 광공업생산Generator(BaseGenerator):
         # 전국 전년동분기 지수 (기여도 계산용)
         nationwide_rows = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
                             (df[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
-        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][self.AGG_COL_2024_2Q], 100) if not nationwide_rows.empty else 100
+        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][prev_y_idx], 100) if not nationwide_rows.empty and prev_y_idx < len(nationwide_rows.iloc[0]) else 100
+        
+        # 소비재 필터링 목록
+        consumer_goods = ['식료품', '음료']
         
         industries = []
         for _, row in nationwide_industries.iterrows():
-            curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
-            prev = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+            curr = self.safe_float(row[target_col_idx], None) if target_col_idx < len(row) else None
+            prev = self.safe_float(row[prev_y_idx], None) if prev_y_idx < len(row) else None
             weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
             
             if curr is not None and prev is not None and prev != 0:
                 ind_growth = ((curr - prev) / prev) * 100
                 contribution = (curr - prev) / nationwide_prev * weight / 10000 * 100 if nationwide_prev else 0
+                
+                industry_name = self._get_industry_display_name(str(row[self.AGG_COL_INDUSTRY_NAME]) if pd.notna(row[self.AGG_COL_INDUSTRY_NAME]) else '')
+                
+                # 소비재 필터링
+                if any(consumer in industry_name for consumer in consumer_goods):
+                    continue
+                
+                # 기여도 = (증감률 × 가중치)의 절대값
+                contribution_abs = abs(ind_growth * weight / 10000)
+                
                 industries.append({
-                    'name': self._get_industry_display_name(str(row[self.AGG_COL_INDUSTRY_NAME]) if pd.notna(row[self.AGG_COL_INDUSTRY_NAME]) else ''),
+                    'name': industry_name,
                     'growth_rate': round(ind_growth, 1),
-                    'contribution': round(contribution, 6)
+                    'contribution': round(contribution, 6),
+                    'contribution_abs': contribution_abs  # 정렬용 절대값
                 })
         
-        # 기여도 순 정렬
-        increase_industries = sorted([i for i in industries if i['contribution'] > 0], 
-                                    key=lambda x: x['contribution'], reverse=True)[:5]
-        decrease_industries = sorted([i for i in industries if i['contribution'] < 0], 
-                                    key=lambda x: x['contribution'])[:5]
+        # 기여도 절대값 순 정렬
+        increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+        decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
         
         return {"increase": increase_industries, "decrease": decrease_industries}
     
@@ -337,65 +442,149 @@ class 광공업생산Generator(BaseGenerator):
         df = self.df_analysis
         
         # 헤더 행 찾기
-        header_row = None
+        header_row_idx = None
         for i in range(min(10, len(df))):
             row = df.iloc[i]
             row_str = ' '.join([str(v) for v in row.values[:10] if pd.notna(v)])
-            if '지역' in row_str and ('2024' in row_str or '2025' in row_str):
-                header_row = i
+            if '지역' in row_str and any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
                 break
         
-        if header_row is None:
-            header_row = 2
+        if header_row_idx is None:
+            header_row_idx = 2
         
-        # 당분기 컬럼 찾기
-        current_quarter_col = None
-        prev_year_col = None
-        header = df.iloc[header_row] if header_row < len(df) else df.iloc[0]
+        header_row = df.iloc[header_row_idx]
         
-        for col_idx in range(len(header) - 1, 4, -1):
-            col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
-            if '2025' in col_val and ('2/4' in col_val or '2' in col_val):
-                current_quarter_col = col_idx
-            if '2024' in col_val and ('2/4' in col_val or '2' in col_val):
-                prev_year_col = col_idx
-            if current_quarter_col and prev_year_col:
-                break
+        # 동적으로 타겟 컬럼 인덱스 찾기
+        target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if target_col == -1:
+            # fallback: 헤더에서 직접 찾기
+            header = df.iloc[header_row_idx] if header_row_idx < len(df) else df.iloc[0]
+            for col_idx in range(len(header) - 1, 4, -1):
+                col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
+                if f"{self.year or 2025}" in col_val and (f"{self.quarter or 2}/4" in col_val or f"{self.quarter or 2}분기" in col_val):
+                    target_col = col_idx
+                    break
+            
+            if target_col == -1:
+                target_col = len(header) - 2
         
-        if current_quarter_col is None:
-            current_quarter_col = len(header) - 2
-        if prev_year_col is None:
-            prev_year_col = current_quarter_col - 4
+        # 전년동분기 인덱스 계산
+        prev_y_col = target_col - 4 if target_col >= 4 else target_col - 1
+        
+        # 소비재 필터링 목록
+        consumer_goods = ['식료품', '음료']
         
         # 업종별 데이터 추출 (분류단계 2)
         industries = []
-        for i in range(header_row + 1, len(df)):
+        for i in range(header_row_idx + 1, len(df)):
             row = df.iloc[i]
             region = str(row[1]).strip() if pd.notna(row[1]) else ''
             classification = str(row[2]).strip() if pd.notna(row[2]) else ''
             if region == '전국' and classification == '2':
-                current = self.safe_float(row[current_quarter_col], None)
-                prev = self.safe_float(row[prev_year_col], None)
+                current = self.safe_float(row[target_col], None) if target_col < len(row) else None
+                prev = self.safe_float(row[prev_y_col], None) if prev_y_col < len(row) else None
                 if current is not None and prev is not None and prev != 0:
                     ind_growth = ((current - prev) / prev) * 100
+                    
+                    industry_name = self._get_industry_display_name(str(row[4]) if pd.notna(row[4]) else '')
+                    industry_code = str(row[3]) if 3 < len(row) and pd.notna(row[3]) else ''
+                    
+                    # 소비재 필터링
+                    if any(consumer in industry_name for consumer in consumer_goods):
+                        continue
+                    
+                    # 가중치가 없으므로 하드코딩 가중치 사용
+                    weight = self._get_industry_weight_fallback(industry_name, industry_code)
+                    
+                    # 기여도 절대값 = (증감률 × 가중치)의 절대값
+                    contribution_abs = abs(ind_growth * weight / 100)
+                    
                     industries.append({
-                        'name': self._get_industry_display_name(str(row[4]) if pd.notna(row[4]) else ''),
+                        'name': industry_name,
                         'growth_rate': round(ind_growth, 1),
-                        'contribution': round(ind_growth * 0.1, 6)
+                        'contribution': round(ind_growth * 0.1, 6),  # 기존 호환성
+                        'contribution_abs': contribution_abs  # 정렬용 절대값
                     })
         
-        # 증가/감소 업종 분류
+        # 기여도 절대값 순 정렬
         increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                    key=lambda x: x['growth_rate'], reverse=True)[:5]
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
         decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                    key=lambda x: x['growth_rate'])[:5]
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
         
         return {"increase": increase_industries, "decrease": decrease_industries}
+    
+    def _get_industry_weight_fallback(self, industry_name: str, industry_code: str = None) -> float:
+        """
+        가중치 컬럼을 찾지 못할 경우 사용하는 하드코딩 가중치 로직
+        제조업 10대 주력 업종에 우선순위 부여
+        """
+        # 주력 업종 키워드 및 가중치 매핑 (상대적 가중치)
+        major_industries = {
+            # 전자/반도체 관련
+            '전자': 100.0,
+            '반도체': 100.0,
+            '전자부품': 100.0,
+            '컴퓨터': 80.0,
+            '통신장비': 80.0,
+            # 자동차 관련
+            '자동차': 90.0,
+            '트레일러': 90.0,
+            # 기계장비 관련
+            '기계': 70.0,
+            '기계장비': 70.0,
+            '산업용기계': 70.0,
+            # 화학 관련
+            '화학': 60.0,
+            '화학물질': 60.0,
+            '화학제품': 60.0,
+            # 철강/금속 관련
+            '1차금속': 50.0,
+            '금속': 50.0,
+            '철강': 50.0,
+            # 기타 주요 업종
+            '전기장비': 40.0,
+            '의료': 30.0,
+            '의약품': 30.0,
+        }
+        
+        # 업종명에서 키워드 매칭
+        industry_name_lower = industry_name.lower()
+        for keyword, weight in major_industries.items():
+            if keyword in industry_name_lower:
+                return weight
+        
+        # 매칭되지 않으면 기본 가중치
+        return 10.0
     
     def _extract_nationwide_from_analysis(self) -> dict:
         """분석 시트에서 전국 데이터 추출 (fallback)"""
         df = self.df_analysis
         data_df = df.iloc[self.DATA_START_ROW:].copy()
+        
+        # 헤더 행 찾기
+        header_row_idx = None
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:30] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
+                break
+        
+        if header_row_idx is None:
+            header_row_idx = 2
+        
+        header_row = df.iloc[header_row_idx]
+        
+        # 동적으로 타겟 컬럼 인덱스 찾기 (증감률 컬럼)
+        growth_rate_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if growth_rate_col == -1:
+            # fallback: 헤더에서 직접 찾기
+            growth_rate_col = self._find_column_by_header(df, ['증감률', 'growth', 'rate'], search_rows=5)
+            if growth_rate_col is None:
+                growth_rate_col = self.COL_GROWTH_RATE
+                print(f"[광공업생산] ⚠️ 증감률 컬럼 fallback: {growth_rate_col}")
         
         nationwide_total = None
         try:
@@ -409,20 +598,37 @@ class 광공업생산Generator(BaseGenerator):
         if nationwide_total is None:
             return self._get_default_nationwide_data()
         
-        # 광공업생산지수 (집계 시트에서)
+        # 광공업생산지수 (집계 시트에서) - 동적 컬럼 사용
         df_agg = self.df_aggregation
         try:
+            # 집계 시트 헤더 찾기
+            agg_header_row_idx = None
+            for i in range(min(5, len(df_agg))):
+                row = df_agg.iloc[i]
+                row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+                if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                    agg_header_row_idx = i
+                    break
+            
+            if agg_header_row_idx is None:
+                agg_header_row_idx = 2
+            
+            agg_header_row = df_agg.iloc[agg_header_row_idx]
+            agg_target_col = self.find_target_col_index(agg_header_row, self.year or 2025, self.quarter or 2)
+            if agg_target_col == -1:
+                agg_target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df_agg.columns) - 1)
+            
             nationwide_agg_rows = df_agg[(df_agg[self.AGG_COL_REGION_NAME] == '전국') & 
                                          (df_agg[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
             if nationwide_agg_rows.empty:
                 production_index = 100.0
             else:
                 nationwide_agg = nationwide_agg_rows.iloc[0]
-                production_index = self.safe_float(nationwide_agg[self.AGG_COL_2025_2Q], 100.0)
+                production_index = self.safe_float(nationwide_agg[agg_target_col] if agg_target_col < len(nationwide_agg) else 100.0, 100.0)
         except Exception as e:
             production_index = 100.0
         
-        growth_rate = nationwide_total[self.COL_GROWTH_RATE] if pd.notna(nationwide_total[self.COL_GROWTH_RATE]) else 0
+        growth_rate = nationwide_total[growth_rate_col] if growth_rate_col < len(nationwide_total) and pd.notna(nationwide_total[growth_rate_col]) else 0
         industries_data = self._extract_nationwide_industries_from_analysis()
         
         return {
@@ -450,25 +656,28 @@ class 광공업생산Generator(BaseGenerator):
         
         nationwide_total = nationwide_rows.iloc[0]
         
-        # Step 3: 엑셀 헤더 파싱 로직 강화 - 동적으로 컬럼 찾기
-        if self.period_context:
-            from utils.excel_utils import find_columns_by_period
-            col_mapping = find_columns_by_period(df, self.period_context, search_rows=5)
-            target_col = col_mapping.get('target_col')
-            prev_y_col = col_mapping.get('prev_y_col')
-        else:
-            # period_context가 없으면 헤더에서 직접 찾기
-            target_period = f"{self.year if self.year else 2025}.{self.quarter if self.quarter else 2}/4"
-            prev_y_period = f"{self.year - 1 if self.year else 2024}.{self.quarter if self.quarter else 2}/4"
-            from utils.excel_utils import find_column_by_header
-            target_col = find_column_by_header(df, target_period, search_rows=5)
-            prev_y_col = find_column_by_header(df, prev_y_period, search_rows=5)
+        # 헤더 행 찾기
+        header_row_idx = None
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
+                break
         
-        # 최종 fallback
-        if target_col is None:
+        if header_row_idx is None:
+            header_row_idx = 2
+        
+        header_row = df.iloc[header_row_idx]
+        
+        # 동적으로 타겟 컬럼 인덱스 찾기
+        target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if target_col == -1:
+            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
             target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
-        if prev_y_col is None:
-            prev_y_col = self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else (target_col - 4 if target_col >= 4 else target_col - 1)
+        
+        # 전년동분기 인덱스 계산 (상대적 위치 -4)
+        prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
         
         # 당분기와 전년동분기 지수로 증감률 계산 (동적 컬럼 사용)
         current_index = self.safe_float(nationwide_total.iloc[target_col] if hasattr(nationwide_total, 'iloc') and target_col < len(nationwide_total) else (nationwide_total[target_col] if target_col < len(nationwide_total) else 100), 100)
@@ -483,27 +692,48 @@ class 광공업생산Generator(BaseGenerator):
         nationwide_industries = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
                                    (df[self.AGG_COL_CLASSIFICATION].astype(str) == '2')]
         
+        # 소비재 필터링 목록
+        consumer_goods = ['식료품', '음료']
+        
         industries = []
         for _, row in nationwide_industries.iterrows():
-            curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
-            prev = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+            curr = self.safe_float(row[target_col], None) if target_col < len(row) else None
+            prev = self.safe_float(row[prev_y_col], None) if prev_y_col < len(row) else None
             weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
             
             if curr is not None and prev is not None and prev != 0:
                 ind_growth = ((curr - prev) / prev) * 100
                 # 기여도 = (당기 - 전기) / 전국전기 * 가중치/10000
                 contribution = (curr - prev) / prev_year_index * weight / 10000 * 100 if prev_year_index else 0
+                
+                industry_name = self._get_industry_display_name(str(row[self.AGG_COL_INDUSTRY_NAME]) if pd.notna(row[self.AGG_COL_INDUSTRY_NAME]) else '')
+                industry_code = str(row[self.AGG_COL_INDUSTRY_CODE]) if self.AGG_COL_INDUSTRY_CODE < len(row) and pd.notna(row[self.AGG_COL_INDUSTRY_CODE]) else ''
+                
+                # 소비재 필터링
+                if any(consumer in industry_name for consumer in consumer_goods):
+                    continue
+                
+                # 가중치가 없거나 0인 경우 하드코딩 가중치 사용
+                if weight == 0 or weight is None:
+                    weight = self._get_industry_weight_fallback(industry_name, industry_code)
+                    print(f"[광공업생산] 가중치 없음 - {industry_name}에 하드코딩 가중치 {weight} 적용")
+                
+                # 기여도 절대값 = (증감률 × 가중치)의 절대값
+                # 가중치가 10000 단위이므로 10000으로 나눔
+                contribution_abs = abs(ind_growth * weight / 10000)
+                
                 industries.append({
-                    'name': self._get_industry_display_name(str(row[self.AGG_COL_INDUSTRY_NAME]) if pd.notna(row[self.AGG_COL_INDUSTRY_NAME]) else ''),
+                    'name': industry_name,
                     'growth_rate': round(ind_growth, 1),
-                    'contribution': round(contribution, 6)
+                    'contribution': round(contribution, 6),
+                    'contribution_abs': contribution_abs  # 정렬용 절대값
                 })
         
-        # 기여도 순 정렬
-        increase_industries = sorted([i for i in industries if i['contribution'] > 0], 
-                                    key=lambda x: x['contribution'], reverse=True)[:5]
-        decrease_industries = sorted([i for i in industries if i['contribution'] < 0], 
-                                    key=lambda x: x['contribution'])[:5]
+        # 기여도 절대값 순 정렬
+        increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+        decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
+                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
         
         return {
             "production_index": current_index,
@@ -626,12 +856,12 @@ class 광공업생산Generator(BaseGenerator):
         # 증감률 기준으로 내림차순 정렬
         sorted_regions = sorted(regional_table_data, key=lambda x: x["change_rate"], reverse=True)
         
-        # 증가 지역: 양수(+)인 지역 중 상위 2~3개
-        increase_regions_data = [r for r in sorted_regions if r["change_rate"] > 0][:3]
+        # 증가 지역: 양수(+)인 지역 중 상위 2~3개 (0.0은 완전히 제외)
+        increase_regions_data = [r for r in sorted_regions if r.get("change_rate") is not None and r["change_rate"] > 0][:3]
         
-        # 감소 지역: 음수(-)인 지역 중 하위 2~3개 (가장 낮은 값이 먼저)
+        # 감소 지역: 음수(-)인 지역 중 하위 2~3개 (0.0은 완전히 제외)
         decrease_regions_data = sorted(
-            [r for r in sorted_regions if r["change_rate"] < 0],
+            [r for r in sorted_regions if r.get("change_rate") is not None and r["change_rate"] < 0],
             key=lambda x: x["change_rate"]
         )[:3]
         
@@ -665,14 +895,15 @@ class 광공업생산Generator(BaseGenerator):
             })
         
         # 증가/감소 지역 분류 (table_data 기준)
+        # 0.0인 지역은 완전히 제외 (None도 제외)
         increase_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] > 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] > 0],
             key=lambda x: x["growth_rate"],
             reverse=True
         )
         
         decrease_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] < 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] < 0],
             key=lambda x: x["growth_rate"]
         )
         
@@ -717,10 +948,33 @@ class 광공업생산Generator(BaseGenerator):
         df = self.df_aggregation
         industry_data = {}
         
+        # 헤더 행 찾기
+        header_row_idx = None
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
+                break
+        
+        if header_row_idx is None:
+            header_row_idx = 2
+        
+        header_row = df.iloc[header_row_idx]
+        
+        # 동적으로 타겟 컬럼 인덱스 찾기
+        target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if target_col == -1:
+            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+            target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
+        
+        # 전년동분기 인덱스 계산 (상대적 위치 -4)
+        prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
+        
         # 전국 전년동분기 지수 (기여도 계산용)
         nationwide_rows = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
                             (df[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
-        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][self.AGG_COL_2024_2Q], 100) if not nationwide_rows.empty else 100
+        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][prev_y_col], 100) if not nationwide_rows.empty and prev_y_col < len(nationwide_rows.iloc[0]) else 100
         
         for region in individual_regions:
             # 해당 지역 업종별 데이터 (분류단계 2)
@@ -729,8 +983,8 @@ class 광공업생산Generator(BaseGenerator):
             
             industries = []
             for _, row in region_industries.iterrows():
-                curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
-                prev_ind = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+                curr = self.safe_float(row[target_col], None) if target_col < len(row) else None
+                prev_ind = self.safe_float(row[prev_y_col], None) if prev_y_col < len(row) else None
                 weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
                 
                 if curr is not None and prev_ind is not None and prev_ind != 0:
@@ -810,10 +1064,33 @@ class 광공업생산Generator(BaseGenerator):
         individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
                               '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
+        # 헤더 행 찾기
+        header_row_idx = None
+        for i in range(min(5, len(df))):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                header_row_idx = i
+                break
+        
+        if header_row_idx is None:
+            header_row_idx = 2
+        
+        header_row = df.iloc[header_row_idx]
+        
+        # 동적으로 타겟 컬럼 인덱스 찾기
+        target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
+        if target_col == -1:
+            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+            target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
+        
+        # 전년동분기 인덱스 계산 (상대적 위치 -4)
+        prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
+        
         # 전국 전년동분기 지수 (기여도 계산용)
         nationwide_rows = df[(df[self.AGG_COL_REGION_NAME] == '전국') & 
                             (df[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
-        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][self.AGG_COL_2024_2Q], 100) if not nationwide_rows.empty else 100
+        nationwide_prev = self.safe_float(nationwide_rows.iloc[0][prev_y_col], 100) if not nationwide_rows.empty and prev_y_col < len(nationwide_rows.iloc[0]) else 100
         
         regions_data = []
         
@@ -824,16 +1101,6 @@ class 광공업생산Generator(BaseGenerator):
             if region_total.empty:
                 continue
             region_total = region_total.iloc[0]
-            
-            # Step 3: 동적 컬럼 찾기
-            if self.period_context:
-                from utils.excel_utils import find_columns_by_period
-                col_mapping = find_columns_by_period(df, self.period_context, search_rows=5)
-                target_col = col_mapping.get('target_col') or (self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else len(df.columns) - 1)
-                prev_y_col = col_mapping.get('prev_y_col') or (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else (target_col - 4 if target_col >= 4 else target_col - 1))
-            else:
-                target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
-                prev_y_col = self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else (target_col - 4 if target_col >= 4 else target_col - 1)
             
             # 증감률 계산 (동적 컬럼 사용)
             current = self.safe_float(region_total.iloc[target_col] if hasattr(region_total, 'iloc') and target_col < len(region_total) else (region_total[target_col] if target_col < len(region_total) else 100), 100)
@@ -850,8 +1117,8 @@ class 광공업생산Generator(BaseGenerator):
             
             industries = []
             for _, row in region_industries.iterrows():
-                curr = self.safe_float(row[self.AGG_COL_2025_2Q], None)
-                prev_ind = self.safe_float(row[self.AGG_COL_2024_2Q], None)
+                curr = self.safe_float(row[target_col], None) if target_col < len(row) else None
+                prev_ind = self.safe_float(row[prev_y_col], None) if prev_y_col < len(row) else None
                 weight = self.safe_float(row[self.AGG_COL_WEIGHT], 0)
                 
                 if curr is not None and prev_ind is not None and prev_ind != 0:
@@ -876,14 +1143,15 @@ class 광공업생산Generator(BaseGenerator):
             })
         
         # 증가/감소 지역 분류
+        # 0.0인 지역은 완전히 제외 (None도 제외)
         increase_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] > 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] > 0],
             key=lambda x: x["growth_rate"],
             reverse=True
         )
         
         decrease_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] < 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] < 0],
             key=lambda x: x["growth_rate"]
         )
         
@@ -983,14 +1251,15 @@ class 광공업생산Generator(BaseGenerator):
             })
         
         # 증가/감소 지역 분류
+        # 0.0인 지역은 완전히 제외 (None도 제외)
         increase_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] > 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] > 0],
             key=lambda x: x["growth_rate"],
             reverse=True
         )
         
         decrease_regions = sorted(
-            [r for r in regions_data if r["growth_rate"] < 0],
+            [r for r in regions_data if r.get("growth_rate") is not None and r["growth_rate"] < 0],
             key=lambda x: x["growth_rate"]
         )
         
@@ -1000,13 +1269,20 @@ class 광공업생산Generator(BaseGenerator):
             "region_count": len(increase_regions)
         }
     
-    def extract_summary_box(self, regional_data: dict = None) -> dict:
+    def extract_summary_box(self, regional_data: dict = None, nationwide_data: dict = None) -> dict:
         """
         Step 3: 나레이션 생성 (Text Variables만 사용)
         회색 요약 박스 데이터 추출
+        지그재그 화법을 사용한 대조 나레이션 생성
+        
+        논리 구조:
+        - 전국 문장 (First Sentence): 전국 추세 설명
+        - 시도 대조 문장 (Second Sentence - Zigzag): 전국 방향에 맞춰 '반대 지역 -> 같은 지역' 순서로 자동 배치
         """
         if regional_data is None:
             regional_data = self.extract_regional_data()
+        if nationwide_data is None:
+            nationwide_data = self.extract_nationwide_data()
         
         # 증가 지역 중 상위 3개
         top_increase = regional_data["increase_regions"][:3]
@@ -1019,9 +1295,101 @@ class 광공업생산Generator(BaseGenerator):
                 "industries": industries
             })
         
+        # 지그재그 화법을 사용한 나레이션 생성
+        from utils.text_utils import get_contrast_narrative
+        
+        # 1. 전국 데이터 및 상/하위 지역 추출
+        nationwide_val = nationwide_data.get("growth_rate", 0.0)
+        production_index = nationwide_data.get("production_index", 100.0)
+        
+        # 증가 지역 1위 (top_k=1, reverse=True)
+        top_increase_regions = regional_data["increase_regions"][:1] if regional_data["increase_regions"] else []
+        
+        # 감소 지역 1위 (top_k=1, reverse=False)
+        top_decrease_regions = regional_data["decrease_regions"][:1] if regional_data["decrease_regions"] else []
+        
+        # 증가 지역 데이터 포맷팅 (name, value 포함)
+        inc_regions = [
+            {"name": r["region"], "value": r["growth_rate"]}
+            for r in top_increase_regions
+        ]
+        
+        # 감소 지역 데이터 포맷팅 (name, value 포함)
+        dec_regions = [
+            {"name": r["region"], "value": r["growth_rate"]}
+            for r in top_decrease_regions
+        ]
+        
+        # 2. 전국 문장 (First Sentence) 생성
+        from utils.text_utils import get_terms
+        
+        # 전국 증감률에 따라 적절한 업종 선택
+        if nationwide_val > 0:
+            # 전국이 증가하면 증가 업종 사용
+            main_industries = nationwide_data.get("main_increase_industries", [])
+        else:
+            # 전국이 감소하면 감소 업종 사용
+            main_industries = nationwide_data.get("main_decrease_industries", [])
+        
+        # 업종명 나열 (데이터 기반)
+        # 데이터가 없으면 '주요 업종'으로 fallback 하되, 최대한 추출 시도
+        top_industries = [ind["name"] for ind in main_industries[:3]] if main_industries else []
+        industry_text = ", ".join(top_industries) if top_industries else "주요 업종"
+        
+        # 1. 서술어 결정 (수치 기반 강제, 어휘 통제 센터 사용)
+        cause_verb, result_noun = get_terms('mining', nationwide_val)
+        # 결과: cause_verb='늘어' 또는 '줄어', result_noun='증가' 또는 '감소'
+        
+        # 3. 문장 완성
+        # 예: "전국 광공업생산(98.5)은 반도체, 자동차 등의 생산이 줄어 전년동분기대비 -1.5% 감소"
+        from utils.text_utils import get_josa
+        전국_josa = get_josa("전국", "Topic")
+        sentence1 = f"전국{전국_josa} 광공업생산({production_index:.1f})은 {industry_text} 등의 생산이 {cause_verb} 전년동분기대비 {nationwide_val:.1f}% {result_noun}"
+        
+        # 3. 시도 대조 문장 (Second Sentence - Zigzag)
+        # 전국 방향에 맞춰 '반대 지역 -> 같은 지역' 순서로 자동 배치
+        # 어휘 통제 센터 사용: report_id='mining' 전달
+        sentence2_base = get_contrast_narrative(nationwide_val, inc_regions, dec_regions, report_id='mining')
+        
+        # 업종 정보 추가 (감소 지역과 증가 지역의 주요 업종)
+        # 어휘 통제 센터에서 가져온 어휘 사용
+        dec_cause, dec_result = get_terms('mining', -1.0)  # 감소 지역용
+        inc_cause, inc_result = get_terms('mining', 1.0)    # 증가 지역용
+        
+        sentence2 = sentence2_base
+        if top_decrease_regions and top_decrease_regions[0].get("top_industries"):
+            dec_industries = ", ".join([ind["name"] for ind in top_decrease_regions[0]["top_industries"][:2]])
+            # 동적으로 생성된 어휘 사용
+            dec_pattern = f"{dec_result}하였으나"
+            dec_pattern2 = f"{dec_cause} {dec_result}"
+            if dec_pattern in sentence2:
+                sentence2 = sentence2.replace(dec_pattern, f"{dec_industries} 등의 생산이 {dec_cause} {dec_result}하였으나")
+            elif dec_pattern2 in sentence2:
+                sentence2 = sentence2.replace(dec_pattern2, f"{dec_industries} 등의 생산이 {dec_cause} {dec_result}")
+        
+        if top_increase_regions and top_increase_regions[0].get("top_industries"):
+            inc_industries = ", ".join([ind["name"] for ind in top_increase_regions[0]["top_industries"][:2]])
+            # 동적으로 생성된 어휘 사용
+            inc_pattern = f"{inc_result}하였으나"
+            inc_pattern2 = f"{inc_cause} {inc_result}"
+            if inc_pattern2 in sentence2:
+                sentence2 = sentence2.replace(inc_pattern2, f"{inc_industries} 등의 생산이 {inc_cause} {inc_result}")
+            elif inc_pattern in sentence2:
+                sentence2 = sentence2.replace(inc_pattern, f"{inc_industries} 등의 생산이 {inc_cause} {inc_result}하였으나")
+        
+        # 최종 본문 (전국 문장 + 시도 대조 문장)
+        full_text = f"□ {sentence1}\n○ {sentence2}"
+        
         return {
             "main_increase_regions": main_regions,
-            "region_count": regional_data["region_count"]
+            "region_count": regional_data["region_count"],
+            "contrast_narrative": sentence2,  # 지그재그 화법 나레이션 (시도 대조 문장만)
+            "nationwide_sentence": sentence1,  # 전국 문장
+            "full_narrative": full_text,  # 완전한 나레이션 (전국 + 시도)
+            # 하위 호환성을 위한 기존 필드들
+            "nationwide_val": nationwide_val,
+            "top_increase": top_increase_regions,
+            "top_decrease": top_decrease_regions
         }
     
     def extract_top3_regions(self, regional_data: dict = None) -> tuple:
@@ -1058,34 +1426,104 @@ class 광공업생산Generator(BaseGenerator):
         """
         df_agg = self.df_aggregation
         
-        # Step 3: 엑셀 헤더 파싱 로직 강화 - 동적으로 컬럼 찾기
+        # Step 1: 디버깅 트랩 설치 - 헤더 정보 출력
+        print(f"\n[광공업생산 SSOT] ===== 헤더 정보 분석 시작 =====")
+        print(f"[광공업생산 SSOT] DataFrame shape: {df_agg.shape}")
+        
+        # 헤더 영역 (3~5번째 행) 출력
+        for header_row_idx in range(min(5, len(df_agg))):
+            header_row = df_agg.iloc[header_row_idx]
+            header_values = [str(v) if pd.notna(v) else 'NaN' for v in header_row.values[:30]]
+            print(f"[광공업생산 SSOT] 헤더 행 {header_row_idx}: {header_values[:15]}...")
+        
+        # Step 1-1: 지역명 컬럼 찾기 (로그 기반: Index 4 확정)
+        # 헤더 행 2: ['조회용', '조회준비2', '조회준비1', '지역\n코드', '지역\n이름', ...]
+        # 헤더 행 3: ['00BCD', 'BCD', 'BCD', '00', '전국', ...]
+        # 따라서 지역명은 Index 4에 위치
+        
+        region_name_col = None
+        region_code_col = None
+        
+        # 먼저 헤더에서 '지역 이름' 찾기
+        for header_row_idx in range(min(5, len(df_agg))):
+            header_row = df_agg.iloc[header_row_idx]
+            for col_idx in range(min(10, len(header_row))):
+                cell_value = str(header_row.iloc[col_idx]) if pd.notna(header_row.iloc[col_idx]) else ''
+                if '지역' in cell_value and ('이름' in cell_value or 'name' in cell_value.lower()):
+                    region_name_col = col_idx
+                    print(f"[광공업생산 SSOT] ✅ 지역명 컬럼 발견: Index {region_name_col} (헤더 행 {header_row_idx}: '{cell_value}')")
+                if '지역' in cell_value and ('코드' in cell_value or 'code' in cell_value.lower()):
+                    region_code_col = col_idx
+                    print(f"[광공업생산 SSOT] ✅ 지역코드 컬럼 발견: Index {region_code_col} (헤더 행 {header_row_idx}: '{cell_value}')")
+        
+        # 실제 데이터 행(헤더 행 3)에서 '전국'이 있는 컬럼 확인 (검증)
+        if len(df_agg) > 3:
+            data_row = df_agg.iloc[3]  # 헤더 행 3 (실제 데이터 시작)
+            for col_idx in range(min(10, len(data_row))):
+                cell_value = str(data_row.iloc[col_idx]).strip() if pd.notna(data_row.iloc[col_idx]) else ''
+                if cell_value == '전국':
+                    if region_name_col is None or region_name_col != col_idx:
+                        print(f"[광공업생산 SSOT] ✅ 실제 데이터 행에서 '전국' 발견: Index {col_idx} (기존 추정: {region_name_col})")
+                        region_name_col = col_idx
+                    break
+        
+        # 로그 기반 확정: Index 4 (근본 수정)
+        if region_name_col is None:
+            region_name_col = 4  # 로그에서 확인된 정확한 인덱스
+            print(f"[광공업생산 SSOT] ✅ 지역명 컬럼 Index 4로 확정 (로그 기반)")
+        
+        if region_code_col is None:
+            region_code_col = 3  # 로그에서 확인된 정확한 인덱스
+            print(f"[광공업생산 SSOT] ✅ 지역코드 컬럼 Index 3으로 확정 (로그 기반)")
+        
+        # Step 2: 동적 컬럼 매핑 - 헤더 검색
         if self.period_context:
             from utils.excel_utils import find_columns_by_period
             col_mapping = find_columns_by_period(df_agg, self.period_context, search_rows=5)
             target_col = col_mapping.get('target_col')
             prev_y_col = col_mapping.get('prev_y_col')
+            print(f"[광공업생산 SSOT] period_context 사용: target_col={target_col}, prev_y_col={prev_y_col}")
         else:
-            # period_context가 없으면 기본값 사용 (하위 호환성)
             target_col = None
             prev_y_col = None
         
-        # 헤더 파싱 실패 시 fallback: 기존 상수 사용 (하위 호환성)
+        # 헤더 파싱 실패 시 fallback: 헤더에서 직접 찾기
         if target_col is None:
-            # 기본 컬럼 인덱스 (하드코딩 제거를 위해 주석 처리)
-            # target_col = self.AGG_COL_2025_2Q  # 더 이상 사용하지 않음
-            # prev_y_col = self.AGG_COL_2024_2Q   # 더 이상 사용하지 않음
-            # 대신 헤더에서 직접 찾기 시도
             target_period = f"{self.year if self.year else 2025}.{self.quarter if self.quarter else 2}/4"
             prev_y_period = f"{self.year - 1 if self.year else 2024}.{self.quarter if self.quarter else 2}/4"
             from utils.excel_utils import find_column_by_header
             target_col = find_column_by_header(df_agg, target_period, search_rows=5)
             prev_y_col = find_column_by_header(df_agg, prev_y_period, search_rows=5)
+            print(f"[광공업생산 SSOT] 헤더 직접 검색: '{target_period}' -> col={target_col}, '{prev_y_period}' -> col={prev_y_col}")
         
         # 최종 fallback: 마지막 컬럼과 그 이전 4개 컬럼 전 (하위 호환성)
         if target_col is None:
             target_col = len(df_agg.columns) - 1
+            print(f"[광공업생산 SSOT] ⚠️ target_col fallback: {target_col}")
         if prev_y_col is None:
             prev_y_col = target_col - 4 if target_col >= 4 else target_col - 1
+            print(f"[광공업생산 SSOT] ⚠️ prev_y_col fallback: {prev_y_col}")
+        
+        print(f"[광공업생산 SSOT] 최종 컬럼 매핑: region_name_col={region_name_col}, target_col={target_col}, prev_y_col={prev_y_col}")
+        
+        # Step 1-2: 산업코드 컬럼 동적 찾기 (헤더에서 '산업코드' 또는 '산업 코드' 찾기)
+        industry_code_col = None
+        for header_row_idx in range(min(5, len(df_agg))):
+            header_row = df_agg.iloc[header_row_idx]
+            for col_idx in range(min(10, len(header_row))):
+                cell_value = str(header_row.iloc[col_idx]) if pd.notna(header_row.iloc[col_idx]) else ''
+                if '산업' in cell_value and ('코드' in cell_value or 'code' in cell_value.lower()):
+                    industry_code_col = col_idx
+                    print(f"[광공업생산 SSOT] ✅ 산업코드 컬럼 발견: Index {industry_code_col} (헤더 행 {header_row_idx}: '{cell_value}')")
+                    break
+            if industry_code_col is not None:
+                break
+        
+        # fallback: 기존 하드코딩된 인덱스 사용 (AGG_COL_INDUSTRY_CODE는 정의되지 않았으므로 region_name_col + 3 추정)
+        if industry_code_col is None:
+            # 일반적으로 산업코드는 지역이름 다음에 위치
+            industry_code_col = region_name_col + 3 if region_name_col + 3 < len(df_agg.columns) else region_name_col + 1
+            print(f"[광공업생산 SSOT] ⚠️ 산업코드 컬럼 fallback: {industry_code_col}")
         
         # 개별 시도 목록 (전국 포함)
         individual_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
@@ -1094,38 +1532,103 @@ class 광공업생산Generator(BaseGenerator):
         table_data = []
         
         for region in individual_regions:
-            # 집계 데이터에서 해당 지역 찾기
-            region_agg = df_agg[(df_agg[self.AGG_COL_REGION_NAME] == region) & 
-                               (df_agg[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
+            # 집계 데이터에서 해당 지역 찾기 (Index 4 사용 - 근본 수정)
+            # 데이터 시작 행 이후부터 확인 (헤더 제외)
+            data_df = df_agg.iloc[self.DATA_START_ROW:].copy() if self.DATA_START_ROW < len(df_agg) else df_agg
+            
+            # region_name_col(Index 4)로 필터링 (데이터 행만)
+            if region_name_col >= len(data_df.columns):
+                print(f"[광공업생산 SSOT] ⚠️ {region} - region_name_col[{region_name_col}] 범위 초과 (컬럼 수: {len(data_df.columns)})")
+                continue
+            
+            # Index 4에서 지역명 확인 (안전한 문자열 변환)
+            region_filter = data_df[
+                data_df.iloc[:, region_name_col].astype(str).str.strip().str.replace('\n', '').str.replace(' ', '') == region
+            ]
+            
+            if region_filter.empty:
+                # 대체 검색: 공백 제거 없이 정확히 일치
+                region_filter = data_df[
+                    data_df.iloc[:, region_name_col].astype(str).str.strip() == region
+                ]
+            
+            # BCD 코드로 추가 필터링 (산업코드 컬럼 사용)
+            if industry_code_col is not None and industry_code_col < len(data_df.columns):
+                # 산업코드 컬럼에서 'BCD' 찾기 (정확히 일치하거나 포함)
+                region_agg = region_filter[
+                    region_filter.iloc[:, industry_code_col].astype(str).str.strip().str.contains('BCD', na=False, regex=False)
+                ]
+            else:
+                # 산업코드 컬럼이 없으면 region_name_col만으로 필터링
+                # 하지만 BCD가 필요하므로 첫 번째 행만 사용 (총지수 행)
+                region_agg = region_filter.head(1)
+            
             if region_agg.empty:
+                print(f"[광공업생산 SSOT] ⚠️ {region} 데이터 없음 (BCD 행 없음, region_name_col={region_name_col})")
+                # 디버깅: 실제 데이터 행에서 Index 4 값 확인
+                if len(data_df) > 0:
+                    sample_values = data_df.iloc[:5, region_name_col].astype(str).tolist()
+                    print(f"[광공업생산 SSOT] 디버깅: Index {region_name_col}의 처음 5개 값: {sample_values}")
                 continue
             region_agg = region_agg.iloc[0]
             
+            # Step 1: 디버깅 트랩 - 행 전체 데이터 출력
+            row_data_list = [str(v) if pd.notna(v) else 'NaN' for v in region_agg.values[:30]]
+            print(f"\n[광공업생산 SSOT] {region} 행 데이터 (처음 30개 컬럼): {row_data_list}")
+            
             # 지수 추출 (동적 컬럼 사용)
+            raw_current = None
+            raw_prev_year = None
+            
+            # 자료형 안전 변환 (근본 수정): 모든 값 읽기 시 safe_float 사용
             if target_col < len(region_agg):
-                idx_current = self.safe_float(region_agg.iloc[target_col] if hasattr(region_agg, 'iloc') else region_agg[target_col], 100)
+                raw_current = region_agg.iloc[target_col] if hasattr(region_agg, 'iloc') else region_agg[target_col]
+                print(f"[광공업생산 SSOT] {region} - target_col[{target_col}] 원본값: {raw_current} (타입: {type(raw_current).__name__})")
+                # parse_excel_value와 동일한 로직: safe_float 사용 (콤마, '-', None 처리)
+                idx_current = self.safe_float(raw_current, None)
+                print(f"[광공업생산 SSOT] {region} - target_col[{target_col}] 변환값: {idx_current}")
             else:
-                idx_current = 100.0
+                print(f"[광공업생산 SSOT] ⚠️ {region} - target_col[{target_col}] 범위 초과 (행 길이: {len(region_agg)})")
+                idx_current = None
             
             if prev_y_col < len(region_agg):
-                idx_prev_year = self.safe_float(region_agg.iloc[prev_y_col] if hasattr(region_agg, 'iloc') else region_agg[prev_y_col], 100)
+                raw_prev_year = region_agg.iloc[prev_y_col] if hasattr(region_agg, 'iloc') else region_agg[prev_y_col]
+                print(f"[광공업생산 SSOT] {region} - prev_y_col[{prev_y_col}] 원본값: {raw_prev_year} (타입: {type(raw_prev_year).__name__})")
+                # parse_excel_value와 동일한 로직: safe_float 사용
+                idx_prev_year = self.safe_float(raw_prev_year, None)
+                print(f"[광공업생산 SSOT] {region} - prev_y_col[{prev_y_col}] 변환값: {idx_prev_year}")
             else:
-                idx_prev_year = 100.0
+                print(f"[광공업생산 SSOT] ⚠️ {region} - prev_y_col[{prev_y_col}] 범위 초과 (행 길이: {len(region_agg)})")
+                idx_prev_year = None
             
-            # 전년동분기대비 증감률 계산
-            if idx_prev_year and idx_prev_year != 0:
-                change_rate = round(((idx_current - idx_prev_year) / idx_prev_year) * 100, 1)
+            # 결측치 체크 및 경고
+            if idx_current is None:
+                print(f"[광공업생산 SSOT] ❌ {region} - 현재 지수 추출 실패! 원본값: {raw_current}")
+            if idx_prev_year is None:
+                print(f"[광공업생산 SSOT] ❌ {region} - 전년 지수 추출 실패! 원본값: {raw_prev_year}")
+            
+            # 기본값 사용 금지 - 실제 데이터가 없으면 None 유지
+            if idx_current is None:
+                print(f"[광공업생산 SSOT] ⚠️ {region} - 현재 지수가 None이므로 이 지역을 건너뜁니다")
+                continue
+            if idx_prev_year is None or idx_prev_year == 0:
+                print(f"[광공업생산 SSOT] ⚠️ {region} - 전년 지수가 None 또는 0이므로 증감률 계산 불가")
+                change_rate = None
             else:
-                change_rate = 0.0
+                # 전년동분기대비 증감률 계산
+                change_rate = round(((idx_current - idx_prev_year) / idx_prev_year) * 100, 1)
             
             # 반올림 완료된 값으로 저장 (SSOT)
             table_data.append({
                 "region_name": region,
                 "region_display": self._get_region_display_name(region),
                 "value": round(idx_current, 1),  # 현재 지수
-                "prev_value": round(idx_prev_year, 1),  # 전년동분기 지수
+                "prev_value": round(idx_prev_year, 1) if idx_prev_year else None,  # 전년동분기 지수
                 "change_rate": change_rate,  # 증감률 (반올림 완료)
             })
+            print(f"[광공업생산 SSOT] ✅ {region} - 지수: {idx_current}, 전년: {idx_prev_year}, 증감률: {change_rate}")
+        
+        print(f"[광공업생산 SSOT] ===== SSOT 추출 완료: {len(table_data)}개 지역 =====\n")
         
         return table_data
     
@@ -1247,16 +1750,23 @@ class 광공업생산Generator(BaseGenerator):
             "regions": regions_data
         }
     
-    def extract_all_data(self) -> dict:
+    def extract_all_data(self) -> Dict[str, Any]:
         """
+        BaseGenerator의 추상 메서드 구현 필수
+        반환값: 템플릿 렌더링에 필요한 모든 데이터를 담은 딕셔너리
+        
         모든 데이터 추출 (Table First, Text Second 방식)
         
         Step 1: Table Data 확정 (SSOT 생성)
         Step 2: Text Variables 추출 (Table Data 재사용)
         Step 3: 나레이션 생성 (Text Variables만 사용)
         """
+        print(f"[DEBUG] 광공업 데이터 추출 시작: {self.excel_path}")
+        
+        # 1. 엑셀 데이터 로드 (기존 로직 활용)
         self.load_data()
         
+        # 2. 데이터 가공
         # Step 1: Table Data 확정 (SSOT 생성)
         table_data = self._extract_table_data_ssot()
         
@@ -1265,19 +1775,30 @@ class 광공업생산Generator(BaseGenerator):
         regional = self.extract_regional_data(table_data)
         
         # Step 3: 나레이션 생성 (Text Variables만 사용)
-        summary_box = self.extract_summary_box(regional)
+        summary_box = self.extract_summary_box(regional, nationwide)
         top3_increase, top3_decrease = self.extract_top3_regions(regional)
         summary_table = self.extract_summary_table(table_data)
         
+        # 3. 필수 반환값 구성 (템플릿 변수명과 일치해야 함)
         # 하드코딩 제거: year와 quarter를 동적으로 사용
+        from utils.text_utils import get_footer_source
+        
         report_year = self.year if self.year else 2025
         report_quarter = self.quarter if self.quarter else 2
+        
+        # 푸터 정보 생성
+        footer_source = get_footer_source(self.report_id)
+        page_number = getattr(self, 'page_number', None) or "- 1 -"
         
         return {
             "report_info": {
                 "year": report_year,
                 "quarter": report_quarter,
                 "data_source": "국가데이터처 국가통계포털(KOSIS), 광업제조업동향조사"
+            },
+            "footer_info": {
+                "source": footer_source,
+                "page_num": page_number
             },
             "nationwide_data": nationwide,
             "regional_data": regional,
@@ -1329,7 +1850,7 @@ def main():
     
     args = parser.parse_args()
     
-    generator = 광공업생산Generator(args.excel)
+    generator = MiningManufacturingGenerator(args.excel)
     
     if args.json:
         generator.extract_all_data()  # 데이터 로드
@@ -1344,5 +1865,23 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # 추상 메서드 구현 검증 테스트
+    try:
+        # 가짜 경로로 인스턴스화 시도
+        gen = MiningManufacturingGenerator("dummy_path.xlsx")
+        print("✅ 인스턴스화 성공: 추상 메서드 구현 완료")
+        print(f"   - extract_all_data 메서드 타입: {type(gen.extract_all_data)}")
+        print(f"   - 반환 타입 어노테이션: {gen.extract_all_data.__annotations__.get('return', 'N/A')}")
+    except TypeError as e:
+        print(f"❌ 인스턴스화 실패: {e}")
+        import sys
+        sys.exit(1)
+    
+    # main() 함수는 실제 사용 시에만 실행
+    import sys
+    if len(sys.argv) > 1:
+        main()
+
+# 하위 호환성을 위한 별칭
+광공업생산Generator = MiningManufacturingGenerator
 

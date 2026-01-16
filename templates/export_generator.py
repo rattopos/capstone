@@ -443,15 +443,31 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     direction = "증가" if change_val >= 0 else "감소"
     verb = "늘어" if change_val >= 0 else "줄어"
     
-    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change_val):.1f}%</span> {direction}"
+    from utils.text_utils import get_josa
+    전국_josa = get_josa("전국", "Topic")
+    nationwide_summary = f"전국{전국_josa} 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change_val):.1f}%</span> {direction}"
     
     # 시도 요약 - None 값 안전 처리
     def safe_change(r):
         c = r.get('change')
         return f"{c:.1f}" if c is not None else "-"
     
-    decrease_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_decrease])
-    increase_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({safe_change(r)}%)" for r in top_increase])
+    # 지역명에 조사 붙이기
+    from utils.text_utils import get_josa
+    
+    def format_region_with_josa(region_list):
+        """지역명 리스트를 조사와 함께 포맷팅"""
+        if not region_list:
+            return ""
+        formatted = []
+        for r in region_list:
+            region_name = r.get('region', r.get('name', ''))
+            josa = get_josa(region_name, "Topic")
+            formatted.append(f"<span class='bold'>{region_name}{josa}</span>({safe_change(r)}%)")
+        return ", ".join(formatted)
+    
+    decrease_names = format_region_with_josa(top_decrease)
+    increase_names = format_region_with_josa(top_increase)
     
     # 감소 지역의 품목
     if top_decrease:
@@ -478,10 +494,10 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     # 전국 방향에 따라 regional_summary 생성
     if change_val >= 0:
         # 전국이 증가일 때: "감소하였으나...증가"
-        regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수출이 줄었으나, {increase_names}은 {increase_product_str} 등의 수출이 늘어 증가"
+        regional_summary = f"{decrease_names} {decrease_product_str} 등의 수출이 줄었으나, {increase_names} {increase_product_str} 등의 수출이 늘어 증가"
     else:
         # 전국이 감소일 때: "증가하였으나...감소"
-        regional_summary = f"{increase_names}은 {increase_product_str} 등의 수출이 늘었으나, {decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소"
+        regional_summary = f"{increase_names} {increase_product_str} 등의 수출이 늘었으나, {decrease_names} {decrease_product_str} 등의 수출이 줄어 감소"
     
     return {
         'headline': headline,
@@ -843,15 +859,30 @@ def _generate_summary_box_from_table(nationwide_data, increase_regions, decrease
     direction = "증가" if change >= 0 else "감소"
     verb = "늘어" if change >= 0 else "줄어"
     
-    nationwide_summary = f"전국 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change):.1f}%</span> {direction}"
+    from utils.text_utils import get_josa
+    전국_josa = get_josa("전국", "Topic")
+    nationwide_summary = f"전국{전국_josa} 수출(<span class='bold'>{amount_str}</span>)은 {product_names} 등의 수출이 {verb} 전년동분기대비 <span class='bold'>{abs(change):.1f}%</span> {direction}"
     
     # 시도 요약
     def safe_change(r):
         c = r.get('change', 0)
         return f"{c:.1f}" if c is not None else "-"
     
-    decrease_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_decrease])
-    increase_names = ", ".join([f"<span class='bold'>{r['name']}</span>({safe_change(r)}%)" for r in top_increase])
+    # 지역명에 조사 붙이기
+    
+    def format_region_with_josa(region_list):
+        """지역명 리스트를 조사와 함께 포맷팅"""
+        if not region_list:
+            return ""
+        formatted = []
+        for r in region_list:
+            region_name = r.get('name', '')
+            josa = get_josa(region_name, "Topic")
+            formatted.append(f"<span class='bold'>{region_name}{josa}</span>({safe_change(r)}%)")
+        return ", ".join(formatted)
+    
+    decrease_names = format_region_with_josa(top_decrease)
+    increase_names = format_region_with_josa(top_increase)
     
     # 품목
     decrease_products = [r['products'][0]['name'] for r in top_decrease if r.get('products')]
@@ -861,9 +892,9 @@ def _generate_summary_box_from_table(nationwide_data, increase_regions, decrease
     increase_product_str = ", ".join(increase_products[:3]) if increase_products else ""
     
     if change >= 0:
-        regional_summary = f"{decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소하였으나, {increase_names}은 {increase_product_str} 등의 수출이 늘어 증가"
+        regional_summary = f"{decrease_names} {decrease_product_str} 등의 수출이 줄어 감소하였으나, {increase_names} {increase_product_str} 등의 수출이 늘어 증가"
     else:
-        regional_summary = f"{increase_names}은 {increase_product_str} 등의 수출이 늘었으나, {decrease_names}은 {decrease_product_str} 등의 수출이 줄어 감소"
+        regional_summary = f"{increase_names} {increase_product_str} 등의 수출이 늘었으나, {decrease_names} {decrease_product_str} 등의 수출이 줄어 감소"
     
     return {
         'headline': headline,

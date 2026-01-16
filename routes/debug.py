@@ -478,7 +478,7 @@ DEBUG_PAGE_TEMPLATE = '''
             
             <div class="action-card">
                 <h3>🗺️ 시도별 섹션만</h3>
-                <p>17개 시도별 경제동향 보도자료와 참고 GRDP를 생성합니다.</p>
+                <p>17개 시도별 경제동향 보도자료를 생성합니다.</p>
                 <button class="action-btn secondary" onclick="generateSection('regional')" {{ 'disabled' if not excel_loaded else '' }}>
                     시도별 섹션 생성
                 </button>
@@ -1653,7 +1653,7 @@ def _generate_regional_pages(excel_path, year, quarter):
                     'id': region['id'],
                     'name': region['name'],
                     'section': '시도별',
-                    'template': 'regional_template.html' if not is_reference else 'grdp_reference_template.html',
+                    'template': 'regional_template.html',
                     'is_reference': is_reference,
                     'content': content
                 })
@@ -1662,7 +1662,7 @@ def _generate_regional_pages(excel_path, year, quarter):
                     'id': region['id'],
                     'name': region['name'],
                     'section': '시도별',
-                    'template': 'regional_template.html' if not is_reference else 'grdp_reference_template.html',
+                    'template': 'regional_template.html',
                     'is_reference': is_reference,
                     'error': error or '생성 실패',
                     'content': f'<div style="padding: 50px; text-align: center; color: #999;"><h3>⚠️ {region["name"]}</h3><p>{error or "생성 실패"}</p></div>'
@@ -1672,7 +1672,7 @@ def _generate_regional_pages(excel_path, year, quarter):
                 'id': region['id'],
                 'name': region['name'],
                 'section': '시도별',
-                'template': 'regional_template.html' if not region.get('is_reference', False) else 'grdp_reference_template.html',
+                'template': 'regional_template.html',
                 'is_reference': region.get('is_reference', False),
                 'error': str(e),
                 'content': f'<div style="padding: 50px; text-align: center; color: #f00;"><h3>❌ {region["name"]}</h3><p>오류: {str(e)}</p></div>'
@@ -1809,20 +1809,6 @@ def _get_toc_sections():
                 entry_number += 1
                 current_page += 1
     
-    # 참고 GRDP 페이지 (2페이지인 경우 구분)
-    reference_page = current_page
-    grdp_pages = PAGE_CONFIG['reference_grdp']
-    reference_entries = []
-    if grdp_pages > 1:
-        for idx in range(1, grdp_pages + 1):
-            reference_entries.append({
-                'name': f'분기GRDP ({idx})',
-                'page': current_page
-            })
-            current_page += 1
-    else:
-        current_page += grdp_pages
-    
     # 통계표 섹션 시작 페이지
     statistics_page = current_page
     stat_config = PAGE_CONFIG['statistics']
@@ -1831,10 +1817,10 @@ def _get_toc_sections():
     # 통계표 목차 항목 생성 (페이지 단위, 각 통계표 2페이지)
     statistics_entries = []
     stat_names = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
-                  '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수', 'GRDP']
+                  '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수']
     entry_number = 1
     for stat_name in stat_names:
-        pages_per_table = 2 if stat_name != 'GRDP' else 2  # 모든 통계표 2페이지
+        pages_per_table = 2  # 모든 통계표 2페이지
         for idx in range(1, pages_per_table + 1):
             statistics_entries.append({
                 'number': entry_number,
@@ -1856,11 +1842,6 @@ def _get_toc_sections():
         'region': {
             'page': region_page,
             'entries': region_entries
-        },
-        'reference': {
-            'name': '분기GRDP', 
-            'page': reference_page,
-            'entries': reference_entries if reference_entries else None
         },
         'statistics': {
             'page': statistics_page,

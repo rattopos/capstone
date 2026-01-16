@@ -15,10 +15,6 @@ from utils.filters import is_missing, format_value
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .excel_cache import get_excel_file, clear_excel_cache
-from .grdp_service import (
-    parse_kosis_grdp_file,
-    get_default_grdp_data
-)
 
 
 def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
@@ -122,11 +118,11 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 사용 가능한 함수 확인
         available_funcs = [name for name in dir(module) if not name.startswith('_')]
         
-        # Generator 클래스 찾기
+        # Generator 클래스 찾기 (BaseGenerator 제외)
         generator_class = None
         for name in dir(module):
             obj = getattr(module, name)
-            if isinstance(obj, type) and name.endswith('Generator'):
+            if isinstance(obj, type) and name.endswith('Generator') and name != 'BaseGenerator':
                 generator_class = obj
                 break
         
@@ -191,26 +187,32 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 sig = inspect.signature(generator_class.__init__)
                 params = list(sig.parameters.keys())
                 
-                # 캐시된 excel_file 전달 시도
+                # year와 quarter는 반드시 포함 (명시적 전달)
                 init_kwargs = {}
-                if 'excel_file' in params:
-                    init_kwargs['excel_file'] = excel_file
                 if 'year' in params:
                     init_kwargs['year'] = year
                 if 'quarter' in params:
                     init_kwargs['quarter'] = quarter
+                if 'excel_file' in params:
+                    init_kwargs['excel_file'] = excel_file
                 
-                if init_kwargs:
+                # year와 quarter가 있으면 명시적으로 전달
+                if 'year' in params and 'quarter' in params:
+                    if 'excel_file' in params:
+                        generator = generator_class(excel_path, year=year, quarter=quarter, excel_file=excel_file)
+                    else:
+                        generator = generator_class(excel_path, year=year, quarter=quarter)
+                elif init_kwargs:
                     generator = generator_class(excel_path, **init_kwargs)
-                elif 'year' in params and 'quarter' in params:
-                    generator = generator_class(excel_path, year=year, quarter=quarter)
-                elif 'year' in params:
-                    generator = generator_class(excel_path, year=year)
                 else:
                     generator = generator_class(excel_path)
             except (TypeError, AttributeError):
-                # 시그니처 확인 실패 시 기본 초기화
-                generator = generator_class(excel_path)
+                # 시그니처 확인 실패 시 year, quarter 포함하여 시도
+                try:
+                    generator = generator_class(excel_path, year=year, quarter=quarter)
+                except TypeError:
+                    # year, quarter 파라미터가 없으면 기본 초기화
+                    generator = generator_class(excel_path)
             
             data = generator.extract_all_data()
         
@@ -357,8 +359,6 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
             print(f"[ERROR] {error_msg}")
             return None, error_msg
         
-        if region_name == '참고_GRDP' or is_reference:
-            return generate_grdp_reference_html(excel_path)
         
         generator_path = TEMPLATES_DIR / 'regional_generator.py'
         if not generator_path.exists():
@@ -381,281 +381,6 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
         return None, error_msg
-
-
-def generate_grdp_reference_html(excel_path, session_data=None):
-    """참고_GRDP 보도자료 HTML 생성"""
-    try:
-        from flask import session
-        # 하드코딩 제거: 동적으로 추출 (기본값은 마지막 fallback)
-        from utils.excel_utils import extract_year_quarter_from_excel
-        try:
-            extracted_year, extracted_quarter = extract_year_quarter_from_excel(excel_path)
-            year = session.get('year', extracted_year) if session_data is None else session_data.get('year', extracted_year)
-            quarter = session.get('quarter', extracted_quarter) if session_data is None else session_data.get('quarter', extracted_quarter)
-        except:
-            # 추출 실패 시 기본값 사용 (최후의 수단)
-            year = session.get('year', 2025) if session_data is None else session_data.get('year', 2025)
-            quarter = session.get('quarter', 2) if session_data is None else session_data.get('quarter', 2)
-        
-        grdp_data = None
-        
-        # 1. 세션에서 추출된 GRDP 데이터 확인
-        if session_data is None:
-            if 'grdp_data' in session and session['grdp_data']:
-                grdp_data = session['grdp_data']
-                print(f"[GRDP] 세션에서 GRDP 데이터 로드 (전국 {grdp_data['national_summary']['growth_rate']}%)")
-        else:
-            grdp_data = session_data.get('grdp_data')
-        
-        # 2. 추출된 JSON 파일 확인
-        if grdp_data is None:
-            grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-            if grdp_json_path.exists():
-                with open(grdp_json_path, 'r', encoding='utf-8') as f:
-                    grdp_data = json.load(f)
-                print(f"[GRDP] JSON 파일에서 GRDP 데이터 로드")
-        
-        # 3. 기초자료는 사용하지 않음 (분석표만 사용)
-        
-        # 4. uploads 폴더에서 KOSIS GRDP 파일 확인
-        if grdp_data is None:
-            kosis_grdp_files = list(UPLOAD_FOLDER.glob('*grdp*.xlsx')) + list(UPLOAD_FOLDER.glob('*GRDP*.xlsx'))
-            kosis_grdp_files += list(UPLOAD_FOLDER.glob('*지역내총생산*.xlsx'))
-            
-            for grdp_file in kosis_grdp_files:
-                print(f"[GRDP] KOSIS GRDP 파일 발견: {grdp_file}")
-                kosis_grdp_data = parse_kosis_grdp_file(str(grdp_file), year, quarter)
-                if kosis_grdp_data:
-                    grdp_data = kosis_grdp_data
-                    if session_data is None:
-                        session['grdp_data'] = grdp_data
-                    grdp_json_path = TEMPLATES_DIR / 'grdp_extracted.json'
-                    with open(grdp_json_path, 'w', encoding='utf-8') as f:
-                        json.dump(grdp_data, f, ensure_ascii=False, indent=2)
-                    print(f"[GRDP] KOSIS GRDP 파일에서 데이터 파싱 성공")
-                    break
-        
-        # 5. 참고_GRDP Generator 로드 시도
-        if grdp_data is None:
-            grdp_generator_path = TEMPLATES_DIR / 'reference_grdp_generator.py'
-            if grdp_generator_path.exists():
-                spec = importlib.util.spec_from_file_location('reference_grdp_generator', str(grdp_generator_path))
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                if hasattr(module, 'generate_report_data'):
-                    grdp_data = module.generate_report_data(excel_path, year, quarter, use_sample=True)
-        
-        # 6. 기본 데이터 사용
-        if grdp_data is None:
-            grdp_data = get_default_grdp_data(year, quarter)
-        
-        # 7. 권역 그룹 정렬 및 플래그 추가 (is_group_start, group_size)
-        if 'regional_data' in grdp_data:
-            grdp_data['regional_data'] = _add_grdp_group_flags(grdp_data['regional_data'])
-        
-        # 연도/분기 정보 업데이트
-        if 'report_info' not in grdp_data:
-            grdp_data['report_info'] = {}
-        grdp_data['report_info']['year'] = year
-        grdp_data['report_info']['quarter'] = quarter
-        grdp_data['report_info']['page_number'] = ''  # 페이지 번호는 더 이상 사용하지 않음
-        
-        # chart_config 기본값 추가 (누락된 경우)
-        if 'chart_config' not in grdp_data:
-            grdp_data['chart_config'] = {
-                'y_axis': {
-                    'min': -6,
-                    'max': 8,
-                    'step': 2
-                }
-            }
-        
-        # 템플릿 렌더링
-        template_path = TEMPLATES_DIR / 'reference_grdp_template.html'
-        if template_path.exists():
-            with open(template_path, 'r', encoding='utf-8') as f:
-                template = Template(f.read())
-            html_content = template.render(**grdp_data)
-        else:
-            html_content = _generate_default_grdp_html(grdp_data)
-        
-        return html_content, None
-        
-    except Exception as e:
-        import traceback
-        error_msg = f"참고_GRDP 보도자료 생성 오류: {str(e)}"
-        print(f"[ERROR] {error_msg}")
-        traceback.print_exc()
-        return None, error_msg
-
-
-def _add_grdp_group_flags(regional_data):
-    """GRDP 데이터에 권역 그룹 플래그 추가 및 순서 정렬"""
-    # 권역별 지역 순서
-    REGION_ORDER = [
-        {"group": None, "region": "전국"},
-        {"group": "경인", "region": "서울"},
-        {"group": "경인", "region": "인천"},
-        {"group": "경인", "region": "경기"},
-        {"group": "충청", "region": "대전"},
-        {"group": "충청", "region": "세종"},
-        {"group": "충청", "region": "충북"},
-        {"group": "충청", "region": "충남"},
-        {"group": "호남", "region": "광주"},
-        {"group": "호남", "region": "전북"},
-        {"group": "호남", "region": "전남"},
-        {"group": "호남", "region": "제주"},
-        {"group": "동북", "region": "대구"},
-        {"group": "동북", "region": "경북"},
-        {"group": "동북", "region": "강원"},
-        {"group": "동남", "region": "부산"},
-        {"group": "동남", "region": "울산"},
-        {"group": "동남", "region": "경남"},
-    ]
-    
-    # region -> item 매핑
-    region_map = {item.get('region'): item for item in regional_data}
-    
-    # 권역별 지역 수 계산
-    group_counts = {}
-    for r in REGION_ORDER:
-        g = r["group"]
-        if g:
-            group_counts[g] = group_counts.get(g, 0) + 1
-    
-    # 정렬된 데이터 생성
-    sorted_data = []
-    prev_group = None
-    
-    for region_info in REGION_ORDER:
-        region = region_info["region"]
-        current_group = region_info["group"]
-        
-        # 기존 데이터에서 해당 지역 찾기
-        item = region_map.get(region)
-        if item is None:
-            # 없으면 플레이스홀더 생성
-            item = {
-                'region': region,
-                'growth_rate': None,
-                'manufacturing': None,
-                'construction': None,
-                'service': None,
-                'other': None,
-                'placeholder': True
-            }
-        else:
-            item = item.copy()  # 원본 수정 방지
-        
-        # 권역 그룹 정보 추가
-        item['region_group'] = current_group
-        
-        # 그룹 시작 플래그
-        is_group_start = (current_group is not None) and (current_group != prev_group)
-        item['is_group_start'] = is_group_start
-        item['group_size'] = group_counts.get(current_group, 0) if is_group_start else 0
-        
-        sorted_data.append(item)
-        prev_group = current_group
-    
-    return sorted_data
-
-
-def _generate_default_grdp_html(grdp_data):
-    """기본 GRDP 참고자료 HTML 생성"""
-    html = """
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>참고 - 분기 지역내총생산(GRDP)</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            font-size: 10pt;
-            line-height: 1.6;
-            color: #000;
-            background: #fff;
-            padding: 20px 40px;
-        }
-        
-        .report-container { max-width: 800px; margin: 0 auto; }
-        
-        h2 {
-            font-size: 14pt;
-            font-weight: bold;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
-        }
-        
-        .info-box {
-            border: 1px dotted #666;
-            padding: 15px;
-            margin-bottom: 20px;
-            background-color: #f9f9f9;
-        }
-        
-        .info-box p {
-            margin-bottom: 10px;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-            margin-top: 20px;
-        }
-        
-        .data-table th, .data-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: center;
-        }
-        
-        .data-table th {
-            background-color: #e3f2fd;
-            font-weight: 500;
-        }
-        
-        .footnote {
-            font-size: 8pt;
-            color: #333;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="report-container">
-        <h2>〔참고〕 분기 지역내총생산(GRDP)</h2>
-        
-        <div class="info-box">
-            <p><strong>■ 분기 지역내총생산(GRDP)이란?</strong></p>
-            <p>일정 기간 동안에 일정 지역 내에서 새로이 창출된 최종생산물을 시장가격으로 평가한 가치의 합입니다.</p>
-            <p>분기 GRDP는 시도별 경제성장 동향을 파악하는 주요 지표로 활용됩니다.</p>
-        </div>
-        
-        <div class="info-box">
-            <p><strong>■ 참고사항</strong></p>
-            <p>· 현재 분기 GRDP 데이터는 별도 발표 자료를 참조하시기 바랍니다.</p>
-            <p>· 본 보도자료에서는 분기 GRDP의 전년동기비 증감률을 시도별로 제공합니다.</p>
-        </div>
-        
-        <div class="footnote">
-            자료: 국가데이터처, 지역소득(GRDP)
-        </div>
-    </div>
-</body>
-</html>
-"""
-    return html
 
 
 def generate_statistics_report_html(excel_path, year, quarter):

@@ -231,11 +231,25 @@ def generate_summary_box(nationwide_data, increase_regions, decrease_regions):
     decreased_ages = [ag for ag in age_groups if ag.get('change', 0) < 0]
     age_names = ", ".join([ag['name'] for ag in decreased_ages]) if decreased_ages else '15~29세, 30~59세'
     
-    nationwide_summary = f"전국 실업률은 <span class='bold'>{rate:.1f}%</span>로, {age_names} 연령대에서 실업률이 내려 전년동분기대비 <span class='bold'>{abs(change):.1f}%p {direction}</span>"
+    from utils.text_utils import get_josa
+    전국_josa = get_josa("전국", "Topic")
+    nationwide_summary = f"전국{전국_josa} 실업률은 <span class='bold'>{rate:.1f}%</span>로, {age_names} 연령대에서 실업률이 내려 전년동분기대비 <span class='bold'>{abs(change):.1f}%p {direction}</span>"
     
-    # 시도 요약
-    increase_names = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({r.get('change', 0):.1f}%p)" for r in increase_regions[:3]])
-    decrease_names_detail = ", ".join([f"<span class='bold'>{r.get('region', r.get('name', ''))}</span>({r.get('change', 0):.1f}%p)" for r in decrease_regions[:3]])
+    # 시도 요약 - 지역명에 조사 붙이기
+    
+    def format_region_with_josa(region_list):
+        """지역명 리스트를 조사와 함께 포맷팅"""
+        if not region_list:
+            return ""
+        formatted = []
+        for r in region_list:
+            region_name = r.get('region', r.get('name', ''))
+            josa = get_josa(region_name, "Topic")
+            formatted.append(f"<span class='bold'>{region_name}{josa}</span>({r.get('change', 0):.1f}%p)")
+        return ", ".join(formatted)
+    
+    increase_names = format_region_with_josa(increase_regions[:3])
+    decrease_names_detail = format_region_with_josa(decrease_regions[:3])
     
     regional_summary = f"{increase_names} 등의 실업률은 상승하였으나, {decrease_names_detail} 등의 실업률은 하락"
     

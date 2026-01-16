@@ -422,13 +422,14 @@ def get_regional_data(df_analysis, df_index):
         })
     
     # 증가/감소 지역 분류
+    # 0.0인 지역은 완전히 제외 (None도 제외)
     increase_regions = sorted(
-        [r for r in regions if r['growth_rate'] > 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] > 0],
         key=lambda x: x['growth_rate'],
         reverse=True
     )
     decrease_regions = sorted(
-        [r for r in regions if r['growth_rate'] < 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] < 0],
         key=lambda x: x['growth_rate']
     )
     
@@ -509,13 +510,14 @@ def _get_regional_from_aggregation(df_index):
         })
     
     # 증가/감소 지역 분류
+    # 0.0인 지역은 완전히 제외 (None도 제외)
     increase_regions = sorted(
-        [r for r in regions if r['growth_rate'] > 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] > 0],
         key=lambda x: x['growth_rate'],
         reverse=True
     )
     decrease_regions = sorted(
-        [r for r in regions if r['growth_rate'] < 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] < 0],
         key=lambda x: x['growth_rate']
     )
     
@@ -621,13 +623,14 @@ def _get_regional_from_raw_data(df):
         })
     
     # 증가/감소 지역 분류
+    # 0.0인 지역은 완전히 제외 (None도 제외)
     increase_regions = sorted(
-        [r for r in regions if r['growth_rate'] > 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] > 0],
         key=lambda x: x['growth_rate'],
         reverse=True
     )
     decrease_regions = sorted(
-        [r for r in regions if r['growth_rate'] < 0],
+        [r for r in regions if r.get('growth_rate') is not None and r['growth_rate'] < 0],
         key=lambda x: x['growth_rate']
     )
     

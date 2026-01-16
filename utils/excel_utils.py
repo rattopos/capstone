@@ -754,7 +754,7 @@ def get_file_type_details(filepath: str) -> dict:
             '광공업생산', '서비스업생산', '소비(소매, 추가)', 
             '고용', '고용(kosis)', '고용률', '실업자 수',
             '지출목적별 물가', '품목성질별 물가', '건설 (공표자료)',
-            '수출', '수입', '분기 GRDP', '완료체크'
+            '수출', '수입', '완료체크'
         }
         
         # 분석표 전용 시트
@@ -845,7 +845,7 @@ def validate_sheet_structure(filepath: str, expected_type: str) -> dict:
             }
             OPTIONAL_RAW_SHEETS = {
                 '소비(소매, 추가)', '지출목적별 물가', '품목성질별 물가',
-                '건설 (공표자료)', '분기 GRDP', '완료체크',
+                '건설 (공표자료)', '완료체크',
                 '고용', '고용(kosis)', '연령별 인구이동', '시군구인구이동'
             }
             
@@ -874,10 +874,6 @@ def validate_sheet_structure(filepath: str, expected_type: str) -> dict:
                 result['valid'] = False
                 result['missing_sheets'] = sorted(missing)
             
-            # GRDP 시트 체크 (선택이지만 경고)
-            grdp_sheets = {'GRDP', 'I GRDP', '분기 GRDP'}
-            if not (sheet_names & grdp_sheets):
-                result['warnings'].append("GRDP 시트가 없음 - 별도 업로드 필요")
         
         return result
         

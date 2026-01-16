@@ -1,0 +1,251 @@
+# -*- coding: utf-8 -*-
+"""
+텍스트 유틸리티 모듈
+나레이션 생성 및 텍스트 포맷팅 함수 제공
+어휘 통제 센터: 보고서 종류별 단어 사용 통제
+"""
+
+from typing import List, Dict, Optional, Tuple
+
+# ============================================================================
+# 어휘 통제 센터: 보고서 유형별 어휘 상수 (Master Vocabulary)
+# ============================================================================
+
+# 보고서 유형별 어휘 세트
+NARRATIVE_MAP = {
+    # 1. 양적 데이터 (Quantity): 늘어/줄어 -> 증가/감소
+    'quantity': {
+        'cause_up': "늘어",
+        'cause_down': "줄어",
+        'result_up': "증가",
+        'result_down': "감소"
+    },
+    # 2. 지수/비율 데이터 (Index/Rate): 올라/내려 -> 상승/하락
+    'price': {
+        'cause_up': "올라",
+        'cause_down': "내려",
+        'result_up': "상승",
+        'result_down': "하락"
+    }
+}
+
+# 리포트 ID별 타입 매핑
+REPORT_TYPE_MAP = {
+    # [Quantity 그룹] - 양적 데이터 (늘어/줄어 -> 증가/감소)
+    'manufacturing': 'quantity',           # 광공업생산
+    'mining': 'quantity',                  # 광공업 (별칭)
+    'service': 'quantity',                 # 서비스업생산
+    'consumption': 'quantity',             # 소비동향
+    'construction': 'quantity',            # 건설
+    'export': 'quantity',                 # 수출
+    'import': 'quantity',                  # 수입
+    'population': 'quantity',              # 인구이동
+    'domestic_migration': 'quantity',      # 인구이동 (별칭)
+    'employment_count': 'quantity',        # 취업자수
+    
+    # [Price 그룹] - 지수/비율 데이터 (올라/내려 -> 상승/하락)
+    'price': 'price',                      # 물가동향
+    'employment': 'price',                 # 고용률
+    'employment_rate': 'price',            # 고용률 (별칭)
+    'unemployment': 'price',               # 실업률
+    'unemployment_rate': 'price',          # 실업률 (별칭)
+}
+
+# ============================================================================
+# 푸터 통제 센터: 보고서별 자료 출처 매핑 (PDF 기준)
+# ============================================================================
+
+# 보고서별 자료 출처 매핑 (PDF 기준)
+SOURCE_MAP = {
+    'manufacturing': "광업제조업동향조사",
+    'mining': "광업제조업동향조사",           # 광공업 (별칭)
+    'service': "서비스업동향조사",
+    'consumption': "서비스업동향조사(소매판매)",
+    'construction': "건설경기동향조사",
+    'export': "무역통계",                    # 관세청 등 출처 확인 필요 시 수정
+    'import': "무역통계",
+    'price': "소비자물가조사",
+    'employment': "경제활동인구조사",
+    'employment_rate': "경제활동인구조사",    # 고용률 (별칭)
+    'unemployment': "경제활동인구조사",
+    'unemployment_rate': "경제활동인구조사",  # 실업률 (별칭)
+    'population': "국내인구이동통계",
+    'domestic_migration': "국내인구이동통계", # 인구이동 (별칭)
+    'regional': "각 통계 원천 참조"          # 시도별은 통합이므로 예외 처리
+}
+
+
+def get_footer_source(report_id: str) -> str:
+    """
+    report_id에 맞는 조사명을 포함한 전체 출처 문자열 반환
+    
+    Args:
+        report_id: 보고서 ID (예: 'mining', 'price', 'employment')
+    
+    Returns:
+        str: 전체 출처 문자열
+        예: "자료: 국가데이터처 국가통계포털(KOSIS), 광업제조업동향조사"
+        예: "자료: 국가데이터처 국가통계포털(KOSIS), 소비자물가조사"
+    """
+    survey_name = SOURCE_MAP.get(report_id, "지역경제동향")
+    return f"자료: 국가데이터처 국가통계포털(KOSIS), {survey_name}"
+
+
+def get_terms(report_id: str, value: float) -> Tuple[str, str]:
+    """
+    report_id와 값(부호)을 넣으면 알맞은 단어 세트를 반환
+    
+    Args:
+        report_id: 보고서 ID (예: 'manufacturing', 'price', 'employment')
+        value: 증감률 값 (양수면 증가, 음수면 감소)
+    
+    Returns:
+        Tuple[str, str]: (원인 서술어, 결과 서술어)
+        예: get_terms('manufacturing', 1.5) -> ('늘어', '증가')
+        예: get_terms('price', -0.5) -> ('내려', '하락')
+        예: get_terms('employment', 0.2) -> ('올라', '상승')
+    
+    Note:
+        - 0은 별도 처리 안함, 호출부에서 0 제외 로직 따름
+        - 알 수 없는 report_id는 기본값 'quantity' 사용
+    """
+    # 1. 타입 결정 (기본값은 quantity)
+    n_type = REPORT_TYPE_MAP.get(report_id, 'quantity')
+    vocabs = NARRATIVE_MAP[n_type]
+    
+    # 2. 값에 따른 어휘 선택 (0은 별도 처리 안함, 호출부에서 0 제외 로직 따름)
+    if value > 0:
+        return vocabs['cause_up'], vocabs['result_up']
+    else:
+        return vocabs['cause_down'], vocabs['result_down']
+
+
+def get_cause_verb(value: float, report_id: str = 'quantity') -> str:
+    """
+    값이 양수면 '늘어' 또는 '올라', 음수면 '줄어' 또는 '내려'를 반환
+    0일 경우 '보합세를 보여' 반환
+    
+    Args:
+        value: 증감률 값 (양수면 증가, 음수면 감소)
+        report_id: 보고서 ID (기본값: 'quantity')
+    
+    Returns:
+        str: 서술어 ('늘어', '줄어', '올라', '내려', '보합세를 보여')
+    
+    Deprecated:
+        이 함수는 하위 호환성을 위해 유지됩니다.
+        새로운 코드는 get_terms() 함수를 사용하세요.
+    """
+    if value == 0:
+        return "보합세를 보여"
+    
+    cause_verb, _ = get_terms(report_id, value)
+    return cause_verb
+
+
+def get_josa(word: str, type: str = "Topic") -> str:
+    """
+    word의 마지막 글자 종성(받침) 유무 확인하여 적절한 조사 반환
+    
+    Args:
+        word: 조사를 붙일 단어 (예: '서울', '부산')
+        type: 조사 타입
+            - "Topic": '은' 또는 '는' 반환
+            - "Subject": '이' 또는 '가' 반환
+    
+    Returns:
+        str: 적절한 조사
+        예: get_josa('서울', 'Topic') -> '은'
+        예: get_josa('경기', 'Topic') -> '는'
+        예: get_josa('서울', 'Subject') -> '이'
+        예: get_josa('경기', 'Subject') -> '가'
+    
+    Note:
+        - 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
+        - 받침이 있으면: 은, 이
+        - 받침이 없으면: 는, 가
+    """
+    if not word:
+        return ""
+    
+    last_char = word[-1]
+    # 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
+    # 0xAC00 = 44032 (십진수)
+    has_batchim = (ord(last_char) - 44032) % 28 > 0
+    
+    if type == "Topic":
+        return "은" if has_batchim else "는"
+    elif type == "Subject":
+        return "이" if has_batchim else "가"
+    return ""
+
+
+def get_contrast_narrative(nationwide_val: float, inc_regions: List[Dict], dec_regions: List[Dict], report_id: str = 'quantity') -> str:
+    """
+    지그재그 화법을 사용한 대조 나레이션 생성
+    
+    논리 구조:
+    1. 전국 증가(+)인 경우: 전국 증가 -> 감소 지역(-, 역접) -> 증가 지역(+, 결론)
+       => "전국은 ~ 증가. [감소지역]은 ~ 감소하였으나, [증가지역]은 ~ 증가"
+       
+    2. 전국 감소(-)인 경우: 전국 감소 -> 증가 지역(+, 역접) -> 감소 지역(-, 결론)
+       => "전국은 ~ 감소. [증가지역]은 ~ 증가하였으나, [감소지역]은 ~ 감소"
+    
+    Args:
+        nationwide_val: 전국 증감률 값 (양수면 증가, 음수면 감소)
+        inc_regions: 증가 지역 리스트 (각 항목은 {'name': str, 'value': float} 형식)
+        dec_regions: 감소 지역 리스트 (각 항목은 {'name': str, 'value': float} 형식)
+        report_id: 보고서 ID (기본값: 'quantity')
+    
+    Returns:
+        str: 생성된 나레이션 텍스트
+    """
+    
+    # 어휘 세트 가져오기
+    inc_cause, inc_result = get_terms(report_id, 1.0)  # 증가 지역용 (양수)
+    dec_cause, dec_result = get_terms(report_id, -1.0)  # 감소 지역용 (음수)
+    
+    # 1. 지역 텍스트 포맷팅 (리스트가 비었을 때 방어 로직 포함)
+    if inc_regions:
+        if len(inc_regions) == 1:
+            region_name = inc_regions[0]['name']
+            josa = get_josa(region_name, "Topic")
+            inc_text = f"{region_name}{josa}({inc_regions[0]['value']}%)"
+        else:
+            # 여러 지역인 경우 첫 번째 지역만 표시하거나 모두 표시
+            inc_names = []
+            for r in inc_regions[:3]:
+                region_name = r['name']
+                josa = get_josa(region_name, "Topic")
+                inc_names.append(f"{region_name}{josa}({r['value']}%)")
+            inc_text = ", ".join(inc_names)
+    else:
+        inc_text = "일부 지역"
+    
+    if dec_regions:
+        if len(dec_regions) == 1:
+            region_name = dec_regions[0]['name']
+            josa = get_josa(region_name, "Topic")
+            dec_text = f"{region_name}{josa}({dec_regions[0]['value']}%)"
+        else:
+            # 여러 지역인 경우 첫 번째 지역만 표시하거나 모두 표시
+            dec_names = []
+            for r in dec_regions[:3]:
+                region_name = r['name']
+                josa = get_josa(region_name, "Topic")
+                dec_names.append(f"{region_name}{josa}({r['value']}%)")
+            dec_text = ", ".join(dec_names)
+    else:
+        dec_text = "일부 지역"
+    
+    # 2. 전국 방향에 따른 지그재그 패턴 결정
+    if nationwide_val > 0:
+        # 패턴: 전국(+) -> 감소 지역(-) -> 증가 지역(+)
+        # 예: "서울은 감소하였으나, 경기는 증가" (quantity)
+        # 예: "서울은 하락하였으나, 경기는 상승" (price)
+        return f"{dec_text} {dec_result}하였으나, {inc_text} {inc_cause} {inc_result}"
+    else:
+        # 패턴: 전국(-) -> 증가 지역(+) -> 감소 지역(-)
+        # 예: "울산은 증가하였으나, 제주는 감소" (quantity)
+        # 예: "울산은 상승하였으나, 제주는 하락" (price)
+        return f"{inc_text} {inc_result}하였으나, {dec_text} {dec_cause} {dec_result}"

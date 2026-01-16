@@ -503,20 +503,6 @@ def _get_toc_sections():
                 entry_number += 1
                 current_page += 1
     
-    # 참고 GRDP 페이지 (2페이지인 경우 구분)
-    reference_page = current_page
-    grdp_pages = PAGE_CONFIG['reference_grdp']
-    reference_entries = []
-    if grdp_pages > 1:
-        for idx in range(1, grdp_pages + 1):
-            reference_entries.append({
-                'name': f'분기GRDP ({idx})',
-                'page': current_page
-            })
-            current_page += 1
-    else:
-        current_page += grdp_pages
-    
     # 통계표 섹션 시작 페이지
     statistics_page = current_page
     stat_config = PAGE_CONFIG['statistics']
@@ -525,10 +511,10 @@ def _get_toc_sections():
     # 통계표 목차 항목 생성 (페이지 단위, 각 통계표 2페이지)
     statistics_entries = []
     stat_names = ['광공업생산지수', '서비스업생산지수', '소매판매액지수', '건설수주액',
-                  '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수', 'GRDP']
+                  '고용률', '실업률', '국내인구이동', '수출액', '수입액', '소비자물가지수']
     entry_number = 1
     for stat_name in stat_names:
-        pages_per_table = 2 if stat_name != 'GRDP' else 2  # 모든 통계표 2페이지
+        pages_per_table = 2  # 모든 통계표 2페이지
         for idx in range(1, pages_per_table + 1):
             statistics_entries.append({
                 'number': entry_number,
@@ -550,11 +536,6 @@ def _get_toc_sections():
         'region': {
             'page': region_page,
             'entries': region_entries
-        },
-        'reference': {
-            'name': '분기GRDP', 
-            'page': reference_page,
-            'entries': reference_entries if reference_entries else None
         },
         'statistics': {
             'page': statistics_page,

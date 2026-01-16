@@ -10,6 +10,7 @@ import json
 import re
 from jinja2 import Template
 from pathlib import Path
+from templates.base_generator import BaseGenerator
 
 # 공종 매핑
 CONSTRUCTION_TYPE_MAPPING = {
@@ -246,17 +247,70 @@ def get_region_indices(df_analysis):
     return region_indices
 
 
-def get_nationwide_data(df_analysis, df_index):
+def _find_header_row(df, max_search_rows=10):
+    """헤더 행 찾기 (연도/분기 정보가 포함된 행)
+    
+    보통 엑셀의 3번째 행(Index 2) 또는 4번째 행(Index 3)이 헤더입니다.
+    """
+    # 우선적으로 Index 2, 3 확인 (일반적인 헤더 위치)
+    for i in [2, 3]:
+        if i < len(df):
+            row = df.iloc[i]
+            row_str = ' '.join([str(v) for v in row.values[:30] if pd.notna(v)])
+            if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+                return i
+    
+    # Index 2, 3에서 못 찾으면 전체 검색
+    for i in range(min(max_search_rows, len(df))):
+        if i in [2, 3]:  # 이미 확인했으므로 스킵
+            continue
+        row = df.iloc[i]
+        row_str = ' '.join([str(v) for v in row.values[:30] if pd.notna(v)])
+        if any(year in row_str for year in ['2023', '2024', '2025', '2026']):
+            return i
+    
+    return 2  # 기본값: 3번째 행 (Index 2)
+
+
+def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
     """전국 데이터 추출"""
     use_raw = df_analysis.attrs.get('use_raw', False)
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
     if use_aggregation_only:
-        return _get_nationwide_from_aggregation(df_index)
+        return _get_nationwide_from_aggregation(df_index, year, quarter)
     
     if use_raw:
         return _get_nationwide_from_raw_data(df_analysis, df_index)
+    
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성 (find_target_col_index 사용을 위해)
+    # 임시로 더미 클래스를 만들어 사용
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기
+    header_row_idx = _find_header_row(df_analysis)
+    header_row = df_analysis.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col_idx = 19  # 기본값 (하위 호환성)
+    
+    # 전분기(-1), 전년동분기(-4) 인덱스 계산
+    prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else -1
+    prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else -1
     
     # 분석 시트에서 전국 총지수 행 (분류단계 0)
     region_indices = get_region_indices(df_analysis)
@@ -264,26 +318,44 @@ def get_nationwide_data(df_analysis, df_index):
     
     if nationwide_idx >= len(df_analysis):
         print(f"[WARNING] 건설동향 - 전국 인덱스 {nationwide_idx}가 범위를 벗어남 (총 행수: {len(df_analysis)})")
-        return _get_nationwide_from_aggregation(df_index)
+        return _get_nationwide_from_aggregation(df_index, year, quarter)
     
     nationwide_row = df_analysis.iloc[nationwide_idx]
     
     # 컬럼 인덱스 확인 및 디버깅
-    if len(nationwide_row) <= 19:
-        print(f"[WARNING] 건설동향 - 전국 행의 컬럼 수가 부족함: {len(nationwide_row)} (최소 20개 필요)")
-        return _get_nationwide_from_aggregation(df_index)
+    if len(nationwide_row) <= target_col_idx:
+        print(f"[WARNING] 건설동향 - 전국 행의 컬럼 수가 부족함: {len(nationwide_row)} (최소 {target_col_idx + 1}개 필요)")
+        return _get_nationwide_from_aggregation(df_index, year, quarter)
     
-    growth_rate = safe_round(nationwide_row[19] if len(nationwide_row) > 19 else None, 1, 0.0)  # 2025.2/4p
-    print(f"[DEBUG] 건설동향 - 전국 증감률: {growth_rate}%")
+    growth_rate = safe_round(nationwide_row[target_col_idx] if len(nationwide_row) > target_col_idx else None, 1, 0.0)
+    print(f"[DEBUG] 건설동향 - 전국 증감률 ({year}년 {quarter}분기, 컬럼 {target_col_idx}): {growth_rate}%")
+    
+    # 검증 로그: 2025년 3분기 데이터가 26.5%인지 확인
+    if year == 2025 and quarter == 3:
+        expected_rate = 26.5
+        if abs(growth_rate - expected_rate) < 0.1:
+            print(f"[✅ 검증 성공] 건설동향 - 전국 증감률이 예상값({expected_rate}%)과 일치합니다: {growth_rate}%")
+        else:
+            print(f"[⚠️ 검증 실패] 건설동향 - 전국 증감률이 예상값({expected_rate}%)과 다릅니다: {growth_rate}%")
+            print(f"[⚠️ 검증 실패] 헤더 행 인덱스: {header_row_idx}, 타겟 컬럼 인덱스: {target_col_idx}")
+            print(f"[⚠️ 검증 실패] 헤더 행 샘플: {[str(v)[:30] if pd.notna(v) else 'NaN' for v in header_row.values[:30]]}")
     
     # 집계 시트에서 전국 지수 (컬럼 1이 지역명)
+    # 집계 시트의 헤더도 찾아서 동적 인덱스 사용
+    index_header_row_idx = _find_header_row(df_index)
+    index_header_row = df_index.iloc[index_header_row_idx]
+    index_target_col_idx = temp_gen.find_target_col_index(index_header_row, year, quarter)
+    if index_target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - 집계 시트에서 {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        index_target_col_idx = 22  # 기본값 (하위 호환성)
+    
     nationwide_idx_row = df_index[df_index[1] == '전국']
     if not nationwide_idx_row.empty:
         idx_row = nationwide_idx_row.iloc[0]
-        if len(idx_row) > 22:
-            construction_index = safe_float(idx_row[22], 0.0)  # 2025.2/4p (억원)
+        if len(idx_row) > index_target_col_idx:
+            construction_index = safe_float(idx_row[index_target_col_idx], 0.0)
         else:
-            print(f"[WARNING] 건설동향 - 집계 행의 컬럼 수가 부족함: {len(idx_row)} (최소 23개 필요)")
+            print(f"[WARNING] 건설동향 - 집계 행의 컬럼 수가 부족함: {len(idx_row)} (최소 {index_target_col_idx + 1}개 필요)")
             construction_index = 0.0
     else:
         print(f"[WARNING] 건설동향 - 집계 시트에서 '전국' 행을 찾을 수 없음")
@@ -302,7 +374,7 @@ def get_nationwide_data(df_analysis, df_index):
         if str(row[3]) != '1':  # 분류단계 1이 아니면 스킵
             continue
         type_name = str(row[5]).strip() if pd.notna(row[5]) else ''  # 공종명
-        type_growth = safe_round(row[19], 1)
+        type_growth = safe_round(row[target_col_idx], 1)
         
         # 토목/건축 증감률 저장
         if '토목' in type_name:
@@ -350,10 +422,33 @@ def get_nationwide_data(df_analysis, df_index):
     }
 
 
-def _get_nationwide_from_aggregation(df_index):
+def _get_nationwide_from_aggregation(df_index, year=None, quarter=None):
     """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)"""
-    # 집계 시트 구조: 1=지역이름, 2=분류단계, 5=공종명
-    # 데이터 컬럼: 19=2024.2/4, 22=2025.2/4p
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기
+    header_row_idx = _find_header_row(df_index)
+    header_row = df_index.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - 집계 시트에서 {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col_idx = 22  # 기본값 (하위 호환성)
+    
+    # 전년동분기(-4) 인덱스 계산
+    prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else -1
     
     # 전국 총지수 행 찾기
     nationwide_rows = df_index[(df_index[1] == '전국') & (df_index[2].astype(str) == '0')]
@@ -373,9 +468,9 @@ def _get_nationwide_from_aggregation(df_index):
     
     nationwide_total = nationwide_rows.iloc[0]
     
-    # 당분기(2025.2/4)와 전년동분기(2024.2/4) 수주액으로 증감률 계산
-    current = safe_float(nationwide_total[22], 0)  # 2025.2/4p (억원)
-    prev = safe_float(nationwide_total[19], 0)  # 2024.2/4 (억원)
+    # 당분기와 전년동분기 수주액으로 증감률 계산
+    current = safe_float(nationwide_total[target_col_idx], 0) if target_col_idx < len(nationwide_total) else 0.0
+    prev = safe_float(nationwide_total[prev_y_idx], 0) if prev_y_idx >= 0 and prev_y_idx < len(nationwide_total) else 0.0
     
     if prev and prev != 0:
         growth_rate = ((current - prev) / prev) * 100
@@ -393,8 +488,8 @@ def _get_nationwide_from_aggregation(df_index):
     building_growth = None
     
     for _, row in nationwide_types.iterrows():
-        curr = safe_float(row[22], None)
-        prev_ind = safe_float(row[19], None)
+        curr = safe_float(row[target_col_idx], None) if target_col_idx < len(row) else None
+        prev_ind = safe_float(row[prev_y_idx], None) if prev_y_idx >= 0 and prev_y_idx < len(row) else None
         type_name = str(row[5]).strip() if pd.notna(row[5]) else ''
         
         if curr is not None and prev_ind is not None and prev_ind != 0:
@@ -446,35 +541,68 @@ def _get_nationwide_from_raw_data(df_analysis, df_index):
     return _get_nationwide_from_aggregation(df_index)
 
 
-def get_regional_data(df_analysis, df_index):
+def get_regional_data(df_analysis, df_index, year=None, quarter=None):
     """시도별 데이터 추출"""
     use_raw = df_analysis.attrs.get('use_raw', False)
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
     if use_aggregation_only:
-        return _get_regional_from_aggregation(df_index)
+        return _get_regional_from_aggregation(df_index, year, quarter)
     
     if use_raw:
         return _get_regional_from_raw_data(df_analysis, df_index)
+    
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기
+    header_row_idx = _find_header_row(df_analysis)
+    header_row = df_analysis.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col_idx = 19  # 기본값 (하위 호환성)
+    
+    # 전분기(-1), 전년동분기(-4) 인덱스 계산
+    prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else -1
+    prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else -1
+    
+    # 과거 분기 인덱스들 (하위 호환성을 위해 기본값 사용)
+    # 실제로는 헤더에서 찾아야 하지만, 일단 상대적 위치로 계산
+    growth_2023_2_idx = target_col_idx - 8 if target_col_idx >= 8 else 11  # 기본값
+    growth_2024_2_idx = target_col_idx - 4 if target_col_idx >= 4 else 15  # 기본값
+    growth_2025_1_idx = target_col_idx - 1 if target_col_idx > 0 else 18  # 기본값
     
     region_indices = get_region_indices(df_analysis)
     regions = []
     
     if not region_indices:
         # 지역 인덱스를 찾을 수 없는 경우 집계 시트에서 계산
-        return _get_regional_from_aggregation(df_index)
+        return _get_regional_from_aggregation(df_index, year, quarter)
     
     for region, start_idx in region_indices.items():
         if region == '전국':
             continue
             
-        # 분류단계 0 행에서 증감률 (컬럼 19: 2025.2/4p)
+        # 분류단계 0 행에서 증감률
         total_row = df_analysis.iloc[start_idx]
-        growth_rate = safe_round(total_row[19], 1)  # 2025.2/4p
-        growth_2023_2 = safe_round(total_row[11], 1)  # 2023 2/4
-        growth_2024_2 = safe_round(total_row[15], 1)  # 2024 2/4
-        growth_2025_1 = safe_round(total_row[18], 1)  # 2025 1/4
+        growth_rate = safe_round(total_row[target_col_idx], 1) if target_col_idx < len(total_row) else 0.0
+        growth_2023_2 = safe_round(total_row[growth_2023_2_idx], 1) if growth_2023_2_idx < len(total_row) else 0.0
+        growth_2024_2 = safe_round(total_row[growth_2024_2_idx], 1) if growth_2024_2_idx < len(total_row) else 0.0
+        growth_2025_1 = safe_round(total_row[growth_2025_1_idx], 1) if growth_2025_1_idx < len(total_row) else 0.0
         
         # 모든 값이 None이면 스킵하지 않고 기본값 0.0 사용
         if growth_rate is None:
@@ -487,10 +615,19 @@ def get_regional_data(df_analysis, df_index):
             growth_2025_1 = 0.0
         
         # 집계 시트에서 지수 (컬럼 1이 지역명)
+        # 집계 시트의 헤더도 찾아서 동적 인덱스 사용
+        index_header_row_idx = _find_header_row(df_index)
+        index_header_row = df_index.iloc[index_header_row_idx]
+        index_target_col_idx = temp_gen.find_target_col_index(index_header_row, year, quarter)
+        if index_target_col_idx == -1:
+            index_target_col_idx = 22  # 기본값 (하위 호환성)
+        index_prev_y_idx = index_target_col_idx - 4 if index_target_col_idx >= 4 else 19  # 기본값
+        
         idx_row = df_index[df_index[1] == region]
         if not idx_row.empty:
-            index_2024 = safe_float(idx_row.iloc[0][19], 0.0)
-            index_2025 = safe_float(idx_row.iloc[0][22], 0.0)
+            idx_row_data = idx_row.iloc[0]
+            index_2024 = safe_float(idx_row_data[index_prev_y_idx], 0.0) if index_prev_y_idx < len(idx_row_data) else 0.0
+            index_2025 = safe_float(idx_row_data[index_target_col_idx], 0.0) if index_target_col_idx < len(idx_row_data) else 0.0
         else:
             index_2024 = 0.0
             index_2025 = 0.0
@@ -512,7 +649,7 @@ def get_regional_data(df_analysis, df_index):
             if str(row[3]) != '1':
                 continue
             type_name = str(row[5]).strip() if pd.notna(row[5]) else ''
-            type_growth = safe_round(row[19], 1)
+            type_growth = safe_round(row[target_col_idx], 1) if target_col_idx < len(row) else None
             
             # 토목/건축 증감률 저장
             if '토목' in type_name:
@@ -573,8 +710,36 @@ def get_regional_data(df_analysis, df_index):
     }
 
 
-def _get_regional_from_aggregation(df_index):
+def _get_regional_from_aggregation(df_index, year=None, quarter=None):
     """집계 시트에서 시도별 데이터 추출"""
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기
+    header_row_idx = _find_header_row(df_index)
+    header_row = df_index.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - 집계 시트에서 {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col_idx = 22  # 기본값 (하위 호환성)
+    
+    # 전년동분기(-4), 전분기(-1) 인덱스 계산
+    prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else 19  # 기본값
+    prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else 21  # 기본값
+    prev_2023_2_idx = target_col_idx - 8 if target_col_idx >= 8 else 15  # 기본값
+    
     individual_regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', 
                           '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
     
@@ -588,10 +753,10 @@ def _get_regional_from_aggregation(df_index):
         region_total = region_total.iloc[0]
         
         # 증감률 계산
-        current = safe_float(region_total[22], 0)  # 2025.2/4p
-        prev = safe_float(region_total[19], 0)  # 2024.2/4
-        prev_2023_2 = safe_float(region_total[15], 0)  # 2023.2/4
-        prev_2025_1 = safe_float(region_total[21], 0)  # 2025.1/4
+        current = safe_float(region_total[target_col_idx], 0) if target_col_idx < len(region_total) else 0.0
+        prev = safe_float(region_total[prev_y_idx], 0) if prev_y_idx < len(region_total) else 0.0
+        prev_2023_2 = safe_float(region_total[prev_2023_2_idx], 0) if prev_2023_2_idx < len(region_total) else 0.0
+        prev_2025_1 = safe_float(region_total[prev_q_idx], 0) if prev_q_idx < len(region_total) else 0.0
         
         if prev and prev != 0:
             growth_rate = ((current - prev) / prev) * 100
@@ -611,8 +776,8 @@ def _get_regional_from_aggregation(df_index):
         building_growth = None
         
         for _, row in region_types.iterrows():
-            curr = safe_float(row[22], None)
-            prev_ind = safe_float(row[19], None)
+            curr = safe_float(row[target_col_idx], None) if target_col_idx < len(row) else None
+            prev_ind = safe_float(row[prev_y_idx], None) if prev_y_idx < len(row) else None
             type_name = str(row[5]).strip() if pd.notna(row[5]) else ''
             
             if curr is not None and prev_ind is not None and prev_ind != 0:
@@ -670,10 +835,10 @@ def _get_regional_from_aggregation(df_index):
 def _get_regional_from_raw_data(df_analysis, df_index):
     """기초자료 시트에서 시도별 데이터 추출"""
     # 기초자료 처리 로직 (필요시 구현)
-    return _get_regional_from_aggregation(df_index)
+    return _get_regional_from_aggregation(df_index, None, None)
 
 
-def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide_data=None):
+def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide_data=None, year=None, quarter=None):
     """표에 들어갈 증감률 및 지수 데이터 생성
     
     Args:
@@ -681,10 +846,67 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
         df_index: 집계 시트 데이터프레임
         regional_data: 시도별 데이터 (이미 계산된 증감률 포함)
         nationwide_data: 전국 데이터 (이미 계산된 증감률 포함)
+        year: 연도
+        quarter: 분기
     """
     # regional_data가 제공되면 그것을 사용 (집계 시트 기반 계산된 값)
     if regional_data and nationwide_data:
-        return _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data)
+        return _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data, year, quarter)
+    
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기 (보통 Index 2 또는 3)
+    header_row_idx = _find_header_row(df_analysis)
+    if header_row_idx == 0:
+        # 기본값이면 2 또는 3 시도
+        for i in [2, 3]:
+            if i < len(df_analysis):
+                row = df_analysis.iloc[i]
+                row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+                if any(year_str in row_str for year_str in ['2023', '2024', '2025', '2026']):
+                    header_row_idx = i
+                    break
+    
+    header_row = df_analysis.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col == -1:
+        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col = 19  # 기본값 (하위 호환성)
+    
+    # 상대적 인덱스 계산
+    prev_q_col = target_col - 1 if target_col > 0 else 18  # 전분기
+    prev_y_col = target_col - 4 if target_col >= 4 else 15  # 전년동분기
+    prev_2y_col = target_col - 8 if target_col >= 8 else 11  # 2년 전 동분기
+    
+    # 집계 시트 헤더도 찾기
+    index_header_row_idx = _find_header_row(df_index)
+    if index_header_row_idx == 0:
+        for i in [2, 3]:
+            if i < len(df_index):
+                row = df_index.iloc[i]
+                row_str = ' '.join([str(v) for v in row.values[:20] if pd.notna(v)])
+                if any(year_str in row_str for year_str in ['2023', '2024', '2025', '2026']):
+                    index_header_row_idx = i
+                    break
+    
+    index_header_row = df_index.iloc[index_header_row_idx]
+    index_target_col = temp_gen.find_target_col_index(index_header_row, year, quarter)
+    if index_target_col == -1:
+        index_target_col = 22  # 기본값 (하위 호환성)
+    index_prev_y_col = index_target_col - 4 if index_target_col >= 4 else 19  # 전년동분기
     
     # 기존 로직 (분석 시트 기반)
     region_indices = get_region_indices(df_analysis)
@@ -703,14 +925,14 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
             'rowspan': None,
             'region': REGION_DISPLAY_MAPPING['전국'],
             'growth_rates': [
-                safe_round(nationwide_row[11], 1),  # 2023 2/4
-                safe_round(nationwide_row[15], 1),  # 2024 2/4
-                safe_round(nationwide_row[18], 1),  # 2025 1/4
-                safe_round(nationwide_row[19], 1),  # 2025 2/4
+                safe_round(nationwide_row[prev_2y_col], 1) if prev_2y_col < len(nationwide_row) else 0.0,  # 2023 2/4
+                safe_round(nationwide_row[prev_y_col], 1) if prev_y_col < len(nationwide_row) else 0.0,  # 2024 2/4
+                safe_round(nationwide_row[prev_q_col], 1) if prev_q_col < len(nationwide_row) else 0.0,  # 2025 1/4
+                safe_round(nationwide_row[target_col], 1) if target_col < len(nationwide_row) else 0.0,  # 2025 2/4
             ],
             'indices': [
-                safe_float(nationwide_idx_row[19], None),  # 2024 2/4
-                safe_float(nationwide_idx_row[22], None),  # 2025 2/4
+                safe_float(nationwide_idx_row[index_prev_y_col], None) if index_prev_y_col < len(nationwide_idx_row) else None,  # 2024 2/4
+                safe_float(nationwide_idx_row[index_target_col], None) if index_target_col < len(nationwide_idx_row) else None,  # 2025 2/4
             ]
         })
     
@@ -734,14 +956,14 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
             entry = {
                 'region': REGION_DISPLAY_MAPPING.get(region, region),
                 'growth_rates': [
-                    safe_round(row[11], 1),  # 2023 2/4
-                    safe_round(row[15], 1),  # 2024 2/4
-                    safe_round(row[18], 1),  # 2025 1/4
-                    safe_round(row[19], 1),  # 2025 2/4
+                    safe_round(row[prev_2y_col], 1) if prev_2y_col < len(row) else 0.0,  # 2023 2/4
+                    safe_round(row[prev_y_col], 1) if prev_y_col < len(row) else 0.0,  # 2024 2/4
+                    safe_round(row[prev_q_col], 1) if prev_q_col < len(row) else 0.0,  # 2025 1/4
+                    safe_round(row[target_col], 1) if target_col < len(row) else 0.0,  # 2025 2/4
                 ],
                 'indices': [
-                    safe_float(idx_row[19], None),  # 2024 2/4
-                    safe_float(idx_row[22], None),  # 2025 2/4
+                    safe_float(idx_row[index_prev_y_col], None) if index_prev_y_col < len(idx_row) else None,  # 2024 2/4
+                    safe_float(idx_row[index_target_col], None) if index_target_col < len(idx_row) else None,  # 2025 2/4
                 ]
             }
             
@@ -757,30 +979,55 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
     return table_data
 
 
-def _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data):
+def _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwide_data, year=None, quarter=None):
     """regional_data에서 이미 계산된 값으로 테이블 생성 (집계 시트 기반)"""
+    # year와 quarter가 없으면 기본값 사용 (하위 호환성)
+    if year is None:
+        year = 2025
+    if quarter is None:
+        quarter = 2
+    
+    # BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        def extract_all_data(self):
+            return {}
+    
+    temp_gen = TempGenerator("", year=year, quarter=quarter)
+    
+    # 헤더 행 찾기
+    header_row_idx = _find_header_row(df_index)
+    header_row = df_index.iloc[header_row_idx]
+    
+    # 동적으로 타겟 컬럼 인덱스 찾기
+    target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
+    if target_col_idx == -1:
+        print(f"[WARNING] 건설동향 - 집계 시트에서 {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
+        target_col_idx = 22  # 기본값 (하위 호환성)
+    
+    # 상대적 인덱스 계산
+    prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else 21  # 전분기
+    prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else 18  # 전년동분기
+    prev_y_prev_q_idx = prev_y_idx - 1 if prev_y_idx > 0 else 17  # 전년 전분기
+    prev_2y_idx = target_col_idx - 8 if target_col_idx >= 8 else 14  # 2년 전 동분기
+    prev_3y_idx = target_col_idx - 12 if target_col_idx >= 12 else 10  # 3년 전 동분기
+    
     table_data = []
     
     # 지역별 데이터를 딕셔너리로 변환
     region_data_map = {r['region']: r for r in regional_data.get('all_regions', [])}
-    
-    # 집계 시트 컬럼 구조 (확인된 값):
-    # 컬럼 10: 2022 2/4, 컬럼 14: 2023 2/4
-    # 컬럼 17: 2024 1/4, 컬럼 18: 2024 2/4
-    # 컬럼 21: 2025 1/4, 컬럼 22: 2025 2/4p
     
     # 전국 데이터 - 집계 시트에서 증감률 직접 계산
     nationwide_idx_row = df_index[(df_index[1] == '전국') & (df_index[2].astype(str) == '0')]
     if not nationwide_idx_row.empty:
         row = nationwide_idx_row.iloc[0]
         
-        # 각 분기의 지수 (정확한 컬럼 위치 사용)
-        idx_2022_2 = safe_float(row[10], 0)  # 2022 2/4
-        idx_2023_2 = safe_float(row[14], 0)  # 2023 2/4
-        idx_2024_1 = safe_float(row[17], 0)  # 2024 1/4
-        idx_2024_2 = safe_float(row[18], 0)  # 2024 2/4
-        idx_2025_1 = safe_float(row[21], 0)  # 2025 1/4
-        idx_2025_2 = safe_float(row[22], 0)  # 2025 2/4p
+        # 각 분기의 지수 (동적 인덱스 사용)
+        idx_2022_2 = safe_float(row[prev_3y_idx], 0) if prev_3y_idx < len(row) else 0.0
+        idx_2023_2 = safe_float(row[prev_2y_idx], 0) if prev_2y_idx < len(row) else 0.0
+        idx_2024_1 = safe_float(row[prev_y_prev_q_idx], 0) if prev_y_prev_q_idx < len(row) else 0.0
+        idx_2024_2 = safe_float(row[prev_y_idx], 0) if prev_y_idx < len(row) else 0.0
+        idx_2025_1 = safe_float(row[prev_q_idx], 0) if prev_q_idx < len(row) else 0.0
+        idx_2025_2 = safe_float(row[target_col_idx], 0) if target_col_idx < len(row) else 0.0
         
         # 증감률 계산 (전년동분기대비)
         growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 else None
@@ -815,13 +1062,13 @@ def _get_growth_rates_table_from_regional_data(df_index, regional_data, nationwi
             
             row = region_idx_row.iloc[0]
             
-            # 각 분기의 지수로 증감률 계산 (정확한 컬럼 위치 사용)
-            idx_2022_2 = safe_float(row[10], 0)  # 2022 2/4
-            idx_2023_2 = safe_float(row[14], 0)  # 2023 2/4
-            idx_2024_1 = safe_float(row[17], 0)  # 2024 1/4
-            idx_2024_2 = safe_float(row[18], 0)  # 2024 2/4
-            idx_2025_1 = safe_float(row[21], 0)  # 2025 1/4
-            idx_2025_2 = safe_float(row[22], 0)  # 2025 2/4p
+            # 각 분기의 지수로 증감률 계산 (동적 인덱스 사용)
+            idx_2022_2 = safe_float(row[prev_3y_idx], 0) if prev_3y_idx < len(row) else 0.0
+            idx_2023_2 = safe_float(row[prev_2y_idx], 0) if prev_2y_idx < len(row) else 0.0
+            idx_2024_1 = safe_float(row[prev_y_prev_q_idx], 0) if prev_y_prev_q_idx < len(row) else 0.0
+            idx_2024_2 = safe_float(row[prev_y_idx], 0) if prev_y_idx < len(row) else 0.0
+            idx_2025_1 = safe_float(row[prev_q_idx], 0) if prev_q_idx < len(row) else 0.0
+            idx_2025_2 = safe_float(row[target_col_idx], 0) if target_col_idx < len(row) else 0.0
             
             growth_2023_2 = ((idx_2023_2 - idx_2022_2) / idx_2022_2 * 100) if idx_2022_2 else None
             growth_2024_2 = ((idx_2024_2 - idx_2023_2) / idx_2023_2 * 100) if idx_2023_2 else None
@@ -934,12 +1181,12 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
     
-    # 데이터 추출
-    nationwide_data = get_nationwide_data(df_analysis, df_index)
-    regional_data = get_regional_data(df_analysis, df_index)
+    # 데이터 추출 (year와 quarter 전달)
+    nationwide_data = get_nationwide_data(df_analysis, df_index, year, quarter)
+    regional_data = get_regional_data(df_analysis, df_index, year, quarter)
     summary_box = get_summary_box_data(regional_data)
     # 테이블 데이터 생성 (regional_data와 nationwide_data 전달하여 집계 시트 기반 계산)
-    table_data = get_growth_rates_table(df_analysis, df_index, regional_data, nationwide_data)
+    table_data = get_growth_rates_table(df_analysis, df_index, regional_data, nationwide_data, year, quarter)
     
     # Top 3 증가/감소 지역 (토목/건축 증감률 및 세부 품목 포함)
     # 기본값 사용하지 않음 (데이터 무결성 원칙)
