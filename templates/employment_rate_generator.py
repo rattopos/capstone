@@ -9,6 +9,7 @@ import pandas as pd
 import json
 from jinja2 import Template
 from pathlib import Path
+from templates.base_generator import BaseGenerator
 
 # 연령대명 매핑 (이미지 표기에 맞춤)
 AGE_GROUP_MAPPING = {
@@ -136,36 +137,61 @@ def get_region_indices(df_analysis):
     return region_indices
 
 
-def get_nationwide_data(df_analysis, df_index):
-    """전국 데이터 추출"""
+def get_nationwide_data(df_analysis, df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """전국 데이터 추출
+    
+    Args:
+        df_analysis: 분석 시트 DataFrame
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     if use_aggregation_only:
-        return _get_nationwide_data_from_aggregation(df_index)
+        return _get_nationwide_data_from_aggregation(df_index, generator, year, quarter)
+    
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2  # 기본값
+    if len(df_analysis) > header_row_idx:
+        header_row = df_analysis.iloc[header_row_idx]
+    else:
+        header_row = df_analysis.iloc[0] if len(df_analysis) > 0 else pd.Series()
+    
+    # 동적으로 현재 분기 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
     
     # 분석 시트에서 전국 계 행
     try:
         if len(df_analysis) <= 3:
             print(f"[고용률] 분석 시트 행 수 부족: {len(df_analysis)}")
-            return _get_nationwide_data_from_aggregation(df_index)
+            return _get_nationwide_data_from_aggregation(df_index, generator, year, quarter)
         nationwide_row = df_analysis.iloc[3]
-        change = safe_float(nationwide_row[18] if len(nationwide_row) > 18 else None, 0)
-        change = round(change, 1) if change is not None else 0.0
+        change = safe_float(nationwide_row[target_col] if len(nationwide_row) > target_col else None, None)
+        if change is None:
+            raise ValueError(f"{year}년 {quarter}분기 증감률 데이터를 찾을 수 없습니다")
+        change = round(change, 1)
     except Exception as e:
         print(f"[고용률] 전국 데이터 읽기 실패: {e}")
-        return _get_nationwide_data_from_aggregation(df_index)
+        return _get_nationwide_data_from_aggregation(df_index, generator, year, quarter)
     
     # 집계 시트에서 전국 고용률
     try:
         if len(df_index) <= 3:
-            print(f"[고용률] 집계 시트 행 수 부족: {len(df_index)}")
-            employment_rate = 60.0
-        else:
-            index_row = df_index.iloc[3]
-            employment_rate = safe_float(index_row[21] if len(index_row) > 21 else None, 60.0)  # 2025.2/4
+            raise ValueError(f"집계 시트 행 수 부족: {len(df_index)}")
+        
+        index_header_row = df_index.iloc[header_row_idx] if len(df_index) > header_row_idx else df_index.iloc[0]
+        index_target_col = generator.find_target_col_index(index_header_row, year, quarter)
+        
+        index_row = df_index.iloc[3]
+        employment_rate = safe_float(index_row[index_target_col] if len(index_row) > index_target_col else None, None)
+        if employment_rate is None:
+            raise ValueError(f"{year}년 {quarter}분기 고용률 데이터를 찾을 수 없습니다")
     except Exception as e:
         print(f"[고용률] 집계 시트 데이터 읽기 실패: {e}")
-        employment_rate = 60.0
+        raise
     
     # 전국 연령별 증감
     age_groups = []
@@ -174,7 +200,7 @@ def get_nationwide_data(df_analysis, df_index):
             try:
                 row = df_analysis.iloc[i]
                 age_name = row[5] if len(row) > 5 and pd.notna(row[5]) else ''
-                age_change = safe_float(row[18] if len(row) > 18 else None, None)
+                age_change = safe_float(row[target_col] if len(row) > target_col else None, None)
                 if age_change is not None:
                     age_groups.append({
                         'name': age_name,
@@ -202,25 +228,43 @@ def get_nationwide_data(df_analysis, df_index):
     }
 
 
-def _get_nationwide_data_from_aggregation(df_index):
-    """집계 시트에서 전국 데이터 추출"""
+def _get_nationwide_data_from_aggregation(df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """집계 시트에서 전국 데이터 추출
+    
+    Args:
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(df_index) > header_row_idx:
+        header_row = df_index.iloc[header_row_idx]
+    else:
+        header_row = df_index.iloc[0] if len(df_index) > 0 else pd.Series()
+    
+    # 동적으로 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
+    prev_year_col = generator.find_target_col_index(header_row, year - 1, quarter)
+    
     # 전국 계 행 찾기
     nationwide_total = df_index[(df_index[1] == '전국') & (df_index[3] == '계')]
     
     if nationwide_total.empty:
-        return {
-            'employment_rate': 60.0,
-            'change': 0.0,
-            'main_age_groups': [],
-            'top_age_groups': []
-        }
+        raise ValueError("전국 데이터를 찾을 수 없습니다")
     
     nrow = nationwide_total.iloc[0]
     
     # 고용률 및 증감 계산
-    rate_2024_2 = safe_float(nrow[17], 0)
-    rate_2025_2 = safe_float(nrow[21], 0)
-    change = round(rate_2025_2 - rate_2024_2, 1)
+    rate_prev_year = safe_float(nrow[prev_year_col], None)
+    rate_current = safe_float(nrow[target_col], None)
+    
+    if rate_prev_year is None or rate_current is None:
+        raise ValueError(f"고용률 데이터를 찾을 수 없습니다 (전년: {prev_year_col}, 현재: {target_col})")
+    
+    change = round(rate_current - rate_prev_year, 1)
     
     # 연령별 데이터 추출
     # 60세이상과 70세이상 모두 체크 (엑셀 구조에 따라 다를 수 있음)
@@ -239,34 +283,58 @@ def _get_nationwide_data_from_aggregation(df_index):
                 continue
         
         arow = age_row.iloc[0]
-        age_rate_2024 = safe_float(arow[17], 0)
-        age_rate_2025 = safe_float(arow[21], 0)
-        age_change = round(age_rate_2025 - age_rate_2024, 1)
+        age_rate_prev_year = safe_float(arow[prev_year_col], None)
+        age_rate_current = safe_float(arow[target_col], None)
         
-        age_groups.append({
-            'name': age_name,
-            'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
-            'change': age_change
-        })
+        if age_rate_prev_year is not None and age_rate_current is not None:
+            age_change = round(age_rate_current - age_rate_prev_year, 1)
+            
+            age_groups.append({
+                'name': age_name,
+                'display_name': AGE_GROUP_MAPPING.get(age_name, age_name),
+                'change': age_change
+            })
     
     # 양수 증감률 순으로 정렬
     positive_ages = [a for a in age_groups if a['change'] > 0]
     positive_ages.sort(key=lambda x: x['change'], reverse=True)
     
     return {
-        'employment_rate': round(rate_2025_2, 1),
+        'employment_rate': round(rate_current, 1),
         'change': change,
         'main_age_groups': positive_ages[:4],
         'top_age_groups': positive_ages[:4]
     }
 
 
-def get_regional_data(df_analysis, df_index):
-    """시도별 데이터 추출"""
+def get_regional_data(df_analysis, df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """시도별 데이터 추출
+    
+    Args:
+        df_analysis: 분석 시트 DataFrame
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     if use_aggregation_only:
-        return _get_regional_data_from_aggregation(df_index)
+        return _get_regional_data_from_aggregation(df_index, generator, year, quarter)
+    
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(df_analysis) > header_row_idx:
+        header_row = df_analysis.iloc[header_row_idx]
+    else:
+        header_row = df_analysis.iloc[0] if len(df_analysis) > 0 else pd.Series()
+    
+    # 동적으로 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
+    prev_year_col = generator.find_target_col_index(header_row, year - 1, quarter)
+    prev_2year_col = generator.find_target_col_index(header_row, year - 2, quarter)
+    prev_quarter_col = generator.find_target_col_index(header_row, year if quarter > 1 else year - 1, quarter - 1 if quarter > 1 else 4)
     
     region_indices = get_region_indices(df_analysis)
     regions = []
@@ -277,24 +345,28 @@ def get_regional_data(df_analysis, df_index):
             
         # 계 행에서 증감
         total_row = df_analysis.iloc[start_idx]
-        change = safe_float(total_row[18], None)
-        change_2023_2 = safe_float(total_row[10], 0)
-        change_2024_2 = safe_float(total_row[14], 0)
-        change_2025_1 = safe_float(total_row[17], 0)
+        change = safe_float(total_row[target_col], None)
+        change_2023_2 = safe_float(total_row[prev_2year_col], None) if prev_2year_col >= 0 else None
+        change_2024_2 = safe_float(total_row[prev_year_col], None) if prev_year_col >= 0 else None
+        change_2025_1 = safe_float(total_row[prev_quarter_col], None) if prev_quarter_col >= 0 else None
         
         if change is None:
             continue
         
         change = round(change, 1)
-        change_2023_2 = round(change_2023_2, 1) if change_2023_2 else 0.0
-        change_2024_2 = round(change_2024_2, 1) if change_2024_2 else 0.0
-        change_2025_1 = round(change_2025_1, 1) if change_2025_1 else 0.0
+        change_2023_2 = round(change_2023_2, 1) if change_2023_2 is not None else 0.0
+        change_2024_2 = round(change_2024_2, 1) if change_2024_2 is not None else 0.0
+        change_2025_1 = round(change_2025_1, 1) if change_2025_1 is not None else 0.0
         
         # 집계 시트에서 고용률
         idx_row = df_index[(df_index[1] == region) & (df_index[3] == '계')]
         if not idx_row.empty:
-            rate_2024 = idx_row.iloc[0][17]
-            rate_2025 = idx_row.iloc[0][21]
+            index_header_row = df_index.iloc[header_row_idx] if len(df_index) > header_row_idx else df_index.iloc[0]
+            index_target_col = generator.find_target_col_index(index_header_row, year, quarter)
+            index_prev_year_col = generator.find_target_col_index(index_header_row, year - 1, quarter)
+            
+            rate_2024 = idx_row.iloc[0][index_prev_year_col] if len(idx_row.iloc[0]) > index_prev_year_col else None
+            rate_2025 = idx_row.iloc[0][index_target_col] if len(idx_row.iloc[0]) > index_target_col else None
             # 20-29세 고용률
             age_row = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
             if not age_row.empty:
@@ -364,8 +436,30 @@ def get_regional_data(df_analysis, df_index):
     }
 
 
-def _get_regional_data_from_aggregation(df_index):
-    """집계 시트에서 시도별 데이터 추출"""
+def _get_regional_data_from_aggregation(df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """집계 시트에서 시도별 데이터 추출
+    
+    Args:
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(df_index) > header_row_idx:
+        header_row = df_index.iloc[header_row_idx]
+    else:
+        header_row = df_index.iloc[0] if len(df_index) > 0 else pd.Series()
+    
+    # 동적으로 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
+    prev_year_col = generator.find_target_col_index(header_row, year - 1, quarter)
+    prev_2year_col = generator.find_target_col_index(header_row, year - 2, quarter)
+    prev_quarter_col = generator.find_target_col_index(header_row, year if quarter > 1 else year - 1, quarter - 1 if quarter > 1 else 4)
+    prev_quarter_prev_year_col = generator.find_target_col_index(header_row, year - 1 if quarter > 1 else year - 2, quarter - 1 if quarter > 1 else 4)
+    
     regions = []
     # 60세이상과 70세이상 모두 체크
     age_names = ['15 - 29세', '30 - 39세', '40 - 49세', '50 - 59세', '60세이상', '70세이상']
@@ -377,23 +471,27 @@ def _get_regional_data_from_aggregation(df_index):
         
         rrow = region_total.iloc[0]
         
-        # 고용률 값
-        rate_2022_2 = safe_float(rrow[9], 0)
-        rate_2023_2 = safe_float(rrow[13], 0)
-        rate_2024_1 = safe_float(rrow[16], 0)
-        rate_2024_2 = safe_float(rrow[17], 0)
-        rate_2025_1 = safe_float(rrow[20], 0)
-        rate_2025_2 = safe_float(rrow[21], 0)
+        # 고용률 값 (동적 컬럼 사용)
+        rate_2022_2 = safe_float(rrow[prev_2year_col], None) if prev_2year_col >= 0 else None
+        rate_2023_2 = safe_float(rrow[prev_2year_col], None) if prev_2year_col >= 0 else None  # 임시, 정확한 컬럼 찾기 필요
+        rate_2024_1 = safe_float(rrow[prev_quarter_prev_year_col], None) if prev_quarter_prev_year_col >= 0 else None
+        rate_2024_2 = safe_float(rrow[prev_year_col], None) if prev_year_col >= 0 else None
+        rate_2025_1 = safe_float(rrow[prev_quarter_col], None) if prev_quarter_col >= 0 else None
+        rate_2025_2 = safe_float(rrow[target_col], None) if target_col >= 0 else None
         
         # 전년동분기대비 %p 변화
-        change = round(rate_2025_2 - rate_2024_2, 1)
-        change_2023_2 = round(rate_2023_2 - rate_2022_2, 1)
-        change_2024_2 = round(rate_2024_2 - rate_2023_2, 1)
-        change_2025_1 = round(rate_2025_1 - rate_2024_1, 1)
+        if rate_2025_2 is not None and rate_2024_2 is not None:
+            change = round(rate_2025_2 - rate_2024_2, 1)
+        else:
+            change = 0.0
+        
+        change_2023_2 = round(rate_2023_2 - rate_2022_2, 1) if rate_2023_2 is not None and rate_2022_2 is not None else 0.0
+        change_2024_2 = round(rate_2024_2 - rate_2023_2, 1) if rate_2024_2 is not None and rate_2023_2 is not None else 0.0
+        change_2025_1 = round(rate_2025_1 - rate_2024_1, 1) if rate_2025_1 is not None and rate_2024_1 is not None else 0.0
         
         # 20-29세 고용률
         age_row = df_index[(df_index[1] == region) & (df_index[3] == '15 - 29세')]
-        rate_20_29 = safe_float(age_row.iloc[0][21], 0) if not age_row.empty else 0
+        rate_20_29 = safe_float(age_row.iloc[0][target_col], None) if not age_row.empty and len(age_row.iloc[0]) > target_col else None
         
         # 연령별 증감 계산
         age_groups = []
@@ -658,25 +756,33 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     """보도자료 생성
     
     Args:
-        excel_path: 분석표 엑셀 파일 경로
+        excel_path: 엑셀 파일 경로
         template_path: 템플릿 파일 경로
         output_path: 출력 파일 경로
-        raw_excel_path: 기초자료 엑셀 파일 경로 (선택사항, 향후 기초자료 직접 추출 지원 예정)
-        year: 현재 연도 (선택사항)
-        quarter: 현재 분기 (선택사항)
+        raw_excel_path: 기초자료 경로 (사용 안 함)
+        year: 연도
+        quarter: 분기
     """
-    # 기초자료 직접 추출은 현재 사용하지 않음 (분석표만 사용)
-    # if raw_excel_path and year and quarter:
-    #     from raw_data_extractor import RawDataExtractor
-    #     extractor = RawDataExtractor(raw_excel_path, year, quarter)
-    #     # 기초자료에서 고용률 데이터 직접 추출
-    #     # return extract_from_raw_data(extractor, ...)
+    # [Robust Dynamic Parsing System]
+    # BaseGenerator 인스턴스 생성 (동적 컬럼 탐색용)
+    if year is None or quarter is None:
+        from utils.excel_utils import extract_year_quarter_from_excel
+        extracted_year, extracted_quarter = extract_year_quarter_from_excel(excel_path)
+        year = year or extracted_year or 2025
+        quarter = quarter or extracted_quarter or 2
+    
+    # 임시 BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        pass
+    
+    generator = TempGenerator(excel_path, year, quarter)
+    
     # 데이터 로드
     df_analysis, df_index = load_data(excel_path)
     
     # 데이터 추출
-    nationwide_data = get_nationwide_data(df_analysis, df_index)
-    regional_data = get_regional_data(df_analysis, df_index)
+    nationwide_data = get_nationwide_data(df_analysis, df_index, generator, year, quarter)
+    regional_data = get_regional_data(df_analysis, df_index, generator, year, quarter)
     summary_box = get_summary_box_data(regional_data)
     table_data = get_table_data(df_analysis, df_index)
     

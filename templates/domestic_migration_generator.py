@@ -9,6 +9,7 @@ import pandas as pd
 import json
 from jinja2 import Environment, FileSystemLoader
 import os
+from templates.base_generator import BaseGenerator
 
 # 시도 순서
 SIDO_ORDER = [
@@ -85,8 +86,29 @@ def load_data(excel_path):
     reference_df = pd.read_excel(excel_path, sheet_name=reference_sheet, header=None)
     return summary_df, reference_df
 
-def get_sido_data(summary_df):
-    """시도별 순인구이동 데이터를 추출합니다."""
+def get_sido_data(summary_df, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """시도별 순인구이동 데이터를 추출합니다.
+    
+    Args:
+        summary_df: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기 (보통 2행 또는 3행)
+    header_row_idx = 2  # 기본값, 필요시 동적으로 찾을 수 있음
+    if len(summary_df) > header_row_idx:
+        header_row = summary_df.iloc[header_row_idx]
+    else:
+        header_row = summary_df.iloc[0] if len(summary_df) > 0 else pd.Series()
+    
+    # 동적으로 각 분기 컬럼 찾기
+    col_2025_24 = generator.find_target_col_index(header_row, 2025, 2)
+    col_2025_14 = generator.find_target_col_index(header_row, 2025, 1)
+    col_2024_24 = generator.find_target_col_index(header_row, 2024, 2)
+    col_2023_24 = generator.find_target_col_index(header_row, 2023, 2)
+    
     sido_data = {}
     
     for i in range(3, len(summary_df)):
@@ -96,10 +118,10 @@ def get_sido_data(summary_df):
         if age_group == '합계':
             sido = row[4]
             if sido in SIDO_ORDER:
-                net_migration_2025_24 = safe_float(row[25], 0)  # 2025.2/4 순이동
-                net_migration_2025_14 = safe_float(row[24], 0)  # 2025.1/4
-                net_migration_2024_24 = safe_float(row[21], 0)  # 2024.2/4
-                net_migration_2023_24 = safe_float(row[17], 0)  # 2023.2/4
+                net_migration_2025_24 = safe_float(row[col_2025_24], 0)
+                net_migration_2025_14 = safe_float(row[col_2025_14], 0)
+                net_migration_2024_24 = safe_float(row[col_2024_24], 0)
+                net_migration_2023_24 = safe_float(row[col_2023_24], 0)
                 
                 sido_data[sido] = {
                     'net_migration': net_migration_2025_24,
@@ -108,8 +130,26 @@ def get_sido_data(summary_df):
     
     return sido_data
 
-def get_sido_age_data(summary_df):
-    """시도별 연령별 순인구이동 데이터를 추출합니다."""
+def get_sido_age_data(summary_df, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """시도별 연령별 순인구이동 데이터를 추출합니다.
+    
+    Args:
+        summary_df: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(summary_df) > header_row_idx:
+        header_row = summary_df.iloc[header_row_idx]
+    else:
+        header_row = summary_df.iloc[0] if len(summary_df) > 0 else pd.Series()
+    
+    # 동적으로 현재 분기 컬럼 찾기
+    col_current = generator.find_target_col_index(header_row, year, quarter)
+    
     sido_age_data = {}
     current_sido = None
     
@@ -119,7 +159,7 @@ def get_sido_age_data(summary_df):
         age_group = row[7]
         rank = row[6]
         level = row[5]
-        net_migration = safe_float(row[25], 0)  # 2025.2/4 순이동
+        net_migration = safe_float(row[col_current], 0)
         
         if sido in SIDO_ORDER and age_group == '합계':
             current_sido = sido
@@ -242,8 +282,15 @@ def generate_summary_box(inflow_regions, outflow_regions):
         'outflow_summary': outflow_summary
     }
 
-def generate_summary_table(sido_data, sido_age_data):
-    """요약 테이블 데이터를 생성합니다."""
+def generate_summary_table(sido_data, sido_age_data, year: int = 2025, quarter: int = 2):
+    """요약 테이블 데이터를 생성합니다.
+    
+    Args:
+        sido_data: 시도별 데이터
+        sido_age_data: 시도별 연령별 데이터
+        year: 현재 연도
+        quarter: 현재 분기
+    """
     rows = []
     
     # 권역별 시도
@@ -279,18 +326,30 @@ def generate_summary_table(sido_data, sido_age_data):
             
             rows.append(row_data)
     
+    # 동적으로 분기 컬럼명 생성
+    current_quarter_str = f"{year}.{quarter}/4"
+    prev_quarter = quarter - 1 if quarter > 1 else 4
+    prev_quarter_year = year if quarter > 1 else year - 1
+    prev_year = year - 1
+    prev_2year = year - 2
+    
     return {
         'rows': rows,
         'columns': {
-            'current_quarter': '2025.2/4',
-            'quarter_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4']
+            'current_quarter': current_quarter_str,
+            'quarter_columns': [
+                f"{prev_2year}.2/4",
+                f"{prev_year}.2/4",
+                f"{prev_quarter_year}.{prev_quarter}/4",
+                current_quarter_str
+            ]
         }
     }
 
-class DomesticMigrationGenerator:
+class DomesticMigrationGenerator(BaseGenerator):
     """국내인구이동 보도자료 생성 클래스"""
     
-    def __init__(self, excel_path: str, year=None, quarter=None):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
         """
         초기화
         
@@ -298,14 +357,19 @@ class DomesticMigrationGenerator:
             excel_path: 엑셀 파일 경로
             year: 연도 (선택사항)
             quarter: 분기 (선택사항)
+            excel_file: 캐시된 ExcelFile 객체 (선택사항)
         """
-        self.excel_path = excel_path
-        self.year = year
-        self.quarter = quarter
+        super().__init__(excel_path, year, quarter, excel_file)
         self.summary_df = None
         self.reference_df = None
         self.sido_data = None
         self.sido_age_data = None
+        
+        # 기본값 설정
+        if self.year is None:
+            self.year = 2025
+        if self.quarter is None:
+            self.quarter = 2
     
     def load_data(self):
         """엑셀 파일에서 데이터를 로드합니다."""
@@ -315,9 +379,9 @@ class DomesticMigrationGenerator:
         """모든 데이터 추출"""
         self.load_data()
         
-        # 시도별 데이터 추출
-        self.sido_data = get_sido_data(self.summary_df)
-        self.sido_age_data = get_sido_age_data(self.summary_df)
+        # 시도별 데이터 추출 (동적 컬럼 탐색 사용)
+        self.sido_data = get_sido_data(self.summary_df, self, self.year, self.quarter)
+        self.sido_age_data = get_sido_age_data(self.summary_df, self, self.year, self.quarter)
         
         # 시도별 분류
         inflow_regions, outflow_regions = get_regional_data(self.sido_data, self.sido_age_data)
@@ -330,7 +394,7 @@ class DomesticMigrationGenerator:
         summary_box = generate_summary_box(inflow_regions, outflow_regions)
         
         # 요약 테이블
-        summary_table = generate_summary_table(self.sido_data, self.sido_age_data)
+        summary_table = generate_summary_table(self.sido_data, self.sido_age_data, self.year, self.quarter)
         
         return {
             'report_info': {

@@ -9,6 +9,7 @@ import pandas as pd
 import json
 from jinja2 import Template
 from pathlib import Path
+from templates.base_generator import BaseGenerator
 
 # 업태명 매핑
 BUSINESS_MAPPING = {
@@ -147,40 +148,67 @@ def get_region_indices(df_analysis):
     return region_indices
 
 
-def get_nationwide_data(df_analysis, df_index):
-    """전국 데이터 추출"""
+def get_nationwide_data(df_analysis, df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """전국 데이터 추출
+    
+    Args:
+        df_analysis: 분석 시트 DataFrame
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
     use_raw = df_analysis.attrs.get('use_raw', False)
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
     
     if use_raw:
-        return _get_nationwide_from_raw_data(df_analysis)
+        return _get_nationwide_from_raw_data(df_analysis, generator, year, quarter)
     
     # 집계 시트 기반으로 추출 (분석 시트가 비어있는 경우 포함)
     if use_aggregation_only:
-        return _get_nationwide_from_aggregation(df_index)
+        return _get_nationwide_from_aggregation(df_index, generator, year, quarter)
+    
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(df_analysis) > header_row_idx:
+        header_row = df_analysis.iloc[header_row_idx]
+    else:
+        header_row = df_analysis.iloc[0] if len(df_analysis) > 0 else pd.Series()
+    
+    # 동적으로 현재 분기 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
     
     # 분석 시트에서 전국 총지수 행
     try:
         nationwide_row = df_analysis.iloc[3]
-        growth_rate = safe_float(nationwide_row[20], 0)
-        growth_rate = round(growth_rate, 1) if growth_rate else 0.0
-    except (IndexError, KeyError):
-        return _get_nationwide_from_aggregation(df_index)
+        growth_rate = safe_float(nationwide_row[target_col], None)
+        if growth_rate is None:
+            raise ValueError(f"{year}년 {quarter}분기 증감률 데이터를 찾을 수 없습니다")
+        growth_rate = round(growth_rate, 1)
+    except (IndexError, KeyError, ValueError) as e:
+        print(f"[소비동향] 분석 시트 데이터 읽기 실패: {e}")
+        return _get_nationwide_from_aggregation(df_index, generator, year, quarter)
     
     # 집계 시트에서 전국 지수
     try:
+        index_header_row = df_index.iloc[header_row_idx] if len(df_index) > header_row_idx else df_index.iloc[0]
+        index_target_col = generator.find_target_col_index(index_header_row, year, quarter)
+        
         index_row = df_index.iloc[3]
-        sales_index = safe_float(index_row[24], 100)  # 2025.2/4p
+        sales_index = safe_float(index_row[index_target_col], None)
+        if sales_index is None:
+            sales_index = 100.0  # 기본값
     except (IndexError, KeyError):
         sales_index = 100.0
     
-    # 전국 업태별 증감률 (컬럼 20: 2025.2/4)
+    # 전국 업태별 증감률
     businesses = []
     for i in range(4, 12):
         try:
             row = df_analysis.iloc[i]
             business_name = row[7]
-            business_growth = safe_float(row[20], None)
+            business_growth = safe_float(row[target_col], None)
             if business_growth is not None:
                 businesses.append({
                     'name': BUSINESS_MAPPING.get(business_name, business_name),
@@ -201,10 +229,26 @@ def get_nationwide_data(df_analysis, df_index):
     }
 
 
-def _get_nationwide_from_aggregation(df_index):
-    """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)"""
-    # 집계 시트 구조: 2=지역이름, 3=분류단계, 5=업태코드, 6=업태종류
-    # 데이터 컬럼: 20=2024.2/4, 24=2025.2/4
+def _get_nationwide_from_aggregation(df_index, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """집계 시트에서 전국 데이터 추출 (증감률 직접 계산)
+    
+    Args:
+        df_index: 집계 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
+    if len(df_index) > header_row_idx:
+        header_row = df_index.iloc[header_row_idx]
+    else:
+        header_row = df_index.iloc[0] if len(df_index) > 0 else pd.Series()
+    
+    # 동적으로 컬럼 찾기
+    target_col = generator.find_target_col_index(header_row, year, quarter)
+    prev_year_col = generator.find_target_col_index(header_row, year - 1, quarter)
     
     # 전국 총지수 행 찾기
     nationwide_rows = df_index[(df_index[2] == '전국') & (df_index[3].astype(str) == '0')]
@@ -217,9 +261,14 @@ def _get_nationwide_from_aggregation(df_index):
     
     nationwide_total = nationwide_rows.iloc[0]
     
-    # 당분기(2025.2/4)와 전년동분기(2024.2/4) 지수로 증감률 계산
-    current_index = safe_float(nationwide_total[24], 100)  # 2025.2/4
-    prev_year_index = safe_float(nationwide_total[20], 100)  # 2024.2/4
+    # 당분기와 전년동분기 지수로 증감률 계산
+    current_index = safe_float(nationwide_total[target_col], None)
+    prev_year_index = safe_float(nationwide_total[prev_year_col], None)
+    
+    if current_index is None:
+        current_index = 100.0
+    if prev_year_index is None:
+        prev_year_index = 100.0
     
     if prev_year_index and prev_year_index != 0:
         growth_rate = ((current_index - prev_year_index) / prev_year_index) * 100
@@ -231,8 +280,8 @@ def _get_nationwide_from_aggregation(df_index):
     
     businesses = []
     for _, row in nationwide_businesses.iterrows():
-        curr = safe_float(row[24], None)
-        prev = safe_float(row[20], None)
+        curr = safe_float(row[target_col], None)
+        prev = safe_float(row[prev_year_col], None)
         
         if curr is not None and prev is not None and prev != 0:
             bus_growth = ((curr - prev) / prev) * 100
@@ -252,39 +301,34 @@ def _get_nationwide_from_aggregation(df_index):
     }
 
 
-def _get_nationwide_from_raw_data(df):
-    """기초자료 시트에서 전국 데이터 추출"""
-    # 헤더 행 및 컬럼 인덱스 찾기
-    header_row = 2
-    current_quarter_col = None
-    prev_year_col = None
+def _get_nationwide_from_raw_data(df, generator: BaseGenerator, year: int = 2025, quarter: int = 2):
+    """기초자료 시트에서 전국 데이터 추출
     
+    Args:
+        df: 기초자료 시트 DataFrame
+        generator: BaseGenerator 인스턴스 (find_target_col_index 사용)
+        year: 현재 연도
+        quarter: 현재 분기
+    """
+    # [Robust Dynamic Parsing System]
+    # 헤더 행 찾기
+    header_row_idx = 2
     for i in range(min(10, len(df))):
         row = df.iloc[i]
         row_str = ' '.join([str(v) for v in row.values[:10] if pd.notna(v)])
         if '지역' in row_str and ('2024' in row_str or '2025' in row_str):
-            header_row = i
+            header_row_idx = i
             break
     
-    header = df.iloc[header_row] if header_row < len(df) else df.iloc[0]
+    header_row = df.iloc[header_row_idx] if header_row_idx < len(df) else df.iloc[0]
     
-    for col_idx in range(len(header) - 1, 4, -1):
-        col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
-        if '2025' in col_val and ('2/4' in col_val or '2' in col_val):
-            current_quarter_col = col_idx
-        if '2024' in col_val and ('2/4' in col_val or '2' in col_val):
-            prev_year_col = col_idx
-        if current_quarter_col and prev_year_col:
-            break
-    
-    if current_quarter_col is None:
-        current_quarter_col = len(header) - 2
-    if prev_year_col is None:
-        prev_year_col = current_quarter_col - 4
+    # 동적으로 컬럼 찾기
+    current_quarter_col = generator.find_target_col_index(header_row, year, quarter)
+    prev_year_col = generator.find_target_col_index(header_row, year - 1, quarter)
     
     # 전국 총지수 행 찾기 (분류단계 0)
     nationwide_row = None
-    for i in range(header_row + 1, len(df)):
+    for i in range(header_row_idx + 1, len(df)):
         row = df.iloc[i]
         region = str(row[1]).strip() if pd.notna(row[1]) else ''
         classification = str(row[2]).strip() if pd.notna(row[2]) else ''
@@ -830,10 +874,24 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     df_analysis, df_index = load_data(excel_path)
     
     # 데이터 추출
-    nationwide_data = get_nationwide_data(df_analysis, df_index)
-    regional_data = get_regional_data(df_analysis, df_index)
+    # [Robust Dynamic Parsing System]
+    # BaseGenerator 인스턴스 생성 (동적 컬럼 탐색용)
+    if year is None or quarter is None:
+        from utils.excel_utils import extract_year_quarter_from_excel
+        extracted_year, extracted_quarter = extract_year_quarter_from_excel(excel_path)
+        year = year or extracted_year or 2025
+        quarter = quarter or extracted_quarter or 2
+    
+    # 임시 BaseGenerator 인스턴스 생성
+    class TempGenerator(BaseGenerator):
+        pass
+    
+    generator = TempGenerator(excel_path, year, quarter)
+    
+    nationwide_data = get_nationwide_data(df_analysis, df_index, generator, year, quarter)
+    regional_data = get_regional_data(df_analysis, df_index, generator, year, quarter)
     summary_box = get_summary_box_data(regional_data)
-    table_data = get_growth_rates_table(df_analysis, df_index)
+    table_data = get_growth_rates_table(df_analysis, df_index, generator, year, quarter)
     
     # Top 3 증가/감소 지역
     top3_increase = []
