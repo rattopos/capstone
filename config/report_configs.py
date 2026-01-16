@@ -147,6 +147,11 @@ REPORT_CONFIGS = {
             'aggregation': ["F'(건설)집계", "F' 집계"],
             'fallback': ['건설', '건설수주']
         },
+        'aggregation_structure': {
+            'region_name_col': 1,
+            'industry_code_col': 3,
+            'total_code': '0'
+        },
         'name_mapping': {
             '건축': '건축',
             '토목': '토목',
@@ -172,6 +177,11 @@ REPORT_CONFIGS = {
             'aggregation': ['G(수출)집계', 'G 집계'],
             'fallback': ['수출', '수출액']
         },
+        'aggregation_structure': {
+            'region_name_col': 3,
+            'industry_code_col': 6,
+            'total_code': '합계'
+        },
         'name_mapping': {},  # 품목명은 그대로 사용
         'template': 'export_template.html',
         'metadata_columns': {
@@ -192,6 +202,11 @@ REPORT_CONFIGS = {
             'aggregation': ['H(수입)집계', 'H 집계'],
             'fallback': ['수입', '수입액']
         },
+        'aggregation_structure': {
+            'region_name_col': 3,
+            'industry_code_col': 6,
+            'total_code': '합계'
+        },
         'name_mapping': {},
         'template': 'import_template.html',
         'metadata_columns': {
@@ -208,9 +223,14 @@ REPORT_CONFIGS = {
         'name': '물가동향',
         'report_id': 'price',
         'sheets': {
-            'analysis': ['E(품목성질물가)분석', 'E 분석'],
-            'aggregation': ['E(품목성질물가)집계', 'E 집계'],
+            'analysis': ['E(지출목적물가) 분석', 'E 분석'],
+            'aggregation': ['E(지출목적물가)집계', 'E 집계'],
             'fallback': ['물가', '소비자물가']
+        },
+        'aggregation_structure': {
+            'region_name_col': 2,
+            'industry_code_col': 5,
+            'total_code': '00'
         },
         'name_mapping': {},
         'template': 'price_trend_template.html',
@@ -232,6 +252,11 @@ REPORT_CONFIGS = {
             'aggregation': ['D(고용률)집계', 'D 집계'],
             'fallback': ['고용', '고용률']
         },
+        'aggregation_structure': {
+            'region_name_col': 1,
+            'industry_code_col': 3,
+            'total_code': '계'
+        },
         'name_mapping': {},
         'template': 'employment_rate_template.html',
         'metadata_columns': {
@@ -252,6 +277,11 @@ REPORT_CONFIGS = {
             'aggregation': ['D(실업)집계', 'D 집계'],
             'fallback': ['실업', '실업률']
         },
+        'aggregation_structure': {
+            'region_name_col': 0,
+            'industry_code_col': 1,
+            'total_code': '계'
+        },
         'name_mapping': {},
         'template': 'unemployment_template.html',
         'metadata_columns': {
@@ -271,6 +301,11 @@ REPORT_CONFIGS = {
             'analysis': ['I(순인구이동)분석', 'I 분석'],
             'aggregation': ['I(순인구이동)집계', 'I 집계'],
             'fallback': ['인구이동', '순인구이동']
+        },
+        'aggregation_structure': {
+            'region_name_col': 4,
+            'industry_code_col': 7,
+            'total_code': '합계'
         },
         'name_mapping': {},
         'template': 'domestic_migration_template.html',
