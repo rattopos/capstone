@@ -469,3 +469,198 @@ class BaseGenerator(ABC):
             f"   (Header dump: {header_dump})"
         )
         raise ValueError(error_msg)
+    
+    # ============================================================================
+    # [문서 2] 나레이션 생성 엔진: 4가지 패턴 (Pattern Engine)
+    # ============================================================================
+    
+    def select_narrative_pattern(
+        self,
+        growth_rate: float,
+        prev_rate: Optional[float] = None,
+        has_contrast_industries: bool = False
+    ) -> str:
+        """
+        [문서 2] 4가지 나레이션 패턴 중 하나 선택
+        
+        패턴 우선순위:
+        1. 패턴 C: 보합 (growth_rate == 0.0)
+        2. 패턴 D: 방향 전환 (전분기와 부호 다름)
+        3. 패턴 B: 역접 (상반된 업종 혼재)
+        4. 패턴 A: 순접 (기본)
+        
+        Args:
+            growth_rate: 현재 분기 증감률
+            prev_rate: 전분기 증감률 (선택)
+            has_contrast_industries: 상반된 업종 혼재 여부
+        
+        Returns:
+            'pattern_a' | 'pattern_b' | 'pattern_c' | 'pattern_d'
+        """
+        # 패턴 C: 보합 (최우선)
+        if abs(growth_rate) < 0.01:
+            return 'pattern_c'
+        
+        # 패턴 D: 방향 전환 (전분기 데이터 있을 때)
+        if prev_rate is not None and abs(prev_rate) > 0.01:
+            # 부호 변경 체크: (+ → -) 또는 (- → +)
+            if (prev_rate > 0 and growth_rate < 0) or \
+               (prev_rate < 0 and growth_rate > 0):
+                return 'pattern_d'
+        
+        # 패턴 B: 역접 (상반된 업종 혼재)
+        if has_contrast_industries:
+            return 'pattern_b'
+        
+        # 패턴 A: 순접 (기본)
+        return 'pattern_a'
+    
+    def generate_narrative(
+        self,
+        pattern: str,
+        region: str,
+        growth_rate: float,
+        prev_rate: Optional[float],
+        main_industries: List[str],
+        contrast_industries: Optional[List[str]] = None,
+        report_id: str = 'manufacturing'
+    ) -> str:
+        """
+        [문서 2] 선택된 패턴에 따라 나레이션 생성
+        
+        엄격한 어휘 매핑 준수:
+        - Type A (물량): 증가/감소, 늘어/줄어
+        - Type B (가격): 상승/하락, 올라/내려
+        
+        Args:
+            pattern: 'pattern_a' | 'pattern_b' | 'pattern_c' | 'pattern_d'
+            region: 지역명
+            growth_rate: 증감률
+            prev_rate: 전분기 증감률
+            main_industries: 주요 업종 리스트
+            contrast_industries: 반대 업종 리스트 (패턴 B, C용)
+            report_id: 보고서 ID (어휘 타입 결정)
+        
+        Returns:
+            생성된 나레이션 문자열
+        """
+        # 1. 어휘 선택 (엄격한 매핑)
+        try:
+            from utils.text_utils import get_terms, get_josa
+        except ImportError:
+            # 상대 import 시도
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from utils.text_utils import get_terms, get_josa
+        
+        # 조사 선택
+        josa = get_josa(region, "은/는")
+        
+        # 주요 업종 문자열
+        industries_str = ', '.join(main_industries[:3]) if main_industries else "주요 업종"
+        
+        # 어휘 선택
+        cause_verb, result_noun = get_terms(report_id, growth_rate)
+        
+        # 2. 패턴별 문장 생성
+        if pattern == 'pattern_a':
+            # 패턴 A (순접): "[지역]은 [업종] 등이 늘어 전년동분기대비 5.2% 증가."
+            if cause_verb is None:  # 보합 예외 처리
+                return f"{region}{josa} 전년동분기대비 {result_noun}."
+            
+            return (
+                f"{region}{josa} {industries_str} 등이 {cause_verb} "
+                f"전년동분기대비 {abs(growth_rate):.1f}% {result_noun}."
+            )
+        
+        elif pattern == 'pattern_b':
+            # 패턴 B (역접): "[지역]은 [반대업종] 등이 줄었으나, [주요업종] 등이 늘어 5.2% 증가."
+            contrast_str = ', '.join(contrast_industries[:2]) if contrast_industries else "일부 업종"
+            
+            # 반대 방향 어휘
+            if growth_rate > 0:
+                opposite_verb = "줄었으나"
+            else:
+                opposite_verb = "늘었으나"
+            
+            return (
+                f"{region}{josa} {contrast_str} 등이 {opposite_verb}, "
+                f"{industries_str} 등이 {cause_verb} "
+                f"전년동분기대비 {abs(growth_rate):.1f}% {result_noun}."
+            )
+        
+        elif pattern == 'pattern_c':
+            # 패턴 C (보합): "[지역]은 [증가업종] 등은 늘었으나, [감소업종] 등이 줄어 보합."
+            inc_str = ', '.join(main_industries[:2]) if main_industries else "일부 업종"
+            dec_str = ', '.join(contrast_industries[:2]) if contrast_industries else "일부 업종"
+            
+            return (
+                f"{region}{josa} {inc_str} 등은 늘었으나, "
+                f"{dec_str} 등이 줄어 전년동분기대비 {result_noun}."
+            )
+        
+        elif pattern == 'pattern_d':
+            # 패턴 D (추세): "[지역]은 전분기 증가하였으나, 이번 분기 [업종] 등이 줄어 3.1% 감소."
+            if prev_rate is not None:
+                _, prev_result = get_terms(report_id, prev_rate)
+            else:
+                prev_result = "변동"
+            
+            return (
+                f"{region}{josa} 전분기 {prev_result}하였으나, "
+                f"이번 분기 {industries_str} 등이 {cause_verb} "
+                f"{abs(growth_rate):.1f}% {result_noun}."
+            )
+        
+        # Fallback (도달 불가능)
+        return f"{region}{josa} [패턴 오류: {pattern}]"
+    
+    # ============================================================================
+    # [문서 3] 기여도 기반 업종 정렬 (Weighted Contribution)
+    # ============================================================================
+    
+    def rank_by_contribution(
+        self,
+        industries: List[Dict[str, Any]],
+        top_n: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        [문서 3] 기여도 = |증감률 × 가중치| 순으로 업종 정렬
+        
+        Args:
+            industries: [{'name': str, 'change_rate': float, 'weight': float}, ...]
+            top_n: 상위 N개 선정
+        
+        Returns:
+            기여도 순 정렬된 리스트
+        
+        Note:
+            가중치 없으면 주요 업종 여부로 가산점 (Fallback)
+        """
+        # 주요 업종 목록 (가중치 없을 때 fallback)
+        MAJOR_INDUSTRIES = [
+            '반도체', '전자부품', '자동차', '기계', 
+            '화학', '전기장비', '1차금속', '의약품'
+        ]
+        
+        for ind in industries:
+            weight = self.safe_float(ind.get('weight'), 0)
+            change_rate = self.safe_float(ind.get('change_rate'), 0)
+            
+            # Fallback: 가중치 없으면 주요 업종 여부로 가산점
+            if weight == 0 or pd.isna(weight):
+                is_major = any(major in ind.get('name', '') for major in MAJOR_INDUSTRIES)
+                weight = 10 if is_major else 1
+            
+            # 기여도 = |증감률 × 가중치|
+            ind['contribution'] = abs(change_rate * weight)
+        
+        # 기여도 순 정렬 (내림차순)
+        ranked = sorted(
+            industries, 
+            key=lambda x: x.get('contribution', 0), 
+            reverse=True
+        )
+        
+        return ranked[:top_n]

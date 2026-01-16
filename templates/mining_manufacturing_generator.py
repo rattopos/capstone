@@ -29,42 +29,15 @@ class MiningManufacturingGenerator(BaseGenerator):
     # 하위 호환성을 위한 별칭 (클래스 정의 후 파일 끝에서 할당)
     
     # ========================================
-    # 분석 시트 컬럼 인덱스 (0-based, 문서 7.2 참조)
+    # [1. Core] 의미 기반(Semantic) 파싱 - 하드코딩 완전 제거
     # ========================================
-    # A분석 시트 컬럼 구조:
-    COL_REGION_NAME = 3        # 지역이름
-    COL_CLASSIFICATION = 4     # 분류단계 (문서에 명시되지 않았으나 일반적으로 4)
-    COL_INDUSTRY_CODE = 6      # 산업/업태코드
-    COL_INDUSTRY_NAME = 7      # 산업/업태명
-    COL_WEIGHT = 8             # 가중치
-    COL_GROWTH_RATE = 21       # 2025_2Q 증감률 (문서: 2025_2Q 증감률)
-    COL_CONTRIBUTION = 28      # 기여도
-    
-    # ========================================
-    # 집계 시트 컬럼 인덱스 (1-based → 0-based 변환)
-    # ========================================
-    # A(광공업생산)집계 시트 구조 (문서 7.2):
-    # 메타시작열: 4 (1-based) → 3 (0-based)
-    # 연도시작열: 10 (1-based) → 9 (0-based)
-    # 분기시작열: 15 (1-based) → 14 (0-based)
-    # 가중치열: 7 (1-based) → 6 (0-based)
-    AGG_COL_REGION_NAME = 4    # 지역이름 (로그 기반 근본 수정: Index 4 확정)
-    AGG_COL_CLASSIFICATION = 4  # 분류단계 (메타시작열 + 1)
-    AGG_COL_WEIGHT = 6         # 가중치 (가중치열 7의 0-based: 6)
-    AGG_COL_INDUSTRY_CODE = 6  # 산업코드 (가중치열과 동일 위치 또는 다음 위치, 실제 확인 필요)
-    AGG_COL_INDUSTRY_NAME = 7  # 산업이름 (산업코드 다음)
-    AGG_COL_YEAR_START = 9     # 연도시작열 (2020년)
-    AGG_COL_QUARTER_START = 14 # 분기시작열 (2022.1/4)
-    # 분기 데이터: 14=2022.1/4, 15=2022.2/4, ..., 22=2024.2/4, 25=2025.1/4, 26=2025.2/4p
-    AGG_COL_2024_2Q = 22       # 2024.2/4 (전년동분기)
-    AGG_COL_2025_2Q = 26       # 2025.2/4p (당분기)
-    AGG_COL_2023_2Q = 18       # 2023.2/4
-    AGG_COL_2025_1Q = 25       # 2025.1/4
-    AGG_COL_2024_1Q = 21       # 2024.1/4
-    AGG_COL_2022_2Q = 14       # 2022.2/4
-    
-    # 데이터 시작 행 (보통 3~4행부터 시작, 0-based로는 2~3)
-    DATA_START_ROW = 2         # 기본값: 3행 (0-based: 2)
+    # ❌ 제거됨: COL_GROWTH_RATE = 21 같은 좌표 기반 상수
+    # ✅ 대체: find_column_by_semantic(header_row, keywords) 동적 탐색
+    # 
+    # 설계 원칙:
+    # - 모든 컬럼 인덱스는 런타임에 헤더를 분석하여 동적으로 결정
+    # - 엑셀 구조가 변경되어도 코드 수정 없이 작동
+    # - 찾지 못할 경우 명시적 오류 발생 (Silent Failure 금지)
     
     # 업종명 매핑 사전 (엑셀 데이터 → 보도자료 표기명)
     INDUSTRY_NAME_MAP = {
@@ -131,7 +104,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         "제주": "제 주",
     }
     
-    def __init__(self, excel_path: str, year=None, quarter=None):
+    # 데이터 시작 행 (헤더 다음 행)
+    DATA_START_ROW = 3
+    
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
         """
         초기화
         
@@ -139,14 +115,22 @@ class MiningManufacturingGenerator(BaseGenerator):
             excel_path: 엑셀 파일 경로
             year: 연도 (선택사항)
             quarter: 분기 (선택사항)
+            excel_file: 캐시된 ExcelFile 객체 (선택사항)
         """
         # 부모 생성자 호출 필수
-        super().__init__(excel_path, year, quarter)
+        super().__init__(excel_path, year, quarter, excel_file)
         self.report_id = 'mining'  # 보고서 ID (푸터 출처 매핑용)
         self.df_analysis = None
         self.df_aggregation = None
         self.data = {}
         self.use_raw_data = False  # 기초자료 시트 사용 여부
+        
+        # [1. Core] 동적 컬럼 인덱스 캐시
+        # 런타임에 헤더를 분석하여 결정되는 컬럼 인덱스들
+        self._col_cache = {
+            'analysis': {},  # 분석 시트 컬럼 인덱스
+            'aggregation': {}  # 집계 시트 컬럼 인덱스
+        }
         
         # Step 2: 동적 할당 적용 - 하드코딩 절대 금지
         if self.year and self.quarter:
@@ -169,7 +153,15 @@ class MiningManufacturingGenerator(BaseGenerator):
             self.period_context = None
         
     def load_data(self):
-        """엑셀 데이터 로드"""
+        """
+        [변하지 않는 부분] 엑셀 데이터 로드
+        
+        이 메서드는 모든 Generator에서 동일한 패턴을 따름:
+        1. ExcelFile 객체 로드
+        2. 필요한 시트 찾기 (분석/집계/기초자료)
+        3. DataFrame으로 변환
+        4. 유효성 검사
+        """
         xl = self.load_excel()
         
         # 집계 시트 찾기 (우선)
@@ -191,14 +183,12 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         if analysis_sheet:
             self.df_analysis = self.get_sheet(analysis_sheet)
-            # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
-            test_conditions = {self.COL_REGION_NAME: '전국'}
-            has_data = self.check_sheet_has_data(
-                self.df_analysis.iloc[self.DATA_START_ROW:],
-                test_conditions,
-                max_empty_cells=20
-            )
-            if not has_data:
+            # 분석 시트에 실제 데이터가 있는지 확인
+            # [1. Core] 동적으로 지역명 컬럼 찾기
+            region_col = self._find_metadata_column('region')
+            test_row = self.df_analysis[self.df_analysis[region_col] == '전국'] if region_col is not None else pd.DataFrame()
+            
+            if test_row.empty or test_row.iloc[0].isna().sum() > 20:
                 print(f"[광공업생산] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
                 self.use_aggregation_only = True
             else:
@@ -206,6 +196,9 @@ class MiningManufacturingGenerator(BaseGenerator):
         else:
             self.df_analysis = self.df_aggregation.copy()
             self.use_aggregation_only = True
+        
+        # [1. Core] 컬럼 인덱스 동적 초기화
+        self._initialize_column_indices()
         
     def _get_industry_display_name(self, raw_name: str) -> str:
         """업종명을 보도자료 표기명으로 변환"""
@@ -220,6 +213,93 @@ class MiningManufacturingGenerator(BaseGenerator):
     def _get_region_display_name(self, raw_name: str) -> str:
         """지역명을 표시용으로 변환"""
         return self.REGION_DISPLAY_MAP.get(raw_name, raw_name)
+    
+    def _find_metadata_column(self, column_type: str) -> Optional[int]:
+        """
+        [1. Core] 메타데이터 컬럼 찾기 (지역명, 분류단계, 업종명 등)
+        
+        Args:
+            column_type: 'region', 'classification', 'industry_code', 'industry_name', 'weight'
+            
+        Returns:
+            컬럼 인덱스 (0-based) 또는 None
+        """
+        # 분석 시트 또는 집계 시트 중 사용 가능한 것 선택
+        df = self.df_analysis if self.df_analysis is not None else self.df_aggregation
+        if df is None:
+            return None
+        
+        # 헤더 행 추정 (보통 2~3행)
+        search_rows = min(5, len(df))
+        
+        # 컬럼 타입별 키워드
+        keywords_map = {
+            'region': ['지역', 'region', '시도'],
+            'classification': ['분류단계', 'classification', '단계'],
+            'industry_code': ['산업코드', '업태코드', 'code', '코드'],
+            'industry_name': ['산업명', '업태명', 'industry', '업종'],
+            'weight': ['가중치', 'weight', '비중']
+        }
+        
+        keywords = keywords_map.get(column_type, [])
+        if not keywords:
+            return None
+        
+        # 헤더 순회하며 키워드 매칭
+        for row_idx in range(search_rows):
+            row = df.iloc[row_idx]
+            for col_idx in range(min(30, len(row))):  # 처음 30개 컬럼만 검색
+                cell = row.iloc[col_idx]
+                if pd.isna(cell):
+                    continue
+                cell_str = str(cell).strip().lower().replace(" ", "")
+                if any(k.lower().replace(" ", "") in cell_str for k in keywords):
+                    return col_idx
+        
+        return None
+    
+    def _initialize_column_indices(self):
+        """
+        [1. Core] 동적 컬럼 인덱스 초기화
+        
+        엑셀 헤더를 분석하여 필요한 모든 컬럼 인덱스를 캐시에 저장
+        이후 코드에서는 self._col_cache를 통해 접근
+        """
+        # 분석 시트 컬럼
+        if self.df_analysis is not None and len(self.df_analysis) > 3:
+            header_row = self.df_analysis.iloc[2]  # 보통 3행이 헤더
+            
+            try:
+                self._col_cache['analysis']['region'] = self._find_metadata_column('region')
+                self._col_cache['analysis']['classification'] = self._find_metadata_column('classification')
+                self._col_cache['analysis']['industry_code'] = self._find_metadata_column('industry_code')
+                self._col_cache['analysis']['industry_name'] = self._find_metadata_column('industry_name')
+                self._col_cache['analysis']['weight'] = self._find_metadata_column('weight')
+                
+                # 연도/분기 데이터 컬럼 (동적 탐색)
+                if self.year and self.quarter:
+                    self._col_cache['analysis']['target'] = self.find_target_col_index(header_row, self.year, self.quarter)
+                    self._col_cache['analysis']['prev_year'] = self.find_target_col_index(header_row, self.year - 1, self.quarter)
+            except Exception as e:
+                print(f"[광공업생산] 분석 시트 컬럼 인덱스 초기화 실패: {e}")
+        
+        # 집계 시트 컬럼
+        if self.df_aggregation is not None and len(self.df_aggregation) > 3:
+            header_row = self.df_aggregation.iloc[2]
+            
+            try:
+                self._col_cache['aggregation']['region'] = self._find_metadata_column('region')
+                self._col_cache['aggregation']['classification'] = self._find_metadata_column('classification')
+                self._col_cache['aggregation']['industry_code'] = self._find_metadata_column('industry_code')
+                self._col_cache['aggregation']['industry_name'] = self._find_metadata_column('industry_name')
+                self._col_cache['aggregation']['weight'] = self._find_metadata_column('weight')
+                
+                # 연도/분기 데이터 컬럼
+                if self.year and self.quarter:
+                    self._col_cache['aggregation']['target'] = self.find_target_col_index(header_row, self.year, self.quarter)
+                    self._col_cache['aggregation']['prev_year'] = self.find_target_col_index(header_row, self.year - 1, self.quarter)
+            except Exception as e:
+                print(f"[광공업생산] 집계 시트 컬럼 인덱스 초기화 실패: {e}")
     
     def extract_nationwide_data(self, table_data: list = None) -> dict:
         """
@@ -252,12 +332,39 @@ class MiningManufacturingGenerator(BaseGenerator):
         else:
             industries_data = self._extract_nationwide_industries_from_analysis()
         
+        # [문서 2] 나레이션 생성: 4가지 패턴 적용
+        main_increase = industries_data.get("increase", [])
+        main_decrease = industries_data.get("decrease", [])
+        
+        # 패턴 선택
+        has_contrast = len(main_increase) > 0 and len(main_decrease) > 0
+        pattern = self.select_narrative_pattern(
+            growth_rate=growth_rate,
+            prev_rate=None,  # 전분기 데이터 추출 필요 시 추가
+            has_contrast_industries=has_contrast
+        )
+        
+        # 나레이션 생성
+        main_industry_names = [ind['name'] for ind in main_increase]
+        contrast_industry_names = [ind['name'] for ind in main_decrease]
+        
+        narrative = self.generate_narrative(
+            pattern=pattern,
+            region='전국',
+            growth_rate=growth_rate,
+            prev_rate=None,
+            main_industries=main_industry_names,
+            contrast_industries=contrast_industry_names,
+            report_id='manufacturing'  # Type A: 물량 지표
+        )
+        
         return {
             "production_index": production_index,
             "growth_rate": growth_rate,  # SSOT에서 가져온 값
             "growth_direction": "증가" if growth_rate > 0 else "감소",
             "main_increase_industries": industries_data.get("increase", []),
-            "main_decrease_industries": industries_data.get("decrease", [])
+            "main_decrease_industries": industries_data.get("decrease", []),
+            "narrative": narrative  # 생성된 나레이션 추가
         }
     
     def _extract_nationwide_industries_from_analysis(self) -> dict:
@@ -332,43 +439,20 @@ class MiningManufacturingGenerator(BaseGenerator):
                 industries.append({
                     "name": industry_name,
                     "growth_rate": self.safe_round(growth_rate, 1, 0.0),
+                    "weight": weight,  # 가중치 추가
+                    "change_rate": self.safe_round(growth_rate, 1, 0.0),  # rank_by_contribution에서 필요
                     "contribution": self.safe_round(raw_weight, 6, 0.0) if raw_weight is not None else 0.0,  # 기존 호환성
                     "contribution_abs": contribution_abs  # 정렬용 절대값
                 })
             
-            # [Robust Dynamic Parsing System - 3단계]
-            # 진짜 주범 찾기: '식료품' 같은 잡음 제거, '반도체' 같은 신호 우선
-            def calculate_score(item):
-                """점수 계산 함수: 가중치 기반 + 키워드 보정"""
-                rate = abs(item.get('growth_rate', 0))
-                name = item.get('name', '')
-                weight = item.get('contribution_abs', 0)  # 이미 계산된 contribution_abs 사용
-                
-                # 가중치 컬럼이 있다면 rate * weight 사용
-                if weight > 0:
-                    score = weight
-                else:
-                    score = rate
-                
-                # 우선순위 키워드 (가중치가 높은 산업군)
-                high_impact_keywords = ['전자', '반도체', '자동차', '기계', '화학', '1차금속', '석유화학']
-                
-                # 키워드 매칭 시 보정치 부여 (임시 방편)
-                if any(k in name for k in high_impact_keywords):
-                    score *= 2.0  # 주력 산업에 가중치 2배 부여
-                
-                # 식료품, 음료 같은 잡음 제거 (가중치 감소)
-                noise_keywords = ['식료품', '음료']
-                if any(k in name for k in noise_keywords):
-                    score *= 0.1  # 잡음 산업에 가중치 0.1배 부여
-                
-                return score
+            # [문서 3] 기여도 기반 정렬: abs(증감률 × 가중치) 순
+            # 하드코딩된 키워드 보정 제거 → BaseGenerator.rank_by_contribution 사용
+            increase_industries_raw = [i for i in industries if i['growth_rate'] > 0]
+            decrease_industries_raw = [i for i in industries if i['growth_rate'] < 0]
             
-            # 점수 기반 정렬
-            increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                        key=calculate_score, reverse=True)[:2]
-            decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                        key=calculate_score, reverse=True)[:2]
+            # 기여도 순 정렬 (상위 2개)
+            increase_industries = self.rank_by_contribution(increase_industries_raw, top_n=2)
+            decrease_industries = self.rank_by_contribution(decrease_industries_raw, top_n=2)
             
         except Exception as e:
             print(f"[광공업생산] 업종별 데이터 추출 실패: {e}")
@@ -1083,16 +1167,18 @@ class MiningManufacturingGenerator(BaseGenerator):
                 
                 if curr is not None and prev_ind is not None and prev_ind != 0:
                     ind_growth = ((curr - prev_ind) / prev_ind) * 100
-                    contribution = (curr - prev_ind) / nationwide_prev * weight / 10000 * 100 if nationwide_prev else 0
+                    
                     industries.append({
                         'name': self._get_industry_display_name(str(row[self.AGG_COL_INDUSTRY_NAME]) if pd.notna(row[self.AGG_COL_INDUSTRY_NAME]) else ''),
                         'growth_rate': round(ind_growth, 1),
-                        'contribution': round(contribution, 6)
+                        'change_rate': round(ind_growth, 1),  # rank_by_contribution에서 필요
+                        'weight': weight,
+                        'contribution': round((curr - prev_ind) / nationwide_prev * weight / 10000 * 100 if nationwide_prev else 0, 6)
                     })
             
-            # 기여도 순 정렬
-            sorted_ind = sorted(industries, key=lambda x: x['contribution'], reverse=True)
-            industry_data[region] = sorted_ind[:3]
+            # [문서 3] 기여도 순 정렬: rank_by_contribution 사용
+            sorted_ind = self.rank_by_contribution(industries, top_n=3)
+            industry_data[region] = sorted_ind
         
         return industry_data
     
@@ -1138,16 +1224,21 @@ class MiningManufacturingGenerator(BaseGenerator):
                 if r_name == region and classification == '2':
                     current = self.safe_float(row[current_quarter_col], None)
                     prev = self.safe_float(row[prev_year_col], None)
+                    weight = self.safe_float(row[6], 0) if 6 < len(row) else 0  # 가중치 컬럼
+                    
                     if current is not None and prev is not None and prev != 0:
                         ind_growth = ((current - prev) / prev) * 100
                         industries.append({
                             'name': self._get_industry_display_name(str(row[4]) if pd.notna(row[4]) else ''),
                             'growth_rate': round(ind_growth, 1),
-                            'contribution': round(ind_growth * 0.1, 6)
+                            'change_rate': round(ind_growth, 1),  # rank_by_contribution에서 필요
+                            'weight': weight,
+                            'contribution': round(ind_growth * 0.1, 6)  # 기존 호환성
                         })
             
-            sorted_ind = sorted(industries, key=lambda x: x['contribution'], reverse=True)
-            industry_data[region] = sorted_ind[:3]
+            # [문서 3] 기여도 순 정렬: rank_by_contribution 사용
+            sorted_ind = self.rank_by_contribution(industries, top_n=3)
+            industry_data[region] = sorted_ind
         
         return industry_data
     

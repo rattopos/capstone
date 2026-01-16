@@ -773,8 +773,9 @@ def generate_report(excel_path, template_path, output_path, raw_excel_path=None,
     
     # 임시 BaseGenerator 인스턴스 생성
     class TempGenerator(BaseGenerator):
-        pass
-    
+        def extract_all_data(self):
+            return {}
+
     generator = TempGenerator(excel_path, year, quarter)
     
     # 데이터 로드

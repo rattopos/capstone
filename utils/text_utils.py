@@ -91,29 +91,40 @@ def get_footer_source(report_id: str) -> str:
     return f"자료: 국가데이터처 국가통계포털(KOSIS), {survey_name}"
 
 
-def get_terms(report_id: str, value: float) -> Tuple[str, str]:
+def get_terms(report_id: str, value: float) -> Tuple[Optional[str], str]:
     """
     report_id와 값(부호)을 넣으면 알맞은 단어 세트를 반환
     
+    [문서 1] 엄격한 어휘 매핑 규칙 준수:
+    - Type A (물량): 증가/감소, 늘어/줄어
+    - Type B (가격): 상승/하락, 올라/내려
+    
     Args:
         report_id: 보고서 ID (예: 'manufacturing', 'price', 'employment')
-        value: 증감률 값 (양수면 증가, 음수면 감소)
+        value: 증감률 값 (양수면 증가, 음수면 감소, 0.0이면 보합)
     
     Returns:
-        Tuple[str, str]: (원인 서술어, 결과 서술어)
+        Tuple[Optional[str], str]: (원인 서술어 or None, 결과 서술어)
         예: get_terms('manufacturing', 1.5) -> ('늘어', '증가')
-        예: get_terms('price', -0.5) -> ('내려', '하락')
-        예: get_terms('employment', 0.2) -> ('올라', '상승')
+        예: get_terms('manufacturing', -0.5) -> ('줄어', '감소')
+        예: get_terms('manufacturing', 0.0) -> (None, '보합')
+        예: get_terms('price', 2.1) -> ('올라', '상승')
+        예: get_terms('price', -1.5) -> ('내려', '하락')
+        예: get_terms('price', 0.0) -> (None, '보합')
     
     Note:
-        - 0은 별도 처리 안함, 호출부에서 0 제외 로직 따름
         - 알 수 없는 report_id는 기본값 'quantity' 사용
+        - 보합일 때 원인 서술어는 None (문장 구조가 다름)
     """
     # 1. 타입 결정 (기본값은 quantity)
     n_type = REPORT_TYPE_MAP.get(report_id, 'quantity')
     vocabs = NARRATIVE_MAP[n_type]
     
-    # 2. 값에 따른 어휘 선택 (0은 별도 처리 안함, 호출부에서 0 제외 로직 따름)
+    # 2. 보합 처리 (최우선)
+    if abs(value) < 0.01:  # 0.0%로 간주
+        return (None, "보합")
+    
+    # 3. 증감 처리
     if value > 0:
         return vocabs['cause_up'], vocabs['result_up']
     else:
