@@ -17,6 +17,11 @@ REPORT_CONFIGS = {
             'aggregation': ['A(광공업생산)집계', 'A 집계'],
             'fallback': ['광공업생산', '광공업생산지수']
         },
+        'aggregation_structure': {
+            'region_name_col': 4,
+            'industry_code_col': 7,
+            'total_code': 'BCD'
+        },
         'name_mapping': {
             '전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
             '의료, 정밀, 광학 기기 및 시계 제조업': '의료·정밀',
@@ -67,6 +72,11 @@ REPORT_CONFIGS = {
             'aggregation': ['B(서비스업생산)집계', 'B 집계'],
             'fallback': ['서비스업생산', '서비스업생산지수']
         },
+        'aggregation_structure': {
+            'region_name_col': 3,
+            'industry_code_col': 6,
+            'total_code': 'E~S'
+        },
         'name_mapping': {
             '수도, 하수 및 폐기물 처리, 원료 재생업': '수도·하수',
             '도매 및 소매업': '도소매',
@@ -100,6 +110,11 @@ REPORT_CONFIGS = {
             'analysis': ['C 분석', 'C분석'],
             'aggregation': ['C(소비)집계', 'C 집계'],
             'fallback': ['소비', '소매판매액지수']
+        },
+        'aggregation_structure': {
+            'region_name_col': 2,
+            'industry_code_col': 5,
+            'total_code': 'A0'
         },
         'name_mapping': {
             '백화점': '백화점',
