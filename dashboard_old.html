@@ -1,0 +1,3796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역경제동향 보도자료 생성 시스템 - 국가데이터처</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-card: #1e1e2a;
+            --bg-card-hover: #252535;
+            --accent-primary: #6366f1;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.3);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.3);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2e2e3e;
+            --border-hover: #3e3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        /* Animated background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, var(--accent-glow) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .logo-text h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .select-group {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-tertiary);
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .select-group label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .select-group select {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.3rem 0.5rem;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .select-group select:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .select-group select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Period Display (자동감지) */
+        .period-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .period-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .period-value {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-glow);
+            border-radius: 6px;
+        }
+
+        .period-value.waiting {
+            color: var(--text-secondary);
+            background: transparent;
+            font-weight: 400;
+        }
+
+        /* Main Layout */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar - 제거됨 (인라인으로 통합) */
+        .sidebar {
+            display: contents; /* 그리드/플렉스 컨텍스트에서 제거 */
+        }
+
+        .upload-section {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s;
+            min-height: 200px;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .upload-section:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-tertiary);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-zone.uploaded {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .upload-text {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-hint {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .upload-filename {
+            color: var(--success);
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+            word-break: break-all;
+        }
+
+        /* Report List */
+        .report-list-section {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+
+        /* Tab Buttons */
+        .tab-buttons {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.4rem 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .report-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 1rem;
+        }
+
+        .report-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            min-height: 100px;
+        }
+
+        .report-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .report-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-color: var(--accent-primary);
+        }
+
+        .report-item.reviewed {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: var(--success);
+        }
+
+        .report-item.has-missing {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+        }
+
+        .report-item.generated {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-secondary);
+        }
+
+        .report-item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .report-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .report-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .report-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .report-sheet {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            display: none;
+        }
+
+        .report-status {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .report-status.pending {
+            color: var(--text-muted);
+        }
+
+        .report-status.generated {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .report-status.reviewed {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .report-status.edited {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: white;
+        }
+
+        .report-item.edited {
+            border-left: 3px solid #f59e0b;
+        }
+
+        .report-status.has-missing {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* Control Bar - 미리보기 헤더에 통합됨 */
+        .control-bar {
+            display: none; /* 미리보기 헤더에 통합되어 숨김 */
+        }
+
+        /* 미리보기 헤더 내 네비게이션 컨트롤 */
+        .preview-header .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--border);
+        }
+
+        .preview-header .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px var(--success-glow);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-edit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-cancel:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            color: var(--error);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--success-glow);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Preview Area */
+        .preview-area {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            gap: 1rem;
+        }
+
+        .preview-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .preview-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .preview-content {
+            background: white;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+            overflow: auto;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+        }
+
+        .preview-placeholder-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.5;
+        }
+
+        .preview-placeholder h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .preview-placeholder p {
+            font-size: 0.8rem;
+            max-width: 350px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Preview Actions */
+        .preview-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Edit Mode Styles */
+        .edit-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+
+        .edit-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-bottom: 2px solid #f59e0b;
+        }
+
+        .edit-mode-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #92400e;
+            font-size: 0.9rem;
+        }
+
+        .edit-hint {
+            font-size: 0.8rem;
+            color: #b45309;
+        }
+
+        .edit-content {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+            background: white;
+        }
+
+        .edit-content [contenteditable="true"] {
+            outline: none;
+            min-height: 1em;
+            transition: background-color 0.2s;
+        }
+
+        .edit-content [contenteditable="true"]:hover {
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .edit-content [contenteditable="true"]:focus {
+            background-color: rgba(245, 158, 11, 0.2);
+            box-shadow: inset 0 0 0 2px #f59e0b;
+        }
+
+        /* 편집 불가 요소 표시 */
+        .edit-content .no-edit {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .edit-content img,
+        .edit-content svg,
+        .edit-content canvas {
+            pointer-events: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .missing-field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .missing-field-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .missing-field-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .missing-field-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .missing-field-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Progress */
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 300px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-color: var(--warning);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Upload Modal */
+        .upload-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1003;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .upload-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .upload-modal-content {
+            width: 90%;
+            max-width: 450px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .upload-modal-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .upload-step.active {
+            border-color: var(--accent-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+        }
+
+        .upload-step.completed {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
+        }
+
+        .upload-step.skipped {
+            opacity: 0.5;
+        }
+
+        .upload-step .step-icon {
+            font-size: 1.2rem;
+            width: 28px;
+            text-align: center;
+        }
+
+        .upload-step .step-text {
+            flex: 1;
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .upload-step .step-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .upload-progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .upload-result {
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border: 1px solid var(--success);
+        }
+
+        .upload-result .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+
+        .upload-result .result-item:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .upload-result .result-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .upload-result .result-value {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Loading - 큰 진행률 표시 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            width: 90%;
+            max-width: 600px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+        }
+
+        .loading-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .loading-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .loading-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .loading-progress-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-progress-bar {
+            height: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .loading-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, #8b5cf6 50%, var(--success) 100%);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .loading-stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .loading-current-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-current-icon {
+            font-size: 1.5rem;
+        }
+
+        .loading-current-text {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .loading-time-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .loading-time-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .loading-time-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .loading-time-label {
+            font-size: 0.75rem;
+        }
+
+        /* 생성 완료 상태 - 더 컴팩트하게 */
+        .generation-status {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+
+        .generation-status.active {
+            display: block;
+        }
+
+        .generation-status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .generation-status-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .generation-status-count {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .generation-mini-progress {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .generation-mini-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 2px;
+        }
+
+        /* 접근성 개선 */
+        .upload-zone:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        /* 키보드 네비게이션 개선 */
+        .report-item:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: -2px;
+        }
+
+        /* 로딩 상태 개선 */
+        .upload-zone.processing {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                max-width: 100%;
+                padding: 30px 15px;
+            }
+
+            .header-content {
+                flex-wrap: wrap;
+            }
+
+            .report-list {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                padding: 20px 15px;
+                gap: 15px;
+            }
+
+            .upload-section {
+                padding: 1.5rem;
+            }
+
+            .upload-zone {
+                padding: 2rem 1.5rem;
+                min-height: 150px;
+            }
+
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+
+            .upload-text {
+                font-size: 1rem;
+            }
+
+            .report-list {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 12px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-controls {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .logo-text h1 {
+                font-size: 0.9rem;
+            }
+
+            .logo-text p {
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 0.5rem;
+            }
+
+            .upload-zone {
+                padding: 0.75rem;
+            }
+
+            .upload-text {
+                font-size: 0.75rem;
+            }
+
+            .control-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .action-btns {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <div class="logo-text">
+                    <h1>지역경제동향 보도자료 생성 시스템</h1>
+                    <p>국가데이터처 · Ministry of Data and Statistics</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="period-display" id="periodDisplay" title="분석표에서 자동으로 추출된 연도/분기 정보">
+                    <span class="period-label">📅 기준시점</span>
+                    <span class="period-value waiting" id="periodValue">파일 업로드 대기중...</span>
+                    <input type="hidden" id="yearSelect" value="2025">
+                    <input type="hidden" id="quarterSelect" value="2">
+                </div>
+                <button class="btn btn-secondary" id="contactInfoBtn" onclick="openContactModal()" title="담당부서/담당자 설정">
+                    ⚙️ 담당자 설정
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="section-title">📁 분석표 업로드</div>
+                <div class="upload-zone" id="uploadZone" role="button" aria-label="분석표 파일 업로드" tabindex="0">
+                    <div class="upload-icon">📄</div>
+                    <p class="upload-text">분석표 파일을 드래그하거나 클릭하세요</p>
+                    <p class="upload-hint" style="line-height: 1.4; margin-top: 0.5rem;">
+                        <span style="color: var(--success); font-weight: 600;">✓ 분석표(.xlsx)</span> 파일만 업로드하세요<br>
+                        <span style="color: var(--text-muted); font-size: 0.7rem;">업로드 후 자동으로 보도자료가 생성됩니다</span>
+                    </p>
+                    <p class="upload-filename" id="uploadFilename" style="display: none;"></p>
+                </div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+                
+                <!-- Conversion Info (사용하지 않음 - 분석표만 업로드) -->
+                <div class="conversion-info" id="conversionInfo" style="display: none;"></div>
+                    
+                    <!-- 분석표 다운로드 버튼 제거 (분석표만 업로드) -->
+                    
+                    <!-- 보도자료 생성 안내 (분석표 업로드 시에만 표시) -->
+                    <div id="reportGenerationHint" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05)); border-radius: 8px; border-left: 3px solid var(--success);">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); line-height: 1.6;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.2rem;">✅</span>
+                                <strong style="color: var(--success); font-size: 0.8rem;">보도자료 생성 준비 완료</strong>
+                            </div>
+                            <div style="padding-left: 1.7rem; color: var(--text-secondary);">
+                                • 우측 미리보기에서 보도자료 확인<br>
+                                • 필요시 직접 편집 가능<br>
+                                • 내보내기로 한글 파일 생성
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report List -->
+            <div class="report-list-section">
+                <div class="section-title">📋 보도자료 목록 <span id="reportCountBadge" style="font-size: 0.75rem; color: var(--text-secondary);"></span></div>
+                
+                <!-- 전체 보도자료 통합 리스트 (순차적 페이지 넘김) -->
+                <div class="report-list" id="allReportsList">
+                    <!-- 초기 상태 안내 -->
+                    <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 0.75rem;">📋</div>
+                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem;">보도자료 목록</div>
+                        <div style="font-size: 0.75rem; line-height: 1.6; color: var(--text-muted); text-align: left; padding: 0 0.5rem;">
+                            <div style="margin-bottom: 0.5rem;">📌 <strong>사용 방법</strong></div>
+                            <div style="padding-left: 1rem; margin-bottom: 0.75rem;">
+                                1. 왼쪽에서 <strong style="color: var(--success);">분석표</strong> 업로드<br>
+                                2. 자동으로 보도자료 생성<br>
+                                3. 우측에서 미리보기 확인<br>
+                                4. 편집 후 내보내기
+                            </div>
+                            <div style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.75rem;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                    💡 <strong>보도자료 종류</strong><br>
+                                    • 요약 보도자료 (6개)<br>
+                                    • 부문별 보도자료 (9개)<br>
+                                    • 시도별 보도자료 (17개)<br>
+                                    • 통계표 (10개)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Generation Status -->
+            <div class="generation-status" id="generationStatus">
+                <div class="generation-status-header">
+                    <span class="generation-status-title">
+                        <span>✅</span>
+                        <span>미리보기 생성 완료</span>
+                    </span>
+                    <span class="generation-status-count" id="generationStatusCount">50/50</span>
+                </div>
+                <div class="generation-mini-progress">
+                    <div class="generation-mini-fill" id="generationMiniFill" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Preview Area -->
+            <div class="preview-area">
+                <div class="preview-header">
+                    <div class="preview-header-left">
+                        <div class="preview-title" id="previewTitle">
+                            <span>📄</span>
+                            <span>미리보기</span>
+                        </div>
+                        <div class="nav-controls">
+                            <button class="nav-btn" id="prevBtn" disabled title="이전">◀</button>
+                            <span class="page-indicator" id="pageIndicator">0 / 0</span>
+                            <button class="nav-btn" id="nextBtn" disabled title="다음">▶</button>
+                        </div>
+                    </div>
+                    <div class="preview-header-right">
+                        <div class="action-btns">
+                            <button class="btn btn-hwp-import" id="exportHwpReadyBtn" style="display: none; background: linear-gradient(135deg, #9c27b0, #7b1fa2); border-color: #6a1b9a; color: white;" title="모든 보도자료를 한글 파일용 HTML로 내보내기">
+                                📄 내보내기
+                            </button>
+                        </div>
+                        <div class="preview-actions">
+                        <button class="btn btn-edit" id="editBtn" style="display: none;" title="편집 모드">
+                            ✏️ 편집
+                        </button>
+                        <button class="btn btn-save" id="saveEditBtn" style="display: none;" title="변경사항 저장">
+                            💾 저장
+                        </button>
+                        <button class="btn btn-cancel" id="cancelEditBtn" style="display: none;" title="편집 취소">
+                            ✕ 취소
+                        </button>
+                        <button class="btn btn-secondary" id="markReviewedBtn" style="display: none;">
+                            ✓ 검토 완료
+                        </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <div class="preview-placeholder-icon">📊</div>
+                        <h3>보도자료 미리보기</h3>
+                        <p style="line-height: 1.6; margin-top: 1rem;">
+                            <strong>1단계:</strong> 왼쪽에서 분석표 파일을 업로드하세요<br>
+                            <strong>2단계:</strong> 자동으로 생성된 보도자료 목록을 확인하세요<br>
+                            <strong>3단계:</strong> 보도자료를 선택하여 미리보기에서 확인하세요<br>
+                            <strong>4단계:</strong> 필요시 편집 후 한글 파일로 내보내세요
+                        </p>
+                        <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid var(--accent-primary);">
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--accent-secondary); margin-bottom: 0.5rem;">💡 안내사항</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;">
+                                • 분석표 파일만 업로드하면 모든 보도자료가 자동 생성됩니다<br>
+                                • 미리보기에서 내용을 확인하고 직접 편집할 수 있습니다<br>
+                                • 내보내기 버튼으로 한글(HWP) 파일에 붙여넣을 수 있는 HTML을 생성합니다
+                            </div>
+                        </div>
+                    </div>
+                    <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
+                    <!-- 편집 모드용 에디터 -->
+                    <div class="edit-container" id="editContainer" style="display: none;">
+                        <div class="edit-toolbar">
+                            <span class="edit-mode-badge">📝 편집 모드</span>
+                            <span class="edit-hint">텍스트를 클릭하여 직접 수정하세요. 레이아웃은 유지됩니다.</span>
+                        </div>
+                        <div class="edit-content" id="editContent"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Contact Info Modal (담당부서/담당자 정보 입력) -->
+    <div class="modal-overlay" id="contactInfoModal">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>📝</span>
+                    <span>담당부서 및 담당자 정보</span>
+                </h2>
+                <button class="modal-close" onclick="closeContactModal()">×</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                보도자료 표지에 표시될 담당부서 및 담당자 정보를 입력해주세요.
+            </p>
+            
+            <!-- 보도자료 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📅</span> 보도자료 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">보도시점</label>
+                        <input type="text" class="missing-field-input" id="releaseDateTime" 
+                               placeholder="예: 2025. 11. 17.(월) 12:00" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">배포일시</label>
+                        <input type="text" class="missing-field-input" id="distributionDateTime" 
+                               placeholder="예: 2025. 11. 17.(월) 08:30" value="">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 담당부서 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🏛️</span> 담당부서
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">부서명</label>
+                        <input type="text" class="missing-field-input" id="department" 
+                               placeholder="예: 국가데이터처 경제통계국" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">과명</label>
+                        <input type="text" class="missing-field-input" id="division" 
+                               placeholder="예: 소득통계과" value="">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 책임자 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>👔</span> 책임자 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">직책</label>
+                        <input type="text" class="missing-field-input" id="managerTitle" 
+                               placeholder="예: 과 장" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">이름</label>
+                        <input type="text" class="missing-field-input" id="managerName" 
+                               placeholder="예: 홍길동" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="managerPhone" 
+                               placeholder="예: 042-481-2206" value="">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 담당자 정보 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>👤</span> 담당자 정보
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">직책</label>
+                        <input type="text" class="missing-field-input" id="staffTitle" 
+                               placeholder="예: 사무관" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">이름</label>
+                        <input type="text" class="missing-field-input" id="staffName" 
+                               placeholder="예: 김철수" value="">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="staffPhone" 
+                               placeholder="예: 042-481-2226" value="">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 관세청 담당 정보 -->
+            <div style="margin-bottom: 1rem;">
+                <h3 style="font-size: 0.95rem; color: var(--accent-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🚢</span> 관세청 담당 (수출입 통계)
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">담당부서</label>
+                        <input type="text" class="missing-field-input" id="customsDepartment" 
+                               placeholder="예: 관세청 정보데이터기획담당관" value="관세청 정보데이터기획담당관">
+                    </div>
+                    <div class="missing-field-item">
+                        <label class="missing-field-label">전화번호</label>
+                        <input type="text" class="missing-field-input" id="customsPhone" 
+                               placeholder="예: 042-481-7845" value="042-481-7845">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeContactModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveContactInfo()">💾 저장</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Upload Progress Modal -->
+    <div class="upload-modal-overlay" id="uploadModal">
+        <div class="upload-modal-content">
+            <div class="upload-modal-icon" id="uploadModalIcon">📤</div>
+            <h2 class="upload-modal-title" id="uploadModalTitle">파일 업로드 중</h2>
+            <p class="upload-modal-subtitle" id="uploadModalSubtitle">파일을 분석하고 있습니다...</p>
+            
+            <div class="upload-steps">
+                <div class="upload-step" id="uploadStep1">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">파일 업로드</span>
+                    <span class="step-status"></span>
+                </div>
+                <div class="upload-step" id="uploadStep2">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">분석표 업로드</span>
+                    <span class="step-status"></span>
+                </div>
+                <div class="upload-step" id="uploadStep4">
+                    <span class="step-icon">⏳</span>
+                    <span class="step-text">보도자료 생성 준비</span>
+                    <span class="step-status"></span>
+                </div>
+            </div>
+            
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+            </div>
+            
+            <div class="upload-result" id="uploadResult" style="display: none;">
+                <div class="result-item">
+                    <span class="result-label">기준시점:</span>
+                    <span class="result-value" id="resultPeriod"></span>
+                </div>
+                <div class="result-item">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay with Progress -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-icon" id="loadingIcon">📊</div>
+            <h2 class="loading-title" id="loadingTitle">보도자료 생성 중</h2>
+            <p class="loading-subtitle" id="loadingSubtitle">모든 보도자료를 미리 생성하고 있습니다. 잠시만 기다려주세요.</p>
+            
+            <div class="loading-progress-container">
+                <div class="loading-progress-bar">
+                    <div class="loading-progress-fill" id="loadingProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="loading-stats">
+                    <span id="loadingProgressText">0 / 50</span>
+                    <span id="loadingProgressPercent">0%</span>
+                </div>
+            </div>
+            
+            <div class="loading-current-item" id="loadingCurrentItem">
+                <span class="loading-current-icon" id="loadingCurrentIcon">📄</span>
+                <span class="loading-current-text" id="loadingCurrentText">준비 중...</span>
+            </div>
+            
+            <div class="loading-time-container">
+                <div class="loading-time-item">
+                    <span class="loading-time-value" id="elapsedTime">00:00</span>
+                    <span class="loading-time-label">경과 시간</span>
+                </div>
+                <div class="loading-time-item" id="remainingTimeContainer" style="display: none;">
+                    <span class="loading-time-value" id="remainingTime">--:--</span>
+                    <span class="loading-time-label">남은 시간</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // State
+        const state = {
+            fileUploaded: false,
+            allGenerated: false,
+            currentReportIndex: -1,
+            currentGlobalIndex: -1,  // 전체 보도자료 통합 인덱스
+            currentPageInReport: 0,  // 현재 보도자료 내 페이지 인덱스
+            totalPagesInReport: 1,   // 현재 보도자료의 총 페이지 수
+            allReports: [],  // 모든 보도자료 통합 배열
+            fileType: 'analysis',  // 분석표만 업로드
+            reports: [],
+            summaryReports: [],
+            sectoralReports: [],
+            regionalReports: [],
+            statisticsReports: [],  // 통계표 기능 비활성화
+            // 캐시된 HTML
+            cachedHtml: {
+                summary: {},
+                sectoral: {},
+                regional: {},
+                statistics: {}
+            },
+            generatedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            reviewedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            editedReports: {
+                summary: new Set(),
+                sectoral: new Set(),
+                regional: new Set(),
+                statistics: new Set()
+            },
+            htmlCache: {},  // 최종 문서 생성용 캐시
+            currentTab: 'summary',
+            currentSummaryIndex: -1,
+            currentRegionalIndex: -1,
+            currentStatisticsIndex: -1,
+            // 생성 통계
+            generationStats: {
+                total: 0,
+                completed: 0,
+                failed: 0,
+                startTime: null
+            },
+            // 담당자 정보 (기본값 없음 - 실무자가 직접 입력해야 함)
+            contactInfo: {
+                release_datetime: '',
+                distribution_datetime: '',
+                department: '',
+                division: '',
+                manager_title: '',
+                manager_name: '',
+                manager_phone: '',
+                staff_title: '',
+                staff_name: '',
+                staff_phone: '',
+                customs_department: '',
+                customs_phone: ''
+            },
+        };
+
+        // DOM Elements
+        const elements = {
+            uploadZone: document.getElementById('uploadZone'),
+            fileInput: document.getElementById('fileInput'),
+            uploadFilename: document.getElementById('uploadFilename'),
+            allReportsList: document.getElementById('allReportsList'),
+            reportCountBadge: document.getElementById('reportCountBadge'),
+            // 기존 호환성 유지 (더미)
+            summaryReportList: { innerHTML: '', style: { display: 'flex' } },
+            reportList: { innerHTML: '', style: { display: 'flex' } },
+            regionalReportList: { innerHTML: '', style: { display: 'flex' } },
+            statisticsReportList: { innerHTML: '', style: { display: 'flex' } },
+            tabSummary: null,
+            tabSectoral: null,
+            tabRegional: null,
+            tabStatistics: null,
+            yearSelect: document.getElementById('yearSelect'),
+            quarterSelect: document.getElementById('quarterSelect'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            pageIndicator: document.getElementById('pageIndicator'),
+            exportHwpReadyBtn: document.getElementById('exportHwpReadyBtn'),
+            previewTitle: document.getElementById('previewTitle'),
+            previewPlaceholder: document.getElementById('previewPlaceholder'),
+            previewIframe: document.getElementById('previewIframe'),
+            editContainer: document.getElementById('editContainer'),
+            editContent: document.getElementById('editContent'),
+            editBtn: document.getElementById('editBtn'),
+            saveEditBtn: document.getElementById('saveEditBtn'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+            markReviewedBtn: document.getElementById('markReviewedBtn'),
+            contactInfoModal: document.getElementById('contactInfoModal'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingTitle: document.getElementById('loadingTitle'),
+            loadingSubtitle: document.getElementById('loadingSubtitle'),
+            loadingIcon: document.getElementById('loadingIcon'),
+            loadingProgressFill: document.getElementById('loadingProgressFill'),
+            loadingProgressText: document.getElementById('loadingProgressText'),
+            loadingProgressPercent: document.getElementById('loadingProgressPercent'),
+            loadingCurrentIcon: document.getElementById('loadingCurrentIcon'),
+            loadingCurrentText: document.getElementById('loadingCurrentText'),
+            elapsedTime: document.getElementById('elapsedTime'),
+            remainingTimeContainer: document.getElementById('remainingTimeContainer'),
+            remainingTime: document.getElementById('remainingTime'),
+            generationStatus: document.getElementById('generationStatus'),
+            generationStatusCount: document.getElementById('generationStatusCount'),
+            generationMiniFill: document.getElementById('generationMiniFill'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        let timerInterval = null;
+        let isEditMode = false;
+        let originalHtmlBeforeEdit = null;
+        let currentEditingReport = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        function initApp() {
+            console.log('[초기화] 앱 초기화 시작');
+            setupEventListeners();
+            loadReportList();
+            renderAllReportsList(); // 초기 렌더링
+            
+            // 알림 권한 요청 (분석 완료 시 알림용)
+            requestNotificationPermission();
+            console.log('[초기화] 앱 초기화 완료');
+        }
+
+        function setupEventListeners() {
+            // File upload - DOM이 로드된 후 요소를 다시 찾기
+            elements.uploadZone = document.getElementById('uploadZone');
+            elements.fileInput = document.getElementById('fileInput');
+            
+            if (!elements.uploadZone || !elements.fileInput) {
+                console.error('[초기화] 업로드 요소를 찾을 수 없습니다:', {
+                    uploadZone: !!elements.uploadZone,
+                    fileInput: !!elements.fileInput
+                });
+                return;
+            }
+            
+            console.log('[초기화] 업로드 이벤트 리스너 등록');
+            elements.uploadZone.addEventListener('click', () => {
+                console.log('[업로드] 업로드 영역 클릭');
+                if (elements.fileInput) {
+                    elements.fileInput.click();
+                } else {
+                    console.error('[업로드] fileInput이 없습니다.');
+                }
+            });
+            elements.fileInput.addEventListener('change', (e) => {
+                console.log('[업로드] 파일 선택:', e.target.files[0]?.name);
+                handleFileSelect(e);
+            });
+            elements.uploadZone.addEventListener('dragover', handleDragOver);
+            elements.uploadZone.addEventListener('dragleave', handleDragLeave);
+            elements.uploadZone.addEventListener('drop', handleDrop);
+
+            // Navigation
+            elements.prevBtn.addEventListener('click', () => navigateReport(-1));
+            elements.nextBtn.addEventListener('click', () => navigateReport(1));
+
+            // Actions
+            elements.markReviewedBtn.addEventListener('click', markCurrentAsReviewed);
+            elements.exportHwpReadyBtn.addEventListener('click', exportHwpReadyDocument);
+            
+            // Edit actions
+            elements.editBtn.addEventListener('click', enterEditMode);
+            elements.saveEditBtn.addEventListener('click', saveEditedContent);
+            elements.cancelEditBtn.addEventListener('click', cancelEditMode);
+        }
+
+        function loadReportList() {
+            fetch('/api/report-order')
+                .then(res => res.json())
+                .then(data => {
+                    state.reports = data.reports;
+                    state.summaryReports = data.reports.filter(r => r.category === 'summary');
+                    state.sectoralReports = data.reports.filter(r => r.category !== 'summary');
+                    state.regionalReports = data.regional_reports || [];
+                    
+                    // 총 보도자료 수 계산
+                    state.generationStats.total = 
+                        state.summaryReports.length + 
+                        state.sectoralReports.length + 
+                        state.regionalReports.length + 
+                        state.statisticsReports.length;
+                    
+                    // 전체 보도자료 배열 초기화 및 렌더링
+                    initializeAllReports();
+                    renderAllReportsList();
+                })
+                .catch(err => {
+                    console.error('보도자료 목록 로드 오류:', err);
+                    showToast('보도자료 목록을 불러오는데 실패했습니다.', 'error');
+                });
+        }
+
+        // ===== 담당자 정보 모달 함수 =====
+        function openContactModal() {
+            document.getElementById('releaseDateTime').value = state.contactInfo.release_datetime;
+            document.getElementById('distributionDateTime').value = state.contactInfo.distribution_datetime;
+            document.getElementById('department').value = state.contactInfo.department;
+            document.getElementById('division').value = state.contactInfo.division;
+            document.getElementById('managerTitle').value = state.contactInfo.manager_title;
+            document.getElementById('managerName').value = state.contactInfo.manager_name;
+            document.getElementById('managerPhone').value = state.contactInfo.manager_phone;
+            document.getElementById('staffTitle').value = state.contactInfo.staff_title;
+            document.getElementById('staffName').value = state.contactInfo.staff_name;
+            document.getElementById('staffPhone').value = state.contactInfo.staff_phone;
+            document.getElementById('customsDepartment').value = state.contactInfo.customs_department || '관세청 정보데이터기획담당관';
+            document.getElementById('customsPhone').value = state.contactInfo.customs_phone || '042-481-7845';
+            
+            elements.contactInfoModal.classList.add('active');
+        }
+
+        function closeContactModal() {
+            elements.contactInfoModal.classList.remove('active');
+        }
+
+        function saveContactInfo() {
+            state.contactInfo = {
+                release_datetime: document.getElementById('releaseDateTime').value,
+                distribution_datetime: document.getElementById('distributionDateTime').value,
+                department: document.getElementById('department').value,
+                division: document.getElementById('division').value,
+                manager_title: document.getElementById('managerTitle').value,
+                manager_name: document.getElementById('managerName').value,
+                manager_phone: document.getElementById('managerPhone').value,
+                staff_title: document.getElementById('staffTitle').value,
+                staff_name: document.getElementById('staffName').value,
+                staff_phone: document.getElementById('staffPhone').value,
+                customs_department: document.getElementById('customsDepartment').value,
+                customs_phone: document.getElementById('customsPhone').value
+            };
+            
+            closeContactModal();
+            showToast('담당자 정보가 저장되었습니다.', 'success');
+        }
+
+
+        // Tab switching
+        function switchTab(tab) {
+            state.currentTab = tab;
+            
+            elements.tabSummary.classList.toggle('active', tab === 'summary');
+            elements.tabSectoral.classList.toggle('active', tab === 'sectoral');
+            elements.tabRegional.classList.toggle('active', tab === 'regional');
+            elements.tabStatistics.classList.toggle('active', tab === 'statistics');
+            
+            elements.summaryReportList.style.display = tab === 'summary' ? 'flex' : 'none';
+            elements.reportList.style.display = tab === 'sectoral' ? 'flex' : 'none';
+            elements.regionalReportList.style.display = tab === 'regional' ? 'flex' : 'none';
+            elements.statisticsReportList.style.display = tab === 'statistics' ? 'flex' : 'none';
+            
+            updatePageIndicator();
+            updateNavigationButtons();
+        }
+
+        // ===== 미리보기 생성 =====
+        async function generateAllReports() {
+            if (!state.fileUploaded) {
+                showToast('먼저 엑셀 파일을 업로드하세요.', 'warning');
+                return;
+            }
+
+            // 초기화
+            state.generationStats.completed = 0;
+            state.generationStats.failed = 0;
+            state.generationStats.startTime = Date.now();
+            
+            showLoadingProgress();
+            startTimer();
+
+            const allItems = [
+                ...state.summaryReports.map(r => ({ type: 'summary', report: r })),
+                ...state.sectoralReports.map(r => ({ type: 'sectoral', report: r })),
+                ...state.regionalReports.map(r => ({ type: 'regional', report: r }))
+                // 통계표 기능 비활성화 - statisticsReports 제외
+            ];
+
+            for (let i = 0; i < allItems.length; i++) {
+                const item = allItems[i];
+                
+                // 통계표 건너뛰기 필터링
+                if (item.type === 'statistics') {
+                    console.log('[건너뛰기] 통계표는 생성하지 않습니다:', item.report.name);
+                    continue;
+                }
+                
+                const progress = ((i + 1) / allItems.length) * 100;
+                
+                // 현재 항목 표시
+                updateLoadingProgress(i + 1, allItems.length, item.report.icon || '📄', item.report.name);
+                
+                try {
+                    const result = await generateSingleReport(item.type, item.report);
+                    if (result && result.success) {
+                        state.generationStats.completed++;
+                    } else {
+                        console.error(`[보도자료 생성 실패] ${item.report.name} (${item.type}):`, result?.error || '알 수 없는 오류');
+                        state.generationStats.failed++;
+                    }
+                } catch (err) {
+                    console.error(`[보도자료 생성 예외] ${item.report.name} (${item.type}):`, err);
+                    state.generationStats.failed++;
+                }
+            }
+
+            stopTimer();
+            hideLoading();
+            
+            // 생성 완료 상태 표시
+            state.allGenerated = true;
+            showGenerationStatus();
+            
+            // 한글 불러오기용 HTML 내보내기 버튼 표시 및 활성화
+            if (elements.exportHwpReadyBtn) {
+                elements.exportHwpReadyBtn.style.display = 'inline-flex';
+                elements.exportHwpReadyBtn.disabled = false;
+                elements.exportHwpReadyBtn.style.opacity = '1';
+                elements.exportHwpReadyBtn.style.cursor = 'pointer';
+                console.log('[출력] 한글 불러오기용 HTML 출력 버튼 활성화');
+            }
+            
+            // 전체 보도자료 배열 초기화 및 렌더링
+            initializeAllReports();
+            renderAllReportsList();
+            
+            // 첫 번째 보도자료 자동 선택
+            if (state.allReports.length > 0) {
+                selectGlobalReport(0);
+            }
+            
+            showToast(`✅ 전체 ${state.generationStats.completed}개 보도자료 생성 완료!`, 'success');
+            
+            // 시스템 알림: 미리보기 생성 완료
+            sendSystemNotification('📋 미리보기 생성 완료', `${state.generationStats.completed}개 보도자료 미리보기 생성이 완료되었습니다.`);
+        }
+        
+        // 시스템 알림 권한 요청 및 알림 보내기
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+        
+        function sendSystemNotification(title, body) {
+            // 브라우저 알림 API 지원 확인
+            if (!('Notification' in window)) {
+                console.log('이 브라우저는 알림을 지원하지 않습니다.');
+                return;
+            }
+            
+            // 알림 권한이 허용된 경우
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title, {
+                    body: body,
+                    icon: '📊',
+                    badge: '📊',
+                    tag: 'analysis-complete',
+                    requireInteraction: false
+                });
+                
+                // 3초 후 자동 닫기
+                setTimeout(() => notification.close(), 5000);
+                
+                // 알림 클릭 시 창 포커스
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            } 
+            // 알림 권한이 거부되지 않은 경우 권한 요청
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        sendSystemNotification(title, body);
+                    }
+                });
+            }
+            
+            // 사운드 알림 (선택적)
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAAAJofI4PKuahEEOnLY8PnLeBMAAFrQ9//tjhAAAD7l//+9cwAAAEDz//+uZgAAOPz//6dbAAAs////nVEAACP///+TRwAAHv///4s9AAAb////hDQAABn///9+LAAA');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
+        async function generateSingleReport(type, report) {
+            // year/quarter 유효성 검사 - NaN이거나 없으면 undefined로 설정 (서버에서 추출하도록)
+            let year = parseInt(elements.yearSelect.value);
+            let quarter = parseInt(elements.quarterSelect.value);
+            
+            // NaN이면 undefined로 설정 (서버에서 세션이나 데이터에서 추출하도록)
+            if (isNaN(year)) year = undefined;
+            if (isNaN(quarter)) quarter = undefined;
+            
+            let endpoint, body;
+            
+            switch (type) {
+                case 'summary':
+                    endpoint = '/api/generate-summary-preview';
+                    body = {
+                        report_id: report.id,
+                        year, quarter,
+                        contact_info: state.contactInfo
+                    };
+                    break;
+                case 'sectoral':
+                    endpoint = '/api/generate-preview';
+                    body = { report_id: report.id, year, quarter };
+                    break;
+                case 'regional':
+                    endpoint = '/api/generate-regional-preview';
+                    body = { region_id: report.id };
+                    break;
+                case 'statistics':
+                    // 통계표 기능 비활성화 - 요청 건너뛰기
+                    console.log('[통계표 건너뛰기] 통계표 생성 기능이 비활성화되어 있습니다:', report.name);
+                    return { success: false, error: '통계표 생성 기능이 비활성화되어 있습니다.' };
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                // 응답 상태 확인
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (e) {
+                        errorData = { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                    console.error(`[보도자료 생성 실패] ${report.name} (${type}):`, errorData.error || '알 수 없는 오류');
+                    return errorData;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // HTML 캐싱
+                    state.cachedHtml[type][report.id] = data.html;
+                    state.htmlCache[`${type}_${report.id}`] = data.html;  // 최종 문서용 캐시
+                    state.generatedReports[type].add(report.id);
+                } else {
+                    console.error(`[보도자료 생성 실패] ${report.name} (${type}):`, data.error || '알 수 없는 오류');
+                }
+                
+                return data;
+            } catch (err) {
+                console.error(`[보도자료 생성 예외] ${report.name} (${type}):`, err);
+                return { success: false, error: `네트워크 오류: ${err.message}` };
+            }
+        }
+
+        // ===== 로딩 진행률 표시 =====
+        function showLoadingProgress() {
+            elements.loadingOverlay.classList.add('active');
+        }
+
+        function updateLoadingProgress(current, total, icon, name) {
+            const percent = Math.round((current / total) * 100);
+            
+            elements.loadingProgressFill.style.width = `${percent}%`;
+            elements.loadingProgressText.textContent = `${current} / ${total}`;
+            elements.loadingProgressPercent.textContent = `${percent}%`;
+            elements.loadingCurrentIcon.textContent = icon;
+            elements.loadingCurrentText.textContent = name;
+        }
+
+        // ===== 처리 시간 저장/불러오기 (localStorage) =====
+        const PROCESSING_TIME_KEY = 'reportGenerationTime';
+        
+        function saveProcessingTime(durationMs) {
+            const record = {
+                duration: durationMs,
+                reportCount: state.generationStats.total,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(PROCESSING_TIME_KEY, JSON.stringify(record));
+        }
+        
+        function getEstimatedTime() {
+            try {
+                const saved = localStorage.getItem(PROCESSING_TIME_KEY);
+                if (saved) {
+                    const record = JSON.parse(saved);
+                    return record;
+                }
+            } catch (e) {
+                console.warn('처리 시간 불러오기 실패:', e);
+            }
+            return null;
+        }
+        
+        function formatTime(ms) {
+            const totalSec = Math.floor(ms / 1000);
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            // 남은 시간 계산용 예상 시간 설정
+            const estimated = getEstimatedTime();
+            if (estimated && estimated.duration) {
+                elements.remainingTimeContainer.style.display = 'flex';
+                state.estimatedDuration = estimated.duration;
+            } else {
+                elements.remainingTimeContainer.style.display = 'none';
+                state.estimatedDuration = null;
+            }
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - state.generationStats.startTime;
+                elements.elapsedTime.textContent = formatTime(elapsed);
+                
+                // 남은 시간 계산 (예상 시간이 있는 경우)
+                if (state.estimatedDuration) {
+                    const remaining = Math.max(0, state.estimatedDuration - elapsed);
+                    elements.remainingTime.textContent = formatTime(remaining);
+                    
+                    // 시간 초과 시 스타일 변경
+                    if (remaining === 0) {
+                        elements.remainingTime.style.color = 'var(--warning)';
+                        elements.remainingTime.textContent = '+' + formatTime(elapsed - state.estimatedDuration);
+                    } else {
+                        elements.remainingTime.style.color = '';
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // 처리 시간 저장
+            if (state.generationStats.startTime) {
+                const duration = Date.now() - state.generationStats.startTime;
+                saveProcessingTime(duration);
+            }
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.classList.remove('active');
+        }
+
+        function showGenerationStatus() {
+            const total = state.generationStats.total;
+            const completed = state.generationStats.completed;
+            
+            elements.generationStatus.classList.add('active');
+            elements.generationStatusCount.textContent = `${completed}/${total}`;
+            elements.generationMiniFill.style.width = `${(completed / total) * 100}%`;
+        }
+
+        // ===== 보도자료 선택 (캐시에서 표시) =====
+        function selectSummaryReport(index) {
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'summary' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
+            }
+        }
+
+        function selectReport(index) {
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'sectoral' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
+            }
+        }
+
+        function selectRegionalReport(index) {
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'regional' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
+            }
+        }
+
+        function selectStatisticsReport(index) {
+            // globalIndex로 변환하여 호출
+            const globalIndex = state.allReports.findIndex(r => r.type === 'statistics' && r.originalIndex === index);
+            if (globalIndex >= 0) {
+                selectGlobalReport(globalIndex);
+            }
+        }
+
+        function displayCachedReport(type, report, pageIndex = 0) {
+            const html = state.cachedHtml[type][report.id];
+            
+            if (html) {
+                // 편집 모드 종료
+                if (isEditMode) {
+                    exitEditMode();
+                }
+                
+                // HTML에서 페이지(.page) 요소들 추출
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const pages = doc.querySelectorAll('.page');
+                
+                state.totalPagesInReport = Math.max(1, pages.length);
+                state.currentPageInReport = Math.min(pageIndex, state.totalPagesInReport - 1);
+                
+                let displayHtml = html;
+                
+                // 페이지가 여러 개인 경우 현재 페이지만 표시
+                if (pages.length > 1) {
+                    const currentPage = pages[state.currentPageInReport];
+                    if (currentPage) {
+                        // 원본 HTML의 head 유지하고 body는 현재 페이지만
+                        const headContent = doc.head.innerHTML;
+                        displayHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>${headContent}</head>
+<body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #f5f5f5;">
+${currentPage.outerHTML}
+</body>
+</html>`;
+                    }
+                }
+                
+                elements.previewPlaceholder.style.display = 'none';
+                elements.editContainer.style.display = 'none';
+                elements.previewIframe.style.display = 'block';
+                elements.previewIframe.srcdoc = displayHtml;
+                
+                // 제목에 페이지 정보 표시
+                const pageInfo = state.totalPagesInReport > 1 ? ` (${state.currentPageInReport + 1}/${state.totalPagesInReport})` : '';
+                elements.previewTitle.innerHTML = `<span>${report.icon || '📄'}</span><span>${report.name}${pageInfo}</span>`;
+                
+                // 편집/검토 버튼 표시
+                elements.editBtn.style.display = 'inline-flex';
+                elements.saveEditBtn.style.display = 'none';
+                elements.cancelEditBtn.style.display = 'none';
+                elements.markReviewedBtn.style.display = 'block';
+                
+                updateNavigationButtons();
+                updatePageIndicator();
+            } else {
+                showToast('보도자료를 찾을 수 없습니다.', 'error');
+            }
+        }
+
+        // ===== 렌더링 함수들 =====
+        // 전체 보도자료 통합 배열 초기화
+        function initializeAllReports() {
+            state.allReports = [
+                ...state.summaryReports.map((r, idx) => ({ ...r, type: 'summary', originalIndex: idx })),
+                ...state.sectoralReports.map((r, idx) => ({ ...r, type: 'sectoral', originalIndex: idx })),
+                ...state.regionalReports.map((r, idx) => ({ ...r, type: 'regional', originalIndex: idx, name: `${r.index}. ${r.name}`, sheet: r.full_name }))
+                // 통계표 기능 비활성화 - statisticsReports 제외
+            ];
+            if (elements.reportCountBadge) {
+                elements.reportCountBadge.textContent = `(총 ${state.allReports.length}개)`;
+            }
+        }
+
+        // 전체 보도자료 통합 리스트 렌더링
+        function renderAllReportsList() {
+            if (!elements.allReportsList) return;
+            
+            // 파일이 업로드되지 않았거나 기초자료인 경우 초기 안내 표시
+            if (!state.fileUploaded) {
+                elements.allReportsList.innerHTML = `
+                    <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 0.75rem;">📁</div>
+                        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">파일을 업로드하세요</div>
+                        <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
+                            • <strong style="color: var(--success);">분석표</strong> 업로드 → 보도자료 생성
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 보도자료 목록 렌더링
+            
+            let currentSection = '';
+            let html = '';
+            
+            state.allReports.forEach((report, globalIdx) => {
+                // 통계표 건너뛰기 필터링
+                if (report.type === 'statistics') {
+                    return;  // continue와 동일하게 작동
+                }
+                
+                // 섹션 헤더 추가
+                const sectionNames = { summary: '📋 요약', sectoral: '📊 부문별', regional: '🗺️ 시도별' };
+                if (report.type !== currentSection) {
+                    currentSection = report.type;
+                    html += `<div style="font-size: 0.75rem; color: var(--accent-primary); padding: 0.5rem 0.75rem; margin-top: ${globalIdx > 0 ? '0.5rem' : '0'}; background: rgba(99, 102, 241, 0.1); border-radius: 4px;">${sectionNames[report.type]}</div>`;
+                }
+                
+                const isActive = globalIdx === state.currentGlobalIndex;
+                const isGenerated = state.generatedReports[report.type].has(report.id);
+                const isReviewed = state.reviewedReports[report.type].has(report.id);
+                const isEdited = state.editedReports[report.type].has(report.id);
+                
+                let statusClass = 'pending';
+                let statusIcon = '○';
+                if (isReviewed) {
+                    statusClass = 'reviewed';
+                    statusIcon = '✓';
+                } else if (isEdited) {
+                    statusClass = 'edited';
+                    statusIcon = '✏️';
+                } else if (isGenerated) {
+                    statusClass = 'generated';
+                    statusIcon = '●';
+                }
+
+                html += `
+                    <div class="report-item ${isActive ? 'active' : ''} ${isGenerated ? 'generated' : ''} ${isReviewed ? 'reviewed' : ''} ${isEdited ? 'edited' : ''}"
+                         onclick="selectGlobalReport(${globalIdx})"
+                         data-report-id="${report.id}"
+                         data-global-index="${globalIdx}">
+                        <div class="report-item-header">
+                        <div class="report-icon">${report.icon}</div>
+                        <div class="report-info">
+                            <div class="report-name">${report.name}</div>
+                        </div>
+                        <div class="report-status ${statusClass}">${statusIcon}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            elements.allReportsList.innerHTML = html;
+            
+            // 현재 선택된 항목으로 스크롤
+            if (state.currentGlobalIndex >= 0) {
+                const activeItem = elements.allReportsList.querySelector(`[data-global-index="${state.currentGlobalIndex}"]`);
+                if (activeItem) {
+                    activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        // 전체 보도자료 선택 함수
+        function selectGlobalReport(globalIndex, pageIndex = 0) {
+            if (!state.allGenerated) {
+                showToast('보도자료 생성 중입니다. 잠시만 기다려주세요.', 'info');
+                return;
+            }
+            
+            if (globalIndex < 0 || globalIndex >= state.allReports.length) return;
+            
+            state.currentGlobalIndex = globalIndex;
+            const report = state.allReports[globalIndex];
+            
+            // 기존 인덱스도 동기화
+            state.currentSummaryIndex = report.type === 'summary' ? report.originalIndex : -1;
+            state.currentReportIndex = report.type === 'sectoral' ? report.originalIndex : -1;
+            state.currentRegionalIndex = report.type === 'regional' ? report.originalIndex : -1;
+            state.currentStatisticsIndex = report.type === 'statistics' ? report.originalIndex : -1;
+            state.currentTab = report.type;
+            
+            // pageIndex가 -1이면 마지막 페이지로 이동
+            let targetPage = pageIndex;
+            if (pageIndex === -1) {
+                const html = state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id];
+                if (html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    targetPage = Math.max(0, doc.querySelectorAll('.page').length - 1);
+                } else {
+                    targetPage = 0;
+                }
+            }
+            
+            displayCachedReport(report.type, report, targetPage);
+            renderAllReportsList();
+            updateNavigationButtons();
+            updatePageIndicator();
+        }
+
+        // 기존 호환성을 위한 함수들 (내부적으로 globalIndex 사용)
+        function renderSummaryReportList() { renderAllReportsList(); }
+        function renderReportList() { renderAllReportsList(); }
+        function renderRegionalReportList() { renderAllReportsList(); }
+        function renderStatisticsReportList() { renderAllReportsList(); }
+
+        // ===== 네비게이션 =====
+        function navigateReport(direction) {
+            if (direction > 0) {
+                // 다음 페이지/보도자료
+                if (state.currentPageInReport < state.totalPagesInReport - 1) {
+                    // 같은 보도자료 내 다음 페이지
+                    const report = state.allReports[state.currentGlobalIndex];
+                    displayCachedReport(report.type, report, state.currentPageInReport + 1);
+                } else {
+                    // 다음 보도자료의 첫 페이지
+                    const newIndex = state.currentGlobalIndex + 1;
+                    if (newIndex < state.allReports.length) {
+                        selectGlobalReport(newIndex, 0);
+                    }
+                }
+            } else {
+                // 이전 페이지/보도자료
+                if (state.currentPageInReport > 0) {
+                    // 같은 보도자료 내 이전 페이지
+                    const report = state.allReports[state.currentGlobalIndex];
+                    displayCachedReport(report.type, report, state.currentPageInReport - 1);
+                } else {
+                    // 이전 보도자료의 마지막 페이지
+                    const newIndex = state.currentGlobalIndex - 1;
+                    if (newIndex >= 0) {
+                        selectGlobalReport(newIndex, -1);  // -1은 마지막 페이지를 의미
+                    }
+                }
+            }
+        }
+
+        function updateNavigationButtons() {
+            // 첫 보도자료의 첫 페이지이면 이전 버튼 비활성화
+            const isFirstPage = state.currentGlobalIndex <= 0 && state.currentPageInReport <= 0;
+            // 마지막 보도자료의 마지막 페이지이면 다음 버튼 비활성화
+            const isLastPage = state.currentGlobalIndex >= state.allReports.length - 1 && 
+                              state.currentPageInReport >= state.totalPagesInReport - 1;
+            
+            elements.prevBtn.disabled = isFirstPage;
+            elements.nextBtn.disabled = isLastPage;
+        }
+
+        function updatePageIndicator() {
+            // 전체 페이지 번호 계산 (모든 보도자료의 모든 페이지)
+            let totalPages = 0;
+            let currentPage = 0;
+            
+            for (let i = 0; i < state.allReports.length; i++) {
+                const report = state.allReports[i];
+                const html = state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id];
+                let pageCount = 1;
+                
+                if (html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    pageCount = Math.max(1, doc.querySelectorAll('.page').length);
+                }
+                
+                if (i < state.currentGlobalIndex) {
+                    currentPage += pageCount;
+                } else if (i === state.currentGlobalIndex) {
+                    currentPage += state.currentPageInReport + 1;
+                }
+                totalPages += pageCount;
+            }
+            
+            elements.pageIndicator.textContent = `${currentPage > 0 ? currentPage : 0} / ${totalPages}`;
+        }
+
+        // ===== 검토 완료 =====
+        function markCurrentAsReviewed() {
+            if (state.currentGlobalIndex < 0 || state.currentGlobalIndex >= state.allReports.length) {
+                return;
+            }
+            
+            const report = state.allReports[state.currentGlobalIndex];
+            state.reviewedReports[report.type].add(report.id);
+            
+            // iframe 내 placeholder 하이라이트 제거
+            try {
+                const iframe = elements.previewIframe;
+                if (iframe && iframe.contentDocument) {
+                    const placeholders = iframe.contentDocument.querySelectorAll('.placeholder');
+                    placeholders.forEach(el => {
+                        el.classList.remove('placeholder');
+                        el.removeAttribute('contenteditable');
+                        el.style.backgroundColor = '';
+                        el.style.border = '';
+                    });
+                    
+                    // 수정된 HTML을 캐시에 저장
+                    const cacheKey = `${report.type}_${report.id}`;
+                    state.htmlCache[cacheKey] = iframe.contentDocument.documentElement.outerHTML;
+                }
+            } catch (e) {
+                console.warn('플레이스홀더 하이라이트 제거 실패:', e);
+            }
+            
+            renderAllReportsList();
+            
+            showToast(`${report.name} 검토 완료`, 'success');
+            navigateReport(1); // 다음으로 자동 이동
+        }
+
+        // ===== 파일 업로드 =====
+        function handleDragOver(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            elements.uploadZone.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            console.log('[업로드] handleFileSelect 호출, 파일:', file?.name);
+            if (file) {
+                uploadFile(file);
+            } else {
+                console.warn('[업로드] 파일이 선택되지 않았습니다');
+            }
+        }
+
+        // 업로드 모달 관련 함수
+        function showUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.add('active');
+            
+            // 초기화
+            document.getElementById('uploadModalIcon').textContent = '📤';
+            document.getElementById('uploadModalTitle').textContent = '파일 업로드 중';
+            document.getElementById('uploadModalSubtitle').textContent = '파일을 분석하고 있습니다...';
+            document.getElementById('uploadProgressFill').style.width = '0%';
+            document.getElementById('uploadResult').style.display = 'none';
+            
+            // 모든 스텝 초기화 및 표시
+            ['uploadStep1', 'uploadStep2', 'uploadStep4'].forEach(id => {
+                const step = document.getElementById(id);
+                step.className = 'upload-step';
+                step.style.display = ''; // 표시 상태로 초기화
+                step.querySelector('.step-icon').textContent = '⏳';
+                step.querySelector('.step-status').textContent = '';
+            });
+        }
+        
+        function updateUploadStep(stepNum, status, statusText = '') {
+            const step = document.getElementById(`uploadStep${stepNum}`);
+            const icon = step.querySelector('.step-icon');
+            const statusEl = step.querySelector('.step-status');
+            
+            step.className = 'upload-step';
+            
+            if (status === 'active') {
+                step.classList.add('active');
+                icon.textContent = '🔄';
+                statusEl.textContent = '진행 중...';
+            } else if (status === 'completed') {
+                step.classList.add('completed');
+                icon.textContent = '✅';
+                statusEl.textContent = statusText || '완료';
+            } else if (status === 'skipped') {
+                step.classList.add('skipped');
+                icon.textContent = '⏭️';
+                statusEl.textContent = '건너뜀';
+            } else if (status === 'error') {
+                step.classList.add('error');
+                icon.textContent = '❌';
+                statusEl.textContent = statusText || '실패';
+            }
+            
+            // 진행률 업데이트 (3단계 기준)
+            const totalSteps = 3;
+            const progress = (stepNum / totalSteps) * 100;
+            document.getElementById('uploadProgressFill').style.width = `${progress}%`;
+        }
+        
+        function hideUploadModal(delay = 0) {
+            setTimeout(() => {
+                document.getElementById('uploadModal').classList.remove('active');
+            }, delay);
+        }
+
+        async function uploadFile(file) {
+            console.log('[업로드] uploadFile 시작:', file.name);
+            
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                console.error('[업로드] 잘못된 파일 형식:', file.name);
+                showToast('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.', 'error');
+                return;
+            }
+
+            // 업로드 모달 표시
+            console.log('[업로드] 업로드 모달 표시');
+            showUploadModal();
+            
+            // Step 1: 파일 업로드
+            updateUploadStep(1, 'active');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Step 1 완료
+                await new Promise(r => setTimeout(r, 300));
+                updateUploadStep(1, 'completed', file.name);
+                
+                // Step 2: 분석표 업로드
+                updateUploadStep(2, 'active');
+                document.getElementById('uploadModalSubtitle').textContent = '분석표를 업로드하고 있습니다...';
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Step 2 완료
+                    updateUploadStep(2, 'completed', '분석표');
+                    
+                    // 완료 상태 표시
+                    document.getElementById('uploadModalIcon').textContent = '✅';
+                    document.getElementById('uploadModalTitle').textContent = '업로드 완료!';
+                    document.getElementById('uploadModalSubtitle').textContent = '파일 처리가 완료되었습니다.';
+                    // 진행률은 updateUploadStep에서 자동 계산됨
+                    
+                    // 결과 표시
+                    const resultDiv = document.getElementById('uploadResult');
+                    resultDiv.style.display = 'block';
+                    document.getElementById('resultPeriod').textContent = `${data.year}년 ${data.quarter}분기`;
+                    
+                    // 기존 UI 업데이트
+                    state.fileUploaded = true;
+                    state.fileType = 'analysis';
+                    
+                    elements.uploadZone.classList.add('uploaded');
+                    elements.uploadFilename.textContent = `✓ ${data.filename}`;
+                    elements.uploadFilename.style.display = 'block';
+                    elements.uploadZone.querySelector('.upload-icon').textContent = '✅';
+                    elements.uploadZone.querySelector('.upload-text').textContent = '분석표 업로드 완료!';
+
+                    elements.yearSelect.value = data.year;
+                    elements.quarterSelect.value = data.quarter;
+                    
+                    const periodValue = document.getElementById('periodValue');
+                    periodValue.textContent = `${data.year}년 ${data.quarter}분기`;
+                    periodValue.classList.remove('waiting');
+                    
+                    // 변환 정보 표시
+                    const conversionInfo = document.getElementById('conversionInfo');
+                    
+                    // 변환 정보 숨김 (분석표만 업로드)
+                    if (conversionInfo) {
+                        conversionInfo.style.display = 'none';
+                    }
+                    
+                    // UI 상태 업데이트 (분석표 모드)
+                    updateUIForFileType('analysis');
+                    
+                    // 보도자료 생성 준비 완료 힌트 표시
+                    const reportGenerationHint = document.getElementById('reportGenerationHint');
+                    if (reportGenerationHint) {
+                        reportGenerationHint.style.display = 'block';
+                    }
+                    
+                    document.getElementById('uploadModalIcon').textContent = '✅';
+                    document.getElementById('uploadModalTitle').textContent = '분석표 업로드 완료!';
+                    document.getElementById('uploadModalSubtitle').textContent = '보도자료를 생성할 준비가 되었습니다.';
+                    
+                    // Step 3은 이미 숨김 처리됨
+                    updateUploadStep(4, 'completed', '보도자료 생성 준비 완료');
+                    
+                    hideUploadModal(2000);
+                    setTimeout(() => {
+                        generateAllReports();
+                    }, 2100);
+                    
+                    // 시스템 알림: 엑셀 파일 업로드 완료
+                    sendSystemNotification('📁 파일 업로드 완료', `${data.filename || '파일'}이 성공적으로 업로드되었습니다.`);
+                } else {
+                    // 오류 발생
+                    document.getElementById('uploadModalIcon').textContent = '❌';
+                    document.getElementById('uploadModalTitle').textContent = '업로드 실패';
+                    document.getElementById('uploadModalSubtitle').textContent = data.error || '파일 처리 중 오류가 발생했습니다.';
+                    hideUploadModal(3000);
+                    showToast(data.error || '업로드 실패', 'error');
+                }
+            } catch (err) {
+                console.error('업로드 오류:', err);
+                showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // ===== 편집 모드 함수들 =====
+        function getCurrentReportInfo() {
+            // 현재 선택된 보도자료 정보 반환
+            if (state.currentSummaryIndex >= 0) {
+                return { type: 'summary', report: state.summaryReports[state.currentSummaryIndex] };
+            } else if (state.currentReportIndex >= 0) {
+                return { type: 'sectoral', report: state.sectoralReports[state.currentReportIndex] };
+            } else if (state.currentRegionalIndex >= 0) {
+                return { type: 'regional', report: state.regionalReports[state.currentRegionalIndex] };
+            } else if (state.currentStatisticsIndex >= 0) {
+                return { type: 'statistics', report: state.statisticsReports[state.currentStatisticsIndex] };
+            }
+            return null;
+        }
+
+        function enterEditMode() {
+            const reportInfo = getCurrentReportInfo();
+            if (!reportInfo) {
+                showToast('편집할 보도자료를 먼저 선택하세요.', 'warning');
+                return;
+            }
+
+            isEditMode = true;
+            currentEditingReport = reportInfo;
+            
+            // 원본 저장
+            originalHtmlBeforeEdit = state.cachedHtml[reportInfo.type][reportInfo.report.id];
+            
+            // iframe 내에서 직접 편집 모드 활성화 (스타일 유지)
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
+            
+            // body를 편집 가능하게 설정
+            iframeDoc.body.contentEditable = 'true';
+            iframeDoc.body.style.cursor = 'text';
+            
+            // 편집 가능한 요소에 하이라이트 스타일 추가
+            const editStyle = iframeDoc.createElement('style');
+            editStyle.id = 'edit-mode-style';
+            editStyle.textContent = `
+                [contenteditable="true"]:focus {
+                    outline: 2px solid #007bff;
+                    outline-offset: 2px;
+                }
+                body {
+                    cursor: text !important;
+                }
+                td, th, p, span, div, h1, h2, h3, h4, h5, h6, li {
+                    min-height: 1em;
+                }
+            `;
+            iframeDoc.head.appendChild(editStyle);
+            
+            // 버튼 상태 변경
+            elements.editBtn.style.display = 'none';
+            elements.saveEditBtn.style.display = 'inline-flex';
+            elements.cancelEditBtn.style.display = 'inline-flex';
+            elements.markReviewedBtn.style.display = 'none';
+            
+            showToast('편집 모드가 활성화되었습니다. 텍스트를 클릭하여 수정하세요.', 'info');
+        }
+
+        function extractStyles(headHtml) {
+            // head에서 style 태그 추출
+            const styleMatch = headHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+            if (styleMatch) {
+                return styleMatch.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n');
+            }
+            return '';
+        }
+
+        function makeEditable(html) {
+            // DOM 파싱
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+            const container = doc.body.firstChild;
+            
+            // 텍스트 노드를 포함한 모든 요소에 contenteditable 추가
+            const editableSelectors = [
+                'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'td', 'th', 'li', 'div.value', 'div.text', 'div.title',
+                '.summary-text', '.description', '.content', '.data-value',
+                '.region-name', '.change-value', '.percent'
+            ];
+            
+            // 모든 텍스트 포함 요소 처리
+            container.querySelectorAll('*').forEach(el => {
+                // 이미지, SVG, 테이블 구조 등은 제외
+                const tagName = el.tagName.toLowerCase();
+                if (['img', 'svg', 'path', 'table', 'tr', 'thead', 'tbody', 'script', 'style', 'br', 'hr'].includes(tagName)) {
+                    return;
+                }
+                
+                // 직접 텍스트를 포함하는 경우만 편집 가능
+                const hasDirectText = Array.from(el.childNodes).some(node => 
+                    node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
+                );
+                
+                if (hasDirectText || editableSelectors.some(sel => el.matches(sel))) {
+                    el.setAttribute('contenteditable', 'true');
+                }
+            });
+            
+            return container.innerHTML;
+        }
+
+        function saveEditedContent() {
+            if (!currentEditingReport) {
+                showToast('저장할 보도자료가 없습니다.', 'error');
+                return;
+            }
+
+            // iframe에서 직접 편집된 내용 추출
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
+            
+            // 편집 모드 스타일 제거
+            const editStyle = iframeDoc.getElementById('edit-mode-style');
+            if (editStyle) editStyle.remove();
+            
+            // contentEditable 비활성화
+            iframeDoc.body.contentEditable = 'false';
+            iframeDoc.body.style.cursor = '';
+            
+            // 현재 상태의 전체 HTML 저장
+            const newHtml = `<!DOCTYPE html>\n<html lang="ko">\n${iframeDoc.documentElement.innerHTML}\n</html>`;
+            
+            // 캐시 업데이트
+            const { type, report } = currentEditingReport;
+            state.cachedHtml[type][report.id] = newHtml;
+            
+            // htmlCache도 업데이트 (최종 문서 생성용)
+            const cacheKey = `${type}_${report.id}`;
+            state.htmlCache[cacheKey] = newHtml;
+            
+            // 편집 모드 종료
+            exitEditMode();
+            
+            // 수정됨 표시
+            markReportAsEdited(type, report.id);
+            
+            showToast('✅ 변경사항이 저장되었습니다.', 'success');
+        }
+
+        function cancelEditMode() {
+            // iframe에서 편집 모드 해제
+            const iframeDoc = elements.previewIframe.contentDocument || elements.previewIframe.contentWindow.document;
+            
+            // 편집 모드 스타일 제거
+            const editStyle = iframeDoc.getElementById('edit-mode-style');
+            if (editStyle) editStyle.remove();
+            
+            // contentEditable 비활성화
+            iframeDoc.body.contentEditable = 'false';
+            iframeDoc.body.style.cursor = '';
+            
+            // 원본 HTML로 복원
+            if (originalHtmlBeforeEdit) {
+                elements.previewIframe.srcdoc = originalHtmlBeforeEdit;
+            }
+            
+            exitEditMode();
+            showToast('편집이 취소되었습니다.', 'info');
+        }
+
+        function exitEditMode() {
+            isEditMode = false;
+            originalHtmlBeforeEdit = null;
+            currentEditingReport = null;
+            
+            // 버튼 상태 복원
+            elements.editBtn.style.display = 'inline-flex';
+            elements.saveEditBtn.style.display = 'none';
+            elements.cancelEditBtn.style.display = 'none';
+            elements.markReviewedBtn.style.display = 'block';
+        }
+
+        function markReportAsEdited(type, reportId) {
+            // 편집된 보도자료 표시 (옵션: 리스트에 표시 추가)
+            if (!state.editedReports) {
+                state.editedReports = { summary: new Set(), sectoral: new Set(), regional: new Set(), statistics: new Set() };
+            }
+            state.editedReports[type].add(reportId);
+            
+            // 목록 새로고침
+            renderSummaryReportList();
+            renderReportList();
+            renderRegionalReportList();
+            renderStatisticsReportList();
+        }
+
+        // ===== 현재 미리보기 iframe 내용을 캐시에 동기화 =====
+        function syncCurrentPreviewToCache() {
+            try {
+                if (state.currentGlobalIndex < 0 || state.currentGlobalIndex >= state.allReports.length) {
+                    console.log('[캐시 동기화] 현재 보고 있는 보도자료가 없습니다.');
+                    return;
+                }
+                
+                const report = state.allReports[state.currentGlobalIndex];
+                if (!report) {
+                    console.warn('[캐시 동기화] 보고 있는 보도자료 정보가 없습니다.');
+                    return;
+                }
+                
+                const iframe = elements.previewIframe;
+                if (!iframe) {
+                    console.warn('[캐시 동기화] previewIframe을 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // iframe 접근 시도 (크로스 오리진 문제 방지)
+                let iframeDoc = null;
+                try {
+                    iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                } catch (e) {
+                    console.warn('[캐시 동기화] iframe 접근 실패 (크로스 오리진):', e);
+                    // srcdoc로 설정된 경우 직접 접근 가능
+                    if (iframe.srcdoc) {
+                        // srcdoc에서 직접 추출
+                        const cacheKey = `${report.type}_${report.id}`;
+                        if (state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id]) {
+                            state.htmlCache[cacheKey] = state.cachedHtml[report.type][report.id];
+                            console.log(`[캐시 동기화] srcdoc에서 캐시 복사: ${cacheKey}`);
+                        }
+                    }
+                    return;
+                }
+                
+                if (iframeDoc && iframeDoc.documentElement) {
+                    // 현재 iframe의 HTML 내용을 캐시에 저장
+                    const currentHtml = iframeDoc.documentElement.outerHTML;
+                    const cacheKey = `${report.type}_${report.id}`;
+                    state.htmlCache[cacheKey] = currentHtml;
+                    if (!state.cachedHtml[report.type]) {
+                        state.cachedHtml[report.type] = {};
+                    }
+                    state.cachedHtml[report.type][report.id] = currentHtml;
+                    console.log(`[캐시 동기화] 성공: ${cacheKey} (${currentHtml.length} bytes)`);
+                } else {
+                    console.warn('[캐시 동기화] iframe 문서를 찾을 수 없습니다.');
+                    // 폴백: 기존 캐시 사용
+                    const cacheKey = `${report.type}_${report.id}`;
+                    if (state.cachedHtml[report.type] && state.cachedHtml[report.type][report.id]) {
+                        state.htmlCache[cacheKey] = state.cachedHtml[report.type][report.id];
+                        console.log(`[캐시 동기화] 폴백: 기존 캐시 사용 ${cacheKey}`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[캐시 동기화] 예외 발생:', e);
+                // 폴백: 모든 생성된 보도자료의 캐시를 htmlCache에 복사
+                for (const type of ['summary', 'sectoral', 'regional', 'statistics']) {
+                    if (state.cachedHtml[type]) {
+                        for (const [id, html] of Object.entries(state.cachedHtml[type])) {
+                            const cacheKey = `${type}_${id}`;
+                            if (!state.htmlCache[cacheKey]) {
+                                state.htmlCache[cacheKey] = html;
+                            }
+                        }
+                    }
+                }
+                console.log('[캐시 동기화] 폴백: 모든 캐시를 htmlCache에 복사 완료');
+            }
+        }
+        
+        // ===== 파일 저장 (저장 위치 선택 지원) =====
+        async function saveFileWithPicker(blob, filename) {
+            // File System Access API 지원 확인
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: 'HTML 파일',
+                            accept: { 'text/html': ['.html'] }
+                        }]
+                    });
+                    
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return true;
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        // 사용자가 취소함
+                        return false;
+                    }
+                    console.warn('File System Access API 오류, 기본 다운로드로 전환:', err);
+                }
+            }
+            
+            // 폴백: 기본 다운로드 (브라우저 설정에 따라 저장 위치 묻기)
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return true;
+        }
+        
+        // ===== JavaScript로 생성된 차트/그래프 요소 제거 =====
+        function removeJavaScriptElements(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // 1. Canvas 요소 제거
+            doc.querySelectorAll('canvas').forEach(canvas => {
+                console.log('[내보내기] Canvas 요소 제거:', canvas.className || canvas.id || 'unnamed');
+                canvas.remove();
+            });
+            
+            // 2. Chart.js 관련 스크립트 태그 제거
+            doc.querySelectorAll('script').forEach(script => {
+                const src = script.getAttribute('src') || '';
+                const content = script.textContent || '';
+                if (src.includes('chart') || src.includes('Chart.js') || 
+                    content.includes('Chart') || content.includes('chart.js') ||
+                    content.includes('new Chart') || content.includes('Chart.register')) {
+                    console.log('[내보내기] Chart.js 스크립트 제거:', src || 'inline script');
+                    script.remove();
+                }
+            });
+            
+            // 3. 차트 컨테이너 제거 (canvas를 포함하는 컨테이너)
+            doc.querySelectorAll('.chart-container, .chart-wrapper, .chart-area, [class*="chart"], [id*="chart"]').forEach(container => {
+                // Canvas가 포함되어 있으면 제거
+                if (container.querySelector('canvas')) {
+                    console.log('[내보내기] 차트 컨테이너 제거:', container.className || container.id || 'unnamed');
+                    container.remove();
+                }
+            });
+            
+            // 4. Chart.js 관련 스타일 태그 제거
+            doc.querySelectorAll('style').forEach(style => {
+                const content = style.textContent || '';
+                if (content.includes('chart') || content.includes('canvas')) {
+                    // 차트 관련 스타일만 제거하거나 전체 스타일 태그 제거
+                    // 여기서는 차트 관련 스타일이 포함된 경우만 제거
+                    if (content.match(/\.chart|canvas\s*\{/i)) {
+                        console.log('[내보내기] 차트 관련 스타일 제거');
+                        style.remove();
+                    }
+                }
+            });
+            
+            // 5. JavaScript 이벤트 핸들러 속성 제거 (onclick, onload 등)
+            doc.querySelectorAll('*').forEach(element => {
+                Array.from(element.attributes).forEach(attr => {
+                    if (attr.name.startsWith('on') || attr.name.startsWith('data-chart')) {
+                        element.removeAttribute(attr.name);
+                    }
+                });
+            });
+            
+            // 6. A4 크기에 맞게 표 최적화
+            doc.querySelectorAll('table').forEach(table => {
+                table.style.width = '100%';
+                table.style.tableLayout = 'fixed';
+                table.style.fontSize = '9pt';
+                table.style.borderCollapse = 'collapse';
+            });
+            
+            // 7. 이미지 최적화
+            doc.querySelectorAll('img').forEach(img => {
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.objectFit = 'contain';
+            });
+            
+            return doc.documentElement.outerHTML;
+        }
+        
+        // ===== 한글 불러오기용 HTML 내보내기 =====
+        async function exportHwpReadyDocument() {
+            console.log('[내보내기] ===== 함수 시작 =====');
+            console.log('[내보내기] 버튼 클릭 감지');
+            
+            // 버튼 비활성화 (중복 클릭 방지)
+            if (elements.exportHwpReadyBtn) {
+                console.log('[내보내기] 버튼 요소 확인됨, 비활성화 중');
+                elements.exportHwpReadyBtn.disabled = true;
+                elements.exportHwpReadyBtn.style.opacity = '0.6';
+                elements.exportHwpReadyBtn.style.cursor = 'not-allowed';
+            } else {
+                console.error('[내보내기] ❌ exportHwpReadyBtn 요소를 찾을 수 없습니다!');
+            }
+            
+            // allGenerated 체크를 더 유연하게 (생성된 보도자료가 있으면 진행)
+            console.log('[내보내기] 상태 확인 중...');
+            console.log('[내보내기] - state.allGenerated:', state.allGenerated);
+            console.log('[내보내기] - state.generatedReports:', state.generatedReports);
+            
+            const hasGeneratedReports = Object.keys(state.generatedReports).some(
+                type => state.generatedReports[type] && state.generatedReports[type].size > 0
+            );
+            console.log('[내보내기] - hasGeneratedReports:', hasGeneratedReports);
+            
+            if (!state.allGenerated && !hasGeneratedReports) {
+                console.warn('[내보내기] ⚠️ 보도자료가 생성되지 않았습니다.');
+                console.warn('[내보내기] - allGenerated:', state.allGenerated);
+                console.warn('[내보내기] - hasGeneratedReports:', hasGeneratedReports);
+                showToast('먼저 모든 보도자료를 생성하세요.', 'warning');
+                if (elements.exportHwpReadyBtn) {
+                    elements.exportHwpReadyBtn.disabled = false;
+                    elements.exportHwpReadyBtn.style.opacity = '1';
+                    elements.exportHwpReadyBtn.style.cursor = 'pointer';
+                }
+                return;
+            }
+            
+            console.log('[내보내기] ✅ 보도자료 생성 상태 확인 완료');
+            
+            // 현재 미리보기 내용을 캐시에 동기화
+            console.log('[내보내기] 캐시 동기화 시작...');
+            try {
+                syncCurrentPreviewToCache();
+                console.log('[내보내기] ✅ 캐시 동기화 완료');
+            } catch (e) {
+                console.warn('[내보내기] ⚠️ 캐시 동기화 실패 (계속 진행):', e);
+            }
+            
+            // 로딩 표시
+            console.log('[내보내기] 로딩 UI 요소 확인 중...');
+            
+            if (!elements.loadingOverlay || !elements.loadingTitle || !elements.loadingProgressFill || !elements.loadingProgressPercent || !elements.loadingCurrentText) {
+                console.error('[내보내기] ❌ 로딩 UI 요소를 찾을 수 없습니다.');
+                console.error('[내보내기] - loadingOverlay:', elements.loadingOverlay);
+                console.error('[내보내기] - loadingTitle:', elements.loadingTitle);
+                console.error('[내보내기] - loadingProgressFill:', elements.loadingProgressFill);
+                console.error('[내보내기] - loadingProgressPercent:', elements.loadingProgressPercent);
+                console.error('[내보내기] - loadingCurrentText:', elements.loadingCurrentText);
+                showToast('로딩 UI 오류가 발생했습니다.', 'error');
+                if (elements.exportHwpReadyBtn) {
+                    elements.exportHwpReadyBtn.disabled = false;
+                    elements.exportHwpReadyBtn.style.opacity = '1';
+                    elements.exportHwpReadyBtn.style.cursor = 'pointer';
+                }
+                return;
+            }
+            
+            console.log('[내보내기] ✅ 로딩 UI 요소 확인 완료');
+            
+            elements.loadingOverlay.style.display = 'flex';
+            elements.loadingTitle.textContent = '📄 한글 불러오기용 HTML 문서 생성 중...';
+            elements.loadingCurrentText.textContent = '페이지 수집 중';
+            elements.loadingProgressFill.style.width = '0%';
+            elements.loadingProgressPercent.textContent = '0%';
+            
+            try {
+                console.log('[내보내기] ===== HTML 수집 시작 =====');
+                // 모든 캐시된 HTML 수집 (순서대로)
+                const rawPages = [];
+                
+                // HTML 가져오기 헬퍼 함수 (htmlCache 우선, cachedHtml 폴백)
+                const getHtmlContent = (type, id) => {
+                    const cacheKey = `${type}_${id}`;
+                    console.log(`[내보내기] HTML 조회: ${cacheKey}`);
+                    // htmlCache 우선 확인 (편집된 내용 포함)
+                    if (state.htmlCache[cacheKey]) {
+                        console.log(`[내보내기] ✅ htmlCache에서 발견: ${cacheKey} (${state.htmlCache[cacheKey].length} bytes)`);
+                        return state.htmlCache[cacheKey];
+                    }
+                    // cachedHtml 폴백
+                    if (state.cachedHtml[type] && state.cachedHtml[type][id]) {
+                        console.log(`[내보내기] ✅ cachedHtml에서 발견: ${cacheKey} (${state.cachedHtml[type][id].length} bytes)`);
+                        return state.cachedHtml[type][id];
+                    }
+                    console.warn(`[내보내기] ⚠️ HTML을 찾을 수 없음: ${cacheKey}`);
+                    return null;
+                };
+                
+                console.log('[내보내기] 캐시 상태 확인:');
+                console.log('[내보내기] - htmlCache 키 개수:', Object.keys(state.htmlCache || {}).length);
+                console.log('[내보내기] - cachedHtml 타입:', Object.keys(state.cachedHtml || {}));
+                
+                // 1. 요약 보도자료
+                console.log('[내보내기] 1. 요약 보도자료 수집 중...');
+                console.log('[내보내기] - summaryReports 개수:', state.summaryReports?.length || 0);
+                for (const report of state.summaryReports) {
+                    const html = getHtmlContent('summary', report.id);
+                    if (html) {
+                        rawPages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'summary',
+                            report_id: report.id
+                        });
+                        console.log(`[내보내기] ✅ 요약 추가: ${report.name}`);
+                    } else {
+                        console.warn(`[내보내기] ⚠️ 요약 HTML 없음: ${report.name} (id: ${report.id})`);
+                    }
+                }
+                
+                // 2. 부문별 보도자료
+                console.log('[내보내기] 2. 부문별 보도자료 수집 중...');
+                console.log('[내보내기] - sectoralReports 개수:', state.sectoralReports?.length || 0);
+                for (const report of state.sectoralReports) {
+                    const html = getHtmlContent('sectoral', report.id);
+                    if (html) {
+                        rawPages.push({
+                            html: html,
+                            title: report.name,
+                            category: 'sectoral',
+                            report_id: report.id
+                        });
+                        console.log(`[내보내기] ✅ 부문별 추가: ${report.name}`);
+                    } else {
+                        console.warn(`[내보내기] ⚠️ 부문별 HTML 없음: ${report.name} (id: ${report.id})`);
+                    }
+                }
+                
+                // 3. 시도별 보도자료
+                console.log('[내보내기] 3. 시도별 보도자료 수집 중...');
+                console.log('[내보내기] - regionalReports 개수:', state.regionalReports?.length || 0);
+                for (const region of state.regionalReports) {
+                    const html = getHtmlContent('regional', region.id);
+                    if (html) {
+                        rawPages.push({
+                            html: html,
+                            title: region.name,
+                            category: 'regional'
+                        });
+                        console.log(`[내보내기] ✅ 시도별 추가: ${region.name}`);
+                    } else {
+                        console.warn(`[내보내기] ⚠️ 시도별 HTML 없음: ${region.name} (id: ${region.id})`);
+                    }
+                }
+                
+                // 4. 통계표 - 비활성화됨
+                // 통계표 기능이 비활성화되어 있어 수집하지 않습니다
+                console.log('[내보내기] 4. 통계표 건너뛰기 (비활성화됨)');
+                
+                console.log(`[내보내기] ===== HTML 수집 완료: 총 ${rawPages.length}개 페이지 =====`);
+                
+                // 페이지가 비어있는 경우 에러 처리
+                if (rawPages.length === 0) {
+                    console.error('[내보내기] ❌ 수집된 페이지가 없습니다!');
+                    console.error('[내보내기] 디버그 정보:');
+                    console.error('[내보내기] - htmlCache:', state.htmlCache);
+                    console.error('[내보내기] - cachedHtml:', state.cachedHtml);
+                    console.error('[내보내기] - summaryReports:', state.summaryReports);
+                    console.error('[내보내기] - sectoralReports:', state.sectoralReports);
+                    console.error('[내보내기] - regionalReports:', state.regionalReports);
+                    console.error('[내보내기] - statisticsReports:', state.statisticsReports);
+                    elements.loadingOverlay.style.display = 'none';
+                    showToast('생성된 보도자료가 없습니다. 먼저 보도자료를 생성하세요.', 'error');
+                    if (elements.exportHwpReadyBtn) {
+                        elements.exportHwpReadyBtn.disabled = false;
+                        elements.exportHwpReadyBtn.style.opacity = '1';
+                        elements.exportHwpReadyBtn.style.cursor = 'pointer';
+                    }
+                    return;
+                }
+                
+                elements.loadingCurrentText.textContent = `${rawPages.length}개 페이지 수집 완료, JavaScript 요소 제거 중...`;
+                elements.loadingProgressFill.style.width = '20%';
+                elements.loadingProgressPercent.textContent = '20%';
+                
+                console.log('[내보내기] ===== JavaScript 요소 제거 시작 =====');
+                // JavaScript로 생성된 차트/그래프 제거 (각 페이지 순차 처리)
+                const pages = [];
+                for (let i = 0; i < rawPages.length; i++) {
+                    const page = rawPages[i];
+                    console.log(`[내보내기] 페이지 ${i + 1}/${rawPages.length} 처리 중: ${page.title}`);
+                    const progress = 20 + Math.floor((i / rawPages.length) * 60);
+                    elements.loadingProgressFill.style.width = `${progress}%`;
+                    elements.loadingProgressPercent.textContent = `${progress}%`;
+                    elements.loadingCurrentText.textContent = `JavaScript 요소 제거 중... (${i + 1}/${rawPages.length}) ${page.title}`;
+                    
+                    // JavaScript로 생성된 차트/그래프 요소 제거
+                    let cleanedHtml = page.html;
+                    const hasCanvas = page.html.includes('<canvas');
+                    const hasChart = page.html.includes('chart') || page.html.includes('Chart');
+                    console.log(`[내보내기] - Canvas 포함 여부: ${hasCanvas}, Chart 포함 여부: ${hasChart}`);
+                    
+                    if (hasCanvas || hasChart) {
+                        try {
+                            console.log(`[내보내기] - JavaScript 요소 제거 시작...`);
+                            cleanedHtml = removeJavaScriptElements(page.html);
+                            console.log(`[내보내기] ✅ JavaScript 요소 제거 완료`);
+                        } catch (e) {
+                            console.warn(`[내보내기] ⚠️ 페이지 ${i + 1} 처리 실패:`, e);
+                            // 실패 시 원본 사용
+                            cleanedHtml = page.html;
+                        }
+                    }
+                    
+                    pages.push({
+                        html: cleanedHtml,
+                        title: page.title,
+                        category: page.category
+                    });
+                    console.log(`[내보내기] ✅ 페이지 ${i + 1} 처리 완료`);
+                }
+                console.log(`[내보내기] ===== JavaScript 요소 제거 완료: 총 ${pages.length}개 페이지 =====`);
+                
+                elements.loadingCurrentText.textContent = `${pages.length}개 페이지 변환 완료, 한글 불러오기용 HTML 생성 중...`;
+                elements.loadingProgressFill.style.width = '85%';
+                elements.loadingProgressPercent.textContent = '85%';
+                
+                // 연도/분기 가져오기
+                const year = parseInt(elements.yearSelect.value) || 2025;
+                const quarter = parseInt(elements.quarterSelect.value) || 2;
+                console.log(`[내보내기] 연도/분기: ${year}년 ${quarter}분기`);
+                
+                // API 호출 (한글 불러오기용 HTML 생성)
+                console.log(`[내보내기] ===== API 호출 시작 =====`);
+                console.log(`[내보내기] - URL: /api/export-hwp-ready`);
+                console.log(`[내보내기] - Method: POST`);
+                console.log(`[내보내기] - 페이지 개수: ${pages.length}`);
+                console.log(`[내보내기] - 연도: ${year}, 분기: ${quarter}`);
+                
+                const requestBody = {
+                    pages: pages,
+                    year: year,
+                    quarter: quarter
+                };
+                console.log(`[내보내기] - Request body 크기: ${JSON.stringify(requestBody).length} bytes`);
+                
+                const response = await fetch('/api/export-hwp-ready', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                console.log(`[내보내기] - Response status: ${response.status} ${response.statusText}`);
+                console.log(`[내보내기] - Response ok: ${response.ok}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`[내보내기] ❌ API 호출 실패:`);
+                    console.error(`[내보내기] - Status: ${response.status}`);
+                    console.error(`[내보내기] - StatusText: ${response.statusText}`);
+                    console.error(`[내보내기] - Error body:`, errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log(`[내보내기] ===== API 응답 수신 =====`);
+                console.log(`[내보내기] - success: ${result.success}`);
+                console.log(`[내보내기] - total_pages: ${result.total_pages}`);
+                console.log(`[내보내기] - filename: ${result.filename}`);
+                if (result.error) {
+                    console.error(`[내보내기] - error: ${result.error}`);
+                }
+                console.log(`[내보내기] - 응답 전체:`, result);
+                
+                elements.loadingProgressFill.style.width = '100%';
+                elements.loadingProgressPercent.textContent = '100%';
+                
+                if (result.success) {
+                    console.log(`[내보내기] ✅ API 호출 성공`);
+                    elements.loadingCurrentText.textContent = '저장 위치 선택 중...';
+                    
+                    // 로딩 오버레이 숨기고 파일 저장 대화상자 표시
+                    elements.loadingOverlay.style.display = 'none';
+                    
+                    // 파일 저장 (사용자가 위치 선택)
+                    console.log(`[내보내기] ===== 파일 저장 시작 =====`);
+                    console.log(`[내보내기] - HTML 크기: ${result.html?.length || 0} bytes`);
+                    console.log(`[내보내기] - 파일명: ${result.filename}`);
+                    
+                    const blob = new Blob([result.html], { type: 'text/html; charset=utf-8' });
+                    console.log(`[내보내기] - Blob 생성 완료: ${blob.size} bytes`);
+                    
+                    console.log(`[내보내기] - saveFileWithPicker 호출 중...`);
+                    const saved = await saveFileWithPicker(blob, result.filename);
+                    console.log(`[내보내기] - saveFileWithPicker 결과: ${saved}`);
+                    
+                    if (saved) {
+                        console.log(`[내보내기] ✅ 파일 저장 완료`);
+                        
+                        // 클립보드에 자동 복사
+                        try {
+                            console.log(`[내보내기] 클립보드 복사 시도 중...`);
+                            
+                            // HTML 내용을 클립보드에 복사
+                            const htmlContent = result.html;
+                            
+                            // 임시 div 생성하여 HTML 내용 삽입
+                            const tempDiv = document.createElement('div');
+                            tempDiv.style.position = 'fixed';
+                            tempDiv.style.left = '-9999px';
+                            tempDiv.style.top = '-9999px';
+                            tempDiv.innerHTML = htmlContent;
+                            document.body.appendChild(tempDiv);
+                            
+                            // 전체 선택
+                            const range = document.createRange();
+                            range.selectNodeContents(tempDiv);
+                            const selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            // 클립보드에 복사
+                            let copySuccess = false;
+                            
+                            // Clipboard API 시도 (HTML 형식 지원)
+                            if (navigator.clipboard && navigator.clipboard.write) {
+                                try {
+                                    // HTML과 텍스트 모두 복사
+                                    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+                                    const textBlob = new Blob([htmlContent], { type: 'text/plain' });
+                                    
+                                    // ClipboardItem이 지원되는 경우
+                                    if (typeof ClipboardItem !== 'undefined') {
+                                        const clipboardItem = new ClipboardItem({
+                                            'text/html': htmlBlob,
+                                            'text/plain': textBlob
+                                        });
+                                        await navigator.clipboard.write([clipboardItem]);
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (ClipboardItem)`);
+                                    } else {
+                                        // ClipboardItem이 없는 경우 텍스트로 복사
+                                        await navigator.clipboard.writeText(htmlContent);
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (writeText)`);
+                                    }
+                                } catch (e) {
+                                    console.warn(`[내보내기] Clipboard API 실패, execCommand 시도:`, e);
+                                }
+                            }
+                            
+                            // Fallback: execCommand 사용
+                            if (!copySuccess) {
+                                try {
+                                    const success = document.execCommand('copy');
+                                    if (success) {
+                                        copySuccess = true;
+                                        console.log(`[내보내기] ✅ 클립보드 복사 완료 (execCommand)`);
+                                    }
+                                } catch (e) {
+                                    console.warn(`[내보내기] execCommand 실패:`, e);
+                                }
+                            }
+                            
+                            // 선택 해제 및 임시 요소 제거
+                            selection.removeAllRanges();
+                            document.body.removeChild(tempDiv);
+                            
+                            if (copySuccess) {
+                                showToast(
+                                    `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                    `📋 클립보드에 자동으로 복사되었습니다!\n\n` +
+                                    `한글에서 붙여넣기:\n` +
+                                    `Ctrl+V (또는 Cmd+V)로 붙여넣으세요.\n\n` +
+                                    `또는 파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                    'success',
+                                    10000
+                                );
+                            } else {
+                                showToast(
+                                    `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                    `⚠️ 클립보드 복사 실패\n\n` +
+                                    `한글에서 열기:\n` +
+                                    `파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                    'success',
+                                    8000
+                                );
+                            }
+                        } catch (err) {
+                            console.warn(`[내보내기] ⚠️ 클립보드 복사 중 오류:`, err);
+                            showToast(
+                                `✅ 한글 불러오기용 HTML 문서가 저장되었습니다. (${result.total_pages}페이지)\n\n` +
+                                `⚠️ 클립보드 복사 실패\n\n` +
+                                `한글에서 열기:\n` +
+                                `파일 → 불러오기 → 저장한 HTML 파일 선택`,
+                                'success',
+                                8000
+                            );
+                        }
+                        
+                        // 작업 완료 후 업로드 폴더 정리
+                        setTimeout(async () => {
+                            try {
+                                const cleanupResponse = await fetch('/api/cleanup-uploads', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                const cleanupResult = await cleanupResponse.json();
+                                if (cleanupResult.success && cleanupResult.deleted_count > 0) {
+                                    console.log(`[내보내기] [정리] ${cleanupResult.deleted_count}개 파일 정리 완료`);
+                                }
+                            } catch (e) {
+                                console.warn('[내보내기] 업로드 폴더 정리 실패:', e);
+                            }
+                        }, 1000);
+                    } else {
+                        console.warn(`[내보내기] ⚠️ 파일 저장 취소됨`);
+                        showToast('저장이 취소되었습니다.', 'info');
+                    }
+                } else {
+                    console.error(`[내보내기] ❌ API 호출 실패`);
+                    elements.loadingOverlay.style.display = 'none';
+                    const errorMsg = result.error || '문서 생성 실패';
+                    console.error('[내보내기] 문서 생성 실패:', errorMsg);
+                    console.error('[내보내기] 전체 응답:', result);
+                    showToast(`문서 생성 실패: ${errorMsg}`, 'error');
+                }
+            } catch (err) {
+                console.error('[내보내기] ===== 예외 발생 =====');
+                console.error('[내보내기] 오류 타입:', err.constructor.name);
+                console.error('[내보내기] 오류 메시지:', err.message);
+                console.error('[내보내기] 스택 트레이스:', err.stack);
+                console.error('[내보내기] 전체 오류 객체:', err);
+                if (elements.loadingOverlay) {
+                    elements.loadingOverlay.style.display = 'none';
+                }
+                showToast(`문서 생성 중 오류가 발생했습니다: ${err.message || err}`, 'error');
+            } finally {
+                console.log(`[내보내기] ===== 함수 종료 =====`);
+                // 버튼 다시 활성화
+                if (elements.exportHwpReadyBtn) {
+                    elements.exportHwpReadyBtn.disabled = false;
+                    elements.exportHwpReadyBtn.style.opacity = '1';
+                    elements.exportHwpReadyBtn.style.cursor = 'pointer';
+                    console.log(`[내보내기] 버튼 다시 활성화`);
+                }
+            }
+        }
+
+        // UI 상태 업데이트 (파일 타입에 따라)
+        function updateUIForFileType(fileType) {
+            const reportListSection = document.querySelector('.report-list-section');
+            const allReportsList = document.getElementById('allReportsList');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const weightInfoHint = document.getElementById('weightInfoHint');
+            const reportGenerationHint = document.getElementById('reportGenerationHint');
+            
+            // 기초자료 관련 코드 제거 (분석표만 업로드)
+            
+            if (fileType === 'analysis') {
+                // ===== 분석표 업로드 → 보도자료 생성 모드 =====
+                reportListSection.style.opacity = '1';
+                
+                // 힌트 표시 상태
+                if (weightInfoHint) weightInfoHint.style.display = 'none';
+                if (reportGenerationHint) reportGenerationHint.style.display = 'block';
+            }
+        }
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <span style="font-size: 1.2rem;">${icons[type] || icons.info}</span>
+                <span>${message}</span>
+            `;
+
+            elements.toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
