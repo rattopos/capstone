@@ -35,19 +35,8 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         # 연도/분기 정보 추가
         data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
         
-        # 일러두기의 경우 담당자 정보에서 관세청 정보 업데이트
-        if report_id == 'guide' and custom_data:
-            contact_info = custom_data.get('contact_info', {})
-            customs_dept = contact_info.get('customs_department', '관세청 정보데이터기획담당관')
-            customs_phone = contact_info.get('customs_phone', '042-481-7845')
-            
-            # contacts 배열에서 수출입 항목 찾아서 업데이트
-            if 'contacts' in data:
-                for contact in data['contacts']:
-                    if contact.get('category') == '수출입':
-                        contact['department'] = customs_dept
-                        contact['phone'] = customs_phone
-                        break
+        # 담당자 설정 기능 제거: 스키마의 기본값 그대로 사용
+        # custom_data는 더 이상 사용하지 않음
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
@@ -277,8 +266,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                         r['age_groups'] = r.get('industries', [])
             
         
-        # 커스텀 데이터 병합
-        if custom_data:
+        # 담당자 설정 기능 제거: custom_data는 더 이상 병합하지 않음
+        # 스키마 기본값 또는 Generator에서 생성한 데이터만 사용
+        if False and custom_data:  # 비활성화
             for key, value in custom_data.items():
                 keys = key.split('.')
                 obj = data

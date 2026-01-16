@@ -490,7 +490,7 @@ def generate_all_reports():
     data = request.get_json()
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
-    all_custom_data = data.get('all_custom_data', {})
+    # 담당자 설정 기능 제거: custom_data는 더 이상 사용하지 않음
     
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
@@ -505,12 +505,11 @@ def generate_all_reports():
     try:
         for report_config in REPORT_ORDER:
             try:
-                custom_data = all_custom_data.get(report_config['id'], {})
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
                 
-                # 캐시된 excel_file 전달
+                # 캐시된 excel_file 전달 (custom_data는 None으로 전달 - 기본값 사용)
                 html_content, error, _ = generate_report_html(
-                    excel_path, report_config, year, quarter, custom_data, excel_file=excel_file
+                    excel_path, report_config, year, quarter, None, excel_file=excel_file
                 )
                 
                 if error:
