@@ -275,13 +275,13 @@
             <div class="regional">○ 
                 {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {% if regional_data.decrease_regions[0].top_industries %}{{ regional_data.decrease_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 줄어 <span class="decrease">감소</span>하였으나, 
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {% if regional_data.decrease_regions[0].top_industries %}{{ regional_data.decrease_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 줄어 <span class="decrease">감소</span>하였으나, 
                 {% endif %}
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {% if regional_data.increase_regions[0].top_industries %}{{ regional_data.increase_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 늘어 <span class="increase">증가</span>
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {% if regional_data.increase_regions[0].top_industries %}{{ regional_data.increase_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 늘어 <span class="increase">증가</span>
                 {% endif %}
             </div>
         </div>

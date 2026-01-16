@@ -224,11 +224,11 @@
             <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 올라 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% 상승</span></div>
             <div class="regional">○ 
                 {% for region in regional_data.low_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ low_items_text }} 등이 내려 전국보다 상승률이 낮았으나, 
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ low_items_text }} 등이 내려 전국보다 상승률이 낮았으나, 
                 {% for region in regional_data.high_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ high_items_text }} 등이 올라 전국보다 <span class="increase">높음</span>
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ high_items_text }} 등이 올라 전국보다 <span class="increase">높음</span>
             </div>
         </div>
         

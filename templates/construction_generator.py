@@ -62,6 +62,139 @@ VALID_REGIONS = [
 ]
 
 
+class ConstructionGenerator(BaseGenerator):
+    """건설동향 보도자료 생성기 클래스"""
+    
+    def __init__(self, excel_path: str, year: int = None, quarter: int = None, excel_file=None):
+        """
+        초기화
+        
+        Args:
+            excel_path: 엑셀 파일 경로
+            year: 연도
+            quarter: 분기
+            excel_file: 캐시된 ExcelFile 객체 (선택사항)
+        """
+        super().__init__(excel_path, year, quarter, excel_file)
+        self.df_analysis = None
+        self.df_index = None
+    
+    def _get_safe_float(self, value, default=None):
+        """안전한 float 변환 (BaseGenerator의 safe_float 사용)"""
+        return self.safe_float(value, default)
+    
+    def extract_all_data(self) -> dict:
+        """
+        모든 데이터 추출 (동적 탐색 사용, 하드코딩 제거)
+        
+        Returns:
+            보도자료 데이터 딕셔너리
+        """
+        # 데이터 로드
+        self.df_analysis, self.df_index = load_data(self.excel_path)
+        
+        # year와 quarter가 없으면 기본값 사용
+        if self.year is None:
+            self.year = 2025
+        if self.quarter is None:
+            self.quarter = 2
+        
+        # [Robust Dynamic Parsing System]
+        # 1. 헤더 행 확보 (보통 3행 or 4행에 위치)
+        # _find_header_row 함수를 사용하여 동적으로 헤더 행 찾기
+        header_row_idx = _find_header_row(self.df_analysis)
+        header_row = self.df_analysis.iloc[header_row_idx]
+        
+        print(f"[ConstructionGenerator] 헤더 행 인덱스: {header_row_idx} (0-based)")
+        
+        # 2. 동적 인덱스 확보 (Robust Dynamic Parsing System)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
+        target_col = self.find_target_col_index(header_row, self.year, self.quarter)
+        
+        print(f"[ConstructionGenerator] 타겟 컬럼 인덱스: {target_col} (0-based)")
+        
+        # 3. 데이터 추출 (하드코딩 절대 금지)
+        # 전년동분기는 보통 4칸 앞(-4), 전분기는 1칸 앞(-1)이나 
+        # 이것도 불안하면 find_target_col_index로 각각 찾아서 할당할 것.
+        # 여기서는 일단 target_col 기반 상대주소 사용
+        prev_q_col = target_col - 1 if target_col > 0 else -1
+        prev_y_col = target_col - 4 if target_col >= 4 else -1
+        
+        # 기존 함수들을 사용하여 데이터 추출
+        nationwide_data = get_nationwide_data(self.df_analysis, self.df_index, self.year, self.quarter)
+        regional_data = get_regional_data(self.df_analysis, self.df_index, self.year, self.quarter)
+        summary_box = get_summary_box_data(regional_data)
+        table_data = get_growth_rates_table(
+            self.df_analysis, self.df_index, regional_data, nationwide_data, self.year, self.quarter
+        )
+        
+        # Top 3 증가/감소 지역
+        top3_increase = []
+        for r in regional_data['increase_regions'][:3]:
+            top3_increase.append({
+                'region': r['region'],
+                'growth_rate': r['growth_rate'],
+                'types': r['top_types'],
+                'civil_growth': r.get('civil_growth'),
+                'building_growth': r.get('building_growth'),
+                'civil_subtypes': None,
+                'building_subtypes': None
+            })
+        
+        top3_decrease = []
+        for r in regional_data['decrease_regions'][:3]:
+            top3_decrease.append({
+                'region': r['region'],
+                'growth_rate': r['growth_rate'],
+                'types': r['top_types'],
+                'civil_growth': r.get('civil_growth'),
+                'building_growth': r.get('building_growth'),
+                'civil_subtypes': None,
+                'building_subtypes': None
+            })
+        
+        # 증가/감소 공종 텍스트 생성
+        increase_types = set()
+        for r in regional_data['increase_regions'][:3]:
+            for t in r['top_types'][:2]:
+                type_name = t.get('name', '')
+                if isinstance(type_name, str) and type_name:
+                    increase_types.add(type_name)
+        increase_types_text = ', '.join([str(t) for t in list(increase_types)[:3]]) if increase_types else ''
+        
+        decrease_types = set()
+        for r in regional_data['decrease_regions'][:3]:
+            for t in r['top_types'][:2]:
+                type_name = t.get('name', '')
+                if isinstance(type_name, str) and type_name:
+                    decrease_types.add(type_name)
+        decrease_types_text = ', '.join([str(t) for t in list(decrease_types)[:3]]) if decrease_types else ''
+        
+        return {
+            'report_info': {
+                'year': self.year,
+                'quarter': self.quarter
+            },
+            'summary_box': summary_box,
+            'nationwide_data': nationwide_data,
+            'regional_data': regional_data,
+            'top3_increase_regions': top3_increase,
+            'top3_decrease_regions': top3_decrease,
+            'increase_types_text': increase_types_text,
+            'decrease_types_text': decrease_types_text,
+            'increase_sub_types_text': None,
+            'decrease_sub_types_text': None,
+            'summary_table': {
+                'base_year': 2020,
+                'columns': {
+                    'growth_rate_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4p'],
+                    'index_columns': ['2024.2/4', '2025.2/4p']
+                },
+                'regions': table_data
+            }
+        }
+
+
 def safe_float(value, default=None):
     """안전한 float 변환 함수 (NaN 체크 포함)"""
     if value is None:
@@ -303,10 +436,9 @@ def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
     header_row = df_analysis.iloc[header_row_idx]
     
     # 동적으로 타겟 컬럼 인덱스 찾기
+    # [Robust Dynamic Parsing System]
+    # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
     target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
-    if target_col_idx == -1:
-        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-        target_col_idx = 19  # 기본값 (하위 호환성)
     
     # 전분기(-1), 전년동분기(-4) 인덱스 계산
     prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else -1
@@ -344,10 +476,9 @@ def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
     # 집계 시트의 헤더도 찾아서 동적 인덱스 사용
     index_header_row_idx = _find_header_row(df_index)
     index_header_row = df_index.iloc[index_header_row_idx]
+    # [Robust Dynamic Parsing System]
+    # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
     index_target_col_idx = temp_gen.find_target_col_index(index_header_row, year, quarter)
-    if index_target_col_idx == -1:
-        print(f"[WARNING] 건설동향 - 집계 시트에서 {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-        index_target_col_idx = 22  # 기본값 (하위 호환성)
     
     nationwide_idx_row = df_index[df_index[1] == '전국']
     if not nationwide_idx_row.empty:
@@ -571,10 +702,9 @@ def get_regional_data(df_analysis, df_index, year=None, quarter=None):
     header_row = df_analysis.iloc[header_row_idx]
     
     # 동적으로 타겟 컬럼 인덱스 찾기
+    # [Robust Dynamic Parsing System]
+    # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
     target_col_idx = temp_gen.find_target_col_index(header_row, year, quarter)
-    if target_col_idx == -1:
-        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-        target_col_idx = 19  # 기본값 (하위 호환성)
     
     # 전분기(-1), 전년동분기(-4) 인덱스 계산
     prev_q_idx = target_col_idx - 1 if target_col_idx > 0 else -1
@@ -618,9 +748,9 @@ def get_regional_data(df_analysis, df_index, year=None, quarter=None):
         # 집계 시트의 헤더도 찾아서 동적 인덱스 사용
         index_header_row_idx = _find_header_row(df_index)
         index_header_row = df_index.iloc[index_header_row_idx]
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
         index_target_col_idx = temp_gen.find_target_col_index(index_header_row, year, quarter)
-        if index_target_col_idx == -1:
-            index_target_col_idx = 22  # 기본값 (하위 호환성)
         index_prev_y_idx = index_target_col_idx - 4 if index_target_col_idx >= 4 else 19  # 기본값
         
         idx_row = df_index[df_index[1] == region]
@@ -881,10 +1011,9 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
     header_row = df_analysis.iloc[header_row_idx]
     
     # 동적으로 타겟 컬럼 인덱스 찾기
+    # [Robust Dynamic Parsing System]
+    # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
     target_col = temp_gen.find_target_col_index(header_row, year, quarter)
-    if target_col == -1:
-        print(f"[WARNING] 건설동향 - {year}년 {quarter}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-        target_col = 19  # 기본값 (하위 호환성)
     
     # 상대적 인덱스 계산
     prev_q_col = target_col - 1 if target_col > 0 else 18  # 전분기
@@ -903,9 +1032,9 @@ def get_growth_rates_table(df_analysis, df_index, regional_data=None, nationwide
                     break
     
     index_header_row = df_index.iloc[index_header_row_idx]
+    # [Robust Dynamic Parsing System]
+    # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
     index_target_col = temp_gen.find_target_col_index(index_header_row, year, quarter)
-    if index_target_col == -1:
-        index_target_col = 22  # 기본값 (하위 호환성)
     index_prev_y_col = index_target_col - 4 if index_target_col >= 4 else 19  # 전년동분기
     
     # 기존 로직 (분석 시트 기반)

@@ -231,11 +231,11 @@
             <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span></div>
             <div class="regional">○ 
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ decrease_industries_text }} 등의 생산이 줄었으나, 
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ decrease_industries_text }} 등의 생산이 줄었으나, 
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %}은 {{ increase_industries_text }} 등의 생산이 늘어 <span class="increase">증가</span>
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ increase_industries_text }} 등의 생산이 늘어 <span class="increase">증가</span>
             </div>
         </div>
         

@@ -12,6 +12,7 @@ from jinja2 import Template
 
 from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
 from utils.filters import is_missing, format_value
+from utils.text_utils import get_josa
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .excel_cache import get_excel_file, clear_excel_cache
@@ -57,6 +58,9 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
             template_content = f.read()
         
         template = Template(template_content)
+        template.environment.filters['format_value'] = format_value
+        template.environment.filters['is_missing'] = is_missing
+        template.environment.filters['josa'] = get_josa
         html_content = template.render(**data)
         
         return html_content, None, []
@@ -336,6 +340,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         template.environment.filters['format_value'] = format_value
         template.environment.filters['is_missing'] = is_missing
+        template.environment.filters['josa'] = get_josa
         
         html_content = template.render(**data)
         

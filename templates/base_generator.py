@@ -379,47 +379,55 @@ class BaseGenerator(ABC):
         target_quarter: int
     ) -> int:
         """
-        헤더 행을 순회하며 목표 연도와 분기가 모두 포함된 열의 인덱스를 동적으로 찾음
+        [Robust Dynamic Parsing System - 1단계]
+        헤더에서 연도와 분기를 찾아 인덱스를 반환 (모든 포맷 대응)
+        
+        목표: 엑셀 파일의 구조가 어떻게 변하든 정확한 데이터를 찾아내는 유연한 탐색기
+        - 입력: header_row(엑셀 행), 2025, 3
+        - 매칭 대상: "2025 3/4", "2025.3/4", "2025년 3분기", "25년 3/4" 등
+        - 정규표현식(Regex)에 준하는 유연성 제공
         
         Args:
-            header_row: 헤더 행 (pandas Series, 리스트, 튜플 등)
+            header_row: 헤더 행 (pandas Series, 리스트, 튜플, openpyxl Cell 객체 등)
             target_year: 찾을 연도 (예: 2025)
             target_quarter: 찾을 분기 (예: 3)
             
         Returns:
-            컬럼 인덱스 (0-based), 찾지 못하면 -1
+            컬럼 인덱스 (0-based)
+            
+        Raises:
+            ValueError: 헤더에서 해당 연도/분기 열을 찾을 수 없을 때
         """
-        import logging
+        # 1. 연도 문자열 준비 (전체 연도 + 단축형)
+        y_str = str(target_year)  # "2025"
+        # 2025가 안되면 25로도 찾을 수 있게 대비
+        y_short = y_str[2:] if len(y_str) == 4 else y_str  # "25"
         
-        # header_row를 리스트로 변환
-        if isinstance(header_row, pd.Series):
-            header_list = header_row.tolist()
-        elif isinstance(header_row, (list, tuple)):
-            header_list = list(header_row)
-        else:
-            # openpyxl Cell 객체나 다른 타입 처리
-            try:
-                # cell.value 속성이 있는 경우 (openpyxl 스타일)
-                if hasattr(header_row, '__iter__') and not isinstance(header_row, str):
-                    header_list = [cell.value if hasattr(cell, 'value') else cell for cell in header_row]
-                else:
-                    header_list = [header_row]
-            except:
-                header_list = [header_row]
-        
-        # 검색 키워드 정규화
-        year_str = str(target_year)
-        quarter_patterns = [
-            f"{target_quarter}/4",      # '3/4'
-            f"{target_quarter}분기",    # '3분기'
-            f"{target_quarter}4",      # '34' (연속 표기)
-            str(target_quarter),       # '3'
-            f"Q{target_quarter}",      # 'Q3'
-            f"{target_quarter}Q",      # '3Q'
+        # 2. 분기 표현식 다양화
+        q_markers = [
+            f"{target_quarter}/4",      # "3/4" (가장 일반적)
+            f"{target_quarter}분기",    # "3분기"
+            f"{target_quarter}Q",       # "3Q"
+            f"Q{target_quarter}",       # "Q3"
         ]
         
-        # 헤더 행을 순회하며 연도와 분기가 모두 포함된 셀 찾기
-        for idx, cell in enumerate(header_list):
+        print(f"[SmartSearch] {y_str}년 {target_quarter}분기 데이터 열 탐색 시작...")
+        
+        # 3. header_row를 순회 가능한 형태로 변환
+        # pandas Series, 리스트, 튜플, openpyxl Cell 객체 등 모든 형태 지원
+        header_items = []
+        if isinstance(header_row, pd.Series):
+            header_items = header_row.tolist()
+        elif isinstance(header_row, (list, tuple)):
+            header_items = list(header_row)
+        elif hasattr(header_row, '__iter__') and not isinstance(header_row, str):
+            # openpyxl Cell 객체나 다른 iterable 객체
+            header_items = [cell.value if hasattr(cell, 'value') else cell for cell in header_row]
+        else:
+            header_items = [header_row]
+        
+        # 4. 헤더 행을 순회하며 연도와 분기가 모두 포함된 셀 찾기
+        for idx, cell in enumerate(header_items):
             # 셀 값 추출 (다양한 타입 지원)
             if pd.isna(cell):
                 continue
@@ -430,19 +438,34 @@ class BaseGenerator(ABC):
             else:
                 cell_value = cell
             
-            # 셀 값을 문자열로 변환
+            # 셀 값이 None이거나 빈 값이면 스킵
             if cell_value is None:
                 continue
             
-            val = str(cell_value).strip()
+            # 5. 값 정규화: 공백 제거 후 비교 (정규표현식 수준의 유연성)
+            val = str(cell_value).strip().replace(" ", "")  # 모든 공백 제거
             
-            # 연도와 분기 표기가 동시에 존재하는지 확인
-            if year_str in val and any(q_pattern in val for q_pattern in quarter_patterns):
+            # 6. 조건 검사: 연도가 있고(2025 or 25) AND 분기 마커 중 하나가 있어야 함
+            has_year = (y_str in val) or (y_short in val)
+            has_quarter = any(q.replace(" ", "") in val for q in q_markers)
+            
+            if has_year and has_quarter:
+                print(f"[SmartSearch] ✅ 발견! Index {idx}: '{cell_value}'")
                 return idx
         
-        # 찾지 못한 경우
-        logging.warning(
-            f"헤더에서 연도 {target_year}년 {target_quarter}분기 컬럼을 찾을 수 없습니다. "
-            f"헤더 행 샘플: {[str(v)[:20] if pd.notna(v) else 'NaN' for v in header_list[:10]]}"
+        # 7. 못 찾으면 에러 발생 (어설프게 진행 금지)
+        # 헤더 덤프 생성 (디버깅용)
+        header_dump = []
+        for item in header_items[:50]:  # 최대 50개만 표시
+            if pd.isna(item):
+                header_dump.append("NaN")
+            elif hasattr(item, 'value'):
+                header_dump.append(str(item.value))
+            else:
+                header_dump.append(str(item))
+        
+        error_msg = (
+            f"❌ 헤더에서 {target_year}년 {target_quarter}분기 열을 찾을 수 없습니다.\n"
+            f"   (Header dump: {header_dump})"
         )
-        return -1
+        raise ValueError(error_msg)

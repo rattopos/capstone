@@ -327,8 +327,7 @@ class MiningManufacturingGenerator(BaseGenerator):
                     print(f"[광공업생산] 가중치 없음 - {industry_name}에 하드코딩 가중치 {weight} 적용")
                 
                 # 기여도 절대값 = (증감률 × 가중치)의 절대값
-                # 가중치가 이미 퍼센트 단위이므로 100으로 나누지 않고 직접 곱셈
-                contribution_abs = abs(growth_rate * weight / 100)
+                contribution_abs = abs(growth_rate * weight)
                 
                 industries.append({
                     "name": industry_name,
@@ -382,11 +381,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
-        # 동적으로 타겟 컬럼 인덱스 찾기
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         target_col_idx = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if target_col_idx == -1:
-            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-            target_col_idx = self.AGG_COL_2025_2Q
         
         # 전년동분기 인덱스 계산 (상대적 위치 -4)
         prev_y_idx = target_col_idx - 4 if target_col_idx >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col_idx - 1)
@@ -420,7 +418,7 @@ class MiningManufacturingGenerator(BaseGenerator):
                     continue
                 
                 # 기여도 = (증감률 × 가중치)의 절대값
-                contribution_abs = abs(ind_growth * weight / 10000)
+                contribution_abs = abs(ind_growth * weight)
                 
                 industries.append({
                     'name': industry_name,
@@ -455,19 +453,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
-        # 동적으로 타겟 컬럼 인덱스 찾기
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if target_col == -1:
-            # fallback: 헤더에서 직접 찾기
-            header = df.iloc[header_row_idx] if header_row_idx < len(df) else df.iloc[0]
-            for col_idx in range(len(header) - 1, 4, -1):
-                col_val = str(header[col_idx]) if pd.notna(header[col_idx]) else ''
-                if f"{self.year or 2025}" in col_val and (f"{self.quarter or 2}/4" in col_val or f"{self.quarter or 2}분기" in col_val):
-                    target_col = col_idx
-                    break
-            
-            if target_col == -1:
-                target_col = len(header) - 2
         
         # 전년동분기 인덱스 계산
         prev_y_col = target_col - 4 if target_col >= 4 else target_col - 1
@@ -498,7 +487,7 @@ class MiningManufacturingGenerator(BaseGenerator):
                     weight = self._get_industry_weight_fallback(industry_name, industry_code)
                     
                     # 기여도 절대값 = (증감률 × 가중치)의 절대값
-                    contribution_abs = abs(ind_growth * weight / 100)
+                    contribution_abs = abs(ind_growth * weight)
                     
                     industries.append({
                         'name': industry_name,
@@ -577,14 +566,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
+        # [Robust Dynamic Parsing System]
         # 동적으로 타겟 컬럼 인덱스 찾기 (증감률 컬럼)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         growth_rate_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if growth_rate_col == -1:
-            # fallback: 헤더에서 직접 찾기
-            growth_rate_col = self._find_column_by_header(df, ['증감률', 'growth', 'rate'], search_rows=5)
-            if growth_rate_col is None:
-                growth_rate_col = self.COL_GROWTH_RATE
-                print(f"[광공업생산] ⚠️ 증감률 컬럼 fallback: {growth_rate_col}")
         
         nationwide_total = None
         try:
@@ -614,9 +599,9 @@ class MiningManufacturingGenerator(BaseGenerator):
                 agg_header_row_idx = 2
             
             agg_header_row = df_agg.iloc[agg_header_row_idx]
+            # [Robust Dynamic Parsing System]
+            # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
             agg_target_col = self.find_target_col_index(agg_header_row, self.year or 2025, self.quarter or 2)
-            if agg_target_col == -1:
-                agg_target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df_agg.columns) - 1)
             
             nationwide_agg_rows = df_agg[(df_agg[self.AGG_COL_REGION_NAME] == '전국') & 
                                          (df_agg[self.AGG_COL_INDUSTRY_CODE] == 'BCD')]
@@ -670,11 +655,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
-        # 동적으로 타겟 컬럼 인덱스 찾기
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if target_col == -1:
-            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-            target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
         
         # 전년동분기 인덱스 계산 (상대적 위치 -4)
         prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
@@ -719,8 +703,7 @@ class MiningManufacturingGenerator(BaseGenerator):
                     print(f"[광공업생산] 가중치 없음 - {industry_name}에 하드코딩 가중치 {weight} 적용")
                 
                 # 기여도 절대값 = (증감률 × 가중치)의 절대값
-                # 가중치가 10000 단위이므로 10000으로 나눔
-                contribution_abs = abs(ind_growth * weight / 10000)
+                contribution_abs = abs(ind_growth * weight)
                 
                 industries.append({
                     'name': industry_name,
@@ -962,11 +945,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
-        # 동적으로 타겟 컬럼 인덱스 찾기
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if target_col == -1:
-            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-            target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
         
         # 전년동분기 인덱스 계산 (상대적 위치 -4)
         prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
@@ -1078,11 +1060,10 @@ class MiningManufacturingGenerator(BaseGenerator):
         
         header_row = df.iloc[header_row_idx]
         
-        # 동적으로 타겟 컬럼 인덱스 찾기
+        # [Robust Dynamic Parsing System]
+        # 동적으로 타겟 컬럼 인덱스 찾기 (하드코딩 절대 금지)
+        # find_target_col_index는 헤더를 찾지 못하면 ValueError 발생 (어설프게 진행 금지)
         target_col = self.find_target_col_index(header_row, self.year or 2025, self.quarter or 2)
-        if target_col == -1:
-            print(f"[광공업생산] {self.year or 2025}년 {self.quarter or 2}분기 컬럼을 찾을 수 없어 기본 인덱스 사용")
-            target_col = self.AGG_COL_2025_2Q if hasattr(self, 'AGG_COL_2025_2Q') else (len(df.columns) - 1)
         
         # 전년동분기 인덱스 계산 (상대적 위치 -4)
         prev_y_col = target_col - 4 if target_col >= 4 else (self.AGG_COL_2024_2Q if hasattr(self, 'AGG_COL_2024_2Q') else target_col - 1)
