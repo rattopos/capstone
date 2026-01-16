@@ -143,41 +143,55 @@ def get_cause_verb(value: float, report_id: str = 'quantity') -> str:
     return cause_verb
 
 
-def get_josa(word: str, type: str = "Topic") -> str:
+def get_josa(word: str, josa_pair: str = "은/는") -> str:
     """
-    word의 마지막 글자 종성(받침) 유무 확인하여 적절한 조사 반환
+    [Robust Dynamic Parsing System - 4단계]
+    word의 마지막 글자 받침 유무에 따라 조사 반환
     
     Args:
-        word: 조사를 붙일 단어 (예: '서울', '부산')
-        type: 조사 타입
-            - "Topic": '은' 또는 '는' 반환
-            - "Subject": '이' 또는 '가' 반환
+        word: 조사를 붙일 단어 (예: '서울', '부산', '경기')
+        josa_pair: 조사 쌍 (기본값: "은/는")
+            - "은/는": 주제 조사
+            - "이/가": 주어 조사
+            - "을/를": 목적어 조사
+            - "와/과": 접속 조사
     
     Returns:
         str: 적절한 조사
-        예: get_josa('서울', 'Topic') -> '은'
-        예: get_josa('경기', 'Topic') -> '는'
-        예: get_josa('서울', 'Subject') -> '이'
-        예: get_josa('경기', 'Subject') -> '가'
+        예: get_josa('서울', '은/는') -> '은'
+        예: get_josa('경기', '은/는') -> '는'
+        예: get_josa('서울', '이/가') -> '이'
+        예: get_josa('경기', '이/가') -> '가'
     
     Note:
-        - 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
-        - 받침이 있으면: 은, 이
-        - 받침이 없으면: 는, 가
+        - 한글 유니코드 범위: 0xAC00 ~ 0xD7A3 (44032 ~ 55203)
+        - 받침 계산 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
+        - 받침 있으면: 첫 번째 조사 (은, 이, 을, 와)
+        - 받침 없으면: 두 번째 조사 (는, 가, 를, 과)
     """
     if not word:
         return ""
     
-    last_char = word[-1]
-    # 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
-    # 0xAC00 = 44032 (십진수)
-    has_batchim = (ord(last_char) - 44032) % 28 > 0
+    # 호환성: 기존 type 파라미터 지원
+    if josa_pair in ["Topic", "Subject"]:
+        if josa_pair == "Topic":
+            josa_pair = "은/는"
+        elif josa_pair == "Subject":
+            josa_pair = "이/가"
     
-    if type == "Topic":
-        return "은" if has_batchim else "는"
-    elif type == "Subject":
-        return "이" if has_batchim else "가"
-    return ""
+    last_char = word[-1]
+    
+    # 한글 범위 체크 및 받침 계산
+    if 0xAC00 <= ord(last_char) <= 0xD7A3:
+        # 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
+        has_batchim = (ord(last_char) - 0xAC00) % 28 > 0
+    else:
+        # 한글 아니면(숫자, 영어 등) 기본값(받침 없음 가정)
+        has_batchim = False
+    
+    # 조사 쌍 분리
+    first, second = josa_pair.split("/")
+    return first if has_batchim else second
 
 
 def get_contrast_narrative(nationwide_val: float, inc_regions: List[Dict], dec_regions: List[Dict], report_id: str = 'quantity') -> str:

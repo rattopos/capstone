@@ -336,11 +336,39 @@ class MiningManufacturingGenerator(BaseGenerator):
                     "contribution_abs": contribution_abs  # 정렬용 절대값
                 })
             
-            # 기여도 절대값 순 정렬
+            # [Robust Dynamic Parsing System - 3단계]
+            # 진짜 주범 찾기: '식료품' 같은 잡음 제거, '반도체' 같은 신호 우선
+            def calculate_score(item):
+                """점수 계산 함수: 가중치 기반 + 키워드 보정"""
+                rate = abs(item.get('growth_rate', 0))
+                name = item.get('name', '')
+                weight = item.get('contribution_abs', 0)  # 이미 계산된 contribution_abs 사용
+                
+                # 가중치 컬럼이 있다면 rate * weight 사용
+                if weight > 0:
+                    score = weight
+                else:
+                    score = rate
+                
+                # 우선순위 키워드 (가중치가 높은 산업군)
+                high_impact_keywords = ['전자', '반도체', '자동차', '기계', '화학', '1차금속', '석유화학']
+                
+                # 키워드 매칭 시 보정치 부여 (임시 방편)
+                if any(k in name for k in high_impact_keywords):
+                    score *= 2.0  # 주력 산업에 가중치 2배 부여
+                
+                # 식료품, 음료 같은 잡음 제거 (가중치 감소)
+                noise_keywords = ['식료품', '음료']
+                if any(k in name for k in noise_keywords):
+                    score *= 0.1  # 잡음 산업에 가중치 0.1배 부여
+                
+                return score
+            
+            # 점수 기반 정렬
             increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                        key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                        key=calculate_score, reverse=True)[:2]
             decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                        key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                        key=calculate_score, reverse=True)[:2]
             
         except Exception as e:
             print(f"[광공업생산] 업종별 데이터 추출 실패: {e}")
@@ -427,11 +455,39 @@ class MiningManufacturingGenerator(BaseGenerator):
                     'contribution_abs': contribution_abs  # 정렬용 절대값
                 })
         
-        # 기여도 절대값 순 정렬
+        # [Robust Dynamic Parsing System - 3단계]
+        # 진짜 주범 찾기: '식료품' 같은 잡음 제거, '반도체' 같은 신호 우선
+        def calculate_score(item):
+            """점수 계산 함수: 가중치 기반 + 키워드 보정"""
+            rate = abs(item.get('growth_rate', 0))
+            name = item.get('name', '')
+            weight = item.get('contribution_abs', 0)  # 이미 계산된 contribution_abs 사용
+            
+            # 가중치 컬럼이 있다면 rate * weight 사용
+            if weight > 0:
+                score = weight
+            else:
+                score = rate
+            
+            # 우선순위 키워드 (가중치가 높은 산업군)
+            high_impact_keywords = ['전자', '반도체', '자동차', '기계', '화학', '1차금속', '석유화학']
+            
+            # 키워드 매칭 시 보정치 부여
+            if any(k in name for k in high_impact_keywords):
+                score *= 2.0  # 주력 산업에 가중치 2배 부여
+            
+            # 식료품, 음료 같은 잡음 제거 (가중치 감소)
+            noise_keywords = ['식료품', '음료']
+            if any(k in name for k in noise_keywords):
+                score *= 0.1  # 잡음 산업에 가중치 0.1배 부여
+            
+            return score
+        
+        # 점수 기반 정렬
         increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         
         return {"increase": increase_industries, "decrease": decrease_industries}
     
@@ -496,11 +552,39 @@ class MiningManufacturingGenerator(BaseGenerator):
                         'contribution_abs': contribution_abs  # 정렬용 절대값
                     })
         
-        # 기여도 절대값 순 정렬
+        # [Robust Dynamic Parsing System - 3단계]
+        # 진짜 주범 찾기: '식료품' 같은 잡음 제거, '반도체' 같은 신호 우선
+        def calculate_score(item):
+            """점수 계산 함수: 가중치 기반 + 키워드 보정"""
+            rate = abs(item.get('growth_rate', 0))
+            name = item.get('name', '')
+            weight = item.get('contribution_abs', 0)  # 이미 계산된 contribution_abs 사용
+            
+            # 가중치 컬럼이 있다면 rate * weight 사용
+            if weight > 0:
+                score = weight
+            else:
+                score = rate
+            
+            # 우선순위 키워드 (가중치가 높은 산업군)
+            high_impact_keywords = ['전자', '반도체', '자동차', '기계', '화학', '1차금속', '석유화학']
+            
+            # 키워드 매칭 시 보정치 부여
+            if any(k in name for k in high_impact_keywords):
+                score *= 2.0  # 주력 산업에 가중치 2배 부여
+            
+            # 식료품, 음료 같은 잡음 제거 (가중치 감소)
+            noise_keywords = ['식료품', '음료']
+            if any(k in name for k in noise_keywords):
+                score *= 0.1  # 잡음 산업에 가중치 0.1배 부여
+            
+            return score
+        
+        # 점수 기반 정렬
         increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         
         return {"increase": increase_industries, "decrease": decrease_industries}
     
@@ -712,11 +796,39 @@ class MiningManufacturingGenerator(BaseGenerator):
                     'contribution_abs': contribution_abs  # 정렬용 절대값
                 })
         
-        # 기여도 절대값 순 정렬
+        # [Robust Dynamic Parsing System - 3단계]
+        # 진짜 주범 찾기: '식료품' 같은 잡음 제거, '반도체' 같은 신호 우선
+        def calculate_score(item):
+            """점수 계산 함수: 가중치 기반 + 키워드 보정"""
+            rate = abs(item.get('growth_rate', 0))
+            name = item.get('name', '')
+            weight = item.get('contribution_abs', 0)  # 이미 계산된 contribution_abs 사용
+            
+            # 가중치 컬럼이 있다면 rate * weight 사용
+            if weight > 0:
+                score = weight
+            else:
+                score = rate
+            
+            # 우선순위 키워드 (가중치가 높은 산업군)
+            high_impact_keywords = ['전자', '반도체', '자동차', '기계', '화학', '1차금속', '석유화학']
+            
+            # 키워드 매칭 시 보정치 부여
+            if any(k in name for k in high_impact_keywords):
+                score *= 2.0  # 주력 산업에 가중치 2배 부여
+            
+            # 식료품, 음료 같은 잡음 제거 (가중치 감소)
+            noise_keywords = ['식료품', '음료']
+            if any(k in name for k in noise_keywords):
+                score *= 0.1  # 잡음 산업에 가중치 0.1배 부여
+            
+            return score
+        
+        # 점수 기반 정렬
         increase_industries = sorted([i for i in industries if i['growth_rate'] > 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         decrease_industries = sorted([i for i in industries if i['growth_rate'] < 0], 
-                                    key=lambda x: x['contribution_abs'], reverse=True)[:2]
+                                    key=calculate_score, reverse=True)[:2]
         
         return {
             "production_index": current_index,
