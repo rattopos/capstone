@@ -64,24 +64,47 @@ def preview_report(report_id):
 
 @main_bp.route('/download/<report_id>')
 def download_report(report_id):
-    """보도자료 다운로드"""
-    # report_id로부터 보도자료 이름 찾기
-    report = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
+    """보도자료 다운로드 (안전한 처리)"""
+    # report_id 검증
+    if not report_id or not isinstance(report_id, str):
+        return "유효하지 않은 보도자료 ID입니다", 400
+    
+    # report_id로부터 보도자료 이름 찾기 (안전한 검색)
+    report = None
+    try:
+        for r in REPORT_ORDER:
+            if r and isinstance(r, dict) and r.get('id') == report_id:
+                report = r
+                break
+    except Exception as e:
+        print(f"[ERROR] 보도자료 검색 중 오류: {e}")
+        return f"보도자료 검색 중 오류가 발생했습니다: {report_id}", 500
+    
     if not report:
         return f"보도자료를 찾을 수 없습니다: {report_id}", 404
     
-    report_name = report['name']
+    report_name = report.get('name', '')
+    if not report_name or not isinstance(report_name, str):
+        return "보도자료 이름이 유효하지 않습니다", 500
+    
+    # 파일명 안전화 (위험한 문자 제거)
+    report_name_safe = report_name.replace('/', '_').replace('\\', '_').replace('..', '_')
     
     # 가능한 파일명 패턴들
     possible_files = [
-        TEMPLATES_DIR / f"{report_name}_output.html",
-        TEMPLATES_DIR / f"{report_name}_preview.html",
+        TEMPLATES_DIR / f"{report_name_safe}_output.html",
+        TEMPLATES_DIR / f"{report_name_safe}_preview.html",
     ]
     
+    # 파일 찾기 및 다운로드 (안전한 처리)
     for file_path in possible_files:
-        if file_path.exists():
-            filename = f"{report_name}.html"
-            return send_file_with_korean_filename(str(file_path), filename, 'text/html')
+        try:
+            if file_path.exists() and file_path.is_file():
+                filename = f"{report_name}.html"
+                return send_file_with_korean_filename(str(file_path), filename, 'text/html')
+        except Exception as e:
+            print(f"[ERROR] 파일 다운로드 중 오류 ({file_path}): {e}")
+            continue  # 다음 파일 시도
     
     return f"보도자료가 아직 생성되지 않았습니다: {report_name}", 404
 

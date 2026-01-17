@@ -18,8 +18,20 @@ from utils.data_utils import check_missing_data
 from .excel_cache import get_excel_file, clear_excel_cache
 
 
-def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
-    """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)"""
+def _generate_from_schema(template_name, report_id, year, quarter, excel_path=None, custom_data=None):
+    """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)
+    
+    Args:
+        template_name: 템플릿 파일명
+        report_id: 보도자료 ID
+        year: 연도
+        quarter: 분기
+        excel_path: 엑셀 파일 경로 (선택사항, 요약 보도자료 데이터 생성용)
+        custom_data: 커스텀 데이터 (선택사항)
+    
+    Returns:
+        (html_content, error, missing) 튜플
+    """
     try:
         # 요약 보도자료는 실제 데이터를 사용하도록 처리
         from services.summary_data import (
@@ -28,10 +40,6 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
             get_trade_price_data, get_employment_population_data
         )
         from pathlib import Path
-        
-        # excel_path는 generate_report_html에서 받아야 하지만, 여기서는 None으로 처리
-        # 실제로는 generate_report_html에서 excel_path를 전달받아야 함
-        excel_path = None  # TODO: excel_path를 파라미터로 받아야 함
         
         # 요약 보도자료별 데이터 생성
         if report_id == 'summary_trade_price':
@@ -121,23 +129,82 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
 
 
 def _generate_from_schema_with_excel(template_name, report_id, year, quarter, excel_path=None, custom_data=None):
-    """스키마 기본값으로 보도자료 생성 (엑셀 경로 전달 가능)"""
+    """스키마 기본값으로 보도자료 생성 (엑셀 경로 전달 가능, 실제 데이터 우선 사용)"""
     try:
-        # 템플릿 이름에서 스키마 파일 이름 생성
-        schema_basename = template_name.replace('_template.html', '_schema.json')
-        schema_path = TEMPLATES_DIR / schema_basename
+        # 요약 보도자료는 실제 데이터를 사용하도록 처리
+        from services.summary_data import (
+            get_summary_overview_data, get_summary_table_data,
+            get_production_summary_data, get_consumption_construction_data,
+            get_trade_price_data, get_employment_population_data
+        )
         
-        if not schema_path.exists():
-            return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+        data = None
         
-        with open(schema_path, 'r', encoding='utf-8') as f:
-            schema = json.load(f)
+        # 요약 보도자료별 실제 데이터 생성 시도
+        if excel_path and Path(excel_path).exists():
+            try:
+                if report_id == 'summary_overview':
+                    # 요약-지역경제동향: 실제 데이터 사용
+                    data = get_summary_overview_data(excel_path, year, quarter)
+                    if not data:
+                        raise ValueError("get_summary_overview_data가 None 반환")
+                
+                elif report_id == 'summary_production':
+                    # 요약-생산: 실제 데이터 사용
+                    data = get_production_summary_data(excel_path, year, quarter)
+                    if not data:
+                        raise ValueError("get_production_summary_data가 None 반환")
+                
+                elif report_id == 'summary_consumption':
+                    # 요약-소비건설: 실제 데이터 사용
+                    data = get_consumption_construction_data(excel_path, year, quarter)
+                    if not data:
+                        raise ValueError("get_consumption_construction_data가 None 반환")
+                
+                elif report_id == 'summary_trade_price':
+                    # 요약-수출물가: 실제 데이터 사용 (이미 generate_report_html에서 처리됨)
+                    data = get_trade_price_data(excel_path, year, quarter)
+                    if not data:
+                        raise ValueError("get_trade_price_data가 None 반환")
+                
+                elif report_id == 'summary_employment':
+                    # 요약-고용인구: 실제 데이터 사용
+                    data = get_employment_population_data(excel_path, year, quarter)
+                    if not data:
+                        raise ValueError("get_employment_population_data가 None 반환")
+            except Exception as data_error:
+                print(f"[WARNING] 요약 보도자료 실제 데이터 생성 실패 ({report_id}): {data_error}")
+                print(f"[WARNING] 스키마 기본값으로 대체합니다.")
+                import traceback
+                traceback.print_exc()
+                data = None  # 스키마 기본값으로 대체
         
-        # 기본값 추출 (example 필드)
-        data = schema.get('example', {})
+        # 실제 데이터 생성 실패 시 스키마 기본값 사용
+        if data is None:
+            # 템플릿 이름에서 스키마 파일 이름 생성
+            schema_basename = template_name.replace('_template.html', '_schema.json')
+            schema_path = TEMPLATES_DIR / schema_basename
+            
+            if not schema_path.exists():
+                return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+            
+            with open(schema_path, 'r', encoding='utf-8') as f:
+                schema = json.load(f)
+            
+            # 기본값 추출 (example 필드)
+            data = schema.get('example', {})
         
-        # 연도/분기 정보 추가
-        data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+        # 연도/분기 정보 추가 (데이터가 없으면 추가, 있으면 업데이트)
+        if 'report_info' not in data:
+            data['report_info'] = {}
+        
+        if year is not None:
+            data['report_info']['year'] = year
+        if quarter is not None:
+            data['report_info']['quarter'] = quarter
+        
+        if 'page_number' not in data['report_info']:
+            data['report_info']['page_number'] = ''
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
@@ -249,11 +316,23 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             # 기타 요약 보도자료는 스키마 기본값 사용 (엑셀 경로 전달)
             return _generate_from_schema_with_excel(template_name, report_id, year, quarter, excel_path, custom_data)
         
-        # Generator 모듈 로드
-        module = load_generator_module(generator_name)
-        if not module:
-            print(f"[ERROR] Generator 모듈을 찾을 수 없습니다: {generator_name}")
-            return None, f"Generator 모듈을 찾을 수 없습니다: {generator_name}", []
+        # Generator 모듈 로드 (안전한 처리)
+        if not generator_name or not isinstance(generator_name, str):
+            error_msg = f"유효하지 않은 Generator 이름: {generator_name}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg, []
+        
+        try:
+            module = load_generator_module(generator_name)
+            if not module:
+                print(f"[ERROR] Generator 모듈을 찾을 수 없습니다: {generator_name}")
+                return None, f"Generator 모듈을 찾을 수 없습니다: {generator_name}", []
+        except Exception as e:
+            import traceback
+            error_msg = f"Generator 모듈 로드 중 오류 발생: {str(e)}"
+            print(f"[ERROR] {error_msg}")
+            traceback.print_exc()
+            return None, error_msg, []
         
         # 사용 가능한 함수 확인
         available_funcs = [name for name in dir(module) if not name.startswith('_')]
@@ -330,13 +409,17 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             except (TypeError, AttributeError):
                 data = module.generate_report(excel_path, template_path, output_path)
         
-        # 방법 3: Generator 클래스 사용
+        # 방법 3: Generator 클래스 사용 (안전한 처리)
         elif generator_class:
             try:
                 # __init__ 시그니처 확인하여 year, quarter, excel_file 전달 시도
                 import inspect
-                sig = inspect.signature(generator_class.__init__)
-                params = list(sig.parameters.keys())
+                try:
+                    sig = inspect.signature(generator_class.__init__)
+                    params = list(sig.parameters.keys())
+                except (ValueError, TypeError) as sig_error:
+                    print(f"[WARNING] 시그니처 확인 실패: {sig_error}, 기본 초기화 시도")
+                    params = []
                 
                 # year와 quarter는 반드시 포함 (명시적 전달)
                 init_kwargs = {}
@@ -357,15 +440,37 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     generator = generator_class(excel_path, **init_kwargs)
                 else:
                     generator = generator_class(excel_path)
-            except (TypeError, AttributeError):
+            except (TypeError, AttributeError) as init_error:
                 # 시그니처 확인 실패 시 year, quarter 포함하여 시도
                 try:
                     generator = generator_class(excel_path, year=year, quarter=quarter)
                 except TypeError:
-                    # year, quarter 파라미터가 없으면 기본 초기화
-                    generator = generator_class(excel_path)
+                    try:
+                        # year, quarter 파라미터가 없으면 기본 초기화
+                        generator = generator_class(excel_path)
+                    except Exception as e:
+                        error_msg = f"Generator 초기화 실패: {str(e)}"
+                        print(f"[ERROR] {error_msg}")
+                        return None, error_msg, []
+            except Exception as init_error:
+                import traceback
+                error_msg = f"Generator 초기화 중 예외 발생: {str(init_error)}"
+                print(f"[ERROR] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
             
-            data = generator.extract_all_data()
+            # extract_all_data 호출 (안전한 처리)
+            try:
+                data = generator.extract_all_data()
+                if data is None:
+                    print(f"[WARNING] Generator.extract_all_data()가 None을 반환했습니다.")
+                    data = {}
+            except Exception as extract_error:
+                import traceback
+                error_msg = f"데이터 추출 중 오류 발생: {str(extract_error)}"
+                print(f"[ERROR] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
         
         else:
             error_msg = f"유효한 Generator를 찾을 수 없습니다: {generator_name}"
@@ -374,33 +479,43 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             return None, error_msg, []
         
         # 통합 Generator는 이미 올바른 필드명으로 데이터를 생성함
-        # 레거시 Generator를 위한 최소한의 후처리만 수행
-        if data and 'regional_data' in data and 'top3_increase_regions' not in data:
-            # top3가 없는 경우 (레거시 Generator)
+        # 레거시 Generator를 위한 최소한의 후처리만 수행 (안전한 처리)
+        if data and isinstance(data, dict) and 'regional_data' in data and 'top3_increase_regions' not in data:
+            # top3가 없는 경우 (레거시 Generator) - 안전한 처리
             top3_increase = []
-            for r in data['regional_data'].get('increase_regions', [])[:3]:
-                region_name = r.get('region', r.get('region_name', ''))
-                rate_value = r.get('growth_rate', r.get('change_rate', r.get('change', 0)))
-                items = r.get('industries', r.get('age_groups', r.get('top_industries', [])))
-                top3_increase.append({
-                    'region': region_name,
-                    'growth_rate': rate_value,
-                    'industries': items,
-                    'age_groups': items
-                })
+            increase_regions = data.get('regional_data', {}).get('increase_regions', [])
+            if isinstance(increase_regions, list):
+                for r in increase_regions[:3]:
+                    if r and isinstance(r, dict):
+                        region_name = r.get('region') or r.get('region_name') or ''
+                        rate_value = r.get('growth_rate') or r.get('change_rate') or r.get('change') or 0.0
+                        items = r.get('industries') or r.get('age_groups') or r.get('top_industries') or []
+                        if not isinstance(items, list):
+                            items = []
+                        top3_increase.append({
+                            'region': region_name,
+                            'growth_rate': rate_value if rate_value is not None else 0.0,
+                            'industries': items,
+                            'age_groups': items
+                        })
             data['top3_increase_regions'] = top3_increase
             
             top3_decrease = []
-            for r in data['regional_data'].get('decrease_regions', [])[:3]:
-                region_name = r.get('region', r.get('region_name', ''))
-                rate_value = r.get('growth_rate', r.get('change_rate', r.get('change', 0)))
-                items = r.get('industries', r.get('age_groups', r.get('top_industries', [])))
-                top3_decrease.append({
-                    'region': region_name,
-                    'growth_rate': rate_value,
-                    'industries': items,
-                    'age_groups': items
-                })
+            decrease_regions = data.get('regional_data', {}).get('decrease_regions', [])
+            if isinstance(decrease_regions, list):
+                for r in decrease_regions[:3]:
+                    if r and isinstance(r, dict):
+                        region_name = r.get('region') or r.get('region_name') or ''
+                        rate_value = r.get('growth_rate') or r.get('change_rate') or r.get('change') or 0.0
+                        items = r.get('industries') or r.get('age_groups') or r.get('top_industries') or []
+                        if not isinstance(items, list):
+                            items = []
+                        top3_decrease.append({
+                            'region': region_name,
+                            'growth_rate': rate_value if rate_value is not None else 0.0,
+                            'industries': items,
+                            'age_groups': items
+                        })
             data['top3_decrease_regions'] = top3_decrease
         
         # 담당자 설정 기능 제거: custom_data는 더 이상 병합하지 않음
@@ -424,11 +539,18 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 else:
                     obj[final_key] = value
         
-        # report_info 강제 추가/업데이트 (연도/분기 보장)
+        # report_info 강제 추가/업데이트 (연도/분기 보장) - 안전한 처리
         if data is None:
             data = {}
         
+        if not isinstance(data, dict):
+            print(f"[WARNING] data가 dict가 아닙니다: {type(data)}")
+            data = {}
+        
         if 'report_info' not in data:
+            data['report_info'] = {}
+        
+        if not isinstance(data['report_info'], dict):
             data['report_info'] = {}
         
         # year, quarter가 None이 아니면 업데이트
@@ -439,9 +561,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # report_info에 year나 quarter가 없으면 동적으로 추출 (하드코딩 제거)
         if 'year' not in data['report_info'] or data['report_info']['year'] is None:
-            data['report_info']['year'] = year if year is not None else (data.get('year') or 2025)
+            data['report_info']['year'] = year if year is not None else (data.get('year') if isinstance(data.get('year'), int) else 2025)
         if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
-            data['report_info']['quarter'] = quarter if quarter is not None else (data.get('quarter') or 2)
+            data['report_info']['quarter'] = quarter if quarter is not None else (data.get('quarter') if isinstance(data.get('quarter'), int) else 2)
         
         # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         data['report_info']['page_number'] = ""
@@ -460,16 +582,65 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                 else:
                     print(f"  - {key}: {type(value).__name__}")
         
-        # 템플릿 렌더링
+        # 템플릿 렌더링 (안전한 처리)
         template_path = TEMPLATES_DIR / template_name
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template = Template(f.read())
         
-        template.environment.filters['format_value'] = format_value
-        template.environment.filters['is_missing'] = is_missing
-        template.environment.filters['josa'] = get_josa
+        # 템플릿 파일 존재 확인
+        if not template_path.exists():
+            error_msg = f"템플릿 파일을 찾을 수 없습니다: {template_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg, []
         
-        html_content = template.render(**data)
+        if not template_path.is_file():
+            error_msg = f"템플릿 경로가 파일이 아닙니다: {template_path}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg, []
+        
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+            
+            if not template_content:
+                error_msg = f"템플릿 파일이 비어있습니다: {template_path}"
+                print(f"[ERROR] {error_msg}")
+                return None, error_msg, []
+            
+            template = Template(template_content)
+            
+            # 필터 등록 (안전한 등록)
+            try:
+                template.environment.filters['format_value'] = format_value
+            except Exception as e:
+                print(f"[WARNING] format_value 필터 등록 실패: {e}")
+            
+            try:
+                template.environment.filters['is_missing'] = is_missing
+            except Exception as e:
+                print(f"[WARNING] is_missing 필터 등록 실패: {e}")
+            
+            try:
+                template.environment.filters['josa'] = get_josa
+            except Exception as e:
+                print(f"[WARNING] josa 필터 등록 실패: {e}")
+            
+            # 템플릿 렌더링 (안전한 렌더링)
+            try:
+                html_content = template.render(**data)
+                if not html_content:
+                    print(f"[WARNING] 템플릿 렌더링 결과가 비어있습니다.")
+                    html_content = "<!-- Empty template render -->"
+            except Exception as render_error:
+                import traceback
+                error_msg = f"템플릿 렌더링 중 오류 발생: {str(render_error)}"
+                print(f"[ERROR] {error_msg}")
+                traceback.print_exc()
+                return None, error_msg, []
+        except Exception as file_error:
+            import traceback
+            error_msg = f"템플릿 파일 읽기 중 오류 발생: {str(file_error)}"
+            print(f"[ERROR] {error_msg}")
+            traceback.print_exc()
+            return None, error_msg, []
         
         return html_content, None, missing
         

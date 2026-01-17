@@ -754,17 +754,22 @@ def get_summary_table_data(excel_path):
 def get_production_summary_data(excel_path, year, quarter):
     """요약-생산 데이터 (각 Generator에서 검증된 데이터 가져오기)"""
     try:
-        # 광공업생산 Generator에서 데이터 가져오기
+        # 광공업생산 Generator에서 데이터 가져오기 (unified_generator 사용)
         mining_data = None
         try:
-            module = load_generator_module('mining_manufacturing_generator')
+            module = load_generator_module('unified_generator.py')
             if module:
                 generator_class = None
-                for name in dir(module):
-                    obj = getattr(module, name)
-                    if isinstance(obj, type) and name.endswith('Generator'):
-                        generator_class = obj
-                        break
+                # MiningManufacturingGenerator 클래스 찾기
+                if hasattr(module, 'MiningManufacturingGenerator'):
+                    generator_class = module.MiningManufacturingGenerator
+                else:
+                    # 자동 탐색
+                    for name in dir(module):
+                        obj = getattr(module, name)
+                        if isinstance(obj, type) and name == 'MiningManufacturingGenerator':
+                            generator_class = obj
+                            break
                 
                 if generator_class:
                     gen = generator_class(excel_path, year=year, quarter=quarter)
@@ -778,11 +783,13 @@ def get_production_summary_data(excel_path, year, quarter):
                     # 기존 차트 데이터 구조 유지하면서 품목 추가
                     xl = pd.ExcelFile(excel_path)
                     mining = _extract_chart_data(xl, 'A 분석')
-                    mining['main_increase_industries'] = main_increase_industries[:5]  # Top 5 품목
-                    mining['main_decrease_industries'] = main_decrease_industries[:5]  # Top 5 품목
+                    mining['main_increase_industries'] = main_increase_industries[:5] if main_increase_industries else []  # Top 5 품목
+                    mining['main_decrease_industries'] = main_decrease_industries[:5] if main_decrease_industries else []  # Top 5 품목
                     mining_data = mining
         except Exception as e:
             print(f"[요약] 광공업생산 Generator 호출 실패, 기본 추출 사용: {e}")
+            import traceback
+            traceback.print_exc()
         
         # Generator 호출 실패 시 기본 추출 사용
         if mining_data is None:
@@ -840,22 +847,44 @@ def get_consumption_construction_data(excel_path, year, quarter):
             print(f"[요약] 소비 전분기대비 데이터 추출 실패: {e}")
             retail['qoq_change'] = None
         
-        # 건설 데이터: ConstructionGenerator에서 가져오기
+        # 건설 데이터: ConstructionGenerator에서 가져오기 (클래스 기반)
         construction_data = None
         try:
-            module = load_generator_module('construction_generator')
+            module = load_generator_module('construction_generator.py')
             if module:
-                # construction_generator는 함수 기반이므로 직접 호출
-                if hasattr(module, 'generate_report_data'):
-                    full_data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                # ConstructionGenerator 클래스 찾기
+                generator_class = None
+                if hasattr(module, 'ConstructionGenerator'):
+                    generator_class = module.ConstructionGenerator
+                else:
+                    # 자동 탐색
+                    for name in dir(module):
+                        obj = getattr(module, name)
+                        if isinstance(obj, type) and name.endswith('Generator'):
+                            generator_class = obj
+                            break
+                
+                if generator_class:
+                    # 클래스 기반 Generator 사용
+                    gen = generator_class(excel_path, year=year, quarter=quarter)
+                    full_data = gen.extract_all_data()
+                    
                     if full_data:
                         nationwide_data = full_data.get('nationwide_data', {})
                         summary_box = full_data.get('summary_box', {})
                         
-                        # 건설 데이터 구조 변환
+                        # 건설 데이터 구조 변환 (construction_index_trillion 사용)
+                        construction_index_trillion = nationwide_data.get('construction_index_trillion', 0.0)
+                        if construction_index_trillion and construction_index_trillion > 0:
+                            amount_billion = int(round(construction_index_trillion * 100, 0))  # 조원 -> 백억원
+                        else:
+                            # fallback: construction_index 사용 (억원 단위)
+                            construction_index = nationwide_data.get('construction_index', 0.0)
+                            amount_billion = int(round(construction_index / 10, 0)) if construction_index else 0
+                        
                         construction_data = {
                             'nationwide': {
-                                'amount': int(round(nationwide_data.get('amount', 0) / 10, 0)),  # 백억원 단위
+                                'amount': amount_billion,  # 백억원 단위
                                 'change': nationwide_data.get('growth_rate', 0.0)
                             },
                             'increase_regions': [],
@@ -870,21 +899,33 @@ def get_consumption_construction_data(excel_path, year, quarter):
                         increase_regions_list = regional_data.get('increase_regions', [])
                         decrease_regions_list = regional_data.get('decrease_regions', [])
                         
-                        for region in increase_regions_list[:3]:
-                            construction_data['increase_regions'].append({
-                                'name': region.get('region', ''),
-                                'value': region.get('growth_rate', 0.0),
-                                'amount': int(round(region.get('amount', 0) / 10, 0)),
-                                'amount_normalized': min(100, max(0, region.get('amount', 0) / 30))
-                            })
+                        if increase_regions_list:
+                            for region in increase_regions_list[:3]:
+                                if region and isinstance(region, dict):
+                                    region_name = region.get('region', '')
+                                    growth_rate = region.get('growth_rate', 0.0)
+                                    # 건설 데이터는 amount 필드가 없으므로 차트 데이터만 사용
+                                    construction_data['increase_regions'].append({
+                                        'name': region_name,
+                                        'value': growth_rate if growth_rate is not None else 0.0,
+                                        'amount': 0,  # 건설 데이터는 amount가 없음
+                                        'amount_normalized': 0
+                                    })
                         
-                        for region in decrease_regions_list[:3]:
-                            construction_data['decrease_regions'].append({
-                                'name': region.get('region', ''),
-                                'value': region.get('growth_rate', 0.0),
-                                'amount': int(round(region.get('amount', 0) / 10, 0)),
-                                'amount_normalized': min(100, max(0, region.get('amount', 0) / 30))
-                            })
+                        if decrease_regions_list:
+                            for region in decrease_regions_list[:3]:
+                                if region and isinstance(region, dict):
+                                    region_name = region.get('region', '')
+                                    growth_rate = region.get('growth_rate', 0.0)
+                                    construction_data['decrease_regions'].append({
+                                        'name': region_name,
+                                        'value': growth_rate if growth_rate is not None else 0.0,
+                                        'amount': 0,  # 건설 데이터는 amount가 없음
+                                        'amount_normalized': 0
+                                    })
+            elif hasattr(module, 'generate_report_data'):
+                # 함수 기반 Generator 호출 (fallback)
+                full_data = module.generate_report_data(excel_path, year=year, quarter=quarter)
         except Exception as e:
             print(f"[요약] 건설 Generator 호출 실패, 기본 추출 사용: {e}")
             import traceback

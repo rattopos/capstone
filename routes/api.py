@@ -592,9 +592,27 @@ def generate_all_reports():
                     })
                 else:
                     try:
-                        output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
+                        # 파일명 검증 및 안전한 경로 생성
+                        report_name_safe = report_config.get('name', 'unknown')
+                        if not report_name_safe or not isinstance(report_name_safe, str):
+                            report_name_safe = 'unknown'
+                        
+                        # 위험한 문자 제거
+                        report_name_safe = report_name_safe.replace('/', '_').replace('\\', '_').replace('..', '_')
+                        
+                        output_path = TEMPLATES_DIR / f"{report_name_safe}_output.html"
+                        
+                        # 디렉토리 존재 확인
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        # 파일 쓰기 (안전한 인코딩)
                         with open(output_path, 'w', encoding='utf-8') as f:
-                            f.write(html_content)
+                            if html_content:
+                                f.write(html_content)
+                            else:
+                                print(f"[WARNING] {report_name} HTML 내용이 비어있습니다.")
+                                f.write('<!-- Empty content -->')
+                        
                         print(f"[보도자료 생성] 성공: {report_name} → {output_path}")
                         generated_reports.append({
                             'report_id': report_id,

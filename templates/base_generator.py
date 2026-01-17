@@ -489,23 +489,44 @@ class BaseGenerator(ABC):
         target_col = None
         candidate_cols = []  # 매칭 후보 컬럼 저장
         
-        for col_idx in range(len(headers.columns)):
-            # 해당 열의 상위 행들의 텍스트를 모두 수집
+        # 안전한 컬럼 범위 체크
+        max_cols = len(headers.columns) if hasattr(headers, 'columns') else 0
+        max_rows = len(headers) if hasattr(headers, '__len__') else 0
+        
+        if max_cols == 0 or max_rows == 0:
+            print(f"[ERROR] 헤더 DataFrame이 비어있습니다: {max_rows}행 × {max_cols}열")
+            return None
+        
+        for col_idx in range(max_cols):
+            # 해당 열의 상위 행들의 텍스트를 모두 수집 (안전한 인덱스 접근)
             col_values = []
-            for row_idx in range(len(headers)):
-                val = headers.iloc[row_idx, col_idx]
-                if pd.notna(val) and str(val).strip() != '':
-                    col_values.append(str(val).strip())
+            for row_idx in range(max_rows):
+                try:
+                    if row_idx < len(headers) and col_idx < len(headers.columns):
+                        val = headers.iloc[row_idx, col_idx]
+                        if pd.notna(val) and str(val).strip() != '':
+                            col_values.append(str(val).strip())
+                except (IndexError, KeyError) as e:
+                    # 인덱스 오류는 무시하고 계속 진행
+                    continue
             
             # 열의 모든 값을 하나의 문자열로 합침 (공백 제거)
             col_text = "".join(col_values).replace(" ", "")
             
-            # 원본 헤더 값도 저장 (비교용)
+            # 원본 헤더 값도 저장 (비교용) - 안전한 인덱스 접근
             col_values_orig = []
-            for row_idx in range(len(headers_original)):
-                val = headers_original.iloc[row_idx, col_idx]
-                if pd.notna(val) and str(val).strip() != '':
-                    col_values_orig.append(str(val).strip())
+            try:
+                max_orig_rows = len(headers_original) if hasattr(headers_original, '__len__') else 0
+                for row_idx in range(max_orig_rows):
+                    try:
+                        if row_idx < len(headers_original) and col_idx < len(headers_original.columns):
+                            val = headers_original.iloc[row_idx, col_idx]
+                            if pd.notna(val) and str(val).strip() != '':
+                                col_values_orig.append(str(val).strip())
+                    except (IndexError, KeyError):
+                        continue
+            except Exception as e:
+                print(f"[WARNING] 원본 헤더 값 수집 중 오류: {e}")
             
             # 5. 조건 검사 (개선된 버전) - 상세 디버깅
             # A. 연도 확인 (전체 연도 또는 단축형, 더 유연한 매칭)
@@ -644,13 +665,25 @@ class BaseGenerator(ABC):
             print(f"{'컬럼':<6} {'원본 헤더 (병합 전)':<50} {'병합 처리 후':<50}")
             print(f"{'-'*6} {'-'*50} {'-'*50}")
             
-            for col_idx in range(min(20, len(headers.columns))):
-                # 원본 헤더 값
+            # 안전한 범위 체크
+            max_compare_cols = min(20, len(headers.columns) if hasattr(headers, 'columns') else 0)
+            max_compare_rows = len(headers_original) if hasattr(headers_original, '__len__') else 0
+            
+            for col_idx in range(max_compare_cols):
+                # 원본 헤더 값 (안전한 인덱스 접근)
                 orig_values = []
-                for row_idx in range(len(headers_original)):
-                    val = headers_original.iloc[row_idx, col_idx]
-                    if pd.notna(val) and str(val).strip() != '':
-                        orig_values.append(str(val).strip())
+                try:
+                    for row_idx in range(max_compare_rows):
+                        try:
+                            if row_idx < len(headers_original) and col_idx < len(headers_original.columns):
+                                val = headers_original.iloc[row_idx, col_idx]
+                                if pd.notna(val) and str(val).strip() != '':
+                                    orig_values.append(str(val).strip())
+                        except (IndexError, KeyError):
+                            continue
+                except Exception as e:
+                    print(f"[WARNING] 원본 헤더 비교 중 오류 (컬럼 {col_idx}): {e}")
+                
                 orig_display = ' | '.join(orig_values[:2]) if orig_values else '(빈)'
                 
                 # 병합 처리 후 헤더 값

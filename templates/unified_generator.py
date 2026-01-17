@@ -61,6 +61,13 @@ class UnifiedReportGenerator(BaseGenerator):
         self.industry_code_col = agg_struct.get('industry_code_col', 7)
         self.total_code = agg_struct.get('total_code', 'BCD')
         
+        # 산업명 컬럼 (보통 industry_code_col + 1 또는 설정에서 가져옴)
+        # metadata_columns에서 'name' 컬럼 찾기 시도
+        metadata_cols = self.config.get('metadata_columns', {})
+        # 실제로는 집계 시트 구조를 보고 동적으로 찾아야 하지만,
+        # 일반적으로 산업명은 산업코드 다음 컬럼에 있음
+        self.industry_name_col = self.industry_code_col + 1
+        
         # 집계 시트
         self.df_aggregation = None
         self.target_col = None
@@ -144,8 +151,15 @@ class UnifiedReportGenerator(BaseGenerator):
         
         df = self.df_aggregation
         
-        # 데이터 행만 (헤더 제외)
-        data_df = df.iloc[self.DATA_START_ROW:].copy() if self.DATA_START_ROW < len(df) else df
+        # 데이터 행만 (헤더 제외) - 안전한 인덱스 처리
+        if self.DATA_START_ROW < 0:
+            self.DATA_START_ROW = 0
+        
+        if self.DATA_START_ROW < len(df):
+            data_df = df.iloc[self.DATA_START_ROW:].copy()
+        else:
+            print(f"[{self.config['name']}] ⚠️ DATA_START_ROW({self.DATA_START_ROW})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
+            data_df = df.copy()
         
         # 지역 목록
         regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -153,25 +167,48 @@ class UnifiedReportGenerator(BaseGenerator):
         
         table_data = []
         
+        # 컬럼 인덱스 검증
+        if self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 지역명 컬럼 인덱스({self.region_name_col})가 유효하지 않습니다. "
+                f"DataFrame 컬럼 수: {len(data_df.columns)}"
+            )
+        
         for region in regions:
-            # 지역명으로 필터링 (설정에서 가져온 컬럼 사용)
-            region_filter = data_df[
-                data_df.iloc[:, self.region_name_col].astype(str).str.strip() == region
-            ]
+            # 지역명으로 필터링 (설정에서 가져온 컬럼 사용) - 안전한 인덱스 접근
+            try:
+                region_filter = data_df[
+                    data_df.iloc[:, self.region_name_col].astype(str).str.strip() == region
+                ]
+            except (IndexError, KeyError) as e:
+                print(f"[{self.config['name']}] ⚠️ {region} 필터링 오류: {e}")
+                continue
             
             if region_filter.empty:
                 continue
             
-            # 총지수 행 찾기 (설정에서 가져온 컬럼 및 코드 사용)
+            # 총지수 행 찾기 (설정에서 가져온 컬럼 및 코드 사용) - 안전한 인덱스 접근
+            # 컬럼 인덱스 검증
+            if self.industry_code_col < 0 or self.industry_code_col >= len(region_filter.columns):
+                print(f"[{self.config['name']}] ⚠️ {region}: 산업코드 컬럼 인덱스({self.industry_code_col})가 유효하지 않습니다. 스킵합니다.")
+                continue
+            
             # 디버깅: 실제 코드 값 확인
             if region == '전국':
-                industry_codes = region_filter.iloc[:, self.industry_code_col].astype(str).head(5).tolist()
-                print(f"[{self.config['name']}] 디버그: {region} 산업코드 (처음 5개): {industry_codes}")
-                print(f"[{self.config['name']}] 디버그: 찾으려는 코드: '{self.total_code}'")
+                try:
+                    industry_codes = region_filter.iloc[:, self.industry_code_col].astype(str).head(5).tolist()
+                    print(f"[{self.config['name']}] 디버그: {region} 산업코드 (처음 5개): {industry_codes}")
+                    print(f"[{self.config['name']}] 디버그: 찾으려는 코드: '{self.total_code}'")
+                except (IndexError, KeyError) as e:
+                    print(f"[{self.config['name']}] ⚠️ {region} 산업코드 확인 오류: {e}")
             
-            region_total = region_filter[
-                region_filter.iloc[:, self.industry_code_col].astype(str).str.contains(self.total_code, na=False, regex=False)
-            ]
+            try:
+                region_total = region_filter[
+                    region_filter.iloc[:, self.industry_code_col].astype(str).str.contains(self.total_code, na=False, regex=False)
+                ]
+            except (IndexError, KeyError) as e:
+                print(f"[{self.config['name']}] ⚠️ {region} 총지수 행 찾기 오류: {e}")
+                region_total = region_filter.head(1)  # Fallback
             
             if region_total.empty:
                 # Fallback: 첫 번째 행
@@ -234,6 +271,175 @@ class UnifiedReportGenerator(BaseGenerator):
         
         return table_data
     
+    def _extract_industry_data(self, region: str) -> List[Dict[str, Any]]:
+        """
+        특정 지역의 업종별 데이터 추출
+        
+        Args:
+            region: 지역명 ('전국', '서울', 등)
+            
+        Returns:
+            업종별 데이터 리스트 [{'name': '업종명', 'value': 지수, 'change_rate': 증감률, 'growth_rate': 증감률}, ...]
+        """
+        if self.df_aggregation is None:
+            return []
+        
+        df = self.df_aggregation
+        
+        # 컬럼 인덱스 검증
+        if self.region_name_col < 0 or self.region_name_col >= len(df.columns):
+            print(f"[{self.config['name']}] ⚠️ 지역명 컬럼 인덱스({self.region_name_col})가 유효하지 않습니다. 빈 리스트 반환")
+            return []
+        
+        # 데이터 행만 (헤더 제외) - 안전한 인덱스 처리
+        if self.DATA_START_ROW < 0:
+            self.DATA_START_ROW = 0
+        
+        if self.DATA_START_ROW < len(df):
+            data_df = df.iloc[self.DATA_START_ROW:].copy()
+        else:
+            data_df = df.copy()
+        
+        # 지역 필터링 (안전한 인덱스 접근)
+        try:
+            region_filter = data_df[
+                data_df.iloc[:, self.region_name_col].astype(str).str.strip() == region
+            ]
+        except (IndexError, KeyError) as e:
+            print(f"[{self.config['name']}] ⚠️ {region} 필터링 오류: {e}")
+            return []
+        
+        if region_filter.empty:
+            return []
+        
+        industries = []
+        name_mapping = self.config.get('name_mapping', {})
+        
+        # 산업명 컬럼 찾기 (산업코드 다음 컬럼 또는 설정에서)
+        # metadata_columns에서 'name' 컬럼 인덱스 찾기 시도
+        metadata_cols = self.config.get('metadata_columns', {})
+        # 일반적으로 산업명은 산업코드 다음 컬럼에 있음
+        # 안전한 컬럼 인덱스 계산
+        industry_name_col = self.industry_code_col + 1
+        if industry_name_col < 0:
+            industry_name_col = 0
+        
+        for idx, row in region_filter.iterrows():
+            # 산업코드 확인 (총지수 제외)
+            if self.industry_code_col >= len(row):
+                continue
+                
+            industry_code = str(row.iloc[self.industry_code_col]).strip() if pd.notna(row.iloc[self.industry_code_col]) else ''
+            
+            # 총지수 코드는 제외
+            if not industry_code or industry_code == '' or industry_code == 'nan':
+                continue
+            
+            # total_code와 일치하면 제외 (총지수)
+            # total_code가 'BCD', 'E~S' 같은 패턴일 수 있으므로 contains 체크
+            if str(self.total_code) in str(industry_code) or industry_code == str(self.total_code):
+                continue
+            
+            # 산업명 추출
+            industry_name = ''
+            if industry_name_col < len(row) and pd.notna(row.iloc[industry_name_col]):
+                industry_name = str(row.iloc[industry_name_col]).strip()
+                if industry_name == 'nan' or not industry_name:
+                    continue
+            else:
+                # 산업명 컬럼이 없으면 스킵
+                continue
+            
+            # 이름 매핑 적용
+            if industry_name in name_mapping:
+                industry_name = name_mapping[industry_name]
+            
+            if not industry_name:
+                continue
+            
+            # 지수 추출 (안전한 인덱스 접근)
+            try:
+                if self.target_col is None or self.prev_y_col is None:
+                    continue
+                
+                # 인덱스 범위 체크
+                if self.target_col < 0 or self.target_col >= len(row):
+                    continue
+                if self.prev_y_col < 0 or self.prev_y_col >= len(row):
+                    continue
+                    
+                idx_current = self.safe_float(row.iloc[self.target_col], None)
+                idx_prev_year = self.safe_float(row.iloc[self.prev_y_col], None)
+            except (IndexError, KeyError, AttributeError) as e:
+                print(f"[{self.config['name']}] ⚠️ 데이터 추출 오류 (인덱스 {self.target_col}/{self.prev_y_col}): {e}")
+                continue
+            
+            if idx_current is None:
+                continue
+            
+            # 증감률 계산
+            change_rate = None
+            if idx_prev_year and idx_prev_year != 0:
+                change_rate = round(((idx_current - idx_prev_year) / idx_prev_year) * 100, 1)
+            
+            industries.append({
+                'name': industry_name,
+                'value': round(idx_current, 1),
+                'prev_value': round(idx_prev_year, 1) if idx_prev_year else None,
+                'change_rate': change_rate,
+                'growth_rate': change_rate,  # 템플릿 호환 필드명
+                'code': industry_code
+            })
+        
+        return industries
+    
+    def _get_top_industries_for_region(self, region: str, increase: bool = True, top_n: int = 3) -> List[Dict[str, Any]]:
+        """
+        특정 지역의 상위 업종 추출
+        
+        Args:
+            region: 지역명
+            increase: True면 증가 업종, False면 감소 업종
+            top_n: 상위 N개
+            
+        Returns:
+            상위 업종 리스트
+        """
+        if not region or not isinstance(region, str):
+            return []
+        
+        industries = self._extract_industry_data(region)
+        
+        # 안전한 필터링
+        if not industries:
+            return []
+        
+        if increase:
+            filtered = [
+                ind for ind in industries 
+                if ind and isinstance(ind, dict) and 
+                ind.get('change_rate') is not None and 
+                ind['change_rate'] > 0
+            ]
+            try:
+                filtered.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
+            except (TypeError, AttributeError):
+                pass  # 정렬 실패 시 원본 유지
+        else:
+            filtered = [
+                ind for ind in industries 
+                if ind and isinstance(ind, dict) and 
+                ind.get('change_rate') is not None and 
+                ind['change_rate'] < 0
+            ]
+            try:
+                filtered.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+            except (TypeError, AttributeError):
+                pass  # 정렬 실패 시 원본 유지
+        
+        # 안전한 슬라이싱
+        return filtered[:top_n] if filtered else []
+    
     def extract_nationwide_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
         """전국 데이터 추출 - 템플릿 호환 필드명"""
         if table_data is None:
@@ -254,8 +460,42 @@ class UnifiedReportGenerator(BaseGenerator):
                 'main_decrease_industries': []   # 템플릿 호환
             }
         
-        index_value = nationwide['value']
-        growth_rate = nationwide['change_rate'] if nationwide['change_rate'] else 0.0
+        # 안전한 값 추출
+        index_value = nationwide.get('value', 100.0) if nationwide and isinstance(nationwide, dict) else 100.0
+        growth_rate = nationwide.get('change_rate', 0.0) if nationwide and isinstance(nationwide, dict) and nationwide.get('change_rate') is not None else 0.0
+        
+        # 업종별 데이터 추출
+        industry_data = self._extract_industry_data('전국')
+        
+        # 안전한 업종 데이터 처리
+        if not industry_data:
+            industry_data = []
+        
+        # 증가/감소 업종 분류 (None 체크 강화)
+        increase_industries = [
+            ind for ind in industry_data 
+            if ind and isinstance(ind, dict) and 
+            ind.get('change_rate') is not None and 
+            ind['change_rate'] > 0
+        ]
+        decrease_industries = [
+            ind for ind in industry_data 
+            if ind and isinstance(ind, dict) and 
+            ind.get('change_rate') is not None and 
+            ind['change_rate'] < 0
+        ]
+        
+        # 증감률 기준 정렬 (안전한 정렬)
+        try:
+            increase_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
+            decrease_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+        except (TypeError, AttributeError) as e:
+            print(f"[{self.config['name']}] ⚠️ 업종 정렬 오류: {e}")
+            # 정렬 실패 시 원본 유지
+        
+        # 상위 3개 추출 (안전한 슬라이싱)
+        main_increase = increase_industries[:3] if increase_industries else []
+        main_decrease = decrease_industries[:3] if decrease_industries else []
         
         # 모든 필드명 포함 (템플릿 호환)
         return {
@@ -263,11 +503,11 @@ class UnifiedReportGenerator(BaseGenerator):
             'sales_index': index_value,  # 소비동향 템플릿 호환
             'service_index': index_value,  # 서비스업 템플릿 호환
             'growth_rate': growth_rate,
-            'main_items': [],  # TODO: 업종별 데이터 추가
-            'main_industries': [],  # 템플릿 호환
-            'main_businesses': [],  # 소비동향 템플릿 호환
-            'main_increase_industries': [],  # 템플릿 호환
-            'main_decrease_industries': []   # 템플릿 호환
+            'main_items': main_increase,  # 업종별 데이터 추가 완료
+            'main_industries': main_increase,  # 템플릿 호환
+            'main_businesses': main_increase,  # 소비동향 템플릿 호환
+            'main_increase_industries': main_increase,  # 템플릿 호환
+            'main_decrease_industries': main_decrease   # 템플릿 호환
         }
     
     def extract_regional_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
@@ -275,15 +515,34 @@ class UnifiedReportGenerator(BaseGenerator):
         if table_data is None:
             table_data = self._extract_table_data_ssot()
         
-        # 전국 제외
-        regional = [d for d in table_data if d['region_name'] != '전국']
+        # 전국 제외 (안전한 필터링)
+        regional = [
+            d for d in table_data 
+            if d and isinstance(d, dict) and 
+            d.get('region_name') != '전국'
+        ]
         
-        # 증가/감소 분류
-        increase = [r for r in regional if r['change_rate'] and r['change_rate'] > 0]
-        decrease = [r for r in regional if r['change_rate'] and r['change_rate'] < 0]
+        # 증가/감소 분류 (None 체크 강화)
+        increase = [
+            r for r in regional 
+            if r and isinstance(r, dict) and 
+            r.get('change_rate') is not None and 
+            r['change_rate'] > 0
+        ]
+        decrease = [
+            r for r in regional 
+            if r and isinstance(r, dict) and 
+            r.get('change_rate') is not None and 
+            r['change_rate'] < 0
+        ]
         
-        increase.sort(key=lambda x: x['change_rate'], reverse=True)
-        decrease.sort(key=lambda x: x['change_rate'])
+        # 안전한 정렬
+        try:
+            increase.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
+            decrease.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+        except (TypeError, AttributeError) as e:
+            print(f"[{self.config['name']}] ⚠️ 지역 정렬 오류: {e}")
+            # 정렬 실패 시 원본 유지
         
         return {
             'increase_regions': increase,
@@ -330,51 +589,161 @@ class UnifiedReportGenerator(BaseGenerator):
         nationwide = self.extract_nationwide_data(table_data)
         regional = self.extract_regional_data(table_data)
         
-        # Top3 regions (템플릿 호환 필드명으로 생성)
+        # Top3 regions (템플릿 호환 필드명으로 생성) - 안전한 처리
         top3_increase = []
-        for r in regional['increase_regions'][:3]:
-            top3_increase.append({
-                'region': r['region_name'],
-                'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
-                'industries': []  # TODO: 업종별 데이터 추가
-            })
+        increase_regions = regional.get('increase_regions', [])
+        if not isinstance(increase_regions, list):
+            increase_regions = []
+        
+        for r in increase_regions[:3]:
+            if not r or not isinstance(r, dict):
+                continue
+            
+            region_name = r.get('region_name', '')
+            if not region_name:
+                continue
+            
+            try:
+                # 지역별 업종 데이터 추출
+                region_industries = self._extract_industry_data(region_name)
+                if not region_industries:
+                    region_industries = []
+                
+                # 증가 업종만 필터링 및 정렬 (안전한 처리)
+                increase_industries = [
+                    ind for ind in region_industries 
+                    if ind and isinstance(ind, dict) and 
+                    ind.get('change_rate') is not None and 
+                    ind['change_rate'] > 0
+                ]
+                try:
+                    increase_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
+                except (TypeError, AttributeError):
+                    pass  # 정렬 실패 시 원본 유지
+                
+                top3_increase.append({
+                    'region': region_name,
+                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
+                    'industries': increase_industries[:3] if increase_industries else []  # 상위 3개 업종
+                })
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ {region_name} 업종 데이터 추출 오류: {e}")
+                # 오류 발생 시 빈 업종 리스트로 추가
+                top3_increase.append({
+                    'region': region_name,
+                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
+                    'industries': []
+                })
         
         top3_decrease = []
-        for r in regional['decrease_regions'][:3]:
-            top3_decrease.append({
-                'region': r['region_name'],
-                'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
-                'industries': [],  # TODO: 업종별 데이터 추가
-                'main_business': ''  # TODO: 소비동향용 주요 업태
-            })
+        decrease_regions = regional.get('decrease_regions', [])
+        if not isinstance(decrease_regions, list):
+            decrease_regions = []
         
-        # Summary Box
+        for r in decrease_regions[:3]:
+            if not r or not isinstance(r, dict):
+                continue
+            
+            region_name = r.get('region_name', '')
+            if not region_name:
+                continue
+            
+            try:
+                # 지역별 업종 데이터 추출
+                region_industries = self._extract_industry_data(region_name)
+                if not region_industries:
+                    region_industries = []
+                
+                # 감소 업종만 필터링 및 정렬 (안전한 처리)
+                decrease_industries = [
+                    ind for ind in region_industries 
+                    if ind and isinstance(ind, dict) and 
+                    ind.get('change_rate') is not None and 
+                    ind['change_rate'] < 0
+                ]
+                try:
+                    decrease_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+                except (TypeError, AttributeError):
+                    pass  # 정렬 실패 시 원본 유지
+                
+                # 소비동향용 주요 업태 (첫 번째 감소 업종)
+                main_business = ''
+                if decrease_industries and decrease_industries[0] and isinstance(decrease_industries[0], dict):
+                    main_business = decrease_industries[0].get('name', '')
+                
+                top3_decrease.append({
+                    'region': region_name,
+                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
+                    'industries': decrease_industries[:3] if decrease_industries else [],  # 상위 3개 업종
+                    'main_business': main_business  # 소비동향용 주요 업태
+                })
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ {region_name} 업종 데이터 추출 오류: {e}")
+                # 오류 발생 시 빈 업종 리스트로 추가
+                top3_decrease.append({
+                    'region': region_name,
+                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
+                    'industries': [],
+                    'main_business': ''
+                })
+        
+        # Summary Box (안전한 처리)
+        main_regions = []
+        for r in top3_increase:
+            if r and isinstance(r, dict):
+                main_regions.append({
+                    'region': r.get('region', ''),
+                    'items': r.get('industries', []) if isinstance(r.get('industries'), list) else []
+                })
+        
+        increase_regions_count = len(regional.get('increase_regions', [])) if isinstance(regional.get('increase_regions'), list) else 0
+        
         summary_box = {
-            'main_regions': [{'region': r['region'], 'items': r['industries']} for r in top3_increase],
-            'region_count': len(regional['increase_regions'])
+            'main_regions': main_regions,
+            'region_count': increase_regions_count
         }
         
-        # Regional data 필드명 변환 (템플릿 호환)
+        # Regional data 필드명 변환 (템플릿 호환) - 안전한 처리
+        increase_regions_list = regional.get('increase_regions', [])
+        if not isinstance(increase_regions_list, list):
+            increase_regions_list = []
+        
+        decrease_regions_list = regional.get('decrease_regions', [])
+        if not isinstance(decrease_regions_list, list):
+            decrease_regions_list = []
+        
+        all_regions_list = regional.get('all_regions', [])
+        if not isinstance(all_regions_list, list):
+            all_regions_list = []
+        
         regional_converted = {
             'increase_regions': [
                 {
-                    'region': r['region_name'],
-                    'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
-                    'value': r['value'],
-                    'top_industries': []  # TODO: 업종별 데이터 추가
+                    'region': r.get('region_name', '') if r and isinstance(r, dict) else '',
+                    'growth_rate': r.get('change_rate', 0.0) if r and isinstance(r, dict) and r.get('change_rate') is not None else 0.0,
+                    'value': r.get('value', 0.0) if r and isinstance(r, dict) else 0.0,
+                    'top_industries': self._get_top_industries_for_region(
+                        r.get('region_name', '') if r and isinstance(r, dict) else '', 
+                        increase=True
+                    )
                 }
-                for r in regional['increase_regions']
+                for r in increase_regions_list
+                if r and isinstance(r, dict) and r.get('region_name')
             ],
             'decrease_regions': [
                 {
-                    'region': r['region_name'],
-                    'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
-                    'value': r['value'],
-                    'top_industries': []  # TODO: 업종별 데이터 추가
+                    'region': r.get('region_name', '') if r and isinstance(r, dict) else '',
+                    'growth_rate': r.get('change_rate', 0.0) if r and isinstance(r, dict) and r.get('change_rate') is not None else 0.0,
+                    'value': r.get('value', 0.0) if r and isinstance(r, dict) else 0.0,
+                    'top_industries': self._get_top_industries_for_region(
+                        r.get('region_name', '') if r and isinstance(r, dict) else '', 
+                        increase=False
+                    )
                 }
-                for r in regional['decrease_regions']
+                for r in decrease_regions_list
+                if r and isinstance(r, dict) and r.get('region_name')
             ],
-            'all_regions': regional['all_regions']
+            'all_regions': all_regions_list
         }
         
         return {

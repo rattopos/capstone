@@ -15,7 +15,7 @@ from flask import Flask
 
 from config.settings import BASE_DIR, SECRET_KEY, MAX_CONTENT_LENGTH, UPLOAD_FOLDER
 from utils.filters import register_filters
-from routes import main_bp, api_bp, preview_bp, debug_bp
+from routes import main_bp, api_bp
 
 
 def create_app():
@@ -37,8 +37,6 @@ def create_app():
     # Blueprint 등록
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp)
-    app.register_blueprint(preview_bp)
-    app.register_blueprint(debug_bp)
     
     return app
 
