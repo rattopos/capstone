@@ -725,6 +725,20 @@ def generate_all_reports():
     finally:
         # 작업 완료 후 캐시 정리 (메모리 관리)
         clear_excel_cache(excel_path)
+        
+        # 작업 완료 후 업로드 파일 삭제
+        try:
+            print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
+            deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
+            if deleted_count > 0:
+                print(f"[정리] 작업 완료 후 업로드 파일 {deleted_count}개 삭제 완료")
+            # 세션에서도 파일 경로 제거
+            session.pop('excel_path', None)
+            session.pop('year', None)
+            session.pop('quarter', None)
+            session.pop('file_type', None)
+        except Exception as cleanup_error:
+            print(f"[경고] 업로드 파일 정리 중 오류 (무시): {cleanup_error}")
     
     return jsonify({
         'success': len(errors) == 0,
@@ -763,6 +777,20 @@ def generate_all_regional_reports():
                 'name': region_config['name'],
                 'path': str(output_path)
             })
+    
+    # 작업 완료 후 업로드 파일 삭제
+    try:
+        print(f"[정리] 시도별 보도자료 생성 완료 - 업로드 파일 정리 시작...")
+        deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
+        if deleted_count > 0:
+            print(f"[정리] 작업 완료 후 업로드 파일 {deleted_count}개 삭제 완료")
+        # 세션에서도 파일 경로 제거
+        session.pop('excel_path', None)
+        session.pop('year', None)
+        session.pop('quarter', None)
+        session.pop('file_type', None)
+    except Exception as cleanup_error:
+        print(f"[경고] 업로드 파일 정리 중 오류 (무시): {cleanup_error}")
     
     return jsonify({
         'success': len(errors) == 0,

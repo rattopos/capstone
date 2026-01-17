@@ -72,10 +72,14 @@ def get_summary_overview_data(excel_path, year, quarter):
         return _generate_sector_narrations(sector_columns)
         
     except Exception as e:
-        print(f"요약 데이터 추출 오류: {e}")
+        print(f"🔍 [디버그] 요약 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
+        print(f"  - year: {year}, quarter: {quarter}")
         import traceback
         traceback.print_exc()
-        return _get_default_summary_data()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"요약 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _build_comprehensive_table(excel_path):

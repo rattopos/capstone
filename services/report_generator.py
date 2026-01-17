@@ -145,9 +145,16 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
             try:
                 if report_id == 'summary_overview':
                     # 요약-지역경제동향: 실제 데이터 사용
-                    data = get_summary_overview_data(excel_path, year, quarter)
-                    if not data:
+                    summary_data = get_summary_overview_data(excel_path, year, quarter)
+                    if not summary_data:
                         raise ValueError("get_summary_overview_data가 None 반환")
+                    # 템플릿에서 summary 키를 사용하므로 데이터를 summary로 감싸기
+                    table_data = get_summary_table_data(excel_path)
+                    data = {
+                        'summary': summary_data,
+                        'table_data': table_data,
+                        'report_info': {'year': year, 'quarter': quarter, 'page_number': ''}
+                    }
                 
                 elif report_id == 'summary_production':
                     # 요약-생산: 실제 데이터 사용
@@ -173,26 +180,21 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
                     if not data:
                         raise ValueError("get_employment_population_data가 None 반환")
             except Exception as data_error:
-                print(f"[WARNING] 요약 보도자료 실제 데이터 생성 실패 ({report_id}): {data_error}")
-                print(f"[WARNING] 스키마 기본값으로 대체합니다.")
+                print(f"🔍 [디버그] 요약 보도자료 실제 데이터 생성 실패:")
+                print(f"  - report_id: {report_id}")
+                print(f"  - 오류: {data_error}")
+                print(f"  - excel_path: {excel_path}")
                 import traceback
                 traceback.print_exc()
-                data = None  # 스키마 기본값으로 대체
+                # 기본값/폴백 사용 금지: ValueError 발생
+                raise ValueError(f"요약 보도자료 실제 데이터 생성 실패 ({report_id}): {data_error}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         
-        # 실제 데이터 생성 실패 시 스키마 기본값 사용
+        # 실제 데이터 생성 실패 시 스키마 기본값 사용 금지 (기본값/폴백 사용 금지 규칙)
         if data is None:
-            # 템플릿 이름에서 스키마 파일 이름 생성
-            schema_basename = template_name.replace('_template.html', '_schema.json')
-            schema_path = TEMPLATES_DIR / schema_basename
-            
-            if not schema_path.exists():
-                return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
-            
-            with open(schema_path, 'r', encoding='utf-8') as f:
-                schema = json.load(f)
-            
-            # 기본값 추출 (example 필드)
-            data = schema.get('example', {})
+            raise ValueError(
+                f"요약 보도자료 ({report_id}) 데이터를 생성할 수 없습니다. "
+                f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+            )
         
         # 연도/분기 정보 추가 (데이터가 없으면 추가, 있으면 업데이트)
         if 'report_info' not in data:
@@ -205,6 +207,24 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
         
         if 'page_number' not in data['report_info']:
             data['report_info']['page_number'] = ''
+        
+        # summary_overview의 경우 summary 키가 있는지 확인 (템플릿 호환)
+        if report_id == 'summary_overview' and 'summary' not in data:
+            # summary 키가 없으면 기존 데이터를 summary로 감싸기
+            summary_data = data.copy()
+            # summary와 table_data는 별도로 있어야 함
+            if 'table_data' not in summary_data:
+                # table_data가 없으면 기본값 사용 금지 - ValueError 발생
+                print(f"🔍 [디버그] summary_overview 데이터 구조:")
+                print(f"  - data 키: {list(data.keys())}")
+                print(f"  - data 전체: {data}")
+                raise ValueError(f"summary_overview 데이터에서 'table_data'를 찾을 수 없습니다. 기본값 사용 금지.")
+            table_data = summary_data.pop('table_data', None)
+            data = {
+                'summary': summary_data,
+                'table_data': table_data,
+                'report_info': data.get('report_info', {'year': year, 'quarter': quarter, 'page_number': ''})
+            }
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name

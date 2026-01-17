@@ -71,11 +71,22 @@ def download_report(report_id):
     
     # report_id로부터 보도자료 이름 찾기 (안전한 검색)
     report = None
+    is_regional = False
+    
     try:
+        # 먼저 REPORT_ORDER에서 찾기
         for r in REPORT_ORDER:
             if r and isinstance(r, dict) and r.get('id') == report_id:
                 report = r
                 break
+        
+        # REPORT_ORDER에서 못 찾으면 REGIONAL_REPORTS에서 찾기
+        if not report:
+            for r in REGIONAL_REPORTS:
+                if r and isinstance(r, dict) and r.get('id') == report_id:
+                    report = r
+                    is_regional = True
+                    break
     except Exception as e:
         print(f"[ERROR] 보도자료 검색 중 오류: {e}")
         return f"보도자료 검색 중 오류가 발생했습니다: {report_id}", 500
@@ -91,10 +102,21 @@ def download_report(report_id):
     report_name_safe = report_name.replace('/', '_').replace('\\', '_').replace('..', '_')
     
     # 가능한 파일명 패턴들
-    possible_files = [
-        TEMPLATES_DIR / f"{report_name_safe}_output.html",
-        TEMPLATES_DIR / f"{report_name_safe}_preview.html",
-    ]
+    possible_files = []
+    
+    if is_regional:
+        # 시도별 보고서: regional_output 폴더 확인
+        possible_files = [
+            TEMPLATES_DIR / 'regional_output' / f"{report_name_safe}_output.html",
+            TEMPLATES_DIR / f"{report_name_safe}_output.html",
+            TEMPLATES_DIR / f"{report_name_safe}_preview.html",
+        ]
+    else:
+        # 일반 보고서: templates 폴더 직접 확인
+        possible_files = [
+            TEMPLATES_DIR / f"{report_name_safe}_output.html",
+            TEMPLATES_DIR / f"{report_name_safe}_preview.html",
+        ]
     
     # 파일 찾기 및 다운로드 (안전한 처리)
     for file_path in possible_files:

@@ -52,17 +52,24 @@ class UnifiedReportGenerator(BaseGenerator):
         
         self.report_type = report_type
         self.report_id = self.config['report_id']
-        self.name_mapping = self.config.get('name_mapping', {})
+        # 기본값/폴백 사용 금지: 설정에서 값을 찾을 수 없으면 ValueError 발생
+        if 'name_mapping' not in self.config:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'name_mapping'을 찾을 수 없습니다. 기본값 사용 금지.")
+        self.name_mapping = self.config['name_mapping']
         
-        # 집계 시트 구조 (설정에서 로드 - 기본값은 나중에 동적으로 찾을 때 fallback으로만 사용)
-        agg_struct = self.config.get('aggregation_structure', {})
+        # 집계 시트 구조 (설정에서 로드, 기본값/폴백 사용 금지)
+        if 'aggregation_structure' not in self.config:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'aggregation_structure'를 찾을 수 없습니다. 기본값 사용 금지.")
+        agg_struct = self.config['aggregation_structure']
         # 기본값은 설정에서 가져오지만, 실제로는 동적으로 찾음
         self.region_name_col = None  # 동적으로 찾음
         self.industry_code_col = None  # 동적으로 찾음
         self.total_code = agg_struct.get('total_code', 'BCD')
         
-        # metadata_columns 설정 (동적 컬럼 찾기에 사용)
-        self.metadata_cols = self.config.get('metadata_columns', {})
+        # metadata_columns 설정 (동적 컬럼 찾기에 사용, 기본값/폴백 사용 금지)
+        if 'metadata_columns' not in self.config:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'metadata_columns'를 찾을 수 없습니다. 기본값 사용 금지.")
+        self.metadata_cols = self.config['metadata_columns']
         
         # 산업명 컬럼도 동적으로 찾음
         self.industry_name_col = None  # 동적으로 찾음
@@ -89,9 +96,10 @@ class UnifiedReportGenerator(BaseGenerator):
         xl = self.load_excel()
         sheet_names = xl.sheet_names
         
-        # 1. 분석 시트 찾기
-        analysis_sheets = self.config['sheets'].get('analysis', [])
-        fallback_sheets = self.config['sheets'].get('fallback', [])
+        # 1. 분석 시트 찾기 (기본값/폴백 사용 금지)
+        analysis_sheets = self.config['sheets'].get('analysis')
+        if analysis_sheets is None:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'analysis' 시트 목록을 찾을 수 없습니다.")
         
         analysis_sheet = None
         for name in analysis_sheets:
@@ -99,16 +107,40 @@ class UnifiedReportGenerator(BaseGenerator):
                 analysis_sheet = name
                 break
         
-        # 분석 시트가 없으면 fallback 시트에서 찾기
+        # 분석 시트를 찾을 수 없으면 경고만 출력 (집계 시트만 있어도 작동 가능)
         if not analysis_sheet:
-            for name in fallback_sheets:
-                if name in sheet_names:
-                    analysis_sheet = name
-                    print(f"[{self.config['name']}] [시트 대체] 분석 시트 → '{name}' (기초자료)")
-                    break
+            # 상세 디버그 정보 출력
+            print(f"[{self.config['name']}] 🔍 [디버그] 분석 시트 찾기 실패:")
+            print(f"  - 찾으려는 시트 목록: {analysis_sheets}")
+            print(f"  - 파일의 모든 시트 목록: {sheet_names}")
+            print(f"  - 시트 개수: {len(sheet_names)}")
+            # 유사한 시트 이름 찾기
+            similar_sheets = []
+            for target in analysis_sheets:
+                for sheet in sheet_names:
+                    if target.lower() in sheet.lower() or sheet.lower() in target.lower():
+                        similar_sheets.append(f"'{sheet}' (유사: '{target}')")
+            if similar_sheets:
+                print(f"  - 유사한 시트 이름: {similar_sheets}")
+            # 집계 시트가 있는지 먼저 확인
+            agg_sheets_check = self.config['sheets'].get('aggregation', [])
+            agg_exists = any(name in sheet_names for name in agg_sheets_check)
+            if agg_exists:
+                print(f"[{self.config['name']}] ⚠️ 분석 시트를 찾을 수 없지만, 집계 시트가 있으므로 집계 시트만 사용합니다.")
+            else:
+                # 집계 시트도 없으면 ValueError 발생
+                raise ValueError(
+                    f"[{self.config['name']}] ❌ 분석 시트와 집계 시트를 모두 찾을 수 없습니다.\n"
+                    f"  찾으려는 분석 시트: {analysis_sheets}\n"
+                    f"  찾으려는 집계 시트: {agg_sheets_check}\n"
+                    f"  파일의 시트 목록: {sheet_names}\n"
+                    f"  유사한 시트: {similar_sheets if similar_sheets else '없음'}"
+                )
         
-        # 2. 집계 시트 찾기
-        agg_sheets = self.config['sheets'].get('aggregation', [])
+        # 2. 집계 시트 찾기 (기본값/폴백 사용 금지)
+        if 'sheets' not in self.config or 'aggregation' not in self.config['sheets']:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'sheets.aggregation'을 찾을 수 없습니다. 기본값 사용 금지.")
+        agg_sheets = self.config['sheets']['aggregation']
         agg_sheet = None
         for name in agg_sheets:
             if name in sheet_names:
@@ -277,28 +309,70 @@ class UnifiedReportGenerator(BaseGenerator):
                             print(f"[{self.config['name']}] ✅ 데이터 시작 행 발견: {row_idx}")
                             break
         
-        # Fallback: 설정에서 기본값 사용 (하드코딩이지만 최후의 수단)
+        # 기본값/폴백 사용 금지: 동적으로 찾지 못하면 ValueError 발생 (상세 디버그 정보 포함)
         if self.region_name_col is None:
-            agg_struct = self.config.get('aggregation_structure', {})
-            self.region_name_col = agg_struct.get('region_name_col')
-            if self.region_name_col is not None:
-                print(f"[{self.config['name']}] ⚠️ 지역명 컬럼을 동적으로 찾지 못해 설정값 사용: {self.region_name_col}")
+            # 상세 디버그 정보 출력
+            print(f"[{self.config['name']}] 🔍 [디버그] 지역명 컬럼 찾기 실패:")
+            print(f"  - 확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}")
+            print(f"  - 확인한 행 수: {header_rows}")
+            print(f"  - 찾으려는 키워드: {region_keywords}")
+            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
+            # 헤더 행 샘플 출력
+            print(f"  - 헤더 행 샘플 (처음 3행):")
+            for i in range(min(3, header_rows)):
+                row_sample = [str(df.iloc[i, j])[:20] if j < len(df.columns) and pd.notna(df.iloc[i, j]) else 'NaN' 
+                             for j in range(min(10, len(df.columns)))]
+                print(f"    행 {i}: {row_sample}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 지역명 컬럼을 찾을 수 없습니다.\n"
+                f"  확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}\n"
+                f"  찾으려는 키워드: {region_keywords}\n"
+                f"  시트 크기: {len(df)}행 × {len(df.columns)}열\n"
+                f"  확인한 헤더 행 수: {header_rows}"
+            )
         
         if self.industry_code_col is None:
-            agg_struct = self.config.get('aggregation_structure', {})
-            self.industry_code_col = agg_struct.get('industry_code_col')
-            if self.industry_code_col is not None:
-                print(f"[{self.config['name']}] ⚠️ 산업코드 컬럼을 동적으로 찾지 못해 설정값 사용: {self.industry_code_col}")
+            print(f"[{self.config['name']}] 🔍 [디버그] 산업코드 컬럼 찾기 실패:")
+            print(f"  - 확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}")
+            print(f"  - 찾으려는 키워드: {code_keywords}")
+            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 산업코드 컬럼을 찾을 수 없습니다.\n"
+                f"  확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}\n"
+                f"  찾으려는 키워드: {code_keywords}\n"
+                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
+            )
         
-        if self.industry_name_col is None and self.industry_code_col is not None:
-            # 산업명은 보통 산업코드 다음 컬럼
-            self.industry_name_col = self.industry_code_col + 1
-            print(f"[{self.config['name']}] ⚠️ 산업명 컬럼을 동적으로 찾지 못해 산업코드+1 사용: {self.industry_name_col}")
+        if self.industry_name_col is None:
+            print(f"[{self.config['name']}] 🔍 [디버그] 산업명 컬럼 찾기 실패:")
+            print(f"  - 확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}")
+            print(f"  - 찾으려는 키워드: {name_keywords}")
+            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 산업명 컬럼을 찾을 수 없습니다.\n"
+                f"  확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}\n"
+                f"  찾으려는 키워드: {name_keywords}\n"
+                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
+            )
         
         if self.data_start_row is None:
-            # 기본값 사용 (하드코딩이지만 최후의 수단)
-            self.data_start_row = 3
-            print(f"[{self.config['name']}] ⚠️ 데이터 시작 행을 동적으로 찾지 못해 기본값 사용: {self.data_start_row}")
+            print(f"[{self.config['name']}] 🔍 [디버그] 데이터 시작 행 찾기 실패:")
+            print(f"  - 확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}")
+            print(f"  - 지역명 컬럼 인덱스: {self.region_name_col}")
+            print(f"  - 확인한 행 범위: {header_rows} ~ {min(header_rows + 10, len(df))}")
+            # 확인한 행의 지역명 컬럼 값 샘플 출력
+            print(f"  - 지역명 컬럼 값 샘플:")
+            for i in range(header_rows, min(header_rows + 10, len(df))):
+                if self.region_name_col < len(df.iloc[i]):
+                    val = df.iloc[i, self.region_name_col]
+                    if pd.notna(val):
+                        print(f"    행 {i}: '{val}'")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 데이터 시작 행을 찾을 수 없습니다.\n"
+                f"  확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}\n"
+                f"  지역명 컬럼 인덱스: {self.region_name_col}\n"
+                f"  확인한 행 범위: {header_rows} ~ {min(header_rows + 10, len(df))}"
+            )
     
     def _find_data_columns(self):
         """데이터 컬럼 동적 탐색 (병합된 셀 처리) - 집계 시트 우선, 없으면 분석 시트"""
@@ -317,29 +391,52 @@ class UnifiedReportGenerator(BaseGenerator):
             )
         
         # DataFrame 전체를 전달하여 병합된 셀 처리 (스마트 헤더 탐색기)
+        # 고용률/실업률은 타입 필터링을 선택적으로 적용 (헤더에 "고용률", "실업률" 키워드가 있으면 OK)
+        require_type_match = self.report_type not in ['employment', 'unemployment']
+        
         # target_col 찾기
         if self.target_col is None:
-            self.target_col = self.find_target_col_index(df, self.year, self.quarter)
+            self.target_col = self.find_target_col_index(df, self.year, self.quarter, require_type_match=require_type_match)
             if self.target_col is not None:
                 print(f"[{self.config['name']}] ✅ Target 컬럼 ({sheet_type} 시트): {self.target_col} ({self.year} {self.quarter}/4)")
         
         # prev_y_col 찾기
         if self.prev_y_col is None:
-            self.prev_y_col = self.find_target_col_index(df, self.year - 1, self.quarter)
+            self.prev_y_col = self.find_target_col_index(df, self.year - 1, self.quarter, require_type_match=require_type_match)
             if self.prev_y_col is not None:
                 print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
         
-        # 기본값 사용 금지: 반드시 찾아야 함
+        # 기본값 사용 금지: 반드시 찾아야 함 (상세 디버그 정보 포함)
         if self.target_col is None:
+            # 헤더 행 샘플 출력
+            print(f"[{self.config['name']}] 🔍 [디버그] Target 컬럼 찾기 실패:")
+            print(f"  - 찾으려는 연도/분기: {self.year}년 {self.quarter}분기")
+            print(f"  - 확인한 시트: {sheet_type}")
+            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
+            # 헤더 행 샘플 출력
+            header_sample_rows = min(3, len(df))
+            print(f"  - 헤더 행 샘플 (처음 {header_sample_rows}행):")
+            for i in range(header_sample_rows):
+                row_sample = [str(df.iloc[i, j])[:30] if j < len(df.columns) and pd.notna(df.iloc[i, j]) else 'NaN' 
+                             for j in range(min(15, len(df.columns)))]
+                print(f"    행 {i}: {row_sample}")
             raise ValueError(
-                f"[{self.config['name']}] ❌ Target 컬럼을 찾을 수 없습니다. "
-                f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                f"[{self.config['name']}] ❌ Target 컬럼을 찾을 수 없습니다.\n"
+                f"  찾으려는 연도/분기: {self.year}년 {self.quarter}분기\n"
+                f"  확인한 시트: {sheet_type}\n"
+                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
             )
         
         if self.prev_y_col is None:
+            print(f"[{self.config['name']}] 🔍 [디버그] 전년 컬럼 찾기 실패:")
+            print(f"  - 찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기")
+            print(f"  - 확인한 시트: {sheet_type}")
+            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
             raise ValueError(
-                f"[{self.config['name']}] ❌ 전년 컬럼을 찾을 수 없습니다. "
-                f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                f"[{self.config['name']}] ❌ 전년 컬럼을 찾을 수 없습니다.\n"
+                f"  찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기\n"
+                f"  확인한 시트: {sheet_type}\n"
+                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
             )
     
     def _extract_table_data_ssot(self) -> List[Dict[str, Any]]:
@@ -419,30 +516,54 @@ class UnifiedReportGenerator(BaseGenerator):
                     region_filter.iloc[:, self.industry_code_col].astype(str).str.contains(self.total_code, na=False, regex=False)
                 ]
             except (IndexError, KeyError) as e:
-                print(f"[{self.config['name']}] ⚠️ {region} 총지수 행 찾기 오류: {e}")
-                region_total = region_filter.head(1)  # Fallback
+                raise ValueError(f"[{self.config['name']}] ❌ {region} 총지수 행 찾기 오류: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
             
             if region_total.empty:
-                # Fallback: 첫 번째 행
-                print(f"[{self.config['name']}] ⚠️ {region}: 코드 '{self.total_code}' 찾기 실패, 첫 번째 행 사용")
-                region_total = region_filter.head(1)
+                # 상세 디버그 정보 출력
+                print(f"[{self.config['name']}] 🔍 [디버그] {region} 총지수 행 찾기 실패:")
+                print(f"  - 찾으려는 코드: '{self.total_code}'")
+                print(f"  - 산업코드 컬럼 인덱스: {self.industry_code_col}")
+                print(f"  - 필터링된 행 수: {len(region_filter)}")
+                # 실제 코드 값 샘플 출력
+                if len(region_filter) > 0:
+                    print(f"  - 실제 코드 값 샘플 (처음 10개):")
+                    for idx, row in region_filter.head(10).iterrows():
+                        if self.industry_code_col < len(row):
+                            code_val = row.iloc[self.industry_code_col]
+                            code_str = str(code_val).strip() if pd.notna(code_val) else 'NaN'
+                            print(f"    행 {idx}: '{code_str}'")
+                raise ValueError(
+                    f"[{self.config['name']}] ❌ {region}: 코드 '{self.total_code}'를 찾을 수 없습니다.\n"
+                    f"  산업코드 컬럼 인덱스: {self.industry_code_col}\n"
+                    f"  필터링된 행 수: {len(region_filter)}\n"
+                    f"  실제 코드 값 샘플: {[str(region_filter.iloc[i, self.industry_code_col]).strip() if i < len(region_filter) and self.industry_code_col < len(region_filter.iloc[i]) else 'N/A' for i in range(min(5, len(region_filter)))]}"
+                )
             
             if region_total.empty:
                 continue
             
             row = region_total.iloc[0]
             
-            # 기본값 사용 금지: 반드시 유효한 인덱스여야 함
+            # 기본값 사용 금지: 반드시 유효한 인덱스여야 함 (상세 디버그 정보 포함)
             if self.target_col is None:
+                print(f"[{self.config['name']}] 🔍 [디버그] {region} Target 컬럼이 None:")
+                print(f"  - 찾으려는 연도/분기: {self.year}년 {self.quarter}분기")
+                print(f"  - 행 길이: {len(row)}")
+                print(f"  - 행 샘플: {[str(row.iloc[j])[:20] if j < len(row) and pd.notna(row.iloc[j]) else 'NaN' for j in range(min(10, len(row)))]}")
                 raise ValueError(
-                    f"[{self.config['name']}] ❌ Target 컬럼이 None입니다. "
-                    f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                    f"[{self.config['name']}] ❌ {region} Target 컬럼이 None입니다.\n"
+                    f"  찾으려는 연도/분기: {self.year}년 {self.quarter}분기\n"
+                    f"  행 길이: {len(row)}"
                 )
             
             if self.prev_y_col is None:
+                print(f"[{self.config['name']}] 🔍 [디버그] {region} 전년 컬럼이 None:")
+                print(f"  - 찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기")
+                print(f"  - 행 길이: {len(row)}")
                 raise ValueError(
-                    f"[{self.config['name']}] ❌ 전년 컬럼이 None입니다. "
-                    f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                    f"[{self.config['name']}] ❌ {region} 전년 컬럼이 None입니다.\n"
+                    f"  찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기\n"
+                    f"  행 길이: {len(row)}"
                 )
             
             # 인덱스 범위 체크
@@ -528,18 +649,16 @@ class UnifiedReportGenerator(BaseGenerator):
             return []
         
         industries = []
-        name_mapping = self.config.get('name_mapping', {})
+        # 기본값/폴백 사용 금지
+        if 'name_mapping' not in self.config:
+            raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'name_mapping'을 찾을 수 없습니다. 기본값 사용 금지.")
+        name_mapping = self.config['name_mapping']
         
-        # 산업명 컬럼 찾기 (동적으로 찾은 값 사용)
+        # 산업명 컬럼 찾기 (동적으로 찾은 값 사용, 기본값/폴백 사용 금지)
         if self.industry_name_col is None:
-            # 산업명 컬럼을 찾지 못한 경우, 산업코드 다음 컬럼 사용 (fallback)
-            if self.industry_code_col is not None:
-                industry_name_col = self.industry_code_col + 1
-            else:
-                print(f"[{self.config['name']}] ⚠️ 산업명 컬럼과 산업코드 컬럼을 모두 찾을 수 없습니다.")
-                return []
-        else:
-            industry_name_col = self.industry_name_col
+            raise ValueError(f"[{self.config['name']}] ❌ 산업명 컬럼을 찾을 수 없습니다. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
+        
+        industry_name_col = self.industry_name_col
         
         if industry_name_col < 0:
             industry_name_col = 0
@@ -552,7 +671,10 @@ class UnifiedReportGenerator(BaseGenerator):
             if self.industry_code_col >= len(row):
                 continue
                 
-            industry_code = str(row.iloc[self.industry_code_col]).strip() if pd.notna(row.iloc[self.industry_code_col]) else ''
+            # 기본값/폴백 사용 금지
+            if pd.isna(row.iloc[self.industry_code_col]):
+                continue  # NaN이면 스킵
+            industry_code = str(row.iloc[self.industry_code_col]).strip()
             
             # 총지수 코드는 제외
             if not industry_code or industry_code == '' or industry_code == 'nan':
@@ -645,9 +767,11 @@ class UnifiedReportGenerator(BaseGenerator):
                 ind['change_rate'] > 0
             ]
             try:
-                filtered.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
-            except (TypeError, AttributeError):
-                pass  # 정렬 실패 시 원본 유지
+                # 기본값/폴백 사용 금지: change_rate가 None이면 정렬에서 제외
+                filtered = [x for x in filtered if x and isinstance(x, dict) and x.get('change_rate') is not None]
+                filtered.sort(key=lambda x: x['change_rate'], reverse=True)
+            except (TypeError, AttributeError, KeyError) as e:
+                raise ValueError(f"[{self.config['name']}] ❌ 정렬 오류: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         else:
             filtered = [
                 ind for ind in industries 
@@ -656,12 +780,17 @@ class UnifiedReportGenerator(BaseGenerator):
                 ind['change_rate'] < 0
             ]
             try:
-                filtered.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+                # 기본값/폴백 사용 금지: change_rate가 None이면 정렬에서 제외
+                filtered = [x for x in filtered if x and isinstance(x, dict) and x.get('change_rate') is not None]
+                filtered.sort(key=lambda x: x['change_rate'])
             except (TypeError, AttributeError):
                 pass  # 정렬 실패 시 원본 유지
         
         # 안전한 슬라이싱
-        return filtered[:top_n] if filtered else []
+        # 기본값/폴백 사용 금지: filtered가 없으면 None 반환
+        if not filtered or len(filtered) == 0:
+            return None
+        return filtered[:top_n]
     
     def extract_nationwide_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
         """전국 데이터 추출 - 템플릿 호환 필드명"""
@@ -670,22 +799,44 @@ class UnifiedReportGenerator(BaseGenerator):
         
         nationwide = next((d for d in table_data if d['region_name'] == '전국'), None)
         
-        if not nationwide:
-            return {
-                'production_index': 100.0,
-                'sales_index': 100.0,  # 소비동향 템플릿 호환
-                'service_index': 100.0,  # 서비스업 템플릿 호환
-                'growth_rate': 0.0,
-                'main_items': [],
-                'main_industries': [],  # 템플릿 호환
-                'main_businesses': [],  # 소비동향 템플릿 호환
-                'main_increase_industries': [],  # 템플릿 호환
-                'main_decrease_industries': []   # 템플릿 호환
-            }
+        # 기본값/폴백 사용 금지: 데이터를 찾을 수 없으면 ValueError 발생
         
-        # 안전한 값 추출
-        index_value = nationwide.get('value', 100.0) if nationwide and isinstance(nationwide, dict) else 100.0
-        growth_rate = nationwide.get('change_rate', 0.0) if nationwide and isinstance(nationwide, dict) and nationwide.get('change_rate') is not None else 0.0
+        # 기본값/폴백 사용 금지: 데이터를 찾을 수 없으면 ValueError 발생 (상세 디버그 정보 포함)
+        if not nationwide or not isinstance(nationwide, dict):
+            print(f"[{self.config['name']}] 🔍 [디버그] 전국 데이터 찾기 실패:")
+            print(f"  - nationwide 타입: {type(nationwide)}")
+            print(f"  - nationwide 값: {nationwide}")
+            print(f"  - table_data 길이: {len(table_data)}")
+            if table_data:
+                print(f"  - table_data 샘플 (처음 3개): {table_data[:3]}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 전국 데이터를 찾을 수 없습니다.\n"
+                f"  nationwide 타입: {type(nationwide)}\n"
+                f"  nationwide 값: {nationwide}\n"
+                f"  table_data 길이: {len(table_data)}"
+            )
+        
+        index_value = nationwide.get('value')
+        if index_value is None:
+            print(f"[{self.config['name']}] 🔍 [디버그] 전국 지수값 찾기 실패:")
+            print(f"  - nationwide 키: {list(nationwide.keys())}")
+            print(f"  - nationwide 전체 값: {nationwide}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 전국 지수값을 찾을 수 없습니다.\n"
+                f"  nationwide 키: {list(nationwide.keys())}\n"
+                f"  nationwide 전체 값: {nationwide}"
+            )
+        
+        growth_rate = nationwide.get('change_rate')
+        if growth_rate is None:
+            print(f"[{self.config['name']}] 🔍 [디버그] 전국 증감률 찾기 실패:")
+            print(f"  - nationwide 키: {list(nationwide.keys())}")
+            print(f"  - nationwide 전체 값: {nationwide}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ 전국 증감률을 찾을 수 없습니다.\n"
+                f"  nationwide 키: {list(nationwide.keys())}\n"
+                f"  nationwide 전체 값: {nationwide}"
+            )
         
         # 업종별 데이터 추출
         industry_data = self._extract_industry_data('전국')
@@ -710,15 +861,19 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # 증감률 기준 정렬 (안전한 정렬)
         try:
-            increase_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
-            decrease_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
+            # 기본값/폴백 사용 금지: change_rate가 None이면 정렬에서 제외
+            increase_industries = [x for x in increase_industries if x and isinstance(x, dict) and x.get('change_rate') is not None]
+            decrease_industries = [x for x in decrease_industries if x and isinstance(x, dict) and x.get('change_rate') is not None]
+            increase_industries.sort(key=lambda x: x['change_rate'], reverse=True)
+            decrease_industries.sort(key=lambda x: x['change_rate'])
         except (TypeError, AttributeError) as e:
             print(f"[{self.config['name']}] ⚠️ 업종 정렬 오류: {e}")
             # 정렬 실패 시 원본 유지
         
         # 상위 3개 추출 (안전한 슬라이싱)
-        main_increase = increase_industries[:3] if increase_industries else []
-        main_decrease = decrease_industries[:3] if decrease_industries else []
+        # 기본값/폴백 사용 금지
+        main_increase = increase_industries[:3] if increase_industries and len(increase_industries) > 0 else None
+        main_decrease = decrease_industries[:3] if decrease_industries and len(decrease_industries) > 0 else None
         
         # 모든 필드명 포함 (템플릿 호환)
         return {
@@ -759,13 +914,21 @@ class UnifiedReportGenerator(BaseGenerator):
             r['change_rate'] < 0
         ]
         
-        # 안전한 정렬
+        # 기본값/폴백 사용 금지: 정렬 (change_rate가 None이면 제외)
         try:
-            increase.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
-            decrease.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
-        except (TypeError, AttributeError) as e:
-            print(f"[{self.config['name']}] ⚠️ 지역 정렬 오류: {e}")
-            # 정렬 실패 시 원본 유지
+            # change_rate가 None인 항목은 정렬에서 제외
+            increase_filtered = [x for x in increase if x and isinstance(x, dict) and x.get('change_rate') is not None]
+            decrease_filtered = [x for x in decrease if x and isinstance(x, dict) and x.get('change_rate') is not None]
+            increase_filtered.sort(key=lambda x: x['change_rate'], reverse=True)
+            decrease_filtered.sort(key=lambda x: x['change_rate'])
+            increase = increase_filtered
+            decrease = decrease_filtered
+        except (TypeError, AttributeError, KeyError) as e:
+            print(f"[{self.config['name']}] 🔍 [디버그] 지역 정렬 오류:")
+            print(f"  - 오류: {e}")
+            print(f"  - increase 샘플: {increase[:3] if increase else '없음'}")
+            print(f"  - decrease 샘플: {decrease[:3] if decrease else '없음'}")
+            raise ValueError(f"[{self.config['name']}] ❌ 지역 정렬 오류: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         
         return {
             'increase_regions': increase,
@@ -780,20 +943,38 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # 스마트 헤더 탐색기로 인덱스 확보 (병합된 셀 처리)
         # 기본값 사용 금지: 반드시 찾아야 함
+        # 고용률/실업률은 타입 필터링을 선택적으로 적용
+        require_type_match = self.report_type not in ['employment', 'unemployment']
+        
         if self.df_aggregation is not None:
-            target_idx = self.find_target_col_index(self.df_aggregation, self.year, self.quarter)
-            prev_y_idx = self.find_target_col_index(self.df_aggregation, self.year - 1, self.quarter)
+            target_idx = self.find_target_col_index(self.df_aggregation, self.year, self.quarter, require_type_match=require_type_match)
+            prev_y_idx = self.find_target_col_index(self.df_aggregation, self.year - 1, self.quarter, require_type_match=require_type_match)
             
             if target_idx is None:
+                print(f"[{self.config['name']}] 🔍 [디버그] {self.year}년 {self.quarter}분기 컬럼 찾기 실패:")
+                print(f"  - 확인한 시트: 집계")
+                print(f"  - 시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열")
+                # 헤더 행 샘플 출력
+                header_sample_rows = min(3, len(self.df_aggregation))
+                print(f"  - 헤더 행 샘플 (처음 {header_sample_rows}행):")
+                for i in range(header_sample_rows):
+                    row_sample = [str(self.df_aggregation.iloc[i, j])[:30] if j < len(self.df_aggregation.columns) and pd.notna(self.df_aggregation.iloc[i, j]) else 'NaN' 
+                                 for j in range(min(15, len(self.df_aggregation.columns)))]
+                    print(f"    행 {i}: {row_sample}")
                 raise ValueError(
-                    f"[{self.config['name']}] ❌ {self.year}년 {self.quarter}분기 컬럼을 찾을 수 없습니다. "
-                    f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                    f"[{self.config['name']}] ❌ {self.year}년 {self.quarter}분기 컬럼을 찾을 수 없습니다.\n"
+                    f"  확인한 시트: 집계\n"
+                    f"  시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열"
                 )
             
             if prev_y_idx is None:
+                print(f"[{self.config['name']}] 🔍 [디버그] {self.year - 1}년 {self.quarter}분기 컬럼 찾기 실패:")
+                print(f"  - 확인한 시트: 집계")
+                print(f"  - 시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열")
                 raise ValueError(
-                    f"[{self.config['name']}] ❌ {self.year - 1}년 {self.quarter}분기 컬럼을 찾을 수 없습니다. "
-                    f"기본값 사용 금지: 반드시 데이터를 찾아야 합니다."
+                    f"[{self.config['name']}] ❌ {self.year - 1}년 {self.quarter}분기 컬럼을 찾을 수 없습니다.\n"
+                    f"  확인한 시트: 집계\n"
+                    f"  시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열"
                 )
             
             self.target_col = target_idx
@@ -812,25 +993,41 @@ class UnifiedReportGenerator(BaseGenerator):
         nationwide = self.extract_nationwide_data(table_data)
         regional = self.extract_regional_data(table_data)
         
-        # Top3 regions (템플릿 호환 필드명으로 생성) - 안전한 처리
+        # Top3 regions (템플릿 호환 필드명으로 생성, 기본값/폴백 사용 금지)
         top3_increase = []
-        increase_regions = regional.get('increase_regions', [])
-        if not isinstance(increase_regions, list):
-            increase_regions = []
+        if 'increase_regions' not in regional or not isinstance(regional['increase_regions'], list):
+            print(f"[{self.config['name']}] 🔍 [디버그] regional 데이터에서 'increase_regions' 찾기 실패:")
+            print(f"  - regional 타입: {type(regional)}")
+            print(f"  - regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}")
+            print(f"  - regional 전체 값: {regional}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ regional 데이터에서 'increase_regions'를 찾을 수 없습니다.\n"
+                f"  regional 타입: {type(regional)}\n"
+                f"  regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}\n"
+                f"  regional 전체 값: {regional}"
+            )
+        increase_regions = regional['increase_regions']
         
         for r in increase_regions[:3]:
             if not r or not isinstance(r, dict):
                 continue
             
-            region_name = r.get('region_name', '')
-            if not region_name:
+            # 기본값/폴백 사용 금지
+            if 'region_name' not in r or not r['region_name']:
+                print(f"[{self.config['name']}] 🔍 [디버그] region_name 찾기 실패:")
+                print(f"  - r 타입: {type(r)}")
+                print(f"  - r 키: {list(r.keys()) if isinstance(r, dict) else 'N/A'}")
+                print(f"  - r 전체 값: {r}")
                 continue
+            region_name = r['region_name']
             
             try:
                 # 지역별 업종 데이터 추출
                 region_industries = self._extract_industry_data(region_name)
-                if not region_industries:
-                    region_industries = []
+                # 기본값/폴백 사용 금지: 빈 리스트는 그대로 사용 (데이터가 없는 경우)
+                # 하지만 None 체크는 필요
+                if region_industries is None:
+                    raise ValueError(f"[{self.config['name']}] ❌ {region_name} 업종 데이터를 추출할 수 없습니다. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
                 
                 # 증가 업종만 필터링 및 정렬 (안전한 처리)
                 increase_industries = [
@@ -840,42 +1037,64 @@ class UnifiedReportGenerator(BaseGenerator):
                     ind['change_rate'] > 0
                 ]
                 try:
-                    increase_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0, reverse=True)
+                    # 기본값/폴백 사용 금지: change_rate가 None이면 정렬에서 제외
+                    increase_industries = [x for x in increase_industries if x and isinstance(x, dict) and x.get('change_rate') is not None]
+                    increase_industries.sort(key=lambda x: x['change_rate'], reverse=True)
                 except (TypeError, AttributeError):
                     pass  # 정렬 실패 시 원본 유지
                 
                 top3_increase.append({
                     'region': region_name,
-                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
-                    'industries': increase_industries[:3] if increase_industries else []  # 상위 3개 업종
+                    # 기본값/폴백 사용 금지
+                    'growth_rate': r['change_rate'] if 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지: increase_industries가 없으면 None
+                    'industries': increase_industries[:3] if increase_industries and len(increase_industries) > 0 else None
                 })
             except Exception as e:
                 print(f"[{self.config['name']}] ⚠️ {region_name} 업종 데이터 추출 오류: {e}")
                 # 오류 발생 시 빈 업종 리스트로 추가
                 top3_increase.append({
                     'region': region_name,
-                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
-                    'industries': []
+                    # 기본값/폴백 사용 금지
+                    'growth_rate': r['change_rate'] if 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지: 빈 리스트 대신 None
+                    'industries': None
                 })
         
         top3_decrease = []
-        decrease_regions = regional.get('decrease_regions', [])
-        if not isinstance(decrease_regions, list):
-            decrease_regions = []
+        # 기본값/폴백 사용 금지
+        if 'decrease_regions' not in regional or not isinstance(regional['decrease_regions'], list):
+            print(f"[{self.config['name']}] 🔍 [디버그] regional 데이터에서 'decrease_regions' 찾기 실패:")
+            print(f"  - regional 타입: {type(regional)}")
+            print(f"  - regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ regional 데이터에서 'decrease_regions'를 찾을 수 없습니다.\n"
+                f"  regional 타입: {type(regional)}\n"
+                f"  regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}"
+            )
+        decrease_regions = regional['decrease_regions']
+        # 기본값/폴백 사용 금지: 타입 체크는 이미 위에서 했으므로 여기서는 추가 체크 불필요
         
         for r in decrease_regions[:3]:
             if not r or not isinstance(r, dict):
                 continue
             
-            region_name = r.get('region_name', '')
-            if not region_name:
+            # 기본값/폴백 사용 금지
+            if 'region_name' not in r or not r['region_name']:
+                print(f"[{self.config['name']}] 🔍 [디버그] region_name 찾기 실패:")
+                print(f"  - r 타입: {type(r)}")
+                print(f"  - r 키: {list(r.keys()) if isinstance(r, dict) else 'N/A'}")
+                print(f"  - r 전체 값: {r}")
                 continue
+            region_name = r['region_name']
             
             try:
                 # 지역별 업종 데이터 추출
                 region_industries = self._extract_industry_data(region_name)
-                if not region_industries:
-                    region_industries = []
+                # 기본값/폴백 사용 금지: 빈 리스트는 그대로 사용 (데이터가 없는 경우)
+                # 하지만 None 체크는 필요
+                if region_industries is None:
+                    raise ValueError(f"[{self.config['name']}] ❌ {region_name} 업종 데이터를 추출할 수 없습니다. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
                 
                 # 감소 업종만 필터링 및 정렬 (안전한 처리)
                 decrease_industries = [
@@ -885,19 +1104,30 @@ class UnifiedReportGenerator(BaseGenerator):
                     ind['change_rate'] < 0
                 ]
                 try:
-                    decrease_industries.sort(key=lambda x: x.get('change_rate', 0) if x and isinstance(x, dict) else 0)
-                except (TypeError, AttributeError):
-                    pass  # 정렬 실패 시 원본 유지
+                    # 기본값/폴백 사용 금지: change_rate가 None이면 정렬에서 제외
+                    decrease_industries_filtered = [x for x in decrease_industries if x and isinstance(x, dict) and x.get('change_rate') is not None]
+                    decrease_industries_filtered.sort(key=lambda x: x['change_rate'])
+                    decrease_industries = decrease_industries_filtered
+                except (TypeError, AttributeError, KeyError) as e:
+                    print(f"[{self.config['name']}] 🔍 [디버그] decrease_industries 정렬 오류:")
+                    print(f"  - 오류: {e}")
+                    print(f"  - decrease_industries 샘플: {decrease_industries[:3] if decrease_industries else '없음'}")
+                    raise ValueError(f"[{self.config['name']}] ❌ decrease_industries 정렬 오류: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
                 
-                # 소비동향용 주요 업태 (첫 번째 감소 업종)
-                main_business = ''
+                # 소비동향용 주요 업태 (첫 번째 감소 업종, 기본값/폴백 사용 금지)
+                main_business = None
                 if decrease_industries and decrease_industries[0] and isinstance(decrease_industries[0], dict):
-                    main_business = decrease_industries[0].get('name', '')
+                    # 기본값/폴백 사용 금지
+                    if 'name' not in decrease_industries[0] or not decrease_industries[0]['name']:
+                        raise ValueError(f"[{self.config['name']}] ❌ decrease_industries[0]에서 'name'을 찾을 수 없습니다.")
+                    main_business = decrease_industries[0]['name']
                 
                 top3_decrease.append({
                     'region': region_name,
-                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
-                    'industries': decrease_industries[:3] if decrease_industries else [],  # 상위 3개 업종
+                    # 기본값/폴백 사용 금지
+                    'growth_rate': r['change_rate'] if 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지
+                    'industries': decrease_industries[:3] if decrease_industries and len(decrease_industries) > 0 else None,
                     'main_business': main_business  # 소비동향용 주요 업태
                 })
             except Exception as e:
@@ -905,9 +1135,12 @@ class UnifiedReportGenerator(BaseGenerator):
                 # 오류 발생 시 빈 업종 리스트로 추가
                 top3_decrease.append({
                     'region': region_name,
-                    'growth_rate': r.get('change_rate', 0.0) if r.get('change_rate') is not None else 0.0,
-                    'industries': [],
-                    'main_business': ''
+                    # 기본값/폴백 사용 금지
+                    'growth_rate': r['change_rate'] if 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지: 빈 리스트 대신 None
+                    'industries': None,
+                    # 기본값/폴백 사용 금지: 빈 문자열 대신 None
+                    'main_business': None
                 })
         
         # Summary Box (안전한 처리)
@@ -915,38 +1148,66 @@ class UnifiedReportGenerator(BaseGenerator):
         for r in top3_increase:
             if r and isinstance(r, dict):
                 main_regions.append({
-                    'region': r.get('region', ''),
-                    'items': r.get('industries', []) if isinstance(r.get('industries'), list) else []
+                    # 기본값/폴백 사용 금지
+                    'region': r['region'] if 'region' in r and r['region'] else None,
+                    # 기본값/폴백 사용 금지
+                    'items': r['industries'] if 'industries' in r and isinstance(r['industries'], list) else None
                 })
         
-        increase_regions_count = len(regional.get('increase_regions', [])) if isinstance(regional.get('increase_regions'), list) else 0
+        # 기본값/폴백 사용 금지
+        if 'increase_regions' not in regional or not isinstance(regional['increase_regions'], list):
+            raise ValueError(f"[{self.config['name']}] ❌ regional 데이터에서 'increase_regions'를 찾을 수 없습니다.")
+        increase_regions_count = len(regional['increase_regions'])
         
         summary_box = {
             'main_regions': main_regions,
             'region_count': increase_regions_count
         }
         
-        # Regional data 필드명 변환 (템플릿 호환) - 안전한 처리
-        increase_regions_list = regional.get('increase_regions', [])
-        if not isinstance(increase_regions_list, list):
-            increase_regions_list = []
+        # Regional data 필드명 변환 (템플릿 호환, 기본값/폴백 사용 금지)
+        if 'increase_regions' not in regional or not isinstance(regional['increase_regions'], list):
+            print(f"[{self.config['name']}] 🔍 [디버그] regional 데이터에서 'increase_regions' 찾기 실패:")
+            print(f"  - regional 타입: {type(regional)}")
+            print(f"  - regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ regional 데이터에서 'increase_regions'를 찾을 수 없습니다.\n"
+                f"  regional 타입: {type(regional)}\n"
+                f"  regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}"
+            )
+        increase_regions_list = regional['increase_regions']
         
-        decrease_regions_list = regional.get('decrease_regions', [])
-        if not isinstance(decrease_regions_list, list):
-            decrease_regions_list = []
+        if 'decrease_regions' not in regional or not isinstance(regional['decrease_regions'], list):
+            print(f"[{self.config['name']}] 🔍 [디버그] regional 데이터에서 'decrease_regions' 찾기 실패:")
+            print(f"  - regional 타입: {type(regional)}")
+            print(f"  - regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ regional 데이터에서 'decrease_regions'를 찾을 수 없습니다.\n"
+                f"  regional 타입: {type(regional)}\n"
+                f"  regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}"
+            )
+        decrease_regions_list = regional['decrease_regions']
         
-        all_regions_list = regional.get('all_regions', [])
-        if not isinstance(all_regions_list, list):
-            all_regions_list = []
+        if 'all_regions' not in regional or not isinstance(regional['all_regions'], list):
+            print(f"[{self.config['name']}] 🔍 [디버그] regional 데이터에서 'all_regions' 찾기 실패:")
+            print(f"  - regional 타입: {type(regional)}")
+            print(f"  - regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}")
+            raise ValueError(
+                f"[{self.config['name']}] ❌ regional 데이터에서 'all_regions'를 찾을 수 없습니다.\n"
+                f"  regional 타입: {type(regional)}\n"
+                f"  regional 키: {list(regional.keys()) if isinstance(regional, dict) else 'N/A'}"
+            )
+        all_regions_list = regional['all_regions']
         
         regional_converted = {
             'increase_regions': [
                 {
-                    'region': r.get('region_name', '') if r and isinstance(r, dict) else '',
-                    'growth_rate': r.get('change_rate', 0.0) if r and isinstance(r, dict) and r.get('change_rate') is not None else 0.0,
-                    'value': r.get('value', 0.0) if r and isinstance(r, dict) else 0.0,
+                    # 기본값/폴백 사용 금지
+                    'region': r['region_name'] if r and isinstance(r, dict) and 'region_name' in r and r['region_name'] else None,
+                    'growth_rate': r['change_rate'] if r and isinstance(r, dict) and 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지
+                    'value': r['value'] if r and isinstance(r, dict) and 'value' in r and r['value'] is not None else None,
                     'top_industries': self._get_top_industries_for_region(
-                        r.get('region_name', '') if r and isinstance(r, dict) else '', 
+                        r['region_name'] if r and isinstance(r, dict) and 'region_name' in r and r['region_name'] else None, 
                         increase=True
                     )
                 }
@@ -955,11 +1216,13 @@ class UnifiedReportGenerator(BaseGenerator):
             ],
             'decrease_regions': [
                 {
-                    'region': r.get('region_name', '') if r and isinstance(r, dict) else '',
-                    'growth_rate': r.get('change_rate', 0.0) if r and isinstance(r, dict) and r.get('change_rate') is not None else 0.0,
-                    'value': r.get('value', 0.0) if r and isinstance(r, dict) else 0.0,
+                    # 기본값/폴백 사용 금지
+                    'region': r['region_name'] if r and isinstance(r, dict) and 'region_name' in r and r['region_name'] else None,
+                    'growth_rate': r['change_rate'] if r and isinstance(r, dict) and 'change_rate' in r and r['change_rate'] is not None else None,
+                    # 기본값/폴백 사용 금지
+                    'value': r['value'] if r and isinstance(r, dict) and 'value' in r and r['value'] is not None else None,
                     'top_industries': self._get_top_industries_for_region(
-                        r.get('region_name', '') if r and isinstance(r, dict) else '', 
+                        r['region_name'] if r and isinstance(r, dict) and 'region_name' in r and r['region_name'] else None, 
                         increase=False
                     )
                 }

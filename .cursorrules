@@ -1,5 +1,26 @@
 # Cursor AI 작업 규칙
 
+## 0. 🚨 기본값/폴백 사용 절대 금지 규칙 (최우선 중 최우선)
+- **기본값(default value)이나 폴백(fallback)을 절대 사용하지 않습니다**
+- 데이터를 찾을 수 없으면 **반드시 ValueError를 발생**시켜야 합니다
+- `dict.get(key, default)`, `if value is None: value = default` 같은 패턴은 절대 사용하지 않습니다
+- 설정에서 기본값을 가져오는 것(`agg_struct.get('region_name_col', 4)`)도 금지입니다
+- 하드코딩된 기본값(`self.data_start_row = 3`)도 금지입니다
+- "Fallback", "기본값", "최후의 수단" 같은 주석이 있는 코드도 모두 제거하고 ValueError를 발생시켜야 합니다
+- 예외: 템플릿 렌더링에서 실제로 None인 경우 `None`을 유지하는 것은 허용하되, 기본값으로 대체하는 것은 금지
+
+### 금지 패턴:
+- ❌ `dict.get(key, default_value)`
+- ❌ `if value is None: value = default`
+- ❌ `config.get('key', fallback_value)`
+- ❌ `region_total = region_filter.head(1)  # Fallback`
+- ❌ `if not found: use_default()`
+
+### 필수 패턴:
+- ✅ `if value is None: raise ValueError("데이터를 찾을 수 없습니다")`
+- ✅ `dict.get(key)` 사용 후 None 체크 → ValueError 발생
+- ✅ 데이터를 찾을 수 없으면 반드시 예외 발생
+
 ## 1. .cursorrules 수정 규칙
 - `.cursorrules` 파일을 수정할 때는 반드시 사용자의 동의를 얻을 것
 - 수정 전 변경 사항을 명확히 설명하고 승인을 받은 후에만 수정 진행

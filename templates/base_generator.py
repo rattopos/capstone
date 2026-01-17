@@ -406,7 +406,8 @@ class BaseGenerator(ABC):
         self,
         df: pd.DataFrame,
         target_year: int,
-        target_quarter: int
+        target_quarter: int,
+        require_type_match: bool = True
     ) -> Optional[int]:
         """
         DataFrame에서 병합된 셀을 고려하여 열 인덱스를 찾습니다.
@@ -435,7 +436,10 @@ class BaseGenerator(ABC):
         print(f"  검색 조건:")
         print(f"    - 연도: {target_year_str} 또는 {target_year_short}")
         print(f"    - 분기: {target_quarter_strs}")
-        print(f"    - 타입: '지수' 또는 '증감률'/'등락'")
+        if require_type_match:
+            print(f"    - 타입: '지수' 또는 '증감률'/'등락' (필수)")
+        else:
+            print(f"    - 타입: 선택적 (고용률/실업률 등)")
         print(f"  DataFrame 크기: {len(df)}행 × {len(df.columns)}열")
         print(f"  헤더 영역: 상위 {max_header_rows}행 사용")
         print(f"{'='*80}\n")
@@ -447,7 +451,8 @@ class BaseGenerator(ABC):
         headers_original = header_df.copy()
         
         # 모든 값을 문자열로 변환하고 빈 값 처리
-        headers = header_df.copy()
+        # FutureWarning 방지: object 타입으로 변환
+        headers = header_df.copy().astype(object)
         
         # 문자열로 변환 (NaN, None 처리)
         empty_count = 0
@@ -566,9 +571,11 @@ class BaseGenerator(ABC):
                     quarter_match_reason.append(f"숫자 '{target_quarter}' 직접 포함")
             
             # C. 컬럼 타입 확인 (더 유연한 매칭)
+            # 고용률/실업률 등은 타입 필터링을 선택적으로 적용
             is_growth = "증감" in col_text or "등락" in col_text or "증감률" in col_text
             is_index = "지수" in col_text
-            type_match = is_growth or is_index
+            is_rate = "고용률" in col_text or "실업률" in col_text or "실업자" in col_text
+            type_match = is_growth or is_index or (is_rate and not require_type_match)
             type_match_reason = []
             
             if "증감" in col_text:
@@ -579,6 +586,11 @@ class BaseGenerator(ABC):
                 type_match_reason.append("'증감률' 포함")
             if "지수" in col_text:
                 type_match_reason.append("'지수' 포함")
+            if is_rate and not require_type_match:
+                if "고용률" in col_text:
+                    type_match_reason.append("'고용률' 포함 (타입 필터링 선택적)")
+                if "실업률" in col_text or "실업자" in col_text:
+                    type_match_reason.append("'실업률/실업자' 포함 (타입 필터링 선택적)")
             
             # 매칭 결과 출력 (처음 10개 컬럼 또는 매칭 조건 일부 만족 시)
             should_print = (col_idx < 10) or has_year or has_quarter or type_match
@@ -604,7 +616,9 @@ class BaseGenerator(ABC):
                 print()
             
             # 최종 매칭 확인
-            if has_year and has_quarter and type_match:
+            # require_type_match가 False면 타입 매칭 없이도 연도+분기만 맞으면 OK
+            final_match = has_year and has_quarter and (type_match if require_type_match else True)
+            if final_match:
                 target_col = col_idx
                 col_display = " | ".join(col_values[:3]) if col_values else "빈값"
                 print(f"\n{'='*80}")
@@ -629,7 +643,10 @@ class BaseGenerator(ABC):
             print(f"[검색 조건 재확인]")
             print(f"  - 타겟 연도: {target_year} ({target_year_str} 또는 {target_year_short})")
             print(f"  - 타겟 분기: {target_quarter} (형식: {target_quarter_strs})")
-            print(f"  - 필수 타입: '지수' 또는 '증감률'/'등락'/'증감'")
+            if require_type_match:
+                print(f"  - 필수 타입: '지수' 또는 '증감률'/'등락'/'증감'")
+            else:
+                print(f"  - 타입: 선택적 (고용률/실업률 등은 타입 필터링 없이 연도+분기만 확인)")
             print()
             
             # 후보 컬럼 분석
