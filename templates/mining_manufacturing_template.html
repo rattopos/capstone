@@ -262,7 +262,7 @@
         <!-- 핵심 요약 박스 (회색 배경, 다이아몬드 불릿) -->
         <div class="key-summary-box">
             <div class="headline">◆ 광공업생산은 
-                {% for region in summary_box.main_increase_regions[:3] %}
+                {% for region in top3_increase_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>

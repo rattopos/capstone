@@ -96,12 +96,29 @@ def load_data(excel_path):
     analysis_df = pd.read_excel(excel_path, sheet_name=analysis_sheet, header=None)
     
     # 분석 시트에 실제 데이터가 있는지 확인 (수식 미계산 체크)
-    test_row = analysis_df[(analysis_df[3].isin(SIDO_ORDER)) & (analysis_df[4].astype(str) == '0')]
-    if test_row.empty or (len(test_row) > 0 and test_row.iloc[0].isna().sum() > 20):
+    # 물가동향 분석 시트 구조: 0=지역이름, 1=분류단계, 16=증감률
+    # get_sido_data 함수에서 row[0]과 row[1]을 사용하므로 여기서도 동일하게 확인
+    test_rows = []
+    for i in range(3, min(len(analysis_df), 50)):  # 처음 50행만 확인 (성능 최적화)
+        row = analysis_df.iloc[i]
+        sido_raw = str(row[0]).strip() if pd.notna(row[0]) else ''
+        level = safe_float(row[1], None)
+        
+        # 지역명 매핑 확인
+        sido = SIDO_MAPPING.get(sido_raw, sido_raw)
+        if sido in SIDO_ORDER and level == 0:
+            # 증감률 컬럼(16)에 데이터가 있는지 확인
+            change_val = safe_float(row[16], None)
+            if change_val is not None:
+                test_rows.append(row)
+                break  # 하나라도 찾으면 충분
+    
+    if len(test_rows) == 0:
         print(f"[물가동향] 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
         use_aggregation_only = True
     else:
         use_aggregation_only = False
+        print(f"[물가동향] 분석 시트에 데이터 있음 → 분석 시트 사용")
     
     # use_raw, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
     analysis_df.attrs['use_raw'] = use_raw

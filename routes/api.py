@@ -461,7 +461,10 @@ def get_report_order():
 def update_report_order():
     """보도자료 순서 업데이트"""
     from config import reports as reports_module
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+    
     new_order = data.get('order', [])
     
     if new_order:
@@ -487,7 +490,10 @@ def generate_all_reports():
     """모든 보도자료 일괄 생성 (최적화 버전 - 엑셀 파일 캐싱)"""
     from services.excel_cache import get_excel_file, clear_excel_cache
     
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}  # 빈 dict로 처리하여 기본값 사용
+    
     year = data.get('year', session.get('year', 2025))
     quarter = data.get('quarter', session.get('quarter', 2))
     # 담당자 설정 기능 제거: custom_data는 더 이상 사용하지 않음
@@ -496,16 +502,42 @@ def generate_all_reports():
     if not excel_path or not Path(excel_path).exists():
         return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
     
-    # 엑셀 파일을 한 번만 로드하고 모든 Generator에 재사용 (캐싱)
-    excel_file = get_excel_file(excel_path, use_data_only=True)
-    
     generated_reports = []
     errors = []
+    
+    # 엑셀 파일을 한 번만 로드하고 모든 Generator에 재사용 (캐싱)
+    excel_file = None
+    try:
+        excel_file = get_excel_file(excel_path, use_data_only=True)
+        if excel_file is None:
+            error_msg = f"엑셀 파일을 로드할 수 없습니다: {excel_path}"
+            print(f"[ERROR] {error_msg}")
+            return jsonify({
+                'success': False,
+                'error': error_msg,
+                'generated': [],
+                'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}]
+            })
+        print(f"[보도자료 생성] 엑셀 파일 캐싱 완료: {excel_path}")
+    except Exception as e:
+        import traceback
+        error_msg = f"엑셀 파일 로드 실패: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': error_msg,
+            'generated': [],
+            'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}]
+        })
     
     try:
         for report_config in REPORT_ORDER:
             try:
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
+                report_id = report_config.get('id', 'Unknown')
+                
+                print(f"[보도자료 생성] 시작: {report_name} ({report_id})")
                 
                 # 캐시된 excel_file 전달 (custom_data는 None으로 전달 - 기본값 사용)
                 html_content, error, _ = generate_report_html(
@@ -514,26 +546,53 @@ def generate_all_reports():
                 
                 if error:
                     import traceback
-                    print(f"[ERROR] {report_name} 생성 실패: {error}")
+                    error_msg = f"{report_name} 생성 실패: {error}"
+                    print(f"[ERROR] {error_msg}")
                     traceback.print_exc()
-                    errors.append({'report_id': report_config['id'], 'error': error})
-                else:
-                    output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
-                    with open(output_path, 'w', encoding='utf-8') as f:
-                        f.write(html_content)
-                    generated_reports.append({
-                        'report_id': report_config['id'],
-                        'name': report_config['name'],
-                        'path': str(output_path)
+                    errors.append({
+                        'report_id': report_id,
+                        'report_name': report_name,
+                        'error': str(error)
                     })
+                elif html_content is None:
+                    error_msg = f"{report_name} 생성 실패: HTML 내용이 None입니다"
+                    print(f"[ERROR] {error_msg}")
+                    errors.append({
+                        'report_id': report_id,
+                        'report_name': report_name,
+                        'error': 'HTML 내용이 None입니다'
+                    })
+                else:
+                    try:
+                        output_path = TEMPLATES_DIR / f"{report_config['name']}_output.html"
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            f.write(html_content)
+                        print(f"[보도자료 생성] 성공: {report_name} → {output_path}")
+                        generated_reports.append({
+                            'report_id': report_id,
+                            'name': report_name,
+                            'path': str(output_path)
+                        })
+                    except Exception as write_error:
+                        import traceback
+                        error_msg = f"{report_name} 파일 저장 실패: {str(write_error)}"
+                        print(f"[ERROR] {error_msg}")
+                        traceback.print_exc()
+                        errors.append({
+                            'report_id': report_id,
+                            'report_name': report_name,
+                            'error': f"파일 저장 실패: {str(write_error)}"
+                        })
             except Exception as e:
                 import traceback
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
+                report_id = report_config.get('id', 'Unknown')
                 error_message = str(e)
                 print(f"[ERROR] {report_name} 생성 중 예외 발생: {error_message}")
                 traceback.print_exc()
                 errors.append({
-                    'report_id': report_config['id'],
+                    'report_id': report_id,
+                    'report_name': report_name,
                     'error': f"예외 발생: {error_message}"
                 })
                 continue  # 다음 보도자료 생성 계속 진행
@@ -587,7 +646,10 @@ def generate_all_regional_reports():
 def export_final_document():
     """모든 보도자료를 HTML 문서로 합치기 (standalone 옵션 지원)"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+        
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
@@ -934,7 +996,10 @@ def export_xlsx_document():
         import base64
         from PIL import Image as PILImage
         
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+        
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
@@ -1140,7 +1205,10 @@ def cleanup_uploads():
 def render_chart_image():
     """차트/인포그래픽을 이미지로 렌더링"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+        
         image_data = data.get('image_data', '')
         filename = data.get('filename', 'chart.png')
         
@@ -1277,7 +1345,10 @@ def export_hwp_import():
     try:
         from datetime import datetime
         
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+        
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
@@ -1649,10 +1720,31 @@ def _create_placeholder_image(image_path):
 def export_hwp_ready():
     """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            data = {}
+        
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))
+        
+        # pages가 없으면 생성된 HTML 파일들을 자동으로 수집
+        if not pages:
+            from pathlib import Path
+            templates_dir = Path(__file__).parent.parent / 'templates'
+            output_files = list(templates_dir.glob('*_output.html'))
+            
+            if not output_files:
+                return jsonify({'success': False, 'error': '생성된 보도자료가 없습니다. 먼저 "전체 생성"을 실행하세요.'})
+            
+            # HTML 파일들을 읽어서 pages 배열 생성
+            for output_file in sorted(output_files):
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                    pages.append({
+                        'title': output_file.stem.replace('_output', ''),
+                        'html': html_content
+                    })
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
@@ -1700,8 +1792,8 @@ def export_hwp_ready():
     <div id="hwp-content">
 '''
         
-        # 표지와 목차 제외할 report_id 목록
-        excluded_report_ids = {'cover', 'toc', 'stat_toc'}
+        # 표지, 목차, 일러두기, 인포그래픽, 통계표, GRDP 제외할 report_id 목록
+        excluded_report_ids = {'cover', 'toc', 'stat_toc', 'guide', 'infographic', 'stat_appendix', 'stat_grdp'}
         
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
@@ -1812,7 +1904,10 @@ def save_html_to_project():
     try:
         from datetime import datetime
         
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
+        
         pages = data.get('pages', [])
         year = data.get('year', session.get('year', 2025))
         quarter = data.get('quarter', session.get('quarter', 2))

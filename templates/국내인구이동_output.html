@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅰ. 부문별 지역경제동향 - 고용률 (2025년 3/4분기)</title>
+    <title>Ⅰ. 부문별 지역경제동향 - 국내 인구이동 (2025년 3/4분기)</title>
     
     
     
@@ -45,14 +45,6 @@
             font-size: 11pt;
             font-weight: bold;
             margin-bottom: 12px;
-        }
-        
-        /* 소제목 */
-        .subsection-title {
-            font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            font-weight: bold;
-            margin-bottom: 10px;
         }
         
         /* 요약 박스 */
@@ -163,22 +155,13 @@
             width: 32px;
         }
         
-        /* 비율 섹션 */
-        .data-table td.rate-section {
+        /* 금액/연령 섹션 */
+        .data-table td.amount-section {
             background-color: #fef9e7;
         }
         
-        .data-table th.rate-section {
+        .data-table th.amount-section {
             background-color: #e6e0ec;
-        }
-        
-        /* 점선 구분 헤더 */
-        .data-table th.dashed-border {
-            border-left: 1px dashed #999;
-        }
-        
-        .data-table td.dashed-border {
-            border-left: 1px dashed #999;
         }
         
         .footnote {
@@ -227,187 +210,71 @@
 </head>
 <body>
     <div class="page">
-        <div class="section-title">6. 고용 동향</div>
-        <div class="subsection-title">가. 고용률</div>
+        <div class="section-title">7. 국내 인구이동</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 고용률은 
-                
-                <span class="highlight">{'region': '대전', 'change': 2.2, 'age_groups': [{'name': '60세이상', 'display_name': '60세이상', 'change': 3.5}, {'name': '30 - 39세', 'display_name': '30~39세', 'change': 3.2}, {'name': '50 - 59세', 'display_name': '50~59세', 'change': 3.2}]}</span>, 
-                
-                <span class="highlight">{'region': '충북', 'change': 1.5, 'age_groups': [{'name': '30 - 39세', 'display_name': '30~39세', 'change': 4.6}, {'name': '40 - 49세', 'display_name': '40~49세', 'change': 3.5}, {'name': '60세이상', 'display_name': '60세이상', 'change': 1.4}]}</span>, 
-                
-                <span class="highlight">{'region': '경북', 'change': 1.5, 'age_groups': [{'name': '15 - 29세', 'display_name': '20~29세', 'change': 3.1}, {'name': '30 - 39세', 'display_name': '30~39세', 'change': 3.0}, {'name': '60세이상', 'display_name': '60세이상', 'change': 2.0}]}</span>
-                
-                등 <span class="highlight">12개</span> 시도에서 전년동분기대비 <span class="increase">상승</span>
-            </div>
-            <div class="nationwide">□ 전국 고용률은 <span class="highlight">63.5%</span>로, 60세이상, 40~49세, 30~39세, 50~59세의 고용률이 올라 전년동분기대비 <span class="increase">0.2%p 상승</span></div>
-            <div class="regional">○ 
-                
-                <span class="highlight">세종</span>(-1.0%p), 
-                
-                <span class="highlight">인천</span>(-0.7%p), 
-                
-                <span class="highlight">경기</span>(-0.7%p)
-                
-                등의 고용률은 <span class="decrease">하락</span>하였으나, 
-                
-                <span class="highlight">대전</span>(2.2%p), 
-                
-                <span class="highlight">충북</span>(1.5%p), 
-                
-                <span class="highlight">경북</span>(1.5%p)
-                
-                등의 고용률은 <span class="increase">상승</span>
-            </div>
+            <div class="headline">◆ ◆ 국내 인구이동은 <span class='bold highlight'>경기</span>, <span class='bold highlight'>인천</span> 등 <span class='bold'>7개</span> 시도 인구 <span class='bold'>순유입</span>, <span class='bold highlight'>서울</span>, <span class='bold highlight'>부산</span> 등 <span class='bold'>10개</span> 시도 인구 <span class='bold'>순유출</span></div>
+            <div class="nationwide">□ 국내 인구 <span class='bold'>순유입지역</span>은 <span class='bold'>경기</span>(+10,426명), <span class='bold'>인천</span>(+8,050명), <span class='bold'>충남</span>(+2,132명) 등 7개 시도임</div>
+            <div class="regional">○ 국내 인구 <span class='bold'>순유출지역</span>은 <span class='bold'>서울</span>(-10,051명), <span class='bold'>부산</span>(-3,704명), <span class='bold'>광주</span>(-2,854명) 등 10개 시도임</div>
         </div>
         
-        <!-- 주요 등락지역 및 연령별 고용률 -->
+        <!-- 유입 지역 상세 -->
         <div class="detail-box">
-            <div class="title">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
+            <div class="title">&lt; 주요 유입지역 및 연령별 유입인구 &gt;</div>
             
-            <!-- 전국 -->
-            <div class="item">·전 국(  0.2%p): 
-                
-                60세이상(0.9%p), 
-                
-                40~49세(0.7%p), 
-                
-                30~39세(0.6%p), 
-                
-                50~59세(0.1%p)
-                
+            <div class="item">·경기(10,426명): 
+                30~34세(1,924명), 80세이상(1,407명), 15~19세(1,054명)
             </div>
             
-            <div class="separator"></div>
-            
-            <!-- 증가 지역 Top 3 -->
-            
-            <div class="item">·대전( 2.2%p): 
-                
-                60세이상(3.5%p), 
-                
-                30~39세(3.2%p), 
-                
-                50~59세(3.2%p)
-                
+            <div class="item">·인천(8,050명): 
+                30~34세(826명), 25~29세(790명), 35~39세(774명)
             </div>
             
-            <div class="item">·충북( 1.5%p): 
-                
-                30~39세(4.6%p), 
-                
-                40~49세(3.5%p), 
-                
-                60세이상(1.4%p)
-                
-            </div>
-            
-            <div class="item">·경북( 1.5%p): 
-                
-                20~29세(3.1%p), 
-                
-                30~39세(3.0%p), 
-                
-                60세이상(2.0%p)
-                
+            <div class="item">·충남(2,132명): 
+                55~59세(497명), 60~64세(496명), 25~29세(400명)
             </div>
             
             
             <div class="separator"></div>
             
-            <!-- 감소 지역 Top 3 -->
+            <!-- 유출 지역 상세 -->
+            <div class="title">&lt; 주요 유출지역 및 연령별 유출인구 &gt;</div>
             
-            <div class="item">·세종(-1.0%p): 
-                
-                20~29세(-3.5%p), 
-                
-                40~49세(-1.7%p), 
-                
-                50~59세(-0.5%p)
-                
+            <div class="item">·서울(-10,051명): 
+                30~34세(-2,506명), 55~59세(-2,177명), 60~64세(-2,157명)
             </div>
             
-            <div class="item">·인천(-0.7%p): 
-                
-                20~29세(-4.8%p), 
-                
-                50~59세(-2.1%p), 
-                
-                40~49세(-1.5%p)
-                
+            <div class="item">·부산(-3,704명): 
+                25~29세(-848명), 30~34세(-389명), 55~59세(-322명)
             </div>
             
-            <div class="item">·경기(-0.7%p): 
-                
-                20~29세(-3.4%p), 
-                
-                60세이상(-0.3%p), 
-                
-                40~49세(-0.1%p)
-                
+            <div class="item">·광주(-2,854명): 
+                25~29세(-334명), 20~24세(-320명), 30~34세(-214명)
             </div>
             
         </div>
         
         <!-- 데이터 테이블 -->
         <div class="table-container">
-            <div class="table-title">《고용률<sup>1)</sup> 및 증감 》</div>
+            <div class="table-title">《 국내 인구 순이동<sup>1)</sup> 》</div>
             <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
                 <thead style="border: 1px solid black !important;">
                     <tr>
                         <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
-                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감(%p)</th>
-                        <th colspan="3" class="rate-section" style="border: 1px solid black !important;">고용률(%)</th>
+                        <th colspan="4" style="border: 1px solid black !important;">순이동(천명)</th>
+                        <th colspan="2" class="amount-section" style="border: 1px solid black !important;">2025.3/4</th>
                     </tr>
                     <tr>
-                        <th style="width: 50px;; border: 1px solid black !important">2023.2/4</th>
-                        <th style="width: 50px;; border: 1px solid black !important">2024.2/4</th>
-                        <th style="width: 50px;; border: 1px solid black !important">2025.1/4</th>
-                        <th style="width: 50px;; border: 1px solid black !important">2025.2/4</th>
-                        <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2024.2/4</th>
-                        <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2025.2/4</th>
-                        <th class="rate-section dashed-border" style="width: 55px;; border: 1px solid black !important">20-29세</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2023.2/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2024.2/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2025.2/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2025.3/4</th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">20~29세</th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">그 외<sup>2)</sup></th>
                     </tr>
                 </thead>
                 <tbody>
-                    
-                    <tr>
-                        
-                        <td colspan="2" style="border: 1px solid black !important;">전 국</td>
-                        
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.4
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.1
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.2
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.2
-                        </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            63.3
-                        </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            63.5
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            45.3
-                        </td>
-                        
-                    </tr>
                     
                     <tr>
                         
@@ -416,34 +283,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            -11.0
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.6
+                            -17.3
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.2
+                            6.1
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.5
+                            -10.1
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            61.8
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            8.3
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            62.3
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -16.0
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            49.8
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -452,34 +312,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.5
+                            4.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            5.3
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            11.1
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.7
+                            8.1
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.4
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            1.0
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            63.7
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            6.0
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            44.4
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -488,34 +341,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.0
+                            14.6
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.1
+                            18.5
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.1
+                            5.6
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.7
+                            10.4
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.7
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.7
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.0
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            6.3
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            46.5
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -529,30 +375,23 @@
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -1.1
+                            -0.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.2
+                            0.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            2.2
+                            0.4
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            60.5
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            1.7
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            62.7
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.9
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            46.3
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -561,34 +400,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.6
+                            0.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.6
+                            0.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.8
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
                             0.0
                         </td>
                         
-                        <td class="" style="border: 1px solid black !important;">
-                            -1.0
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.1
                         </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            65.8
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.5
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.8
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            33.4
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -597,34 +429,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.5
+                            1.0
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            1.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.8
+                            1.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.5
+                            1.6
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.6
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.1
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            68.1
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            2.5
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            48.2
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -633,7 +458,99 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.1
+                            3.7
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            4.1
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            1.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            2.1
+                        </td>
+                        
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.2
+                        </td>
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            2.5
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-group" rowspan="4" style="border: 1px solid black !important;">호남</td>
+                        <td class="region-name" style="border: 1px solid black !important;">광 주</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -2.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -1.6
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -4.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -2.9
+                        </td>
+                        
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.7
+                        </td>
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.0
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">전 북</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -0.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -1.3
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -2.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -1.0
+                        </td>
+                        
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.2
+                        </td>
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.7
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">전 남</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.3
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -0.8
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
@@ -644,132 +561,12 @@
                             0.7
                         </td>
                         
-                        <td class="" style="border: 1px solid black !important;">
-                            0.4
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.8
                         </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.1
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.3
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.5
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            46.1
-                        </td>
-                        
-                    </tr>
-                    
-                    <tr>
-                        
-                        <td class="region-group" rowspan="4" style="border: 1px solid black !important;">호남</td>
-                        <td class="region-name" style="border: 1px solid black !important;">광 주</td>
-                        
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            1.4
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.1
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            -0.4
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            1.1
-                        </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            60.5
-                        </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            61.6
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            37.6
-                        </td>
-                        
-                    </tr>
-                    
-                    <tr>
-                        
-                        <td class="region-name" style="border: 1px solid black !important;">전 북</td>
-                        
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.9
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.2
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            -1.0
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.1
-                        </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.8
-                        </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.9
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            38.9
-                        </td>
-                        
-                    </tr>
-                    
-                    <tr>
-                        
-                        <td class="region-name" style="border: 1px solid black !important;">전 남</td>
-                        
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.4
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            -0.7
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            -0.2
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            -0.5
-                        </td>
-                        
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.6
-                        </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.1
-                        </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            43.7
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -778,34 +575,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.3
+                            0.1
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.4
+                            -0.5
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.5
+                            -2.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            -0.9
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            69.5
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            0.7
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            69.9
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.1
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            43.6
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -815,34 +605,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.5
+                            -1.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -2.3
+                            -1.4
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.0
+                            -1.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.1
+                            -2.1
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            58.0
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.5
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            58.1
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            1.0
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            39.4
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -851,11 +634,7 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.2
-                        </td>
-                        
-                        <td class="" style="border: 1px solid black !important;">
-                            0.8
+                            -0.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
@@ -863,22 +642,19 @@
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.5
+                            -3.5
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            64.8
+                        <td class="" style="border: 1px solid black !important;">
+                            -0.2
                         </td>
                         
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.3
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -2.6
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            45.7
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.3
                         </td>
-                        
                     </tr>
                     
                     <tr>
@@ -887,34 +663,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.3
+                            0.5
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.8
+                            0.1
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.0
+                            -2.4
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.3
+                            -0.6
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.2
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.7
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            66.5
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            1.1
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            44.5
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -924,34 +693,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            -3.8
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.1
+                            -3.7
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.0
+                            -3.4
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.4
+                            -3.7
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            58.3
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.5
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            58.7
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -1.4
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            44.1
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -960,34 +722,27 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.0
+                            -1.6
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.3
+                            -0.9
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.2
+                            -2.7
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.0
+                            -1.3
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            60.2
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.4
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            60.2
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.6
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            43.2
-                        </td>
-                        
                     </tr>
                     
                     <tr>
@@ -996,40 +751,34 @@
                         
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.2
+                            -3.2
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            -0.3
+                            -2.1
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            0.3
+                            -4.7
                         </td>
                         
                         <td class="" style="border: 1px solid black !important;">
-                            1.5
+                            -0.7
                         </td>
                         
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            62.1
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -2.7
                         </td>
-                        
-                        <td class="rate-section  " style="border: 1px solid black !important;">
-                            63.6
+                        <td class="amount-section " style="border: 1px solid black !important;">
+                            -0.2
                         </td>
-                        
-                        <td class="rate-section dashed-border " style="border: 1px solid black !important;">
-                            39.0
-                        </td>
-                        
                     </tr>
                     
                 </tbody>
             </table>
             
-            <div class="footnote">1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100</div>
+            <div class="footnote">1) 순이동 = 전입자 수 - 전출자 수 (전국 순이동 = 0)</div>
+            <div class="footnote">2) 그 외: 0~19세 및 30세 이상 연령층</div>
             <div class="footnote">자료: 국가데이터처</div>
             <div class="footnote">담당: 경제동향통계심의관 지역경제동향과 (042-481-xxxx)</div>
         </div>

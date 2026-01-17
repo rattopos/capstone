@@ -21,8 +21,112 @@ from .excel_cache import get_excel_file, clear_excel_cache
 def _generate_from_schema(template_name, report_id, year, quarter, custom_data=None):
     """스키마 기본값으로 보도자료 생성 (일러두기 등 generator 없는 경우)"""
     try:
-        # 스키마 파일에서 기본값 로드
-        schema_path = TEMPLATES_DIR / f"{report_id}_schema.json"
+        # 요약 보도자료는 실제 데이터를 사용하도록 처리
+        from services.summary_data import (
+            get_summary_overview_data, get_summary_table_data,
+            get_production_summary_data, get_consumption_construction_data,
+            get_trade_price_data, get_employment_population_data
+        )
+        from pathlib import Path
+        
+        # excel_path는 generate_report_html에서 받아야 하지만, 여기서는 None으로 처리
+        # 실제로는 generate_report_html에서 excel_path를 전달받아야 함
+        excel_path = None  # TODO: excel_path를 파라미터로 받아야 함
+        
+        # 요약 보도자료별 데이터 생성
+        if report_id == 'summary_trade_price':
+            # 요약-수출물가는 실제 데이터 사용
+            if excel_path and Path(excel_path).exists():
+                trade_price_data = get_trade_price_data(excel_path, year, quarter)
+                # amount를 숫자로 변환 (문자열이면 숫자로 변환)
+                if trade_price_data and 'exports' in trade_price_data:
+                    exports = trade_price_data['exports']
+                    if 'nationwide' in exports and 'amount' in exports['nationwide']:
+                        amount = exports['nationwide']['amount']
+                        # 문자열이면 숫자로 변환 (쉼표 제거)
+                        if isinstance(amount, str):
+                            try:
+                                exports['nationwide']['amount'] = float(amount.replace(',', ''))
+                            except (ValueError, AttributeError):
+                                exports['nationwide']['amount'] = 0.0
+                        elif amount is None:
+                            exports['nationwide']['amount'] = 0.0
+                    # chart_data의 amount도 숫자로 변환
+                    if 'chart_data' in exports:
+                        for item in exports['chart_data']:
+                            if 'amount' in item and isinstance(item['amount'], str):
+                                try:
+                                    item['amount'] = float(item['amount'].replace(',', ''))
+                                except (ValueError, AttributeError):
+                                    item['amount'] = 0.0
+                
+                data = trade_price_data
+                data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+            else:
+                # excel_path가 없으면 스키마 기본값 사용
+                schema_basename = template_name.replace('_template.html', '_schema.json')
+                schema_path = TEMPLATES_DIR / schema_basename
+                if schema_path.exists():
+                    with open(schema_path, 'r', encoding='utf-8') as f:
+                        schema = json.load(f)
+                    data = schema.get('example', {})
+                    # amount를 숫자로 변환
+                    if 'exports' in data and 'nationwide' in data['exports']:
+                        amount = data['exports']['nationwide'].get('amount', '0')
+                        if isinstance(amount, str):
+                            try:
+                                data['exports']['nationwide']['amount'] = float(amount.replace(',', ''))
+                            except (ValueError, AttributeError):
+                                data['exports']['nationwide']['amount'] = 0.0
+                    data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+                else:
+                    return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+        else:
+            # 다른 요약 보도자료는 스키마 기본값 사용
+            schema_basename = template_name.replace('_template.html', '_schema.json')
+            schema_path = TEMPLATES_DIR / schema_basename
+            
+            if not schema_path.exists():
+                return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+            
+            with open(schema_path, 'r', encoding='utf-8') as f:
+                schema = json.load(f)
+            
+            # 기본값 추출 (example 필드)
+            data = schema.get('example', {})
+            
+            # 연도/분기 정보 추가
+            data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+        
+        # 템플릿 렌더링
+        template_path = TEMPLATES_DIR / template_name
+        if not template_path.exists():
+            return None, f"템플릿 파일을 찾을 수 없습니다: {template_path}", []
+        
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+        
+        template = Template(template_content)
+        template.environment.filters['format_value'] = format_value
+        template.environment.filters['is_missing'] = is_missing
+        template.environment.filters['josa'] = get_josa
+        html_content = template.render(**data)
+        
+        return html_content, None, []
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return None, f"스키마 기반 보도자료 생성 오류: {str(e)}", []
+
+
+def _generate_from_schema_with_excel(template_name, report_id, year, quarter, excel_path=None, custom_data=None):
+    """스키마 기본값으로 보도자료 생성 (엑셀 경로 전달 가능)"""
+    try:
+        # 템플릿 이름에서 스키마 파일 이름 생성
+        schema_basename = template_name.replace('_template.html', '_schema.json')
+        schema_path = TEMPLATES_DIR / schema_basename
+        
         if not schema_path.exists():
             return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
         
@@ -34,9 +138,6 @@ def _generate_from_schema(template_name, report_id, year, quarter, custom_data=N
         
         # 연도/분기 정보 추가
         data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
-        
-        # 담당자 설정 기능 제거: 스키마의 기본값 그대로 사용
-        # custom_data는 더 이상 사용하지 않음
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
@@ -98,9 +199,55 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # 보도자료 생성 시작
         
-        # Generator가 None인 경우 (일러두기 등) 스키마에서 기본값 로드
+        # Generator가 None인 경우 (요약 보도자료 등) 실제 데이터 사용 또는 스키마 기본값
         if generator_name is None:
-            return _generate_from_schema(template_name, report_id, year, quarter, custom_data)
+            # 요약-수출물가는 실제 데이터 사용
+            if report_id == 'summary_trade_price':
+                from services.summary_data import get_trade_price_data
+                try:
+                    trade_price_data = get_trade_price_data(excel_path, year, quarter)
+                    # amount를 숫자로 보장
+                    if trade_price_data and 'exports' in trade_price_data:
+                        exports = trade_price_data['exports']
+                        if 'nationwide' in exports and 'amount' in exports['nationwide']:
+                            amount = exports['nationwide']['amount']
+                            if isinstance(amount, str):
+                                try:
+                                    exports['nationwide']['amount'] = float(amount.replace(',', ''))
+                                except (ValueError, AttributeError):
+                                    exports['nationwide']['amount'] = 0.0
+                            elif amount is None:
+                                exports['nationwide']['amount'] = 0.0
+                        # chart_data의 amount도 숫자로 변환
+                        if 'chart_data' in exports:
+                            for item in exports['chart_data']:
+                                if 'amount' in item:
+                                    if isinstance(item['amount'], str):
+                                        try:
+                                            item['amount'] = float(item['amount'].replace(',', ''))
+                                        except (ValueError, AttributeError):
+                                            item['amount'] = 0.0
+                                    elif item['amount'] is None:
+                                        item['amount'] = 0.0
+                    
+                    trade_price_data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+                    
+                    # 템플릿 렌더링
+                    template_path = TEMPLATES_DIR / template_name
+                    with open(template_path, 'r', encoding='utf-8') as f:
+                        template = Template(f.read())
+                    template.environment.filters['format_value'] = format_value
+                    template.environment.filters['is_missing'] = is_missing
+                    template.environment.filters['josa'] = get_josa
+                    html_content = template.render(**trade_price_data)
+                    return html_content, None, []
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    return None, f"요약-수출물가 데이터 생성 오류: {str(e)}", []
+            
+            # 기타 요약 보도자료는 스키마 기본값 사용 (엑셀 경로 전달)
+            return _generate_from_schema_with_excel(template_name, report_id, year, quarter, excel_path, custom_data)
         
         # Generator 모듈 로드
         module = load_generator_module(generator_name)
@@ -215,56 +362,35 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             print(f"[ERROR] 사용 가능한 함수: {available_funcs}")
             return None, error_msg, []
         
-        # Top3 regions 후처리
-        if data and 'regional_data' in data:
-            if 'top3_increase_regions' not in data:
-                top3_increase = []
-                for r in data['regional_data'].get('increase_regions', [])[:3]:
-                    rate_value = r.get('change', r.get('growth_rate', 0))
-                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                    top3_increase.append({
-                        'region': r.get('region', ''),
-                        'change': rate_value,
-                        'growth_rate': rate_value,
-                        'age_groups': items,
-                        'industries': items
-                    })
-                data['top3_increase_regions'] = top3_increase
-            else:
-                for r in data['top3_increase_regions']:
-                    if 'growth_rate' not in r:
-                        r['growth_rate'] = r.get('change', 0)
-                    if 'change' not in r:
-                        r['change'] = r.get('growth_rate', 0)
-                    if 'industries' not in r:
-                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
-                    if 'age_groups' not in r:
-                        r['age_groups'] = r.get('industries', [])
+        # 통합 Generator는 이미 올바른 필드명으로 데이터를 생성함
+        # 레거시 Generator를 위한 최소한의 후처리만 수행
+        if data and 'regional_data' in data and 'top3_increase_regions' not in data:
+            # top3가 없는 경우 (레거시 Generator)
+            top3_increase = []
+            for r in data['regional_data'].get('increase_regions', [])[:3]:
+                region_name = r.get('region', r.get('region_name', ''))
+                rate_value = r.get('growth_rate', r.get('change_rate', r.get('change', 0)))
+                items = r.get('industries', r.get('age_groups', r.get('top_industries', [])))
+                top3_increase.append({
+                    'region': region_name,
+                    'growth_rate': rate_value,
+                    'industries': items,
+                    'age_groups': items
+                })
+            data['top3_increase_regions'] = top3_increase
             
-            if 'top3_decrease_regions' not in data:
-                top3_decrease = []
-                for r in data['regional_data'].get('decrease_regions', [])[:3]:
-                    rate_value = r.get('change', r.get('growth_rate', 0))
-                    items = r.get('top_age_groups', r.get('industries', r.get('top_industries', [])))
-                    top3_decrease.append({
-                        'region': r.get('region', ''),
-                        'change': rate_value,
-                        'growth_rate': rate_value,
-                        'age_groups': items,
-                        'industries': items
-                    })
-                data['top3_decrease_regions'] = top3_decrease
-            else:
-                for r in data['top3_decrease_regions']:
-                    if 'growth_rate' not in r:
-                        r['growth_rate'] = r.get('change', 0)
-                    if 'change' not in r:
-                        r['change'] = r.get('growth_rate', 0)
-                    if 'industries' not in r:
-                        r['industries'] = r.get('age_groups', r.get('top_industries', []))
-                    if 'age_groups' not in r:
-                        r['age_groups'] = r.get('industries', [])
-            
+            top3_decrease = []
+            for r in data['regional_data'].get('decrease_regions', [])[:3]:
+                region_name = r.get('region', r.get('region_name', ''))
+                rate_value = r.get('growth_rate', r.get('change_rate', r.get('change', 0)))
+                items = r.get('industries', r.get('age_groups', r.get('top_industries', [])))
+                top3_decrease.append({
+                    'region': region_name,
+                    'growth_rate': rate_value,
+                    'industries': items,
+                    'age_groups': items
+                })
+            data['top3_decrease_regions'] = top3_decrease
         
         # 담당자 설정 기능 제거: custom_data는 더 이상 병합하지 않음
         # 스키마 기본값 또는 Generator에서 생성한 데이터만 사용

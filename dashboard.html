@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>지역경제동향 보도자료 생성 시스템 | 국가데이터처</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
             /* Colors */
@@ -52,7 +50,7 @@
         }
 
         body {
-            font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: '바탕', 'Batang', 'BatangChe', serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             background-attachment: fixed;
             color: var(--text-primary);
@@ -805,7 +803,7 @@
         <div class="header-content">
             <div class="logo-section">
                 <div class="logo-icon">
-                    <i class="fas fa-chart-line"></i>
+                    차트
                 </div>
                 <div class="logo-text">
                     <h1>지역경제동향 보도자료 생성 시스템</h1>
@@ -814,7 +812,6 @@
             </div>
             <div class="header-actions">
                 <div class="period-badge">
-                    <i class="far fa-calendar-alt"></i>
                     <span class="period-label">기준 분기:</span>
                     <span class="period-value" id="periodDisplay">-</span>
                 </div>
@@ -826,7 +823,7 @@
     <main class="main-container">
         <!-- Hero Section -->
         <section class="hero-section">
-            <h2 class="hero-title">✨ 보도자료 자동 생성</h2>
+            <h2 class="hero-title">보도자료 자동 생성</h2>
             <p class="hero-subtitle">분석표 엑셀 파일을 업로드하면 자동으로 모든 보도자료를 생성합니다</p>
         </section>
 
@@ -834,14 +831,13 @@
         <section class="upload-section" id="uploadSection">
             <div class="upload-content">
                 <div class="upload-icon">
-                    <i class="fas fa-cloud-upload-alt"></i>
+                    업로드
                 </div>
                 <div class="upload-text">
                     <h3>분석표 업로드</h3>
-                    <p>엑셀 파일을 선택하거나 드래그 앤 드롭하세요</p>
+                    <p>엑셀 파일을 업로드하면 보도자료가 자동으로 생성되고 한글 복사용 HTML 파일이 다운로드됩니다</p>
                 </div>
                 <button class="upload-button" onclick="document.getElementById('excelFileInput').click()">
-                    <i class="fas fa-file-excel"></i>
                     파일 선택
                 </button>
                 <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
@@ -851,7 +847,7 @@
         <!-- File Info -->
         <div class="file-info" id="fileInfo">
             <div class="file-info-icon">
-                <i class="fas fa-check"></i>
+                완료
             </div>
             <div class="file-info-details">
                 <h4 id="fileName">파일명</h4>
@@ -859,64 +855,16 @@
             </div>
         </div>
 
-        <!-- Action Cards -->
-        <div class="action-cards" id="actionCards" style="display: none;">
-            <div class="action-card">
-                <div class="action-card-header">
-                    <div class="action-card-icon primary">
-                        <i class="fas fa-rocket"></i>
-                    </div>
-                    <h3 class="action-card-title">일괄 생성</h3>
-                </div>
-                <p class="action-card-description">
-                    모든 보도자료를 한 번에 생성합니다. 부문별, 시도별, 통계표 등 전체 문서를 자동으로 생성합니다.
-                </p>
-                <button class="action-card-button" onclick="generateAllReports()">
-                    <i class="fas fa-play-circle"></i> 전체 생성 시작
-                </button>
-            </div>
-
-            <div class="action-card">
-                <div class="action-card-header">
-                    <div class="action-card-icon secondary">
-                        <i class="fas fa-file-export"></i>
-                    </div>
-                    <h3 class="action-card-title">한글 내보내기</h3>
-                </div>
-                <p class="action-card-description">
-                    생성된 보도자료를 한글(HWP) 파일에 복사-붙여넣기 가능한 HTML 형식으로 내보냅니다.
-                </p>
-                <button class="action-card-button" onclick="exportToHwp()">
-                    <i class="fas fa-download"></i> HTML 내보내기
-                </button>
-            </div>
-
-            <div class="action-card">
-                <div class="action-card-header">
-                    <div class="action-card-icon success">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-                    <h3 class="action-card-title">분석표 다운로드</h3>
-                </div>
-                <p class="action-card-description">
-                    업로드한 분석표 파일을 다시 다운로드합니다. 백업이나 확인용으로 사용하세요.
-                </p>
-                <button class="action-card-button" onclick="downloadAnalysis()">
-                    <i class="fas fa-file-download"></i> 분석표 다운로드
-                </button>
-            </div>
-        </div>
 
         <!-- Reports Section -->
         <section class="reports-section" id="reportsSection" style="display: none;">
             <div class="section-header">
                 <h2 class="section-title">
-                    <i class="fas fa-list-check"></i>
                     생성된 보도자료
                 </h2>
                 <div class="section-actions">
                     <button class="section-button" onclick="refreshReports()">
-                        <i class="fas fa-sync-alt"></i> 새로고침
+                        새로고침
                     </button>
                 </div>
             </div>
@@ -1029,15 +977,12 @@
                         document.getElementById('periodDisplay').textContent = `${result.year}년 ${result.quarter}분기`;
                     }
                     
-                    // Show action cards and reports
-                    document.getElementById('actionCards').style.display = 'grid';
-                    document.getElementById('reportsSection').style.display = 'block';
+                    setLoadingProgress(60);
                     
-                    setLoadingProgress(100);
-                    setTimeout(() => {
-                        hideLoading();
-                        showToast('파일 업로드 완료!', 'success');
-                    }, 300);
+                    // 자동으로 전체 생성 시작
+                    showLoading('보도자료 생성 중...', '모든 보도자료를 자동으로 생성하고 있습니다');
+                    await generateAllReportsAuto();
+                    
                 } else {
                     hideLoading();
                     showToast(result.error || '파일 업로드 실패', 'error');
@@ -1052,35 +997,87 @@
         // Check for existing uploaded file
         async function checkExistingFile() {
             try {
-                const response = await fetch('/api/status');
+                const response = await fetch('/api/session-info');
+                if (!response.ok) {
+                    // 세션 정보가 없으면 조용히 무시 (정상적인 상황)
+                    return;
+                }
                 const result = await response.json();
                 
-                if (result.excel_uploaded) {
-                    // Simulate file info
-                    document.getElementById('fileName').textContent = '분석표 (업로드됨)';
-                    document.getElementById('fileDetails').textContent = `${result.year}년 ${result.quarter}분기`;
-                    document.getElementById('fileInfo').classList.add('active');
+                // has_file로 파일 존재 여부 확인
+                if (result.has_file && result.excel_path) {
+                    // 파일 정보 표시
+                    const fileName = result.excel_path.split('/').pop() || '분석표 (업로드됨)';
+                    document.getElementById('fileName').textContent = fileName;
                     
-                    // Update period
                     if (result.year && result.quarter) {
+                        document.getElementById('fileDetails').textContent = `${result.year}년 ${result.quarter}분기`;
                         document.getElementById('periodDisplay').textContent = `${result.year}년 ${result.quarter}분기`;
                     }
                     
-                    // Show action cards and reports
-                    document.getElementById('actionCards').style.display = 'grid';
-                    document.getElementById('reportsSection').style.display = 'block';
-                    
-                    // Load reports if available
-                    if (result.generated_reports && result.generated_reports.length > 0) {
-                        displayReports(result.generated_reports);
-                    }
+                    document.getElementById('fileInfo').classList.add('active');
                 }
             } catch (error) {
-                console.error('Status check error:', error);
+                // JSON 파싱 오류 등은 조용히 무시 (정상적인 상황일 수 있음)
+                // console.warn('세션 정보 확인 중 오류 (무시됨):', error);
             }
         }
 
-        // Generate all reports
+        // Generate all reports (자동 실행 버전 - 업로드 후 자동)
+        async function generateAllReportsAuto() {
+            try {
+                const response = await fetch('/api/generate-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                setLoadingProgress(75);
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 보도자료 생성 완료 후 자동으로 한글 내보내기
+                    showLoading('한글 내보내기 중...', '한글 복사용 HTML 파일을 생성하고 있습니다');
+                    setLoadingProgress(85);
+                    
+                    await exportToHwpAuto();
+                } else {
+                    hideLoading();
+                    // 상세 에러 메시지 표시
+                    let errorMessage = '보도자료 생성 실패';
+                    if (result.errors && result.errors.length > 0) {
+                        // 에러 상세 정보 출력
+                        console.error('보도자료 생성 에러 상세:', result.errors);
+                        
+                        // 실패한 보도자료 목록 생성
+                        const errorReports = result.errors.map(e => {
+                            const reportName = e.report_name || e.report_id || '알 수 없음';
+                            const errorMsg = e.error || '알 수 없는 오류';
+                            return `${reportName} (${errorMsg.substring(0, 80)}${errorMsg.length > 80 ? '...' : ''})`;
+                        });
+                        
+                        // 사용자에게 보여줄 메시지 (간단하게)
+                        const failedReports = result.errors.map(e => e.report_name || e.report_id || '알 수 없음').join(', ');
+                        errorMessage = `보도자료 생성 실패 (${result.errors.length}개): ${failedReports}`;
+                        
+                        // 전체 에러 목록은 콘솔에만 출력
+                        console.error('실패한 보도자료 상세:', errorReports);
+                    } else if (result.error) {
+                        errorMessage = `보도자료 생성 실패: ${result.error}`;
+                    }
+                    showToast(errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                hideLoading();
+                showToast('보도자료 생성 중 오류 발생', 'error');
+            }
+        }
+
+        // Generate all reports (수동 호출용)
         async function generateAllReports() {
             showLoading('보도자료 생성 중...', '모든 보도자료를 생성하고 있습니다');
             setLoadingProgress(0);
@@ -1090,7 +1087,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({})
                 });
 
                 setLoadingProgress(50);
@@ -1106,10 +1104,46 @@
                         showToast(`${result.generated.length}개 보도자료 생성 완료!`, 'success');
                         displayReports(result.generated);
                     } else {
-                        showToast('일부 보도자료 생성 실패', 'warning');
+                        // 일부 성공한 경우와 전체 실패한 경우 구분
                         if (result.generated && result.generated.length > 0) {
+                            const errorCount = result.errors ? result.errors.length : 0;
+                            showToast(`${result.generated.length}개 생성 완료, ${errorCount}개 실패`, 'warning');
                             displayReports(result.generated);
+                            
+                            // 에러 상세 표시
+                            if (result.errors && result.errors.length > 0) {
+                                console.error('보도자료 생성 에러 상세:', result.errors);
+                                const errorList = result.errors.map(e => {
+                                    const reportName = e.report_name || e.report_id || '알 수 없음';
+                                    const errorMsg = e.error || '알 수 없는 오류';
+                                    return `${reportName}: ${errorMsg.substring(0, 50)}`;
+                                }).join('\n');
+                                console.warn('실패한 보도자료:\n' + errorList);
+                            }
+                    } else {
+                        // 전체 실패
+                        let errorMessage = '모든 보도자료 생성 실패';
+                        if (result.errors && result.errors.length > 0) {
+                            // 에러 상세 정보 출력
+                            console.error('보도자료 생성 에러 상세:', result.errors);
+                            
+                            // 실패한 보도자료 목록 생성
+                            const errorReports = result.errors.map(e => {
+                                const reportName = e.report_name || e.report_id || '알 수 없음';
+                                const errorMsg = e.error || '알 수 없는 오류';
+                                return `${reportName}: ${errorMsg.substring(0, 100)}${errorMsg.length > 100 ? '...' : ''}`;
+                            });
+                            
+                            const failedReports = result.errors.map(e => e.report_name || e.report_id || '알 수 없음').join(', ');
+                            errorMessage = `보도자료 생성 실패: ${failedReports}`;
+                            
+                            // 전체 에러 목록은 콘솔에 출력
+                            console.error('실패한 보도자료 상세:', errorReports);
+                        } else if (result.error) {
+                            errorMessage = `보도자료 생성 실패: ${result.error}`;
                         }
+                        showToast(errorMessage, 'error');
+                    }
                     }
                 }, 300);
             } catch (error) {
@@ -1130,17 +1164,17 @@
                 card.innerHTML = `
                     <div class="report-card-header">
                         <div class="report-card-icon">
-                            📊
+                            보도자료
                         </div>
                         <div class="report-card-title">${report.name}</div>
                         <div class="report-card-status generated"></div>
                     </div>
                     <div class="report-card-actions">
                         <button class="report-card-button primary" onclick="previewReport('${report.report_id}')">
-                            <i class="fas fa-eye"></i> 미리보기
+                            미리보기
                         </button>
                         <button class="report-card-button" onclick="downloadReport('${report.report_id}')">
-                            <i class="fas fa-download"></i> 다운로드
+                            다운로드
                         </button>
                     </div>
                 `;
@@ -1158,7 +1192,53 @@
             window.location.href = `/download/${reportId}`;
         }
 
-        // Export to HWP
+        // Export to HWP (자동 실행 버전)
+        async function exportToHwpAuto() {
+            try {
+                const response = await fetch('/api/export-hwp-ready', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                
+                setLoadingProgress(100);
+                
+                setTimeout(() => {
+                    hideLoading();
+                    
+                    if (result.success && result.html) {
+                        // HTML을 Blob으로 변환하여 다운로드
+                        const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = result.filename || '지역경제동향_보도자료.html';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        
+                        showToast('✅ 완료! HTML 파일 저장 다이얼로그가 열렸습니다', 'success');
+                    } else if (result.success && result.download_url) {
+                        // download_url이 있는 경우 (기존 방식)
+                        window.location.href = result.download_url;
+                        showToast('✅ 완료! 한글 복사용 HTML 파일이 다운로드됩니다', 'success');
+                    } else {
+                        showToast(result.error || 'HTML 생성 실패', 'error');
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Export error:', error);
+                hideLoading();
+                showToast('HTML 생성 중 오류 발생', 'error');
+            }
+        }
+
+        // Export to HWP (수동 호출용)
         async function exportToHwp() {
             showLoading('HTML 생성 중...', '한글 복사용 HTML 파일을 생성하고 있습니다');
             
@@ -1167,16 +1247,30 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({})
                 });
 
                 const result = await response.json();
                 
                 hideLoading();
                 
-                if (result.success && result.file_path) {
-                    // Download file
-                    window.location.href = `/download-export/${result.filename}`;
+                if (result.success && result.html) {
+                    // HTML을 Blob으로 변환하여 다운로드
+                    const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = result.filename || '지역경제동향_보도자료.html';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    showToast('✅ 완료! HTML 파일 저장 다이얼로그가 열렸습니다', 'success');
+                } else if (result.success && result.download_url) {
+                    // download_url이 있는 경우 (기존 방식)
+                    window.location.href = result.download_url;
                     showToast('HTML 파일 다운로드 시작!', 'success');
                 } else {
                     showToast(result.error || 'HTML 생성 실패', 'error');
@@ -1186,12 +1280,6 @@
                 hideLoading();
                 showToast('HTML 생성 중 오류 발생', 'error');
             }
-        }
-
-        // Download analysis
-        function downloadAnalysis() {
-            window.location.href = '/download-analysis-file';
-            showToast('분석표 다운로드 시작', 'info');
         }
 
         // Refresh reports
@@ -1222,15 +1310,15 @@
             toast.className = `toast ${type}`;
             
             const icons = {
-                success: 'fa-check',
-                error: 'fa-times',
-                warning: 'fa-exclamation',
-                info: 'fa-info'
+                success: '완료',
+                error: '오류',
+                warning: '경고',
+                info: '정보'
             };
 
             toast.innerHTML = `
                 <div class="toast-icon">
-                    <i class="fas ${icons[type]}"></i>
+                    ${icons[type]}
                 </div>
                 <div class="toast-message">${message}</div>
             `;

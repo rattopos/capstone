@@ -191,7 +191,7 @@ class UnifiedReportGenerator(BaseGenerator):
         return table_data
     
     def extract_nationwide_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
-        """전국 데이터 추출"""
+        """전국 데이터 추출 - 템플릿 호환 필드명"""
         if table_data is None:
             table_data = self._extract_table_data_ssot()
         
@@ -200,14 +200,31 @@ class UnifiedReportGenerator(BaseGenerator):
         if not nationwide:
             return {
                 'production_index': 100.0,
+                'sales_index': 100.0,
+                'service_index': 100.0,
                 'growth_rate': 0.0,
+                'main_industries': [],
+                'main_businesses': [],
                 'main_items': []
             }
         
+        # 보고서 타입별 지수명 결정
+        index_value = nationwide['value']
+        growth_rate = nationwide['change_rate'] if nationwide['change_rate'] else 0.0
+        
+        # 모든 필드명 포함 (템플릿 호환)
+        empty_items = []  # TODO: 업종별 데이터 추가
+        
         return {
-            'production_index': nationwide['value'],
-            'growth_rate': nationwide['change_rate'] if nationwide['change_rate'] else 0.0,
-            'main_items': []  # TODO: 업종별 데이터 추가
+            'production_index': index_value,
+            'sales_index': index_value,
+            'service_index': index_value,
+            'growth_rate': growth_rate,
+            'main_industries': empty_items,
+            'main_increase_industries': empty_items,
+            'main_decrease_industries': empty_items,
+            'main_businesses': empty_items,
+            'main_items': empty_items
         }
     
     def extract_regional_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
@@ -231,8 +248,85 @@ class UnifiedReportGenerator(BaseGenerator):
             'all_regions': regional
         }
     
+    def _generate_summary_table(self, table_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """summary_table 생성 (템플릿 호환 형식)"""
+        # 지역 표시명 매핑 (띄어쓰기 포함)
+        region_display = {
+            '전국': '전 국', '서울': '서 울', '부산': '부 산', '대구': '대 구', '인천': '인 천',
+            '광주': '광 주', '대전': '대 전', '울산': '울 산', '세종': '세 종', '경기': '경 기',
+            '강원': '강 원', '충북': '충 북', '충남': '충 남', '전북': '전 북', '전남': '전 남',
+            '경북': '경 북', '경남': '경 남', '제주': '제 주'
+        }
+        
+        # 지역 그룹 정보
+        REGION_GROUPS = {
+            '경인': ['서울', '인천', '경기'],
+            '충청': ['대전', '세종', '충북', '충남'],
+            '호남': ['광주', '전북', '전남', '제주'],
+            '동북': ['대구', '경북', '강원'],
+            '동남': ['부산', '울산', '경남']
+        }
+        
+        regions_list = []
+        
+        # 전국 먼저 추가
+        nationwide = next((d for d in table_data if d['region_name'] == '전국'), None)
+        if nationwide:
+            regions_list.append({
+                'region': region_display.get('전국', '전 국'),
+                'growth_rates': [None, None, None, nationwide.get('change_rate', 0.0)],
+                'indices': [nationwide.get('prev_value', 0.0) if nationwide.get('prev_value') else 0.0,
+                           nationwide.get('value', 0.0)],
+                'group': None,
+                'rowspan': None
+            })
+        
+        # 권역별 시도 추가
+        region_group_order = ['경인', '충청', '호남', '동북', '동남']
+        
+        for group_name in region_group_order:
+            sidos = REGION_GROUPS.get(group_name, [])
+            for idx, sido in enumerate(sidos):
+                region_data = next((d for d in table_data if d['region_name'] == sido), None)
+                if not region_data:
+                    continue
+                
+                row_data = {
+                    'region': region_display.get(sido, sido),
+                    'growth_rates': [None, None, None, region_data.get('change_rate', 0.0)],
+                    'indices': [region_data.get('prev_value', 0.0) if region_data.get('prev_value') else 0.0,
+                               region_data.get('value', 0.0)],
+                    'group': group_name if idx == 0 else None,
+                    'rowspan': len(sidos) if idx == 0 else None
+                }
+                regions_list.append(row_data)
+        
+        # base_year는 설정에서 가져오거나 기본값 사용
+        base_year = self.config.get('base_year', 2020)
+        
+        # columns 정보 (연도/분기 기반)
+        growth_rate_columns = [
+            f"{self.year - 2}.2/4",
+            f"{self.year - 1}.2/4",
+            f"{self.year}.1/4",
+            f"{self.year}.2/4p"
+        ]
+        index_columns = [
+            f"{self.year - 1}.2/4",
+            f"{self.year}.2/4p"
+        ]
+        
+        return {
+            'base_year': base_year,
+            'columns': {
+                'growth_rate_columns': growth_rate_columns,
+                'index_columns': index_columns
+            },
+            'regions': regions_list
+        }
+    
     def extract_all_data(self) -> Dict[str, Any]:
-        """전체 데이터 추출"""
+        """전체 데이터 추출 - 템플릿 호환 구조"""
         # 데이터 로드
         self.load_data()
         
@@ -243,11 +337,90 @@ class UnifiedReportGenerator(BaseGenerator):
         nationwide = self.extract_nationwide_data(table_data)
         regional = self.extract_regional_data(table_data)
         
+        # Top3 regions (템플릿 호환 필드명으로 생성)
+        top3_increase = []
+        for r in regional['increase_regions'][:3]:
+            top3_increase.append({
+                'region': r['region_name'],
+                'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
+                'industries': []  # TODO: 업종별 데이터 추가
+            })
+        
+        top3_decrease = []
+        for r in regional['decrease_regions'][:3]:
+            top3_decrease.append({
+                'region': r['region_name'],
+                'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
+                'industries': [],  # TODO: 업종별 데이터 추가
+                'main_business': ''  # TODO: 소비동향용 주요 업태
+            })
+        
         # Summary Box
-        top3 = regional['increase_regions'][:3]
         summary_box = {
-            'main_regions': [{'region': r['region_name'], 'items': []} for r in top3],
+            'main_regions': [{'region': r['region'], 'items': r['industries']} for r in top3_increase],
             'region_count': len(regional['increase_regions'])
+        }
+        
+        # Regional data 필드명 변환 (템플릿 호환)
+        regional_converted = {
+            'increase_regions': [
+                {
+                    'region': r['region_name'],
+                    'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
+                    'value': r['value'],
+                    'top_industries': []  # TODO: 업종별 데이터 추가
+                }
+                for r in regional['increase_regions']
+            ],
+            'decrease_regions': [
+                {
+                    'region': r['region_name'],
+                    'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
+                    'value': r['value'],
+                    'top_industries': []  # TODO: 업종별 데이터 추가
+                }
+                for r in regional['decrease_regions']
+            ],
+            'all_regions': regional['all_regions']
+        }
+        
+        # Table data 필드명 변환 (템플릿 호환)
+        table_data_converted = [
+            {
+                'region': r['region_name'],
+                'region_name': r['region_name'],
+                'value': r['value'],
+                'growth_rate': r['change_rate'] if r['change_rate'] else 0.0,
+                'change_rate': r['change_rate'] if r['change_rate'] else 0.0
+            }
+            for r in table_data
+        ]
+        
+        # summary_table 생성 (템플릿에서 필요)
+        summary_table = self._generate_summary_table(table_data)
+        
+        # 템플릿별 추가 필드 (TODO: 실제 데이터로 대체)
+        extra_fields = {}
+        
+        # 소비동향용 필드
+        if self.report_type == 'consumption':
+            extra_fields['increase_businesses_text'] = ''  # TODO: 업태별 데이터 추가
+            extra_fields['decrease_businesses_text'] = ''  # TODO: 업태별 데이터 추가
+        
+        # 서비스업용 필드
+        elif self.report_type == 'service':
+            extra_fields['increase_industries_text'] = ''  # TODO: 업종별 데이터 추가
+            extra_fields['decrease_industries_text'] = ''  # TODO: 업종별 데이터 추가
+        
+        # footer_info 생성 (템플릿에서 필요)
+        footer_source_map = {
+            'mining': '자료: 국가데이터처 국가통계포털(KOSIS), 광업제조업동향조사',
+            'service': '자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사',
+            'consumption': '자료: 국가데이터처 국가통계포털(KOSIS), 서비스업동향조사'
+        }
+        footer_info = {
+            'source': footer_source_map.get(self.report_type, '자료: 국가데이터처'),
+            'page_num': '- 1 -'  # 기본값, 필요시 설정에서 가져올 수 있음
         }
         
         return {
@@ -257,12 +430,18 @@ class UnifiedReportGenerator(BaseGenerator):
                 'report_type': self.report_type,
                 'report_name': self.config['name'],
                 'index_name': self.config.get('index_name', '지수'),
-                'item_name': self.config.get('item_name', '항목')
+                'item_name': self.config.get('item_name', '항목'),
+                'period': f"{self.year}년 {self.quarter}분기"
             },
+            'footer_info': footer_info,  # 템플릿에서 필요
             'summary_box': summary_box,
             'nationwide_data': nationwide,
-            'regional_data': regional,
-            'table_data': table_data
+            'regional_data': regional_converted,
+            'table_data': table_data_converted,
+            'summary_table': summary_table,  # 템플릿에서 필요
+            'top3_increase_regions': top3_increase,
+            'top3_decrease_regions': top3_decrease,
+            **extra_fields  # 추가 필드 병합
         }
 
 

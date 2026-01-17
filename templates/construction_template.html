@@ -269,12 +269,12 @@
         <div class="summary-box">
             <div class="headline">◆건설수주는 
                 {% if summary_box.decrease_count > summary_box.increase_count %}
-                {% for region in summary_box.main_decrease_regions[:3] %}
+                {% for region in top3_decrease_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
                 {% else %}
-                {% for region in summary_box.main_increase_regions[:3] %}
+                {% for region in top3_increase_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
