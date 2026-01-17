@@ -7,6 +7,7 @@ Base Generator 클래스
 """
 
 import pandas as pd
+import re
 from pathlib import Path
 from typing import Optional, Tuple, List, Any, Dict
 from abc import ABC, abstractmethod
@@ -366,10 +367,8 @@ class BaseGenerator(ABC):
         return {
             "year": self.year or 2025,
             "quarter": self.quarter or 2,
-            "organization": "국가데이터처",
-            "department": "경제동향통계심의관 지역경제동향과",
-            "contact_phone": "042-481-xxxx",
             "page_number": ""  # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
+            # footer info는 나중에 추가 예정
         }
     
     def find_target_col_index(
@@ -377,98 +376,470 @@ class BaseGenerator(ABC):
         header_row: Any,
         target_year: int,
         target_quarter: int
-    ) -> int:
+    ) -> Optional[int]:
         """
-        [Robust Dynamic Parsing System - 1단계]
-        헤더에서 연도와 분기를 찾아 인덱스를 반환 (모든 포맷 대응)
+        [스마트 헤더 탐색기] 병합된 셀(Merged Header) 문제를 완벽하게 돌파하여 정확한 열 위치를 찾아냅니다.
         
-        목표: 엑셀 파일의 구조가 어떻게 변하든 정확한 데이터를 찾아내는 유연한 탐색기
-        - 입력: header_row(엑셀 행), 2025, 3
-        - 매칭 대상: "2025 3/4", "2025.3/4", "2025년 3분기", "25년 3/4" 등
-        - 정규표현식(Regex)에 준하는 유연성 제공
+        핵심 로직: "기억하고 채워라 (Memory & Fill)"
+        - 엑셀 헤더는 보통 [2025년][ (빈칸) ][ (빈칸) ] 처럼 되어 있고, 그 아래에 [1분기][2분기][3분기]가 옵니다.
+        - pandas의 'ffill' (forward fill)을 사용하여 병합된 셀을 채워서 정확한 열을 찾습니다.
         
         Args:
-            header_row: 헤더 행 (pandas Series, 리스트, 튜플, openpyxl Cell 객체 등)
+            header_row: 헤더 행 또는 DataFrame
+                - DataFrame: 상위 3행을 추출하여 병합된 셀 처리
+                - Series/리스트: 단일 행으로 처리 (하위 호환성)
             target_year: 찾을 연도 (예: 2025)
             target_quarter: 찾을 분기 (예: 3)
             
         Returns:
-            컬럼 인덱스 (0-based)
-            
-        Raises:
-            ValueError: 헤더에서 해당 연도/분기 열을 찾을 수 없을 때
+            컬럼 인덱스 (0-based) 또는 None (찾지 못한 경우)
         """
-        # 1. 연도 문자열 준비 (전체 연도 + 단축형)
-        y_str = str(target_year)  # "2025"
-        # 2025가 안되면 25로도 찾을 수 있게 대비
-        y_short = y_str[2:] if len(y_str) == 4 else y_str  # "25"
+        # 1. DataFrame인 경우: 병합된 셀 처리 로직 사용
+        if isinstance(header_row, pd.DataFrame):
+            return self._find_target_col_index_from_df(header_row, target_year, target_quarter)
         
-        # 2. 분기 표현식 다양화
-        q_markers = [
-            f"{target_quarter}/4",      # "3/4" (가장 일반적)
-            f"{target_quarter}분기",    # "3분기"
-            f"{target_quarter}Q",       # "3Q"
-            f"Q{target_quarter}",       # "Q3"
+        # 2. Series나 단일 행인 경우: 기존 로직 사용 (하위 호환성)
+        # 하지만 가능하면 DataFrame을 전달하는 것이 좋습니다.
+        return self._find_target_col_index_from_row(header_row, target_year, target_quarter)
+    
+    def _find_target_col_index_from_df(
+        self,
+        df: pd.DataFrame,
+        target_year: int,
+        target_quarter: int
+    ) -> Optional[int]:
+        """
+        DataFrame에서 병합된 셀을 고려하여 열 인덱스를 찾습니다.
+        
+        핵심: pandas의 ffill을 사용하여 병합된 셀을 채웁니다.
+        """
+        # 1. 헤더 영역 추출 (상위 3-5행)
+        max_header_rows = min(5, len(df))
+        header_df = df.iloc[:max_header_rows].copy()
+        
+        # 2. 정규화된 타겟 문자열 생성
+        target_year_str = str(target_year).replace(" ", "")
+        target_year_short = target_year_str[2:] if len(target_year_str) == 4 else target_year_str
+        
+        target_quarter_strs = [
+            str(target_quarter).replace(" ", ""),
+            f"{target_quarter}분기",
+            f"{target_quarter}/4",
+            f"{target_quarter}Q",
+            f"Q{target_quarter}",
         ]
         
-        print(f"[SmartSearch] {y_str}년 {target_quarter}분기 데이터 열 탐색 시작...")
+        print(f"\n{'='*80}")
+        print(f"[SmartHeader] ═══ 헤더 탐색 시작 ═══")
+        print(f"  타겟: {target_year}년 {target_quarter}분기")
+        print(f"  검색 조건:")
+        print(f"    - 연도: {target_year_str} 또는 {target_year_short}")
+        print(f"    - 분기: {target_quarter_strs}")
+        print(f"    - 타입: '지수' 또는 '증감률'/'등락'")
+        print(f"  DataFrame 크기: {len(df)}행 × {len(df.columns)}열")
+        print(f"  헤더 영역: 상위 {max_header_rows}행 사용")
+        print(f"{'='*80}\n")
         
-        # 3. header_row를 순회 가능한 형태로 변환
-        # pandas Series, 리스트, 튜플, openpyxl Cell 객체 등 모든 형태 지원
+        # 3. 헤더 재구성: 병합된 셀 채우기 (강화된 버전)
+        print(f"[디버그] 병합 셀 처리 시작...")
+        
+        # 원본 헤더 저장 (디버깅용)
+        headers_original = header_df.copy()
+        
+        # 모든 값을 문자열로 변환하고 빈 값 처리
+        headers = header_df.copy()
+        
+        # 문자열로 변환 (NaN, None 처리)
+        empty_count = 0
+        for col_idx in range(len(headers.columns)):
+            for row_idx in range(len(headers)):
+                val = headers.iloc[row_idx, col_idx]
+                if pd.isna(val) or val == '' or str(val).strip() == '':
+                    headers.iloc[row_idx, col_idx] = None
+                    empty_count += 1
+                else:
+                    headers.iloc[row_idx, col_idx] = str(val).strip()
+        
+        print(f"[디버그] 빈 셀 개수 (처리 전): {empty_count}개")
+        
+        # 좌우 병합 채우기 (axis=1): [2025년][빈칸][빈칸] -> [2025년][2025년][2025년]
+        headers = headers.ffill(axis=1, limit=None)
+        filled_horizontal = sum(1 for col_idx in range(len(headers.columns)) 
+                                for row_idx in range(len(headers)) 
+                                if headers.iloc[row_idx, col_idx] is not None and 
+                                   (headers_original.iloc[row_idx, col_idx] is None or 
+                                    pd.isna(headers_original.iloc[row_idx, col_idx])))
+        
+        # 상하 병합 채우기 (axis=0): 위 행의 값이 없으면 아래 행에서 채움
+        headers = headers.ffill(axis=0, limit=None)
+        
+        # 역방향 채우기 (bfill): 아래에서 위로도 채우기 (상하 병합 대응)
+        headers = headers.bfill(axis=0, limit=None)
+        
+        final_empty_count = sum(1 for col_idx in range(len(headers.columns)) 
+                                for row_idx in range(len(headers)) 
+                                if headers.iloc[row_idx, col_idx] is None)
+        
+        print(f"[디버그] 병합 처리 완료: 빈 셀 {empty_count}개 → {final_empty_count}개 (채움: {empty_count - final_empty_count}개)")
+        print(f"[디버그] 좌우 병합으로 채운 셀: 약 {filled_horizontal}개\n")
+        
+        # 4. 전수 조사: 열 단위로 스캔 (개선된 버전)
+        print(f"[디버그] 컬럼 전수 조사 시작 (총 {len(headers.columns)}개 컬럼)...\n")
+        
+        target_col = None
+        candidate_cols = []  # 매칭 후보 컬럼 저장
+        
+        for col_idx in range(len(headers.columns)):
+            # 해당 열의 상위 행들의 텍스트를 모두 수집
+            col_values = []
+            for row_idx in range(len(headers)):
+                val = headers.iloc[row_idx, col_idx]
+                if pd.notna(val) and str(val).strip() != '':
+                    col_values.append(str(val).strip())
+            
+            # 열의 모든 값을 하나의 문자열로 합침 (공백 제거)
+            col_text = "".join(col_values).replace(" ", "")
+            
+            # 원본 헤더 값도 저장 (비교용)
+            col_values_orig = []
+            for row_idx in range(len(headers_original)):
+                val = headers_original.iloc[row_idx, col_idx]
+                if pd.notna(val) and str(val).strip() != '':
+                    col_values_orig.append(str(val).strip())
+            
+            # 5. 조건 검사 (개선된 버전) - 상세 디버깅
+            # A. 연도 확인 (전체 연도 또는 단축형, 더 유연한 매칭)
+            has_year = False
+            year_match_reason = []
+            
+            # 직접 포함 확인
+            if target_year_str in col_text:
+                has_year = True
+                year_match_reason.append(f"'{target_year_str}' 직접 포함")
+            if target_year_short in col_text:
+                has_year = True
+                year_match_reason.append(f"'{target_year_short}' 포함")
+            
+            # 숫자만 추출하여 비교 (예: "2025" 추출)
+            years_in_text = re.findall(r'\d{4}', col_text)
+            if years_in_text:
+                if any(str(target_year) == y for y in years_in_text):
+                    has_year = True
+                    year_match_reason.append(f"4자리 숫자 '{target_year}' 발견")
+            
+            # B. 분기 확인 (더 유연한 매칭)
+            has_quarter = False
+            quarter_match_reason = []
+            
+            for q_str in target_quarter_strs:
+                q_clean = q_str.replace(" ", "").replace("/", "")
+                if q_clean in col_text:
+                    has_quarter = True
+                    quarter_match_reason.append(f"'{q_str}' 형식 매칭")
+                    break
+            
+            # 숫자로 직접 확인 (예: "3"이 "3분기" 또는 "3/4"에 포함)
+            if str(target_quarter) in col_text:
+                has_quarter = True
+                if not quarter_match_reason:
+                    quarter_match_reason.append(f"숫자 '{target_quarter}' 직접 포함")
+            
+            # C. 컬럼 타입 확인 (더 유연한 매칭)
+            is_growth = "증감" in col_text or "등락" in col_text or "증감률" in col_text
+            is_index = "지수" in col_text
+            type_match = is_growth or is_index
+            type_match_reason = []
+            
+            if "증감" in col_text:
+                type_match_reason.append("'증감' 포함")
+            if "등락" in col_text:
+                type_match_reason.append("'등락' 포함")
+            if "증감률" in col_text:
+                type_match_reason.append("'증감률' 포함")
+            if "지수" in col_text:
+                type_match_reason.append("'지수' 포함")
+            
+            # 매칭 결과 출력 (처음 10개 컬럼 또는 매칭 조건 일부 만족 시)
+            should_print = (col_idx < 10) or has_year or has_quarter or type_match
+            
+            if should_print:
+                match_status = "✅ 매칭" if (has_year and has_quarter and type_match) else "❌ 불일치"
+                print(f"  컬럼 {col_idx:3d}: {match_status}")
+                print(f"    원본: {' | '.join(col_values_orig) if col_values_orig else '(빈)'}")
+                print(f"    병합처리: {' | '.join(col_values) if col_values else '(빈)'}")
+                print(f"    텍스트: '{col_text[:60]}{'...' if len(col_text) > 60 else ''}'")
+                print(f"    연도: {has_year} {year_match_reason if year_match_reason else '(불일치)'}")
+                print(f"    분기: {has_quarter} {quarter_match_reason if quarter_match_reason else '(불일치)'}")
+                print(f"    타입: {type_match} ({type_match_reason if type_match_reason else '불일치'})")
+                if has_year or has_quarter or type_match:
+                    candidate_cols.append({
+                        'col_idx': col_idx,
+                        'has_year': has_year,
+                        'has_quarter': has_quarter,
+                        'type_match': type_match,
+                        'text': col_text[:100],
+                        'values': col_values
+                    })
+                print()
+            
+            # 최종 매칭 확인
+            if has_year and has_quarter and type_match:
+                target_col = col_idx
+                col_display = " | ".join(col_values[:3]) if col_values else "빈값"
+                print(f"\n{'='*80}")
+                print(f"✅ [동적탐색 성공] 컬럼 {target_col} 매칭!")
+                print(f"   원본 헤더: {' | '.join(col_values_orig) if col_values_orig else '(빈)'}")
+                print(f"   병합 처리 후: {' | '.join(col_values) if col_values else '(빈)'}")
+                print(f"   전체 텍스트: '{col_text}'")
+                print(f"   매칭 이유:")
+                print(f"     - 연도: {', '.join(year_match_reason)}")
+                print(f"     - 분기: {', '.join(quarter_match_reason)}")
+                print(f"     - 타입: {', '.join(type_match_reason)}")
+                print(f"{'='*80}\n")
+                return target_col
+        
+        # 6. 실패 시 (최대 강화된 디버깅 정보 출력)
+        if target_col is None:
+            print(f"\n{'='*80}")
+            print(f"❌❌❌ [탐색 실패] {target_year}년 {target_quarter}분기 데이터 열을 찾을 수 없습니다! ❌❌❌")
+            print(f"{'='*80}\n")
+            
+            # 검색 조건 재확인
+            print(f"[검색 조건 재확인]")
+            print(f"  - 타겟 연도: {target_year} ({target_year_str} 또는 {target_year_short})")
+            print(f"  - 타겟 분기: {target_quarter} (형식: {target_quarter_strs})")
+            print(f"  - 필수 타입: '지수' 또는 '증감률'/'등락'/'증감'")
+            print()
+            
+            # 후보 컬럼 분석
+            print(f"[후보 컬럼 분석] (부분 매칭된 컬럼들)")
+            if candidate_cols:
+                print(f"  총 {len(candidate_cols)}개 컬럼이 부분적으로 매칭되었습니다:\n")
+                for i, cand in enumerate(candidate_cols[:10], 1):  # 최대 10개만 출력
+                    match_summary = []
+                    if cand['has_year']:
+                        match_summary.append("✅연도")
+                    else:
+                        match_summary.append("❌연도")
+                    if cand['has_quarter']:
+                        match_summary.append("✅분기")
+                    else:
+                        match_summary.append("❌분기")
+                    if cand['type_match']:
+                        match_summary.append("✅타입")
+                    else:
+                        match_summary.append("❌타입")
+                    
+                    print(f"  [{i}] 컬럼 {cand['col_idx']:3d}: {' | '.join(match_summary)}")
+                    print(f"      텍스트: '{cand['text'][:80]}{'...' if len(cand['text']) > 80 else ''}'")
+                    print(f"      값: {cand['values'][:5]}")
+                    print()
+            else:
+                print(f"  ⚠️ 부분 매칭된 컬럼이 하나도 없습니다!")
+                print(f"  → 헤더 구조가 예상과 완전히 다를 수 있습니다.\n")
+            
+            # 원본 헤더 vs 병합 처리 후 비교 (상위 20개 컬럼)
+            print(f"[헤더 비교 분석] (상위 20개 컬럼)")
+            print(f"{'='*80}")
+            print(f"{'컬럼':<6} {'원본 헤더 (병합 전)':<50} {'병합 처리 후':<50}")
+            print(f"{'-'*6} {'-'*50} {'-'*50}")
+            
+            for col_idx in range(min(20, len(headers.columns))):
+                # 원본 헤더 값
+                orig_values = []
+                for row_idx in range(len(headers_original)):
+                    val = headers_original.iloc[row_idx, col_idx]
+                    if pd.notna(val) and str(val).strip() != '':
+                        orig_values.append(str(val).strip())
+                orig_display = ' | '.join(orig_values[:2]) if orig_values else '(빈)'
+                
+                # 병합 처리 후 헤더 값
+                merged_values = []
+                for row_idx in range(len(headers)):
+                    val = headers.iloc[row_idx, col_idx]
+                    if pd.notna(val) and str(val).strip() != '':
+                        merged_values.append(str(val).strip())
+                merged_display = ' | '.join(merged_values[:2]) if merged_values else '(빈)'
+                
+                # 매칭 상태 표시
+                col_text_check = "".join(merged_values).replace(" ", "")
+                has_y = (target_year_str in col_text_check or target_year_short in col_text_check)
+                has_q = str(target_quarter) in col_text_check
+                has_t = ("지수" in col_text_check or "증감" in col_text_check or "등락" in col_text_check)
+                
+                status = ""
+                if has_y and has_q and has_t:
+                    status = " ✅ 완전매칭"
+                elif has_y or has_q or has_t:
+                    status = " ⚠️ 부분매칭"
+                
+                print(f"{col_idx:4d}  {orig_display[:48]:<50} {merged_display[:48]:<50}{status}")
+            
+            print(f"{'='*80}\n")
+            
+            # 원본 헤더 상세 덤프 (상위 30개 컬럼, 모든 행)
+            print(f"[원본 헤더 상세 덤프] (상위 30개 컬럼, 모든 {len(headers_original)}행)")
+            print(f"{'='*80}")
+            print(f"컬럼 번호: ", end="")
+            for col_idx in range(min(30, len(headers_original.columns))):
+                print(f"{col_idx:3d} ", end="")
+            print()
+            print(f"{'-'*120}")
+            
+            for row_idx in range(len(headers_original)):
+                print(f"행 {row_idx:2d}:  ", end="")
+                for col_idx in range(min(30, len(headers_original.columns))):
+                    val = headers_original.iloc[row_idx, col_idx]
+                    if pd.notna(val) and str(val).strip() != '':
+                        val_str = str(val).strip()[:8]  # 최대 8자
+                        print(f"{val_str:>8} ", end="")
+                    else:
+                        print(f"{'[빈]':>8} ", end="")
+                print()
+            print(f"{'='*80}\n")
+            
+            # 병합 처리 후 헤더 상세 덤프
+            print(f"[병합 처리 후 헤더 상세 덤프] (상위 30개 컬럼, 모든 {len(headers)}행)")
+            print(f"{'='*80}")
+            print(f"컬럼 번호: ", end="")
+            for col_idx in range(min(30, len(headers.columns))):
+                print(f"{col_idx:3d} ", end="")
+            print()
+            print(f"{'-'*120}")
+            
+            for row_idx in range(len(headers)):
+                print(f"행 {row_idx:2d}:  ", end="")
+                for col_idx in range(min(30, len(headers.columns))):
+                    val = headers.iloc[row_idx, col_idx]
+                    if pd.notna(val) and str(val).strip() != '':
+                        val_str = str(val).strip()[:8]  # 최대 8자
+                        print(f"{val_str:>8} ", end="")
+                    else:
+                        print(f"{'[빈]':>8} ", end="")
+                print()
+            print(f"{'='*80}\n")
+            
+            # 원인 분석 리포트
+            print(f"[원인 분석 리포트]")
+            print(f"{'='*80}")
+            
+            # 1. 연도만 매칭된 컬럼 찾기
+            year_only_cols = [c for c in candidate_cols if c['has_year'] and not c['has_quarter']]
+            if year_only_cols:
+                print(f"⚠️  연도만 매칭된 컬럼 {len(year_only_cols)}개 발견:")
+                for cand in year_only_cols[:5]:
+                    print(f"   - 컬럼 {cand['col_idx']}: '{cand['text'][:60]}' (분기 불일치)")
+                print()
+            
+            # 2. 분기만 매칭된 컬럼 찾기
+            quarter_only_cols = [c for c in candidate_cols if c['has_quarter'] and not c['has_year']]
+            if quarter_only_cols:
+                print(f"⚠️  분기만 매칭된 컬럼 {len(quarter_only_cols)}개 발견:")
+                for cand in quarter_only_cols[:5]:
+                    print(f"   - 컬럼 {cand['col_idx']}: '{cand['text'][:60]}' (연도 불일치)")
+                print()
+            
+            # 3. 타입만 매칭된 컬럼 찾기
+            type_only_cols = [c for c in candidate_cols if c['type_match'] and not (c['has_year'] and c['has_quarter'])]
+            if type_only_cols:
+                print(f"⚠️  타입만 매칭된 컬럼 {len(type_only_cols)}개 발견:")
+                for cand in type_only_cols[:5]:
+                    print(f"   - 컬럼 {cand['col_idx']}: '{cand['text'][:60]}' (연도/분기 불일치)")
+                print()
+            
+            # 4. 완전 불일치인 경우
+            if not candidate_cols:
+                print(f"❌  모든 컬럼이 완전 불일치입니다.")
+                print(f"   가능한 원인:")
+                print(f"   1. 헤더 구조가 예상과 완전히 다름")
+                print(f"   2. 시트 선택이 잘못됨 (집계 시트 vs 분석 시트)")
+                print(f"   3. 연도/분기 형식이 예상과 다름")
+                print(f"   4. 병합 셀 처리가 제대로 되지 않음")
+                print()
+            
+            # 5. 헤더 통계
+            print(f"[헤더 통계]")
+            total_cells = len(headers_original) * len(headers_original.columns)
+            empty_cells_before = sum(1 for col_idx in range(len(headers_original.columns)) 
+                                     for row_idx in range(len(headers_original))
+                                     if pd.isna(headers_original.iloc[row_idx, col_idx]) or 
+                                        str(headers_original.iloc[row_idx, col_idx]).strip() == '')
+            empty_cells_after = sum(1 for col_idx in range(len(headers.columns)) 
+                                   for row_idx in range(len(headers))
+                                   if headers.iloc[row_idx, col_idx] is None)
+            
+            print(f"  - 총 셀 수: {total_cells}개")
+            print(f"  - 빈 셀 (처리 전): {empty_cells_before}개 ({empty_cells_before/total_cells*100:.1f}%)")
+            print(f"  - 빈 셀 (처리 후): {empty_cells_after}개 ({empty_cells_after/total_cells*100:.1f}%)")
+            print(f"  - 채운 셀: {empty_cells_before - empty_cells_after}개")
+            print()
+            
+            print(f"{'='*80}")
+            print(f"❌ 탐색 실패: 컬럼을 찾을 수 없습니다.")
+            print(f"{'='*80}\n")
+            
+            return None
+    
+    def _find_target_col_index_from_row(
+        self,
+        header_row: Any,
+        target_year: int,
+        target_quarter: int
+    ) -> Optional[int]:
+        """
+        단일 행에서 열 인덱스를 찾습니다 (하위 호환성용).
+        
+        주의: 병합된 셀을 제대로 처리하지 못할 수 있으므로,
+        가능하면 DataFrame을 전달하는 것을 권장합니다.
+        """
+        # 연도 문자열 준비
+        y_str = str(target_year)
+        y_short = y_str[2:] if len(y_str) == 4 else y_str
+        
+        # 분기 표현식
+        q_markers = [
+            f"{target_quarter}/4",
+            f"{target_quarter}분기",
+            f"{target_quarter}Q",
+            f"Q{target_quarter}",
+        ]
+        
+        # header_row를 순회 가능한 형태로 변환
         header_items = []
         if isinstance(header_row, pd.Series):
             header_items = header_row.tolist()
         elif isinstance(header_row, (list, tuple)):
             header_items = list(header_row)
         elif hasattr(header_row, '__iter__') and not isinstance(header_row, str):
-            # openpyxl Cell 객체나 다른 iterable 객체
             header_items = [cell.value if hasattr(cell, 'value') else cell for cell in header_row]
         else:
             header_items = [header_row]
         
-        # 4. 헤더 행을 순회하며 연도와 분기가 모두 포함된 셀 찾기
+        # 헤더 행을 순회하며 연도와 분기가 모두 포함된 셀 찾기
         for idx, cell in enumerate(header_items):
-            # 셀 값 추출 (다양한 타입 지원)
             if pd.isna(cell):
                 continue
             
-            # cell.value 속성이 있는 경우 (openpyxl 스타일)
             if hasattr(cell, 'value'):
                 cell_value = cell.value
             else:
                 cell_value = cell
             
-            # 셀 값이 None이거나 빈 값이면 스킵
             if cell_value is None:
                 continue
             
-            # 5. 값 정규화: 공백 제거 후 비교 (정규표현식 수준의 유연성)
-            val = str(cell_value).strip().replace(" ", "")  # 모든 공백 제거
+            val = str(cell_value).strip().replace(" ", "")
             
-            # 6. 조건 검사: 연도가 있고(2025 or 25) AND 분기 마커 중 하나가 있어야 함
             has_year = (y_str in val) or (y_short in val)
             has_quarter = any(q.replace(" ", "") in val for q in q_markers)
+            is_growth = "증감" in val or "등락" in val
             
-            if has_year and has_quarter:
+            if has_year and has_quarter and is_growth:
                 print(f"[SmartSearch] ✅ 발견! Index {idx}: '{cell_value}'")
                 return idx
         
-        # 7. 못 찾으면 에러 발생 (어설프게 진행 금지)
-        # 헤더 덤프 생성 (디버깅용)
-        header_dump = []
-        for item in header_items[:50]:  # 최대 50개만 표시
-            if pd.isna(item):
-                header_dump.append("NaN")
-            elif hasattr(item, 'value'):
-                header_dump.append(str(item.value))
-            else:
-                header_dump.append(str(item))
-        
-        error_msg = (
-            f"❌ 헤더에서 {target_year}년 {target_quarter}분기 열을 찾을 수 없습니다.\n"
-            f"   (Header dump: {header_dump})"
-        )
-        raise ValueError(error_msg)
+        # 못 찾음
+        return None
     
     # ============================================================================
     # [문서 2] 나레이션 생성 엔진: 4가지 패턴 (Pattern Engine)

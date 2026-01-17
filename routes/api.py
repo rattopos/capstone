@@ -113,8 +113,18 @@ def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
                 # 정리 대상인지 확인
                 should_delete = False
                 
+                # keep_current_files=False면 보호 목록 체크 없이 바로 삭제 대상
+                if not keep_current_files:
+                    # 엑셀 파일만 정리하는 경우
+                    if cleanup_excel_only:
+                        if file_path.suffix.lower() in ['.xlsx', '.xls']:
+                            should_delete = True
+                    else:
+                        # 디버그 파일이 아닌 경우 모두 삭제
+                        if '디버그' not in file_path.name:
+                            should_delete = True
                 # 현재 세션 파일이 아닌 경우
-                if file_path.name not in protected_files:
+                elif file_path.name not in protected_files:
                     # 엑셀 파일만 정리하는 경우
                     if cleanup_excel_only:
                         if file_path.suffix.lower() in ['.xlsx', '.xls']:
@@ -253,8 +263,10 @@ def upload_excel():
     if not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'success': False, 'error': '엑셀 파일만 업로드 가능합니다'})
     
-    # 새 파일 업로드 전 이전 파일 정리 (현재 세션 파일 제외)
-    cleanup_upload_folder(keep_current_files=False)
+    # 새 파일 업로드 전 이전 파일 정리 (모든 이전 파일 삭제)
+    # 현재 세션 파일도 포함하여 모두 정리 (새 파일로 교체하므로)
+    old_excel_path = session.get('excel_path')
+    cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
     
     # 한글 파일명 보존하면서 안전한 파일명 생성
     filename = safe_filename(file.filename)
@@ -476,12 +488,28 @@ def update_report_order():
 
 @api_bp.route('/session-info', methods=['GET'])
 def get_session_info():
-    """현재 세션 정보 반환"""
+    """현재 세션 정보 반환 (파일 존재 여부 확인)"""
+    excel_path = session.get('excel_path')
+    
+    # 파일이 실제로 존재하는지 확인
+    has_file = False
+    if excel_path:
+        file_path = Path(excel_path)
+        if file_path.exists() and file_path.is_file():
+            has_file = True
+        else:
+            # 파일이 존재하지 않으면 세션에서도 제거
+            session.pop('excel_path', None)
+            session.pop('year', None)
+            session.pop('quarter', None)
+            session.pop('file_type', None)
+            excel_path = None
+    
     return jsonify({
-        'excel_path': session.get('excel_path'),
-        'year': session.get('year'),
-        'quarter': session.get('quarter'),
-        'has_file': bool(session.get('excel_path'))
+        'excel_path': excel_path,
+        'year': session.get('year') if has_file else None,
+        'quarter': session.get('quarter') if has_file else None,
+        'has_file': has_file
     })
 
 

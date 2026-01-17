@@ -180,6 +180,18 @@ def get_josa(word: str, josa_pair: str = "은/는") -> str:
         - 받침 있으면: 첫 번째 조사 (은, 이, 을, 와)
         - 받침 없으면: 두 번째 조사 (는, 가, 를, 과)
     """
+    # 타입 체크 및 문자열 변환 (템플릿에서 None이나 다른 타입이 올 수 있음)
+    if word is None:
+        return ""
+    
+    # 문자열이 아니면 문자열로 변환 시도
+    if not isinstance(word, str):
+        try:
+            word = str(word).strip()
+        except:
+            return ""
+    
+    # 빈 문자열 체크
     if not word:
         return ""
     
@@ -190,19 +202,29 @@ def get_josa(word: str, josa_pair: str = "은/는") -> str:
         elif josa_pair == "Subject":
             josa_pair = "이/가"
     
+    # 마지막 글자 추출
     last_char = word[-1]
     
     # 한글 범위 체크 및 받침 계산
-    if 0xAC00 <= ord(last_char) <= 0xD7A3:
-        # 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
-        has_batchim = (ord(last_char) - 0xAC00) % 28 > 0
-    else:
-        # 한글 아니면(숫자, 영어 등) 기본값(받침 없음 가정)
+    try:
+        last_code = ord(last_char)
+        if 0xAC00 <= last_code <= 0xD7A3:
+            # 한글 유니코드 공식: (코드 - 0xAC00) % 28 > 0 이면 받침 있음
+            has_batchim = (last_code - 0xAC00) % 28 > 0
+        else:
+            # 한글 아니면(숫자, 영어 등) 기본값(받침 없음 가정)
+            has_batchim = False
+    except (TypeError, ValueError):
+        # ord() 실패 시 기본값(받침 없음)
         has_batchim = False
     
     # 조사 쌍 분리
-    first, second = josa_pair.split("/")
-    return first if has_batchim else second
+    try:
+        first, second = josa_pair.split("/")
+        return first if has_batchim else second
+    except (ValueError, AttributeError):
+        # 조사 쌍 형식이 잘못되었을 경우 기본값 반환
+        return "는"
 
 
 def get_contrast_narrative(nationwide_val: float, inc_regions: List[Dict], dec_regions: List[Dict], report_id: str = 'quantity') -> str:

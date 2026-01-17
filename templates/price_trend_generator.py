@@ -674,9 +674,7 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     main_items = [c['name'] for c in categories[:2]] if categories else ['농산물', '개인서비스']
     summary_box['main_items'] = main_items
     
-    # 푸터 정보 생성
-    from utils.text_utils import get_footer_source
-    footer_source = get_footer_source('price')
+    # footer info는 나중에 추가 예정
     
     return {
         'report_info': {
@@ -684,10 +682,6 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
             'section_title': '물가 동향',
             'year': year,
             'quarter': quarter
-        },
-        'footer_info': {
-            'source': footer_source,
-            'page_num': '- 1 -'
         },
         'nationwide_data': nationwide_data,
         'regional_data': {

@@ -60,28 +60,31 @@ SECTOR_REPORTS = [
         'id': 'manufacturing',
         'name': '광공업생산',
         'sheet': 'A 분석',
-        'generator': 'mining_manufacturing_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'mining_manufacturing_template.html',
         'icon': '🏭',
-        'category': 'production'
+        'category': 'production',
+        'class_name': 'MiningManufacturingGenerator'
     },
     {
         'id': 'service',
         'name': '서비스업생산',
         'sheet': 'B 분석',
-        'generator': 'service_industry_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'service_industry_template.html',
         'icon': '🏢',
-        'category': 'production'
+        'category': 'production',
+        'class_name': 'ServiceIndustryGenerator'
     },
     {
         'id': 'consumption',
         'name': '소비동향',
         'sheet': 'C 분석',
-        'generator': 'consumption_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'consumption_template.html',
         'icon': '🛒',
-        'category': 'consumption'
+        'category': 'consumption',
+        'class_name': 'ConsumptionGenerator'
     },
     {
         'id': 'construction',

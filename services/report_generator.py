@@ -260,11 +260,22 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # Generator 클래스 찾기 (BaseGenerator 제외)
         generator_class = None
-        for name in dir(module):
-            obj = getattr(module, name)
-            if isinstance(obj, type) and name.endswith('Generator') and name != 'BaseGenerator':
-                generator_class = obj
-                break
+        
+        # config에서 class_name이 지정되어 있으면 우선 사용
+        if 'class_name' in report_config:
+            class_name = report_config['class_name']
+            if hasattr(module, class_name):
+                generator_class = getattr(module, class_name)
+                print(f"[보도자료 생성] 클래스명으로 찾음: {class_name}")
+        
+        # class_name으로 못 찾았으면 자동 탐색
+        if generator_class is None:
+            for name in dir(module):
+                obj = getattr(module, name)
+                if isinstance(obj, type) and name.endswith('Generator') and name != 'BaseGenerator':
+                    generator_class = obj
+                    print(f"[보도자료 생성] 자동 탐색으로 찾음: {name}")
+                    break
         
         data = None
         

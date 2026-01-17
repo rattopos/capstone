@@ -174,10 +174,8 @@ def generate_summary_preview():
         report_data = {
             'report_info': {
                 'year': year,
-                'quarter': quarter,
-                'organization': '국가데이터처',
-                'department': '경제동향통계심의관 지역경제동향과',
-                'contact_phone': '042-481-xxxx'
+                'quarter': quarter
+                # footer info는 나중에 추가 예정
             }
         }
         
@@ -189,24 +187,58 @@ def generate_summary_preview():
                     print(f"[PREVIEW] {error_msg}")
                     return jsonify({'success': False, 'error': error_msg}), 400
                 
+                # Generator 클래스 찾기 (services/report_generator.py와 동일한 로직)
+                generator_class = None
+                if 'class_name' in report_config:
+                    class_name = report_config['class_name']
+                    if hasattr(module, class_name):
+                        generator_class = getattr(module, class_name)
+                        print(f"[PREVIEW] 클래스명으로 찾음: {class_name}")
+                
+                # class_name으로 못 찾았으면 자동 탐색
+                if generator_class is None:
+                    for name in dir(module):
+                        obj = getattr(module, name)
+                        if isinstance(obj, type) and name.endswith('Generator') and name != 'BaseGenerator':
+                            generator_class = obj
+                            print(f"[PREVIEW] 자동 탐색으로 찾음: {name}")
+                            break
+                
+                generated_data = None
+                
+                # 방법 1: generate_report_data 함수 사용
                 if hasattr(module, 'generate_report_data'):
                     try:
-                        generated_data = module.generate_report_data(excel_path)
-                        if generated_data:
-                            report_data.update(generated_data)
-                            print(f"[PREVIEW] Generator 데이터 생성 성공: {generator_name}")
+                        import inspect
+                        sig = inspect.signature(module.generate_report_data)
+                        params = list(sig.parameters.keys())
+                        if 'year' in params and 'quarter' in params:
+                            generated_data = module.generate_report_data(excel_path, year=year, quarter=quarter)
+                        elif 'year' in params:
+                            generated_data = module.generate_report_data(excel_path, year=year)
                         else:
-                            print(f"[PREVIEW] Generator가 빈 데이터를 반환했습니다: {generator_name}")
+                            generated_data = module.generate_report_data(excel_path)
+                    except Exception as e:
+                        print(f"[PREVIEW] generate_report_data 호출 실패: {e}, 클래스 시도...")
+                
+                # 방법 2: Generator 클래스 사용 (unified_generator 지원)
+                if generated_data is None and generator_class:
+                    try:
+                        generator = generator_class(excel_path, year=year, quarter=quarter)
+                        generated_data = generator.extract_all_data()
+                        print(f"[PREVIEW] Generator 클래스로 데이터 생성 성공: {generator_name}")
                     except Exception as e:
                         import traceback
-                        error_msg = f"Generator 데이터 생성 오류 ({generator_name}): {str(e)}"
+                        error_msg = f"Generator 클래스 데이터 생성 오류 ({generator_name}): {str(e)}"
                         print(f"[PREVIEW] {error_msg}")
                         traceback.print_exc()
                         return jsonify({'success': False, 'error': error_msg}), 400
+                
+                if generated_data:
+                    report_data.update(generated_data)
+                    print(f"[PREVIEW] Generator 데이터 생성 성공: {generator_name}")
                 else:
-                    error_msg = f"Generator에 generate_report_data 함수가 없습니다: {generator_name}"
-                    print(f"[PREVIEW] {error_msg}")
-                    return jsonify({'success': False, 'error': error_msg}), 400
+                    print(f"[PREVIEW] Generator가 빈 데이터를 반환했습니다: {generator_name}")
             except Exception as e:
                 import traceback
                 error_msg = f"Generator 모듈 로드 오류 ({generator_name}): {str(e)}"
@@ -286,6 +318,13 @@ def generate_summary_preview():
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = Template(f.read())
+            
+            # 필터 등록
+            from utils.filters import is_missing, format_value
+            from utils.text_utils import get_josa
+            template.environment.filters['format_value'] = format_value
+            template.environment.filters['is_missing'] = is_missing
+            template.environment.filters['josa'] = get_josa
             
             html_content = template.render(**report_data)
             print(f"[PREVIEW] {report_id} 템플릿 렌더링 완료: {template_name}")
