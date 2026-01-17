@@ -20,7 +20,7 @@ def check_missing_data(data, report_id):
         'price': [],
         'export': [],
         'import': [],
-        'population': [],
+        'migration': [],
     }
     
     def get_nested_value(obj, path):

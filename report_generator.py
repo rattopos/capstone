@@ -77,7 +77,7 @@ class ReportGenerator:
             'sheet': 'H 분석',
             'class_name': 'ImportGenerator'
         },
-        'population': {
+        'migration': {
             'name': '국내인구이동',
             'generator': 'domestic_migration_generator.py',
             'template': 'domestic_migration_template.html',

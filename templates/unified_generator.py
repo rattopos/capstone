@@ -68,10 +68,13 @@ class UnifiedReportGenerator(BaseGenerator):
         # 일반적으로 산업명은 산업코드 다음 컬럼에 있음
         self.industry_name_col = self.industry_code_col + 1
         
-        # 집계 시트
+        # 여러 시트 지원
+        self.df_analysis = None
         self.df_aggregation = None
+        self.df_reference = None
         self.target_col = None
         self.prev_y_col = None
+        self.use_aggregation_only = False
         
         print(f"[{self.config['name']}] Generator 초기화")
     
@@ -80,49 +83,128 @@ class UnifiedReportGenerator(BaseGenerator):
         return REGION_DISPLAY_MAPPING.get(region, region)
     
     def load_data(self):
-        """집계 시트 로드"""
+        """모든 관련 시트 로드 (분석 시트, 집계 시트, 참고 시트)"""
         xl = self.load_excel()
+        sheet_names = xl.sheet_names
         
-        # 집계 시트 찾기
-        agg_sheets = self.config['sheets']['aggregation']
-        fallback_sheets = self.config['sheets']['fallback']
+        # 1. 분석 시트 찾기
+        analysis_sheets = self.config['sheets'].get('analysis', [])
+        fallback_sheets = self.config['sheets'].get('fallback', [])
         
-        agg_sheet, _ = self.find_sheet_with_fallback(agg_sheets, fallback_sheets)
+        analysis_sheet = None
+        for name in analysis_sheets:
+            if name in sheet_names:
+                analysis_sheet = name
+                break
         
+        # 분석 시트가 없으면 fallback 시트에서 찾기
+        if not analysis_sheet:
+            for name in fallback_sheets:
+                if name in sheet_names:
+                    analysis_sheet = name
+                    print(f"[{self.config['name']}] [시트 대체] 분석 시트 → '{name}' (기초자료)")
+                    break
+        
+        # 2. 집계 시트 찾기
+        agg_sheets = self.config['sheets'].get('aggregation', [])
+        agg_sheet = None
+        for name in agg_sheets:
+            if name in sheet_names:
+                agg_sheet = name
+                break
+        
+        # 집계 시트가 없으면 분석 시트 사용
         if not agg_sheet:
-            raise ValueError(f"[{self.config['name']}] 집계 시트를 찾을 수 없습니다")
+            agg_sheet = analysis_sheet
+            if agg_sheet:
+                print(f"[{self.config['name']}] [시트 대체] 집계 시트 → 분석 시트 '{agg_sheet}'")
         
-        self.df_aggregation = self.get_sheet(agg_sheet)
-        if self.df_aggregation is None:
-            raise ValueError(f"[{self.config['name']}] 집계 시트를 로드할 수 없습니다: '{agg_sheet}'")
-        print(f"[{self.config['name']}] ✅ 집계 시트: '{agg_sheet}' ({len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열)")
+        # 3. 참고 시트(비공표자료) 찾기
+        # 참고 시트 패턴: '{분석시트명} 참고', '{분석시트명}참고', '{보고서명} 참고' 등
+        reference_sheet = None
+        if analysis_sheet:
+            # 분석 시트명 기반으로 참고 시트 찾기
+            base_name = analysis_sheet.replace(' 분석', '').replace('분석', '')
+            reference_patterns = [
+                f"{base_name} 참고",
+                f"{base_name}참고",
+                f"{analysis_sheet} 참고",
+                f"{analysis_sheet}참고",
+                f"{self.config['name']} 참고",
+            ]
+            for pattern in reference_patterns:
+                if pattern in sheet_names:
+                    reference_sheet = pattern
+                    break
         
-        # 동적 컬럼 찾기
+        # 참고 시트가 없으면 분석 시트 사용
+        if not reference_sheet:
+            reference_sheet = analysis_sheet
+        
+        # 4. 시트 로드
+        if analysis_sheet:
+            self.df_analysis = self.get_sheet(analysis_sheet)
+            if self.df_analysis is not None:
+                print(f"[{self.config['name']}] ✅ 분석 시트: '{analysis_sheet}' ({len(self.df_analysis)}행 × {len(self.df_analysis.columns)}열)")
+        
+        if agg_sheet:
+            self.df_aggregation = self.get_sheet(agg_sheet)
+            if self.df_aggregation is not None:
+                print(f"[{self.config['name']}] ✅ 집계 시트: '{agg_sheet}' ({len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열)")
+        
+        if reference_sheet and reference_sheet != analysis_sheet:
+            self.df_reference = self.get_sheet(reference_sheet)
+            if self.df_reference is not None:
+                print(f"[{self.config['name']}] ✅ 참고 시트: '{reference_sheet}' ({len(self.df_reference)}행 × {len(self.df_reference.columns)}열)")
+        
+        # 5. 분석 시트가 비어있는지 확인 (수식 미계산 체크)
+        if self.df_analysis is not None:
+            # 간단한 체크: 특정 행에 데이터가 거의 없으면 비어있다고 판단
+            if len(self.df_analysis) > 0:
+                # 중간 행의 NaN 비율 확인
+                mid_row = len(self.df_analysis) // 2
+                if mid_row < len(self.df_analysis):
+                    nan_ratio = self.df_analysis.iloc[mid_row].isna().sum() / len(self.df_analysis.columns)
+                    if nan_ratio > 0.8:  # 80% 이상이 NaN이면 비어있다고 판단
+                        print(f"[{self.config['name']}] ⚠️ 분석 시트가 비어있음 → 집계 시트에서 직접 계산")
+                        self.use_aggregation_only = True
+        
+        # 6. 최종 데이터 소스 결정
+        # 집계 시트가 있으면 우선 사용, 없으면 분석 시트 사용
+        if self.df_aggregation is None and self.df_analysis is None:
+            raise ValueError(f"[{self.config['name']}] ❌ 분석 시트와 집계 시트를 모두 찾을 수 없습니다. 시트 목록: {sheet_names}")
+        
+        # 동적 컬럼 찾기 (집계 시트 우선, 없으면 분석 시트)
         self._find_data_columns()
     
     def _find_data_columns(self):
-        """데이터 컬럼 동적 탐색 (병합된 셀 처리)"""
-        # None 체크: load_data()에서 이미 체크하지만 방어적 코딩
-        if self.df_aggregation is None:
+        """데이터 컬럼 동적 탐색 (병합된 셀 처리) - 집계 시트 우선, 없으면 분석 시트"""
+        # 데이터 소스 결정: 집계 시트 우선, 없으면 분석 시트
+        df = None
+        if self.df_aggregation is not None:
+            df = self.df_aggregation
+            sheet_type = "집계"
+        elif self.df_analysis is not None:
+            df = self.df_analysis
+            sheet_type = "분석"
+        else:
             raise ValueError(
-                f"[{self.config['name']}] ❌ 집계 시트가 로드되지 않았습니다. "
+                f"[{self.config['name']}] ❌ 집계 시트와 분석 시트가 모두 로드되지 않았습니다. "
                 f"load_data()를 먼저 호출해야 합니다."
             )
-        
-        df = self.df_aggregation
         
         # DataFrame 전체를 전달하여 병합된 셀 처리 (스마트 헤더 탐색기)
         # target_col 찾기
         if self.target_col is None:
             self.target_col = self.find_target_col_index(df, self.year, self.quarter)
             if self.target_col is not None:
-                print(f"[{self.config['name']}] ✅ Target 컬럼: {self.target_col} ({self.year} {self.quarter}/4)")
+                print(f"[{self.config['name']}] ✅ Target 컬럼 ({sheet_type} 시트): {self.target_col} ({self.year} {self.quarter}/4)")
         
         # prev_y_col 찾기
         if self.prev_y_col is None:
             self.prev_y_col = self.find_target_col_index(df, self.year - 1, self.quarter)
             if self.prev_y_col is not None:
-                print(f"[{self.config['name']}] ✅ 전년 컬럼: {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
+                print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
         
         # 기본값 사용 금지: 반드시 찾아야 함
         if self.target_col is None:
@@ -139,17 +221,20 @@ class UnifiedReportGenerator(BaseGenerator):
     
     def _extract_table_data_ssot(self) -> List[Dict[str, Any]]:
         """
-        집계 시트에서 전국 + 17개 시도 데이터 추출 (SSOT)
-        mining_manufacturing_generator의 로직 그대로 사용
+        집계 시트 또는 분석 시트에서 전국 + 17개 시도 데이터 추출 (SSOT)
+        집계 시트 우선, 없으면 분석 시트 사용
         """
-        # None 체크: load_data() 또는 extract_all_data()에서 이미 체크하지만 방어적 코딩
-        if self.df_aggregation is None:
+        # 데이터 소스 결정: 집계 시트 우선, 없으면 분석 시트
+        df = None
+        if self.df_aggregation is not None:
+            df = self.df_aggregation
+        elif self.df_analysis is not None:
+            df = self.df_analysis
+        else:
             raise ValueError(
-                f"[{self.config['name']}] ❌ 집계 시트가 로드되지 않았습니다. "
+                f"[{self.config['name']}] ❌ 집계 시트와 분석 시트가 모두 로드되지 않았습니다. "
                 f"load_data() 또는 extract_all_data()를 먼저 호출해야 합니다."
             )
-        
-        df = self.df_aggregation
         
         # 데이터 행만 (헤더 제외) - 안전한 인덱스 처리
         if self.DATA_START_ROW < 0:
@@ -778,6 +863,87 @@ class ServiceIndustryGenerator(UnifiedReportGenerator):
 class ConsumptionGenerator(UnifiedReportGenerator):
     def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
         super().__init__('consumption', excel_path, year, quarter, excel_file)
+
+
+class ConstructionGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('construction', excel_path, year, quarter, excel_file)
+
+
+class ExportGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('export', excel_path, year, quarter, excel_file)
+
+
+class ImportGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('import', excel_path, year, quarter, excel_file)
+
+
+class PriceTrendGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('price', excel_path, year, quarter, excel_file)
+
+
+class EmploymentRateGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('employment', excel_path, year, quarter, excel_file)
+
+
+class UnemploymentGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__('unemployment', excel_path, year, quarter, excel_file)
+
+
+class DomesticMigrationGenerator(UnifiedReportGenerator):
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        # report_configs.py에서 'migration'을 사용하지만, 
+        # 실제로는 REPORT_CONFIGS에 'migration'으로 정의되어 있으므로 'migration' 사용
+        super().__init__('migration', excel_path, year, quarter, excel_file)
+
+
+class RegionalReportGenerator(BaseGenerator):
+    """시도별 보고서 생성기 (unified_generator에 통합)"""
+    
+    def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
+        super().__init__(excel_path, year, quarter, excel_file)
+        # regional_generator.py를 import하여 사용
+        self._regional_gen = None
+    
+    def _get_regional_generator(self):
+        """regional_generator.py의 RegionalGenerator 인스턴스 가져오기 (지연 로딩)"""
+        if self._regional_gen is None:
+            # regional_generator.py 동적 import
+            generator_path = Path(__file__).parent / 'regional_generator.py'
+            if generator_path.exists():
+                import importlib.util
+                spec = importlib.util.spec_from_file_location('regional_generator', str(generator_path))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                if hasattr(module, 'RegionalGenerator'):
+                    self._regional_gen = module.RegionalGenerator(
+                        str(self.excel_path), 
+                        year=self.year, 
+                        quarter=self.quarter
+                    )
+        return self._regional_gen
+    
+    def extract_all_data(self, region: str) -> Dict[str, Any]:
+        """시도별 모든 데이터 추출"""
+        regional_gen = self._get_regional_generator()
+        if regional_gen is None:
+            raise ValueError("시도별 Generator를 로드할 수 없습니다")
+        
+        return regional_gen.extract_all_data(region)
+    
+    def render_html(self, region: str, template_path: str) -> str:
+        """시도별 HTML 보도자료 렌더링"""
+        regional_gen = self._get_regional_generator()
+        if regional_gen is None:
+            raise ValueError("시도별 Generator를 로드할 수 없습니다")
+        
+        return regional_gen.render_html(region, template_path)
 
 
 if __name__ == '__main__':

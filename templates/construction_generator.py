@@ -78,6 +78,7 @@ class ConstructionGenerator(BaseGenerator):
         super().__init__(excel_path, year, quarter, excel_file)
         self.df_analysis = None
         self.df_index = None
+        self.df_reference = None  # 참고 시트(비공표자료) - 공정 정보 추출용
     
     def _get_safe_float(self, value, default=None):
         """안전한 float 변환 (BaseGenerator의 safe_float 사용)"""
@@ -90,8 +91,8 @@ class ConstructionGenerator(BaseGenerator):
         Returns:
             보도자료 데이터 딕셔너리
         """
-        # 데이터 로드
-        self.df_analysis, self.df_index = load_data(self.excel_path)
+        # 데이터 로드 (분석 시트, 집계 시트, 참고 시트)
+        self.df_analysis, self.df_index, self.df_reference = load_data(self.excel_path)
         
         # year와 quarter가 없으면 기본값 사용
         if self.year is None:
@@ -120,9 +121,9 @@ class ConstructionGenerator(BaseGenerator):
         prev_q_col = target_col - 1 if target_col > 0 else -1
         prev_y_col = target_col - 4 if target_col >= 4 else -1
         
-        # 기존 함수들을 사용하여 데이터 추출
-        nationwide_data = get_nationwide_data(self.df_analysis, self.df_index, self.year, self.quarter)
-        regional_data = get_regional_data(self.df_analysis, self.df_index, self.year, self.quarter)
+        # 기존 함수들을 사용하여 데이터 추출 (참고 시트도 전달)
+        nationwide_data = get_nationwide_data(self.df_analysis, self.df_index, self.year, self.quarter, self.df_reference)
+        regional_data = get_regional_data(self.df_analysis, self.df_index, self.year, self.quarter, self.df_reference)
         summary_box = get_summary_box_data(regional_data)
         table_data = get_growth_rates_table(
             self.df_analysis, self.df_index, regional_data, nationwide_data, self.year, self.quarter
@@ -267,22 +268,23 @@ def find_sheet_by_pattern(sheet_names, patterns, sheet_type="분석"):
 
 
 def load_data(excel_path):
-    """엑셀 파일에서 데이터 로드"""
+    """엑셀 파일에서 데이터 로드 (분석 시트, 집계 시트, 참고 시트)"""
     xl = pd.ExcelFile(excel_path)
+    sheet_names = xl.sheet_names
     
     # 디버깅: 모든 시트 이름 출력
-    print(f"[DEBUG] 건설동향 - 사용 가능한 시트 목록: {xl.sheet_names}")
+    print(f"[DEBUG] 건설동향 - 사용 가능한 시트 목록: {sheet_names}")
     
     # F'분석 시트 찾기
     possible_analysis_sheets = ["F'분석", "F' 분석", "F분석", "F 분석"]
-    analysis_sheet_name = find_sheet_by_pattern(xl.sheet_names, possible_analysis_sheets, "분석")
+    analysis_sheet_name = find_sheet_by_pattern(sheet_names, possible_analysis_sheets, "분석")
     
     # 분석 시트가 없으면 기초자료 시트로 대체
     use_raw_data = False
     if not analysis_sheet_name:
         raw_sheets = ["건설 (공표자료)", "건설(공표자료)", "건설"]
         for raw_sheet in raw_sheets:
-            if raw_sheet in xl.sheet_names:
+            if raw_sheet in sheet_names:
                 analysis_sheet_name = raw_sheet
                 use_raw_data = True
                 print(f"[시트 대체] 분석 시트 → '{raw_sheet}' (기초자료)")
@@ -304,11 +306,11 @@ def load_data(excel_path):
             print(f"[ERROR] 건설동향 분석 시트 읽기 실패: {e}")
             raise ValueError(f"건설동향 분석 시트를 읽을 수 없습니다: '{analysis_sheet_name}'")
     else:
-        raise ValueError(f"건설동향 분석 시트를 찾을 수 없습니다. 시트 목록: {xl.sheet_names}")
+        raise ValueError(f"건설동향 분석 시트를 찾을 수 없습니다. 시트 목록: {sheet_names}")
     
     # F'집계 시트 찾기
     possible_index_sheets = ["F'(건설)집계", "F'(건설) 집계", "F'집계", "F' 집계", "F(건설)집계", "F집계"]
-    index_sheet_name = find_sheet_by_pattern(xl.sheet_names, possible_index_sheets, "집계")
+    index_sheet_name = find_sheet_by_pattern(sheet_names, possible_index_sheets, "집계")
     
     df_index = None
     if index_sheet_name:
@@ -324,11 +326,69 @@ def load_data(excel_path):
         print(f"[DEBUG] 건설동향 집계 시트를 찾지 못해 분석 시트를 사용합니다.")
         df_index = df_analysis.copy()
     
+    # 참고 시트(비공표자료) 찾기 - 공정 정보 추출용
+    reference_sheet_name = None
+    if analysis_sheet_name:
+        # F'참고, F'참고, F참고 등 패턴으로 찾기
+        base_name = analysis_sheet_name.replace("'", "").replace(" 분석", "").replace("분석", "")
+        reference_patterns = [
+            f"F' 참고",
+            f"F'참고",
+            f"F 참고",
+            f"F참고",
+            f"{base_name} 참고",
+            f"{base_name}참고",
+            "건설 참고",
+            "건설참고",
+            "F' (비공표자료)",
+            "F'비공표자료",
+        ]
+        for pattern in reference_patterns:
+            if pattern in sheet_names:
+                reference_sheet_name = pattern
+                break
+    
+    df_reference = None
+    if reference_sheet_name:
+        try:
+            print(f"[DEBUG] 건설동향 참고 시트 발견: '{reference_sheet_name}' (공정 정보 추출용)")
+            df_reference = pd.read_excel(xl, sheet_name=reference_sheet_name, header=None)
+        except Exception as e:
+            print(f"[WARNING] 건설동향 참고 시트 읽기 실패: {e}, 공정 정보 없이 진행합니다.")
+            df_reference = None
+    
     # use_raw_data, use_aggregation_only 정보를 데이터프레임에 속성으로 저장
     df_analysis.attrs['use_raw'] = use_raw_data
     df_analysis.attrs['use_aggregation_only'] = use_aggregation_only if 'use_aggregation_only' in locals() else False
     
-    return df_analysis, df_index
+    return df_analysis, df_index, df_reference
+
+
+def _extract_subtypes_from_reference(df_reference, year=None, quarter=None):
+    """참고 시트(비공표자료)에서 공정 정보 추출"""
+    if df_reference is None:
+        return None
+    
+    # TODO: 참고 시트 구조에 맞게 공정 정보 추출 로직 구현 필요
+    # 참고 시트의 구조를 확인하여 공정 정보를 추출하는 로직 추가
+    print(f"[건설동향] 참고 시트에서 공정 정보 추출 시도...")
+    
+    # 참고 시트 구조가 확인되면 여기에 추출 로직 추가
+    # 예: 분류단계 2인 행에서 세부 공정 추출
+    return None
+
+
+def _extract_construction_subtypes_from_reference(df_reference, year=None, quarter=None):
+    """참고 시트(비공표자료)에서 토목/건축 세부 공정 정보 추출"""
+    if df_reference is None:
+        return None, None
+    
+    # TODO: 참고 시트 구조에 맞게 토목/건축 세부 공정 정보 추출 로직 구현 필요
+    print(f"[건설동향] 참고 시트에서 토목/건축 세부 공정 정보 추출 시도...")
+    
+    # 참고 시트 구조가 확인되면 여기에 추출 로직 추가
+    # 예: 토목 관련 세부 공정, 건축 관련 세부 공정 추출
+    return None, None
 
 
 def get_region_indices(df_analysis):
@@ -405,7 +465,7 @@ def _find_header_row(df, max_search_rows=10):
     return 2  # 기본값: 3번째 행 (Index 2)
 
 
-def get_nationwide_data(df_analysis, df_index, year=None, quarter=None):
+def get_nationwide_data(df_analysis, df_index, year=None, quarter=None, df_reference=None):
     """전국 데이터 추출"""
     use_raw = df_analysis.attrs.get('use_raw', False)
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
@@ -672,7 +732,7 @@ def _get_nationwide_from_raw_data(df_analysis, df_index):
     return _get_nationwide_from_aggregation(df_index)
 
 
-def get_regional_data(df_analysis, df_index, year=None, quarter=None):
+def get_regional_data(df_analysis, df_index, year=None, quarter=None, df_reference=None):
     """시도별 데이터 추출"""
     use_raw = df_analysis.attrs.get('use_raw', False)
     use_aggregation_only = df_analysis.attrs.get('use_aggregation_only', False)
@@ -1307,12 +1367,12 @@ def generate_report_data(excel_path, raw_excel_path=None, year=None, quarter=Non
     #     # return extract_from_raw_data(extractor, ...)
     
     # 현재는 분석표 기반 (기존 로직)
-    # 데이터 로드
-    df_analysis, df_index = load_data(excel_path)
+    # 데이터 로드 (분석 시트, 집계 시트, 참고 시트)
+    df_analysis, df_index, df_reference = load_data(excel_path)
     
-    # 데이터 추출 (year와 quarter 전달)
-    nationwide_data = get_nationwide_data(df_analysis, df_index, year, quarter)
-    regional_data = get_regional_data(df_analysis, df_index, year, quarter)
+    # 데이터 추출 (year와 quarter 전달, 참고 시트도 전달)
+    nationwide_data = get_nationwide_data(df_analysis, df_index, year, quarter, df_reference)
+    regional_data = get_regional_data(df_analysis, df_index, year, quarter, df_reference)
     summary_box = get_summary_box_data(regional_data)
     # 테이블 데이터 생성 (regional_data와 nationwide_data 전달하여 집계 시트 기반 계산)
     table_data = get_growth_rates_table(df_analysis, df_index, regional_data, nationwide_data, year, quarter)

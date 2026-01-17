@@ -652,8 +652,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         return None, error_msg, []
 
 
-def generate_regional_report_html(excel_path, region_name, is_reference=False):
-    """시도별 보도자료 HTML 생성"""
+def generate_regional_report_html(excel_path, region_name, is_reference=False, year=None, quarter=None):
+    """시도별 보도자료 HTML 생성 (unified_generator 사용)"""
     try:
         # 파일 존재 확인
         excel_path_obj = Path(excel_path)
@@ -662,16 +662,25 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False):
             print(f"[ERROR] {error_msg}")
             return None, error_msg
         
-        
-        generator_path = TEMPLATES_DIR / 'regional_generator.py'
+        # unified_generator.py에서 RegionalReportGenerator 사용
+        generator_path = TEMPLATES_DIR / 'unified_generator.py'
         if not generator_path.exists():
-            return None, f"시도별 Generator를 찾을 수 없습니다"
+            return None, f"unified_generator.py를 찾을 수 없습니다"
         
-        spec = importlib.util.spec_from_file_location('regional_generator', str(generator_path))
+        spec = importlib.util.spec_from_file_location('unified_generator', str(generator_path))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         
-        generator = module.RegionalGenerator(excel_path)
+        if not hasattr(module, 'RegionalReportGenerator'):
+            return None, f"RegionalReportGenerator 클래스를 찾을 수 없습니다"
+        
+        # year, quarter가 없으면 기본값 사용
+        if year is None:
+            year = 2025
+        if quarter is None:
+            quarter = 2
+        
+        generator = module.RegionalReportGenerator(excel_path, year=year, quarter=quarter)
         template_path = TEMPLATES_DIR / 'regional_template.html'
         
         html_content = generator.render_html(region_name, str(template_path))

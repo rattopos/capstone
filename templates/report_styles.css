@@ -323,36 +323,6 @@ h3, .h3-title {
     margin-left: -18px;
 }
 
-/* 차트 컨테이너 (TYPE A: Summary & Sector Trends) */
-/* Charts: Do NOT render canvas. Use chart-placeholder */
-.chart-placeholder {
-    height: 250px;
-    background: #fafafa;
-    border: 1px dashed #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #999;
-    margin: 15px 0;
-}
-
-.charts-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    margin: 15px 0;
-}
-
-.chart-wrapper {
-    flex: 1;
-    text-align: center;
-}
-
-.chart-wrapper .chart-title {
-    font-size: 9pt;
-    margin-bottom: 5px;
-    text-align: center;
-}
 
 /* ===== 통계표 스타일 (TYPE C: Statistical Tables) ===== */
 /* Full-width dense grid, Font Size: 8pt ~ 9pt */

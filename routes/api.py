@@ -560,6 +560,7 @@ def generate_all_reports():
         })
     
     try:
+        # 1. 요약 및 부문별 보도자료 생성
         for report_config in REPORT_ORDER:
             try:
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
@@ -642,6 +643,85 @@ def generate_all_reports():
                     'error': f"예외 발생: {error_message}"
                 })
                 continue  # 다음 보도자료 생성 계속 진행
+        
+        # 2. 시도별 보도자료 생성
+        print(f"[보도자료 생성] 시도별 보도자료 생성 시작...")
+        output_dir = TEMPLATES_DIR / 'regional_output'
+        output_dir.mkdir(exist_ok=True)
+        
+        for region_config in REGIONAL_REPORTS:
+            try:
+                region_name = region_config.get('name', region_config.get('id', 'Unknown'))
+                region_id = region_config.get('id', 'Unknown')
+                
+                print(f"[시도별 보도자료 생성] 시작: {region_name} ({region_id})")
+                
+                html_content, error = generate_regional_report_html(excel_path, region_name, is_reference=False, year=year, quarter=quarter)
+                
+                if error:
+                    import traceback
+                    error_msg = f"{region_name} 생성 실패: {error}"
+                    print(f"[ERROR] {error_msg}")
+                    traceback.print_exc()
+                    errors.append({
+                        'report_id': region_id,
+                        'report_name': f'시도별-{region_name}',
+                        'error': str(error)
+                    })
+                elif html_content is None:
+                    error_msg = f"{region_name} 생성 실패: HTML 내용이 None입니다"
+                    print(f"[ERROR] {error_msg}")
+                    errors.append({
+                        'report_id': region_id,
+                        'report_name': f'시도별-{region_name}',
+                        'error': 'HTML 내용이 None입니다'
+                    })
+                else:
+                    try:
+                        # 파일명 검증 및 안전한 경로 생성
+                        region_name_safe = region_name.replace('/', '_').replace('\\', '_').replace('..', '_')
+                        output_path = output_dir / f"{region_name_safe}_output.html"
+                        
+                        # 디렉토리 존재 확인
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        # 파일 쓰기 (안전한 인코딩)
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            if html_content:
+                                f.write(html_content)
+                            else:
+                                print(f"[WARNING] {region_name} HTML 내용이 비어있습니다.")
+                                f.write('<!-- Empty content -->')
+                        
+                        print(f"[시도별 보도자료 생성] 성공: {region_name} → {output_path}")
+                        generated_reports.append({
+                            'report_id': region_id,
+                            'name': f'시도별-{region_name}',
+                            'path': str(output_path)
+                        })
+                    except Exception as write_error:
+                        import traceback
+                        error_msg = f"{region_name} 파일 저장 실패: {str(write_error)}"
+                        print(f"[ERROR] {error_msg}")
+                        traceback.print_exc()
+                        errors.append({
+                            'report_id': region_id,
+                            'report_name': f'시도별-{region_name}',
+                            'error': f"파일 저장 실패: {str(write_error)}"
+                        })
+            except Exception as e:
+                import traceback
+                region_name = region_config.get('name', region_config.get('id', 'Unknown'))
+                region_id = region_config.get('id', 'Unknown')
+                error_message = str(e)
+                print(f"[ERROR] {region_name} 생성 중 예외 발생: {error_message}")
+                traceback.print_exc()
+                errors.append({
+                    'report_id': region_id,
+                    'report_name': f'시도별-{region_name}',
+                    'error': f"예외 발생: {error_message}"
+                })
+                continue  # 다음 시도별 보도자료 생성 계속 진행
     finally:
         # 작업 완료 후 캐시 정리 (메모리 관리)
         clear_excel_cache(excel_path)
@@ -667,7 +747,10 @@ def generate_all_regional_reports():
     output_dir.mkdir(exist_ok=True)
     
     for region_config in REGIONAL_REPORTS:
-        html_content, error = generate_regional_report_html(excel_path, region_config['name'])
+        # year, quarter가 없으면 기본값 사용
+        gen_year = session.get('year', 2025)
+        gen_quarter = session.get('quarter', 2)
+        html_content, error = generate_regional_report_html(excel_path, region_config['name'], is_reference=False, year=gen_year, quarter=gen_quarter)
         
         if error:
             errors.append({'region_id': region_config['id'], 'error': error})

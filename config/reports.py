@@ -90,64 +90,71 @@ SECTOR_REPORTS = [
         'id': 'construction',
         'name': '건설동향',
         'sheet': "F'분석",
-        'generator': 'construction_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'construction_template.html',
         'icon': '🏗️',
-        'category': 'construction'
+        'category': 'construction',
+        'class_name': 'ConstructionGenerator'
     },
     {
         'id': 'export',
         'name': '수출',
         'sheet': 'G 분석',
-        'generator': 'export_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'export_template.html',
         'icon': '📦',
-        'category': 'trade'
+        'category': 'trade',
+        'class_name': 'ExportGenerator'
     },
     {
         'id': 'import',
         'name': '수입',
         'sheet': 'H 분석',
-        'generator': 'import_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'import_template.html',
         'icon': '🚢',
-        'category': 'trade'
+        'category': 'trade',
+        'class_name': 'ImportGenerator'
     },
     {
         'id': 'price',
         'name': '물가동향',
         'sheet': 'E(품목성질물가)분석',
-        'generator': 'price_trend_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'price_trend_template.html',
         'icon': '💰',
-        'category': 'price'
+        'category': 'price',
+        'class_name': 'PriceTrendGenerator'
     },
     {
         'id': 'employment',
         'name': '고용률',
         'sheet': 'D(고용률)분석',
-        'generator': 'employment_rate_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'employment_rate_template.html',
         'icon': '👔',
-        'category': 'employment'
+        'category': 'employment',
+        'class_name': 'EmploymentRateGenerator'
     },
     {
         'id': 'unemployment',
         'name': '실업률',
         'sheet': 'D(실업)분석',
-        'generator': 'unemployment_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'unemployment_template.html',
         'icon': '📉',
-        'category': 'employment'
+        'category': 'employment',
+        'class_name': 'UnemploymentGenerator'
     },
     {
-        'id': 'population',
+        'id': 'migration',
         'name': '국내인구이동',
         'sheet': 'I(순인구이동)집계',
-        'generator': 'domestic_migration_generator.py',
+        'generator': 'unified_generator.py',
         'template': 'domestic_migration_template.html',
         'icon': '👥',
-        'category': 'population'
+        'category': 'population',
+        'class_name': 'DomesticMigrationGenerator'
     }
 ]
 
@@ -208,7 +215,7 @@ PAGE_CONFIG = {
         'price': 1,             # 물가동향: 12페이지
         'employment': 1,        # 고용률: 13페이지
         'unemployment': 1,      # 실업률: 14페이지
-        'population': 1,        # 국내인구이동: 15페이지
+        'migration': 1,        # 국내인구이동: 15페이지
     },
     
     # 시도별 섹션 페이지 수 (16~49페이지) - 각 시도 2페이지
@@ -235,7 +242,7 @@ TOC_SECTOR_ITEMS = [
     {'number': 4, 'name': '수출입', 'start_from': 'export'},       # 수출 시작 페이지
     {'number': 5, 'name': '물가', 'start_from': 'price'},
     {'number': 6, 'name': '고용', 'start_from': 'employment'},     # 고용률 시작 페이지
-    {'number': 7, 'name': '국내 인구이동', 'start_from': 'population'},
+    {'number': 7, 'name': '국내 인구이동', 'start_from': 'migration'},
 ]
 
 # 시도별 17개 항목 (원본 이미지 기준 - 띄어쓰기 없음)

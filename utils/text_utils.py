@@ -39,8 +39,9 @@ REPORT_TYPE_MAP = {
     'construction': 'quantity',            # 건설
     'export': 'quantity',                 # 수출
     'import': 'quantity',                  # 수입
-    'population': 'quantity',              # 인구이동
-    'domestic_migration': 'quantity',      # 인구이동 (별칭)
+    'migration': 'quantity',                # 인구이동
+    'population': 'quantity',               # 인구이동 (별칭, 하위 호환성)
+    'domestic_migration': 'quantity',       # 인구이동 (별칭)
     'employment_count': 'quantity',        # 취업자수
     
     # [Price 그룹] - 지수/비율 데이터 (올라/내려 -> 상승/하락)
@@ -69,7 +70,8 @@ SOURCE_MAP = {
     'employment_rate': "경제활동인구조사",    # 고용률 (별칭)
     'unemployment': "경제활동인구조사",
     'unemployment_rate': "경제활동인구조사",  # 실업률 (별칭)
-    'population': "국내인구이동통계",
+    'migration': "국내인구이동통계",
+    'population': "국내인구이동통계",        # 인구이동 (별칭, 하위 호환성)
     'domestic_migration': "국내인구이동통계", # 인구이동 (별칭)
     'regional': "각 통계 원천 참조"          # 시도별은 통합이므로 예외 처리
 }
