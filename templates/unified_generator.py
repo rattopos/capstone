@@ -40,8 +40,7 @@ class UnifiedReportGenerator(BaseGenerator):
     mining_manufacturing_generator의 검증된 로직을 기반으로 구현
     """
     
-    # 집계 시트 구조
-    DATA_START_ROW = 3
+    # 데이터 시작 행은 동적으로 찾음 (하드코딩 제거)
     
     def __init__(self, report_type: str, excel_path: str, year=None, quarter=None, excel_file=None):
         super().__init__(excel_path, year, quarter, excel_file)
@@ -55,18 +54,21 @@ class UnifiedReportGenerator(BaseGenerator):
         self.report_id = self.config['report_id']
         self.name_mapping = self.config.get('name_mapping', {})
         
-        # 집계 시트 구조 (설정에서 로드)
+        # 집계 시트 구조 (설정에서 로드 - 기본값은 나중에 동적으로 찾을 때 fallback으로만 사용)
         agg_struct = self.config.get('aggregation_structure', {})
-        self.region_name_col = agg_struct.get('region_name_col', 4)
-        self.industry_code_col = agg_struct.get('industry_code_col', 7)
+        # 기본값은 설정에서 가져오지만, 실제로는 동적으로 찾음
+        self.region_name_col = None  # 동적으로 찾음
+        self.industry_code_col = None  # 동적으로 찾음
         self.total_code = agg_struct.get('total_code', 'BCD')
         
-        # 산업명 컬럼 (보통 industry_code_col + 1 또는 설정에서 가져옴)
-        # metadata_columns에서 'name' 컬럼 찾기 시도
-        metadata_cols = self.config.get('metadata_columns', {})
-        # 실제로는 집계 시트 구조를 보고 동적으로 찾아야 하지만,
-        # 일반적으로 산업명은 산업코드 다음 컬럼에 있음
-        self.industry_name_col = self.industry_code_col + 1
+        # metadata_columns 설정 (동적 컬럼 찾기에 사용)
+        self.metadata_cols = self.config.get('metadata_columns', {})
+        
+        # 산업명 컬럼도 동적으로 찾음
+        self.industry_name_col = None  # 동적으로 찾음
+        
+        # 데이터 시작 행도 동적으로 찾음 (하드코딩 제거)
+        self.data_start_row = None  # 동적으로 찾음
         
         # 여러 시트 지원
         self.df_analysis = None
@@ -120,26 +122,43 @@ class UnifiedReportGenerator(BaseGenerator):
                 print(f"[{self.config['name']}] [시트 대체] 집계 시트 → 분석 시트 '{agg_sheet}'")
         
         # 3. 참고 시트(비공표자료) 찾기
-        # 참고 시트 패턴: '{분석시트명} 참고', '{분석시트명}참고', '{보고서명} 참고' 등
+        # 파일 전체에서 "참고", "비공표자료", "reference" 등의 키워드가 포함된 시트 찾기
+        # 셀 위치가 아닌 시트 이름으로만 찾음
         reference_sheet = None
-        if analysis_sheet:
-            # 분석 시트명 기반으로 참고 시트 찾기
-            base_name = analysis_sheet.replace(' 분석', '').replace('분석', '')
-            reference_patterns = [
-                f"{base_name} 참고",
-                f"{base_name}참고",
-                f"{analysis_sheet} 참고",
-                f"{analysis_sheet}참고",
+        
+        # 키워드 패턴: "참고", "비공표", "reference" 등이 포함된 시트 찾기
+        reference_keywords = ['참고', '비공표', 'reference', '비공표자료', '참고자료']
+        
+        for sheet_name in sheet_names:
+            # 시트 이름에서 키워드가 포함되어 있는지 확인
+            normalized_name = sheet_name.lower().replace(' ', '').replace("'", "").replace('(', '').replace(')', '')
+            for keyword in reference_keywords:
+                if keyword in sheet_name or keyword in normalized_name:
+                    # 분석 시트나 집계 시트와는 다른 시트인지 확인
+                    if sheet_name != analysis_sheet and sheet_name != agg_sheet:
+                        reference_sheet = sheet_name
+                        print(f"[{self.config['name']}] 🔍 참고 시트 후보 발견: '{sheet_name}' (키워드: '{keyword}')")
+                        break
+            if reference_sheet:
+                break
+        
+        # 키워드로 찾지 못한 경우, 보고서명 기반으로 추가 시도
+        if not reference_sheet:
+            report_name_patterns = [
                 f"{self.config['name']} 참고",
+                f"{self.config['name']}참고",
             ]
-            for pattern in reference_patterns:
+            if analysis_sheet:
+                base_name = analysis_sheet.replace(' 분석', '').replace('분석', '').replace('(', '').replace(')', '').replace("'", "")
+                report_name_patterns.extend([
+                    f"{base_name} 참고",
+                    f"{base_name}참고",
+                ])
+            
+            for pattern in report_name_patterns:
                 if pattern in sheet_names:
                     reference_sheet = pattern
                     break
-        
-        # 참고 시트가 없으면 분석 시트 사용
-        if not reference_sheet:
-            reference_sheet = analysis_sheet
         
         # 4. 시트 로드
         if analysis_sheet:
@@ -176,6 +195,110 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # 동적 컬럼 찾기 (집계 시트 우선, 없으면 분석 시트)
         self._find_data_columns()
+        # 동적 컬럼 위치 찾기 (지역명, 산업코드, 산업명 등)
+        self._find_metadata_columns()
+    
+    def _find_metadata_columns(self):
+        """메타데이터 컬럼 동적 탐색 (지역명, 산업코드, 산업명 등)"""
+        # 데이터 소스 결정: 집계 시트 우선, 없으면 분석 시트
+        df = None
+        if self.df_aggregation is not None:
+            df = self.df_aggregation
+        elif self.df_analysis is not None:
+            df = self.df_analysis
+        else:
+            return  # 컬럼을 찾을 수 없음
+        
+        # 헤더 행 찾기 (처음 몇 행에서)
+        header_rows = min(5, len(df))
+        if header_rows == 0:
+            return
+        
+        # metadata_columns 설정에서 키워드 가져오기
+        region_keywords = self.metadata_cols.get('region', ['지역', 'region', '시도'])
+        code_keywords = self.metadata_cols.get('code', ['코드', 'code', '산업코드', '업태코드', '품목코드', '분류코드'])
+        name_keywords = self.metadata_cols.get('name', ['이름', 'name', '산업명', '업태명', '품목명', '공정이름', '공정명'])
+        
+        # 각 행에서 키워드 검색
+        for row_idx in range(header_rows):
+            row = df.iloc[row_idx]
+            for col_idx, cell_value in enumerate(row):
+                if pd.isna(cell_value):
+                    continue
+                cell_str = str(cell_value).strip().lower()
+                
+                # 지역명 컬럼 찾기
+                if self.region_name_col is None:
+                    for keyword in region_keywords:
+                        if keyword.lower() in cell_str:
+                            self.region_name_col = col_idx
+                            print(f"[{self.config['name']}] ✅ 지역명 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
+                            break
+                
+                # 산업코드 컬럼 찾기
+                if self.industry_code_col is None:
+                    for keyword in code_keywords:
+                        if keyword.lower() in cell_str:
+                            self.industry_code_col = col_idx
+                            print(f"[{self.config['name']}] ✅ 산업코드 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
+                            break
+                
+                # 산업명 컬럼 찾기
+                if self.industry_name_col is None:
+                    for keyword in name_keywords:
+                        if keyword.lower() in cell_str:
+                            self.industry_name_col = col_idx
+                            print(f"[{self.config['name']}] ✅ 산업명 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
+                            break
+                
+                # 모든 컬럼을 찾았으면 종료
+                if (self.region_name_col is not None and 
+                    self.industry_code_col is not None and 
+                    self.industry_name_col is not None):
+                    break
+            
+            if (self.region_name_col is not None and 
+                self.industry_code_col is not None and 
+                self.industry_name_col is not None):
+                break
+        
+        # 데이터 시작 행 찾기 (헤더 다음 행)
+        # 지역명이나 산업코드가 실제로 나타나는 첫 번째 행 찾기
+        if self.region_name_col is not None:
+            for row_idx in range(header_rows, min(header_rows + 10, len(df))):
+                row = df.iloc[row_idx]
+                if self.region_name_col < len(row):
+                    cell_value = row.iloc[self.region_name_col]
+                    if pd.notna(cell_value):
+                        cell_str = str(cell_value).strip()
+                        # 지역명이 실제로 나타나는 행 찾기
+                        if cell_str in ['전국', '서울', '부산', '대구', '인천']:
+                            self.data_start_row = row_idx
+                            print(f"[{self.config['name']}] ✅ 데이터 시작 행 발견: {row_idx}")
+                            break
+        
+        # Fallback: 설정에서 기본값 사용 (하드코딩이지만 최후의 수단)
+        if self.region_name_col is None:
+            agg_struct = self.config.get('aggregation_structure', {})
+            self.region_name_col = agg_struct.get('region_name_col')
+            if self.region_name_col is not None:
+                print(f"[{self.config['name']}] ⚠️ 지역명 컬럼을 동적으로 찾지 못해 설정값 사용: {self.region_name_col}")
+        
+        if self.industry_code_col is None:
+            agg_struct = self.config.get('aggregation_structure', {})
+            self.industry_code_col = agg_struct.get('industry_code_col')
+            if self.industry_code_col is not None:
+                print(f"[{self.config['name']}] ⚠️ 산업코드 컬럼을 동적으로 찾지 못해 설정값 사용: {self.industry_code_col}")
+        
+        if self.industry_name_col is None and self.industry_code_col is not None:
+            # 산업명은 보통 산업코드 다음 컬럼
+            self.industry_name_col = self.industry_code_col + 1
+            print(f"[{self.config['name']}] ⚠️ 산업명 컬럼을 동적으로 찾지 못해 산업코드+1 사용: {self.industry_name_col}")
+        
+        if self.data_start_row is None:
+            # 기본값 사용 (하드코딩이지만 최후의 수단)
+            self.data_start_row = 3
+            print(f"[{self.config['name']}] ⚠️ 데이터 시작 행을 동적으로 찾지 못해 기본값 사용: {self.data_start_row}")
     
     def _find_data_columns(self):
         """데이터 컬럼 동적 탐색 (병합된 셀 처리) - 집계 시트 우선, 없으면 분석 시트"""
@@ -236,14 +359,17 @@ class UnifiedReportGenerator(BaseGenerator):
                 f"load_data() 또는 extract_all_data()를 먼저 호출해야 합니다."
             )
         
-        # 데이터 행만 (헤더 제외) - 안전한 인덱스 처리
-        if self.DATA_START_ROW < 0:
-            self.DATA_START_ROW = 0
+        # 데이터 행만 (헤더 제외) - 동적으로 찾은 시작 행 사용
+        if self.data_start_row is None:
+            self.data_start_row = 0
         
-        if self.DATA_START_ROW < len(df):
-            data_df = df.iloc[self.DATA_START_ROW:].copy()
+        if self.data_start_row < 0:
+            self.data_start_row = 0
+        
+        if self.data_start_row < len(df):
+            data_df = df.iloc[self.data_start_row:].copy()
         else:
-            print(f"[{self.config['name']}] ⚠️ DATA_START_ROW({self.DATA_START_ROW})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
+            print(f"[{self.config['name']}] ⚠️ data_start_row({self.data_start_row})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
             data_df = df.copy()
         
         # 지역 목록
@@ -252,10 +378,11 @@ class UnifiedReportGenerator(BaseGenerator):
         
         table_data = []
         
-        # 컬럼 인덱스 검증
-        if self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
+        # 컬럼 인덱스 검증 (동적으로 찾은 컬럼)
+        if self.region_name_col is None or self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
             raise ValueError(
-                f"[{self.config['name']}] ❌ 지역명 컬럼 인덱스({self.region_name_col})가 유효하지 않습니다. "
+                f"[{self.config['name']}] ❌ 지역명 컬럼을 찾을 수 없습니다. "
+                f"동적 탐색 실패 또는 인덱스({self.region_name_col})가 유효하지 않습니다. "
                 f"DataFrame 컬럼 수: {len(data_df.columns)}"
             )
         
@@ -272,10 +399,10 @@ class UnifiedReportGenerator(BaseGenerator):
             if region_filter.empty:
                 continue
             
-            # 총지수 행 찾기 (설정에서 가져온 컬럼 및 코드 사용) - 안전한 인덱스 접근
+            # 총지수 행 찾기 (동적으로 찾은 컬럼 및 코드 사용) - 안전한 인덱스 접근
             # 컬럼 인덱스 검증
-            if self.industry_code_col < 0 or self.industry_code_col >= len(region_filter.columns):
-                print(f"[{self.config['name']}] ⚠️ {region}: 산업코드 컬럼 인덱스({self.industry_code_col})가 유효하지 않습니다. 스킵합니다.")
+            if self.industry_code_col is None or self.industry_code_col < 0 or self.industry_code_col >= len(region_filter.columns):
+                print(f"[{self.config['name']}] ⚠️ {region}: 산업코드 컬럼을 찾을 수 없습니다. 동적 탐색 실패 또는 인덱스({self.industry_code_col})가 유효하지 않습니다. 스킵합니다.")
                 continue
             
             # 디버깅: 실제 코드 값 확인
@@ -371,17 +498,20 @@ class UnifiedReportGenerator(BaseGenerator):
         
         df = self.df_aggregation
         
-        # 컬럼 인덱스 검증
-        if self.region_name_col < 0 or self.region_name_col >= len(df.columns):
-            print(f"[{self.config['name']}] ⚠️ 지역명 컬럼 인덱스({self.region_name_col})가 유효하지 않습니다. 빈 리스트 반환")
+        # 컬럼 인덱스 검증 (동적으로 찾은 컬럼)
+        if self.region_name_col is None or self.region_name_col < 0 or self.region_name_col >= len(df.columns):
+            print(f"[{self.config['name']}] ⚠️ 지역명 컬럼을 찾을 수 없습니다. 동적 탐색 실패 또는 인덱스({self.region_name_col})가 유효하지 않습니다. 빈 리스트 반환")
             return []
         
-        # 데이터 행만 (헤더 제외) - 안전한 인덱스 처리
-        if self.DATA_START_ROW < 0:
-            self.DATA_START_ROW = 0
+        # 데이터 행만 (헤더 제외) - 동적으로 찾은 시작 행 사용
+        if self.data_start_row is None:
+            self.data_start_row = 0
         
-        if self.DATA_START_ROW < len(df):
-            data_df = df.iloc[self.DATA_START_ROW:].copy()
+        if self.data_start_row < 0:
+            self.data_start_row = 0
+        
+        if self.data_start_row < len(df):
+            data_df = df.iloc[self.data_start_row:].copy()
         else:
             data_df = df.copy()
         
@@ -400,17 +530,25 @@ class UnifiedReportGenerator(BaseGenerator):
         industries = []
         name_mapping = self.config.get('name_mapping', {})
         
-        # 산업명 컬럼 찾기 (산업코드 다음 컬럼 또는 설정에서)
-        # metadata_columns에서 'name' 컬럼 인덱스 찾기 시도
-        metadata_cols = self.config.get('metadata_columns', {})
-        # 일반적으로 산업명은 산업코드 다음 컬럼에 있음
-        # 안전한 컬럼 인덱스 계산
-        industry_name_col = self.industry_code_col + 1
+        # 산업명 컬럼 찾기 (동적으로 찾은 값 사용)
+        if self.industry_name_col is None:
+            # 산업명 컬럼을 찾지 못한 경우, 산업코드 다음 컬럼 사용 (fallback)
+            if self.industry_code_col is not None:
+                industry_name_col = self.industry_code_col + 1
+            else:
+                print(f"[{self.config['name']}] ⚠️ 산업명 컬럼과 산업코드 컬럼을 모두 찾을 수 없습니다.")
+                return []
+        else:
+            industry_name_col = self.industry_name_col
+        
         if industry_name_col < 0:
             industry_name_col = 0
         
         for idx, row in region_filter.iterrows():
-            # 산업코드 확인 (총지수 제외)
+            # 산업코드 확인 (총지수 제외) - 동적으로 찾은 컬럼 사용
+            if self.industry_code_col is None:
+                continue
+            
             if self.industry_code_col >= len(row):
                 continue
                 
