@@ -336,8 +336,11 @@ def _extract_sector_summary(xl, sheet_name):
                 actual_sheet = config['aggregate_sheet']
         
         if not actual_sheet:
-            print(f"시트 없음: {sheet_name}")
-            return _get_default_sector_summary()
+            print(f"🔍 [디버그] 시트 없음:")
+            print(f"  - sheet_name: {sheet_name}")
+            print(f"  - excel_path: {excel_path}")
+            # 기본값/폴백 사용 금지: ValueError 발생
+            raise ValueError(f"시트를 찾을 수 없습니다: {sheet_name}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         
         df = pd.read_excel(xl, sheet_name=actual_sheet, header=None)
         
@@ -411,10 +414,13 @@ def _extract_sector_summary(xl, sheet_name):
             'below_count': len(decrease_regions)
         }
     except Exception as e:
-        print(f"{sheet_name} 데이터 추출 오류: {e}")
+        print(f"🔍 [디버그] {sheet_name} 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
         import traceback
         traceback.print_exc()
-        return _get_default_sector_summary()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"{sheet_name} 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _extract_price_summary_from_aggregate(xl, regions):
@@ -812,12 +818,13 @@ def get_production_summary_data(excel_path, year, quarter):
         }
     except Exception as e:
         print(f"생산 요약 데이터 오류: {e}")
+        print(f"🔍 [디버그] 생산 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
         import traceback
         traceback.print_exc()
-        return {
-            'mining_production': _get_default_chart_data(),
-            'service_production': _get_default_chart_data()
-        }
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"생산 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def get_consumption_construction_data(excel_path, year, quarter):
@@ -945,12 +952,13 @@ def get_consumption_construction_data(excel_path, year, quarter):
         }
     except Exception as e:
         print(f"소비건설 요약 데이터 오류: {e}")
+        print(f"🔍 [디버그] 소비건설 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
         import traceback
         traceback.print_exc()
-        return {
-            'retail_sales': _get_default_chart_data(),
-            'construction': _get_default_construction_data()
-        }
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"소비건설 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _extract_construction_chart_data(xl):
@@ -1020,8 +1028,12 @@ def _extract_construction_chart_data(xl):
             'chart_data': chart_data[:18]
         }
     except Exception as e:
-        print(f"건설 차트 데이터 추출 오류: {e}")
-        return _get_default_construction_data()
+        print(f"🔍 [디버그] 건설 차트 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"건설 차트 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _get_default_construction_data():
@@ -1047,11 +1059,14 @@ def get_trade_price_data(excel_path, year, quarter):
             'price': price
         }
     except Exception as e:
-        print(f"수출 데이터 추출 오류: {e}")
-        return {
-            'exports': _get_default_trade_data(),
-            'price': _get_default_chart_data()
-        }
+        print(f"🔍 [디버그] 수출물가 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
+        print(f"  - year: {year}, quarter: {quarter}")
+        import traceback
+        traceback.print_exc()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"수출물가 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def get_employment_population_data(excel_path, year, quarter):
@@ -1135,12 +1150,14 @@ def get_employment_population_data(excel_path, year, quarter):
             'population': population
         }
     except Exception as e:
-        print(f"고용인구 요약 데이터 오류: {e}")
-        return {
-            'employment': _get_default_employment_data(),
-            'population': {'inflow_regions': [], 'outflow_regions': [], 'inflow_count': 0, 
-                          'outflow_count': 0, 'chart_data': []}
-        }
+        print(f"🔍 [디버그] 고용인구 요약 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - excel_path: {excel_path}")
+        print(f"  - year: {year}, quarter: {quarter}")
+        import traceback
+        traceback.print_exc()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"고용인구 요약 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
@@ -1235,7 +1252,8 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
         raw_config = raw_sheet_config.get(sheet_name, {})
         
         if not config and not raw_config:
-            return _get_default_chart_data()
+            # 기본값/폴백 사용 금지: ValueError 발생
+            raise ValueError(f"시트 설정을 찾을 수 없습니다: {sheet_name}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         
         # 분석 시트 존재 여부 확인
         use_raw = sheet_name not in xl.sheet_names
@@ -1304,7 +1322,8 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                         print(f"[요약] {sheet_name} 분석 시트 비어있음 → 집계 시트에서 계산")
                         return _extract_chart_data_from_aggregate(xl, agg_config, regions, is_trade)
         else:
-            return _get_default_chart_data()
+            # 기본값/폴백 사용 금지: ValueError 발생
+            raise ValueError(f"분석 시트와 집계 시트를 모두 찾을 수 없습니다: {sheet_name}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
         
         nationwide = {'index': 100.0, 'change': 0.0, 'rate': 60.0, 'amount': 0}
         increase_regions = []
@@ -1509,14 +1528,13 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
             'chart_data': chart_data[:18]
         }
     except Exception as e:
-        print(f"{sheet_name} 차트 데이터 오류: {e}")
+        print(f"🔍 [디버그] {sheet_name} 차트 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
+        print(f"  - is_trade: {is_trade}, is_employment: {is_employment}")
         import traceback
         traceback.print_exc()
-        if is_trade:
-            return _get_default_trade_data()
-        elif is_employment:
-            return _get_default_employment_data()
-        return _get_default_chart_data()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"{sheet_name} 차트 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employment=False):
@@ -1603,10 +1621,12 @@ def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employm
             'chart_data': chart_data[:18]
         }
     except Exception as e:
-        print(f"기초자료 차트 데이터 오류: {e}")
+        print(f"🔍 [디버그] 기초자료 차트 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
         import traceback
         traceback.print_exc()
-        return _get_default_chart_data()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"기초자료 차트 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
@@ -1689,10 +1709,12 @@ def _extract_chart_data_from_aggregate(xl, config, regions, is_trade=False):
             'chart_data': chart_data[:18]
         }
     except Exception as e:
-        print(f"집계 시트 차트 데이터 오류: {e}")
+        print(f"🔍 [디버그] 집계 시트 차트 데이터 추출 오류:")
+        print(f"  - 오류: {e}")
         import traceback
         traceback.print_exc()
-        return _get_default_chart_data()
+        # 기본값/폴백 사용 금지: ValueError 발생
+        raise ValueError(f"집계 시트 차트 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
 def _get_default_chart_data():

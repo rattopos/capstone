@@ -1,0 +1,206 @@
+{
+  "report_type": "regional_economy_by_region",
+  "description": "시도별 경제동향 보도자료",
+  "sections": [
+    {
+      "id": "production",
+      "title": "생산",
+      "subsections": [
+        {
+          "id": "manufacturing",
+          "title": "광공업생산",
+          "narrative": [
+            {
+              "key": "manufacturing_direction",
+              "text": "○ {{manufacturing_direction}}는 {{manufacturing_products}}이 {{manufacturing_changes}}"
+            }
+          ],
+          "data_fields": [
+            "manufacturing_index_period",
+            "manufacturing_pct_change_yoy",
+            "manufacturing_products_list",
+            "manufacturing_products_pct",
+            "manufacturing_prev_quarter_data"
+          ]
+        },
+        {
+          "id": "service",
+          "title": "서비스업생산",
+          "narrative": [
+            {
+              "key": "service_direction",
+              "text": "○ {{service_direction}}는 {{service_products}}이 {{service_changes}}"
+            }
+          ],
+          "data_fields": [
+            "service_index_period",
+            "service_pct_change_yoy",
+            "service_products_list",
+            "service_products_pct",
+            "service_prev_quarter_data"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consumption_construction",
+      "title": "소비·건설",
+      "subsections": [
+        {
+          "id": "consumption",
+          "title": "소비",
+          "narrative": [
+            {
+              "key": "consumption_direction",
+              "text": "○ {{consumption_direction}}는 {{consumption_items}}이 {{consumption_changes}}"
+            }
+          ],
+          "data_fields": [
+            "consumption_items_list",
+            "consumption_pct_change_yoy",
+            "consumption_prev_quarter_data"
+          ]
+        },
+        {
+          "id": "construction",
+          "title": "건설",
+          "narrative": [
+            {
+              "key": "construction_direction",
+              "text": "○ {{construction_direction}}는 {{construction_types}}이 {{construction_changes}}"
+            }
+          ],
+          "data_fields": [
+            "construction_types_list",
+            "construction_pct_change_yoy",
+            "construction_prev_quarter_data"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exports",
+      "title": "수출·입",
+      "subsections": [
+        {
+          "id": "exports",
+          "title": "수출",
+          "narrative": [
+            {
+              "key": "exports_direction",
+              "text": "○ {{exports_direction}}는 {{exports_products}}이 {{exports_changes}}"
+            }
+          ],
+          "data_fields": [
+            "exports_products_list",
+            "exports_pct_change_yoy",
+            "exports_prev_quarter_data"
+          ]
+        },
+        {
+          "id": "imports",
+          "title": "수입",
+          "narrative": [
+            {
+              "key": "imports_direction",
+              "text": "○ {{imports_direction}}는 {{imports_products}}이 {{imports_changes}}"
+            }
+          ],
+          "data_fields": [
+            "imports_products_list",
+            "imports_pct_change_yoy",
+            "imports_prev_quarter_data"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "employment",
+      "title": "고용",
+      "subsections": [
+        {
+          "id": "employment_rate",
+          "title": "고용률",
+          "narrative": [
+            {
+              "key": "employment_rate_direction",
+              "text": "○ {{employment_rate_age_groups}}: {{employment_rate_changes}}"
+            }
+          ],
+          "data_fields": [
+            "employment_rate_by_age",
+            "employment_rate_changes_text"
+          ]
+        },
+        {
+          "id": "employed_persons",
+          "title": "취업자",
+          "narrative": [
+            {
+              "key": "employed_direction",
+              "text": "○ {{employed_direction}}: {{employed_changes}}"
+            }
+          ],
+          "data_fields": [
+            "employed_persons_change",
+            "employed_persons_age_groups"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prices",
+      "title": "물가",
+      "subsections": [
+        {
+          "id": "consumer_prices",
+          "title": "소비자물가",
+          "narrative": [
+            {
+              "key": "consumer_prices_direction",
+              "text": "○ {{consumer_prices_direction}}: {{consumer_prices_changes}}"
+            }
+          ],
+          "data_fields": [
+            "consumer_prices_items",
+            "consumer_prices_pct_change_yoy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "domestic_migration",
+      "title": "국내 인구이동",
+      "subsections": [
+        {
+          "id": "domestic_migration",
+          "title": "국내 인구이동",
+          "narrative": [
+            {
+              "key": "migration_direction",
+              "text": "○ {{migration_direction}}: {{migration_changes}}"
+            }
+          ],
+          "data_fields": [
+            "migration_by_age_group",
+            "migration_net_flow"
+          ]
+        }
+      ]
+    }
+  ],
+  "table_structure": {
+    "columns": [
+      "indicator",
+      "unit",
+      "previous_year_same_quarter",
+      "previous_quarter",
+      "current_quarter",
+      "yoy_change",
+      "qoq_change"
+    ],
+    "periods": [
+      "YYYY/Q"
+    ]
+  }
+}

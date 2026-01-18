@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅰ. 부문별 지역경제동향 - 수출 ({% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기)</title>
+    
+    {# 결측치 플레이스홀더 매크로 #}
+    {% macro val(value, format="%.1f", suffix="") %}
+        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
+        {%- else -%}
+            {{ format|format(value) }}{{ suffix }}
+        {%- endif -%}
+    {% endmacro %}
+    
+    <style>
+        /* 기본 리셋 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            background: #fff;
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* 숫자 제목 */
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        /* 소제목 */
+        .subsection-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        /* 요약 박스 */
+        .summary-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: transparent;
+            line-height: 1.6;
+        }
+        
+        .summary-box .headline {
+            margin-bottom: 6px;
+            text-indent: -12px;
+            padding-left: 12px;
+        }
+        
+        .summary-box .nationwide {
+            margin-bottom: 4px;
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .summary-box .regional {
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase, .decrease {
+            font-weight: bold;
+        }
+        
+        /* 상세 박스 */
+        .detail-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-box .title {
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 11pt;
+        }
+        
+        .detail-box .item {
+            margin-bottom: 1px;
+            line-height: 1.45;
+            padding-left: 8px;
+            text-indent: -8px;
+        }
+        
+        .detail-box .separator {
+            border-top: 1px dotted #888;
+            margin: 5px 0;
+        }
+        
+        /* 테이블 */
+        .table-container {
+            margin-top: 12px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            font-family: "Malgun Gothic", serif;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            table-layout: fixed;
+        }
+        
+        .data-table th,
+        .data-table td {
+            
+            padding: 2px 3px;
+            text-align: center;
+            vertical-align: middle;
+            height: 22px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* 테이블 헤더 - 연보라색 */
+        .data-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
+        /* 지역 그룹 셀 */
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: normal;
+            width: 28px;
+        }
+        
+        .data-table .region-name {
+            width: 32px;
+        }
+        
+        /* 금액 섹션 */
+        .data-table td.amount-section {
+            background-color: #fef9e7;
+        }
+        
+        .data-table th.amount-section {
+            background-color: #e6e0ec;
+        }
+        
+        .footnote {
+            font-size: 11pt;
+            color: #333;
+            margin-top: 4px;
+        }
+        
+        
+        /* 결측치 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 0 4px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            display: inline-block;
+            min-width: 25px;
+            text-align: center;
+        }
+        
+        .missing-cell {
+            background-color: #fff9c4 !important;
+        }
+        
+        sup {
+            font-size: 70%;
+            vertical-align: super;
+        }
+        
+        @media print {
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .data-table th {
+                background-color: #e6e0ec !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="section-title">4. 수출입 동향</div>
+        <div class="subsection-title">가. 수출</div>
+        
+        <!-- 요약 박스 -->
+        <div class="summary-box">
+            <div class="headline">◆ 수출은 
+                {% for region in top3_increase_regions %}
+                <span class="highlight">{{ region.region }}</span>({{ region.products | join(', ') }}){% if not loop.last %}, {% endif %}
+                {% endfor %}
+                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+            </div>
+            <div class="nationwide">□ 전국 수출({{ "%.1f"|format(nationwide_data.amount) }}억달러)은 {{ nationwide_data.products | map(attribute='name') | join(', ') }} 등의 수출이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% 증가</span></div>
+            <div class="regional">○ 
+                {% for region in regional_data.decrease_regions[:3] %}
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ decrease_products_text }} 등의 수출이 줄어 <span class="decrease">감소</span>하였으나, 
+                {% for region in regional_data.increase_regions[:3] %}
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ increase_products_text }} 등의 수출이 늘어 <span class="increase">증가</span>
+            </div>
+        </div>
+        
+        <!-- 주요 증감지역 및 품목 상세 -->
+        <div class="detail-box">
+            <div class="title">&lt; 주요 증감지역 및 품목 &gt;</div>
+            
+            <!-- 전국 -->
+            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.change) }}%): 
+                {% for prod in nationwide_data.products[:3] %}
+                {{ prod.name }}({{ "%.1f"|format(prod.change) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- 증가 지역 Top 3 -->
+            {% for region in top3_increase_regions %}
+            <div class="item">·{{ region.name }}( {{ "%.1f"|format(region.change) }}%): 
+                {% for prod in region.products %}
+                {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+            
+            <div class="separator"></div>
+            
+            <!-- 감소 지역 Top 3 -->
+            {% for region in top3_decrease_regions %}
+            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% for prod in region.products %}
+                {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- 데이터 테이블 -->
+        <div class="table-container">
+            <div class="table-title">《 수출액 및 증감률 》</div>
+            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+                <thead style="border: 1px solid black !important;">
+                    <tr>
+                        <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
+                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
+                        <th colspan="2" class="amount-section" style="border: 1px solid black !important;">수출액(억달러)</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "2023.2/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "2024.2/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "2025.1/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[0] if summary_table.columns else "2024.2/4" }}</th>
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[1] if summary_table.columns else "2025.2/4" }}<sup>p</sup></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in summary_table.rows %}
+                    <tr>
+                        {% if row.region_group %}
+                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}" style="border: 1px solid black !important;">{{ row.region_group }}</td>
+                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
+                        {% elif '전' in row.sido and '국' in row.sido %}
+                        <td colspan="2" style="border: 1px solid black !important;">{{ row.sido }}</td>
+                        {% else %}
+                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
+                        {% endif %}
+                        {% for change in row.changes %}
+                        <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                            {{ val(change) }}
+                        </td>
+                        {% endfor %}
+                        {% for amount in row.amounts %}
+                        <td class="amount-section {% if amount is none or amount == '' or amount == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                            {{ val(amount) }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div class="footnote">1) 수출신고서 상 제조자의 사업장 소재지 기준</div>
+            <div class="footnote">자료: 국가데이터처</div>
+            <div class="footnote">담당: 경제동향통계심의관 지역경제동향과 (042-481-xxxx)</div>
+        </div>
+        
+</body>
+</html>

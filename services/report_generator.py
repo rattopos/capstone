@@ -223,7 +223,7 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
             data = {
                 'summary': summary_data,
                 'table_data': table_data,
-                'report_info': data.get('report_info', {'year': year, 'quarter': quarter, 'page_number': ''})
+                'report_info': data.get('report_info') or {'year': year, 'quarter': quarter, 'page_number': ''}
             }
         
         # 템플릿 렌더링
@@ -503,7 +503,12 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         if data and isinstance(data, dict) and 'regional_data' in data and 'top3_increase_regions' not in data:
             # top3가 없는 경우 (레거시 Generator) - 안전한 처리
             top3_increase = []
-            increase_regions = data.get('regional_data', {}).get('increase_regions', [])
+            # 기본값/폴백 사용 금지: 데이터 구조 확인
+            if 'regional_data' not in data:
+                raise ValueError(f"데이터에 'regional_data'가 없습니다. 기본값 사용 금지.")
+            if 'increase_regions' not in data['regional_data']:
+                raise ValueError(f"데이터에 'regional_data.increase_regions'가 없습니다. 기본값 사용 금지.")
+            increase_regions = data['regional_data']['increase_regions']
             if isinstance(increase_regions, list):
                 for r in increase_regions[:3]:
                     if r and isinstance(r, dict):
@@ -521,7 +526,10 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             data['top3_increase_regions'] = top3_increase
             
             top3_decrease = []
-            decrease_regions = data.get('regional_data', {}).get('decrease_regions', [])
+            # 기본값/폴백 사용 금지: 데이터 구조 확인
+            if 'decrease_regions' not in data['regional_data']:
+                raise ValueError(f"데이터에 'regional_data.decrease_regions'가 없습니다. 기본값 사용 금지.")
+            decrease_regions = data['regional_data']['decrease_regions']
             if isinstance(decrease_regions, list):
                 for r in decrease_regions[:3]:
                     if r and isinstance(r, dict):
@@ -813,60 +821,55 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                 table_index = 1
             
             try:
-            config = generator.TABLE_CONFIG.get(table_name)
+                config = generator.TABLE_CONFIG.get(table_name)
                 if not config:
-                    print(f"[통계표] 설정 없음: {table_name}, 빈 데이터 반환")
-                    data = generator._create_empty_table_data()
-                else:
+                    raise ValueError(f"[통계표] 설정 없음: {table_name}")
                 data = generator.extract_table_data(table_name)
-                    # data가 None이면 빈 데이터로 대체
-                    if data is None:
-                        print(f"[통계표] 데이터 추출 실패: {table_name}, 빈 데이터 반환")
-                        data = generator._create_empty_table_data()
+                if data is None:
+                    raise ValueError(f"[통계표] 데이터 추출 실패: {table_name}")
             except Exception as e:
                 import traceback
-                print(f"[통계표] 데이터 추출 중 오류: {table_name} - {e}")
+                error_msg = f"[통계표] 데이터 추출 중 오류: {table_name} - {e}"
+                print(f"[ERROR] {error_msg}")
                 traceback.print_exc()
-                # 오류 발생 시 빈 데이터 반환
-                try:
-                    data = generator._create_empty_table_data()
-                except:
-                    data = {
-                        'yearly': {},
-                        'quarterly': {},
-                        'yearly_years': [],
-                        'quarterly_keys': []
-                    }
-                
-                # 연도 키: JSON 데이터에서 가져오거나 기본값 사용
-                yearly_years = data.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
-                
-                # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
-                quarterly_keys = data.get('quarterly_keys', [])
-                if not quarterly_keys and data.get('quarterly'):
-                    # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
-                    quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
-                        int(x[:4]), int(x[5]) if len(x) > 5 else 0
-                    ))
-                
+                # 기본값/폴백 사용 금지: ValueError 발생
+                raise ValueError(f"통계표 데이터 추출 실패: {table_name}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다. 원인: {e}")
+            
+            # 연도 키: 데이터에서 가져오기 (기본값 사용 금지)
+            if 'yearly_years' not in data:
+                raise ValueError(f"[통계표] yearly_years가 데이터에 없습니다: {table_name}")
+            yearly_years = data['yearly_years']
+            
+            # 분기 키: 실제 데이터에 있는 분기만 사용 (데이터 없는 분기 제외)
+            quarterly_keys = data.get('quarterly_keys', [])
+            if not quarterly_keys and data.get('quarterly'):
+                # quarterly_keys가 없으면 quarterly 딕셔너리에서 키 추출 후 정렬
+                quarterly_keys = sorted(data['quarterly'].keys(), key=lambda x: (
+                    int(x[:4]), int(x[5]) if len(x) > 5 else 0
+                ))
+            
             # page_base 계산 제거 (페이지 번호는 더 이상 사용하지 않음, 목차 생성 중단)
             # page_base = 22 + (table_index - 1) * 2
             
-            # config가 없어도 기본값 사용
-            unit = config.get('단위', '[자료 없음]') if config else '[자료 없음]'
-                
-                template_data = {
-                    'year': year,
-                    'quarter': quarter,
-                    'index': table_index,
-                    'title': table_name,
+            # config에서 단위 가져오기 (기본값 사용 금지)
+            if not config:
+                raise ValueError(f"[통계표] config가 없습니다: {table_name}")
+            if '단위' not in config:
+                raise ValueError(f"[통계표] '단위'가 config에 없습니다: {table_name}")
+            unit = config['단위']
+            
+            template_data = {
+                'year': year,
+                'quarter': quarter,
+                'index': table_index,
+                'title': table_name,
                 'unit': unit,
-                'data': data if data else {'yearly': {}, 'quarterly': {}, 'yearly_years': [], 'quarterly_keys': []},
-                    'page1_regions': PAGE1_REGIONS,
-                    'page2_regions': PAGE2_REGIONS,
-                    'yearly_years': yearly_years,
+                'data': data,
+                'page1_regions': PAGE1_REGIONS,
+                'page2_regions': PAGE2_REGIONS,
+                'yearly_years': yearly_years,
                 'quarterly_keys': quarterly_keys
-                }
+            }
         
         # 통계표 - GRDP
         elif stat_id == 'stat_grdp':
@@ -897,10 +900,14 @@ def generate_individual_statistics_html(excel_path, stat_config, year, quarter):
                     }
                 }
             
-            # grdp_data에서 yearly_years와 quarterly_keys 가져오기
-            data_dict = grdp_data.get('data', {'yearly': {}, 'quarterly': {}})
-            yearly_years = data_dict.get('yearly_years', ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"])
-            quarterly_keys = data_dict.get('quarterly_keys', [])
+            # grdp_data에서 yearly_years와 quarterly_keys 가져오기 (기본값 사용 금지)
+            if 'data' not in grdp_data:
+                raise ValueError(f"[통계표] GRDP 데이터에 'data'가 없습니다. 기본값 사용 금지.")
+            data_dict = grdp_data['data']
+            if 'yearly_years' not in data_dict:
+                raise ValueError(f"[통계표] GRDP 데이터에 'yearly_years'가 없습니다. 기본값 사용 금지.")
+            yearly_years = data_dict['yearly_years']
+            quarterly_keys = data_dict.get('quarterly_keys', [])  # 빈 리스트는 허용 (데이터가 없을 수 있음)
             
             template_data = {
                 'year': year,

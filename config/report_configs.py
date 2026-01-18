@@ -12,6 +12,7 @@ REPORT_CONFIGS = {
     'mining': {
         'name': '광공업생산',
         'report_id': 'mining',
+        'header_row': 1,  # 분석시트의 헤더 행 (0부터 시작)
         'sheets': {
             'analysis': ['A 분석', 'A분석'],
             'aggregation': ['A(광공업생산)집계', 'A 집계'],
@@ -23,7 +24,6 @@ REPORT_CONFIGS = {
             'total_code': 'BCD'
         },
         'name_mapping': {
-            '전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
             '의료, 정밀, 광학 기기 및 시계 제조업': '의료·정밀',
             '의료용 물질 및 의약품 제조업': '의약품',
             '기타 운송장비 제조업': '기타 운송장비',
@@ -53,7 +53,7 @@ REPORT_CONFIGS = {
             '목재 및 나무제품 제조업; 가구 제외': '목재제품',
             '비금속광물 광업; 연료용 제외': '비금속광물광업',
         },
-        'template': 'mining_manufacturing_template.html',
+        'template': 'by_type/mining_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -92,7 +92,7 @@ REPORT_CONFIGS = {
             '예술, 스포츠 및 여가관련 서비스업': '예술·스포츠·여가',
             '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인서비스'
         },
-        'template': 'service_industry_template.html',
+        'template': 'by_type/service_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -128,7 +128,7 @@ REPORT_CONFIGS = {
             '전문소매점': '전문소매점',
             '무점포 소매': '무점포소매'
         },
-        'template': 'consumption_template.html',
+        'template': 'by_type/consumption_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -158,7 +158,7 @@ REPORT_CONFIGS = {
             '주거용 건물': '주거용',
             '비주거용 건물': '비주거용',
         },
-        'template': 'construction_template.html',
+        'template': 'by_type/construction_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -183,7 +183,7 @@ REPORT_CONFIGS = {
             'total_code': '합계'
         },
         'name_mapping': {},  # 품목명은 그대로 사용
-        'template': 'export_template.html',
+        'template': 'by_type/export_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -208,7 +208,7 @@ REPORT_CONFIGS = {
             'total_code': '합계'
         },
         'name_mapping': {},
-        'template': 'import_template.html',
+        'template': 'by_type/import_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -233,12 +233,12 @@ REPORT_CONFIGS = {
             'total_code': '00'
         },
         'name_mapping': {},
-        'template': 'price_trend_template.html',
+        'template': 'by_type/price_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
             'code': ['품목코드', 'code', '코드'],
-            'name': ['품목명', '품목', 'item']
+            'name': ['품목명', '품목 이름', '품목', 'item', '지출목적']
         },
         'index_name': '물가지수',
         'item_name': '품목'
@@ -258,12 +258,12 @@ REPORT_CONFIGS = {
             'total_code': '계'
         },
         'name_mapping': {},
-        'template': 'employment_rate_template.html',
+        'template': 'by_type/employment_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
             'code': ['산업코드', 'code', '코드'],
-            'name': ['산업명', 'industry']
+            'name': ['산업명', '산업 이름', 'industry']
         },
         'index_name': '고용률',
         'item_name': '업종'
@@ -283,12 +283,12 @@ REPORT_CONFIGS = {
             'total_code': '계'
         },
         'name_mapping': {},
-        'template': 'unemployment_template.html',
+        'template': 'by_type/unemployment_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
             'code': ['산업코드', 'code', '코드'],
-            'name': ['산업명', 'industry']
+            'name': ['산업명', '산업 이름', 'industry']
         },
         'index_name': '실업률',
         'item_name': '업종'
@@ -303,20 +303,54 @@ REPORT_CONFIGS = {
             'fallback': ['인구이동', '순인구이동']
         },
         'aggregation_structure': {
-            'region_name_col': 4,
-            'industry_code_col': 7,
-            'total_code': '합계'
+            'region_name_col': 4,           # 지역이름 컬럼 (서울, 부산, ...)
+            'industry_code_col': 3,          # 지역코드 컬럼 (11, 21, 22, ...)
+            'total_code': '순인구이동 수'   # 이동 유형: 유입/유출/순인구이동 중 '순인구이동 수' 선택
         },
         'name_mapping': {},
-        'template': 'domestic_migration_template.html',
+        'template': 'by_type/migration_template.html',
+        'metadata_columns': {
+            'region': ['지역', 'region', '시도'],
+            'classification': ['분류단계', 'classification', '단계', '유형'],  # 이동 유형 (유입/유출/순이동)
+            'code': ['지역코드', 'code', '코드'],  # 지역코드
+            'name': ['분류', '유형', '단계']  # 이동 유형 (유입인구 수/유출인구 수/순인구이동 수)
+        },
+        'index_name': '순인구이동',
+        'item_name': '연령대',  # 연령대별 분류
+        'has_nationwide': False,  # 국내인구이동은 전국 통계 없음
+        'require_analysis_sheet': False  # 집계시트만 사용
+    },
+    
+    'regional_economy_by_region': {
+        'name': '시도별 경제동향',
+        'report_id': 'regional_economy_by_region',
+        'sheets': {
+            'analysis': None,  # 분석시트 없음, 집계시트만 사용
+            'aggregation': [
+                'A(광공업생산)집계', 'B(서비스업생산)집계', 'C(소비)집계',
+                "F'(건설)집계", 'G(수출)집계', 'H(수입)집계', 
+                'D(고용률)집계', 'E(지출목적물가)집계', 'I(순인구이동)집계'
+            ],
+            'fallback': []
+        },
+        'aggregation_structure': {
+            'region_name_col': None,  # 동적으로 찾음
+            'industry_code_col': None,  # 동적으로 찾음
+            'total_code': None  # 동적으로 찾음
+        },
+        'name_mapping': {},
+        'template': 'regional_economy_by_region_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
-            'code': ['연령코드', 'code', '코드'],
-            'name': ['연령대', '연령', 'age']
+            'code': ['코드', 'code'],
+            'name': ['산업명', '품목명', '분류', '유형', 'item', 'industry']
         },
-        'index_name': '이동자수',
-        'item_name': '연령대'
+        'index_name': '주요지표',
+        'item_name': '부문',
+        'has_nationwide': False,  # 시도별이므로 전국 통계 없음
+        'require_analysis_sheet': False,  # 집계시트만 사용
+        'is_regional_by_region': True  # 시도별 경제동향 플래그
     },
 }
 

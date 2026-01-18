@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅲ. 시도별 경제동향 - {{ region_name }} ({% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %})</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            background: #fff;
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* Level 1: 대제목 헤더 (배너 스타일) */
+        .main-header {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 40px;
+            background: #4a4a4a;
+            color: #ffffff;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        /* Level 2: 지역 제목 (크게 강조) */
+        .region-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 18px;
+            margin-top: 10px;
+        }
+        
+        /* 섹션 제목 (네모 불릿) */
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            padding-left: 20px;
+            text-indent: -20px;
+        }
+        
+        .section-title::before {
+            content: "□ ";
+        }
+        
+        /* 본문 항목 (동그라미 불릿) */
+        .item {
+            margin-bottom: 8px;
+            padding-left: 25px;
+            text-indent: -25px;
+            line-height: 1.6;
+            width: 100%;
+        }
+        
+        .item::before {
+            content: "○ ";
+        }
+        
+        .item-label {
+            font-weight: bold;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase {
+            font-weight: bold;
+            color: #c62828;
+        }
+        
+        .decrease {
+            font-weight: bold;
+            color: #1565c0;
+        }
+        
+        /* 표 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+        
+        table thead {
+            background-color: #e8e8e8;
+        }
+        
+        table th {
+            border: 1px solid #999;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        table td:first-child {
+            text-align: left;
+            font-weight: normal;
+        }
+        
+        /* 주석 */
+        .note {
+            font-size: 9pt;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-left: 3px solid #999;
+        }
+        
+        .note-label {
+            font-weight: bold;
+        }
+        
+        .numeric {
+            text-align: right;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% for page_num in range(num_pages) %}
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
+        
+        <div class="region-title">{{ region_name }}</div>
+        
+        {% if sections['production'] %}
+        <div class="section">
+            <h2 class="section-title">생산</h2>
+            
+            {% if sections['production']['manufacturing'] %}
+            <div class="subsection">
+                <h3 class="section-title">광공업생산</h3>
+                {% for item in sections['production']['manufacturing']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['production']['service'] %}
+            <div class="subsection">
+                <h3 class="section-title">서비스업생산</h3>
+                {% for item in sections['production']['service']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['production']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비 (%)</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['production']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['production']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if sections['consumption_construction'] %}
+        <div class="section">
+            <h2 class="section-title">소비·건설</h2>
+            
+            {% if sections['consumption_construction']['consumption'] %}
+            <div class="subsection">
+                <h3 class="section-title">소비</h3>
+                {% for item in sections['consumption_construction']['consumption']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['consumption_construction']['construction'] %}
+            <div class="subsection">
+                <h3 class="section-title">건설</h3>
+                {% for item in sections['consumption_construction']['construction']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['consumption_construction']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비 (%)</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['consumption_construction']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['consumption_construction']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if sections['exports'] %}
+        <div class="section">
+            <h2 class="section-title">수출·입</h2>
+            
+            {% if sections['exports']['exports'] %}
+            <div class="subsection">
+                <h3 class="section-title">수출</h3>
+                {% for item in sections['exports']['exports']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['exports']['imports'] %}
+            <div class="subsection">
+                <h3 class="section-title">수입</h3>
+                {% for item in sections['exports']['imports']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['exports']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비 (%)</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['exports']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['exports']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if sections['employment'] %}
+        <div class="section">
+            <h2 class="section-title">고용</h2>
+            
+            {% if sections['employment']['employment_rate'] %}
+            <div class="subsection">
+                <h3 class="section-title">고용률</h3>
+                {% for item in sections['employment']['employment_rate']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['employment']['employed_persons'] %}
+            <div class="subsection">
+                <h3 class="section-title">취업자</h3>
+                {% for item in sections['employment']['employed_persons']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['employment']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비 (%)</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['employment']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['employment']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if sections['prices'] %}
+        <div class="section">
+            <h2 class="section-title">물가</h2>
+            
+            {% if sections['prices']['consumer_prices'] %}
+            <div class="subsection">
+                <h3 class="section-title">소비자물가</h3>
+                {% for item in sections['prices']['consumer_prices']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['prices']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비 (%)</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['prices']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['prices']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if sections['domestic_migration'] %}
+        <div class="section">
+            <h2 class="section-title">국내 인구이동</h2>
+            
+            {% if sections['domestic_migration']['domestic_migration'] %}
+            <div class="subsection">
+                <h3 class="section-title">국내 인구이동</h3>
+                {% for item in sections['domestic_migration']['domestic_migration']['narrative'] %}
+                <div class="item">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if sections['domestic_migration']['table'] %}
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">주요지표</th>
+                        <th colspan="3">전년동기대비</th>
+                    </tr>
+                    <tr>
+                        {% for period in sections['domestic_migration']['table']['periods'] %}
+                        <th>{{ period }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sections['domestic_migration']['table']['data'] %}
+                    <tr>
+                        <td>{{ row['indicator'] }}</td>
+                        {% for value in row['values'] %}
+                        <td class="numeric">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if notes %}
+        <div class="note">
+            <span class="note-label">주:</span> {{ notes }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>

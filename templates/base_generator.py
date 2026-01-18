@@ -375,7 +375,8 @@ class BaseGenerator(ABC):
         self,
         header_row: Any,
         target_year: int,
-        target_quarter: int
+        target_quarter: int,
+        require_type_match: bool = True
     ) -> Optional[int]:
         """
         [스마트 헤더 탐색기] 병합된 셀(Merged Header) 문제를 완벽하게 돌파하여 정확한 열 위치를 찾아냅니다.
@@ -396,10 +397,11 @@ class BaseGenerator(ABC):
         """
         # 1. DataFrame인 경우: 병합된 셀 처리 로직 사용
         if isinstance(header_row, pd.DataFrame):
-            return self._find_target_col_index_from_df(header_row, target_year, target_quarter)
+            return self._find_target_col_index_from_df(header_row, target_year, target_quarter, require_type_match)
         
         # 2. Series나 단일 행인 경우: 기존 로직 사용 (하위 호환성)
         # 하지만 가능하면 DataFrame을 전달하는 것이 좋습니다.
+        # require_type_match는 단일 행에서는 항상 True로 사용 (하위 호환성)
         return self._find_target_col_index_from_row(header_row, target_year, target_quarter)
     
     def _find_target_col_index_from_df(
@@ -558,11 +560,29 @@ class BaseGenerator(ABC):
             quarter_match_reason = []
             
             for q_str in target_quarter_strs:
-                q_clean = q_str.replace(" ", "").replace("/", "")
-                if q_clean in col_text:
-                    has_quarter = True
-                    quarter_match_reason.append(f"'{q_str}' 형식 매칭")
-                    break
+                # "/"가 포함된 형식(예: "3/4")은 그대로 매칭 시도
+                if "/" in q_str:
+                    # "3/4" 형식: col_text에서 공백 제거 후 "3/4"가 포함되는지 확인
+                    q_normalized = q_str.replace(" ", "")
+                    # "2025 3/4" -> "20253/4"가 되므로 "3/4"를 직접 찾기
+                    if q_normalized in col_text:
+                        has_quarter = True
+                        quarter_match_reason.append(f"'{q_str}' 형식 매칭")
+                        break
+                    # 연도와 함께 있는 경우도 확인 (예: "20253/4"에서 "3/4" 추출)
+                    # 정규식으로 "숫자숫자숫자숫자3/4" 패턴 찾기
+                    year_quarter_pattern = rf'\d{{4}}{re.escape(q_normalized)}'
+                    if re.search(year_quarter_pattern, col_text):
+                        has_quarter = True
+                        quarter_match_reason.append(f"'{q_str}' 형식 매칭 (연도+분기 패턴)")
+                        break
+                else:
+                    # "/"가 없는 형식(예: "3", "3분기", "3Q"): 공백과 "/" 제거 후 매칭
+                    q_clean = q_str.replace(" ", "").replace("/", "")
+                    if q_clean in col_text:
+                        has_quarter = True
+                        quarter_match_reason.append(f"'{q_str}' 형식 매칭")
+                        break
             
             # 숫자로 직접 확인 (예: "3"이 "3분기" 또는 "3/4"에 포함)
             if str(target_quarter) in col_text:
@@ -589,14 +609,18 @@ class BaseGenerator(ABC):
             if is_rate and not require_type_match:
                 if "고용률" in col_text:
                     type_match_reason.append("'고용률' 포함 (타입 필터링 선택적)")
+                    type_match = True  # 명시적으로 True 설정
                 if "실업률" in col_text or "실업자" in col_text:
                     type_match_reason.append("'실업률/실업자' 포함 (타입 필터링 선택적)")
+                    type_match = True  # 명시적으로 True 설정
             
             # 매칭 결과 출력 (처음 10개 컬럼 또는 매칭 조건 일부 만족 시)
             should_print = (col_idx < 10) or has_year or has_quarter or type_match
             
             if should_print:
-                match_status = "✅ 매칭" if (has_year and has_quarter and type_match) else "❌ 불일치"
+                # require_type_match가 False면 타입 매칭 없이도 연도+분기만 맞으면 매칭
+                final_match_check = has_year and has_quarter and (type_match if require_type_match else True)
+                match_status = "✅ 매칭" if final_match_check else "❌ 불일치"
                 print(f"  컬럼 {col_idx:3d}: {match_status}")
                 print(f"    원본: {' | '.join(col_values_orig) if col_values_orig else '(빈)'}")
                 print(f"    병합처리: {' | '.join(col_values) if col_values else '(빈)'}")
@@ -715,13 +739,35 @@ class BaseGenerator(ABC):
                 col_text_check = "".join(merged_values).replace(" ", "")
                 has_y = (target_year_str in col_text_check or target_year_short in col_text_check)
                 has_q = str(target_quarter) in col_text_check
+                # 분기 형식도 확인 ("3/4" 형식)
+                for q_str in target_quarter_strs:
+                    if "/" in q_str:
+                        q_normalized = q_str.replace(" ", "")
+                        if q_normalized in col_text_check:
+                            has_q = True
+                            break
+                    else:
+                        q_clean = q_str.replace(" ", "").replace("/", "")
+                        if q_clean in col_text_check:
+                            has_q = True
+                            break
                 has_t = ("지수" in col_text_check or "증감" in col_text_check or "등락" in col_text_check)
+                # 고용률/실업률도 타입으로 인정 (require_type_match가 False인 경우)
+                if not require_type_match:
+                    has_t = has_t or ("고용률" in col_text_check or "실업률" in col_text_check or "실업자" in col_text_check)
                 
                 status = ""
-                if has_y and has_q and has_t:
-                    status = " ✅ 완전매칭"
-                elif has_y or has_q or has_t:
-                    status = " ⚠️ 부분매칭"
+                # require_type_match가 False면 타입 없이도 연도+분기만 맞으면 완전매칭
+                if require_type_match:
+                    if has_y and has_q and has_t:
+                        status = " ✅ 완전매칭"
+                    elif has_y or has_q or has_t:
+                        status = " ⚠️ 부분매칭"
+                else:
+                    if has_y and has_q:
+                        status = " ✅ 완전매칭"
+                    elif has_y or has_q:
+                        status = " ⚠️ 부분매칭"
                 
                 print(f"{col_idx:4d}  {orig_display[:48]:<50} {merged_display[:48]:<50}{status}")
             

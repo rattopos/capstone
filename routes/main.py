@@ -98,8 +98,16 @@ def download_report(report_id):
     if not report_name or not isinstance(report_name, str):
         return "보도자료 이름이 유효하지 않습니다", 500
     
-    # 파일명 안전화 (위험한 문자 제거)
+    # 파일명 안전화 (위험한 문자 제거, 하이픈은 유지)
     report_name_safe = report_name.replace('/', '_').replace('\\', '_').replace('..', '_')
+    # 하이픈은 파일명에 포함될 수 있으므로 유지 (예: '요약-고용인구')
+    
+    # 디버그: 파일 검색 정보 출력
+    print(f"[다운로드] 보도자료 검색:")
+    print(f"  - report_id: {report_id}")
+    print(f"  - report_name: {report_name}")
+    print(f"  - report_name_safe: {report_name_safe}")
+    print(f"  - is_regional: {is_regional}")
     
     # 가능한 파일명 패턴들
     possible_files = []
@@ -108,25 +116,53 @@ def download_report(report_id):
         # 시도별 보고서: regional_output 폴더 확인
         possible_files = [
             TEMPLATES_DIR / 'regional_output' / f"{report_name_safe}_output.html",
+            TEMPLATES_DIR / 'regional_output' / f"{report_name}_output.html",  # 원본 이름도 시도
             TEMPLATES_DIR / f"{report_name_safe}_output.html",
             TEMPLATES_DIR / f"{report_name_safe}_preview.html",
         ]
     else:
-        # 일반 보고서: templates 폴더 직접 확인
+        # 일반 보고서: templates 폴더 직접 확인 (여러 패턴 시도)
         possible_files = [
             TEMPLATES_DIR / f"{report_name_safe}_output.html",
+            TEMPLATES_DIR / f"{report_name}_output.html",  # 원본 이름도 시도
             TEMPLATES_DIR / f"{report_name_safe}_preview.html",
+            TEMPLATES_DIR / f"{report_name}_preview.html",  # 원본 이름도 시도
         ]
+    
+    # 디버그: 검색할 파일 목록 출력
+    print(f"[다운로드] 검색할 파일 목록:")
+    for file_path in possible_files:
+        exists = file_path.exists() if file_path else False
+        is_file = file_path.is_file() if exists else False
+        print(f"  - {file_path} (존재: {exists}, 파일: {is_file})")
     
     # 파일 찾기 및 다운로드 (안전한 처리)
     for file_path in possible_files:
         try:
             if file_path.exists() and file_path.is_file():
                 filename = f"{report_name}.html"
+                print(f"[다운로드] ✅ 파일 발견: {file_path}")
+                print(f"[다운로드] 다운로드 파일명: {filename}")
                 return send_file_with_korean_filename(str(file_path), filename, 'text/html')
         except Exception as e:
             print(f"[ERROR] 파일 다운로드 중 오류 ({file_path}): {e}")
+            import traceback
+            traceback.print_exc()
             continue  # 다음 파일 시도
+    
+    # 디버그: 파일을 찾지 못한 경우 실제 존재하는 파일 목록 출력
+    print(f"[다운로드] ❌ 파일을 찾을 수 없습니다. TEMPLATES_DIR의 파일 목록:")
+    try:
+        if is_regional:
+            regional_dir = TEMPLATES_DIR / 'regional_output'
+            if regional_dir.exists():
+                files = list(regional_dir.glob('*.html'))
+                print(f"  - regional_output 폴더의 HTML 파일: {[f.name for f in files[:10]]}")
+        else:
+            files = list(TEMPLATES_DIR.glob('*_output.html'))
+            print(f"  - templates 폴더의 *_output.html 파일: {[f.name for f in files[:10]]}")
+    except Exception as e:
+        print(f"  - 파일 목록 조회 중 오류: {e}")
     
     return f"보도자료가 아직 생성되지 않았습니다: {report_name}", 404
 
