@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅱ. 시도별 경제동향 - 제주 (2025년 3/4분기)</title>
+    <title>Ⅲ. 시도별 경제동향 - 제주 (2025년 3/4분기)</title>
     <style>
         * {
             margin: 0;
@@ -101,314 +101,87 @@
             color: #1565c0;
         }
         
-        /* 플레이스홀더 */
-        .placeholder {
-            background-color: #fff3cd;
-            border: 1px dashed #ffc107;
-            padding: 1px 4px;
-            border-radius: 2px;
-            color: #856404;
-            cursor: text;
-            display: inline-block;
-            min-width: 30px;
-        }
-        
-        /* 섹션별 미니 테이블 */
-        .mini-table-container {
-            margin-top: 12px;
-            margin-bottom: 15px;
-            width: 100%;
-        }
-        
-        .mini-table-title {
-            font-size: 10pt;
-            font-weight: 500;
-            margin-bottom: 5px;
-            color: #666;
-        }
-        
-        .mini-table {
+        /* 표 스타일 */
+        table {
             width: 100%;
             border-collapse: collapse;
+            margin: 15px 0;
             font-size: 10pt;
         }
         
-        .mini-table th,
-        .mini-table td {
-            border: 1px solid #000;
-            padding: 3px 5px;
-            text-align: center;
-            word-break: break-word;
-            overflow-wrap: break-word;
+        table thead {
+            background-color: #e8e8e8;
         }
         
-        .mini-table th {
-            background-color: #e6e0ec;
-            font-weight: normal;
-        }
-        
-        /* 요약 테이블 */
-        .summary-table-container {
-            margin-top: 20px;
-            width: 100%;
-        }
-        
-        .table-title {
+        table th {
+            border: 1px solid #999;
+            padding: 8px;
             text-align: center;
             font-weight: bold;
-            font-size: 11pt;
-            font-family: "Malgun Gothic", serif;
-            margin-bottom: 5px;
         }
         
-        .table-subtitle {
-            text-align: right;
-            font-size: 11pt;
-            color: #333;
-            margin-bottom: 3px;
-        }
-        
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11pt;
-        }
-        
-        .summary-table th,
-        .summary-table td {
-            border: 1px solid #000;
-            padding: 2px 4px;
+        table td {
+            border: 1px solid #ccc;
+            padding: 8px;
             text-align: center;
-            word-break: break-word;
-            overflow-wrap: break-word;
         }
         
-        .summary-table th {
-            background-color: #e6e0ec;
+        table td:first-child {
+            text-align: left;
             font-weight: normal;
         }
         
-        .summary-table .period-col {
+        /* 주석 */
+        .note {
+            font-size: 9pt;
+            margin-top: 10px;
+            padding: 8px;
             background-color: #f5f5f5;
+            border-left: 3px solid #999;
         }
         
-        /* 인쇄 최적화 */
+        .note-label {
+            font-weight: bold;
+        }
+        
+        .numeric {
+            text-align: right;
+        }
+        
         @media print {
             body {
+                margin: 0;
                 padding: 0;
             }
-            
             .page {
-                width: 100%;
-                min-height: auto;
-                padding: 0;
                 margin: 0;
                 box-shadow: none;
-            }
-            
-            .summary-table th {
-                background-color: #e6e0ec !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                page-break-after: always;
             }
         }
     </style>
 </head>
 <body>
+    
     <div class="page">
-        <!-- Level 1: 메인 헤더 (첫 페이지에만 표시) -->
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
+        
+        <div class="region-title">제주</div>
         
         
-        <!-- Level 2: 지역 제목 (크게 강조) -->
-        <div class="region-title">17. 제주</div>
         
-        <!-- ===== 생산 섹션 ===== -->
-        <div class="section-title">생산</div>
         
-        <div class="item">
-            <span class="item-label">(광공업 생산)</span>
-            
-            
-            
-                의약품, 식료품(41.7%, 9.2%) 등에서 늘었으나, 전기·가스업, 음료(-15.3%, -8.7%) 등에서 줄어 전년동분기대비 <span class="decrease">4.2% 감소</span>
-            
-        </div>
         
-        <div class="item">
-            <span class="item-label">(서비스업 생산)</span>
-            
-            
-            
-                도소매업, 운수·창고업(2.2%, 1.6%) 등이 늘었으나, 부동산, 정보통신업(-40.9%, -34.4%) 등이 줄어 전년동분기대비 <span class="decrease">8.2% 감소</span>
-            
-        </div>
         
-        <!-- ===== 소비.건설 섹션 ===== -->
-        <div class="section-title">소비.건설</div>
         
-        <div class="item">
-            <span class="item-label">(소매판매)</span>
-            
-            
-            
-                
-                    승용차 및 연료소매점(4.3%)이 늘었으나, 대형마트, 슈퍼마켓·잡화점·편의점(-8.7%, -4.4%)등이 줄어
-                
-                전년동분기대비 <span class="decrease">1.3% 감소</span>
-            
-        </div>
         
-        <div class="item">
-            <span class="item-label">(건설수주)</span>
-            
-            
-            
-                
-                    기타 건축, 토지조성(1790.9%)이 늘었으나,
-                
-                
-                    농림 및 수산, 발전 및 송전(-100.0%)이 줄어
-                
-                전년동분기대비 <span class="decrease">69.7% 감소</span>
-            
-        </div>
         
-        <!-- ===== 수출입.물가 섹션 ===== -->
-        <div class="section-title">수출입·물가</div>
         
-        <div class="item">
-            <span class="item-label">(수출)</span>
-            
-            
-            
-            
-            
-                돼지고기, 주류(-64.3%, -22.1%) 등이 줄었으나, 기타 집적회로 반도체 및 부품, 프로세스와 컨트롤러(151.8%, 9767.5%) 등이 늘어 전년동분기대비 <span class="increase">168.1% 증가</span>
-            
-        </div>
         
-        <div class="item">
-            <span class="item-label">(수입)</span>
-            
-            
-            
-                측정시험기, 기타 석유제품(-21.1%, -15.3%) 등이 줄었으나, 항공기, 원동기(1439.3%, 63.4%) 등이 늘어 전년동분기대비 <span class="increase">61.4% 증가</span>
-            
-        </div>
         
-        <div class="item">
-            <span class="item-label">(소비자물가)</span>
-            
-            
-            통신, 교통(-4.3%, -0.1%)가 하락하였으나, 기타 상품 및 서비스, 식료품 · 비주류음료(5.0%, 4.8%) 등이 올라 전년동분기대비 <span class="increase">1.7% 상승</span>
-        </div>
         
-        <!-- ===== 고용·인구이동 섹션 ===== -->
-        <div class="section-title">고용·인구이동</div>
-        
-        <div class="item">
-            <span class="item-label">(고용률)</span>
-            
-            
-            
-                50대(-2.1%p), 30대(-1.5%p) 등에서 하락하였으나, 20대(3.2%p), 60대(2.2%p) 등에서 올라 전년동분기대비 <span class="increase">0.4%p 상승</span>
-            
-        </div>
-        
-        <div class="item">
-            <span class="item-label">(인구이동)</span>
-            
-            
-            
-                인구는 05~09세(81명), 40~44세(31명) 등에서 유입되었으나, 20~24세(420명), 15~19세(221명) 등에서 유출되어 <span class="decrease">759명 순유출</span>
-            
-        </div>
-        
-        <!-- ===== 주요지표 요약 테이블 ===== -->
-        <div class="summary-table-container">
-            <div class="table-title">《 《 제주특별자치도 주요지표 》 》</div>
-            <div class="table-subtitle">[전년동분기대비, %]</div>
-            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="summary-table">
-                <thead style="border: 1px solid black !important;">
-                    <tr>
-                        <th rowspan="2" style="border: 1px solid black !important;"></th>
-                        <th rowspan="2" style="border: 1px solid black !important;">광공업<br>생산</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">서비스업<br>생산</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">소매<br>판매</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">건설<br>수주</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">수출</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">수입</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">소비자<br>물가</th>
-                        <th rowspan="2" style="border: 1px solid black !important;">고용률<br>(%p)</th>
-                        <th colspan="2" style="border: 1px solid black !important;">인구순이동<br>(천명)</th>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black !important;">전체</th>
-                        <th style="border: 1px solid black !important;">20-29</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    
-                    <tr>
-                        <td class="period-col" style="border: 1px solid black !important;">'23.2/4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-2.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-1.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-6.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-33.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">18.8</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-20.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">2.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.3</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.3</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.5</td>
-                    </tr>
-                    
-                    <tr>
-                        <td class="period-col" style="border: 1px solid black !important;">'24.2/4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">3.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">9.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-2.5</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-8.7</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-10.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-2.6</td>
-                        <td style="border: 1px solid black !important; text-align: right;">1.5</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.8</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.5</td>
-                    </tr>
-                    
-                    <tr>
-                        <td class="period-col" style="border: 1px solid black !important;">'25.1/4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-3.1</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-8.9</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-2.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-70.6</td>
-                        <td style="border: 1px solid black !important; text-align: right;">37.8</td>
-                        <td style="border: 1px solid black !important; text-align: right;">53.6</td>
-                        <td style="border: 1px solid black !important; text-align: right;">1.5</td>
-                        <td style="border: 1px solid black !important; text-align: right;">0.5</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.9</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.4</td>
-                    </tr>
-                    
-                    <tr>
-                        <td class="period-col" style="border: 1px solid black !important;">'25.2/4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-4.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-8.2</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-1.3</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-69.7</td>
-                        <td style="border: 1px solid black !important; text-align: right;">168.1</td>
-                        <td style="border: 1px solid black !important; text-align: right;">61.4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">1.7</td>
-                        <td style="border: 1px solid black !important; text-align: right;">0.4</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.8</td>
-                        <td style="border: 1px solid black !important; text-align: right;">-0.5</td>
-                    </tr>
-                    
-                </tbody>
-            </table>
-        </div>
         
     </div>
+    
 </body>
 </html>

@@ -14,6 +14,8 @@ import unicodedata
 import uuid
 
 from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER, EXPORT_FOLDER
+from openpyxl.utils import get_column_letter
+from openpyxl.cell.cell import MergedCell
 
 
 def safe_filename(filename):
@@ -313,6 +315,12 @@ def upload_excel():
             session['excel_file_mtime'] = Path(filepath).stat().st_mtime
         except OSError:
             pass  # 파일 시간 확인 실패는 무시
+
+        # 업로드 직후 미리보기 없이 자동 생성/내보내기
+        auto_year = year or session.get('year') or 2025
+        auto_quarter = quarter or session.get('quarter') or 2
+        auto_generate = _generate_all_reports_core(auto_year, auto_quarter, cleanup_after=False)
+        auto_export = _export_hwp_ready_core([], auto_year, auto_quarter, output_folder=EXPORT_FOLDER)
         
         return jsonify({
             'success': True,
@@ -327,7 +335,9 @@ def upload_excel():
                 'success': preprocess_success,
                 'message': preprocess_msg,
                 'method': get_recommended_method()
-            }
+            },
+            'auto_generate': auto_generate,
+            'auto_export': auto_export
         })
     
     except Exception as e:
@@ -513,238 +523,165 @@ def get_session_info():
     })
 
 
-@api_bp.route('/generate-all', methods=['POST'])
-def generate_all_reports():
-    """모든 보도자료 일괄 생성 (최적화 버전 - 엑셀 파일 캐싱)"""
+def _generate_all_reports_core(year, quarter, cleanup_after=True):
+    """모든 보도자료 생성 공통 로직 (옵션: 업로드 정리 여부)"""
     from services.excel_cache import get_excel_file, clear_excel_cache
-    
-    data = request.get_json(silent=True)
-    if data is None:
-        data = {}  # 빈 dict로 처리하여 기본값 사용
-    
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
-    # 담당자 설정 기능 제거: custom_data는 더 이상 사용하지 않음
-    
+
     excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
-        return jsonify({'success': False, 'error': '엑셀 파일을 먼저 업로드하세요'})
-    
+        return {'success': False, 'error': '엑셀 파일을 먼저 업로드하세요', 'generated': [], 'errors': [], 'cleanup': cleanup_after}
+
     generated_reports = []
     errors = []
-    
-    # 엑셀 파일을 한 번만 로드하고 모든 Generator에 재사용 (캐싱)
     excel_file = None
+
     try:
         excel_file = get_excel_file(excel_path, use_data_only=True)
         if excel_file is None:
             error_msg = f"엑셀 파일을 로드할 수 없습니다: {excel_path}"
             print(f"[ERROR] {error_msg}")
-            return jsonify({
+            return {
                 'success': False,
                 'error': error_msg,
                 'generated': [],
-                'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}]
-            })
+                'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}],
+                'cleanup': cleanup_after
+            }
         print(f"[보도자료 생성] 엑셀 파일 캐싱 완료: {excel_path}")
     except Exception as e:
         import traceback
         error_msg = f"엑셀 파일 로드 실패: {str(e)}"
         print(f"[ERROR] {error_msg}")
         traceback.print_exc()
-        return jsonify({
+        return {
             'success': False,
             'error': error_msg,
             'generated': [],
-            'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}]
-        })
-    
+            'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}],
+            'cleanup': cleanup_after
+        }
+
     try:
-        # 1. 요약 및 부문별 보도자료 생성
         for report_config in REPORT_ORDER:
             try:
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
                 report_id = report_config.get('id', 'Unknown')
-                
+
                 print(f"[보도자료 생성] 시작: {report_name} ({report_id})")
-                
-                # 캐시된 excel_file 전달 (custom_data는 None으로 전달 - 기본값 사용)
+
                 html_content, error, _ = generate_report_html(
                     excel_path, report_config, year, quarter, None, excel_file=excel_file
                 )
-                
+
                 if error:
                     import traceback
                     error_msg = f"{report_name} 생성 실패: {error}"
                     print(f"[ERROR] {error_msg}")
                     traceback.print_exc()
-                    errors.append({
-                        'report_id': report_id,
-                        'report_name': report_name,
-                        'error': str(error)
-                    })
+                    errors.append({'report_id': report_id, 'report_name': report_name, 'error': str(error)})
                 elif html_content is None:
                     error_msg = f"{report_name} 생성 실패: HTML 내용이 None입니다"
                     print(f"[ERROR] {error_msg}")
-                    errors.append({
-                        'report_id': report_id,
-                        'report_name': report_name,
-                        'error': 'HTML 내용이 None입니다'
-                    })
+                    errors.append({'report_id': report_id, 'report_name': report_name, 'error': 'HTML 내용이 None입니다'})
                 else:
                     try:
-                        # 파일명 검증 및 안전한 경로 생성
                         report_name_safe = report_config.get('name', 'unknown')
                         if not report_name_safe or not isinstance(report_name_safe, str):
                             report_name_safe = 'unknown'
-                        
-                        # 위험한 문자 제거
                         report_name_safe = report_name_safe.replace('/', '_').replace('\\', '_').replace('..', '_')
-                        
                         output_path = TEMPLATES_DIR / f"{report_name_safe}_output.html"
-                        
-                        # 디렉토리 존재 확인
                         output_path.parent.mkdir(parents=True, exist_ok=True)
-                        
-                        # 파일 쓰기 (안전한 인코딩)
                         with open(output_path, 'w', encoding='utf-8') as f:
-                            if html_content:
-                                f.write(html_content)
-                            else:
-                                print(f"[WARNING] {report_name} HTML 내용이 비어있습니다.")
-                                f.write('<!-- Empty content -->')
-                        
+                            f.write(html_content if html_content else '<!-- Empty content -->')
                         print(f"[보도자료 생성] 성공: {report_name} → {output_path}")
-                        generated_reports.append({
-                            'report_id': report_id,
-                            'name': report_name,
-                            'path': str(output_path)
-                        })
+                        generated_reports.append({'report_id': report_id, 'name': report_name, 'path': str(output_path)})
                     except Exception as write_error:
                         import traceback
                         error_msg = f"{report_name} 파일 저장 실패: {str(write_error)}"
                         print(f"[ERROR] {error_msg}")
                         traceback.print_exc()
-                        errors.append({
-                            'report_id': report_id,
-                            'report_name': report_name,
-                            'error': f"파일 저장 실패: {str(write_error)}"
-                        })
+                        errors.append({'report_id': report_id, 'report_name': report_name, 'error': f"파일 저장 실패: {str(write_error)}"})
             except Exception as e:
                 import traceback
-                report_name = report_config.get('name', report_config.get('id', 'Unknown'))
-                report_id = report_config.get('id', 'Unknown')
                 error_message = str(e)
-                print(f"[ERROR] {report_name} 생성 중 예외 발생: {error_message}")
+                print(f"[ERROR] {report_config.get('name', report_config.get('id', 'Unknown'))} 생성 중 예외 발생: {error_message}")
                 traceback.print_exc()
-                errors.append({
-                    'report_id': report_id,
-                    'report_name': report_name,
-                    'error': f"예외 발생: {error_message}"
-                })
-                continue  # 다음 보도자료 생성 계속 진행
-        
-        # 2. 시도별 보도자료 생성
+                errors.append({'report_id': report_config.get('id', 'Unknown'), 'report_name': report_config.get('name', report_config.get('id', 'Unknown')), 'error': f"예외 발생: {error_message}"})
+                continue
+
         print(f"[보도자료 생성] 시도별 보도자료 생성 시작...")
         output_dir = TEMPLATES_DIR / 'regional_output'
         output_dir.mkdir(exist_ok=True)
-        
+
         for region_config in REGIONAL_REPORTS:
             try:
                 region_name = region_config.get('name', region_config.get('id', 'Unknown'))
                 region_id = region_config.get('id', 'Unknown')
-                
                 print(f"[시도별 보도자료 생성] 시작: {region_name} ({region_id})")
-                
-                html_content, error = generate_regional_report_html(excel_path, region_name, is_reference=False, year=year, quarter=quarter)
-                
+                html_content, error = generate_regional_report_html(excel_path, region_name, is_reference=False, year=year, quarter=quarter, excel_file=excel_file)
+
                 if error:
                     import traceback
                     error_msg = f"{region_name} 생성 실패: {error}"
                     print(f"[ERROR] {error_msg}")
                     traceback.print_exc()
-                    errors.append({
-                        'report_id': region_id,
-                        'report_name': f'시도별-{region_name}',
-                        'error': str(error)
-                    })
+                    errors.append({'report_id': region_id, 'report_name': f'시도별-{region_name}', 'error': str(error)})
                 elif html_content is None:
                     error_msg = f"{region_name} 생성 실패: HTML 내용이 None입니다"
                     print(f"[ERROR] {error_msg}")
-                    errors.append({
-                        'report_id': region_id,
-                        'report_name': f'시도별-{region_name}',
-                        'error': 'HTML 내용이 None입니다'
-                    })
+                    errors.append({'report_id': region_id, 'report_name': f'시도별-{region_name}', 'error': 'HTML 내용이 None입니다'})
                 else:
                     try:
-                        # 파일명 검증 및 안전한 경로 생성
                         region_name_safe = region_name.replace('/', '_').replace('\\', '_').replace('..', '_')
                         output_path = output_dir / f"{region_name_safe}_output.html"
-                        
-                        # 디렉토리 존재 확인
                         output_path.parent.mkdir(parents=True, exist_ok=True)
-                        
-                        # 파일 쓰기 (안전한 인코딩)
                         with open(output_path, 'w', encoding='utf-8') as f:
-                            if html_content:
-                                f.write(html_content)
-                            else:
-                                print(f"[WARNING] {region_name} HTML 내용이 비어있습니다.")
-                                f.write('<!-- Empty content -->')
-                        
+                            f.write(html_content if html_content else '<!-- Empty content -->')
                         print(f"[시도별 보도자료 생성] 성공: {region_name} → {output_path}")
-                        generated_reports.append({
-                            'report_id': region_id,
-                            'name': f'시도별-{region_name}',
-                            'path': str(output_path)
-                        })
+                        generated_reports.append({'report_id': region_id, 'name': f'시도별-{region_name}', 'path': str(output_path)})
                     except Exception as write_error:
                         import traceback
                         error_msg = f"{region_name} 파일 저장 실패: {str(write_error)}"
                         print(f"[ERROR] {error_msg}")
                         traceback.print_exc()
-                        errors.append({
-                            'report_id': region_id,
-                            'report_name': f'시도별-{region_name}',
-                            'error': f"파일 저장 실패: {str(write_error)}"
-                        })
+                        errors.append({'report_id': region_id, 'report_name': f'시도별-{region_name}', 'error': f"파일 저장 실패: {str(write_error)}"})
             except Exception as e:
                 import traceback
-                region_name = region_config.get('name', region_config.get('id', 'Unknown'))
-                region_id = region_config.get('id', 'Unknown')
                 error_message = str(e)
-                print(f"[ERROR] {region_name} 생성 중 예외 발생: {error_message}")
+                print(f"[ERROR] {region_config.get('name', region_config.get('id', 'Unknown'))} 생성 중 예외 발생: {error_message}")
                 traceback.print_exc()
-                errors.append({
-                    'report_id': region_id,
-                    'report_name': f'시도별-{region_name}',
-                    'error': f"예외 발생: {error_message}"
-                })
-                continue  # 다음 시도별 보도자료 생성 계속 진행
+                errors.append({'report_id': region_config.get('id', 'Unknown'), 'report_name': f"시도별-{region_config.get('name', region_config.get('id', 'Unknown'))}", 'error': f"예외 발생: {error_message}"})
+                continue
     finally:
-        # 작업 완료 후 캐시 정리 (메모리 관리)
         clear_excel_cache(excel_path)
-        
-        # 작업 완료 후 업로드 파일 삭제
-        try:
-            print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
-            deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
-            if deleted_count > 0:
-                print(f"[정리] 작업 완료 후 업로드 파일 {deleted_count}개 삭제 완료")
-            # 세션에서도 파일 경로 제거
-            session.pop('excel_path', None)
-            session.pop('year', None)
-            session.pop('quarter', None)
-            session.pop('file_type', None)
-        except Exception as cleanup_error:
-            print(f"[경고] 업로드 파일 정리 중 오류 (무시): {cleanup_error}")
-    
-    return jsonify({
-        'success': len(errors) == 0,
-        'generated': generated_reports,
-        'errors': errors
-    })
+        if cleanup_after:
+            try:
+                print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
+                deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
+                if deleted_count > 0:
+                    print(f"[정리] 작업 완료 후 업로드 파일 {deleted_count}개 삭제 완료")
+                session.pop('excel_path', None)
+                session.pop('year', None)
+                session.pop('quarter', None)
+                session.pop('file_type', None)
+            except Exception as cleanup_error:
+                print(f"[경고] 업로드 파일 정리 중 오류 (무시): {cleanup_error}")
+
+    return {'success': len(errors) == 0, 'generated': generated_reports, 'errors': errors, 'cleanup': cleanup_after}
+
+
+@api_bp.route('/generate-all', methods=['POST'])
+def generate_all_reports():
+    """모든 보도자료 일괄 생성 (최적화 버전 - 엑셀 파일 캐싱)"""
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
+    year = data.get('year', session.get('year', 2025))
+    quarter = data.get('quarter', session.get('quarter', 2))
+    cleanup_after = data.get('cleanup_after', True)
+
+    result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after)
+    return jsonify(result)
 
 
 @api_bp.route('/generate-all-regional', methods=['POST'])
@@ -1222,7 +1159,9 @@ def export_xlsx_document():
                 rows = table.find_all('tr')
                 for row_idx, tr in enumerate(rows):
                     cells = tr.find_all(['th', 'td'])
-                    for col_idx, cell in enumerate(cells, 1):
+                    col_pointer = 1  # 현재 입력할 엑셀 컬럼 위치
+                    for cell in cells:
+                        col_idx = col_pointer
                         cell_text = cell.get_text(strip=True)
                         
                         # 숫자 변환 시도
@@ -1245,13 +1184,16 @@ def export_xlsx_document():
                             excel_cell.font = header_font
                             excel_cell.fill = header_fill
                         
-                        # colspan 처리
+                        # colspan 처리: 병합 영역에는 값 입력을 반복하지 않도록 포인터만 이동
                         colspan = int(cell.get('colspan', 1))
                         if colspan > 1:
                             ws.merge_cells(
                                 start_row=current_row, start_column=col_idx,
                                 end_row=current_row, end_column=col_idx + colspan - 1
                             )
+                            col_pointer += colspan
+                        else:
+                            col_pointer += 1
                     
                     current_row += 1
                 
@@ -1298,18 +1240,20 @@ def export_xlsx_document():
                         print(f"이미지 처리 오류: {e}")
                         continue
             
-            # 열 너비 자동 조정
-            for col in ws.columns:
+            # 열 너비 자동 조정 (병합된 셀 위치에서도 안전하게 동작하도록 보강)
+            for idx, col in enumerate(ws.iter_cols(1, ws.max_column)):
                 max_length = 0
-                column = col[0].column_letter
+                column_letter = get_column_letter(idx + 1)
                 for cell in col:
+                    if isinstance(cell, MergedCell):
+                        continue
                     try:
                         if cell.value:
                             max_length = max(max_length, len(str(cell.value)))
-                    except:
-                        pass
+                    except Exception:
+                        continue
                 adjusted_width = min(max_length + 2, 50)
-                ws.column_dimensions[column].width = adjusted_width
+                ws.column_dimensions[column_letter].width = adjusted_width
         
         # 파일 저장
         output_filename = f'지역경제동향_{year}년_{quarter}분기.xlsx'
@@ -1873,40 +1817,24 @@ def _create_placeholder_image(image_path):
     except Exception as e:
         print(f"[경고] 플레이스홀더 이미지 생성 실패: {e}")
         return False
-@api_bp.route('/export-hwp-ready', methods=['POST'])
-def export_hwp_ready():
-    """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
+def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
+    """한글(HWP) 복붙용 HTML을 생성하고 지정 폴더에 저장"""
     try:
-        data = request.get_json(silent=True)
-        if data is None:
-            data = {}
-        
-        pages = data.get('pages', [])
-        year = data.get('year', session.get('year', 2025))
-        quarter = data.get('quarter', session.get('quarter', 2))
-        
-        # pages가 없으면 생성된 HTML 파일들을 자동으로 수집
         if not pages:
-            from pathlib import Path
             templates_dir = Path(__file__).parent.parent / 'templates'
             output_files = list(templates_dir.glob('*_output.html'))
-            
+
             if not output_files:
-                return jsonify({'success': False, 'error': '생성된 보도자료가 없습니다. 먼저 "전체 생성"을 실행하세요.'})
-            
-            # HTML 파일들을 읽어서 pages 배열 생성
+                return {'success': False, 'error': '생성된 보도자료가 없습니다. 먼저 "전체 생성"을 실행하세요.'}
+
             for output_file in sorted(output_files):
                 with open(output_file, 'r', encoding='utf-8') as f:
                     html_content = f.read()
-                    pages.append({
-                        'title': output_file.stem.replace('_output', ''),
-                        'html': html_content
-                    })
-        
+                    pages.append({'title': output_file.stem.replace('_output', ''), 'html': html_content})
+
         if not pages:
-            return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
-        
-        # 한글 복붙에 최적화된 HTML 생성 (인라인 스타일 사용)
+            return {'success': False, 'error': '페이지 데이터가 없습니다.'}
+
         final_html = f'''<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1948,49 +1876,36 @@ def export_hwp_ready():
     
     <div id="hwp-content">
 '''
-        
-        # 표지, 목차, 일러두기, 인포그래픽, 통계표, GRDP 제외할 report_id 목록
+
         excluded_report_ids = {'cover', 'toc', 'stat_toc', 'guide', 'infographic', 'stat_appendix', 'stat_grdp'}
-        
+
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
             page_title = page.get('title', f'페이지 {idx}')
-            category = page.get('category', '')
             report_id = page.get('report_id', '')
-            
-            # 표지와 목차는 제외
+
             if report_id in excluded_report_ids:
                 print(f"[HTML 내보내기] 제외: {report_id} ({page_title})")
                 continue
-            
-            # body 내용 추출
+
             body_content = page_html
             if '<body' in page_html.lower():
                 body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
                 if body_match:
                     body_content = body_match.group(1)
-            
-            # 한글 복붙에 불필요한 요소 제거
-            # 주의: 로고 이미지(img 태그, 특히 logo_mods.png)는 보존됨
+
             body_content = re.sub(r'<style[^>]*>.*?</style>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<script[^>]*>.*?</script>', '', body_content, flags=re.DOTALL)
             body_content = re.sub(r'<link[^>]*>', '', body_content)
             body_content = re.sub(r'<meta[^>]*>', '', body_content)
-            # img 태그는 제거하지 않음 (국가데이터처 로고 등 이미지 보존)
-            
-            # canvas를 차트 플레이스홀더로 대체 (인라인 스타일)
+
             chart_placeholder = '<div style="border: 2px dashed #666; padding: 15px; text-align: center; background: #f5f5f5; margin: 10px 0;">📊 [차트 영역 - 별도 이미지 삽입]</div>'
             body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', chart_placeholder, body_content, flags=re.DOTALL)
             body_content = re.sub(r'<canvas[^>]*/?>',  chart_placeholder, body_content)
-            
-            # SVG 제거 (복잡한 차트)
             body_content = re.sub(r'<svg[^>]*>.*?</svg>', chart_placeholder, body_content, flags=re.DOTALL)
-            
-            # 표에 인라인 border 스타일 추가 (한글에서 표 테두리 인식) - 함초롱바탕 14pt 적용
+
             body_content = _add_table_inline_styles(body_content)
-            
-            # 페이지 구분 (인라인 스타일로) - STYLE_GUIDE 적용
-            # STYLE_GUIDE: Container padding: 20mm 15mm, Font: 'Malgun Gothic', 'Dotum', sans-serif
+
             final_html += f'''
         <!-- 페이지 {idx}: {page_title} -->
         <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; page-break-after: always; width: 210mm; padding: 20mm 15mm;">
@@ -1999,7 +1914,7 @@ def export_hwp_ready():
             </div>
         </div>
 '''
-        
+
         final_html += '''
     </div>
     
@@ -2022,7 +1937,6 @@ def export_hwp_ready():
             selection.removeAllRanges();
         }
         
-        // 단축키 지원
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'a') {
                 e.preventDefault();
@@ -2033,26 +1947,43 @@ def export_hwp_ready():
 </body>
 </html>
 '''
-        
+
         output_filename = f'지역경제동향_{year}년_{quarter}분기_한글복붙용.html'
-        output_path = UPLOAD_FOLDER / output_filename
-        
+        output_folder.mkdir(parents=True, exist_ok=True)
+        output_path = output_folder / output_filename
+
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
-        
-        return jsonify({
+
+        return {
             'success': True,
             'html': final_html,
             'filename': output_filename,
-            'view_url': f'/view/{output_filename}',
-            'download_url': f'/uploads/{output_filename}',
-            'total_pages': len(pages)
-        })
-        
+            'view_url': f'/exports/{output_filename}',
+            'download_url': f'/exports/{output_filename}',
+            'total_pages': len(pages),
+            'output_path': str(output_path)
+        }
+
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
+        return {'success': False, 'error': str(e)}
+
+
+@api_bp.route('/export-hwp-ready', methods=['POST'])
+def export_hwp_ready():
+    """한글(HWP) 복붙용 HTML 문서 생성 - 인라인 스타일 최적화"""
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
+    pages = data.get('pages', [])
+    year = data.get('year', session.get('year', 2025))
+    quarter = data.get('quarter', session.get('quarter', 2))
+
+    result = _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER)
+    status = 200 if result.get('success') else 500
+    return jsonify(result), status
 
 
 @api_bp.route('/save-html-to-project', methods=['POST'])

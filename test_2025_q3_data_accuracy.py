@@ -14,7 +14,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from templates.mining_manufacturing_generator import MiningManufacturingGenerator
+from templates.unified_generator import MiningManufacturingGenerator
 
 
 class Color:
@@ -200,13 +200,14 @@ def compare_results(raw_data, generator_data):
         return False
 
 
-def test_column_detection(excel_path):
+def test_column_detection():
     """컬럼 감지 로직 테스트"""
     print_header("4단계: 동적 컬럼 감지 로직 검증")
     
     try:
+        excel_path = project_root / "uploads" / "분석표_25년_3분기_캡스톤업데이트_ee0197ea.xlsx"
         generator = MiningManufacturingGenerator(
-            excel_path=excel_path,
+            excel_path=str(excel_path),
             year=2025,
             quarter=3
         )

@@ -380,21 +380,9 @@ class BaseGenerator(ABC):
     ) -> Optional[int]:
         """
         [스마트 헤더 탐색기] 병합된 셀(Merged Header) 문제를 완벽하게 돌파하여 정확한 열 위치를 찾아냅니다.
-        
-        핵심 로직: "기억하고 채워라 (Memory & Fill)"
-        - 엑셀 헤더는 보통 [2025년][ (빈칸) ][ (빈칸) ] 처럼 되어 있고, 그 아래에 [1분기][2분기][3분기]가 옵니다.
-        - pandas의 'ffill' (forward fill)을 사용하여 병합된 셀을 채워서 정확한 열을 찾습니다.
-        
-        Args:
-            header_row: 헤더 행 또는 DataFrame
-                - DataFrame: 상위 3행을 추출하여 병합된 셀 처리
-                - Series/리스트: 단일 행으로 처리 (하위 호환성)
-            target_year: 찾을 연도 (예: 2025)
-            target_quarter: 찾을 분기 (예: 3)
-            
-        Returns:
-            컬럼 인덱스 (0-based) 또는 None (찾지 못한 경우)
+        (유연성 강화: 다양한 연도/분기/타입 표기법 robust 지원)
         """
+        import re
         # 1. DataFrame인 경우: 병합된 셀 처리 로직 사용
         if isinstance(header_row, pd.DataFrame):
             return self._find_target_col_index_from_df(header_row, target_year, target_quarter, require_type_match)
@@ -402,7 +390,61 @@ class BaseGenerator(ABC):
         # 2. Series나 단일 행인 경우: 기존 로직 사용 (하위 호환성)
         # 하지만 가능하면 DataFrame을 전달하는 것이 좋습니다.
         # require_type_match는 단일 행에서는 항상 True로 사용 (하위 호환성)
-        return self._find_target_col_index_from_row(header_row, target_year, target_quarter)
+        # --- 유연성 강화: 다양한 헤더 표기법 robust 지원 ---
+        y_str = str(target_year)
+        y_short = y_str[2:] if len(y_str) == 4 else y_str
+        q = str(target_quarter)
+        # 다양한 분기 표기
+        q_patterns = [
+            f"{q}/4", f"{q}분기", f"{q}Q", f"Q{q}", f"{q}-4", f"{q} - 4", f"{q}분", f"{q}q"
+        ]
+        # 다양한 연도+분기 결합 패턴 (띄어쓰기, 괄호, 하이픈 등)
+        year_quarter_patterns = [
+            rf"{y_str}\s*[\(\-]{{0,1}}\s*{q}/4[\)\-]{{0,1}}",  # 2025(3/4), 2025-3/4
+            rf"{y_str}\s*{q}분기", rf"{y_str}\s*{q}Q", rf"{y_str}\s*Q{q}",
+            rf"{y_str}{q}/4", rf"{y_str}{q}Q", rf"{y_str}{q}분기",
+            rf"{y_str}\s*{q}-4", rf"{y_str}\s*{q} - 4",
+            rf"{y_str}\s*\({q}/4\)", rf"{y_str}\s*\({q}Q\)",
+            rf"{y_str}\s*\({q}분기\)",
+            rf"{y_str}\s*{q}q", rf"{y_str}{q}q",
+            rf"{y_short}\s*[\(\-]{{0,1}}\s*{q}/4[\)\-]{{0,1}}",  # 25(3/4)
+            rf"{y_short}\s*{q}분기", rf"{y_short}\s*{q}Q", rf"{y_short}\s*Q{q}",
+            rf"{y_short}{q}/4", rf"{y_short}{q}Q", rf"{y_short}{q}분기",
+            rf"{y_short}\s*{q}-4", rf"{y_short}\s*{q} - 4",
+            rf"{y_short}\s*\({q}/4\)", rf"{y_short}\s*\({q}Q\)",
+            rf"{y_short}\s*\({q}분기\)",
+            rf"{y_short}\s*{q}q", rf"{y_short}{q}q",
+        ]
+        # 타입 키워드
+        type_keywords = ["증감", "등락", "증감률", "지수", "고용률", "실업률", "실업자"]
+        header_items = []
+        if isinstance(header_row, pd.Series):
+            header_items = header_row.tolist()
+        elif isinstance(header_row, (list, tuple)):
+            header_items = list(header_row)
+        elif hasattr(header_row, '__iter__') and not isinstance(header_row, str):
+            header_items = [cell.value if hasattr(cell, 'value') else cell for cell in header_row]
+        else:
+            header_items = [header_row]
+        for idx, cell in enumerate(header_items):
+            if pd.isna(cell):
+                continue
+            val = str(cell).strip().replace(" ", "")
+            # 연도/분기 패턴 매칭
+            has_yq = any(re.search(pat.replace(" ", ""), val) for pat in year_quarter_patterns)
+            has_year = (y_str in val) or (y_short in val)
+            has_quarter = any(qp.replace(" ", "") in val for qp in q_patterns)
+            # 타입 키워드 매칭
+            is_growth = any(k in val for k in type_keywords[:4])
+            is_rate = any(k in val for k in type_keywords[4:])
+            type_match = is_growth or (is_rate and not require_type_match)
+            # 최종 매칭: 연도+분기 패턴 or (연도 and 분기)
+            if (has_yq or (has_year and has_quarter)) and (type_match if require_type_match else True):
+                print(f"[SmartSearch-유연] ✅ 발견! Index {idx}: '{cell}' (패턴매칭)")
+                return idx
+        # 못 찾음
+        print(f"[SmartSearch-유연] ❌ 탐색 실패: 컬럼을 찾을 수 없습니다.")
+        return None
     
     def _find_target_col_index_from_df(
         self,

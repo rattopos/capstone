@@ -83,13 +83,29 @@ def find_header_row(ws, max_scan=10):
             return r
     return None
 
-def build_header_map(ws, header_row):
-    """헤더 맵 생성"""
-    header_map = {}
+
+# 여러 행에 걸친 병합 헤더를 조합하는 함수
+def build_multirow_header(ws, header_rows):
+    """여러 행의 헤더를 조합하여 컬럼별 최종 헤더 문자열 생성"""
+    headers = []
     for c in range(1, ws.max_column + 1):
-        v = norm(ws.cell(header_row, c).value)
+        parts = []
+        for r in header_rows:
+            val = ws.cell(r, c).value
+            if val is not None:
+                parts.append(str(val).replace('\n', '').strip())
+        header = ''.join(parts)
+        headers.append(norm(header))
+    return headers
+
+# 조합된 헤더 리스트를 맵으로 변환
+def build_header_map_v2(ws, header_rows):
+    """여러 행 헤더 조합 후 맵 생성"""
+    headers = build_multirow_header(ws, header_rows)
+    header_map = {}
+    for idx, v in enumerate(headers):
         if v:
-            header_map[v] = c
+            header_map[v] = idx + 1  # openpyxl은 1-based index
     return header_map
 
 def fill_aggregation_from_base(wb_a, wb_b, sheet_a_name, sheet_b_name):

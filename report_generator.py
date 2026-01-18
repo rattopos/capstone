@@ -5,6 +5,7 @@
 모든 개별 Generator들을 통합하여 관리하고, 데이터 추출 및 HTML 생성을 처리합니다.
 """
 
+
 import sys
 import json
 import importlib.util
@@ -12,91 +13,22 @@ from pathlib import Path
 from jinja2 import Template
 import pandas as pd
 
-BASE_DIR = Path(__file__).parent
-TEMPLATES_DIR = BASE_DIR / 'templates'
+from config.settings import BASE_DIR, TEMPLATES_DIR
+from config.reports import REPORT_ORDER, SECTOR_REPORTS, SUMMARY_REPORTS, REGIONAL_REPORTS
 
 
 class ReportGenerator:
     """통합 보도자료 생성기"""
     
-    # 보도자료 설정
-    REPORT_CONFIGS = {
-        'manufacturing': {
-            'name': '광공업생산',
-            'generator': 'mining_manufacturing_generator.py',
-            'template': 'mining_manufacturing_template.html',
-            'sheet': 'A 분석',
-            'class_name': 'MiningManufacturingGenerator'
-        },
-        'service': {
-            'name': '서비스업생산',
-            'generator': 'service_industry_generator.py',
-            'template': 'service_industry_template.html',
-            'sheet': 'B 분석',
-            'class_name': 'ServiceIndustryGenerator'
-        },
-        'consumption': {
-            'name': '소비동향',
-            'generator': 'consumption_generator.py',
-            'template': 'consumption_template.html',
-            'sheet': 'C 분석',
-            'class_name': 'ConsumptionGenerator'
-        },
-        'employment': {
-            'name': '고용률',
-            'generator': 'employment_rate_generator.py',
-            'template': 'employment_rate_template.html',
-            'sheet': 'D(고용률)분석',
-            'uses_functions': True
-        },
-        'unemployment': {
-            'name': '실업률',
-            'generator': 'unemployment_generator.py',
-            'template': 'by_type/unemployment_template.html',
-            'sheet': 'D(실업)분석',
-            'uses_functions': True
-        },
-        'price': {
-            'name': '물가동향',
-            'generator': 'price_trend_generator.py',
-            'template': 'price_trend_template.html',
-            'sheet': 'E(품목성질물가)분석',
-            'class_name': 'PriceTrendGenerator'
-        },
-        'export': {
-            'name': '수출',
-            'generator': 'export_generator.py',
-            'template': 'export_template.html',
-            'sheet': 'G 분석',
-            'class_name': 'ExportGenerator'
-        },
-        'import': {
-            'name': '수입',
-            'generator': 'import_generator.py',
-            'template': 'import_template.html',
-            'sheet': 'H 분석',
-            'class_name': 'ImportGenerator'
-        },
-        'migration': {
-            'name': '국내인구이동',
-            'generator': 'domestic_migration_generator.py',
-            'template': 'by_type/migration_template.html',
-            'sheet': 'I(순인구이동)집계',
-            'class_name': 'DomesticMigrationGenerator'
-        }
-    }
-    
     def __init__(self, excel_path: str):
         """
         초기화
-        
         Args:
             excel_path: 엑셀 파일 경로
         """
         self.excel_path = Path(excel_path)
         if not self.excel_path.exists():
             raise FileNotFoundError(f"엑셀 파일을 찾을 수 없습니다: {excel_path}")
-        
         self._modules = {}
     
     def _load_module(self, generator_name: str):
@@ -121,31 +53,26 @@ class ReportGenerator:
     def extract_data(self, report_id: str) -> dict:
         """
         특정 보도자료의 데이터 추출
-        
         Args:
             report_id: 보도자료 ID
-            
         Returns:
             추출된 데이터 딕셔너리
         """
-        if report_id not in self.REPORT_CONFIGS:
+        # REPORT_ORDER(요약+부문별)에서 report_id로 검색
+        all_reports = [*REPORT_ORDER]
+        config = next((r for r in all_reports if r.get('id') == report_id), None)
+        if not config:
             raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
-        
-        config = self.REPORT_CONFIGS[report_id]
         module = self._load_module(config['generator'])
-        
-        # 함수 기반 Generator (고용률, 실업률)
+        # 함수 기반 Generator (고용률, 실업률 등)
         if config.get('uses_functions'):
             return self._extract_with_functions(module, config)
-        
         # 클래스 기반 Generator
         return self._extract_with_class(module, config)
     
     def _extract_with_class(self, module, config: dict) -> dict:
         """클래스 기반 Generator로 데이터 추출"""
         class_name = config.get('class_name')
-        
-        # 클래스 찾기
         generator_class = None
         for name in dir(module):
             obj = getattr(module, name)
@@ -155,10 +82,8 @@ class ReportGenerator:
                     break
                 elif name.endswith('Generator'):
                     generator_class = obj
-        
         if not generator_class:
             raise ValueError(f"Generator 클래스를 찾을 수 없습니다: {config['generator']}")
-        
         generator = generator_class(str(self.excel_path))
         return generator.extract_all_data()
     
@@ -218,31 +143,25 @@ class ReportGenerator:
     def generate_html(self, report_id: str, custom_data: dict = None) -> str:
         """
         보도자료 HTML 생성
-        
         Args:
             report_id: 보도자료 ID
             custom_data: 사용자 정의 데이터 (결측치 대체용)
-            
         Returns:
             생성된 HTML 문자열
         """
-        if report_id not in self.REPORT_CONFIGS:
+        all_reports = [*REPORT_ORDER]
+        config = next((r for r in all_reports if r.get('id') == report_id), None)
+        if not config:
             raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
-        
-        config = self.REPORT_CONFIGS[report_id]
-        
         # 데이터 추출
         data = self.extract_data(report_id)
-        
         # 커스텀 데이터 병합
         if custom_data:
             data = self._merge_custom_data(data, custom_data)
-        
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / config['template']
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
-        
         return template.render(**data)
     
     def _merge_custom_data(self, data: dict, custom_data: dict) -> dict:
@@ -293,34 +212,29 @@ class ReportGenerator:
     def save_report(self, report_id: str, output_path: str = None, custom_data: dict = None) -> str:
         """
         보도자료를 파일로 저장
-        
         Args:
             report_id: 보도자료 ID
             output_path: 출력 파일 경로 (미지정 시 기본 경로)
             custom_data: 사용자 정의 데이터
-            
         Returns:
             저장된 파일 경로
         """
-        config = self.REPORT_CONFIGS[report_id]
-        
+        all_reports = [*REPORT_ORDER]
+        config = next((r for r in all_reports if r.get('id') == report_id), None)
+        if not config:
+            raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
         if output_path is None:
             output_path = TEMPLATES_DIR / f"{config['name']}_output.html"
-        
         html = self.generate_html(report_id, custom_data)
-        
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
-        
         return str(output_path)
     
     def generate_all(self, custom_data_by_report: dict = None) -> dict:
         """
         모든 보도자료 생성
-        
         Args:
             custom_data_by_report: 보도자료별 커스텀 데이터
-            
         Returns:
             생성 결과 딕셔너리
         """
@@ -328,25 +242,23 @@ class ReportGenerator:
             'success': [],
             'errors': []
         }
-        
         custom_data_by_report = custom_data_by_report or {}
-        
-        for report_id in self.REPORT_CONFIGS:
+        for report in REPORT_ORDER:
+            report_id = report.get('id')
             try:
                 custom_data = custom_data_by_report.get(report_id, {})
                 output_path = self.save_report(report_id, custom_data=custom_data)
                 results['success'].append({
                     'report_id': report_id,
-                    'name': self.REPORT_CONFIGS[report_id]['name'],
+                    'name': report.get('name'),
                     'path': output_path
                 })
             except Exception as e:
                 results['errors'].append({
                     'report_id': report_id,
-                    'name': self.REPORT_CONFIGS[report_id]['name'],
+                    'name': report.get('name'),
                     'error': str(e)
                 })
-        
         return results
 
 

@@ -680,7 +680,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         return None, error_msg, []
 
 
-def generate_regional_report_html(excel_path, region_name, is_reference=False, year=None, quarter=None):
+def generate_regional_report_html(excel_path, region_name, is_reference=False, year=None, quarter=None, excel_file=None):
     """시도별 보도자료 HTML 생성 (unified_generator 사용)"""
     try:
         # 파일 존재 확인
@@ -708,7 +708,7 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False, y
         if quarter is None:
             quarter = 2
         
-        generator = module.RegionalReportGenerator(excel_path, year=year, quarter=quarter)
+        generator = module.RegionalReportGenerator(excel_path, year=year, quarter=quarter, excel_file=excel_file)
         template_path = TEMPLATES_DIR / 'regional_economy_by_region_template.html'
         
         html_content = generator.render_html(region_name, str(template_path))

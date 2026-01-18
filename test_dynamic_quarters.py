@@ -5,16 +5,19 @@
 """
 
 from pathlib import Path
-from templates.service_industry_generator import ServiceIndustryGenerator
+from templates.unified_generator import ServiceIndustryGenerator
 
-def test_quarter(year: int, quarter: int, excel_path: str):
+def _test_quarter(year: int, quarter: int, excel_path: str = None):
     """특정 연도/분기로 generator 실행 테스트"""
     print(f"\n{'='*60}")
     print(f"🧪 테스트: {year}년 {quarter}분기")
     print(f"{'='*60}")
     
     try:
-        generator = ServiceIndustryGenerator(excel_path, year=year, quarter=quarter)
+        if excel_path is None:
+            base_path = Path(__file__).parent
+            excel_path = base_path / '분석표_25년 3분기_캡스톤(업데이트).xlsx'
+        generator = ServiceIndustryGenerator(str(excel_path), year=year, quarter=quarter)
         
         # 시트 로드만 테스트 (데이터가 없을 수 있으므로)
         generator._load_sheets()
@@ -65,7 +68,7 @@ if __name__ == '__main__':
     
     results = []
     for year, quarter in test_cases:
-        success = test_quarter(year, quarter, str(excel_path))
+        success = _test_quarter(year, quarter, str(excel_path))
         results.append((year, quarter, success))
     
     # 결과 요약

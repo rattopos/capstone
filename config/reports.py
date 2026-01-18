@@ -3,6 +3,59 @@
 보도자료 설정 및 상수 정의
 """
 
+REGIONAL_REPORTS = [
+    {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
+    {'id': 'region_busan', 'name': '부산', 'full_name': '부산광역시', 'index': 2, 'icon': '🌊'},
+    {'id': 'region_daegu', 'name': '대구', 'full_name': '대구광역시', 'index': 3, 'icon': '🏛️'},
+    {'id': 'region_incheon', 'name': '인천', 'full_name': '인천광역시', 'index': 4, 'icon': '✈️'},
+    {'id': 'region_gwangju', 'name': '광주', 'full_name': '광주광역시', 'index': 5, 'icon': '🎨'},
+    {'id': 'region_daejeon', 'name': '대전', 'full_name': '대전광역시', 'index': 6, 'icon': '🔬'},
+    {'id': 'region_ulsan', 'name': '울산', 'full_name': '울산광역시', 'index': 7, 'icon': '🚗'},
+    {'id': 'region_sejong', 'name': '세종', 'full_name': '세종특별자치시', 'index': 8, 'icon': '🏛️'},
+    {'id': 'region_gyeonggi', 'name': '경기', 'full_name': '경기도', 'index': 9, 'icon': '🏘️'},
+    {'id': 'region_gangwon', 'name': '강원', 'full_name': '강원특별자치도', 'index': 10, 'icon': '⛰️'},
+    {'id': 'region_chungbuk', 'name': '충북', 'full_name': '충청북도', 'index': 11, 'icon': '🌾'},
+    {'id': 'region_chungnam', 'name': '충남', 'full_name': '충청남도', 'index': 12, 'icon': '🌅'},
+    {'id': 'region_jeonbuk', 'name': '전북', 'full_name': '전북특별자치도', 'index': 13, 'icon': '🌿'},
+    {'id': 'region_jeonnam', 'name': '전남', 'full_name': '전라남도', 'index': 14, 'icon': '🍃'},
+    {'id': 'region_gyeongbuk', 'name': '경북', 'full_name': '경상북도', 'index': 15, 'icon': '🏔️'},
+    {'id': 'region_gyeongnam', 'name': '경남', 'full_name': '경상남도', 'index': 16, 'icon': '🌳'},
+    {'id': 'region_jeju', 'name': '제주', 'full_name': '제주특별자치도', 'index': 17, 'icon': '🏝️'},
+]
+
+# 아래는 REGION_DISPLAY_MAPPING, REGION_GROUPS, VALID_REGIONS 등 통합 매핑 예시 (필요시 확장)
+REGION_DISPLAY_MAPPING = {
+    '서울': '서울특별시',
+    '부산': '부산광역시',
+    '대구': '대구광역시',
+    '인천': '인천광역시',
+    '광주': '광주광역시',
+    '대전': '대전광역시',
+    '울산': '울산광역시',
+    '세종': '세종특별자치시',
+    '경기': '경기도',
+    '강원': '강원특별자치도',
+    '충북': '충청북도',
+    '충남': '충청남도',
+    '전북': '전북특별자치도',
+    '전남': '전라남도',
+    '경북': '경상북도',
+    '경남': '경상남도',
+    '제주': '제주특별자치도',
+}
+
+REGION_GROUPS = {
+    '수도권': ['서울', '경기', '인천'],
+    '충청권': ['대전', '세종', '충북', '충남'],
+    '호남권': ['광주', '전북', '전남'],
+    '동남권': ['부산', '울산', '경남'],
+    '대경권': ['대구', '경북'],
+    '강원권': ['강원'],
+    '제주권': ['제주'],
+}
+
+VALID_REGIONS = [r['name'] for r in REGIONAL_REPORTS]
+
 # ===== 요약 보도자료 목록 (요약만 포함) =====
 # 주의: 표지, 일러두기, 목차, 인포그래픽, 차트, 통계표, GRDP는 고객사 요구사항 변경으로 더 이상 생성하지 않음
 # 실무자는 표와 나레이션만 한글 문서에 복붙함
@@ -58,103 +111,202 @@ SUMMARY_REPORTS = [
 SECTOR_REPORTS = [
     {
         'id': 'manufacturing',
+        'report_id': 'manufacturing',
         'name': '광공업생산',
         'sheet': 'A 분석',
         'generator': 'unified_generator.py',
-        'template': 'mining_manufacturing_template.html',
+        'template': 'by_type/mining_template.html',
         'icon': '🏭',
         'category': 'production',
-        'class_name': 'MiningManufacturingGenerator'
+        'class_name': 'MiningManufacturingGenerator',
+        'name_mapping': {
+            '의료, 정밀, 광학 기기 및 시계 제조업': '의료·정밀',
+            '의료용 물질 및 의약품 제조업': '의약품',
+            '기타 운송장비 제조업': '기타 운송장비',
+            '기타 기계 및 장비 제조업': '기타기계장비',
+            '전기장비 제조업': '전기장비',
+            '자동차 및 트레일러 제조업': '자동차·트레일러',
+            '전기, 가스, 증기 및 공기 조절 공급업': '전기·가스업',
+            '전기업 및 가스업': '전기·가스업',
+            '식료품 제조업': '식료품',
+            '금속 가공제품 제조업; 기계 및 가구 제외': '금속가공제품',
+            '1차 금속 제조업': '1차금속',
+            '화학 물질 및 화학제품 제조업; 의약품 제외': '화학물질',
+            '담배 제조업': '담배',
+            '고무 및 플라스틱제품 제조업': '고무·플라스틱',
+            '비금속 광물제품 제조업': '비금속광물',
+            '섬유제품 제조업; 의복 제외': '섬유제품',
+            '금속 광업': '금속광업',
+            '산업용 기계 및 장비 수리업': '산업용기계',
+            '펄프, 종이 및 종이제품 제조업': '펄프·종이',
+            '인쇄 및 기록매체 복제업': '인쇄',
+            '음료 제조업': '음료',
+            '가구 제조업': '가구',
+            '기타 제품 제조업': '기타제품',
+            '가죽, 가방 및 신발 제조업': '가죽·신발',
+            '의복, 의복액세서리 및 모피제품 제조업': '의복',
+            '코크스, 연탄 및 석유정제품 제조업': '석유정제품',
+            '목재 및 나무제품 제조업; 가구 제외': '목재제품',
+            '비금속광물 광업; 연료용 제외': '비금속광물광업',
+        },
+        'aggregation_structure': {'total_code': 'BCD', 'sheet': 'A(광공업생산)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'service',
+        'report_id': 'service',
         'name': '서비스업생산',
         'sheet': 'B 분석',
         'generator': 'unified_generator.py',
-        'template': 'service_industry_template.html',
+        'template': 'by_type/service_template.html',
         'icon': '🏢',
         'category': 'production',
-        'class_name': 'ServiceIndustryGenerator'
+        'class_name': 'ServiceIndustryGenerator',
+        'name_mapping': {
+            '수도, 하수 및 폐기물 처리, 원료 재생업': '수도·하수',
+            '도매 및 소매업': '도소매',
+            '운수 및 창고업': '운수·창고',
+            '숙박 및 음식점업': '숙박·음식점',
+            '정보통신업': '정보통신',
+            '금융 및 보험업': '금융·보험',
+            '부동산업': '부동산',
+            '전문, 과학 및 기술 서비스업': '전문·과학·기술',
+            '사업시설관리, 사업지원 및 임대 서비스업': '사업시설관리·사업지원·임대',
+            '교육 서비스업': '교육',
+            '보건업 및 사회복지 서비스업': '보건·복지',
+            '예술, 스포츠 및 여가관련 서비스업': '예술·스포츠·여가',
+            '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인서비스'
+        },
+        'aggregation_structure': {'total_code': 'E~S', 'sheet': 'B(서비스업생산)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'consumption',
+        'report_id': 'consumption',
         'name': '소비동향',
         'sheet': 'C 분석',
         'generator': 'unified_generator.py',
-        'template': 'consumption_template.html',
+        'template': 'by_type/consumption_template.html',
         'icon': '🛒',
         'category': 'consumption',
-        'class_name': 'ConsumptionGenerator'
+        'class_name': 'ConsumptionGenerator',
+        'name_mapping': {
+            '백화점': '백화점',
+            '대형마트': '대형마트',
+            '면세점': '면세점',
+            '슈퍼마켓 및 잡화점': '슈퍼마켓·잡화점',
+            '슈퍼마켓· 잡화점 및 편의점': '슈퍼마켓·잡화점·편의점',
+            '편의점': '편의점',
+            '승용차 및 연료 소매점': '승용차·연료소매점',
+            '전문소매점': '전문소매점',
+            '무점포 소매': '무점포소매'
+        },
+        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C(소비)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'construction',
+        'report_id': 'construction',
         'name': '건설동향',
         'sheet': "F'분석",
         'generator': 'unified_generator.py',
-        'template': 'construction_template.html',
+        'template': 'by_type/construction_template.html',
         'icon': '🏗️',
         'category': 'construction',
-        'class_name': 'ConstructionGenerator'
+        'class_name': 'ConstructionGenerator',
+        'name_mapping': {
+            '건축': '건축',
+            '토목': '토목',
+            '주거용 건물': '주거용',
+            '비주거용 건물': '비주거용',
+        },
+        'aggregation_structure': {'total_code': '0', 'sheet': "F'(건설)집계"},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'export',
+        'report_id': 'export',
         'name': '수출',
         'sheet': 'G 분석',
         'generator': 'unified_generator.py',
-        'template': 'export_template.html',
+        'template': 'by_type/export_template.html',
         'icon': '📦',
         'category': 'trade',
-        'class_name': 'ExportGenerator'
+        'class_name': 'ExportGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '합계', 'sheet': 'G(수출)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'import',
+        'report_id': 'import',
         'name': '수입',
         'sheet': 'H 분석',
         'generator': 'unified_generator.py',
-        'template': 'import_template.html',
+        'template': 'by_type/import_template.html',
         'icon': '🚢',
         'category': 'trade',
-        'class_name': 'ImportGenerator'
+        'class_name': 'ImportGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '합계', 'sheet': 'H(수입)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'price',
+        'report_id': 'price',
         'name': '물가동향',
         'sheet': 'E(품목성질물가)분석',
         'generator': 'unified_generator.py',
-        'template': 'price_trend_template.html',
+        'template': 'by_type/price_template.html',
         'icon': '💰',
         'category': 'price',
-        'class_name': 'PriceTrendGenerator'
+        'class_name': 'PriceTrendGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '00', 'sheet': 'E(지출목적물가)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
         'id': 'employment',
+        'report_id': 'employment',
         'name': '고용률',
         'sheet': 'D(고용률)분석',
         'generator': 'unified_generator.py',
         'template': 'by_type/employment_template.html',
         'icon': '👔',
         'category': 'employment',
-        'class_name': 'EmploymentRateGenerator'
+        'class_name': 'EmploymentRateGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '계', 'sheet': 'D(고용률)집계'},
+        'metadata_columns': ['year', 'quarter', 'region']
     },
     {
         'id': 'unemployment',
+        'report_id': 'unemployment',
         'name': '실업률',
         'sheet': 'D(실업)분석',
         'generator': 'unified_generator.py',
         'template': 'by_type/unemployment_template.html',
         'icon': '📉',
         'category': 'employment',
-        'class_name': 'UnemploymentGenerator'
+        'class_name': 'UnemploymentGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '계', 'sheet': 'D(실업)집계'},
+        'metadata_columns': ['year', 'quarter', 'region']
     },
     {
         'id': 'migration',
+        'report_id': 'migration',
         'name': '국내인구이동',
         'sheet': 'I(순인구이동)집계',
         'generator': 'unified_generator.py',
         'template': 'by_type/migration_template.html',
         'icon': '👥',
         'category': 'population',
-        'class_name': 'DomesticMigrationGenerator'
+        'class_name': 'DomesticMigrationGenerator',
+        'name_mapping': {},
+        'aggregation_structure': {'total_code': '순인구이동 수', 'sheet': 'I(순인구이동)집계'},
+        'metadata_columns': ['region', 'classification', 'code', 'name'],
+        'require_industry_code': False
     }
 ]
 

@@ -1,3 +1,6 @@
+# DEPRECATED: config/reports.py를 사용하세요.
+# 기존 REPORT_CONFIGS, get_report_config 등은 reports.py로 통합되었습니다.
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """

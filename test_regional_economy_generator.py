@@ -17,46 +17,80 @@ def test_regional_economy_generator():
     """시도별 경제동향 Generator 테스트"""
     from templates.unified_generator import RegionalEconomyByRegionGenerator
     from config.report_configs import REPORT_CONFIGS
+
+    # 테스트 엑셀 파일 경로 탐색 (루트 및 uploads 폴더 모두 검색)
+    excel_path = None
     
-    # 테스트 엑셀 파일 경로
-    excel_files = list(base_path.glob('*분석표*.xlsx'))
-    if not excel_files:
-        print("❌ 분석표 엑셀 파일을 찾을 수 없습니다.")
+    # 1) 루트에서 직접 찾기 (주요 파일명)
+    candidates = [
+        base_path / '분석표_25년 3분기_캡스톤(업데이트).xlsx',
+        base_path / '분석표_2025년_3분기_자동생성.xlsx',
+    ]
+    for p in candidates:
+        if p.exists():
+            excel_path = str(p)
+            break
+
+    # 2) 없으면 재귀적으로 검색
+    if not excel_path:
+        for p in base_path.rglob('*분석표*캡스톤*.xlsx'):
+            excel_path = str(p)
+            break
+
+    # 3) uploads 폴더에서 해시가 붙은 업로드 파일 검색
+    if not excel_path:
+        uploads_dir = base_path / 'uploads'
+        if uploads_dir.exists():
+            # 최근 수정된 파일 우선 선택
+            matched = sorted(
+                [p for p in uploads_dir.glob('*분석표*캡스톤*.xlsx')],
+                key=lambda x: x.stat().st_mtime,
+                reverse=True
+            )
+            if matched:
+                excel_path = str(matched[0])
+
+    if not excel_path:
+        print("❌ 분석표 엑셀 파일을 찾을 수 없습니다. 루트/업로드 폴더를 확인해주세요.")
+        print(f"   검색 기준: '*분석표*캡스톤*.xlsx'")
+        print(f"   작업 디렉터리: {base_path}")
         return False
-    
-    excel_path = str(excel_files[0])
+
     print(f"✅ 엑셀 파일: {excel_path}")
-    
+
     try:
         # Generator 생성
         gen = RegionalEconomyByRegionGenerator(excel_path, year=2025, quarter=3)
         print("✅ RegionalEconomyByRegionGenerator 초기화 완료")
-        
+
         # 설정 확인
         config = REPORT_CONFIGS.get('regional_economy_by_region')
         if not config:
             print("❌ regional_economy_by_region 설정을 찾을 수 없습니다.")
             return False
         print(f"✅ 설정 확인: {config['name']}")
-        
+
         # 시도 목록 확인
         print(f"\n📍 대상 시도 ({len(gen.REGIONS)}개):")
         for region in gen.REGIONS:
             print(f"  - {region['code']:2d}: {region['full_name']}")
-        
+
         # 서울 데이터로 테스트
         print("\n🧪 서울 데이터 추출 테스트...")
         section = gen.extract_regional_section('서울', 'mining')
         if section:
             print(f"✅ 생산 섹션 추출 완료")
             if section.get('narrative'):
-                print(f"   나레이션: {section['narrative'][:80]}...")
+                # 나레이션은 리스트 형태
+                narr = section['narrative']
+                text = narr[0] if isinstance(narr, list) and narr else str(narr)
+                print(f"   나레이션: {text[:80]}...")
         else:
             print("⚠️ 생산 섹션을 찾을 수 없습니다.")
-        
+
         print("\n✅ 모든 테스트 완료!")
         return True
-        
+
     except Exception as e:
         print(f"❌ 테스트 실패: {e}")
         import traceback
