@@ -131,7 +131,7 @@ SECTOR_REPORTS = [
         'name': '고용률',
         'sheet': 'D(고용률)분석',
         'generator': 'unified_generator.py',
-        'template': 'employment_rate_template.html',
+        'template': 'by_type/employment_template.html',
         'icon': '👔',
         'category': 'employment',
         'class_name': 'EmploymentRateGenerator'
@@ -141,7 +141,7 @@ SECTOR_REPORTS = [
         'name': '실업률',
         'sheet': 'D(실업)분석',
         'generator': 'unified_generator.py',
-        'template': 'unemployment_template.html',
+        'template': 'by_type/unemployment_template.html',
         'icon': '📉',
         'category': 'employment',
         'class_name': 'UnemploymentGenerator'
@@ -151,7 +151,7 @@ SECTOR_REPORTS = [
         'name': '국내인구이동',
         'sheet': 'I(순인구이동)집계',
         'generator': 'unified_generator.py',
-        'template': 'domestic_migration_template.html',
+        'template': 'by_type/migration_template.html',
         'icon': '👥',
         'category': 'population',
         'class_name': 'DomesticMigrationGenerator'

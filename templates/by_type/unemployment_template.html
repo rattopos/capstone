@@ -265,9 +265,9 @@
             
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">·{{ region.name }}( {{ "%.1f"|format(region.change) }}%p): 
-                {% for age in region.age_groups[:2] %}
-                {{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region['region'] }}( {{ "%.1f"|format(region['growth_rate']) }}%p): 
+                {% for age in region['age_groups'][:2] %}
+                {{ age.get('name', age.get('display_name', '')) }}({{ "%.1f"|format(age.get('change', 0)) }}%p){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -276,9 +276,9 @@
             
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%p): 
-                {% for age in region.age_groups[:2] %}
-                {{ age.name }}({{ "%.1f"|format(age.change) }}%p){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region['region'] }}({{ "%.1f"|format(region['growth_rate']) }}%p): 
+                {% for age in region['age_groups'][:2] %}
+                {{ age.get('name', age.get('display_name', '')) }}({{ "%.1f"|format(age.get('change', 0)) }}%p){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}

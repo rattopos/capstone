@@ -199,9 +199,14 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ {{ summary.headline | default("국내 인구이동은 인천, 경기 등 7개 시도 인구 순유입, 서울, 경북 등 10개 시도 인구 순유출") }}</div>
-            <div class="item">□ {{ summary.inflow_detail | default("2025년 3/4분기 국내 인구 순유입지역은 인천(7,025명), 경기(7,018명), 대전(2,652명) 등 7개 시도로 나타났음") }}</div>
-            <div class="item">□ {{ summary.outflow_detail | default("국내 인구 순유출지역은 서울(-7,751명), 경북(-3,932명), 경남(-2,834명) 등 10개 시도로 나타났음") }}</div>
+            {% if nationwide_data %}
+            <div class="headline">◆ {{ nationwide_data.summary.headline | default("국내 인구이동은 인천, 경기 등 7개 시도 인구 순유입, 서울, 경북 등 10개 시도 인구 순유출") }}</div>
+            <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("2025년 3/4분기 국내 인구 순유입지역은 인천(7,025명), 경기(7,018명), 대전(2,652명) 등 7개 시도로 나타났음") }}</div>
+            <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 서울(-7,751명), 경북(-3,932명), 경남(-2,834명) 등 10개 시도로 나타났음") }}</div>
+            {% else %}
+            <div class="headline">◆ 국내 인구이동 현황</div>
+            <div class="item">□ 국내 인구이동 데이터는 시도별로 제공됩니다.</div>
+            {% endif %}
         </div>
         
         <!-- 주요 유입/유출 지역 상세 -->

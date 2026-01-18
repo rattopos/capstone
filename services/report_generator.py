@@ -709,7 +709,7 @@ def generate_regional_report_html(excel_path, region_name, is_reference=False, y
             quarter = 2
         
         generator = module.RegionalReportGenerator(excel_path, year=year, quarter=quarter)
-        template_path = TEMPLATES_DIR / 'regional_template.html'
+        template_path = TEMPLATES_DIR / 'regional_economy_by_region_template.html'
         
         html_content = generator.render_html(region_name, str(template_path))
         

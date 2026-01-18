@@ -255,6 +255,9 @@ class UnifiedReportGenerator(BaseGenerator):
         code_keywords = self.metadata_cols.get('code', ['코드', 'code', '산업코드', '업태코드', '품목코드', '분류코드'])
         name_keywords = self.metadata_cols.get('name', ['이름', 'name', '산업명', '산업 이름', '업태명', '품목명', '품목 이름', '공정이름', '공정명', '연령'])
         
+        # 지역명 컬럼 후보 목록 (순서대로)
+        region_col_candidates = []
+        
         # 각 행에서 키워드 검색
         for row_idx in range(header_rows):
             row = df.iloc[row_idx]
@@ -263,12 +266,12 @@ class UnifiedReportGenerator(BaseGenerator):
                     continue
                 cell_str = str(cell_value).strip().lower()
                 
-                # 지역명 컬럼 찾기
+                # 지역명 컬럼 후보 찾기 (모든 일치하는 컬럼 수집)
                 if self.region_name_col is None:
                     for keyword in region_keywords:
                         if keyword.lower() in cell_str:
-                            self.region_name_col = col_idx
-                            print(f"[{self.config['name']}] ✅ 지역명 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
+                            region_col_candidates.append((col_idx, keyword, row_idx))
+                            print(f"[{self.config['name']}] 🔍 지역명 컬럼 후보: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
                             break
                 
                 # 산업코드 컬럼 찾기
@@ -286,23 +289,77 @@ class UnifiedReportGenerator(BaseGenerator):
                             self.industry_name_col = col_idx
                             print(f"[{self.config['name']}] ✅ 산업명 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
                             break
-                
-                # 모든 컬럼을 찾았으면 종료
-                if (self.region_name_col is not None and 
-                    self.industry_code_col is not None and 
-                    self.industry_name_col is not None):
-                    break
+        
+        # 지역명 컬럼 후보 중에서 실제 유효한 지역명이 있는 컬럼 선택
+        if region_col_candidates:
+            valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                            '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+            valid_region_codes = ['00', '11', '26', '27', '28', '29', '30', '31', '36', '41', '42', '43', '44', '45', '46', '47', '48', '50']
             
-            if (self.region_name_col is not None and 
-                self.industry_code_col is not None and 
-                self.industry_name_col is not None):
-                break
+            # 먼저 실제 지역명이 있는 컬럼 찾기 (우선순위: 실제 지역명 > 지역 코드)
+            for col_idx, keyword, _ in region_col_candidates:
+                # 데이터 행에서 이 컬럼의 값들 확인 (헤더 이후 처음 20행)
+                has_actual_region_name = False
+                has_valid_region = False
+                
+                for data_row_idx in range(header_rows, min(header_rows + 20, len(df))):
+                    if col_idx < len(df.columns):
+                        cell_value = df.iloc[data_row_idx, col_idx]
+                        if pd.notna(cell_value):
+                            cell_str = str(cell_value).strip()
+                            # 실제 지역명 확인
+                            if cell_str in valid_regions:
+                                has_actual_region_name = True
+                                self.region_name_col = col_idx
+                                print(f"[{self.config['name']}] ✅ 지역명 컬럼 확정: {col_idx} (키워드: '{keyword}', 실제 지역명 발견: '{cell_str}')")
+                                break
+                            # 지역 코드 확인 (실제 지역명이 없을 때만)
+                            elif cell_str in valid_region_codes and not has_actual_region_name:
+                                has_valid_region = True
+                
+                if has_actual_region_name:
+                    break  # 실제 지역명 찾음 - 종료
+            
+            # 실제 지역명을 찾지 못했지만 지역 코드만 있는 경우, 지역 코드 다음 컬럼에서 지역명 찾기
+            if self.region_name_col is None:
+                for col_idx, keyword, _ in region_col_candidates:
+                    # 이 컬럼이 지역 코드 컬럼인지 확인
+                    is_code_column = False
+                    for data_row_idx in range(header_rows, min(header_rows + 5, len(df))):
+                        if col_idx < len(df.columns):
+                            cell_value = df.iloc[data_row_idx, col_idx]
+                            if pd.notna(cell_value) and str(cell_value).strip() in valid_region_codes:
+                                is_code_column = True
+                                break
+                    
+                    if is_code_column:
+                        # 지역명이 다음 컬럼에 있는지 확인
+                        next_col_idx = col_idx + 1
+                        if next_col_idx < len(df.columns):
+                            for data_row_idx in range(header_rows, min(header_rows + 20, len(df))):
+                                if next_col_idx < len(df.columns):
+                                    cell_value = df.iloc[data_row_idx, next_col_idx]
+                                    if pd.notna(cell_value):
+                                        cell_str = str(cell_value).strip()
+                                        if cell_str in valid_regions:
+                                            self.region_name_col = next_col_idx
+                                            print(f"[{self.config['name']}] ✅ 지역명 컬럼 확정: {next_col_idx} (지역 코드 컬럼 {col_idx} 다음, 지역명 발견: '{cell_str}')")
+                                            break
+                        
+                        if self.region_name_col is not None:
+                            break
+            
+            # 여전히 찾지 못했으면 첫 번째 후보 사용
+            if self.region_name_col is None and region_col_candidates:
+                self.region_name_col = region_col_candidates[0][0]
+                print(f"[{self.config['name']}] ⚠️ 실제 지역명/지역명 다음 컬럼을 찾지 못해, 첫 번째 후보 컬럼 사용: {self.region_name_col}")
         
         # 데이터 시작 행 찾기 (헤더 다음 행)
         # 지역명이나 산업코드가 실제로 나타나는 첫 번째 행 찾기
         if self.region_name_col is not None:
             valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                             '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+            valid_region_codes = ['00', '11', '26', '27', '28', '29', '30', '31', '36', '41', '42', '43', '44', '45', '46', '47', '48', '50']  # 지역 코드
             
             # 먼저 지역명 컬럼에서 실제 지역명 찾기
             for row_idx in range(header_rows, min(header_rows + 20, len(df))):
@@ -311,8 +368,8 @@ class UnifiedReportGenerator(BaseGenerator):
                     cell_value = row.iloc[self.region_name_col]
                     if pd.notna(cell_value):
                         cell_str = str(cell_value).strip()
-                        # 지역명이 실제로 나타나는 행 찾기
-                        if cell_str in valid_regions:
+                        # 지역명이 실제로 나타나는 행 찾기 (또는 지역 코드)
+                        if cell_str in valid_regions or cell_str in valid_region_codes:
                             self.data_start_row = row_idx
                             print(f"[{self.config['name']}] ✅ 데이터 시작 행 발견: {row_idx} (지역명: '{cell_str}')")
                             break
@@ -1670,45 +1727,113 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
 class RegionalReportGenerator(BaseGenerator):
     """시도별 보고서 생성기 (unified_generator에 통합)"""
     
+    # 17개 시도 정보
+    REGIONS = {
+        'region_seoul': {'code': '11', 'name': '서울', 'full_name': '서울특별시'},
+        'region_busan': {'code': '21', 'name': '부산', 'full_name': '부산광역시'},
+        'region_daegu': {'code': '22', 'name': '대구', 'full_name': '대구광역시'},
+        'region_incheon': {'code': '23', 'name': '인천', 'full_name': '인천광역시'},
+        'region_gwangju': {'code': '24', 'name': '광주', 'full_name': '광주광역시'},
+        'region_daejeon': {'code': '25', 'name': '대전', 'full_name': '대전광역시'},
+        'region_ulsan': {'code': '26', 'name': '울산', 'full_name': '울산광역시'},
+        'region_sejong': {'code': '29', 'name': '세종', 'full_name': '세종특별자치시'},
+        'region_gyeonggi': {'code': '31', 'name': '경기', 'full_name': '경기도'},
+        'region_gangwon': {'code': '32', 'name': '강원', 'full_name': '강원특별자치도'},
+        'region_chungbuk': {'code': '33', 'name': '충북', 'full_name': '충청북도'},
+        'region_chungnam': {'code': '34', 'name': '충남', 'full_name': '충청남도'},
+        'region_jeonbuk': {'code': '35', 'name': '전북', 'full_name': '전북특별자치도'},
+        'region_jeonnam': {'code': '36', 'name': '전남', 'full_name': '전라남도'},
+        'region_gyeongbuk': {'code': '37', 'name': '경북', 'full_name': '경상북도'},
+        'region_gyeongnam': {'code': '38', 'name': '경남', 'full_name': '경상남도'},
+        'region_jeju': {'code': '39', 'name': '제주', 'full_name': '제주특별자치도'},
+    }
+    
     def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
         super().__init__(excel_path, year, quarter, excel_file)
-        # regional_generator.py를 import하여 사용
-        self._regional_gen = None
-    
-    def _get_regional_generator(self):
-        """regional_generator.py의 RegionalGenerator 인스턴스 가져오기 (지연 로딩)"""
-        if self._regional_gen is None:
-            # regional_generator.py 동적 import
-            generator_path = Path(__file__).parent / 'legacy' / 'regional_generator.py.legacy'
-            if generator_path.exists():
-                import importlib.util
-                spec = importlib.util.spec_from_file_location('regional_generator_legacy', str(generator_path))
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                if hasattr(module, 'RegionalGenerator'):
-                    self._regional_gen = module.RegionalGenerator(
-                        str(self.excel_path), 
-                        year=self.year, 
-                        quarter=self.quarter
-                    )
-        return self._regional_gen
     
     def extract_all_data(self, region: str) -> Dict[str, Any]:
-        """시도별 모든 데이터 추출"""
-        regional_gen = self._get_regional_generator()
-        if regional_gen is None:
-            raise ValueError("시도별 Generator를 로드할 수 없습니다")
+        """시도별 모든 데이터 추출
         
-        return regional_gen.extract_all_data(region)
+        Args:
+            region: 지역 키 (e.g., 'region_seoul')
+        
+        Returns:
+            지역별 모든 데이터
+        """
+        try:
+            # 부모 클래스의 extract_all_data() 호출
+            data = super().extract_all_data()
+            
+            # 데이터가 None인 경우 빈 dict 반환
+            if data is None:
+                data = {}
+            
+            return data
+        except Exception as e:
+            print(f"[{self.config.get('name', 'Unknown')}] [경고] 시도별 데이터 추출 중 오류: {e}")
+            # 기본 구조 반환
+            return {
+                'report_info': {'year': self.year, 'quarter': self.quarter},
+                'nationwide_data': None,
+                'regional_data': {},
+                'table_data': [],
+            }
     
     def render_html(self, region: str, template_path: str) -> str:
-        """시도별 HTML 보도자료 렌더링"""
-        regional_gen = self._get_regional_generator()
-        if regional_gen is None:
-            raise ValueError("시도별 Generator를 로드할 수 없습니다")
+        """시도별 HTML 보도자료 렌더링
         
-        return regional_gen.render_html(region, template_path)
+        Args:
+            region: 지역 키 (e.g., 'region_seoul')
+            template_path: 템플릿 파일 경로
+        
+        Returns:
+            렌더링된 HTML 문자열
+        """
+        from jinja2 import Environment, FileSystemLoader
+        
+        # 데이터 추출
+        data = self.extract_all_data(region)
+        
+        # 데이터 검증
+        if not isinstance(data, dict):
+            print(f"[경고] 데이터가 dict가 아닙니다: {type(data)}")
+            data = {}
+        
+        # 템플릿 경로 및 렌더링
+        template_path_obj = Path(template_path)
+        if not template_path_obj.exists():
+            raise ValueError(f"템플릿 파일을 찾을 수 없습니다: {template_path}")
+        
+        # Jinja2 환경 설정
+        env = Environment(loader=FileSystemLoader(str(template_path_obj.parent)))
+        template = env.get_template(template_path_obj.name)
+        
+        # 데이터에 지역 정보 추가
+        if region in self.REGIONS:
+            data['region_info'] = self.REGIONS[region]
+            data['region_name'] = self.REGIONS[region]['name']
+        else:
+            data['region_info'] = {'code': '00', 'name': region, 'full_name': region}
+            data['region_name'] = region
+        
+        # report_info 추가 (regional templates에 필요)
+        if 'report_info' not in data:
+            data['report_info'] = {
+                'year': self.year,
+                'quarter': self.quarter,
+                'name': self.config.get('name', '지역경제동향') if hasattr(self, 'config') else '지역경제동향'
+            }
+        
+        # 템플릿 렌더링
+        try:
+            html_content = template.render(**data)
+        except TypeError as e:
+            print(f"[경고] 템플릿 렌더링 오류: {e}")
+            print(f"[경고] 데이터 타입: {type(data)}")
+            print(f"[경고] 데이터 키: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
+            raise
+        
+        return html_content
 
 
 

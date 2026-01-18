@@ -52,7 +52,7 @@ class ReportGenerator:
         'unemployment': {
             'name': '실업률',
             'generator': 'unemployment_generator.py',
-            'template': 'unemployment_template.html',
+            'template': 'by_type/unemployment_template.html',
             'sheet': 'D(실업)분석',
             'uses_functions': True
         },
@@ -80,7 +80,7 @@ class ReportGenerator:
         'migration': {
             'name': '국내인구이동',
             'generator': 'domestic_migration_generator.py',
-            'template': 'domestic_migration_template.html',
+            'template': 'by_type/migration_template.html',
             'sheet': 'I(순인구이동)집계',
             'class_name': 'DomesticMigrationGenerator'
         }
