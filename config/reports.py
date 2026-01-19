@@ -235,7 +235,8 @@ SECTOR_REPORTS = [
         'class_name': 'ExportGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '합계', 'sheet': 'G(수출)집계'},
-        'metadata_columns': ['region', 'classification', 'code', 'name']
+        'metadata_columns': ['region', 'classification', 'code', 'name'],
+        'header_rows': 3  # 집계 시트 헤더 행 수 (데이터는 4행부터)
     },
     {
         'id': 'import',
@@ -249,7 +250,8 @@ SECTOR_REPORTS = [
         'class_name': 'ImportGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '합계', 'sheet': 'H(수입)집계'},
-        'metadata_columns': ['region', 'classification', 'code', 'name']
+        'metadata_columns': ['region', 'classification', 'code', 'name'],
+        'header_rows': 3  # 집계 시트 헤더 행 수 (데이터는 4행부터)
     },
     {
         'id': 'price',
@@ -277,7 +279,8 @@ SECTOR_REPORTS = [
         'class_name': 'EmploymentRateGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '계', 'sheet': 'D(고용률)집계'},
-        'metadata_columns': ['year', 'quarter', 'region']
+        'metadata_columns': ['year', 'quarter', 'region'],
+        'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
     },
     {
         'id': 'unemployment',
@@ -291,22 +294,25 @@ SECTOR_REPORTS = [
         'class_name': 'UnemploymentGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '계', 'sheet': 'D(실업)집계'},
-        'metadata_columns': ['year', 'quarter', 'region']
+        'metadata_columns': ['year', 'quarter', 'region'],
+        'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
     },
     {
         'id': 'migration',
         'report_id': 'migration',
         'name': '국내인구이동',
-        'sheet': 'I(순인구이동)집계',
+        'sheet': '국내인구이동',  # 실제 Excel 시트명
         'generator': 'unified_generator.py',
         'template': 'by_type/migration_template.html',
         'icon': '👥',
         'category': 'population',
         'class_name': 'DomesticMigrationGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '순인구이동 수', 'sheet': 'I(순인구이동)집계'},
+        # 집계 시트의 합계 행은 연령별 컬럼에 '합계'로 표기됨
+        'aggregation_structure': {'total_code': '합계', 'sheet': '국내인구이동'},
         'metadata_columns': ['region', 'classification', 'code', 'name'],
-        'require_industry_code': False
+        'require_industry_code': False,
+        'has_nationwide': False  # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미없음
     }
 ]
 

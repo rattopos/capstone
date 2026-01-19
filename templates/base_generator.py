@@ -376,16 +376,26 @@ class BaseGenerator(ABC):
         header_row: Any,
         target_year: int,
         target_quarter: int,
-        require_type_match: bool = True
+        require_type_match: bool = True,
+        max_header_rows: Optional[int] = None
     ) -> Optional[int]:
         """
         [스마트 헤더 탐색기] 병합된 셀(Merged Header) 문제를 완벽하게 돌파하여 정확한 열 위치를 찾아냅니다.
         (유연성 강화: 다양한 연도/분기/타입 표기법 robust 지원)
+        
+        Args:
+            header_row: DataFrame 또는 Series/list (단일 행)
+            target_year: 대상 연도
+            target_quarter: 대상 분기
+            require_type_match: 타입 매칭 필수 여부
+            max_header_rows: 헤더 행 수 (DataFrame인 경우만 사용, None이면 기본값 5)
         """
         import re
         # 1. DataFrame인 경우: 병합된 셀 처리 로직 사용
         if isinstance(header_row, pd.DataFrame):
-            return self._find_target_col_index_from_df(header_row, target_year, target_quarter, require_type_match)
+            return self._find_target_col_index_from_df(
+                header_row, target_year, target_quarter, require_type_match, max_header_rows
+            )
         
         # 2. Series나 단일 행인 경우: 기존 로직 사용 (하위 호환성)
         # 하지만 가능하면 DataFrame을 전달하는 것이 좋습니다.
@@ -451,15 +461,25 @@ class BaseGenerator(ABC):
         df: pd.DataFrame,
         target_year: int,
         target_quarter: int,
-        require_type_match: bool = True
+        require_type_match: bool = True,
+        max_header_rows: Optional[int] = None
     ) -> Optional[int]:
         """
         DataFrame에서 병합된 셀을 고려하여 열 인덱스를 찾습니다.
         
         핵심: pandas의 ffill을 사용하여 병합된 셀을 채웁니다.
+        
+        Args:
+            df: DataFrame
+            target_year: 대상 연도
+            target_quarter: 대상 분기
+            require_type_match: 타입 매칭 필수 여부
+            max_header_rows: 헤더 행 수 (None이면 기본값 5 사용)
         """
-        # 1. 헤더 영역 추출 (상위 3-5행)
-        max_header_rows = min(5, len(df))
+        # 1. 헤더 영역 추출 (config 설정 우선, 없으면 기본값 5)
+        if max_header_rows is None:
+            max_header_rows = 5
+        max_header_rows = min(max_header_rows, len(df))
         header_df = df.iloc[:max_header_rows].copy()
         
         # 2. 정규화된 타겟 문자열 생성
@@ -467,11 +487,11 @@ class BaseGenerator(ABC):
         target_year_short = target_year_str[2:] if len(target_year_str) == 4 else target_year_str
         
         target_quarter_strs = [
-            str(target_quarter).replace(" ", ""),
-            f"{target_quarter}분기",
             f"{target_quarter}/4",
+            f"{target_quarter}분기",
             f"{target_quarter}Q",
             f"Q{target_quarter}",
+            f"{target_quarter}q",
         ]
         
         print(f"\n{'='*80}")
@@ -602,35 +622,11 @@ class BaseGenerator(ABC):
             quarter_match_reason = []
             
             for q_str in target_quarter_strs:
-                # "/"가 포함된 형식(예: "3/4")은 그대로 매칭 시도
-                if "/" in q_str:
-                    # "3/4" 형식: col_text에서 공백 제거 후 "3/4"가 포함되는지 확인
-                    q_normalized = q_str.replace(" ", "")
-                    # "2025 3/4" -> "20253/4"가 되므로 "3/4"를 직접 찾기
-                    if q_normalized in col_text:
-                        has_quarter = True
-                        quarter_match_reason.append(f"'{q_str}' 형식 매칭")
-                        break
-                    # 연도와 함께 있는 경우도 확인 (예: "20253/4"에서 "3/4" 추출)
-                    # 정규식으로 "숫자숫자숫자숫자3/4" 패턴 찾기
-                    year_quarter_pattern = rf'\d{{4}}{re.escape(q_normalized)}'
-                    if re.search(year_quarter_pattern, col_text):
-                        has_quarter = True
-                        quarter_match_reason.append(f"'{q_str}' 형식 매칭 (연도+분기 패턴)")
-                        break
-                else:
-                    # "/"가 없는 형식(예: "3", "3분기", "3Q"): 공백과 "/" 제거 후 매칭
-                    q_clean = q_str.replace(" ", "").replace("/", "")
-                    if q_clean in col_text:
-                        has_quarter = True
-                        quarter_match_reason.append(f"'{q_str}' 형식 매칭")
-                        break
-            
-            # 숫자로 직접 확인 (예: "3"이 "3분기" 또는 "3/4"에 포함)
-            if str(target_quarter) in col_text:
-                has_quarter = True
-                if not quarter_match_reason:
-                    quarter_match_reason.append(f"숫자 '{target_quarter}' 직접 포함")
+                token = q_str.replace(" ", "")
+                if token and token in col_text:
+                    has_quarter = True
+                    quarter_match_reason.append(f"'{q_str}' 형식 매칭")
+                    break
             
             # C. 컬럼 타입 확인 (더 유연한 매칭)
             # 고용률/실업률 등은 타입 필터링을 선택적으로 적용

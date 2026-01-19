@@ -143,6 +143,29 @@ class UnifiedReportGenerator(BaseGenerator):
         if result is not None and not result.empty:
             return result.head(1)
         return None
+
+    @staticmethod
+    def _find_total_row_by_code(
+        df: pd.DataFrame,
+        total_code: Any,
+        exclude_cols: Optional[List[int]] = None
+    ) -> Optional[pd.DataFrame]:
+        """지정 코드(total_code)를 갖는 행을 모든 텍스트 컬럼에서 탐색."""
+        if df is None or df.empty or total_code is None:
+            return None
+        code_str = str(total_code).strip()
+        exclude_cols = exclude_cols or []
+        for col_idx in range(len(df.columns)):
+            if col_idx in exclude_cols:
+                continue
+            try:
+                series = df.iloc[:, col_idx].astype(str).str.strip()
+            except Exception:
+                continue
+            matched = df[series == code_str]
+            if matched is not None and not matched.empty:
+                return matched.head(1)
+        return None
     def load_data(self):
         """
         테스트 호환성: 기존 테스트 코드에서 generator.load_data()를 호출하는 경우
@@ -160,18 +183,23 @@ class UnifiedReportGenerator(BaseGenerator):
         print(f"[디버그] wb.sheetnames: {wb.sheetnames}")
         if not agg_sheet_name:
             raise ValueError('집계 시트명이 설정에 없습니다.')
-        ws = wb[agg_sheet_name]
-        data = ws.values
-        columns = next(data)
-        self.df_aggregation = pd.DataFrame(data, columns=columns)
+        # 헤더 행을 보존하기 위해 header=None으로 읽어 병합 헤더 탐색과 데이터 시작 행 탐색을 일관되게 처리
+        self.df_aggregation = pd.read_excel(self.excel_path, sheet_name=agg_sheet_name, header=None)
         self.target_col = None
         
         # target column 찾기 (요청한 연도/분기)
         require_type_match = False
         sheet_type = agg_sheet_name
         
-        # 1. 요청한 연도/분기 찾기
-        target_col_result = self.find_target_col_index(self.df_aggregation, self.year, self.quarter, require_type_match=require_type_match)
+        # config에서 header_rows 가져오기 (기본값 5)
+        max_header_rows = self.config.get('header_rows', 5)
+        
+        # 1. 요청한 연도/분기 찾기 (max_header_rows 전달)
+        target_col_result = self.find_target_col_index(
+            self.df_aggregation, self.year, self.quarter, 
+            require_type_match=require_type_match,
+            max_header_rows=max_header_rows
+        )
         
         # 2. 없으면 최신 데이터 자동 사용 (우아한 처리)
         if target_col_result is None:
@@ -196,8 +224,12 @@ class UnifiedReportGenerator(BaseGenerator):
         else:
             self.target_col = target_col_result
         
-        # 전년 컬럼 찾기
-        prev_y_col_result = self.find_target_col_index(self.df_aggregation, self.year - 1, self.quarter, require_type_match=require_type_match)
+        # 전년 컬럼 찾기 (max_header_rows 전달)
+        prev_y_col_result = self.find_target_col_index(
+            self.df_aggregation, self.year - 1, self.quarter, 
+            require_type_match=require_type_match,
+            max_header_rows=max_header_rows
+        )
         if prev_y_col_result is not None:
             self.prev_y_col = prev_y_col_result
             print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
@@ -236,12 +268,16 @@ class UnifiedReportGenerator(BaseGenerator):
             if pd.isna(col_name):
                 continue
             cell_str = str(col_name).strip().lower()
+            matched_region = False
             if self.region_name_col is None:
                 for keyword in region_keywords:
                     if keyword.lower() in cell_str:
                         region_col_candidates.append((col_idx, keyword, -1))
+                        matched_region = True
                         print(f"[{self.config['name']}] 🔍 [헤더] 지역명 컬럼 후보: {col_idx} (키워드: '{keyword}')")
                         break
+            if matched_region:
+                continue
             if self.industry_name_col is None:
                 for keyword in name_keywords:
                     if keyword.lower() in cell_str:
@@ -256,6 +292,7 @@ class UnifiedReportGenerator(BaseGenerator):
                 if pd.isna(cell_value):
                     continue
                 cell_str = str(cell_value).strip().lower()
+                matched_region = False
 
                 # 지역명 컬럼 후보 찾기 (모든 일치하는 컬럼 수집)
                 if self.region_name_col is None:
@@ -263,9 +300,12 @@ class UnifiedReportGenerator(BaseGenerator):
                         if keyword.lower() in cell_str:
                             region_col_candidates.append((col_idx, keyword, row_idx))
                             print(f"[{self.config['name']}] 🔍 지역명 컬럼 후보: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
+                            matched_region = True
                             break
 
                 # 산업명 컬럼 찾기
+                if matched_region:
+                    continue
                 if self.industry_name_col is None:
                     for keyword in name_keywords:
                         if keyword.lower() in cell_str:
@@ -365,6 +405,20 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # 데이터 시작 행 찾기 (헤더 다음 행)
         # 지역명이나 산업코드가 실제로 나타나는 첫 번째 행 찾기
+
+        # 산업명 컬럼이 지역명 컬럼과 동일하게 잡힌 경우 초기화 후 재추정
+        if self.industry_name_col is not None and self.region_name_col is not None and self.industry_name_col == self.region_name_col:
+            print(f"[{self.config['name']}] ⚠️ 산업명 컬럼이 지역명 컬럼과 동일({self.industry_name_col})하여 재탐색합니다.")
+            self.industry_name_col = None
+
+        # 업종/품목명 컬럼을 찾지 못했거나 제거된 경우, 텍스트 비율 기반으로 재추정
+        if self.industry_name_col is None:
+            exclude_cols = [self.region_name_col] if self.region_name_col is not None else []
+            guessed_col = self._find_textual_column(df, header_rows=header_rows, exclude_cols=exclude_cols)
+            if guessed_col is not None and guessed_col != self.region_name_col:
+                self.industry_name_col = guessed_col
+                print(f"[{self.config['name']}] ✅ 업종/품목 컬럼 재추정: {guessed_col}")
+
         if self.region_name_col is not None:
             valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                             '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
@@ -708,11 +762,41 @@ class UnifiedReportGenerator(BaseGenerator):
             print(f"[{self.config['name']}] ⚠️ data_start_row({self.data_start_row})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
             data_df = df.copy()
         
+        # 국내인구이동은 최근 3개 분기(전기, 전전기, 전전전기) 컬럼을 별도로 찾는다.
+        prev_q_col = prev_prev_col = prev_prev_prev_col = None
+        if self.report_type == 'migration':
+            header_rows = self.config.get('header_rows', 5)
+
+            def find_quarter_col(offset: int) -> Optional[int]:
+                y = self.year
+                q = (self.quarter or 0) - offset
+                while q <= 0:
+                    y -= 1
+                    q += 4
+                if y is None or y <= 0:
+                    return None
+                return self.find_target_col_index(
+                    self.df_aggregation,
+                    y,
+                    q,
+                    require_type_match=False,
+                    max_header_rows=header_rows
+                )
+
+            prev_q_col = find_quarter_col(1)            # 직전 분기
+            prev_prev_col = find_quarter_col(2)         # 직전-1 분기
+            prev_prev_prev_col = find_quarter_col(3)    # 직전-2 분기
+        
         # 지역 목록
         regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
         
         table_data = []
+        total_code = None
+        try:
+            total_code = (self.config.get('aggregation_structure') or {}).get('total_code')
+        except Exception:
+            total_code = None
         
         # 컬럼 인덱스 검증 (동적으로 찾은 컬럼)
         if self.region_name_col is None or self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
@@ -739,10 +823,23 @@ class UnifiedReportGenerator(BaseGenerator):
             region_total = None
             
             # 1) 산업명 컬럼에서 총계 키워드로 탐색
-            if self.industry_name_col is not None and self.industry_name_col >= 0 and self.industry_name_col < len(region_filter.columns):
+            if self.industry_name_col is not None and self.industry_name_col != self.region_name_col and self.industry_name_col >= 0 and self.industry_name_col < len(region_filter.columns):
                 by_name = self._find_total_row_by_name(region_filter, self.industry_name_col, header_rows=0)
                 if by_name is not None and not by_name.empty:
                     region_total = by_name
+
+            # 1-1) 산업명 탐색 실패 시 total_code로 추가 검색
+            if (region_total is None or region_total.empty) and total_code:
+                exclude_cols = []
+                if self.region_name_col is not None:
+                    exclude_cols.append(self.region_name_col)
+                # 일부 지표(고용률/실업률/순인구이동)는 총계 코드가 업종/연령 컬럼에 위치하므로
+                # industry_name_col은 제외 목록에서 빼서 검색 범위에 포함한다.
+                if self.industry_name_col is not None and self.report_type not in ['employment', 'unemployment', 'migration']:
+                    exclude_cols.append(self.industry_name_col)
+                by_code = self._find_total_row_by_code(region_filter, total_code, exclude_cols=exclude_cols)
+                if by_code is not None and not by_code.empty:
+                    region_total = by_code
             
             # 2) 그래도 못 찾으면 report_type에 따라 첫 행 폴백
             if (region_total is None or region_total.empty) and self.report_type in ['employment', 'unemployment', 'migration']:
@@ -803,6 +900,16 @@ class UnifiedReportGenerator(BaseGenerator):
                 print(f"[{self.config['name']}] ⚠️ 데이터 추출 오류: {e}. 스킵합니다.")
                 continue
             
+            # 국내인구이동: 최근 3개 분기 값 추출 (없으면 None 유지)
+            idx_prev_quarter = idx_prev_prev = idx_prev_prev_prev = None
+            if self.report_type == 'migration':
+                if prev_q_col is not None and prev_q_col < len(row):
+                    idx_prev_quarter = self.safe_float(row.iloc[prev_q_col], None)
+                if prev_prev_col is not None and prev_prev_col < len(row):
+                    idx_prev_prev = self.safe_float(row.iloc[prev_prev_col], None)
+                if prev_prev_prev_col is not None and prev_prev_prev_col < len(row):
+                    idx_prev_prev_prev = self.safe_float(row.iloc[prev_prev_prev_col], None)
+            
             if idx_current is None:
                 continue
             
@@ -823,26 +930,60 @@ class UnifiedReportGenerator(BaseGenerator):
             else:
                 change_rate = None
             
-            row_data = {
-                'region_name': region,
-                'region_display': self._get_region_display_name(region),
-                'value': round(idx_current, 1),
-                'prev_value': round(idx_prev_year, 1) if idx_prev_year else None,
-                'change_rate': change_rate
-            }
-
-            # 국내인구이동 템플릿 호환 필드(이전 분기/연도 및 연령대) 기본 제공
             if self.report_type == 'migration':
-                row_data.update({
-                    'prev_prev_prev_value': None,
-                    'prev_prev_value': None,
+                row_data = {
+                    'region_name': region,
+                    'region_display': self._get_region_display_name(region),
+                    'value': round(idx_current, 1),
+                    'prev_value': round(idx_prev_quarter, 1) if idx_prev_quarter is not None else None,
+                    'prev_prev_value': round(idx_prev_prev, 1) if idx_prev_prev is not None else None,
+                    'prev_prev_prev_value': round(idx_prev_prev_prev, 1) if idx_prev_prev_prev is not None else None,
+                    'change_rate': change_rate,
                     'age_20_29': None,
                     'age_other': None
-                })
+                }
+            else:
+                row_data = {
+                    'region_name': region,
+                    'region_display': self._get_region_display_name(region),
+                    'value': round(idx_current, 1),
+                    'prev_value': round(idx_prev_year, 1) if idx_prev_year else None,
+                    'change_rate': change_rate
+                }
 
             table_data.append(row_data)
             
             print(f"[{self.config['name']}] ✅ {region}: 지수={idx_current:.1f}, 증감률={change_rate}%")
+        
+        # 국내인구이동: 전국 데이터 생성 여부 확인 (config의 has_nationwide 설정)
+        # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미가 없어 생성하지 않음
+        if self.report_type == 'migration' and table_data:
+            # config에서 has_nationwide 설정 확인 (기본값 True)
+            should_generate_nationwide = self.config.get('has_nationwide', True)
+            
+            if should_generate_nationwide:
+                def sum_field(key: str) -> Optional[float]:
+                    values = [row.get(key) for row in table_data if row.get('region_name') != '전국' and row.get(key) is not None]
+                    return round(sum(values), 1) if values else None
+
+                # 이미 전국이 있다면 스킵
+                has_nationwide = any(row.get('region_name') == '전국' for row in table_data)
+                if not has_nationwide:
+                    nationwide_row = {
+                        'region_name': '전국',
+                        'region_display': self._get_region_display_name('전국'),
+                        'value': sum_field('value'),
+                        'prev_value': sum_field('prev_value'),
+                        'prev_prev_value': sum_field('prev_prev_value'),
+                        'prev_prev_prev_value': sum_field('prev_prev_prev_value'),
+                        'change_rate': sum_field('change_rate'),
+                        'age_20_29': None,
+                        'age_other': None
+                    }
+                    table_data.insert(0, nationwide_row)
+                    print(f"[{self.config['name']}] ✅ 전국 데이터가 없어 지역 합계로 추가")
+            else:
+                print(f"[{self.config['name']}] ⚠️ has_nationwide=False이므로 전국 데이터 생성 건너뜀")
         
         return table_data
     
@@ -1471,6 +1612,9 @@ class UnifiedReportGenerator(BaseGenerator):
         """전체 데이터 추출"""
         # 데이터 로드는 외부에서 보장 (테스트 호환성)
         
+        # config에서 header_rows 가져오기 (기본값 5)
+        max_header_rows = self.config.get('header_rows', 5)
+        
         # migration은 load_data()에서 이미 명시적 헤더 탐색으로 컬럼 설정됨
         if self.report_type == 'migration':
             target_idx = self.target_col
@@ -1481,8 +1625,16 @@ class UnifiedReportGenerator(BaseGenerator):
             # 타입 키워드가 헤더에 없을 수 있으므로 모든 보고서에서 타입 매칭을 강제하지 않음
             require_type_match = False
             
-            target_idx = self.find_target_col_index(self.df_aggregation, self.year, self.quarter, require_type_match=require_type_match)
-            prev_y_idx = self.find_target_col_index(self.df_aggregation, self.year - 1, self.quarter, require_type_match=require_type_match)
+            target_idx = self.find_target_col_index(
+                self.df_aggregation, self.year, self.quarter, 
+                require_type_match=require_type_match,
+                max_header_rows=max_header_rows
+            )
+            prev_y_idx = self.find_target_col_index(
+                self.df_aggregation, self.year - 1, self.quarter, 
+                require_type_match=require_type_match,
+                max_header_rows=max_header_rows
+            )
         
         if self.df_aggregation is not None:
             if target_idx is None:
