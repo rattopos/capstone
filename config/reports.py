@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 # -*- coding: utf-8 -*-
 """
 보도자료 설정 및 상수 정의
 """
 
-REGIONAL_REPORTS = [
+from typing import Any
+
+REGIONAL_REPORTS: list[dict[str, Any]] = [
     {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
     {'id': 'region_busan', 'name': '부산', 'full_name': '부산광역시', 'index': 2, 'icon': '🌊'},
     {'id': 'region_daegu', 'name': '대구', 'full_name': '대구광역시', 'index': 3, 'icon': '🏛️'},
@@ -24,7 +28,7 @@ REGIONAL_REPORTS = [
 ]
 
 # 아래는 REGION_DISPLAY_MAPPING, REGION_GROUPS, VALID_REGIONS 등 통합 매핑 예시 (필요시 확장)
-REGION_DISPLAY_MAPPING = {
+REGION_DISPLAY_MAPPING: dict[str, str] = {
     '서울': '서울특별시',
     '부산': '부산광역시',
     '대구': '대구광역시',
@@ -44,7 +48,7 @@ REGION_DISPLAY_MAPPING = {
     '제주': '제주특별자치도',
 }
 
-REGION_GROUPS = {
+REGION_GROUPS: dict[str, list[str]] = {
     '수도권': ['서울', '경기', '인천'],
     '충청권': ['대전', '세종', '충북', '충남'],
     '호남권': ['광주', '전북', '전남'],
@@ -54,12 +58,12 @@ REGION_GROUPS = {
     '제주권': ['제주'],
 }
 
-VALID_REGIONS = [r['name'] for r in REGIONAL_REPORTS]
+VALID_REGIONS: list[str] = [r['name'] for r in REGIONAL_REPORTS]
 
 # ===== 요약 보도자료 목록 (요약만 포함) =====
 # 주의: 표지, 일러두기, 목차, 인포그래픽, 차트, 통계표, GRDP는 고객사 요구사항 변경으로 더 이상 생성하지 않음
 # 실무자는 표와 나레이션만 한글 문서에 복붙함
-SUMMARY_REPORTS = [
+SUMMARY_REPORTS: list[dict[str, Any]] = [
     {
         'id': 'summary_overview',
         'name': '요약-지역경제동향',
@@ -108,7 +112,7 @@ SUMMARY_REPORTS = [
 ]
 
 # ===== 부문별 보도자료 순서 설정 =====
-SECTOR_REPORTS = [
+SECTOR_REPORTS: list[dict[str, Any]] = [
     {
         'id': 'manufacturing',
         'report_id': 'manufacturing',

@@ -5,22 +5,28 @@
 모든 개별 Generator들을 통합하여 관리하고, 데이터 추출 및 HTML 생성을 처리합니다.
 """
 
+from __future__ import annotations
+
 
 import sys
 import json
 import importlib.util
 from pathlib import Path
+from typing import Any
+
 from jinja2 import Template
 import pandas as pd
 
 from config.settings import BASE_DIR, TEMPLATES_DIR
 from config.reports import REPORT_ORDER, SECTOR_REPORTS, SUMMARY_REPORTS, REGIONAL_REPORTS
+from utils.filters import is_missing, format_value
+from utils.text_utils import get_josa, get_terms
 
 
 class ReportGenerator:
     """통합 보도자료 생성기"""
     
-    def __init__(self, excel_path: str):
+    def __init__(self, excel_path: str) -> None:
         """
         초기화
         Args:
@@ -29,9 +35,13 @@ class ReportGenerator:
         self.excel_path = Path(excel_path)
         if not self.excel_path.exists():
             raise FileNotFoundError(f"엑셀 파일을 찾을 수 없습니다: {excel_path}")
-        self._modules = {}
+        self._modules: dict[str, Any] = {}
+        # 파일명에서 연/분기 자동 추정 (예: '분석표_25년 3분기_...xlsx')
+        self._year_quarter: tuple[int, int] | None = self._infer_period_from_filename(
+            self.excel_path.name
+        )
     
-    def _load_module(self, generator_name: str):
+    def _load_module(self, generator_name: str) -> Any:
         """Generator 모듈 동적 로드"""
         if generator_name in self._modules:
             return self._modules[generator_name]
@@ -49,8 +59,52 @@ class ReportGenerator:
         
         self._modules[generator_name] = module
         return module
+
+    @staticmethod
+    def _infer_period_from_filename(filename: str) -> tuple[int, int] | None:
+        """파일명에서 연도/분기 추정. 없으면 None 반환.
+        허용 패턴 예시:
+        - '분석표_25년 3분기_캡스톤.xlsx' -> (2025, 3)
+        - '보고서_2025년3분기.xlsx' -> (2025, 3)
+        - '2025_3Q.xlsx' -> (2025, 3)
+        """
+        import re
+        s = filename
+        # 1) '2025년 3분기' 또는 '25년 3분기'
+        m = re.search(r"(\d{2,4})\s*년\s*(\d)\s*분기", s)
+        if m:
+            y = int(m.group(1))
+            if y < 100:  # 두 자리 연도 처리 (예: 25 -> 2025)
+                y += 2000
+            q = int(m.group(2))
+            return (y, q)
+        # 2) '2025 3/4' 또는 '25 3/4'
+        m = re.search(r"(\d{2,4})\s*(\d)\s*/\s*4", s)
+        if m:
+            y = int(m.group(1))
+            if y < 100:
+                y += 2000
+            q = int(m.group(2))
+            return (y, q)
+        # 3) '2025 3Q' 또는 '25 Q3'
+        m = re.search(r"(\d{2,4})\s*[Qq]?\s*(\d)\s*[Qq]", s)
+        if m:
+            y = int(m.group(1))
+            if y < 100:
+                y += 2000
+            q = int(m.group(2))
+            return (y, q)
+        # 4) 'Q3 2025' 등 역순
+        m = re.search(r"[Qq]\s*(\d)\s*(\d{2,4})", s)
+        if m:
+            q = int(m.group(1))
+            y = int(m.group(2))
+            if y < 100:
+                y += 2000
+            return (y, q)
+        return None
     
-    def extract_data(self, report_id: str) -> dict:
+    def extract_data(self, report_id: str) -> dict[str, Any]:
         """
         특정 보도자료의 데이터 추출
         Args:
@@ -70,7 +124,7 @@ class ReportGenerator:
         # 클래스 기반 Generator
         return self._extract_with_class(module, config)
     
-    def _extract_with_class(self, module, config: dict) -> dict:
+    def _extract_with_class(self, module: Any, config: dict[str, Any]) -> dict[str, Any]:
         """클래스 기반 Generator로 데이터 추출"""
         class_name = config.get('class_name')
         generator_class = None
@@ -84,12 +138,17 @@ class ReportGenerator:
                     generator_class = obj
         if not generator_class:
             raise ValueError(f"Generator 클래스를 찾을 수 없습니다: {config['generator']}")
-        generator = generator_class(str(self.excel_path))
+        # 연/분기 추정치가 있으면 전달하여 헤더 탐색 실패를 방지
+        if self._year_quarter:
+            y, q = self._year_quarter
+            generator = generator_class(str(self.excel_path), year=y, quarter=q)
+        else:
+            generator = generator_class(str(self.excel_path))
         return generator.extract_all_data()
     
-    def _extract_with_functions(self, module, config: dict) -> dict:
+    def _extract_with_functions(self, module: Any, config: dict[str, Any]) -> dict[str, Any]:
         """함수 기반 Generator로 데이터 추출"""
-        data = {}
+        data: dict[str, Any] = {}
         
         # load_data 함수로 데이터 로드
         if hasattr(module, 'load_data'):
@@ -140,7 +199,7 @@ class ReportGenerator:
         
         return data
     
-    def generate_html(self, report_id: str, custom_data: dict = None) -> str:
+    def generate_html(self, report_id: str, custom_data: dict[str, Any] | None = None) -> str:
         """
         보도자료 HTML 생성
         Args:
@@ -158,13 +217,27 @@ class ReportGenerator:
         # 커스텀 데이터 병합
         if custom_data:
             data = self._merge_custom_data(data, custom_data)
+        data['get_terms'] = get_terms
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / config['template']
         with open(template_path, 'r', encoding='utf-8') as f:
             template = Template(f.read())
+        # 템플릿 필터 등록 (템플릿에서 사용되는 커스텀 필터들)
+        try:
+            template.environment.filters['format_value'] = format_value
+        except Exception:
+            pass
+        try:
+            template.environment.filters['is_missing'] = is_missing
+        except Exception:
+            pass
+        try:
+            template.environment.filters['josa'] = get_josa
+        except Exception:
+            pass
         return template.render(**data)
     
-    def _merge_custom_data(self, data: dict, custom_data: dict) -> dict:
+    def _merge_custom_data(self, data: dict[str, Any], custom_data: dict[str, Any]) -> dict[str, Any]:
         """커스텀 데이터를 기존 데이터에 병합"""
         for key, value in custom_data.items():
             keys = key.split('.')
@@ -186,7 +259,7 @@ class ReportGenerator:
         
         return data
     
-    def check_missing_data(self, data: dict) -> list:
+    def check_missing_data(self, data: dict[str, Any]) -> list[str]:
         """데이터에서 결측치 확인"""
         missing_fields = []
         
