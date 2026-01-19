@@ -330,6 +330,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     template.environment.filters['format_value'] = format_value
                     template.environment.filters['is_missing'] = is_missing
                     template.environment.filters['josa'] = get_josa
+                    trade_price_data['get_terms'] = get_terms
+                    trade_price_data['get_comparative_terms'] = get_comparative_terms
                     html_content = template.render(**trade_price_data)
                     return html_content, None, []
                 except Exception as e:

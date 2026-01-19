@@ -71,6 +71,16 @@ class UnifiedReportGenerator(BaseGenerator):
         self.df_reference = None
         self.target_col = None
         self.prev_y_col = None
+        self.prev_prev_y_col = None
+        self.prev_prev_prev_y_col = None
+        self.quarterly_keys = []
+        self.quarterly_cols = {}
+        self.analysis_target_col = None
+        self.analysis_prev_y_col = None
+        self.analysis_prev_prev_y_col = None
+        self.analysis_prev_prev_prev_y_col = None
+        self.analysis_quarterly_keys = []
+        self.analysis_quarterly_cols = {}
         # 인스턴스 생성 시 데이터프레임 등 필드 자동 초기화
         self.load_data()
     def _get_region_display_name(self, region: str) -> str:
@@ -166,6 +176,86 @@ class UnifiedReportGenerator(BaseGenerator):
             if matched is not None and not matched.empty:
                 return matched.head(1)
         return None
+
+    @staticmethod
+    def _previous_quarter(year: int, quarter: int) -> tuple[int, int]:
+        if quarter <= 1:
+            return (year - 1, 4)
+        return (year, quarter - 1)
+
+    @staticmethod
+    def _format_quarter_key(year: int, quarter: int) -> str:
+        return f"{year} {quarter}/4"
+
+    def _build_quarter_range(
+        self,
+        start_year: int,
+        start_quarter: int,
+        end_year: int,
+        end_quarter: int
+    ) -> List[tuple[int, int]]:
+        quarters = []
+        y, q = start_year, start_quarter
+        while (y < end_year) or (y == end_year and q <= end_quarter):
+            quarters.append((y, q))
+            q += 1
+            if q > 4:
+                q = 1
+                y += 1
+        return quarters
+
+    def _ensure_quarter_columns(
+        self,
+        df: pd.DataFrame,
+        start_year: int,
+        start_quarter: int,
+        end_year: int,
+        end_quarter: int,
+        max_header_rows: int
+    ) -> None:
+        if df is None or start_year is None or start_quarter is None or end_year is None or end_quarter is None:
+            return
+        quarter_range = self._build_quarter_range(start_year, start_quarter, end_year, end_quarter)
+        keys: List[str] = []
+        cols: Dict[str, Optional[int]] = {}
+        for y, q in quarter_range:
+            key = self._format_quarter_key(y, q)
+            keys.append(key)
+            cols[key] = self.find_target_col_index(
+                df,
+                y,
+                q,
+                require_type_match=False,
+                max_header_rows=max_header_rows
+            )
+        self.quarterly_keys = keys
+        self.quarterly_cols = cols
+
+    def _collect_quarter_columns(
+        self,
+        df: pd.DataFrame,
+        start_year: int,
+        start_quarter: int,
+        end_year: int,
+        end_quarter: int,
+        max_header_rows: int
+    ) -> tuple[List[str], Dict[str, Optional[int]]]:
+        if df is None or start_year is None or start_quarter is None or end_year is None or end_quarter is None:
+            return [], {}
+        quarter_range = self._build_quarter_range(start_year, start_quarter, end_year, end_quarter)
+        keys: List[str] = []
+        cols: Dict[str, Optional[int]] = {}
+        for y, q in quarter_range:
+            key = self._format_quarter_key(y, q)
+            keys.append(key)
+            cols[key] = self.find_target_col_index(
+                df,
+                y,
+                q,
+                require_type_match=False,
+                max_header_rows=max_header_rows
+            )
+        return keys, cols
     def load_data(self):
         """
         테스트 호환성: 기존 테스트 코드에서 generator.load_data()를 호출하는 경우
@@ -243,6 +333,42 @@ class UnifiedReportGenerator(BaseGenerator):
             else:
                 print(f"[{self.config['name']}] ⚠️ 이전 연도 데이터도 없음 (계속 진행)")
                 self.prev_y_col = None
+
+        # 전전년 컬럼 찾기 (2년 전)
+        prev_prev_y_col_result = self.find_target_col_index(
+            self.df_aggregation, self.year - 2, self.quarter,
+            require_type_match=require_type_match,
+            max_header_rows=max_header_rows
+        )
+        if prev_prev_y_col_result is not None:
+            self.prev_prev_y_col = prev_prev_y_col_result
+            print(f"[{self.config['name']}] ✅ 전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_y_col} ({self.year - 2} {self.quarter}/4)")
+        else:
+            print(f"[{self.config['name']}] ⚠️ {self.year - 2}년 {self.quarter}분기 데이터 없음 (계속 진행)")
+            self.prev_prev_y_col = None
+
+        # 전전전년 컬럼 찾기 (3년 전) - 재작년 증감률 계산용
+        prev_prev_prev_y_col_result = self.find_target_col_index(
+            self.df_aggregation, self.year - 3, self.quarter,
+            require_type_match=require_type_match,
+            max_header_rows=max_header_rows
+        )
+        if prev_prev_prev_y_col_result is not None:
+            self.prev_prev_prev_y_col = prev_prev_prev_y_col_result
+            print(f"[{self.config['name']}] ✅ 전전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_prev_y_col} ({self.year - 3} {self.quarter}/4)")
+        else:
+            self.prev_prev_prev_y_col = None
+
+        # 22년 3분기 ~ 25년 3분기처럼 분기 단위 전체 범위 컬럼 확보
+        if self.year is not None and self.quarter is not None:
+            self._ensure_quarter_columns(
+                self.df_aggregation,
+                self.year - 3,
+                self.quarter,
+                self.year,
+                self.quarter,
+                max_header_rows
+            )
         
         wb.close()
 
@@ -622,6 +748,8 @@ class UnifiedReportGenerator(BaseGenerator):
                     self.df_reference = None
                     self.target_col = None
                     self.prev_y_col = None
+                    self.prev_prev_y_col = None
+                    self.prev_prev_prev_y_col = None
                     self.use_aggregation_only = False
                     print(f"[{self.config['name']}] Generator 초기화")
 
@@ -649,6 +777,63 @@ class UnifiedReportGenerator(BaseGenerator):
             self.prev_y_col = self.find_target_col_index(df, self.year - 1, self.quarter, require_type_match=require_type_match)
             if self.prev_y_col is not None:
                 print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
+
+        if self.prev_prev_y_col is None:
+            self.prev_prev_y_col = self.find_target_col_index(df, self.year - 2, self.quarter, require_type_match=require_type_match)
+            if self.prev_prev_y_col is not None:
+                print(f"[{self.config['name']}] ✅ 전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_y_col} ({self.year - 2} {self.quarter}/4)")
+
+        if self.prev_prev_prev_y_col is None:
+            self.prev_prev_prev_y_col = self.find_target_col_index(df, self.year - 3, self.quarter, require_type_match=require_type_match)
+            if self.prev_prev_prev_y_col is not None:
+                print(f"[{self.config['name']}] ✅ 전전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_prev_y_col} ({self.year - 3} {self.quarter}/4)")
+
+        analysis_sheet = self.config.get('analysis_sheet')
+        if analysis_sheet and analysis_sheet != agg_sheet_name:
+            try:
+                self.df_analysis = pd.read_excel(self.excel_path, sheet_name=analysis_sheet, header=None)
+                analysis_header_rows = self.config.get('analysis_header_rows', max_header_rows)
+                self.analysis_target_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+                self.analysis_prev_y_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year - 1,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+                self.analysis_prev_prev_y_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year - 2,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+                self.analysis_prev_prev_prev_y_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year - 3,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+                if self.year is not None and self.quarter is not None:
+                    keys, cols = self._collect_quarter_columns(
+                        self.df_analysis,
+                        self.year - 3,
+                        self.quarter,
+                        self.year,
+                        self.quarter,
+                        analysis_header_rows
+                    )
+                    self.analysis_quarterly_keys = keys
+                    self.analysis_quarterly_cols = cols
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ 분석 시트 로드 실패: {analysis_sheet} ({e})")
         
         # 기본값 사용 금지: 반드시 찾아야 함 (상세 디버그 정보 포함)
         if self.target_col is None:
@@ -762,30 +947,56 @@ class UnifiedReportGenerator(BaseGenerator):
             print(f"[{self.config['name']}] ⚠️ data_start_row({self.data_start_row})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
             data_df = df.copy()
         
-        # 국내인구이동은 최근 3개 분기(전기, 전전기, 전전전기) 컬럼을 별도로 찾는다.
-        prev_q_col = prev_prev_col = prev_prev_prev_col = None
-        if self.report_type == 'migration':
-            header_rows = self.config.get('header_rows', 5)
-
-            def find_quarter_col(offset: int) -> Optional[int]:
-                y = self.year
-                q = (self.quarter or 0) - offset
-                while q <= 0:
-                    y -= 1
-                    q += 4
-                if y is None or y <= 0:
-                    return None
-                return self.find_target_col_index(
-                    self.df_aggregation,
-                    y,
-                    q,
-                    require_type_match=False,
-                    max_header_rows=header_rows
+        # 분기 단위 전체 범위 컬럼 확보 (22년 3분기 ~ 25년 3분기 등)
+        header_rows = self.config.get('header_rows', 5)
+        if self.year is not None and self.quarter is not None:
+            if not self.quarterly_keys or not self.quarterly_cols or (df is not self.df_aggregation):
+                self._ensure_quarter_columns(
+                    df,
+                    self.year - 3,
+                    self.quarter,
+                    self.year,
+                    self.quarter,
+                    header_rows
                 )
 
-            prev_q_col = find_quarter_col(1)            # 직전 분기
-            prev_prev_col = find_quarter_col(2)         # 직전-1 분기
-            prev_prev_prev_col = find_quarter_col(3)    # 직전-2 분기
+        # 직전 분기 컬럼
+        prev_q_col = None
+        if self.year is not None and self.quarter is not None:
+            prev_q_year, prev_q = self._previous_quarter(self.year, self.quarter)
+            prev_q_key = self._format_quarter_key(prev_q_year, prev_q)
+            prev_q_col = self.quarterly_cols.get(prev_q_key)
+
+        use_analysis_rates = self.config.get('value_type') == 'change_rate' and self.df_analysis is not None
+        if use_analysis_rates and self.year is not None and self.quarter is not None:
+            analysis_header_rows = self.config.get('analysis_header_rows', header_rows)
+            if self.analysis_target_col is None:
+                self.analysis_target_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+            if self.analysis_prev_y_col is None:
+                self.analysis_prev_y_col = self.find_target_col_index(
+                    self.df_analysis,
+                    self.year - 1,
+                    self.quarter,
+                    require_type_match=False,
+                    max_header_rows=analysis_header_rows
+                )
+            if not self.analysis_quarterly_keys or not self.analysis_quarterly_cols:
+                keys, cols = self._collect_quarter_columns(
+                    self.df_analysis,
+                    self.year - 3,
+                    self.quarter,
+                    self.year,
+                    self.quarter,
+                    analysis_header_rows
+                )
+                self.analysis_quarterly_keys = keys
+                self.analysis_quarterly_cols = cols
         
         # 지역 목록
         regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -797,6 +1008,93 @@ class UnifiedReportGenerator(BaseGenerator):
             total_code = (self.config.get('aggregation_structure') or {}).get('total_code')
         except Exception:
             total_code = None
+
+        def _select_region_total(df_source: pd.DataFrame, region_name: str) -> Optional[pd.Series]:
+            if df_source is None:
+                return None
+            if self.data_start_row is None:
+                start_row = 0
+            else:
+                start_row = max(self.data_start_row, 0)
+            if start_row < len(df_source):
+                local_df = df_source.iloc[start_row:].copy()
+            else:
+                local_df = df_source.copy()
+            region_col = self.region_name_col
+            if region_col is None or region_col < 0 or region_col >= len(local_df.columns):
+                region_col = None
+
+            def _detect_region_col(df_search: pd.DataFrame) -> Optional[int]:
+                if df_search is None or df_search.empty:
+                    return None
+                valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+                                 '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
+                rows_to_scan = min(40, len(df_search))
+                try:
+                    for col_idx in range(len(df_search.columns)):
+                        for r in range(rows_to_scan):
+                            val = df_search.iloc[r, col_idx]
+                            if pd.notna(val) and str(val).strip() in valid_regions:
+                                return col_idx
+                except Exception:
+                    return None
+                return None
+
+            if region_col is None:
+                region_col = _detect_region_col(df_source)
+            if region_col is None:
+                return None
+
+            try:
+                region_filter = local_df[
+                    local_df.iloc[:, region_col].astype(str).str.strip() == region_name
+                ]
+            except (IndexError, KeyError):
+                return None
+            if region_filter.empty and df_source is not local_df:
+                try:
+                    region_filter = df_source[
+                        df_source.iloc[:, region_col].astype(str).str.strip() == region_name
+                    ]
+                    local_df = df_source
+                except (IndexError, KeyError):
+                    return None
+            if region_filter.empty:
+                alt_col = _detect_region_col(df_source)
+                if alt_col is not None and alt_col != region_col:
+                    region_col = alt_col
+                    try:
+                        region_filter = df_source[
+                            df_source.iloc[:, region_col].astype(str).str.strip() == region_name
+                        ]
+                        local_df = df_source
+                    except (IndexError, KeyError):
+                        return None
+            if region_filter.empty:
+                return None
+            region_total = None
+            if self.industry_name_col is not None and self.industry_name_col != self.region_name_col and self.industry_name_col >= 0 and self.industry_name_col < len(region_filter.columns):
+                by_name = self._find_total_row_by_name(region_filter, self.industry_name_col, header_rows=0)
+                if by_name is not None and not by_name.empty:
+                    region_total = by_name
+            if (region_total is None or region_total.empty) and total_code:
+                exclude_cols = []
+                if region_col is not None:
+                    exclude_cols.append(region_col)
+                if self.industry_name_col is not None and self.report_type not in ['employment', 'unemployment', 'migration']:
+                    exclude_cols.append(self.industry_name_col)
+                by_code = self._find_total_row_by_code(region_filter, total_code, exclude_cols=exclude_cols)
+                if by_code is not None and not by_code.empty:
+                    region_total = by_code
+            if (region_total is None or region_total.empty) and self.report_type in ['employment', 'unemployment', 'migration']:
+                if len(region_filter) > 0:
+                    region_total = region_filter.head(1)
+            if (region_total is None or region_total.empty) and self.report_type == 'migration':
+                if len(region_filter) > 0:
+                    region_total = region_filter.head(1)
+            if region_total is None or region_total.empty:
+                return None
+            return region_total.iloc[0]
         
         # 컬럼 인덱스 검증 (동적으로 찾은 컬럼)
         if self.region_name_col is None or self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
@@ -807,59 +1105,12 @@ class UnifiedReportGenerator(BaseGenerator):
             )
         
         for region in regions:
-            # 지역명으로 필터링 (설정에서 가져온 컬럼 사용) - 안전한 인덱스 접근
-            try:
-                region_filter = data_df[
-                    data_df.iloc[:, self.region_name_col].astype(str).str.strip() == region
-                ]
-            except (IndexError, KeyError) as e:
-                print(f"[{self.config['name']}] ⚠️ {region} 필터링 오류: {e}")
-                continue
-            
-            if region_filter.empty:
-                continue
-            
-            # 총지수 행 찾기 (이름 기반 탐색만 사용)
-            region_total = None
-            
-            # 1) 산업명 컬럼에서 총계 키워드로 탐색
-            if self.industry_name_col is not None and self.industry_name_col != self.region_name_col and self.industry_name_col >= 0 and self.industry_name_col < len(region_filter.columns):
-                by_name = self._find_total_row_by_name(region_filter, self.industry_name_col, header_rows=0)
-                if by_name is not None and not by_name.empty:
-                    region_total = by_name
-
-            # 1-1) 산업명 탐색 실패 시 total_code로 추가 검색
-            if (region_total is None or region_total.empty) and total_code:
-                exclude_cols = []
-                if self.region_name_col is not None:
-                    exclude_cols.append(self.region_name_col)
-                # 일부 지표(고용률/실업률/순인구이동)는 총계 코드가 업종/연령 컬럼에 위치하므로
-                # industry_name_col은 제외 목록에서 빼서 검색 범위에 포함한다.
-                if self.industry_name_col is not None and self.report_type not in ['employment', 'unemployment', 'migration']:
-                    exclude_cols.append(self.industry_name_col)
-                by_code = self._find_total_row_by_code(region_filter, total_code, exclude_cols=exclude_cols)
-                if by_code is not None and not by_code.empty:
-                    region_total = by_code
-            
-            # 2) 그래도 못 찾으면 report_type에 따라 첫 행 폴백
-            if (region_total is None or region_total.empty) and self.report_type in ['employment', 'unemployment', 'migration']:
-                if len(region_filter) > 0:
-                    region_total = region_filter.head(1)
-                    print(f"[{self.config['name']}] ⚠️ {region}: 총지수 행을 찾지 못해 첫 번째 행 사용")
-            
-            # 국내인구이동의 경우, 데이터 구조가 다름 (산업명 없음, 연령으로 구분)
-            # 첫 번째 행을 합계 데이터로 사용
-            if (region_total is None or region_total.empty) and self.report_type == 'migration':
-                if len(region_filter) > 0:
-                    region_total = region_filter.head(1)
-                    print(f"[{self.config['name']}] ⚠️ {region}: 첫 번째 행을 합계 데이터로 사용 (연령: {region_filter.iloc[0, 7] if len(region_filter.columns) > 7 else 'N/A'})")
-            
-            if region_total is None or region_total.empty:
-                # 산업코드가 없고 일반 부문 보고서인 경우에도 이름 기반 폴백을 시도했으나 실패
+            row = _select_region_total(df, region)
+            if row is None:
                 print(f"[{self.config['name']}] ⚠️ {region}: 총계 행을 찾지 못했습니다. 스킵합니다.")
                 continue
-            
-            row = region_total.iloc[0]
+
+            analysis_row = _select_region_total(self.df_analysis, region) if use_analysis_rates else None
             
             # 기본값 사용 금지: 반드시 유효한 인덱스여야 함 (상세 디버그 정보 포함)
             if self.target_col is None:
@@ -891,27 +1142,99 @@ class UnifiedReportGenerator(BaseGenerator):
             if self.prev_y_col >= len(row):
                 print(f"[{self.config['name']}] ⚠️ 전년 컬럼 인덱스({self.prev_y_col})가 행 길이({len(row)})를 초과합니다. 스킵합니다.")
                 continue
+
+            def _compute_quarterly_growth(current: Optional[float], previous: Optional[float]) -> Optional[float]:
+                if current is None or previous is None:
+                    return None
+                if self.report_type in ['employment', 'unemployment']:
+                    return round(current - previous, 1)
+                if self.report_type == 'migration':
+                    return round(current - previous, 1)
+                if self.config.get('value_type') == 'change_rate':
+                    return round(current, 1)
+                if previous == 0:
+                    return None
+                return round((current - previous) / previous * 100, 1)
             
             # 지수 추출
             try:
                 idx_current = self.safe_float(row.iloc[self.target_col], None)
                 idx_prev_year = self.safe_float(row.iloc[self.prev_y_col], None)
+                idx_prev_prev_year = None
+                idx_prev_prev_prev_year = None
+                if self.prev_prev_y_col is not None and self.prev_prev_y_col < len(row):
+                    idx_prev_prev_year = self.safe_float(row.iloc[self.prev_prev_y_col], None)
+                if self.prev_prev_prev_y_col is not None and self.prev_prev_prev_y_col < len(row):
+                    idx_prev_prev_prev_year = self.safe_float(row.iloc[self.prev_prev_prev_y_col], None)
             except (IndexError, KeyError) as e:
                 print(f"[{self.config['name']}] ⚠️ 데이터 추출 오류: {e}. 스킵합니다.")
                 continue
+
+            rate_current = None
+            rate_prev_year = None
+            rate_quarterly_values: List[Optional[float]] = []
+            rate_prev_quarter = None
+            if use_analysis_rates and analysis_row is not None:
+                if self.analysis_target_col is not None and self.analysis_target_col < len(analysis_row):
+                    rate_current = self.safe_float(analysis_row.iloc[self.analysis_target_col], None)
+                if self.analysis_prev_y_col is not None and self.analysis_prev_y_col < len(analysis_row):
+                    rate_prev_year = self.safe_float(analysis_row.iloc[self.analysis_prev_y_col], None)
+                if self.analysis_quarterly_keys:
+                    for key in self.analysis_quarterly_keys:
+                        col_idx = self.analysis_quarterly_cols.get(key)
+                        if col_idx is not None and col_idx < len(analysis_row):
+                            rate_quarterly_values.append(self.safe_float(analysis_row.iloc[col_idx], None))
+                        else:
+                            rate_quarterly_values.append(None)
+                    if len(rate_quarterly_values) >= 2:
+                        rate_prev_quarter = rate_quarterly_values[-2]
             
-            # 국내인구이동: 최근 3개 분기 값 추출 (없으면 None 유지)
-            idx_prev_quarter = idx_prev_prev = idx_prev_prev_prev = None
-            if self.report_type == 'migration':
-                if prev_q_col is not None and prev_q_col < len(row):
-                    idx_prev_quarter = self.safe_float(row.iloc[prev_q_col], None)
-                if prev_prev_col is not None and prev_prev_col < len(row):
-                    idx_prev_prev = self.safe_float(row.iloc[prev_prev_col], None)
-                if prev_prev_prev_col is not None and prev_prev_prev_col < len(row):
-                    idx_prev_prev_prev = self.safe_float(row.iloc[prev_prev_prev_col], None)
+            # 분기 단위 전체 범위 값 추출
+            quarterly_values: List[Optional[float]] = []
+            if self.quarterly_keys:
+                for key in self.quarterly_keys:
+                    col_idx = self.quarterly_cols.get(key)
+                    if col_idx is not None and col_idx < len(row):
+                        quarterly_values.append(self.safe_float(row.iloc[col_idx], None))
+                    else:
+                        quarterly_values.append(None)
+
+            if use_analysis_rates and rate_quarterly_values:
+                quarterly_growth_rates = rate_quarterly_values[:]
+            elif self.report_type == 'migration':
+                quarterly_growth_rates: List[Optional[float]] = [None for _ in quarterly_values]
+            else:
+                quarterly_growth_rates = []
+                for i, val in enumerate(quarterly_values):
+                    if i == 0:
+                        quarterly_growth_rates.append(None)
+                    else:
+                        quarterly_growth_rates.append(_compute_quarterly_growth(val, quarterly_values[i - 1]))
+
+            # 직전 분기 값
+            idx_prev_quarter = None
+            if prev_q_col is not None and prev_q_col < len(row):
+                idx_prev_quarter = self.safe_float(row.iloc[prev_q_col], None)
+
+            # 국내인구이동: 직전/전전/전전전 분기 값 추출 (없으면 None 유지)
+            idx_prev_prev = idx_prev_prev_prev = None
+            if self.report_type == 'migration' and quarterly_values:
+                if len(quarterly_values) >= 2:
+                    idx_prev_quarter = quarterly_values[-2]
+                if len(quarterly_values) >= 3:
+                    idx_prev_prev = quarterly_values[-3]
+                if len(quarterly_values) >= 4:
+                    idx_prev_prev_prev = quarterly_values[-4]
             
             if idx_current is None:
                 continue
+
+            if self.report_type == 'migration':
+                previous_quarter_growth = None
+            elif use_analysis_rates:
+                previous_quarter_growth = rate_prev_quarter
+            else:
+                previous_quarter_growth = _compute_quarterly_growth(idx_current, idx_prev_quarter)
             
             # 증감 계산 (report_type에 따라 다름)
             # 국내인구이동: 절대값 (부호 포함, 변화율 아님)
@@ -919,11 +1242,11 @@ class UnifiedReportGenerator(BaseGenerator):
             # value_type='change_rate': 이미 계산된 증감률 직접 사용
             # 기타 지수: 증감률(%)
             if self.report_type == 'migration':
-                # 절대 순인구이동값 (부호 포함) - 변화율이 아님
-                change_rate = round(idx_current, 1)
+                # 국내인구이동은 증감률 계산하지 않음
+                change_rate = None
             elif self.config.get('value_type') == 'change_rate':
                 # 시트에 이미 증감률이 계산되어 있는 경우 (예: C 분석)
-                change_rate = round(idx_current, 1)
+                change_rate = round(rate_current, 1) if rate_current is not None else round(idx_current, 1)
             elif idx_prev_year is not None and idx_prev_year != 0:
                 if self.report_type in ['employment', 'unemployment']:
                     # 퍼센트포인트 차이 (p)
@@ -942,7 +1265,10 @@ class UnifiedReportGenerator(BaseGenerator):
                     'prev_value': round(idx_prev_quarter, 1) if idx_prev_quarter is not None else None,
                     'prev_prev_value': round(idx_prev_prev, 1) if idx_prev_prev is not None else None,
                     'prev_prev_prev_value': round(idx_prev_prev_prev, 1) if idx_prev_prev_prev is not None else None,
-                    'change_rate': change_rate,
+                    # 국내인구이동은 증감률 계산하지 않음
+                    'quarterly_keys': self.quarterly_keys,
+                    'quarterly_values': quarterly_values,
+                    'quarterly_growth_rates': quarterly_growth_rates,
                     'age_20_29': None,
                     'age_other': None
                 }
@@ -952,7 +1278,15 @@ class UnifiedReportGenerator(BaseGenerator):
                     'region_display': self._get_region_display_name(region),
                     'value': round(idx_current, 1),
                     'prev_value': round(idx_prev_year, 1) if idx_prev_year else None,
-                    'change_rate': change_rate
+                    'prev_prev_value': round(idx_prev_prev_year, 1) if idx_prev_prev_year is not None else None,
+                    'prev_prev_prev_value': round(idx_prev_prev_prev_year, 1) if idx_prev_prev_prev_year is not None else None,
+                    'change_rate': change_rate,
+                    'previous_quarter_growth': previous_quarter_growth,
+                    'quarterly_keys': self.quarterly_keys,
+                    'quarterly_values': quarterly_values,
+                    'quarterly_growth_rates': quarterly_growth_rates,
+                    'rate_quarterly_keys': self.analysis_quarterly_keys if use_analysis_rates else None,
+                    'rate_quarterly_values': rate_quarterly_values if use_analysis_rates else None
                 }
 
             table_data.append(row_data)
@@ -1423,6 +1757,24 @@ class UnifiedReportGenerator(BaseGenerator):
         growth_cols = _growth_labels(self.year, self.quarter)
         index_cols = _index_labels(self.year, self.quarter)
 
+        target_quarter_keys: List[str] = []
+        if self.year is not None and self.quarter is not None:
+            prev_q_year, prev_q = _previous_quarter(self.year, self.quarter)
+            target_quarter_keys = [
+                self._format_quarter_key(self.year - 2, self.quarter),
+                self._format_quarter_key(self.year - 1, self.quarter),
+                self._format_quarter_key(prev_q_year, prev_q),
+                self._format_quarter_key(self.year, self.quarter),
+            ]
+
+        def _map_quarter_values(keys: Any, values: Any) -> List[Optional[float]]:
+            if not keys or not values:
+                return [None, None, None, None]
+            mapping = {k: v for k, v in zip(keys, values)}
+            if not target_quarter_keys:
+                return [None, None, None, None]
+            return [mapping.get(k) for k in target_quarter_keys]
+
         def _to_float(value: Any) -> Optional[float]:
             if value is None or value == '' or value == '-':
                 return None
@@ -1439,6 +1791,19 @@ class UnifiedReportGenerator(BaseGenerator):
             return round((current - previous) / previous * 100, 1)
 
         def _build_growth_slots(row: Dict[str, Any]) -> List[Optional[float]]:
+            # 분기별 증감률(분기-전분기) 값이 있으면 우선 사용
+            q_keys = row.get('quarterly_keys')
+            q_growth = row.get('quarterly_growth_rates')
+            mapped_growth = _map_quarter_values(q_keys, q_growth)
+            if any(v is not None for v in mapped_growth):
+                return mapped_growth
+
+            if self.config.get('value_type') == 'change_rate':
+                rate_keys = row.get('rate_quarterly_keys') or row.get('quarterly_keys')
+                rate_values = row.get('rate_quarterly_values') or row.get('quarterly_values')
+                mapped = _map_quarter_values(rate_keys, rate_values)
+                if any(v is not None for v in mapped):
+                    return mapped
             current_value = _to_float(row.get('value'))
             prev_value = _to_float(row.get('prev_value'))
             prev_prev_value = _to_float(row.get('prev_prev_value'))
@@ -1446,7 +1811,13 @@ class UnifiedReportGenerator(BaseGenerator):
 
             two_years_ago = _compute_growth(prev_prev_value, prev_prev_prev_value)
             last_year = _compute_growth(prev_value, prev_prev_value)
-            previous_quarter = None
+            previous_quarter = _to_float(
+                row.get('previous_quarter_growth') or row.get('prev_quarter_growth')
+            )
+            if previous_quarter is None:
+                quarterly_growth_rates = row.get('quarterly_growth_rates')
+                if isinstance(quarterly_growth_rates, list) and quarterly_growth_rates:
+                    previous_quarter = _to_float(quarterly_growth_rates[-1])
             current = _compute_growth(current_value, prev_value)
             if current is None:
                 current = _to_float(row.get('change_rate'))
@@ -1483,6 +1854,11 @@ class UnifiedReportGenerator(BaseGenerator):
                 'changes': growth_rates,
                 'rates': [prev_value, value, youth_rate if youth_rate not in (None, '', '-') else ''],
                 'youth_rate': youth_rate,
+                'quarterly_keys': row.get('quarterly_keys') if isinstance(row, dict) else None,
+                'quarterly_values': row.get('quarterly_values') if isinstance(row, dict) else None,
+                'quarterly_growth_rates': row.get('quarterly_growth_rates') if isinstance(row, dict) else None,
+                'rate_quarterly_keys': row.get('rate_quarterly_keys') if isinstance(row, dict) else None,
+                'rate_quarterly_values': row.get('rate_quarterly_values') if isinstance(row, dict) else None,
                 'prev_prev_value': prev_prev_value,
                 'prev_prev_prev_value': prev_prev_prev_value,
             })

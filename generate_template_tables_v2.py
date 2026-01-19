@@ -112,6 +112,36 @@ class TemplateTableGenerator:
             row['computed_growth_rates'] = slots
 
     def _build_growth_slots(self, row: dict[str, Any]) -> list[float | None]:
+        rate_keys = row.get('rate_quarterly_keys') or row.get('quarterly_keys')
+        rate_values = row.get('rate_quarterly_values')
+        growth_keys = row.get('quarterly_keys')
+        growth_values = row.get('quarterly_growth_rates')
+        if rate_keys and rate_values and self.generator._year_quarter:
+            year, quarter = self.generator._year_quarter
+            prev_q_year, prev_q = self._previous_quarter(year, quarter)
+            target_keys = [
+                f"{year-2} {quarter}/4",
+                f"{year-1} {quarter}/4",
+                f"{prev_q_year} {prev_q}/4",
+                f"{year} {quarter}/4",
+            ]
+            mapping = {k: v for k, v in zip(rate_keys, rate_values)}
+            mapped = [mapping.get(k) for k in target_keys]
+            if any(v is not None for v in mapped):
+                return mapped
+        if growth_keys and growth_values and self.generator._year_quarter:
+            year, quarter = self.generator._year_quarter
+            prev_q_year, prev_q = self._previous_quarter(year, quarter)
+            target_keys = [
+                f"{year-2} {quarter}/4",
+                f"{year-1} {quarter}/4",
+                f"{prev_q_year} {prev_q}/4",
+                f"{year} {quarter}/4",
+            ]
+            mapping = {k: v for k, v in zip(growth_keys, growth_values)}
+            mapped = [mapping.get(k) for k in target_keys]
+            if any(v is not None for v in mapped):
+                return mapped
         current_value = self._first_numeric(row, ['value', 'current_value', 'index'])
         prev_value = self._first_numeric(row, ['prev_value', 'previous_year_value', 'previous_year_index'])
         prev_prev_value = self._first_numeric(row, ['prev_prev_value', 'previous_prev_value', 'two_years_ago_value'])

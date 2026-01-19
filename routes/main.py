@@ -215,6 +215,15 @@ def serve_template_file(filename):
     return "파일을 찾을 수 없습니다.", 404
 
 
+@main_bp.route('/logo.png')
+def serve_logo_png():
+    """루트의 logo.png 제공 (상대경로 ./logo.png 지원)"""
+    filepath = BASE_DIR / 'logo.png'
+    if filepath.exists() and filepath.is_file():
+        return send_file(str(filepath), mimetype='image/png')
+    return "파일을 찾을 수 없습니다.", 404
+
+
 @main_bp.route('/download-export/<export_dir>')
 def download_export_zip(export_dir):
     """내보내기 폴더를 ZIP으로 다운로드"""

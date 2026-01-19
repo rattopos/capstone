@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅰ. 부문별 지역경제동향 - 건설동향 (2025년 3/4분기)</title>
+    
+    
+    
+    
+    <style>
+        /* 기본 리셋 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            background: #fff;
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* 숫자 제목 - 3. 건설 동향 */
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        /* 요약 박스 */
+        .summary-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: transparent;
+            line-height: 1.6;
+        }
+        
+        .summary-box .headline {
+            margin-bottom: 6px;
+            text-indent: -12px;
+            padding-left: 12px;
+        }
+        
+        .summary-box .nationwide {
+            margin-bottom: 4px;
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .summary-box .regional {
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase, .decrease {
+            font-weight: bold;
+        }
+        
+        /* 상세 박스 - 건설동향 특수 레이아웃 */
+        .detail-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-box .title {
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 11pt;
+        }
+        
+        .detail-item {
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+        
+        .detail-first-row {
+            display: flex;
+            align-items: flex-start;
+            padding-left: 8px;
+            text-indent: -8px;
+            margin-bottom: 2px;
+            flex-wrap: wrap;
+        }
+        
+        .detail-first-row::before {
+            content: "·";
+            margin-right: 3px;
+        }
+        
+        .detail-second-row {
+            display: flex;
+            align-items: flex-start;
+            padding-left: 8px;
+            margin-top: 2px;
+            margin-left: 90px;
+            flex-wrap: wrap;
+        }
+        
+        .detail-region {
+            min-width: 85px;
+            display: inline-block;
+            white-space: nowrap;
+            margin-right: 5px;
+        }
+        
+        .detail-type-col {
+            min-width: 100px;
+            display: inline-block;
+            white-space: nowrap;
+            margin-right: 5px;
+        }
+        
+        .detail-arrow {
+            margin: 0 5px;
+            white-space: nowrap;
+        }
+        
+        .detail-subtype {
+            flex: 1;
+            min-width: 120px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .separator {
+            border-top: 1px dotted #888;
+            margin: 5px 0;
+        }
+        
+        /* 테이블 */
+        .table-container {
+            margin-top: 12px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            font-family: "Malgun Gothic", serif;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            table-layout: fixed;
+        }
+        
+        .data-table th,
+        .data-table td {
+            
+            padding: 2px 3px;
+            text-align: center;
+            vertical-align: middle;
+            height: 22px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* 테이블 헤더 - 연보라색 */
+        .data-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
+        /* 지역 그룹 셀 */
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: normal;
+            width: 28px;
+        }
+        
+        .data-table .region-name {
+            width: 32px;
+        }
+        
+        /* 지수 섹션 */
+        .data-table td.index-section {
+            background-color: #fef9e7;
+        }
+        
+        .data-table th.index-section {
+            background-color: #e6e0ec;
+        }
+        
+        .footnote {
+            font-size: 11pt;
+            color: #333;
+            margin-top: 4px;
+        }
+        
+        
+        /* 결측치 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 0 4px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            display: inline-block;
+            min-width: 25px;
+            text-align: center;
+        }
+        
+        .missing-cell {
+            background-color: #fff9c4 !important;
+        }
+        
+        sup {
+            font-size: 70%;
+            vertical-align: super;
+        }
+        
+        @media print {
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .data-table th {
+                background-color: #e6e0ec !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="section-title">3. 건설 동향</div>
+        
+        <!-- 요약 박스 -->
+        <div class="summary-box">
+            <div class="headline">◆건설수주는 
+                
+                
+                <span class="highlight">충북</span>(), 
+                
+                <span class="highlight">서울</span>(), 
+                
+                <span class="highlight">부산</span>()
+                
+                등 <span class="highlight">9개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                
+            </div>
+            <div class="nationwide">□전국 건설수주(523.3조원)는 
+                철도·궤도, 도로·교량, 주택 등 
+                
+                <span class="highlight">토목</span> 수주가 늘어 전년동분기대비 <span class="increase">26.5% 증가</span>
+                
+            </div>
+            <div class="regional">○
+                
+                
+                <span class="highlight">충북</span>(104.4%), 
+                
+                <span class="highlight">서울</span>(68.1%), 
+                
+                <span class="highlight">부산은</span>(45.9%)
+                 주택, 항만·공항 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
+                
+                
+                
+                <span class="highlight">제주</span>(-69.7%), 
+                
+                <span class="highlight">강원</span>(-60.0%), 
+                
+                <span class="highlight">세종은</span>(-49.4%)
+                 사무실·점포, 주택, 도로·교량 등의 수주가 줄어 <span class="decrease">감소</span>
+                
+            </div>
+        </div>
+        
+        <!-- 주요 증감 지역 및 공종 -->
+        <div class="detail-box">
+            <div class="title">&lt; 주요 증감지역 및 공종 &gt;</div>
+            
+            <!-- 전국 -->
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">전 국(26.5%):</span>
+                    <span class="detail-type-col">토목(26.5%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(26.5%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- 증가 지역 Top -->
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">충북(104.4%):</span>
+                    <span class="detail-type-col">토목(104.4%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(104.4%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">서울(68.1%):</span>
+                    <span class="detail-type-col">토목(68.1%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(68.1%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">부산(45.9%):</span>
+                    <span class="detail-type-col">토목(45.9%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(45.9%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            
+            <div class="separator"></div>
+            
+            <!-- 감소 지역 Top -->
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">제주(-69.7%):</span>
+                    <span class="detail-type-col">토목(-69.7%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(-69.7%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">강원(-60.0%):</span>
+                    <span class="detail-type-col">토목(-60.0%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(-60.0%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-first-row">
+                    <span class="detail-region">세종(-49.4%):</span>
+                    <span class="detail-type-col">토목(-49.4%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">철도·궤도, 기계설치</span>
+                </div>
+                <div class="detail-second-row">
+                    <span class="detail-type-col">건축(-49.4%)</span>
+                    <span class="detail-arrow">⇒</span>
+                    <span class="detail-subtype">주택, 관공서 등</span>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- 데이터 테이블 -->
+        <div class="table-container">
+            <div class="table-title">《 건설수주액 및 증감률 》</div>
+            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+                <thead style="border: 1px solid black !important;">
+                    <tr>
+                        <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
+                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
+                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">건설수주액(백억원)</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 58px;; border: 1px solid black !important">2023.3/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2024.3/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2025.2/4</th>
+                        <th style="width: 58px;; border: 1px solid black !important">2025.3/4<sup>p</sup></th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">2024.3/4</th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">2025.3/4<sup>p</sup></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        
+                        <td colspan="2" style="border: 1px solid black !important;">전국</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -23.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -19.6
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            32.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            7.5
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            41350.6
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            52328.2
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">서울</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -16.1
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -7.7
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -18.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            19.3
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            7377.4
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            12398.7
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">부산</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -23.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            18.8
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            9.3
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -3.7
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2336.2
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            3409.4
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">대구</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -63.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            83.7
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            169.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -59.5
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            584.2
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            606.7
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">인천</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -72.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -33.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -4.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            31.2
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2758.4
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2747.6
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">광주</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -7.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -3.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -23.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            152.1
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            317.4
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            362.5
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">대전</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -23.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -57.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            107.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            18.0
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1129.5
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1568.4
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">울산</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -68.1
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -33.1
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            37.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -19.7
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1140.1
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1162.2
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">세종</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -83.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            30.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -67.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            102.6
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            505.6
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            256.0
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">경기</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -8.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -27.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            102.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            13.9
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            13815.1
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            19743.5
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">강원</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -48.6
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -25.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            93.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -37.3
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2058.2
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            824.2
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">충북</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            84.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -32.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -10.7
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            43.8
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1369.7
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2800.3
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">충남</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -39.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -9.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            20.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            54.7
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2804.8
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2125.8
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">전북</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -47.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            2.1
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            48.3
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -63.9
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            570.1
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            420.8
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">전남</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            15.4
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -68.6
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            92.5
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -62.8
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            533.4
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            395.2
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">경북</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            10.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            39.8
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -1.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            1.6
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1716.8
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1245.2
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">경남</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -18.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            48.8
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            368.8
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -16.1
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            1911.9
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            2133.7
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        
+                        <td class="region-name" style="border: 1px solid black !important;">제주</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            -18.0
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.9
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            23.2
+                        </td>
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            4.1
+                        </td>
+                        
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            421.8
+                        </td>
+                        
+                        <td class="index-section " style="border: 1px solid black !important;">
+                            128.0
+                        </td>
+                        
+                        <td class="index-section missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+        
+</body>
+</html>

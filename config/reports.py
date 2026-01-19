@@ -205,9 +205,10 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '전문소매점': '전문소매점',
             '무점포 소매': '무점포소매'
         },
-        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C 분석'},
+        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C(소비)집계'},
         'metadata_columns': ['region', 'classification', 'code', 'name'],
-        'value_type': 'change_rate'  # 이미 계산된 증감률 직접 읽기
+        'value_type': 'change_rate',  # 이미 계산된 증감률 직접 읽기
+        'analysis_sheet': 'C 분석'
     },
     {
         'id': 'construction',

@@ -48,17 +48,31 @@ class BaseGenerator(ABC):
         return self.xl
 
     def _get_calculated_excel_path(self) -> str:
-        """수식 계산 로직으로 계산된 임시 파일 경로 반환 (캐시 사용 금지)."""
+        """수식 계산 로직으로 계산된 임시 파일 경로 반환 (전역 캐시 사용)."""
         from services.excel_processor import preprocess_excel
+        from services.excel_cache import get_cached_calculated_path, set_cached_calculated_path
+
+        if self._calculated_excel_path and Path(self._calculated_excel_path).exists():
+            return self._calculated_excel_path
+
+        cached_path = get_cached_calculated_path(self.excel_path)
+        if cached_path:
+            self._calculated_excel_path = cached_path
+            return cached_path
 
         calc_dir = Path(__file__).parent.parent / "exports" / "_calculated"
         calc_dir.mkdir(parents=True, exist_ok=True)
         output_path = calc_dir / f"{Path(self.excel_path).stem}_calculated.xlsx"
-        result_path, _, _ = preprocess_excel(
+        result_path, success, _ = preprocess_excel(
             self.excel_path,
             str(output_path),
             force_calculation=True
         )
+
+        if success and result_path:
+            set_cached_calculated_path(self.excel_path, result_path)
+            self._calculated_excel_path = result_path
+
         return result_path
     
     def get_sheet(self, sheet_name: str, use_cache: bool = True) -> Optional[pd.DataFrame]:
@@ -439,7 +453,11 @@ class BaseGenerator(ABC):
             val = str(cell).strip().replace(" ", "")
             # 연도/분기 패턴 매칭
             has_yq = any(re.search(pat.replace(" ", ""), val) for pat in year_quarter_patterns)
-            has_year = (y_str in val) or (y_short in val)
+            year_tokens = re.findall(r"\d{4}", val)
+            has_year = str(target_year) in year_tokens
+            if not has_year and len(y_short) == 2:
+                if re.search(rf"(?<!\d){re.escape(y_short)}(?!\d)", val):
+                    has_year = True
             has_quarter = any(qp.replace(" ", "") in val for qp in q_patterns)
             # 타입 키워드 매칭
             is_growth = any(k in val for k in type_keywords[:4])
@@ -595,24 +613,20 @@ class BaseGenerator(ABC):
                 print(f"[WARNING] 원본 헤더 값 수집 중 오류: {e}")
             
             # 5. 조건 검사 (개선된 버전) - 상세 디버깅
-            # A. 연도 확인 (전체 연도 또는 단축형, 더 유연한 매칭)
+            # A. 연도 확인 (전체 연도 또는 단축형, 경계 고려)
             has_year = False
             year_match_reason = []
             
-            # 직접 포함 확인
-            if target_year_str in col_text:
-                has_year = True
-                year_match_reason.append(f"'{target_year_str}' 직접 포함")
-            if target_year_short in col_text:
-                has_year = True
-                year_match_reason.append(f"'{target_year_short}' 포함")
-            
-            # 숫자만 추출하여 비교 (예: "2025" 추출)
+            # 4자리 연도 토큰 확인
             years_in_text = re.findall(r'\d{4}', col_text)
-            if years_in_text:
-                if any(str(target_year) == y for y in years_in_text):
+            if years_in_text and any(str(target_year) == y for y in years_in_text):
+                has_year = True
+                year_match_reason.append(f"4자리 숫자 '{target_year}' 발견")
+            # 2자리 연도는 숫자 경계가 있는 경우만 허용
+            if not has_year and len(target_year_short) == 2:
+                if re.search(rf"(?<!\d){re.escape(target_year_short)}(?!\d)", col_text):
                     has_year = True
-                    year_match_reason.append(f"4자리 숫자 '{target_year}' 발견")
+                    year_match_reason.append(f"'{target_year_short}' 경계 포함")
             
             # B. 분기 확인 (더 유연한 매칭)
             has_quarter = False

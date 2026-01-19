@@ -85,6 +85,7 @@ from services.report_generator import (
     generate_individual_statistics_html
 )
 from services.excel_processor import preprocess_excel, check_available_methods, get_recommended_method
+from services.excel_cache import set_cached_calculated_path
 # from data_converter import DataConverter  # 레거시 모듈 - 더 이상 사용하지 않음
 import openpyxl
 
@@ -307,6 +308,8 @@ def upload_excel():
             print(f"[전처리] 성공: {preprocess_msg}")
             # 전처리된 파일 경로 사용
             filepath = Path(processed_path)
+            # 전처리된 결과를 전역 캐시에 등록 (분석 시트 재계산 방지)
+            set_cached_calculated_path(str(filepath), str(filepath))
         else:
             print(f"[전처리] {preprocess_msg} - generator fallback 로직 사용")
         
@@ -670,7 +673,7 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
                 errors.append({'report_id': region_config.get('id', 'Unknown'), 'report_name': f"시도별-{region_config.get('name', region_config.get('id', 'Unknown'))}", 'error': f"예외 발생: {error_message}"})
                 continue
     finally:
-        clear_excel_cache(excel_path)
+        clear_excel_cache(excel_path, preserve_calculated_path=True)
         if cleanup_after:
             try:
                 print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
@@ -1885,7 +1888,7 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{year}년 {quarter}/4분기 지역경제동향 - 한글 복붙용</title>
+    <title>{year}년 {quarter}/4분기 지역경제동향</title>
     <style>
         /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
         body {{
@@ -1951,6 +1954,9 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
 
             body_content = _add_table_inline_styles(body_content)
 
+            if re.search(r'<div[^>]*class=["\"][^"\"]*\bpage\b[^"\"]*["\"][^>]*>', body_content):
+                body_content = body_content.rstrip() + "\n</div>"
+
             final_html += f'''
             <!-- 페이지 {idx}: {page_title} -->
             <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
@@ -1993,7 +1999,7 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
 </html>
 '''
 
-        output_filename = f'지역경제동향_{year}년_{quarter}분기_한글복붙용.html'
+        output_filename = f'지역경제동향_{year}년_{quarter}분기.html'
         output_folder.mkdir(parents=True, exist_ok=True)
         output_path = output_folder / output_filename
 

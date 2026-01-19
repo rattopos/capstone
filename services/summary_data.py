@@ -61,15 +61,25 @@ def _get_excel_path(xl_or_path):
 
 
 def _get_calculated_excel_path(excel_path: str) -> str:
-    """수식 계산 로직으로 계산된 임시 파일 경로 반환 (캐시 사용 금지)."""
+    """수식 계산 로직으로 계산된 임시 파일 경로 반환 (전역 캐시 사용)."""
+    from services.excel_cache import get_cached_calculated_path, set_cached_calculated_path
+
+    cached_path = get_cached_calculated_path(excel_path)
+    if cached_path:
+        return cached_path
+
     calc_dir = Path(__file__).parent.parent / "exports" / "_calculated"
     calc_dir.mkdir(parents=True, exist_ok=True)
     output_path = calc_dir / f"{Path(excel_path).stem}_calculated.xlsx"
-    result_path, _, _ = preprocess_excel(
+    result_path, success, _ = preprocess_excel(
         excel_path,
         str(output_path),
         force_calculation=True
     )
+
+    if success and result_path:
+        set_cached_calculated_path(excel_path, result_path)
+
     return result_path
 
 
@@ -428,7 +438,7 @@ def get_employment_population_data(excel_path, year, quarter):
             df = _read_sheet_df(xl, 'I(순인구이동)집계', data_only=False)
             regions = VALID_REGIONS.copy()
             
-            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기, col21=2024 2/4분기
+            # 시트 구조: col4=지역이름, col5=분류단계(0=합계), col25=2025 2/4분기
             # 합계(분류단계 0) 행만 추출
             processed_regions = set()
             region_data = {}  # 지역별 데이터 저장
@@ -440,16 +450,11 @@ def get_employment_population_data(excel_path, year, quarter):
                 # 합계 행 (분류단계 0)만 처리, 중복 지역 방지
                 if division == '0' and region in regions and region not in processed_regions:
                     try:
-                        # 2025 2/4분기 데이터 (열 25)와 2024 2/4분기 데이터 (열 21)
+                        # 2025 2/4분기 데이터 (열 25)
                         curr_value = safe_float(row[25])
-                        prev_value = safe_float(row[21])
                         value = int(curr_value) if curr_value is not None else 0
-                        
-                        # 전년동분기대비 증감률 계산 (천명 단위이므로 직접 비교)
-                        if prev_value is not None and prev_value != 0:
-                            change = round((curr_value - prev_value) / abs(prev_value) * 100, 1)
-                        else:
-                            change = None
+                        # 국내인구이동은 증감률 계산하지 않음 (raw data만 사용)
+                        change = None
                         
                         processed_regions.add(region)
                         region_data[region] = {'value': value, 'change': change}
@@ -479,7 +484,7 @@ def get_employment_population_data(excel_path, year, quarter):
                     population['chart_data'].append({
                         'name': region,
                         'value': 0,
-                        'change': 0.0
+                        'change': None
                     })
                     
         except Exception as e:

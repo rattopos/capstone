@@ -94,6 +94,21 @@ class DataTableBuilder:
         return [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4", age_label]
 
     def _build_growth_slots(self, row: dict[str, Any]) -> list[float | None]:
+        rate_keys = row.get('rate_quarterly_keys') or row.get('quarterly_keys')
+        rate_values = row.get('rate_quarterly_values')
+        if rate_keys and rate_values and self.generator._year_quarter:
+            year, quarter = self.generator._year_quarter
+            prev_q_year, prev_q = self._previous_quarter(year, quarter)
+            target_keys = [
+                f"{year-2} {quarter}/4",
+                f"{year-1} {quarter}/4",
+                f"{prev_q_year} {prev_q}/4",
+                f"{year} {quarter}/4",
+            ]
+            mapping = {k: v for k, v in zip(rate_keys, rate_values)}
+            mapped = [mapping.get(k) for k in target_keys]
+            if any(v is not None for v in mapped):
+                return mapped
         current_value = self._to_float(row.get('value') or row.get('current_value') or row.get('index'))
         prev_value = self._to_float(row.get('prev_value') or row.get('previous_year_value') or row.get('previous_year_index'))
         prev_prev_value = self._to_float(row.get('prev_prev_value') or row.get('previous_prev_value') or row.get('two_years_ago_value'))

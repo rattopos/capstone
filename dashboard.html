@@ -133,13 +133,11 @@
         .logo-icon {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: block;
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            object-fit: contain;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+            background: transparent;
         }
 
         .logo-text h1 {
@@ -493,6 +491,33 @@
             gap: 1rem;
         }
 
+        /* Download Section */
+        .download-section {
+            margin-top: 1rem;
+        }
+
+        .download-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .download-card h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .download-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
         .report-card {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -803,9 +828,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <div class="logo-icon">
-                    차트
-                </div>
+                <img class="logo-icon" src="./logo.png" alt="로고">
                 <div class="logo-text">
                     <h1>지역경제동향 보도자료 생성 시스템</h1>
                     <p>Ministry of Data and Statistics</p>
@@ -850,6 +873,20 @@
             </div>
         </div>
 
+        <!-- Download Section -->
+        <section class="download-section" id="downloadSection" style="display: none;">
+            <div class="download-card">
+                <div class="download-text">
+                    <h4>한글 복사용 HTML</h4>
+                    <p id="downloadDesc">파일이 생성되었습니다. 다운로드 버튼을 눌러주세요.</p>
+                </div>
+                <div class="download-actions">
+                    <button class="section-button" id="downloadHtmlButton">다운로드</button>
+                    <a class="section-button" id="downloadHtmlLink" href="#" target="_blank" rel="noopener" style="text-decoration: none;">새 창 열기</a>
+                </div>
+            </div>
+        </section>
+
 
         <!-- Reports Section -->
         <section class="reports-section" id="reportsSection" style="display: none;">
@@ -888,12 +925,89 @@
         // Global state
         let uploadedFile = null;
         let generatedReports = [];
+        let lastDownloadInfo = {
+            html: null,
+            filename: null,
+            downloadUrl: null
+        };
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             setupDragAndDrop();
             checkExistingFile();
         });
+
+        function setDownloadSectionVisible(isVisible) {
+            const section = document.getElementById('downloadSection');
+            if (section) {
+                section.style.display = isVisible ? 'block' : 'none';
+            }
+        }
+
+        function prepareDownload(result) {
+            lastDownloadInfo = {
+                html: result.html || null,
+                filename: result.filename || '지역경제동향_보도자료.html',
+                downloadUrl: result.download_url || result.view_url || null
+            };
+
+            const link = document.getElementById('downloadHtmlLink');
+            if (link) {
+                if (lastDownloadInfo.downloadUrl) {
+                    link.href = lastDownloadInfo.downloadUrl;
+                    link.style.display = 'inline-flex';
+                } else {
+                    link.href = '#';
+                    link.style.display = 'none';
+                }
+            }
+
+            const button = document.getElementById('downloadHtmlButton');
+            if (button) {
+                button.onclick = () => triggerDownload();
+            }
+
+            setDownloadSectionVisible(true);
+        }
+
+        async function triggerDownload() {
+            if (lastDownloadInfo.html) {
+                const blob = new Blob([lastDownloadInfo.html], { type: 'text/html;charset=utf-8' });
+
+                // 브라우저가 지원하면 저장 위치 선택창 표시
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: lastDownloadInfo.filename || '지역경제동향_보도자료.html',
+                            types: [{
+                                description: 'HTML 문서',
+                                accept: { 'text/html': ['.html'] }
+                            }]
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        return;
+                    } catch (e) {
+                        // 사용자가 취소하거나 오류가 나면 기본 다운로드로 fallback
+                    }
+                }
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = lastDownloadInfo.filename || '지역경제동향_보도자료.html';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                return;
+            }
+
+            if (lastDownloadInfo.downloadUrl) {
+                window.location.href = lastDownloadInfo.downloadUrl;
+            }
+        }
 
         // Setup drag and drop
         function setupDragAndDrop() {
@@ -1040,30 +1154,20 @@
                     
                     await exportToHwpAuto();
                 } else {
-                    hideLoading();
-                    // 상세 에러 메시지 표시
-                    let errorMessage = '보도자료 생성 실패';
+                    // 오류가 있어도 다운로드는 가능해야 하므로 계속 진행
+                    let errorMessage = '보도자료 생성 중 일부 오류가 발생했습니다';
                     if (result.errors && result.errors.length > 0) {
-                        // 에러 상세 정보 출력
                         console.error('보도자료 생성 에러 상세:', result.errors);
-                        
-                        // 실패한 보도자료 목록 생성
-                        const errorReports = result.errors.map(e => {
-                            const reportName = e.report_name || e.report_id || '알 수 없음';
-                            const errorMsg = e.error || '알 수 없는 오류';
-                            return `${reportName} (${errorMsg.substring(0, 80)}${errorMsg.length > 80 ? '...' : ''})`;
-                        });
-                        
-                        // 사용자에게 보여줄 메시지 (간단하게)
                         const failedReports = result.errors.map(e => e.report_name || e.report_id || '알 수 없음').join(', ');
-                        errorMessage = `보도자료 생성 실패 (${result.errors.length}개): ${failedReports}`;
-                        
-                        // 전체 에러 목록은 콘솔에만 출력
-                        console.error('실패한 보도자료 상세:', errorReports);
+                        errorMessage = `보도자료 일부 실패 (${result.errors.length}개): ${failedReports}`;
                     } else if (result.error) {
-                        errorMessage = `보도자료 생성 실패: ${result.error}`;
+                        errorMessage = `보도자료 생성 경고: ${result.error}`;
                     }
-                    showToast(errorMessage, 'error');
+                    showToast(errorMessage, 'warning');
+
+                    showLoading('한글 내보내기 중...', '오류가 있어도 다운로드용 HTML을 생성합니다');
+                    setLoadingProgress(85);
+                    await exportToHwpAuto();
                 }
             } catch (error) {
                 console.error('Generation error:', error);
@@ -1153,6 +1257,11 @@
             const grid = document.getElementById('reportsGrid');
             grid.innerHTML = '';
 
+            const section = document.getElementById('reportsSection');
+            if (section) {
+                section.style.display = 'block';
+            }
+
             reports.forEach(report => {
                 const card = document.createElement('div');
                 card.className = 'report-card';
@@ -1197,23 +1306,10 @@
                 setTimeout(() => {
                     hideLoading();
                     
-                    if (result.success && result.html) {
-                        // HTML을 Blob으로 변환하여 다운로드
-                        const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = result.filename || '지역경제동향_보도자료.html';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                        
-                        showToast('✅ 완료! HTML 파일 저장 다이얼로그가 열렸습니다', 'success');
-                    } else if (result.success && result.download_url) {
-                        // download_url이 있는 경우 (기존 방식)
-                        window.location.href = result.download_url;
-                        showToast('✅ 완료! 한글 복사용 HTML 파일이 다운로드됩니다', 'success');
+                    if (result.success) {
+                        prepareDownload(result);
+                        triggerDownload();
+                        showToast('✅ 완료! 다운로드가 시작되지 않으면 아래 버튼을 눌러주세요', 'success');
                     } else {
                         showToast(result.error || 'HTML 생성 실패', 'error');
                     }
@@ -1242,23 +1338,10 @@
                 
                 hideLoading();
                 
-                if (result.success && result.html) {
-                    // HTML을 Blob으로 변환하여 다운로드
-                    const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = result.filename || '지역경제동향_보도자료.html';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    
-                    showToast('✅ 완료! HTML 파일 저장 다이얼로그가 열렸습니다', 'success');
-                } else if (result.success && result.download_url) {
-                    // download_url이 있는 경우 (기존 방식)
-                    window.location.href = result.download_url;
-                    showToast('HTML 파일 다운로드 시작!', 'success');
+                if (result.success) {
+                    prepareDownload(result);
+                    triggerDownload();
+                    showToast('✅ 완료! 다운로드가 시작되지 않으면 아래 버튼을 눌러주세요', 'success');
                 } else {
                     showToast(result.error || 'HTML 생성 실패', 'error');
                 }
