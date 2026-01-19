@@ -195,14 +195,14 @@
 </head>
 <body>
     <div class="page">
-        <div class="section-title">{{ report_info.main_section_number | default(6) }}. {{ report_info.main_section_title | default("국내 인구이동") }}</div>
+        <div class="section-title">{{ report_info.main_section_number | default("[번호]") }}. {{ report_info.main_section_title | default("[항목명]") }}</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
             {% if nationwide_data %}
-            <div class="headline">◆ {{ nationwide_data.summary.headline | default("국내 인구이동은 인천, 경기 등 7개 시도 인구 순유입, 서울, 경북 등 10개 시도 인구 순유출") }}</div>
-            <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("2025년 3/4분기 국내 인구 순유입지역은 인천(7,025명), 경기(7,018명), 대전(2,652명) 등 7개 시도로 나타났음") }}</div>
-            <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 서울(-7,751명), 경북(-3,932명), 경남(-2,834명) 등 10개 시도로 나타났음") }}</div>
+            <div class="headline">◆ {{ nationwide_data.summary.headline | default("국내 인구이동 현황") }}</div>
+            <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("국내 인구 순유입지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
+            <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
             {% else %}
             <div class="headline">◆ 국내 인구이동 현황</div>
             <div class="item">□ 국내 인구이동 데이터는 시도별로 제공됩니다.</div>
@@ -229,6 +229,41 @@
         </div>
         
         <!-- 데이터 테이블 -->
+        {% set base_year = report_info.year if report_info and report_info.year else none %}
+        {% set base_quarter = report_info.quarter if report_info and report_info.quarter else none %}
+        {% if base_year and base_quarter %}
+            {% set prev1_year = base_year %}
+            {% set prev1_quarter = base_quarter - 1 %}
+            {% if prev1_quarter <= 0 %}
+                {% set prev1_year = base_year - 1 %}
+                {% set prev1_quarter = prev1_quarter + 4 %}
+            {% endif %}
+            {% set prev2_year = base_year %}
+            {% set prev2_quarter = base_quarter - 2 %}
+            {% if prev2_quarter <= 0 %}
+                {% set prev2_year = base_year - 1 %}
+                {% set prev2_quarter = prev2_quarter + 4 %}
+            {% endif %}
+            {% set prev3_year = base_year %}
+            {% set prev3_quarter = base_quarter - 3 %}
+            {% if prev3_quarter <= 0 %}
+                {% set prev3_year = base_year - 1 %}
+                {% set prev3_quarter = prev3_quarter + 4 %}
+            {% endif %}
+            {% set current_label = base_year ~ " " ~ base_quarter ~ "/4분기" %}
+            {% set current_col_label = base_year ~ " " ~ base_quarter ~ "/4" %}
+            {% set prev3_label = prev3_year ~ " " ~ prev3_quarter ~ "/4" %}
+            {% set prev2_label = prev2_year ~ " " ~ prev2_quarter ~ "/4" %}
+            {% set prev1_label = prev1_year ~ " " ~ prev1_quarter ~ "/4" %}
+        {% else %}
+            {% set current_label = "[연도] [분기]/4분기" %}
+            {% set current_col_label = "[기간]" %}
+            {% set prev3_label = "[기간]" %}
+            {% set prev2_label = "[기간]" %}
+            {% set prev1_label = "[기간]" %}
+        {% endif %}
+        {% set age_20_29_label = report_info.age_20_29_label if report_info and report_info.age_20_29_label else "[연령]" %}
+        {% set age_other_label = report_info.age_other_label if report_info and report_info.age_other_label else "[연령]" %}
         <div class="table-container">
             <div class="table-title">《 국내 인구 순이동<sup>1)</sup> 》</div>
             <table class="data-table">
@@ -236,15 +271,15 @@
                     <tr>
                         <th rowspan="2" style="width: 50px;">시 도</th>
                         <th colspan="4">순이동(천명)</th>
-                        <th colspan="2">2025 3/4분기<sup>2)</sup></th>
+                        <th colspan="2">{{ current_label }}<sup>2)</sup></th>
                     </tr>
                     <tr>
-                        <th style="width: 50px;">2024 4/4</th>
-                        <th style="width: 50px;">2025 1/4</th>
-                        <th style="width: 50px;">2025 2/4</th>
-                        <th style="width: 50px;">2025 3/4</th>
-                        <th style="width: 60px;">20~29세</th>
-                        <th style="width: 60px;">그 외</th>
+                        <th style="width: 50px;">{{ prev3_label }}</th>
+                        <th style="width: 50px;">{{ prev2_label }}</th>
+                        <th style="width: 50px;">{{ prev1_label }}</th>
+                        <th style="width: 50px;">{{ current_col_label }}</th>
+                        <th style="width: 60px;">{{ age_20_29_label }}</th>
+                        <th style="width: 60px;">{{ age_other_label }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -262,8 +297,8 @@
                 </tbody>
             </table>
             
-            <div class="footnote">1) 순이동 = 전입자 수 - 전출자 수 (전국 순이동 = 0)</div>
-            <div class="footnote">2) 그 외: 0~19세 및 30세 이상 연령층</div>
+            <div class="footnote">1) {{ report_info.migration_note if report_info and report_info.migration_note else "순이동 산식" }}</div>
+            <div class="footnote">2) {{ report_info.age_other_note if report_info and report_info.age_other_note else "그 외 연령층" }}</div>
             <div class="footnote">자료: 국가데이터포털(KOSIS), 국내 인구이동 통계</div>
         </div>
     </div>

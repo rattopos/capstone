@@ -369,7 +369,7 @@
             </table>
             
             <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">담당: 경제동향통계심의관 지역경제동향과 (042-481-xxxx)</div>
+            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
         </div>
         
     </div>
@@ -379,10 +379,10 @@
         <table style="width: 100%; border: none; border-collapse: collapse;">
             <tr>
                 <td style="text-align: left; font-family: 'Malgun Gothic', sans-serif; font-size: 10pt; color: #444;">
-                    {{ footer_info.source | default('자료: 국가데이터처 국가통계포털(KOSIS), 광업제조업동향조사') }}
+                    {{ footer_info.source | default('자료: [출처]') }}
                 </td>
                 <td style="text-align: center; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; font-weight: bold;">
-                    - {{ footer_info.page_num | default('1') | replace('-', '') | trim }} -
+                    - {{ footer_info.page_num | default('[페이지]') | replace('-', '') | trim }} -
                 </td>
                 <td style="width: 30%;"></td>
             </tr>

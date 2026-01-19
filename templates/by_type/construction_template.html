@@ -280,7 +280,7 @@
                 등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
                 {% endif %}
             </div>
-            <div class="nationwide">□전국 건설수주({{ "%.1f"|format(nationwide_data.construction_index_trillion) if nationwide_data.construction_index_trillion else "0.0" }}조원)는 
+            <div class="nationwide">□전국 건설수주({{ val(nationwide_data.construction_index_trillion, "%.1f", "조원") }})는 
                 {{ nationwide_data.sub_types_text if nationwide_data.sub_types_text else "철도·궤도, 기계설치" }} 등 
                 {% if nationwide_data.growth_rate is not none and nationwide_data.growth_rate >= 0 %}
                 <span class="highlight">{{ nationwide_data.main_category }}</span> 수주가 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span>
@@ -309,13 +309,13 @@
             <!-- 전국 -->
             <div class="detail-item">
                 <div class="detail-first-row">
-                    <span class="detail-region">전 국({{ "%.1f"|format(nationwide_data.growth_rate) if nationwide_data.growth_rate is not none else "0.0" }}%):</span>
-                    <span class="detail-type-col">토목({{ "%.1f"|format(nationwide_data.civil_growth) if nationwide_data.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-region">전 국({{ val(nationwide_data.growth_rate, "%.1f", "%") }}):</span>
+                    <span class="detail-type-col">토목({{ val(nationwide_data.civil_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ nationwide_data.civil_subtypes if nationwide_data.civil_subtypes else "철도·궤도, 기계설치" }}</span>
                 </div>
                 <div class="detail-second-row">
-                    <span class="detail-type-col">건축({{ "%.1f"|format(nationwide_data.building_growth) if nationwide_data.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-type-col">건축({{ val(nationwide_data.building_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ nationwide_data.building_subtypes if nationwide_data.building_subtypes else "주택, 관공서 등" }}</span>
                 </div>
@@ -327,13 +327,13 @@
             {% for region in top3_increase_regions %}
             <div class="detail-item">
                 <div class="detail-first-row">
-                    <span class="detail-region">{{ region.region }}( {{ "%.1f"|format(region.growth_rate) if region.growth_rate is not none else "0.0" }}%):</span>
-                    <span class="detail-type-col">토목({{ "%.1f"|format(region.civil_growth) if region.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-region">{{ region.region }}({{ val(region.growth_rate, "%.1f", "%") }}):</span>
+                    <span class="detail-type-col">토목({{ val(region.civil_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ region.civil_subtypes if region.civil_subtypes else "철도·궤도, 도로·교량" }}</span>
                 </div>
                 <div class="detail-second-row">
-                    <span class="detail-type-col">건축({{ "%.1f"|format(region.building_growth) if region.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-type-col">건축({{ val(region.building_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ region.building_subtypes if region.building_subtypes else "주택, 관공서 등" }}</span>
                 </div>
@@ -346,13 +346,13 @@
             {% for region in top3_decrease_regions %}
             <div class="detail-item">
                 <div class="detail-first-row">
-                    <span class="detail-region">{{ region.region }}({{ "%.1f"|format(region.growth_rate) if region.growth_rate is not none else "0.0" }}%):</span>
-                    <span class="detail-type-col">토목({{ "%.1f"|format(region.civil_growth) if region.civil_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-region">{{ region.region }}({{ val(region.growth_rate, "%.1f", "%") }}):</span>
+                    <span class="detail-type-col">토목({{ val(region.civil_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ region.civil_subtypes if region.civil_subtypes else "토지조성, 치산·치수" }}</span>
                 </div>
                 <div class="detail-second-row">
-                    <span class="detail-type-col">건축({{ "%.1f"|format(region.building_growth) if region.building_growth is not none else "0.0" }}%)</span>
+                    <span class="detail-type-col">건축({{ val(region.building_growth, "%.1f", "%") }})</span>
                     <span class="detail-arrow">⇒</span>
                     <span class="detail-subtype">{{ region.building_subtypes if region.building_subtypes else "사무실·점포, 관공서 등" }}</span>
                 </div>
@@ -406,7 +406,7 @@
             </table>
             
             <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">담당: 경제동향통계심의관 지역경제동향과 (042-481-xxxx)</div>
+            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
         </div>
         
 </body>

@@ -337,9 +337,9 @@
                 </tbody>
             </table>
             
-            <div class="footnote">1) 고용률(%) = (취업자수 ÷ 15세 이상 인구 수) × 100</div>
+            <div class="footnote">1) {{ report_info.employment_rate_note if report_info and report_info.employment_rate_note else "고용률(%) 산식" }}</div>
             <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">담당: 경제동향통계심의관 지역경제동향과 (042-481-xxxx)</div>
+            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
         </div>
         
 </body>
