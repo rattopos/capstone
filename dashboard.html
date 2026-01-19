@@ -1165,9 +1165,6 @@
                         <div class="report-card-status generated"></div>
                     </div>
                     <div class="report-card-actions">
-                        <button class="report-card-button primary" onclick="previewReport('${report.report_id}')">
-                            미리보기
-                        </button>
                         <button class="report-card-button" onclick="downloadReport('${report.report_id}')">
                             다운로드
                         </button>
@@ -1175,11 +1172,6 @@
                 `;
                 grid.appendChild(card);
             });
-        }
-
-        // Preview report
-        function previewReport(reportId) {
-            window.open(`/preview/${reportId}`, '_blank');
         }
 
         // Download report

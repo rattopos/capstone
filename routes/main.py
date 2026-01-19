@@ -40,29 +40,6 @@ def index():
     return render_template('dashboard.html', reports=REPORT_ORDER, regional_reports=REGIONAL_REPORTS)
 
 
-@main_bp.route('/preview/<report_id>')
-def preview_report(report_id):
-    """보도자료 미리보기"""
-    # report_id로부터 보도자료 이름 찾기
-    report = next((r for r in REPORT_ORDER if r['id'] == report_id), None)
-    if not report:
-        return f"보도자료를 찾을 수 없습니다: {report_id}", 404
-    
-    report_name = report['name']
-    
-    # 가능한 파일명 패턴들
-    possible_files = [
-        TEMPLATES_DIR / f"{report_name}_preview.html",
-        TEMPLATES_DIR / f"{report_name}_output.html",
-    ]
-    
-    for file_path in possible_files:
-        if file_path.exists():
-            return send_file(str(file_path), mimetype='text/html')
-    
-    return f"보도자료가 아직 생성되지 않았습니다: {report_name}", 404
-
-
 @main_bp.route('/download/<report_id>')
 def download_report(report_id):
     """보도자료 다운로드 (안전한 처리)"""
@@ -119,15 +96,12 @@ def download_report(report_id):
             TEMPLATES_DIR / 'regional_output' / f"{report_name_safe}_output.html",
             TEMPLATES_DIR / 'regional_output' / f"{report_name}_output.html",  # 원본 이름도 시도
             TEMPLATES_DIR / f"{report_name_safe}_output.html",
-            TEMPLATES_DIR / f"{report_name_safe}_preview.html",
         ]
     else:
         # 일반 보고서: templates 폴더 직접 확인 (여러 패턴 시도)
         possible_files = [
             TEMPLATES_DIR / f"{report_name_safe}_output.html",
             TEMPLATES_DIR / f"{report_name}_output.html",  # 원본 이름도 시도
-            TEMPLATES_DIR / f"{report_name_safe}_preview.html",
-            TEMPLATES_DIR / f"{report_name}_preview.html",  # 원본 이름도 시도
         ]
     
     # 디버그: 검색할 파일 목록 출력
@@ -166,15 +140,6 @@ def download_report(report_id):
         print(f"  - 파일 목록 조회 중 오류: {e}")
     
     return f"보도자료가 아직 생성되지 않았습니다: {report_name}", 404
-
-
-@main_bp.route('/preview/infographic')
-def preview_infographic():
-    """인포그래픽 미리보기 (직접 접근용)"""
-    output_path = TEMPLATES_DIR / 'infographic_output.html'
-    if output_path.exists():
-        return send_file(output_path)
-    return "인포그래픽이 아직 생성되지 않았습니다.", 404
 
 
 @main_bp.route('/uploads/<filename>')

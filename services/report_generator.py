@@ -422,7 +422,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         elif hasattr(module, 'generate_report'):
             template_path = TEMPLATES_DIR / template_name
-            output_path = TEMPLATES_DIR / f"{report_name}_preview.html"
+            output_path = TEMPLATES_DIR / f"{report_name}_output.html"
             try:
                 # 분석표만 사용
                 data = module.generate_report(excel_path, template_path, output_path)

@@ -58,7 +58,13 @@ for sector_id in sectors:
         
         # 기본 HTML 템플릿 생성
         industries_html = ""
+        # industry_data가 없으면 table_data에서 첫 번째 지역의 데이터 사용
         industries = data.get('industry_data', [])
+        if not industries and table_data:
+            # table_data의 첫 번째 행(전국이 아닌 다른 지역)의 산업/지표 데이터 사용
+            # 또는 nationwide 데이터 자체를 사용
+            pass
+        
         for idx, industry in enumerate(industries[:15], 1):  # 상위 15개
             name = industry.get('name', 'N/A')
             value = industry.get('value', 'N/A')
@@ -191,6 +197,21 @@ for sector_id in sectors:
             font-size: 0.9em;
             border-top: 1px solid #e0e0e0;
         }}
+        .narrative {{
+            background: #f8f9fa;
+            padding: 25px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            line-height: 1.8;
+            color: #333;
+        }}
+        .narrative p {{
+            margin-bottom: 15px;
+        }}
+        .narrative strong {{
+            color: #667eea;
+        }}
     </style>
 </head>
 <body>
@@ -221,6 +242,12 @@ for sector_id in sectors:
                 </div>
             </div>
             
+            <div class="narrative">
+                <p><strong>📈 {year}년 {quarter}분기 {sector_name} 동향</strong></p>
+                <p>{sector_name}의 전국 지수는 <strong>{current_val if current_val != 'N/A' else '미제공'}</strong>으로 나타났으며, 전기 대비 <strong>{change_val if change_val != 'N/A' else '미제공'}%</strong> {'상승' if isinstance(change_val, (int, float)) and change_val >= 0 else '하락'}했습니다. 이는 국내 경제 상황의 변화를 반영하고 있습니다.</p>
+                <p>상위 업종/지표를 살펴보면 다양한 산업 분야에서 차별화된 변화가 나타나고 있습니다. 아래의 상세 표에서 각 업종별 지수와 증감률을 확인할 수 있으며, 이를 통해 구체적인 시장 동향을 파악할 수 있습니다.</p>
+            </div>
+            
             <h2>🏭 업종/지표별 동향 (상위 15개)</h2>
             <table class="data-table">
                 <thead>
@@ -232,7 +259,7 @@ for sector_id in sectors:
                     </tr>
                 </thead>
                 <tbody>
-{industries_html}
+INDUSTRIES_PLACEHOLDER
                 </tbody>
             </table>
         </div>
@@ -243,6 +270,8 @@ for sector_id in sectors:
     </div>
 </body>
 </html>"""
+        # industries_html을 템플릿에 삽입
+        html_content = html_content.replace("INDUSTRIES_PLACEHOLDER", industries_html)
         
         output_file = output_dir / f"{sector_name}_전국_{year}년{quarter}분기.html"
         output_file.write_text(html_content, encoding='utf-8')

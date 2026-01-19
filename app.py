@@ -8,7 +8,7 @@ Flask 기반 대시보드로 기초자료 수집표를 업로드하고 보도자
 - config/     : 설정 및 상수 (보도자료 정의, 경로 설정)
 - utils/      : 유틸리티 함수 (필터, 엑셀 처리, 데이터 처리)
 - services/   : 비즈니스 로직 (보도자료 생성, GRDP 처리, 요약 데이터)
-- routes/     : API 라우트 (메인, API, 미리보기)
+- routes/     : API 라우트 (메인, API)
 """
 
 from flask import Flask
