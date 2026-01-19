@@ -103,6 +103,34 @@ class ReportGenerator:
                 y += 2000
             return (y, q)
         return None
+
+    def _summary_table_labels(self, report_id: str | None = None) -> tuple[list[str], list[str], list[str]]:
+        """요약 표 라벨(증감률/지수/율)을 현재 연·분기에 맞게 구성"""
+        age_label = "15-29세"
+        if report_id == "employment" or report_id == "summary_employment":
+            age_label = "20-29세"
+        elif report_id == "unemployment":
+            age_label = "15-29세"
+
+        if not self._year_quarter:
+            growth_cols = ["{Y-2}. {Q}/4", "{Y-1}. {Q}/4", "{Y}. {Q-1}/4", "{Y}. {Q}/4"]
+            index_cols = ["{Y-1}. {Q}/4", "{Y}. {Q}/4"]
+            rate_cols = ["{Y-1}. {Q}/4", "{Y}. {Q}/4", age_label]
+            return growth_cols, index_cols, rate_cols
+        year, quarter = self._year_quarter
+        if quarter <= 1:
+            prev_q_year, prev_q = year - 1, 4
+        else:
+            prev_q_year, prev_q = year, quarter - 1
+        growth_cols = [
+            f"{year-2}. {quarter}/4",
+            f"{year-1}. {quarter}/4",
+            f"{prev_q_year}. {prev_q}/4",
+            f"{year}. {quarter}/4",
+        ]
+        index_cols = [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4"]
+        rate_cols = [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4", age_label]
+        return growth_cols, index_cols, rate_cols
     
     def extract_data(self, report_id: str) -> dict[str, Any]:
         """
@@ -168,10 +196,11 @@ class ReportGenerator:
             
             # 표 데이터
             if hasattr(module, 'get_table_data'):
+                growth_cols, index_cols, rate_cols = self._summary_table_labels(config.get('id'))
                 data['summary_table'] = {
                     'columns': {
-                        'change_columns': ['[기간]', '[기간]', '[기간]', '[기간]'],
-                        'rate_columns': ['[기간]', '[기간]', '[연령]']
+                        'change_columns': growth_cols,
+                        'rate_columns': rate_cols
                     },
                     'regions': module.get_table_data(df_analysis, df_index)
                 }

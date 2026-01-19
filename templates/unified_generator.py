@@ -1389,27 +1389,69 @@ class UnifiedReportGenerator(BaseGenerator):
             table_data = []
 
         # 4개 증감률 컬럼, 3개 지수/율 컬럼을 기본 라벨로 구성
+        def _previous_quarter(year: int, quarter: int) -> tuple[int, int]:
+            if quarter <= 1:
+                return (year - 1, 4)
+            return (year, quarter - 1)
+
         def _growth_labels(year: Optional[int], quarter: Optional[int]) -> List[str]:
             if year is None or quarter is None:
                 return ["전전기", "전기", "직전기", "현기"]
+            prev_q_year, prev_q = _previous_quarter(year, quarter)
             return [
                 f"{year-2}.{quarter}/4",
                 f"{year-1}.{quarter}/4",
-                f"{year}.{max(quarter-1, 1)}/4",
+                f"{prev_q_year}.{prev_q}/4",
                 f"{year}.{quarter}/4",
             ]
 
         def _index_labels(year: Optional[int], quarter: Optional[int]) -> List[str]:
+            if self.report_type == 'employment':
+                age_label = "20-29세"
+            elif self.report_type == 'unemployment':
+                age_label = "15-29세"
+            else:
+                age_label = "15-29세"
             if year is None or quarter is None:
                 return ["전기", "현기", "청년층"]
             return [
                 f"{year-1}.{quarter}/4",
                 f"{year}.{quarter}/4",
-                "15-29세",
+                age_label,
             ]
 
         growth_cols = _growth_labels(self.year, self.quarter)
         index_cols = _index_labels(self.year, self.quarter)
+
+        def _to_float(value: Any) -> Optional[float]:
+            if value is None or value == '' or value == '-':
+                return None
+            try:
+                return float(value)
+            except Exception:
+                return None
+
+        def _compute_growth(current: Optional[float], previous: Optional[float]) -> Optional[float]:
+            if current is None or previous is None:
+                return None
+            if previous == 0:
+                return None
+            return round((current - previous) / previous * 100, 1)
+
+        def _build_growth_slots(row: Dict[str, Any]) -> List[Optional[float]]:
+            current_value = _to_float(row.get('value'))
+            prev_value = _to_float(row.get('prev_value'))
+            prev_prev_value = _to_float(row.get('prev_prev_value'))
+            prev_prev_prev_value = _to_float(row.get('prev_prev_prev_value'))
+
+            two_years_ago = _compute_growth(prev_prev_value, prev_prev_prev_value)
+            last_year = _compute_growth(prev_value, prev_prev_value)
+            previous_quarter = None
+            current = _compute_growth(current_value, prev_value)
+            if current is None:
+                current = _to_float(row.get('change_rate'))
+
+            return [two_years_ago, last_year, previous_quarter, current]
 
         regions = []
         for row in table_data:
@@ -1417,20 +1459,32 @@ class UnifiedReportGenerator(BaseGenerator):
             growth_rate = row.get('change_rate') if isinstance(row, dict) else None
             value = row.get('value') if isinstance(row, dict) else None
             prev_value = row.get('prev_value') if isinstance(row, dict) else None
+            prev_prev_value = row.get('prev_prev_value') if isinstance(row, dict) else None
+            prev_prev_prev_value = row.get('prev_prev_prev_value') if isinstance(row, dict) else None
 
+            computed = _build_growth_slots(row) if isinstance(row, dict) else [None, None, None, None]
+            growth_rates = [
+                '' if computed[0] is None else computed[0],
+                '' if computed[1] is None else computed[1],
+                '' if computed[2] is None else computed[2],
+                '' if computed[3] is None else computed[3],
+            ]
+
+            youth_rate = row.get('youth_rate') if isinstance(row, dict) else None
             regions.append({
                 'group': None,
                 'region': region_name,
                 'sido': region_name,
                 'region_group': None,
                 'rowspan': 1,
-                # 보유한 데이터: 현기(현재 분기), 전년 동분기
-                # 보유하지 않은 데이터: 전전기, 전기, 직전기 (빈 문자열로 표시)
-                'growth_rates': ['', '', '', growth_rate],
+                # 보유한 데이터 기반으로 증감률 슬롯 채움
+                'growth_rates': growth_rates,
                 'indices': [prev_value, value, ''],
-                'changes': ['', '', '', growth_rate],
-                'rates': [prev_value, value, ''],
-                'youth_rate': None,
+                'changes': growth_rates,
+                'rates': [prev_value, value, youth_rate if youth_rate not in (None, '', '-') else ''],
+                'youth_rate': youth_rate,
+                'prev_prev_value': prev_prev_value,
+                'prev_prev_prev_value': prev_prev_prev_value,
             })
 
         return {

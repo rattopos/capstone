@@ -44,6 +44,76 @@ class DataTableBuilder:
             return f"{v:.1f}"
         except:
             return str(value)
+
+    def _to_float(self, value: Any) -> float | None:
+        if value is None or value == '' or value == '-':
+            return None
+        try:
+            return float(value)
+        except Exception:
+            return None
+
+    def _compute_growth(self, current: float | None, previous: float | None) -> float | None:
+        if current is None or previous is None:
+            return None
+        if previous == 0:
+            return None
+        return round((current - previous) / previous * 100, 1)
+
+    def _previous_quarter(self, year: int, quarter: int) -> tuple[int, int]:
+        if quarter <= 1:
+            return (year - 1, 4)
+        return (year, quarter - 1)
+
+    def _growth_labels(self) -> list[str]:
+        year_quarter = self.generator._year_quarter
+        if not year_quarter:
+            return ["{Y-2}. {Q}/4", "{Y-1}. {Q}/4", "{Y}. {Q-1}/4", "{Y}. {Q}/4"]
+        year, quarter = year_quarter
+        prev_q_year, prev_q = self._previous_quarter(year, quarter)
+        return [
+            f"{year-2}. {quarter}/4",
+            f"{year-1}. {quarter}/4",
+            f"{prev_q_year}. {prev_q}/4",
+            f"{year}. {quarter}/4",
+        ]
+
+    def _index_labels(self) -> list[str]:
+        year_quarter = self.generator._year_quarter
+        if not year_quarter:
+            return ["{Y-1}. {Q}/4", "{Y}. {Q}/4"]
+        year, quarter = year_quarter
+        return [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4"]
+
+    def _rate_labels(self, report_id: str) -> list[str]:
+        year_quarter = self.generator._year_quarter
+        age_label = "20-29세" if report_id == "employment" else "15-29세"
+        if not year_quarter:
+            return ["{Y-1}. {Q}/4", "{Y}. {Q}/4", age_label]
+        year, quarter = year_quarter
+        return [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4", age_label]
+
+    def _build_growth_slots(self, row: dict[str, Any]) -> list[float | None]:
+        current_value = self._to_float(row.get('value') or row.get('current_value') or row.get('index'))
+        prev_value = self._to_float(row.get('prev_value') or row.get('previous_year_value') or row.get('previous_year_index'))
+        prev_prev_value = self._to_float(row.get('prev_prev_value') or row.get('previous_prev_value') or row.get('two_years_ago_value'))
+        prev_prev_prev_value = self._to_float(row.get('prev_prev_prev_value') or row.get('three_years_ago_value'))
+
+        indices = row.get('indices')
+        if isinstance(indices, list):
+            if current_value is None and len(indices) >= 2:
+                current_value = self._to_float(indices[1])
+            if prev_value is None and len(indices) >= 1:
+                prev_value = self._to_float(indices[0])
+
+        two_years_ago = self._compute_growth(prev_prev_value, prev_prev_prev_value)
+        last_year = self._compute_growth(prev_value, prev_prev_value)
+        previous_quarter = self._to_float(row.get('previous_quarter_growth') or row.get('prev_quarter_growth'))
+        current = self._compute_growth(current_value, prev_value)
+        if current is None:
+            current = self._to_float(row.get('growth_rate') or row.get('change_rate'))
+
+        return [two_years_ago, last_year, previous_quarter, current]
     
     def extract_sector_report(self, report_id: str) -> dict[str, Any] | None:
         """부문별 보도자료 데이터 추출"""
@@ -162,6 +232,15 @@ class DataTableBuilder:
                 growth_rates.append(self.format_change_value(region_data.get('previous_quarter_growth')))
                 growth_rates.append(self.format_change_value(region_data.get('previous_year_growth')))
                 growth_rates.append(self.format_change_value(region_data.get('previous_year_same_quarter_growth')))
+
+                computed_growth = self._build_growth_slots(region_data)
+                filled_rates: list[str] = []
+                for idx, rate in enumerate(growth_rates):
+                    if (rate == '-' or rate == '') and idx < len(computed_growth) and computed_growth[idx] is not None:
+                        filled_rates.append(self.format_change_value(computed_growth[idx]))
+                    else:
+                        filled_rates.append(rate)
+                growth_rates = filled_rates
                 
                 # 값이 있으면 추가
                 if any(g != '-' for g in growth_rates):
@@ -183,6 +262,10 @@ class DataTableBuilder:
                 rates.append(self.format_change_value(region_data.get('rate') or region_data.get('employment_rate')))
                 rates.append(self.format_change_value(region_data.get('previous_quarter_rate')))
                 rates.append(self.format_change_value(region_data.get('previous_year_rate')))
+                youth_rate = region_data.get('youth_rate')
+                if youth_rate not in (None, '', '-'):
+                    rates = (rates + ['-'] * 3)[:3]
+                    rates[2] = self.format_change_value(youth_rate)
                 
                 # 값이 있으면 추가
                 if any(r != '-' for r in rates):
@@ -192,30 +275,13 @@ class DataTableBuilder:
         
         # 컬럼 헤더 설정
         if any('growth_rates' in r for r in table['regions']):
-            table['columns']['growth_rate_columns'] = [
-                '2025년 3분기',
-                '2025년 2분기',
-                '2024년 3분기',
-                '전년동분기대비'
-            ]
-            table['columns']['index_columns'] = [
-                '2025년 3분기',
-                '2024년 3분기'
-            ]
+            table['columns']['growth_rate_columns'] = self._growth_labels()
+            table['columns']['index_columns'] = self._index_labels()
             table['base_year'] = '2020'
         
         if any('rates' in r for r in table['regions']):
-            table['columns']['change_columns'] = [
-                '2025년 3분기',
-                '2025년 2분기',
-                '2024년 3분기',
-                '전년동분기대비'
-            ]
-            table['columns']['rate_columns'] = [
-                '2025년 3분기',
-                '2025년 2분기',
-                '2024년 3분기'
-            ]
+            table['columns']['change_columns'] = self._growth_labels()
+            table['columns']['rate_columns'] = self._rate_labels(report_id)
         
         return table
     
