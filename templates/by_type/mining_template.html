@@ -263,25 +263,25 @@
         <div class="key-summary-box">
             <div class="headline">◆ 광공업생산은 
                 {% for region in top3_increase_regions %}
-                <span class="highlight">{{ region.region }}</span>({{ region.industries | join(', ') }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.industries_names | join(', ') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
-                등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
             </div>
         </div>
         
         <!-- 요약 박스 (기존) -->
         <div class="summary-box">
-            <div class="nationwide">□ 전국 광공업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {% if nationwide_data.main_increase_industries %}{{ nationwide_data.main_increase_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span></div>
+            <div class="nationwide">□ 전국 광공업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {% if nationwide_data.main_increase_industries %}{{ nationwide_data.main_increase_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span></div>
             <div class="regional">○ 
                 {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {% if regional_data.decrease_regions[0].top_industries %}{{ regional_data.decrease_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 줄어 <span class="decrease">감소</span>하였으나, 
+                {% endfor %} {% if regional_data.decrease_regions[0].top_industries %}{{ regional_data.decrease_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 {{ get_terms(report_info.report_id, -1)[0] }} <span class="decrease">{{ get_terms(report_info.report_id, -1)[1] }}</span>{{ get_terms(report_info.report_id, -1)[2] }}, 
                 {% endif %}
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {% if regional_data.increase_regions[0].top_industries %}{{ regional_data.increase_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 늘어 <span class="increase">증가</span>
+                {% endfor %} {% if regional_data.increase_regions[0].top_industries %}{{ regional_data.increase_regions[0].top_industries | map(attribute='name') | join(', ') }}{% else %}주요 업종{% endif %} 등의 생산이 {{ get_terms(report_info.report_id, 1)[0] }} <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
                 {% endif %}
             </div>
         </div>
@@ -325,21 +325,21 @@
             <div class="table-title">《 광공업생산지수 및 증감률 》</div>
             <table class="data-table" style="border-collapse: collapse !important; border: 1px solid black !important;">
                 <thead>
-                    <!-- 1행: 구분 | 전년동분기대비 증감률(%) (colspan=4) | 광공업생산지수(2020=100) (colspan=2) -->
+                    <!-- 1행: 구분 | 전년동분기대비 증감률(%) (colspan=4) | 광공업생산지수([기준연도]=100) (colspan=2) -->
                     <tr>
                         <th rowspan="2" style="width: 30px; border: 1px solid black !important;">구분</th>
                         <th rowspan="2" style="width: 30px; border: 1px solid black !important;"></th>
                         <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
-                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">광공업생산지수({{ summary_table.base_year }}=100)</th>
+                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">광공업생산지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
                     </tr>
-                    <!-- 2행: (증감률 하위) 2023.2/4 | 2024.2/4 | 2025.1/4 | 2025.2/4p | (지수 하위) 2024.2/4 | 2025.2/4p -->
+                    <!-- 2행: (증감률 하위) [기간] | [기간] | [기간] | [기간]p | (지수 하위) [기간] | [기간]p -->
                     <tr>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[0] }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[1] }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[2] }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[3] }}<sup>p</sup></th>
-                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[0] }}</th>
-                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[1] }}<sup>p</sup></th>
+                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
+                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[1] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -368,8 +368,7 @@
                 </tbody>
             </table>
             
-            <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
+            <div class="footnote">{{ footer_info.contact | default('담당: [연락처]') }}</div>
         </div>
         
     </div>

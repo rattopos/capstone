@@ -84,15 +84,15 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 수출</span>({{ "%.1f"|format(exports.nationwide.amount) }}억달러)은 전년동분기대비 <span class="{% if exports.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(exports.nationwide.change) }}% {% if exports.nationwide.change >= 0 %}증가{% else %}감소{% endif %}</span>
+                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 수출</span>({{ "%.1f"|format(exports.nationwide.amount) }}억달러)은 전년동분기대비 <span class="{% if exports.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(exports.nationwide.change) }}% {% if exports.nationwide.change >= 0 %}{{ get_terms('export', 1)[1] }}{% else %}{{ get_terms('export', -1)[1] }}{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in exports.increase_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ exports.increase_count }}개 시도는 수출이 <span class="increase">증가</span>하였으나,
+                {% endfor %} 등 {{ exports.increase_count }}개 시도는 수출이 <span class="increase">{{ get_terms('export', 1)[1] }}</span>{{ get_terms('export', 1)[2] }},
                 {% for region in exports.decrease_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ exports.decrease_count }}개 시도는 <span class="decrease">감소</span>
+                {% endfor %} 등 {{ exports.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('export', -1)[1] }}</span>
             </div>
         </div>
         
@@ -103,12 +103,12 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소비자물가</span>({{ "%.1f"|format(price.nationwide.index) }})는 전년동분기대비 <span class="{% if price.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(price.nationwide.change) }}% {% if price.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
+                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소비자물가</span>({{ "%.1f"|format(price.nationwide.index) }})는 전년동분기대비 <span class="{% if price.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(price.nationwide.change) }}% {% if price.nationwide.change >= 0 %}{{ get_terms('price', 1)[1] }}{% else %}{{ get_terms('price', -1)[1] }}{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in price.increase_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ price.increase_count }}개 시도가 전국 평균({{ "%.1f"|format(price.nationwide.change) }}%) 이상 <span class="increase">상승</span>
+                {% endfor %} 등 {{ price.increase_count }}개 시도가 전국 평균({{ "%.1f"|format(price.nationwide.change) }}%) 이상 <span class="increase">{{ get_terms('price', 1)[1] }}</span>
             </div>
         </div>
         

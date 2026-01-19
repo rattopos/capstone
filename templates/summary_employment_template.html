@@ -84,15 +84,15 @@
         
         <div class="summary-box">
             <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change) }}%p {% if employment.nationwide.change >= 0 %}상승{% else %}하락{% endif %}</span>
+                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(employment.nationwide.change) }}%p {% if employment.nationwide.change >= 0 %}{{ get_terms('employment', 1)[1] }}{% else %}{{ get_terms('employment', -1)[1] }}{% endif %}</span>
             </div>
             <div class="summary-sub">
                 {% for region in employment.increase_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ employment.increase_count }}개 시도는 고용률이 <span class="increase">상승</span>하였으나,
+                {% endfor %} 등 {{ employment.increase_count }}개 시도는 고용률이 <span class="increase">{{ get_terms('employment', 1)[1] }}</span>{{ get_terms('employment', 1)[2] }},
                 {% for region in employment.decrease_regions[:3] %}
                 <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ employment.decrease_count }}개 시도는 <span class="decrease">하락</span>
+                {% endfor %} 등 {{ employment.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('employment', -1)[1] }}</span>
             </div>
         </div>
         

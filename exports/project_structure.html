@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로젝트 보도자료 구조</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            border-bottom: 4px solid #0066cc;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+            font-size: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #004499;
+        }
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+        .info-box {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-left: 4px solid #0066cc;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #0066cc;
+        }
+        .category {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 지역경제동향 보도자료 생성 프로젝트 구조</h1>
+        
+        <div class="info-box">
+            <strong>✅ 설명:</strong> 이 프로젝트에서는 Excel 파일로부터 <strong>3가지 유형</strong>의 보도자료를 생성합니다.
+            <br>1️⃣ <strong>요약 보도자료</strong> - 전국 기준의 핵심 지표 요약
+            <br>2️⃣ <strong>부문별 보도자료</strong> - 경제 부문별(생산, 소비, 고용 등) 상세 분석
+            <br>3️⃣ <strong>지역별 보도자료</strong> - 17개 시도별 경제동향
+        </div>
+
+        <h2>📊 요약 보도자료 (SUMMARY_REPORTS)</h2><table border="1"><tr><th>번호</th><th>ID</th><th>이름</th><th>시트</th><th>템플릿</th><th>아이콘</th></tr><tr>
+        <td>1</td>
+        <td>summary_overview</td>
+        <td>요약-지역경제동향</td>
+        <td>multiple</td>
+        <td>summary_regional_economy_template.html</td>
+        <td>📈</td>
+        </tr><tr>
+        <td>2</td>
+        <td>summary_production</td>
+        <td>요약-생산</td>
+        <td>multiple</td>
+        <td>summary_production_template.html</td>
+        <td>🏭</td>
+        </tr><tr>
+        <td>3</td>
+        <td>summary_consumption</td>
+        <td>요약-소비건설</td>
+        <td>multiple</td>
+        <td>summary_consumption_construction_template.html</td>
+        <td>🛒</td>
+        </tr><tr>
+        <td>4</td>
+        <td>summary_trade_price</td>
+        <td>요약-수출물가</td>
+        <td>multiple</td>
+        <td>summary_export_price_template.html</td>
+        <td>📦</td>
+        </tr><tr>
+        <td>5</td>
+        <td>summary_employment</td>
+        <td>요약-고용인구</td>
+        <td>multiple</td>
+        <td>summary_employment_template.html</td>
+        <td>👔</td>
+        </tr></table>
+        
+        <h2>🏭 부문별 보도자료 (SECTOR_REPORTS)</h2><table border="1"><tr><th>번호</th><th>ID</th><th>이름</th><th>카테고리</th><th>시트</th><th>집계시트</th><th>아이콘</th></tr><tr>
+        <td>1</td>
+        <td>manufacturing</td>
+        <td>광공업생산</td>
+        <td>production</td>
+        <td>A 분석</td>
+        <td>A(광공업생산)집계</td>
+        <td>🏭</td>
+        </tr><tr>
+        <td>2</td>
+        <td>service</td>
+        <td>서비스업생산</td>
+        <td>production</td>
+        <td>B 분석</td>
+        <td>B(서비스업생산)집계</td>
+        <td>🏢</td>
+        </tr><tr>
+        <td>3</td>
+        <td>consumption</td>
+        <td>소비동향</td>
+        <td>consumption</td>
+        <td>C 분석</td>
+        <td>C 분석</td>
+        <td>🛒</td>
+        </tr><tr>
+        <td>4</td>
+        <td>construction</td>
+        <td>건설동향</td>
+        <td>construction</td>
+        <td>F'분석</td>
+        <td>F'(건설)집계</td>
+        <td>🏗️</td>
+        </tr><tr>
+        <td>5</td>
+        <td>export</td>
+        <td>수출</td>
+        <td>trade</td>
+        <td>G 분석</td>
+        <td>G(수출)집계</td>
+        <td>📦</td>
+        </tr><tr>
+        <td>6</td>
+        <td>import</td>
+        <td>수입</td>
+        <td>trade</td>
+        <td>H 분석</td>
+        <td>H(수입)집계</td>
+        <td>🚢</td>
+        </tr><tr>
+        <td>7</td>
+        <td>price</td>
+        <td>물가동향</td>
+        <td>price</td>
+        <td>E(품목성질물가)분석</td>
+        <td>E(지출목적물가)집계</td>
+        <td>💰</td>
+        </tr><tr>
+        <td>8</td>
+        <td>employment</td>
+        <td>고용률</td>
+        <td>employment</td>
+        <td>D(고용률)분석</td>
+        <td>D(고용률)집계</td>
+        <td>👔</td>
+        </tr><tr>
+        <td>9</td>
+        <td>unemployment</td>
+        <td>실업률</td>
+        <td>employment</td>
+        <td>D(실업)분석</td>
+        <td>D(실업)집계</td>
+        <td>📉</td>
+        </tr><tr>
+        <td>10</td>
+        <td>migration</td>
+        <td>국내인구이동</td>
+        <td>population</td>
+        <td>I(순인구이동)집계</td>
+        <td>I(순인구이동)집계</td>
+        <td>👥</td>
+        </tr></table>
+        
+        <h2>🗺️ 지역별 보도자료 (17개 지역)</h2><table border="1"><tr><th>번호</th><th>ID</th><th>지역명</th><th>전체명</th><th>아이콘</th></tr><tr>
+        <td>1</td>
+        <td>region_seoul</td>
+        <td>서울</td>
+        <td>서울특별시</td>
+        <td>🏙️</td>
+        </tr><tr>
+        <td>2</td>
+        <td>region_busan</td>
+        <td>부산</td>
+        <td>부산광역시</td>
+        <td>🌊</td>
+        </tr><tr>
+        <td>3</td>
+        <td>region_daegu</td>
+        <td>대구</td>
+        <td>대구광역시</td>
+        <td>🏛️</td>
+        </tr><tr>
+        <td>4</td>
+        <td>region_incheon</td>
+        <td>인천</td>
+        <td>인천광역시</td>
+        <td>✈️</td>
+        </tr><tr>
+        <td>5</td>
+        <td>region_gwangju</td>
+        <td>광주</td>
+        <td>광주광역시</td>
+        <td>🎨</td>
+        </tr><tr>
+        <td>6</td>
+        <td>region_daejeon</td>
+        <td>대전</td>
+        <td>대전광역시</td>
+        <td>🔬</td>
+        </tr><tr>
+        <td>7</td>
+        <td>region_ulsan</td>
+        <td>울산</td>
+        <td>울산광역시</td>
+        <td>🚗</td>
+        </tr><tr>
+        <td>8</td>
+        <td>region_sejong</td>
+        <td>세종</td>
+        <td>세종특별자치시</td>
+        <td>🏛️</td>
+        </tr><tr>
+        <td>9</td>
+        <td>region_gyeonggi</td>
+        <td>경기</td>
+        <td>경기도</td>
+        <td>🏘️</td>
+        </tr><tr>
+        <td>10</td>
+        <td>region_gangwon</td>
+        <td>강원</td>
+        <td>강원특별자치도</td>
+        <td>⛰️</td>
+        </tr><tr>
+        <td>11</td>
+        <td>region_chungbuk</td>
+        <td>충북</td>
+        <td>충청북도</td>
+        <td>🌾</td>
+        </tr><tr>
+        <td>12</td>
+        <td>region_chungnam</td>
+        <td>충남</td>
+        <td>충청남도</td>
+        <td>🌅</td>
+        </tr><tr>
+        <td>13</td>
+        <td>region_jeonbuk</td>
+        <td>전북</td>
+        <td>전북특별자치도</td>
+        <td>🌿</td>
+        </tr><tr>
+        <td>14</td>
+        <td>region_jeonnam</td>
+        <td>전남</td>
+        <td>전라남도</td>
+        <td>🍃</td>
+        </tr><tr>
+        <td>15</td>
+        <td>region_gyeongbuk</td>
+        <td>경북</td>
+        <td>경상북도</td>
+        <td>🏔️</td>
+        </tr><tr>
+        <td>16</td>
+        <td>region_gyeongnam</td>
+        <td>경남</td>
+        <td>경상남도</td>
+        <td>🌳</td>
+        </tr><tr>
+        <td>17</td>
+        <td>region_jeju</td>
+        <td>제주</td>
+        <td>제주특별자치도</td>
+        <td>🏝️</td>
+        </tr></table>
+        
+        
+    <h2>📈 통계</h2>
+    <table border="1">
+    <tr><td><strong>요약 보도자료</strong></td><td>5</td></tr>
+    <tr><td><strong>부문별 보도자료</strong></td><td>10</td></tr>
+    <tr><td><strong>지역별 보도자료</strong></td><td>17</td></tr>
+    <tr><td><strong>합계</strong></td><td>32</td></tr>
+    </table>
+    
+        
+        <h2>📝 설명</h2>
+        <div class="info-box">
+            <p><strong>• 요약 보도자료 (5개):</strong> 생산, 소비·건설, 수출·물가, 고용·인구, 지역경제동향 등 전국 단위의 요약본</p>
+            <p><strong>• 부문별 보도자료 (9개):</strong></p>
+            <ul>
+                <li>생산: 광공업생산, 서비스업생산</li>
+                <li>소비/건설: 소비동향, 건설동향</li>
+                <li>무역: 수출, 수입</li>
+                <li>물가: 물가동향</li>
+                <li>고용: 고용률, 실업률</li>
+                <li>인구: 국내인구이동</li>
+            </ul>
+            <p><strong>• 지역별 보도자료 (17개):</strong> 각 시/도별 경제 현황 분석</p>
+        </div>
+        
+    </div>
+</body>
+</html>

@@ -18,14 +18,22 @@ NARRATIVE_MAP = {
         'cause_up': "늘어",
         'cause_down': "줄어",
         'result_up': "증가",
-        'result_down': "감소"
+        'result_down': "감소",
+        'conjunction_up': "하였으나",  # 증가했을 때 활용형
+        'conjunction_down': "하였으나",  # 감소했을 때 활용형
+        'comparative_rate_low': "증가율이 낮았으나",  # 전국 대비 낮음 (증가 시)
+        'comparative_rate_high': "높음",  # 전국 대비 높음 (증가 시)
     },
     # 2. 지수/비율 데이터 (Index/Rate): 올라/내려 -> 상승/하락
     'price': {
         'cause_up': "올라",
         'cause_down': "내려",
         'result_up': "상승",
-        'result_down': "하락"
+        'result_down': "하락",
+        'conjunction_up': "하였으나",  # 상승했을 때 활용형
+        'conjunction_down': "하였으나",  # 하락했을 때 활용형
+        'comparative_rate_low': "상승률이 낮았으나",  # 전국 대비 낮음 (상승 시)
+        'comparative_rate_high': "높음",  # 전국 대비 높음 (상승 시)
     }
 }
 
@@ -93,7 +101,7 @@ def get_footer_source(report_id: str) -> str:
     return f"자료: 국가데이터처 국가통계포털(KOSIS), {survey_name}"
 
 
-def get_terms(report_id: str, value: float) -> Tuple[Optional[str], str]:
+def get_terms(report_id: str, value: float) -> Tuple[Optional[str], str, str]:
     """
     report_id와 값(부호)을 넣으면 알맞은 단어 세트를 반환
     
@@ -106,17 +114,18 @@ def get_terms(report_id: str, value: float) -> Tuple[Optional[str], str]:
         value: 증감률 값 (양수면 증가, 음수면 감소, 0.0이면 보합)
     
     Returns:
-        Tuple[Optional[str], str]: (원인 서술어 or None, 결과 서술어)
-        예: get_terms('manufacturing', 1.5) -> ('늘어', '증가')
-        예: get_terms('manufacturing', -0.5) -> ('줄어', '감소')
-        예: get_terms('manufacturing', 0.0) -> (None, '보합')
-        예: get_terms('price', 2.1) -> ('올라', '상승')
-        예: get_terms('price', -1.5) -> ('내려', '하락')
-        예: get_terms('price', 0.0) -> (None, '보합')
+        Tuple[Optional[str], str, str]: (원인 서술어 or None, 결과 서술어, 활용형)
+        예: get_terms('manufacturing', 1.5) -> ('늘어', '증가', '하였으나')
+        예: get_terms('manufacturing', -0.5) -> ('줄어', '감소', '하였으나')
+        예: get_terms('manufacturing', 0.0) -> (None, '보합', '')
+        예: get_terms('price', 2.1) -> ('올라', '상승', '하였으나')
+        예: get_terms('price', -1.5) -> ('내려', '하락', '하였으나')
+        예: get_terms('price', 0.0) -> (None, '보합', '')
     
     Note:
         - 알 수 없는 report_id는 기본값 'quantity' 사용
         - 보합일 때 원인 서술어는 None (문장 구조가 다름)
+        - 활용형은 결과 서술어 뒤에 붙는 형태 (예: "증가하였으나", "감소하였으나")
     """
     # 1. 타입 결정 (기본값은 quantity)
     n_type = REPORT_TYPE_MAP.get(report_id, 'quantity')
@@ -124,13 +133,47 @@ def get_terms(report_id: str, value: float) -> Tuple[Optional[str], str]:
     
     # 2. 보합 처리 (최우선)
     if abs(value) < 0.01:  # 0.0%로 간주
-        return (None, "보합")
+        return (None, "보합", "")
     
     # 3. 증감 처리
     if value > 0:
-        return vocabs['cause_up'], vocabs['result_up']
+        return vocabs['cause_up'], vocabs['result_up'], vocabs['conjunction_up']
     else:
-        return vocabs['cause_down'], vocabs['result_down']
+        return vocabs['cause_down'], vocabs['result_down'], vocabs['conjunction_down']
+
+
+def get_comparative_terms(report_id: str, nationwide_direction: int) -> Tuple[str, str]:
+    """
+    전국 방향에 따른 지역별 비교 표현 반환 (물가동향 등에서 사용)
+    
+    Args:
+        report_id: 보고서 ID (예: 'price')
+        nationwide_direction: 전국의 방향 (양수: 상승, 음수: 하락)
+    
+    Returns:
+        Tuple[str, str]: (낮은 지역 표현, 높은 지역 표현)
+        예: get_comparative_terms('price', 1) -> ('상승률이 낮았으나', '높음')
+        예: get_comparative_terms('price', -1) -> ('하락률이 낮았으나', '높음')
+    
+    Note:
+        - 전국이 상승일 때: "상승률이 낮았으나" / "높음"
+        - 전국이 하락일 때: "하락률이 낮았으나" / "높음"
+    """
+    n_type = REPORT_TYPE_MAP.get(report_id, 'price')
+    vocabs = NARRATIVE_MAP[n_type]
+    
+    if nationwide_direction >= 0:
+        # 상승/증가 시
+        result_verb = vocabs['result_up']  # "상승" 또는 "증가"
+        low_expression = f"{result_verb}률이 낮았으나"
+        high_expression = "높음"
+    else:
+        # 하락/감소 시
+        result_verb = vocabs['result_down']  # "하락" 또는 "감소"
+        low_expression = f"{result_verb}률이 낮았으나"
+        high_expression = "높음"
+    
+    return low_expression, high_expression
 
 
 def get_cause_verb(value: float, report_id: str = 'quantity') -> str:

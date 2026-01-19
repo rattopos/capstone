@@ -1305,8 +1305,23 @@ class UnifiedReportGenerator(BaseGenerator):
             'main_decrease_industries': main_decrease   # 템플릿 호환
         }
 
+        # 건설동향 템플릿 호환 별칭 추가
+        if self.report_type == 'construction':
+            # construction_template.html에서 요구하는 키: construction_index_trillion
+            # index_value가 백억원이므로 조원 단위로 변환 (백억원 * 100 = 조원)
+            construction_trillion = (index_value / 100) if index_value else None
+            result['construction_index_trillion'] = construction_trillion
+            result['change'] = growth_rate
+            # 토목/건축 증감률 (기본값은 전체 증감률 사용)
+            result['civil_growth'] = growth_rate
+            result['building_growth'] = growth_rate
+            # 토목/건축 부공종 (기본값)
+            result['civil_subtypes'] = '철도·궤도, 기계설치'
+            result['building_subtypes'] = '주택, 관공서 등'
+            result['main_category'] = '토목' if (growth_rate is not None and growth_rate >= 0) else '토목'
+            result['sub_types_text'] = '철도·궤도, 도로·교량, 주택'
         # 고용률/실업률 템플릿 호환 별칭 추가
-        if self.report_type == 'employment':
+        elif self.report_type == 'employment':
             # employment_template.html에서 요구하는 키: employment_rate, change, main_age_groups, top_age_groups
             result['employment_rate'] = index_value
             result['change'] = growth_rate
@@ -1409,10 +1424,12 @@ class UnifiedReportGenerator(BaseGenerator):
                 'sido': region_name,
                 'region_group': None,
                 'rowspan': 1,
-                'growth_rates': [None, None, None, growth_rate],
-                'indices': [prev_value, value],
-                'changes': [None, None, None, growth_rate],
-                'rates': [prev_value, value, None],
+                # 보유한 데이터: 현기(현재 분기), 전년 동분기
+                # 보유하지 않은 데이터: 전전기, 전기, 직전기 (빈 문자열로 표시)
+                'growth_rates': ['', '', '', growth_rate],
+                'indices': [prev_value, value, ''],
+                'changes': ['', '', '', growth_rate],
+                'rates': [prev_value, value, ''],
                 'youth_rate': None,
             })
 
@@ -1511,6 +1528,14 @@ class UnifiedReportGenerator(BaseGenerator):
             nationwide.setdefault('change', nationwide.get('growth_rate'))
             nationwide.setdefault('age_groups', nationwide.get('age_groups', []))
             nationwide.setdefault('main_age_groups', nationwide.get('main_age_groups', []))
+        elif self.report_type == 'construction':
+            # construction_template.html 호환성 보강
+            nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))
+            nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
+            nationwide.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+            nationwide.setdefault('building_subtypes', '주택, 관공서 등')
+            nationwide.setdefault('main_category', '토목' if (nationwide.get('growth_rate') is not None and nationwide.get('growth_rate') >= 0) else '토목')
+            nationwide.setdefault('sub_types_text', '철도·궤도, 도로·교량, 주택')
         data['nationwide_data'] = nationwide
 
         # 지역 데이터 별칭/필드 보강
@@ -1568,12 +1593,23 @@ class UnifiedReportGenerator(BaseGenerator):
             if not isinstance(item, dict):
                 continue
             item.setdefault('change', item.get('growth_rate'))
+            
+            # 모든 타입에 대해 industries_names 추가 (템플릿에서 JSON 렌더링 방지)
+            if item.get('industries'):
+                item['industries_names'] = self._extract_item_names(item.get('industries'))
+            
             if self.report_type in ['export', 'import']:
                 item.setdefault('products', self._extract_item_names(item.get('industries')))
             elif self.report_type == 'price':
                 item.setdefault('categories', item.get('industries', []))
             elif self.report_type in ['employment', 'unemployment']:
                 item.setdefault('age_groups', [])
+            elif self.report_type == 'construction':
+                # construction_template.html 호환성 보강
+                item.setdefault('civil_growth', item.get('growth_rate'))
+                item.setdefault('building_growth', item.get('growth_rate'))
+                item.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+                item.setdefault('building_subtypes', '주택, 관공서 등')
 
         data['top3_increase_regions'] = top3_increase
         data['top3_decrease_regions'] = top3_decrease

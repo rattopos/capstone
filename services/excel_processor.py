@@ -15,7 +15,8 @@ import platform
 def preprocess_excel(
     excel_path: str, 
     output_path: Optional[str] = None,
-    use_xlwings: bool = False
+    use_xlwings: bool = False,
+    force_calculation: bool = False
 ) -> Tuple[str, bool, str]:
     """
     엑셀 파일의 수식을 계산하여 새 파일로 저장 (최적화 버전)
@@ -27,6 +28,7 @@ def preprocess_excel(
         excel_path: 원본 엑셀 파일 경로
         output_path: 출력 파일 경로 (None이면 원본 덮어쓰기)
         use_xlwings: xlwings 사용 여부 (기본값: False, Excel 앱 필요하고 느림)
+        force_calculation: data_only 캐시 사용 금지하고 계산 로직 강제 사용
     
     Returns:
         Tuple[str, bool, str]: (처리된 파일 경로, 성공 여부, 메시지)
@@ -34,31 +36,52 @@ def preprocess_excel(
     if output_path is None:
         output_path = excel_path
     
-    # 1. openpyxl data_only=True 사용 (가장 빠름 - 수식 계산된 값 직접 읽기)
-    result_path, success, message = _try_openpyxl_data_only(excel_path, output_path)
-    if success:
-        return result_path, True, message
-    
-    # 2. openpyxl로 직접 계산 시도 (백엔드 직접 계산 - 시트 간 참조 매핑)
-    result_path, success, message = _try_openpyxl_calculation(excel_path, output_path)
-    if success:
-        return result_path, True, message
-    
-    # 3. formulas 라이브러리 시도 (선택적 - 복잡한 수식 지원, 하지만 느릴 수 있음)
-    # 주의: 대부분의 경우 위 두 방법으로 충분하므로, 필요시에만 사용
-    try:
-        import formulas
-        result_path, success, message = _try_formulas(excel_path, output_path)
+    if force_calculation:
+        # 1. openpyxl로 직접 계산 시도 (백엔드 직접 계산 - 시트 간 참조 매핑)
+        result_path, success, message = _try_openpyxl_calculation(excel_path, output_path)
         if success:
             return result_path, True, message
-    except ImportError:
-        pass  # formulas가 없으면 건너뛰기
-    
-    # 4. xlwings 시도 (명시적으로 요청한 경우만 - Excel 앱 필요, 매우 느림)
-    if use_xlwings:
-        result_path, success, message = _try_xlwings(excel_path, output_path)
-    if success:
-        return result_path, True, message
+
+        # 2. formulas 라이브러리 시도 (선택적 - 복잡한 수식 지원, 하지만 느릴 수 있음)
+        try:
+            import formulas
+            result_path, success, message = _try_formulas(excel_path, output_path)
+            if success:
+                return result_path, True, message
+        except ImportError:
+            pass  # formulas가 없으면 건너뛰기
+
+        # 3. xlwings 시도 (명시적으로 요청한 경우만 - Excel 앱 필요, 매우 느림)
+        if use_xlwings:
+            result_path, success, message = _try_xlwings(excel_path, output_path)
+            if success:
+                return result_path, True, message
+    else:
+        # 1. openpyxl data_only=True 사용 (가장 빠름 - 수식 계산된 값 직접 읽기)
+        result_path, success, message = _try_openpyxl_data_only(excel_path, output_path)
+        if success:
+            return result_path, True, message
+
+        # 2. openpyxl로 직접 계산 시도 (백엔드 직접 계산 - 시트 간 참조 매핑)
+        result_path, success, message = _try_openpyxl_calculation(excel_path, output_path)
+        if success:
+            return result_path, True, message
+
+        # 3. formulas 라이브러리 시도 (선택적 - 복잡한 수식 지원, 하지만 느릴 수 있음)
+        # 주의: 대부분의 경우 위 두 방법으로 충분하므로, 필요시에만 사용
+        try:
+            import formulas
+            result_path, success, message = _try_formulas(excel_path, output_path)
+            if success:
+                return result_path, True, message
+        except ImportError:
+            pass  # formulas가 없으면 건너뛰기
+
+        # 4. xlwings 시도 (명시적으로 요청한 경우만 - Excel 앱 필요, 매우 느림)
+        if use_xlwings:
+            result_path, success, message = _try_xlwings(excel_path, output_path)
+            if success:
+                return result_path, True, message
     
     # 5. 모두 실패 시 원본 반환 (fallback 로직 사용)
     print(f"[전처리] 수식 계산 실패 - 원본 파일 사용, generator fallback 로직 활성화")
@@ -207,6 +230,8 @@ def _try_openpyxl_calculation(excel_path: str, output_path: str) -> Tuple[str, b
             'C 분석': 'C(소비)집계',
             'D(고용률)분석': 'D(고용률)집계',
             'D(실업)분석': 'D(실업)집계',
+            'E(지출목적물가) 분석': 'E(지출목적물가)집계',
+            'E(품목성질물가)분석': 'E(품목성질물가)집계',
             "F'분석": "F'(건설)집계",
             'G 분석': 'G(수출)집계',
             'H 분석': 'H(수입)집계',

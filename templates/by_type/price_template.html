@@ -220,15 +220,16 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 올라 모든 시도에서 전년동분기대비 <span class="increase">상승</span></div>
-            <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 올라 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% 상승</span></div>
+            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 모든 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
+            <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% {{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
             <div class="regional">○ 
+                {% set comp_terms = get_comparative_terms(report_info.report_id, nationwide_data.change) %}
                 {% for region in regional_data.low_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ low_items_text }} 등이 내려 전국보다 상승률이 낮았으나, 
+                {% endfor %} {{ low_items_text }} 등이 {{ get_terms(report_info.report_id, -1 if nationwide_data.change >= 0 else 1)[0] }} 전국보다 {{ comp_terms[0] }}, 
                 {% for region in regional_data.high_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ high_items_text }} 등이 올라 전국보다 <span class="increase">높음</span>
+                {% endfor %} {{ high_items_text }} 등이 {{ get_terms(report_info.report_id, 1 if nationwide_data.change >= 0 else -1)[0] }} 전국보다 <span class="increase">{{ comp_terms[1] }}</span>
             </div>
         </div>
         
@@ -311,8 +312,7 @@
                 </tbody>
             </table>
             
-            <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
+            <div class="footnote">{{ footer_info.contact | default('담당: [연락처]') }}</div>
         </div>
         
     </div>

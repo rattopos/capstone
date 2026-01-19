@@ -12,6 +12,7 @@ os.environ['PYTHONWARNINGS'] = 'ignore'
 
 from templates.unified_generator import UnifiedReportGenerator
 from config.reports import SECTOR_REPORTS
+from utils.text_utils import get_terms
 import openpyxl
 
 excel_path = "/Users/topos/Library/CloudStorage/GoogleDrive-ckdwo0605@gmail.com/내 드라이브/capstone/분석표_25년 3분기_캡스톤(업데이트).xlsx"
@@ -298,7 +299,7 @@ for sector_id in sectors:
             
             <div class="narrative">
                 <p><strong>📈 {year}년 {quarter}분기 {sector_name} 동향</strong></p>
-                <p>{sector_name}의 전국 지수는 <strong>{current_val if current_val != 'N/A' else '미제공'}</strong>으로 나타났으며, 전기 대비 <strong>{change_val if change_val != 'N/A' else '미제공'}%</strong> {'상승' if isinstance(change_val, (int, float)) and change_val >= 0 else '하락'}했습니다. 이는 국내 경제 상황의 변화를 반영하고 있습니다.</p>
+                <p>{sector_name}의 전국 지수는 <strong>{current_val if current_val != 'N/A' else '미제공'}</strong>으로 나타났으며, 전기 대비 <strong>{change_val if change_val != 'N/A' else '미제공'}%</strong> {get_terms(sector_id, change_val if isinstance(change_val, (int, float)) else 0)[1]}했습니다. 이는 국내 경제 상황의 변화를 반영하고 있습니다.</p>
                 <p>상위 업종/지표를 살펴보면 다양한 산업 분야에서 차별화된 변화가 나타나고 있습니다. 아래의 상세 표에서 각 업종별 지수와 증감률을 확인할 수 있으며, 이를 통해 구체적인 시장 동향을 파악할 수 있습니다.</p>
             </div>
             

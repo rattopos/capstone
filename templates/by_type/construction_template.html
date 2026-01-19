@@ -272,32 +272,32 @@
                 {% for region in top3_decrease_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
-                등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
+                등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">{{ get_terms(report_info.report_id, -1)[1] }}</span>
                 {% else %}
                 {% for region in top3_increase_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
-                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+                등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
                 {% endif %}
             </div>
             <div class="nationwide">□전국 건설수주({{ val(nationwide_data.construction_index_trillion, "%.1f", "조원") }})는 
                 {{ nationwide_data.sub_types_text if nationwide_data.sub_types_text else "철도·궤도, 기계설치" }} 등 
                 {% if nationwide_data.growth_rate is not none and nationwide_data.growth_rate >= 0 %}
-                <span class="highlight">{{ nationwide_data.main_category }}</span> 수주가 늘어 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% 증가</span>
+                <span class="highlight">{{ nationwide_data.main_category }}</span> 수주가 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span>
                 {% else %}
-                <span class="highlight">{{ nationwide_data.main_category if nationwide_data.main_category else "토목" }}</span> 수주가 줄어 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate|abs) }}% 감소</span>
+                <span class="highlight">{{ nationwide_data.main_category if nationwide_data.main_category else "토목" }}</span> 수주가 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate|abs) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span>
                 {% endif %}
             </div>
             <div class="regional">○
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ increase_sub_types_text if increase_sub_types_text else "주택, 항만·공항" }} 등의 수주가 늘어 <span class="increase">증가</span>하였으나, 
+                {% endfor %} {{ increase_sub_types_text if increase_sub_types_text else "주택, 항만·공항" }} 등의 수주가 {{ get_terms(report_info.report_id, 1)[0] }} <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>{{ get_terms(report_info.report_id, 1)[2] }}, 
                 {% endif %}
                 {% if regional_data.decrease_regions %}
                 {% for region in regional_data.decrease_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ decrease_sub_types_text if decrease_sub_types_text else "사무실·점포, 주택, 도로·교량" }} 등의 수주가 줄어 <span class="decrease">감소</span>
+                {% endfor %} {{ decrease_sub_types_text if decrease_sub_types_text else "사무실·점포, 주택, 도로·교량" }} 등의 수주가 {{ get_terms(report_info.report_id, -1)[0] }} <span class="decrease">{{ get_terms(report_info.report_id, -1)[1] }}</span>
                 {% endif %}
             </div>
         </div>
@@ -371,12 +371,12 @@
                         <th colspan="2" class="index-section" style="border: 1px solid black !important;">건설수주액(백억원)</th>
                     </tr>
                     <tr>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[0] }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[1] }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[2] }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[3] }}<sup>p</sup></th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[0] }}</th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[1] }}<sup>p</sup></th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[1] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -405,8 +405,7 @@
                 </tbody>
             </table>
             
-            <div class="footnote">자료: 국가데이터처</div>
-            <div class="footnote">{{ footer_info.contact if footer_info is defined and footer_info.contact else "담당: 경제동향통계심의관 지역경제동향과 [연락처]" }}</div>
+            <div class="footnote">{{ footer_info.source | default('자료: [출처]') }}</div>
         </div>
         
 </body>

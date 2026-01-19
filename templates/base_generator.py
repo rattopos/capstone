@@ -38,35 +38,28 @@ class BaseGenerator(ABC):
         self.xl = excel_file  # 캐시된 ExcelFile 객체 재사용
         self.df_cache = {}  # 시트별 DataFrame 캐시
         self._xl_owner = excel_file is not None  # 외부에서 전달된 경우 소유권 없음
+        self._calculated_excel_path = None
         
     def load_excel(self) -> pd.ExcelFile:
         """엑셀 파일 로드 (캐싱)"""
         if self.xl is None:
-            # 캐시에서 가져오기 시도
-            try:
-                import sys
-                from pathlib import Path
-                # 절대 import 시도
-                cache_module_path = Path(__file__).parent.parent / 'services' / 'excel_cache.py'
-                if cache_module_path.exists():
-                    import importlib.util
-                    spec = importlib.util.spec_from_file_location('excel_cache', str(cache_module_path))
-                    excel_cache = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(excel_cache)
-                    self.xl = excel_cache.get_excel_file(self.excel_path, use_data_only=True)
-                    if self.xl is None:
-                        # 캐시 실패 시 직접 로드
-                        self.xl = pd.ExcelFile(self.excel_path)
-                        self._xl_owner = True
-                else:
-                    # excel_cache 모듈이 없으면 직접 로드
-                    self.xl = pd.ExcelFile(self.excel_path)
-                    self._xl_owner = True
-            except (ImportError, Exception) as e:
-                # excel_cache 모듈이 없거나 오류 발생 시 직접 로드
-                self.xl = pd.ExcelFile(self.excel_path)
-                self._xl_owner = True
+            self.xl = pd.ExcelFile(self.excel_path)
+            self._xl_owner = True
         return self.xl
+
+    def _get_calculated_excel_path(self) -> str:
+        """수식 계산 로직으로 계산된 임시 파일 경로 반환 (캐시 사용 금지)."""
+        from services.excel_processor import preprocess_excel
+
+        calc_dir = Path(__file__).parent.parent / "exports" / "_calculated"
+        calc_dir.mkdir(parents=True, exist_ok=True)
+        output_path = calc_dir / f"{Path(self.excel_path).stem}_calculated.xlsx"
+        result_path, _, _ = preprocess_excel(
+            self.excel_path,
+            str(output_path),
+            force_calculation=True
+        )
+        return result_path
     
     def get_sheet(self, sheet_name: str, use_cache: bool = True) -> Optional[pd.DataFrame]:
         """
@@ -86,7 +79,11 @@ class BaseGenerator(ABC):
         if sheet_name not in xl.sheet_names:
             return None
         
-        df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        if '분석' in sheet_name:
+            calculated_path = self._get_calculated_excel_path()
+            df = pd.read_excel(calculated_path, sheet_name=sheet_name, header=None)
+        else:
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
         
         if use_cache:
             self.df_cache[sheet_name] = df

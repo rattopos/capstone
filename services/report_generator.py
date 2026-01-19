@@ -12,7 +12,7 @@ from jinja2 import Template
 
 from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
 from utils.filters import is_missing, format_value
-from utils.text_utils import get_josa
+from utils.text_utils import get_josa, get_terms, get_comparative_terms
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .excel_cache import get_excel_file, clear_excel_cache
@@ -104,7 +104,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
             data = schema.get('example', {})
             
             # 연도/분기 정보 추가
-            data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
+            data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': '', 'report_id': report_id}
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
@@ -118,6 +118,8 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
         template.environment.filters['format_value'] = format_value
         template.environment.filters['is_missing'] = is_missing
         template.environment.filters['josa'] = get_josa
+        data['get_terms'] = get_terms
+        data['get_comparative_terms'] = get_comparative_terms
         html_content = template.render(**data)
         
         return html_content, None, []
@@ -238,6 +240,8 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
         template.environment.filters['format_value'] = format_value
         template.environment.filters['is_missing'] = is_missing
         template.environment.filters['josa'] = get_josa
+        data['get_terms'] = get_terms
+        data['get_comparative_terms'] = get_comparative_terms
         html_content = template.render(**data)
         
         return html_content, None, []
@@ -648,6 +652,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             
             try:
                 template.environment.filters['josa'] = get_josa
+                data['get_terms'] = get_terms
+                data['get_comparative_terms'] = get_comparative_terms
             except Exception as e:
                 print(f"[WARNING] josa 필터 등록 실패: {e}")
             
