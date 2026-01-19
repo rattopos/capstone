@@ -12,11 +12,46 @@ os.environ['PYTHONWARNINGS'] = 'ignore'
 
 from templates.unified_generator import UnifiedReportGenerator
 from config.reports import SECTOR_REPORTS
+import openpyxl
 
 excel_path = "/Users/topos/Library/CloudStorage/GoogleDrive-ckdwo0605@gmail.com/내 드라이브/capstone/분석표_25년 3분기_캡스톤(업데이트).xlsx"
 year, quarter = 2025, 3
 output_dir = Path("/Users/topos/Library/CloudStorage/GoogleDrive-ckdwo0605@gmail.com/내 드라이브/capstone/exports/final_review")
 output_dir.mkdir(parents=True, exist_ok=True)
+
+def get_industry_name_mapping(sector_id: str) -> dict:
+    """엑셀에서 산업 코드와 산업명의 매핑 딕셔너리 생성"""
+    mapping = {}
+    config = next((s for s in SECTOR_REPORTS if s['id'] == sector_id), None)
+    
+    if not config or 'aggregation_structure' not in config:
+        return mapping
+    
+    agg_sheet_name = config['aggregation_structure'].get('sheet')
+    if not agg_sheet_name:
+        return mapping
+    
+    try:
+        wb = openpyxl.load_workbook(excel_path, data_only=True)
+        if agg_sheet_name not in wb.sheetnames:
+            return mapping
+        
+        sheet = wb[agg_sheet_name]
+        # 첫 5행을 헤더로 간주하고 시작
+        for row_idx in range(4, sheet.max_row + 1):
+            code_cell = sheet.cell(row_idx, 1)
+            name_cell = sheet.cell(row_idx, 8)  # 산업이름
+            
+            if code_cell.value and name_cell.value:
+                code = str(code_cell.value).strip()
+                name = str(name_cell.value).strip()
+                mapping[code] = name
+        
+        wb.close()
+    except Exception:
+        pass
+    
+    return mapping
 
 print("\n" + "="*70)
 print(" 📄 담당자 최종 검토용 HTML 생성 중...")
@@ -56,16 +91,35 @@ for sector_id in sectors:
             failed.append(f"{sector_name}: 전국 데이터 없음")
             continue
         
+        # 생성기에서 직접 업종 데이터 추출 (엑셀에서)
+        industries = gen._extract_industry_data('전국')
+        
+        # 산업 이름 매핑 적용 (코드 -> 이름)
+        code_to_name = get_industry_name_mapping(sector_id)
+        if code_to_name:
+            for ind in industries:
+                if 'name' in ind and ind['name'] in code_to_name:
+                    ind['name'] = code_to_name[ind['name']]
+        
+        # 통계 지수 제외 ("총지수" 등 제외하고 실제 업종만 선택)
+        filtered_industries = [
+            ind for ind in industries
+            if ind.get('name') and '총' not in ind.get('name', '') and '합' not in ind.get('name', '')
+        ]
+        
+        if filtered_industries:
+            # 변화도 기준으로 정렬
+            sorted_industries = sorted(
+                filtered_industries,
+                key=lambda x: abs(x.get('change_rate', 0) or 0),
+                reverse=True
+            )[:15]  # 상위 15개
+        else:
+            sorted_industries = []
+        
         # 기본 HTML 템플릿 생성
         industries_html = ""
-        # industry_data가 없으면 table_data에서 첫 번째 지역의 데이터 사용
-        industries = data.get('industry_data', [])
-        if not industries and table_data:
-            # table_data의 첫 번째 행(전국이 아닌 다른 지역)의 산업/지표 데이터 사용
-            # 또는 nationwide 데이터 자체를 사용
-            pass
-        
-        for idx, industry in enumerate(industries[:15], 1):  # 상위 15개
+        for idx, industry in enumerate(sorted_industries, 1):
             name = industry.get('name', 'N/A')
             value = industry.get('value', 'N/A')
             rate = industry.get('change_rate', 'N/A')

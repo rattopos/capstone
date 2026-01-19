@@ -91,6 +91,20 @@ import openpyxl
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 
+def _resolve_year_quarter(excel_path: str, year=None, quarter=None):
+    """연도/분기 해석 (하드코딩 없이 엑셀에서 추출)"""
+    if year is not None and quarter is not None:
+        return year, quarter, None
+    if excel_path and Path(excel_path).exists():
+        try:
+            y, q = extract_year_quarter_from_excel(excel_path)
+            if y is not None and q is not None:
+                return y, q, None
+        except Exception as e:
+            return None, None, f"연도/분기 추출 실패: {e}"
+    return None, None, "연도/분기 정보가 없습니다"
+
+
 def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
     """업로드 폴더 정리 (현재 세션 파일 제외)
     
@@ -317,10 +331,13 @@ def upload_excel():
             pass  # 파일 시간 확인 실패는 무시
 
         # 업로드 직후 미리보기 없이 자동 생성/내보내기
-        auto_year = year or session.get('year') or 2025
-        auto_quarter = quarter or session.get('quarter') or 2
-        auto_generate = _generate_all_reports_core(auto_year, auto_quarter, cleanup_after=False)
-        auto_export = _export_hwp_ready_core([], auto_year, auto_quarter, output_folder=EXPORT_FOLDER)
+        auto_year, auto_quarter, auto_err = _resolve_year_quarter(str(filepath), year, quarter)
+        if auto_year is not None and auto_quarter is not None:
+            auto_generate = _generate_all_reports_core(auto_year, auto_quarter, cleanup_after=False)
+            auto_export = _export_hwp_ready_core([], auto_year, auto_quarter, output_folder=EXPORT_FOLDER)
+        else:
+            auto_generate = {'success': False, 'error': auto_err or '연도/분기 정보 없음', 'generated': [], 'errors': []}
+            auto_export = {'success': False, 'error': auto_err or '연도/분기 정보 없음'}
         
         return jsonify({
             'success': True,
@@ -676,9 +693,21 @@ def generate_all_reports():
     data = request.get_json(silent=True)
     if data is None:
         data = {}
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
+    year = data.get('year', session.get('year'))
+    quarter = data.get('quarter', session.get('quarter'))
     cleanup_after = data.get('cleanup_after', True)
+
+    if year is None or quarter is None:
+        excel_path = session.get('excel_path')
+        year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+        if year is None or quarter is None:
+            return jsonify({
+                'success': False,
+                'error': resolve_err or '연도/분기 정보가 없습니다',
+                'generated': [],
+                'errors': [{'report_id': 'all', 'report_name': '전체', 'error': resolve_err or '연도/분기 정보가 없습니다'}],
+                'cleanup': cleanup_after
+            })
 
     result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after)
     return jsonify(result)
@@ -697,10 +726,11 @@ def generate_all_regional_reports():
     output_dir = TEMPLATES_DIR / 'regional_output'
     output_dir.mkdir(exist_ok=True)
     
+    gen_year, gen_quarter, resolve_err = _resolve_year_quarter(excel_path, session.get('year'), session.get('quarter'))
+    if gen_year is None or gen_quarter is None:
+        return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다'})
+
     for region_config in REGIONAL_REPORTS:
-        # year, quarter가 없으면 기본값 사용
-        gen_year = session.get('year', 2025)
-        gen_quarter = session.get('quarter', 2)
         html_content, error = generate_regional_report_html(excel_path, region_config['name'], is_reference=False, year=gen_year, quarter=gen_quarter)
         
         if error:
@@ -745,8 +775,13 @@ def export_final_document():
             return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
         
         pages = data.get('pages', [])
-        year = data.get('year', session.get('year', 2025))
-        quarter = data.get('quarter', session.get('quarter', 2))
+        year = data.get('year', session.get('year'))
+        quarter = data.get('quarter', session.get('quarter'))
+        if year is None or quarter is None:
+            excel_path = session.get('excel_path')
+            year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+            if year is None or quarter is None:
+                return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다.'}), 400
         standalone = data.get('standalone', False)  # 완전한 standalone HTML 여부
         
         if not pages:
@@ -1095,8 +1130,13 @@ def export_xlsx_document():
             return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
         
         pages = data.get('pages', [])
-        year = data.get('year', session.get('year', 2025))
-        quarter = data.get('quarter', session.get('quarter', 2))
+        year = data.get('year', session.get('year'))
+        quarter = data.get('quarter', session.get('quarter'))
+        if year is None or quarter is None:
+            excel_path = session.get('excel_path')
+            year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+            if year is None or quarter is None:
+                return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다.'}), 400
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})
@@ -1451,8 +1491,13 @@ def export_hwp_import():
             return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
         
         pages = data.get('pages', [])
-        year = data.get('year', session.get('year', 2025))
-        quarter = data.get('quarter', session.get('quarter', 2))
+        year = data.get('year', session.get('year'))
+        quarter = data.get('quarter', session.get('quarter'))
+        if year is None or quarter is None:
+            excel_path = session.get('excel_path')
+            year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+            if year is None or quarter is None:
+                return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다.'}), 400
         doc_format = data.get('format', 'hwp-xml')  # hwp-xml 형식
         
         if not pages:
@@ -1978,8 +2023,14 @@ def export_hwp_ready():
     if data is None:
         data = {}
     pages = data.get('pages', [])
-    year = data.get('year', session.get('year', 2025))
-    quarter = data.get('quarter', session.get('quarter', 2))
+    year = data.get('year', session.get('year'))
+    quarter = data.get('quarter', session.get('quarter'))
+
+    if year is None or quarter is None:
+        excel_path = session.get('excel_path')
+        year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+        if year is None or quarter is None:
+            return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다.'}), 400
 
     result = _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER)
     status = 200 if result.get('success') else 500
@@ -1997,8 +2048,13 @@ def save_html_to_project():
             return jsonify({'success': False, 'error': 'JSON 형식의 요청 데이터가 필요합니다.'}), 400
         
         pages = data.get('pages', [])
-        year = data.get('year', session.get('year', 2025))
-        quarter = data.get('quarter', session.get('quarter', 2))
+        year = data.get('year', session.get('year'))
+        quarter = data.get('quarter', session.get('quarter'))
+        if year is None or quarter is None:
+            excel_path = session.get('excel_path')
+            year, quarter, resolve_err = _resolve_year_quarter(excel_path, year, quarter)
+            if year is None or quarter is None:
+                return jsonify({'success': False, 'error': resolve_err or '연도/분기 정보가 없습니다.'}), 400
         
         if not pages:
             return jsonify({'success': False, 'error': '페이지 데이터가 없습니다.'})

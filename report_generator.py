@@ -111,8 +111,8 @@ class ReportGenerator:
             if hasattr(module, 'get_table_data'):
                 data['summary_table'] = {
                     'columns': {
-                        'change_columns': ['2023.2/4', '2024.2/4', '2025.1/4', '2025.2/4'],
-                        'rate_columns': ['2024.2/4', '2025.2/4', '20-29세']
+                        'change_columns': ['[기간]', '[기간]', '[기간]', '[기간]'],
+                        'rate_columns': ['[기간]', '[기간]', '[연령]']
                     },
                     'regions': module.get_table_data(df_analysis, df_index)
                 }

@@ -589,9 +589,9 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # report_info에 year나 quarter가 없으면 동적으로 추출 (하드코딩 제거)
         if 'year' not in data['report_info'] or data['report_info']['year'] is None:
-            data['report_info']['year'] = year if year is not None else (data.get('year') if isinstance(data.get('year'), int) else 2025)
+            data['report_info']['year'] = year if year is not None else (data.get('year') if isinstance(data.get('year'), int) else None)
         if 'quarter' not in data['report_info'] or data['report_info']['quarter'] is None:
-            data['report_info']['quarter'] = quarter if quarter is not None else (data.get('quarter') if isinstance(data.get('quarter'), int) else 2)
+            data['report_info']['quarter'] = quarter if quarter is not None else (data.get('quarter') if isinstance(data.get('quarter'), int) else None)
         
         # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         data['report_info']['page_number'] = ""
