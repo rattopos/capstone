@@ -274,15 +274,15 @@
                     <tr>
                         <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
                         <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 등락률(%)</th>
-                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">소비자물가지수({{ summary_table.base_year | default(2020) }}=100)</th>
+                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">소비자물가지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
                     </tr>
                     <tr>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[0] if summary_table.columns else "2023.2/4" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[1] if summary_table.columns else "2024.2/4" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[2] if summary_table.columns else "2025.1/4" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[3] if summary_table.columns else "2025.2/4" }}</th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[0] if summary_table.columns else "2024.2/4" }}</th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[1] if summary_table.columns else "2025.2/4" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[1] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[2] if summary_table.columns else "[기간]" }}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[3] if summary_table.columns else "[기간]" }}</th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[0] if summary_table.columns else "[기간]" }}</th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[1] if summary_table.columns else "[기간]" }}</th>
                     </tr>
                 </thead>
                 <tbody>

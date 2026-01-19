@@ -1907,8 +1907,8 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
             body_content = _add_table_inline_styles(body_content)
 
             final_html += f'''
-        <!-- 페이지 {idx}: {page_title} -->
-        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; page-break-after: always; width: 210mm; padding: 20mm 15mm;">
+            <!-- 페이지 {idx}: {page_title} -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
             <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 {body_content}
             </div>

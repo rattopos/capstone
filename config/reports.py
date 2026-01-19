@@ -201,8 +201,9 @@ SECTOR_REPORTS = [
             '전문소매점': '전문소매점',
             '무점포 소매': '무점포소매'
         },
-        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C(소비)집계'},
-        'metadata_columns': ['region', 'classification', 'code', 'name']
+        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C 분석'},
+        'metadata_columns': ['region', 'classification', 'code', 'name'],
+        'value_type': 'change_rate'  # 이미 계산된 증감률 직접 읽기
     },
     {
         'id': 'construction',
@@ -301,7 +302,7 @@ SECTOR_REPORTS = [
         'id': 'migration',
         'report_id': 'migration',
         'name': '국내인구이동',
-        'sheet': '국내인구이동',  # 실제 Excel 시트명
+        'sheet': 'I(순인구이동)집계',  # 실제 Excel 시트명
         'generator': 'unified_generator.py',
         'template': 'by_type/migration_template.html',
         'icon': '👥',
@@ -309,7 +310,7 @@ SECTOR_REPORTS = [
         'class_name': 'DomesticMigrationGenerator',
         'name_mapping': {},
         # 집계 시트의 합계 행은 연령별 컬럼에 '합계'로 표기됨
-        'aggregation_structure': {'total_code': '합계', 'sheet': '국내인구이동'},
+        'aggregation_structure': {'total_code': '합계', 'sheet': 'I(순인구이동)집계'},
         'metadata_columns': ['region', 'classification', 'code', 'name'],
         'require_industry_code': False,
         'has_nationwide': False  # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미없음

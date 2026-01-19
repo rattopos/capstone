@@ -916,9 +916,13 @@ class UnifiedReportGenerator(BaseGenerator):
             # 증감 계산 (report_type에 따라 다름)
             # 국내인구이동: 절대값 (부호 포함, 변화율 아님)
             # 고용률/실업률: 퍼센트포인트(p) 차이
+            # value_type='change_rate': 이미 계산된 증감률 직접 사용
             # 기타 지수: 증감률(%)
             if self.report_type == 'migration':
                 # 절대 순인구이동값 (부호 포함) - 변화율이 아님
+                change_rate = round(idx_current, 1)
+            elif self.config.get('value_type') == 'change_rate':
+                # 시트에 이미 증감률이 계산되어 있는 경우 (예: C 분석)
                 change_rate = round(idx_current, 1)
             elif idx_prev_year is not None and idx_prev_year != 0:
                 if self.report_type in ['employment', 'unemployment']:
