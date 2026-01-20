@@ -275,6 +275,34 @@ class UnifiedReportGenerator(BaseGenerator):
             raise ValueError('집계 시트명이 설정에 없습니다.')
         # 헤더 행을 보존하기 위해 header=None으로 읽어 병합 헤더 탐색과 데이터 시작 행 탐색을 일관되게 처리
         self.df_aggregation = pd.read_excel(self.excel_path, sheet_name=agg_sheet_name, header=None)
+        # 집계 범위가 설정되어 있으면 해당 범위만 사용
+        agg_range = self.config.get('aggregation_range')
+        if isinstance(agg_range, dict) and self.df_aggregation is not None:
+            from openpyxl.utils import column_index_from_string
+
+            def _col_to_index(col_value):
+                if col_value is None:
+                    return None
+                if isinstance(col_value, int):
+                    return col_value
+                if isinstance(col_value, str) and col_value.strip():
+                    return column_index_from_string(col_value.strip().upper()) - 1
+                return None
+
+            start_row = agg_range.get('start_row')
+            end_row = agg_range.get('end_row')
+            start_col = _col_to_index(agg_range.get('start_col'))
+            end_col = _col_to_index(agg_range.get('end_col'))
+
+            row_start = max((start_row - 1) if isinstance(start_row, int) else 0, 0)
+            row_end = end_row if isinstance(end_row, int) else len(self.df_aggregation)
+            col_start = start_col if isinstance(start_col, int) else 0
+            col_end = (end_col + 1) if isinstance(end_col, int) else len(self.df_aggregation.columns)
+
+            self.df_aggregation = self.df_aggregation.iloc[row_start:row_end, col_start:col_end].copy()
+            print(
+                f"[{self.config['name']}] ✅ 집계 범위 적용: rows {start_row}-{end_row}, cols {agg_range.get('start_col')}-{agg_range.get('end_col')}"
+            )
         self.target_col = None
         
         # target column 찾기 (요청한 연도/분기)
@@ -1199,6 +1227,28 @@ class UnifiedReportGenerator(BaseGenerator):
                     else:
                         quarterly_values.append(None)
 
+            # 단위 보정
+            scale_factor = 1.0
+            if self.report_type == 'construction':
+                # 10억원 단위 → 100억원 단위 (1/10)
+                scale_factor = 0.1
+            elif self.report_type == 'export':
+                # 백만달러 단위 → 억달러 단위 (요청: 100배)
+                scale_factor = 100.0
+            elif self.report_type == 'migration':
+                # 명 단위 → 천명 단위
+                scale_factor = 0.001
+
+            if scale_factor != 1.0:
+                idx_current = (idx_current * scale_factor) if idx_current is not None else None
+                idx_prev_year = (idx_prev_year * scale_factor) if idx_prev_year is not None else None
+                idx_prev_prev_year = (idx_prev_prev_year * scale_factor) if idx_prev_prev_year is not None else None
+                idx_prev_prev_prev_year = (idx_prev_prev_prev_year * scale_factor) if idx_prev_prev_prev_year is not None else None
+                quarterly_values = [
+                    (v * scale_factor) if v is not None else None
+                    for v in quarterly_values
+                ]
+
             if use_analysis_rates and rate_quarterly_values:
                 quarterly_growth_rates = rate_quarterly_values[:]
             elif self.report_type == 'migration':
@@ -1215,6 +1265,9 @@ class UnifiedReportGenerator(BaseGenerator):
             idx_prev_quarter = None
             if prev_q_col is not None and prev_q_col < len(row):
                 idx_prev_quarter = self.safe_float(row.iloc[prev_q_col], None)
+
+            if idx_prev_quarter is not None and scale_factor != 1.0:
+                idx_prev_quarter = idx_prev_quarter * scale_factor
 
             # 국내인구이동: 직전/전전/전전전 분기 값 추출 (없으면 None 유지)
             idx_prev_prev = idx_prev_prev_prev = None
@@ -2540,21 +2593,39 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
             섹션 데이터 (narrative + table)
         """
         try:
-            gen = self._get_generator(report_type)
-            gen.load_data()
-            
-            # 지역 데이터 추출
-            table_data = gen._extract_table_data_ssot()
+            from services.excel_cache import get_sector_data
+
+            cache_config = get_report_config(report_type)
+            cache_report_id = cache_config.get('report_id') or cache_config.get('id')
+
+            cached = get_sector_data(self.excel_path, self.year, self.quarter, cache_report_id)
+
+            table_data = None
+            industries = None
+            if cached:
+                cached_data = cached.get('data') if isinstance(cached, dict) else None
+                if isinstance(cached_data, dict):
+                    table_data = cached.get('table_data') or cached_data.get('table_data')
+                industries_by_region = cached.get('industries_by_region') if isinstance(cached, dict) else None
+                if isinstance(industries_by_region, dict):
+                    industries = industries_by_region.get(region_name)
+
+            if table_data is None:
+                gen = self._get_generator(report_type)
+                gen.load_data()
+                table_data = gen._extract_table_data_ssot()
+
             region_data = next(
-                (d for d in table_data if d.get('region_name') == region_name),
+                (d for d in (table_data or []) if d.get('region_name') == region_name),
                 None
             )
-            
+
             if not region_data:
                 return None
-            
-            # 업종별 데이터 추출 (TOP 3)
-            industries = gen._extract_industry_data(region_name)
+
+            if industries is None:
+                gen = self._get_generator(report_type)
+                industries = gen._extract_industry_data(region_name)
             increase_industries = [
                 ind for ind in (industries or [])
                 if ind and ind.get('change_rate', 0) > 0
@@ -2581,63 +2652,74 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
             return None
     
     def _generate_narrative(
-        self, 
-        region_name: str, 
+        self,
+        region_name: str,
         report_type: str,
         region_data: Dict,
         top_industries: List[Dict]
     ) -> List[str]:
         """나레이션 생성"""
         narratives = []
-        
+
         try:
             value = region_data.get('value')
-            prev_value = region_data.get('prev_value')
             change_rate = region_data.get('change_rate')
-            
+
             if value is None:
                 return narratives
-            
+
+            try:
+                from utils.text_utils import get_terms
+            except ImportError:
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(Path(__file__).parent.parent))
+                from utils.text_utils import get_terms
+
             # 보고서별 나레이션 템플릿
             template_map = {
-                'mining': '{region}의 광공업생산은 {products}이 {changes}',
-                'service': '{region}의 서비스업생산은 {products}이 {changes}',
-                'consumption': '{region}의 소비는 {products}이 {changes}',
-                'construction': '{region}의 건설은 {products}이 {changes}',
-                'export': '{region}의 수출은 {products}이 {changes}',
-                'import': '{region}의 수입은 {products}이 {changes}',
+                'mining': '{region}의 광공업생산은 {products_phrase}{changes}',
+                'service': '{region}의 서비스업생산은 {products_phrase}{changes}',
+                'consumption': '{region}의 소비는 {products_phrase}{changes}',
+                'construction': '{region}의 건설은 {products_phrase}{changes}',
+                'export': '{region}의 수출은 {products_phrase}{changes}',
+                'import': '{region}의 수입은 {products_phrase}{changes}',
                 'employment': '{region}의 고용률은 {changes}',
                 'unemployment': '{region}의 실업률은 {changes}',
-                'price': '{region}의 물가는 {products}이 {changes}',
+                'price': '{region}의 물가는 {products_phrase}{changes}',
                 'migration': '{region}의 순인구이동은 {changes}',
             }
-            
+
             template = template_map.get(report_type, '{region}는 {changes}')
-            
+
             # 제품/항목 텍스트 생성
             products_text = ''
             if top_industries:
-                product_names = [ind.get('name', '') for ind in top_industries[:2]]
+                product_names = [ind.get('name', '') for ind in top_industries[:2] if ind.get('name')]
                 products_text = ', '.join(product_names)
-            
-            # 증감 텍스트
-            if change_rate is not None and change_rate >= 0:
-                changes_text = f'전년동기대비 {abs(change_rate)}% 증가'
-            elif change_rate is not None:
-                changes_text = f'전년동기대비 {abs(change_rate)}% 감소'
-            else:
+
+            products_phrase = f"{products_text}이 " if products_text else ''
+
+            # 증감 텍스트 (어휘 매핑 준수)
+            if change_rate is None:
                 changes_text = '변화'
-            
+            else:
+                _, result_noun, _ = get_terms(report_type, change_rate)
+                if abs(change_rate) < 0.01:
+                    changes_text = '전년동기대비 보합'
+                else:
+                    changes_text = f'전년동기대비 {abs(change_rate):.1f}% {result_noun}'
+
             narrative_text = template.format(
                 region=region_name,
-                products=products_text,
+                products_phrase=products_phrase,
                 changes=changes_text
             )
             narratives.append(narrative_text)
-            
+
         except Exception as e:
             print(f"[지역경제동향] ⚠️ 나레이션 생성 실패: {e}")
-        
+
         return narratives
     
     def _get_table_periods(self, gen: UnifiedReportGenerator) -> List[str]:

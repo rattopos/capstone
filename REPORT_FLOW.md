@@ -31,6 +31,7 @@
   - 부문별 보고서(`SECTOR_REPORTS`)
   - 요약 보고서(`SUMMARY_REPORTS`)
   - 시도 목록/권역 매핑
+  - 전체 생성 순서: **부문별 → 시도별 → 요약**
 - **레거시 설정**: [config/report_configs.py](config/report_configs.py)
   - 구버전 설정(현재는 `reports.py`가 기준)
 

@@ -49,13 +49,11 @@ REGION_DISPLAY_MAPPING: dict[str, str] = {
 }
 
 REGION_GROUPS: dict[str, list[str]] = {
-    '수도권': ['서울', '경기', '인천'],
-    '충청권': ['대전', '세종', '충북', '충남'],
-    '호남권': ['광주', '전북', '전남'],
-    '동남권': ['부산', '울산', '경남'],
-    '대경권': ['대구', '경북'],
-    '강원권': ['강원'],
-    '제주권': ['제주'],
+    '경인': ['서울', '인천', '경기'],
+    '충청': ['대전', '세종', '충북', '충남'],
+    '호남': ['광주', '전북', '전남', '제주'],
+    '동북': ['대구', '경북', '강원'],
+    '동남': ['부산', '울산', '경남'],
 }
 
 VALID_REGIONS: list[str] = [r['name'] for r in REGIONAL_REPORTS]
@@ -285,6 +283,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'class_name': 'EmploymentRateGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '계', 'sheet': 'D(고용률)집계'},
+        'aggregation_range': {'start_row': 3, 'end_row': 111, 'start_col': 'A', 'end_col': 'V'},
         'metadata_columns': ['year', 'quarter', 'region'],
         'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
     },
@@ -300,6 +299,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'class_name': 'UnemploymentGenerator',
         'name_mapping': {},
         'aggregation_structure': {'total_code': '계', 'sheet': 'D(실업)집계'},
+        'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},
         'metadata_columns': ['year', 'quarter', 'region'],
         'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
     },
@@ -322,8 +322,8 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
     }
 ]
 
-# 전체 보도자료 순서 (요약 → 부문별)
-REPORT_ORDER = SUMMARY_REPORTS + SECTOR_REPORTS
+# 전체 보도자료 순서 (부문별 → 요약)
+REPORT_ORDER = SECTOR_REPORTS + SUMMARY_REPORTS
 
 # ===== 통계표 보도자료 목록 =====
 # 주의: 고객사 요청으로 통계표 섹션 전체(통계표, GRDP, 부록)를 생성하지 않기로 결정됨

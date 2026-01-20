@@ -196,8 +196,83 @@ class ExcelCache:
             }
 
 
+class SectorDataCache:
+    """부문별 처리 결과 캐싱 (Thread-safe, 메모리 전용)"""
+
+    def __init__(self):
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def _build_key(excel_path: str, year: Optional[int], quarter: Optional[int], report_id: str) -> str:
+        return f"{excel_path}:y={year}:q={quarter}:report={report_id}"
+
+    def get_sector_data(self, excel_path: str, year: Optional[int], quarter: Optional[int], report_id: str) -> Optional[Dict[str, Any]]:
+        if not report_id:
+            return None
+        cache_key = self._build_key(excel_path, year, quarter, report_id)
+
+        with self._lock:
+            cache_entry = self._cache.get(cache_key)
+            if not cache_entry:
+                return None
+
+            try:
+                file_mtime = Path(excel_path).stat().st_mtime
+            except OSError:
+                del self._cache[cache_key]
+                return None
+
+            if cache_entry.get('mtime') != file_mtime:
+                del self._cache[cache_key]
+                return None
+
+            return cache_entry.get('data')
+
+    def set_sector_data(
+        self,
+        excel_path: str,
+        year: Optional[int],
+        quarter: Optional[int],
+        report_id: str,
+        data: Dict[str, Any]
+    ) -> None:
+        if not report_id:
+            return
+        try:
+            file_mtime = Path(excel_path).stat().st_mtime
+        except OSError:
+            return
+
+        cache_key = self._build_key(excel_path, year, quarter, report_id)
+
+        with self._lock:
+            self._cache[cache_key] = {
+                'data': data,
+                'mtime': file_mtime,
+                'timestamp': datetime.now()
+            }
+
+    def clear_cache(self, excel_path: Optional[str] = None) -> None:
+        with self._lock:
+            if excel_path:
+                keys_to_remove = [k for k in self._cache.keys() if k.startswith(excel_path)]
+                for key in keys_to_remove:
+                    del self._cache[key]
+            else:
+                self._cache.clear()
+
+    def get_cache_info(self) -> Dict[str, Any]:
+        with self._lock:
+            return {
+                'cache_size': len(self._cache),
+                'cached_files': list(set(k.split(':')[0] for k in self._cache.keys()))
+            }
+
+
 # 전역 캐시 인스턴스
 _excel_cache = ExcelCache()
+_sector_data_cache = SectorDataCache()
 
 
 def get_excel_file(excel_path: str, use_data_only: bool = True) -> Optional[pd.ExcelFile]:
@@ -223,8 +298,29 @@ def set_cached_calculated_path(excel_path: str, calculated_path: str):
 def clear_excel_cache(excel_path: Optional[str] = None, preserve_calculated_path: bool = False):
     """전역 캐시 정리"""
     _excel_cache.clear_cache(excel_path, preserve_calculated_path)
+    _sector_data_cache.clear_cache(excel_path)
 
 
 def get_cache_info() -> Dict[str, Any]:
     """캐시 정보 반환"""
     return _excel_cache.get_cache_info()
+
+
+def get_sector_data(excel_path: str, year: Optional[int], quarter: Optional[int], report_id: str) -> Optional[Dict[str, Any]]:
+    """부문별 처리 결과 캐시 조회"""
+    return _sector_data_cache.get_sector_data(excel_path, year, quarter, report_id)
+
+
+def set_sector_data(excel_path: str, year: Optional[int], quarter: Optional[int], report_id: str, data: Dict[str, Any]) -> None:
+    """부문별 처리 결과 캐시 저장"""
+    _sector_data_cache.set_sector_data(excel_path, year, quarter, report_id, data)
+
+
+def clear_sector_cache(excel_path: Optional[str] = None) -> None:
+    """부문별 처리 결과 캐시 정리"""
+    _sector_data_cache.clear_cache(excel_path)
+
+
+def get_sector_cache_info() -> Dict[str, Any]:
+    """부문별 처리 결과 캐시 정보"""
+    return _sector_data_cache.get_cache_info()

@@ -24,8 +24,8 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
         }
@@ -48,7 +48,7 @@
         /* 숫자 제목 - 5. 물가 동향 */
         .section-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 17pt;
             font-weight: bold;
             margin-bottom: 12px;
         }
@@ -59,7 +59,7 @@
             padding: 8px 12px;
             margin-bottom: 12px;
             background-color: transparent;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .summary-box .headline {
@@ -97,7 +97,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 11pt;
+            font-size: 14pt;
         }
         
         .detail-box .item {
@@ -220,9 +220,9 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 모든 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
+            <div class="headline">󰋮 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 모든 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
             <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% {{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
-            <div class="regional">○ 
+            <div class="regional">◦ 
                 {% set comp_terms = get_comparative_terms(report_info.report_id, nationwide_data.change) %}
                 {% for region in regional_data.low_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.change) }}%){% if not loop.last %}, {% endif %}

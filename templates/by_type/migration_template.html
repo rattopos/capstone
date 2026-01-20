@@ -33,8 +33,8 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
         }
@@ -56,7 +56,7 @@
         
         .section-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 17pt;
             font-weight: bold;
             margin-bottom: 12px;
         }
@@ -66,7 +66,7 @@
             padding: 8px 12px;
             margin-bottom: 12px;
             background-color: transparent;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .summary-box .headline {
@@ -95,7 +95,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 11pt;
+            font-size: 14pt;
             font-weight: bold;
         }
         
@@ -200,11 +200,11 @@
         <!-- 요약 박스 -->
         <div class="summary-box">
             {% if nationwide_data %}
-            <div class="headline">◆ {{ nationwide_data.summary.headline | default("국내 인구이동 현황") }}</div>
+            <div class="headline">󰋮 {{ nationwide_data.summary.headline | default("국내 인구이동 현황") }}</div>
             <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("국내 인구 순유입지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
             <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
             {% else %}
-            <div class="headline">◆ 국내 인구이동 현황</div>
+            <div class="headline">󰋮 국내 인구이동 현황</div>
             <div class="item">□ 국내 인구이동 데이터는 시도별로 제공됩니다.</div>
             {% endif %}
         </div>

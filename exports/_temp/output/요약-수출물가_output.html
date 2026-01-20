@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요약 - 수출/물가</title>
+    <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: "Malgun Gothic", serif;
+            font-size: 14pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+        }
+
+        /* 그래프/차트 요소 제거 */
+        .chart-container,
+        .chart-wrapper,
+        .chart-area,
+        .graph-container,
+        .chart-canvas-wrapper,
+        .chart-title,
+        canvas,
+        svg {
+            display: none !important;
+        }
+        
+        .summary-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .section-header {
+            background: #4a4a4a;
+            color: #fff;
+            font-size: 15pt;
+            font-weight: 700;
+            padding: 8px 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .section-header::after {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #ffc107;
+            margin-top: 3px;
+        }
+        
+        .summary-box { margin-bottom: 25px; }
+        
+        .summary-main {
+            font-size: 14pt;
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .summary-main::before {
+            content: "□";
+            position: absolute;
+            left: 0;
+            font-size: 14pt;
+            color: #999;
+        }
+        
+        .summary-sub {
+            font-size: 14pt;
+            margin-left: 25px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .summary-sub::before {
+            content: "◦";
+            position: absolute;
+            left: 0;
+            color: #999;
+        }
+        
+        .highlight { font-weight: 700; }
+        .increase { font-weight: 700; color: #c62828; }
+        .decrease { font-weight: 700; color: #1565c0; }
+        
+        .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
+    </style>
+</head>
+<body>
+    <div class="summary-container">
+        <!-- 수출 섹션 -->
+        <div class="section-header">수출</div>
+        
+        <div class="summary-box">
+            <div class="summary-main">
+                2025년 3/4분기 <span class="highlight">전국 수출</span>(1849.7억달러)은 전년동분기대비 <span class="increase">6.5% 증가</span>
+            </div>
+            <div class="summary-sub">
+                
+                <span class="highlight">제주</span>(168.1%), 
+                
+                <span class="highlight">충북</span>(36.8%), 
+                
+                <span class="highlight">광주</span>(23.5%)
+                 등 13개 시도는 수출이 <span class="increase">증가</span>하였으나,
+                
+                <span class="highlight">경북</span>(-6.4%), 
+                
+                <span class="highlight">경남</span>(-5.5%), 
+                
+                <span class="highlight">서울</span>(-2.8%)
+                 등 4개 시도는 <span class="decrease">감소</span>
+            </div>
+        </div>
+        
+        <hr class="section-divider">
+        
+        <!-- 물가 섹션 -->
+        <div class="section-header">물가</div>
+        
+        <div class="summary-box">
+            <div class="summary-main">
+                2025년 3/4분기 <span class="highlight">전국 소비자물가</span>(117.3)는 전년동분기대비 <span class="increase">1.7% 상승</span>
+            </div>
+            <div class="summary-sub">
+                
+                <span class="highlight">부산</span>(2.0%), 
+                
+                <span class="highlight">세종</span>(1.9%), 
+                
+                <span class="highlight">대전</span>(1.9%)
+                 등 34개 시도가 전국 평균(1.7%) 이상 <span class="increase">상승</span>
+            </div>
+        </div>
+        
+    
+</body>
+</html>

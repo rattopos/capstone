@@ -3,1000 +3,645 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역경제동향 보도자료 생성 시스템 | 국가데이터처</title>
+    <title>지역경제동향 보도자료 생성 시스템</title>
     <style>
         :root {
-            /* Colors */
+            --bg: #0f172a;
+            --panel: #111827;
+            --card: #1f2937;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
             --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #8b5cf6;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --info: #3b82f6;
-            
-            /* Backgrounds */
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-            --bg-card: rgba(30, 41, 59, 0.5);
-            --bg-card-hover: rgba(51, 65, 85, 0.6);
-            
-            /* Text */
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            
-            /* Borders */
-            --border: rgba(148, 163, 184, 0.1);
-            --border-hover: rgba(148, 163, 184, 0.2);
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-            
-            /* Glassmorphism */
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --border: #2a3648;
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: '바탕', 'Batang', 'BatangChe', serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            background-attachment: fixed;
-            color: var(--text-primary);
+            font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+            background: linear-gradient(135deg, #0f172a, #111827);
+            color: var(--text);
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
-        /* Animated Background */
-        .bg-animated {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.4;
-        }
-
-        .bg-animated::before,
-        .bg-animated::after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            animation: float 20s infinite;
-        }
-
-        .bg-animated::before {
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-            top: 20%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .bg-animated::after {
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
-            bottom: 20%;
-            right: 10%;
-            animation-delay: 5s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -30px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-
-        /* Header */
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 1rem 2rem;
-        }
-
-        .header-content {
-            max-width: 1400px;
+        .container {
+            max-width: 1000px;
             margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 2rem;
+            gap: 16px;
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            margin-bottom: 24px;
         }
 
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .title h1 {
+            font-size: 1.4rem;
+            margin-bottom: 6px;
         }
 
-        .logo-icon {
-            width: 48px;
-            height: 48px;
-            display: block;
-            border-radius: 12px;
-            object-fit: contain;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
-            background: transparent;
+        .title p {
+            color: var(--muted);
+            font-size: 0.95rem;
         }
 
-        .logo-text h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.125rem;
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 18px;
         }
 
-        .logo-text p {
-            font-size: 0.875rem;
-            color: var(--text-muted);
+        .panel h2 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .panel p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 16px;
         }
 
-        .period-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            font-size: 0.875rem;
-        }
-
-        .period-badge i {
-            color: var(--primary-light);
-        }
-
-        .period-value {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        /* Main Container */
-        .main-container {
-            position: relative;
-            z-index: 1;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* Hero Section */
-        .hero-section {
-            text-align: center;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-        }
-
-        .hero-title {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.125rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Upload Section */
-        .upload-section {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 2px dashed var(--glass-border);
-            border-radius: 24px;
-            padding: 3rem;
-            margin-bottom: 2rem;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .upload-section:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .upload-section.drag-over {
-            border-color: var(--primary-light);
-            background: rgba(99, 102, 241, 0.1);
-            transform: scale(1.02);
-        }
-
-        .upload-content {
+        .upload-area {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
+            gap: 12px;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            background: #0b1220;
         }
 
-        .upload-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 20px;
+        .upload-actions {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .upload-text h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .upload-text p {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-
-        .upload-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 2rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
+        button {
             border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-        }
-
-        .upload-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
-        }
-
-        .upload-button:active {
-            transform: translateY(0);
-        }
-
-        #excelFileInput {
-            display: none;
-        }
-
-        /* File Info */
-        .file-info {
-            display: none;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .file-info.active {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .file-info-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .file-info-details {
-            flex: 1;
-        }
-
-        .file-info-details h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .file-info-details p {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        /* Action Cards */
-        .action-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .action-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 2rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .action-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
-        }
-
-        .action-card-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .action-card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .action-card-icon.primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        }
-
-        .action-card-icon.secondary {
-            background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
-        }
-
-        .action-card-icon.success {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-        }
-
-        .action-card-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .action-card-description {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-
-        .action-card-button {
-            width: 100%;
-            padding: 0.75rem 1.5rem;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
             border-radius: 10px;
-            font-size: 0.875rem;
+            padding: 10px 16px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            color: white;
+            background: var(--primary);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
         }
 
-        .action-card-button:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--border-hover);
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25);
         }
 
-        .action-card-button:disabled {
+        button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
-        /* Reports Grid */
-        .reports-section {
-            margin-bottom: 2rem;
+        button.secondary {
+            background: #334155;
         }
 
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .section-title i {
-            color: var(--primary-light);
-        }
-
-        .section-actions {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .section-button {
-            padding: 0.5rem 1rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .section-button:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-        }
-
-        .reports-grid {
+        .status-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
+            gap: 8px;
         }
 
-        /* Download Section */
-        .download-section {
-            margin-top: 1rem;
-        }
-
-        .download-card {
+        .status-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            backdrop-filter: blur(12px);
-        }
-
-        .download-card h4 {
-            margin-bottom: 0.25rem;
-        }
-
-        .download-actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .report-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .report-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .report-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .report-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .report-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .report-card-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--bg-secondary);
+            padding: 10px 12px;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.125rem;
-        }
-
-        .report-card-title {
-            flex: 1;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .report-card-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .report-card-status.generated {
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-        }
-
-        .report-card-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .report-card-button {
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--bg-secondary);
+            background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            font-size: 0.95rem;
         }
 
-        .report-card-button:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--border-hover);
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #0b1220;
+            color: var(--muted);
         }
 
-        .report-card-button.primary {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
+        .status-badge.active { color: var(--warning); border-color: rgba(245, 158, 11, 0.5); }
+        .status-badge.done { color: var(--success); border-color: rgba(16, 185, 129, 0.5); }
+        .status-badge.error { color: var(--danger); border-color: rgba(239, 68, 68, 0.5); }
+
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .report-card-button.primary:hover {
-            background: var(--primary-dark);
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            display: none;
+        .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 9999;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            display: none;
             align-items: center;
             justify-content: center;
+            z-index: 999;
         }
 
-        .loading-overlay.active {
+        .modal-overlay.active {
             display: flex;
         }
 
-        .loading-content {
-            text-align: center;
-            max-width: 400px;
+        .modal-card {
+            width: min(560px, 92vw);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px 24px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
         }
 
-        .loading-spinner {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 2rem;
-            border: 4px solid var(--glass-border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .modal-subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 16px;
         }
 
-        .loading-text {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .loading-subtext {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .loading-progress {
-            margin-top: 2rem;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            height: 8px;
+        .progress-track {
+            height: 10px;
+            background: #0b1220;
+            border-radius: 999px;
             overflow: hidden;
+            margin-bottom: 12px;
         }
 
-        .loading-progress-bar {
+        .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            width: 0;
+            background: linear-gradient(90deg, var(--primary), #8b5cf6);
             transition: width 0.3s ease;
-            border-radius: 12px;
         }
 
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 10000;
+        .progress-meta {
             display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 0.9rem;
         }
+
+        .progress-meta strong {
+            color: var(--text);
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .file-info.active { display: block; }
 
         .toast {
-            min-width: 300px;
-            padding: 1rem 1.5rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            box-shadow: var(--shadow-xl);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            animation: slideInRight 0.3s ease;
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .toast.success {
-            border-left: 4px solid var(--success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--danger);
-        }
-
-        .toast.warning {
-            border-left: 4px solid var(--warning);
-        }
-
-        .toast.info {
-            border-left: 4px solid var(--info);
-        }
-
-        .toast-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-        }
-
-        .toast.success .toast-icon {
-            background: var(--success);
-        }
-
-        .toast.error .toast-icon {
-            background: var(--danger);
-        }
-
-        .toast.warning .toast-icon {
-            background: var(--warning);
-        }
-
-        .toast.info .toast-icon {
-            background: var(--info);
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header {
-                padding: 1rem;
-            }
-
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .main-container {
-                padding: 1rem;
-            }
-
-            .hero-title {
-                font-size: 2rem;
-            }
-
-            .upload-section {
-                padding: 2rem;
-            }
-
-            .action-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .reports-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-tertiary);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-hover);
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
-    <div class="bg-animated"></div>
-
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo-section">
-                <img class="logo-icon" src="./logo.png" alt="로고">
-                <div class="logo-text">
-                    <h1>지역경제동향 보도자료 생성 시스템</h1>
-                    <p>Ministry of Data and Statistics</p>
-                </div>
+    <div class="container">
+        <header>
+            <div class="title">
+                <h1>지역경제동향 보도자료 생성 시스템</h1>
+                <p>엑셀 업로드 → 처리 → HTML 내보내기</p>
             </div>
-            <div class="header-actions">
-                <div class="period-badge">
-                    <span class="period-label">기준 분기:</span>
-                    <span class="period-value" id="periodDisplay">-</span>
-                </div>
-            </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Main Container -->
-    <main class="main-container">
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <h2 class="hero-title">보도자료 자동 생성</h2>
-            <p class="hero-subtitle">분석표 엑셀 파일을 업로드하면 자동으로 모든 보도자료를 생성합니다</p>
-        </section>
-
-        <!-- Upload Section -->
-        <section class="upload-section" id="uploadSection">
-            <div class="upload-content">
-                <div class="upload-text">
-                    <h3>분석표 업로드</h3>
-                    <p>엑셀 파일을 업로드하면 보도자료가 자동으로 생성되고 한글 복사용 HTML 파일이 다운로드됩니다</p>
+        <section class="panel">
+            <h2>1. 업로드</h2>
+            <p>엑셀 파일(.xlsx/.xls)을 업로드하세요.</p>
+            <div class="upload-area">
+                <div class="upload-actions">
+                    <button id="selectFileBtn">파일 선택</button>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" hidden>
                 </div>
-                <button class="upload-button" onclick="document.getElementById('excelFileInput').click()">
-                    파일 선택
-                </button>
-                <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+                <div class="file-info" id="fileInfo"></div>
             </div>
         </section>
 
-        <!-- File Info -->
-        <div class="file-info" id="fileInfo">
-            <div class="file-info-details">
-                <h4 id="fileName">파일명</h4>
-                <p id="fileDetails">파일 정보</p>
-            </div>
-        </div>
-
-        <!-- Download Section -->
-        <section class="download-section" id="downloadSection" style="display: none;">
-            <div class="download-card">
-                <div class="download-text">
-                    <h4>한글 복사용 HTML</h4>
-                    <p id="downloadDesc">파일이 생성되었습니다. 다운로드 버튼을 눌러주세요.</p>
+        <section class="panel">
+            <h2>2. 처리 프로세스</h2>
+            <div class="status-list">
+                <div class="status-item">
+                    <span>업로드</span>
+                    <span class="status-badge" id="statusUpload">대기</span>
                 </div>
-                <div class="download-actions">
-                    <button class="section-button" id="downloadHtmlButton">다운로드</button>
-                    <a class="section-button" id="downloadHtmlLink" href="#" target="_blank" rel="noopener" style="text-decoration: none;">새 창 열기</a>
+                <div class="status-item">
+                    <span>보도자료 생성</span>
+                    <span class="status-badge" id="statusGenerate">대기</span>
+                </div>
+                <div class="status-item">
+                    <span>완료</span>
+                    <span class="status-badge" id="statusDone">대기</span>
                 </div>
             </div>
+            <div class="toast" id="statusMessage">파일을 업로드하면 처리됩니다.</div>
         </section>
 
-
-        <!-- Reports Section -->
-        <section class="reports-section" id="reportsSection" style="display: none;">
-            <div class="section-header">
-                <h2 class="section-title">
-                    생성된 보도자료
-                </h2>
-                <div class="section-actions">
-                    <button class="section-button" onclick="refreshReports()">
-                        새로고침
-                    </button>
-                </div>
-            </div>
-            <div class="reports-grid" id="reportsGrid">
-                <!-- Reports will be dynamically added here -->
+        <section class="panel">
+            <h2>3. 내보내기</h2>
+            <p>처리 완료 후 HTML 보고서 내보내기가 가능합니다.</p>
+            <div class="actions-row">
+                <button id="exportBtn" disabled>내보내기</button>
             </div>
         </section>
-    </main>
+    </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <div class="loading-text" id="loadingText">처리 중...</div>
-            <div class="loading-subtext" id="loadingSubtext">잠시만 기다려주세요</div>
-            <div class="loading-progress">
-                <div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div>
+    <div class="modal-overlay" id="progressOverlay" aria-live="polite">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">처리 중...</div>
+            <div class="modal-subtitle" id="modalSubtitle">업로드 준비 중</div>
+            <div class="progress-track">
+                <div class="progress-bar" id="modalProgressBar"></div>
+            </div>
+            <div class="progress-meta">
+                <div>진행률: <strong id="modalProgressPercent">0%</strong></div>
+                <div>경과: <strong id="modalElapsed">0초</strong></div>
+                <div>남은 시간: <strong id="modalRemaining">알 수 없음</strong></div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
     <script>
-        // Global state
-        let uploadedFile = null;
-        let generatedReports = [];
-        let lastDownloadInfo = {
-            html: null,
-            filename: null,
-            downloadUrl: null
+        const excelFileInput = document.getElementById('excelFileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const statusUpload = document.getElementById('statusUpload');
+        const statusGenerate = document.getElementById('statusGenerate');
+        const statusDone = document.getElementById('statusDone');
+        const statusMessage = document.getElementById('statusMessage');
+        const progressOverlay = document.getElementById('progressOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSubtitle = document.getElementById('modalSubtitle');
+        const modalProgressBar = document.getElementById('modalProgressBar');
+        const modalProgressPercent = document.getElementById('modalProgressPercent');
+        const modalElapsed = document.getElementById('modalElapsed');
+        const modalRemaining = document.getElementById('modalRemaining');
+
+        let exportReady = false;
+        let exportPayload = null;
+        let uploadedYear = null;
+        let uploadedQuarter = null;
+        const RUN_METRICS_KEY = 'dashboard_last_run_metrics_v1';
+        let etaTimer = null;
+        let stageStartAt = null;
+        let currentStage = null;
+        let baseStatusMessage = '파일을 업로드하면 처리됩니다.';
+        let runStartAt = null;
+        let detailTicker = null;
+        let currentDetailIndex = 0;
+
+        const stageDetails = {
+            upload: [
+                '엑셀 파일 업로드 처리 중',
+                '파일 무결성 점검 중',
+                '업로드 파일 분석 준비 중'
+            ],
+            generate: [
+                '시트 구조 점검 중',
+                '핵심 지표 추출 중',
+                '지역별 데이터 집계 중',
+                '보도자료 템플릿 렌더링 중',
+                'HTML 보고서 구성 중'
+            ]
         };
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupDragAndDrop();
-            checkExistingFile();
-        });
+        selectFileBtn.addEventListener('click', () => excelFileInput.click());
+        excelFileInput.addEventListener('change', handleFileUpload);
+        exportBtn.addEventListener('click', handleExport);
 
-        function setDownloadSectionVisible(isVisible) {
-            const section = document.getElementById('downloadSection');
-            if (section) {
-                section.style.display = isVisible ? 'block' : 'none';
+        function setStatus(el, state, text) {
+            el.classList.remove('active', 'done', 'error');
+            if (state) el.classList.add(state);
+            el.textContent = text;
+        }
+
+        function resetStatus() {
+            setStatus(statusUpload, null, '대기');
+            setStatus(statusGenerate, null, '대기');
+            setStatus(statusDone, null, '대기');
+            stopEtaTicker();
+            stopDetailTicker();
+            hideProgressOverlay();
+            baseStatusMessage = '파일을 업로드하면 처리됩니다.';
+            renderStatusMessage();
+            exportBtn.disabled = true;
+            exportReady = false;
+            exportPayload = null;
+        }
+
+        function formatDuration(ms) {
+            if (!ms || ms < 0) return '알 수 없음';
+            const totalSeconds = Math.ceil(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            if (minutes <= 0) return `${seconds}초`;
+            return `${minutes}분 ${seconds}초`;
+        }
+
+        function readLastMetrics() {
+            try {
+                const raw = localStorage.getItem(RUN_METRICS_KEY);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) {
+                return null;
             }
         }
 
-        function prepareDownload(result) {
-            lastDownloadInfo = {
-                html: result.html || null,
-                filename: result.filename || '지역경제동향_보도자료.html',
-                downloadUrl: result.download_url || result.view_url || null
-            };
-
-            const link = document.getElementById('downloadHtmlLink');
-            if (link) {
-                if (lastDownloadInfo.downloadUrl) {
-                    link.href = lastDownloadInfo.downloadUrl;
-                    link.style.display = 'inline-flex';
-                } else {
-                    link.href = '#';
-                    link.style.display = 'none';
-                }
+        function writeLastMetrics(metrics) {
+            try {
+                localStorage.setItem(RUN_METRICS_KEY, JSON.stringify(metrics));
+            } catch (e) {
+                // ignore
             }
-
-            const button = document.getElementById('downloadHtmlButton');
-            if (button) {
-                button.onclick = () => triggerDownload();
-            }
-
-            setDownloadSectionVisible(true);
         }
 
-        async function triggerDownload() {
-            if (lastDownloadInfo.html) {
-                const blob = new Blob([lastDownloadInfo.html], { type: 'text/html;charset=utf-8' });
+        function startStage(stageName) {
+            currentStage = stageName;
+            stageStartAt = performance.now();
+            startEtaTicker();
+        }
 
-                // 브라우저가 지원하면 저장 위치 선택창 표시
-                if (window.showSaveFilePicker) {
-                    try {
-                        const handle = await window.showSaveFilePicker({
-                            suggestedName: lastDownloadInfo.filename || '지역경제동향_보도자료.html',
-                            types: [{
-                                description: 'HTML 문서',
-                                accept: { 'text/html': ['.html'] }
-                            }]
-                        });
-                        const writable = await handle.createWritable();
-                        await writable.write(blob);
-                        await writable.close();
-                        return;
-                    } catch (e) {
-                        // 사용자가 취소하거나 오류가 나면 기본 다운로드로 fallback
+        function endStage(stageName, elapsedMs) {
+            const metrics = readLastMetrics() || {};
+            metrics[stageName] = elapsedMs;
+            metrics.updatedAt = Date.now();
+            writeLastMetrics(metrics);
+        }
+
+        function getRemainingMsEstimate() {
+            const metrics = readLastMetrics();
+            if (!metrics) return null;
+
+            const stageOrder = ['upload', 'generate'];
+            let remaining = 0;
+            let reachedCurrent = false;
+
+            stageOrder.forEach(stage => {
+                if (stage === currentStage) {
+                    reachedCurrent = true;
+                    const knownStageMs = metrics[stage];
+                    if (knownStageMs && stageStartAt) {
+                        const elapsed = performance.now() - stageStartAt;
+                        remaining += Math.max(knownStageMs - elapsed, 0);
                     }
+                } else if (reachedCurrent) {
+                    if (metrics[stage]) remaining += metrics[stage];
+                }
+            });
+
+            return remaining || null;
+        }
+
+        function renderStatusMessage() {
+            const etaMs = getRemainingMsEstimate();
+            const etaText = etaMs ? ` (남은 시간 약 ${formatDuration(etaMs)})` : '';
+            statusMessage.textContent = `${baseStatusMessage}${etaText}`;
+        }
+
+        function setStatusMessage(message) {
+            baseStatusMessage = message;
+            renderStatusMessage();
+        }
+
+        function startEtaTicker() {
+            stopEtaTicker();
+            etaTimer = setInterval(() => {
+                if (currentStage) {
+                    setStatusMessage(getStageLabel(currentStage));
+                } else {
+                    renderStatusMessage();
+                }
+                updateProgressOverlay();
+            }, 1000);
+        }
+
+        function stopEtaTicker() {
+            if (etaTimer) {
+                clearInterval(etaTimer);
+                etaTimer = null;
+            }
+        }
+
+        function startDetailTicker(stage) {
+            stopDetailTicker();
+            currentDetailIndex = 0;
+            detailTicker = setInterval(() => {
+                const details = stageDetails[stage] || [];
+                if (!details.length) return;
+                currentDetailIndex = (currentDetailIndex + 1) % details.length;
+                updateProgressOverlay();
+            }, 1800);
+        }
+
+        function stopDetailTicker() {
+            if (detailTicker) {
+                clearInterval(detailTicker);
+                detailTicker = null;
+            }
+        }
+
+        function getStageLabel(stage) {
+            const labels = {
+                upload: '업로드 및 준비 중',
+                generate: '보도자료 생성 중'
+            };
+            return labels[stage] || baseStatusMessage;
+        }
+
+        function showProgressOverlay() {
+            progressOverlay.classList.add('active');
+        }
+
+        function hideProgressOverlay() {
+            progressOverlay.classList.remove('active');
+        }
+
+        function updateProgressOverlay() {
+            if (!currentStage || runStartAt === null) return;
+            const elapsedMs = performance.now() - runStartAt;
+            const remainingMs = getRemainingMsEstimate();
+            const totalEstimate = remainingMs ? elapsedMs + remainingMs : null;
+            const percent = totalEstimate ? Math.min(Math.round((elapsedMs / totalEstimate) * 100), 99) : 15;
+
+            const details = stageDetails[currentStage] || [];
+            const detailText = details.length ? details[currentDetailIndex] : getStageLabel(currentStage);
+
+            modalTitle.textContent = getStageLabel(currentStage);
+            modalSubtitle.textContent = detailText;
+            modalProgressBar.style.width = `${percent}%`;
+            modalProgressPercent.textContent = `${percent}%`;
+            modalElapsed.textContent = formatDuration(elapsedMs);
+            modalRemaining.textContent = remainingMs ? formatDuration(remainingMs) : '알 수 없음';
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            resetStatus();
+            fileInfo.textContent = `선택됨: ${file.name}`;
+            fileInfo.classList.add('active');
+
+            setStatus(statusUpload, 'active', '진행 중');
+            setStatusMessage('업로드 중...');
+            runStartAt = performance.now();
+            startStage('upload');
+            startDetailTicker('upload');
+            showProgressOverlay();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const uploadStart = performance.now();
+                const uploadResponse = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadElapsed = performance.now() - uploadStart;
+                endStage('upload', uploadElapsed);
+                const uploadResult = await safeJson(uploadResponse);
+                if (!uploadResponse.ok || !uploadResult.success) {
+                    setStatus(statusUpload, 'error', '실패');
+                    setStatusMessage(uploadResult.error || '업로드 실패');
+                    stopDetailTicker();
+                    currentStage = null;
+                    stopEtaTicker();
+                    hideProgressOverlay();
+                    return;
                 }
 
+                setStatus(statusUpload, 'done', '완료');
+                setStatus(statusGenerate, 'active', '진행 중');
+                setStatusMessage('보도자료 생성 중...');
+                startStage('generate');
+                startDetailTicker('generate');
+
+                const generateStart = performance.now();
+                uploadedYear = uploadResult.year ?? null;
+                uploadedQuarter = uploadResult.quarter ?? null;
+
+                const generateResponse = await fetch('/api/generate-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: uploadedYear,
+                        quarter: uploadedQuarter,
+                        cleanup_after: false
+                    })
+                });
+                const generateElapsed = performance.now() - generateStart;
+                endStage('generate', generateElapsed);
+                const generateResult = await safeJson(generateResponse);
+                if (!generateResponse.ok || !generateResult.success) {
+                    setStatus(statusGenerate, 'error', '실패');
+                    setStatusMessage(generateResult.error || '보도자료 생성 실패');
+                    stopDetailTicker();
+                    currentStage = null;
+                    stopEtaTicker();
+                    hideProgressOverlay();
+                    return;
+                }
+
+                setStatus(statusGenerate, 'done', '완료');
+                setStatus(statusDone, 'done', '완료');
+                currentStage = null;
+                stopEtaTicker();
+                stopDetailTicker();
+                hideProgressOverlay();
+                setStatusMessage('처리 완료. 내보내기 버튼을 눌러주세요.');
+                exportBtn.disabled = false;
+                exportReady = true;
+            } catch (error) {
+                setStatus(statusUpload, 'error', '실패');
+                setStatus(statusGenerate, 'error', '실패');
+                currentStage = null;
+                stopEtaTicker();
+                stopDetailTicker();
+                hideProgressOverlay();
+                setStatusMessage('처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function handleExport() {
+            if (!exportReady) return;
+            exportBtn.disabled = true;
+            setStatusMessage('HTML 내보내기 준비 중...');
+
+            try {
+                const response = await fetch('/api/export-hwp-ready', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: uploadedYear,
+                        quarter: uploadedQuarter
+                    })
+                });
+                const result = await safeJson(response);
+
+                if (!response.ok || !result.success) {
+                    setStatusMessage(result.error || '내보내기 실패');
+                    exportBtn.disabled = false;
+                    return;
+                }
+
+                exportPayload = result;
+                triggerDownload(result);
+                setStatusMessage('내보내기 완료');
+            } catch (error) {
+                setStatusMessage('내보내기 중 오류가 발생했습니다.');
+                exportBtn.disabled = false;
+            }
+        }
+
+        function triggerDownload(result) {
+            if (result.html) {
+                const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = lastDownloadInfo.filename || '지역경제동향_보도자료.html';
+                link.download = result.filename || '지역경제동향_보도자료.html';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -1004,411 +649,18 @@
                 return;
             }
 
-            if (lastDownloadInfo.downloadUrl) {
-                window.location.href = lastDownloadInfo.downloadUrl;
+            const downloadUrl = result.download_url || result.view_url;
+            if (downloadUrl) {
+                window.location.href = downloadUrl;
             }
         }
 
-        // Setup drag and drop
-        function setupDragAndDrop() {
-            const uploadSection = document.getElementById('uploadSection');
-            
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadSection.addEventListener(eventName, preventDefaults, false);
-            });
-
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                uploadSection.addEventListener(eventName, () => {
-                    uploadSection.classList.add('drag-over');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                uploadSection.addEventListener(eventName, () => {
-                    uploadSection.classList.remove('drag-over');
-                }, false);
-            });
-
-            uploadSection.addEventListener('drop', handleDrop, false);
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                    document.getElementById('excelFileInput').files = files;
-                    handleFileUpload({ target: { files: files } });
-                } else {
-                    showToast('엑셀 파일만 업로드 가능합니다', 'error');
-                }
-            }
-        }
-
-        // Handle file upload
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            showLoading('파일 업로드 중...', '파일을 서버에 업로드하고 있습니다');
-            setLoadingProgress(10);
-
-            const formData = new FormData();
-            formData.append('file', file);
-
+        async function safeJson(response) {
             try {
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                setLoadingProgress(50);
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    uploadedFile = file;
-                    
-                    // Update file info
-                    document.getElementById('fileName').textContent = file.name;
-                    document.getElementById('fileDetails').textContent = `크기: ${formatFileSize(file.size)} | 업로드: ${new Date().toLocaleString()}`;
-                    document.getElementById('fileInfo').classList.add('active');
-                    
-                    // Update period
-                    if (result.year && result.quarter) {
-                        document.getElementById('periodDisplay').textContent = `${result.year}년 ${result.quarter}분기`;
-                    }
-                    
-                    setLoadingProgress(60);
-                    
-                    // 자동으로 전체 생성 시작
-                    showLoading('보도자료 생성 중...', '모든 보도자료를 자동으로 생성하고 있습니다');
-                    await generateAllReportsAuto();
-                    
-                } else {
-                    hideLoading();
-                    showToast(result.error || '파일 업로드 실패', 'error');
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                hideLoading();
-                showToast('파일 업로드 중 오류 발생', 'error');
+                return await response.json();
+            } catch (e) {
+                return { success: false, error: '응답 처리 실패' };
             }
-        }
-
-        // Check for existing uploaded file
-        async function checkExistingFile() {
-            try {
-                const response = await fetch('/api/session-info');
-                if (!response.ok) {
-                    // 세션 정보가 없으면 조용히 무시 (정상적인 상황)
-                    return;
-                }
-                const result = await response.json();
-                
-                // has_file로 파일 존재 여부 확인
-                if (result.has_file && result.excel_path) {
-                    // 파일 정보 표시
-                    const fileName = result.excel_path.split('/').pop() || '분석표 (업로드됨)';
-                    document.getElementById('fileName').textContent = fileName;
-                    
-                    if (result.year && result.quarter) {
-                        document.getElementById('fileDetails').textContent = `${result.year}년 ${result.quarter}분기`;
-                        document.getElementById('periodDisplay').textContent = `${result.year}년 ${result.quarter}분기`;
-                    }
-                    
-                    document.getElementById('fileInfo').classList.add('active');
-                }
-            } catch (error) {
-                // JSON 파싱 오류 등은 조용히 무시 (정상적인 상황일 수 있음)
-                // console.warn('세션 정보 확인 중 오류 (무시됨):', error);
-            }
-        }
-
-        // Generate all reports (자동 실행 버전 - 업로드 후 자동)
-        async function generateAllReportsAuto() {
-            try {
-                const response = await fetch('/api/generate-all', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-
-                setLoadingProgress(75);
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 보도자료 생성 완료 후 자동으로 한글 내보내기
-                    showLoading('한글 내보내기 중...', '한글 복사용 HTML 파일을 생성하고 있습니다');
-                    setLoadingProgress(85);
-                    
-                    await exportToHwpAuto();
-                } else {
-                    // 오류가 있어도 다운로드는 가능해야 하므로 계속 진행
-                    let errorMessage = '보도자료 생성 중 일부 오류가 발생했습니다';
-                    if (result.errors && result.errors.length > 0) {
-                        console.error('보도자료 생성 에러 상세:', result.errors);
-                        const failedReports = result.errors.map(e => e.report_name || e.report_id || '알 수 없음').join(', ');
-                        errorMessage = `보도자료 일부 실패 (${result.errors.length}개): ${failedReports}`;
-                    } else if (result.error) {
-                        errorMessage = `보도자료 생성 경고: ${result.error}`;
-                    }
-                    showToast(errorMessage, 'warning');
-
-                    showLoading('한글 내보내기 중...', '오류가 있어도 다운로드용 HTML을 생성합니다');
-                    setLoadingProgress(85);
-                    await exportToHwpAuto();
-                }
-            } catch (error) {
-                console.error('Generation error:', error);
-                hideLoading();
-                showToast('보도자료 생성 중 오류 발생', 'error');
-            }
-        }
-
-        // Generate all reports (수동 호출용)
-        async function generateAllReports() {
-            showLoading('보도자료 생성 중...', '모든 보도자료를 생성하고 있습니다');
-            setLoadingProgress(0);
-
-            try {
-                const response = await fetch('/api/generate-all', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-
-                setLoadingProgress(50);
-
-                const result = await response.json();
-                
-                setLoadingProgress(100);
-
-                setTimeout(() => {
-                    hideLoading();
-                    
-                    if (result.success) {
-                        showToast(`${result.generated.length}개 보도자료 생성 완료!`, 'success');
-                        displayReports(result.generated);
-                    } else {
-                        // 일부 성공한 경우와 전체 실패한 경우 구분
-                        if (result.generated && result.generated.length > 0) {
-                            const errorCount = result.errors ? result.errors.length : 0;
-                            showToast(`${result.generated.length}개 생성 완료, ${errorCount}개 실패`, 'warning');
-                            displayReports(result.generated);
-                            
-                            // 에러 상세 표시
-                            if (result.errors && result.errors.length > 0) {
-                                console.error('보도자료 생성 에러 상세:', result.errors);
-                                const errorList = result.errors.map(e => {
-                                    const reportName = e.report_name || e.report_id || '알 수 없음';
-                                    const errorMsg = e.error || '알 수 없는 오류';
-                                    return `${reportName}: ${errorMsg.substring(0, 50)}`;
-                                }).join('\n');
-                                console.warn('실패한 보도자료:\n' + errorList);
-                            }
-                    } else {
-                        // 전체 실패
-                        let errorMessage = '모든 보도자료 생성 실패';
-                        if (result.errors && result.errors.length > 0) {
-                            // 에러 상세 정보 출력
-                            console.error('보도자료 생성 에러 상세:', result.errors);
-                            
-                            // 실패한 보도자료 목록 생성
-                            const errorReports = result.errors.map(e => {
-                                const reportName = e.report_name || e.report_id || '알 수 없음';
-                                const errorMsg = e.error || '알 수 없는 오류';
-                                return `${reportName}: ${errorMsg.substring(0, 100)}${errorMsg.length > 100 ? '...' : ''}`;
-                            });
-                            
-                            const failedReports = result.errors.map(e => e.report_name || e.report_id || '알 수 없음').join(', ');
-                            errorMessage = `보도자료 생성 실패: ${failedReports}`;
-                            
-                            // 전체 에러 목록은 콘솔에 출력
-                            console.error('실패한 보도자료 상세:', errorReports);
-                        } else if (result.error) {
-                            errorMessage = `보도자료 생성 실패: ${result.error}`;
-                        }
-                        showToast(errorMessage, 'error');
-                    }
-                    }
-                }, 300);
-            } catch (error) {
-                console.error('Generation error:', error);
-                hideLoading();
-                showToast('보도자료 생성 중 오류 발생', 'error');
-            }
-        }
-
-        // Display reports
-        function displayReports(reports) {
-            const grid = document.getElementById('reportsGrid');
-            grid.innerHTML = '';
-
-            const section = document.getElementById('reportsSection');
-            if (section) {
-                section.style.display = 'block';
-            }
-
-            reports.forEach(report => {
-                const card = document.createElement('div');
-                card.className = 'report-card';
-                card.innerHTML = `
-                    <div class="report-card-header">
-                        <div class="report-card-icon">
-                            보도자료
-                        </div>
-                        <div class="report-card-title">${report.name}</div>
-                        <div class="report-card-status generated"></div>
-                    </div>
-                    <div class="report-card-actions">
-                        <button class="report-card-button" onclick="downloadReport('${report.report_id}')">
-                            다운로드
-                        </button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // Download report
-        function downloadReport(reportId) {
-            window.location.href = `/download/${reportId}`;
-        }
-
-        // Export to HWP (자동 실행 버전)
-        async function exportToHwpAuto() {
-            try {
-                const response = await fetch('/api/export-hwp-ready', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-
-                const result = await response.json();
-                
-                setLoadingProgress(100);
-                
-                setTimeout(() => {
-                    hideLoading();
-                    
-                    if (result.success) {
-                        prepareDownload(result);
-                        triggerDownload();
-                        showToast('✅ 완료! 다운로드가 시작되지 않으면 아래 버튼을 눌러주세요', 'success');
-                    } else {
-                        showToast(result.error || 'HTML 생성 실패', 'error');
-                    }
-                }, 500);
-            } catch (error) {
-                console.error('Export error:', error);
-                hideLoading();
-                showToast('HTML 생성 중 오류 발생', 'error');
-            }
-        }
-
-        // Export to HWP (수동 호출용)
-        async function exportToHwp() {
-            showLoading('HTML 생성 중...', '한글 복사용 HTML 파일을 생성하고 있습니다');
-            
-            try {
-                const response = await fetch('/api/export-hwp-ready', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-
-                const result = await response.json();
-                
-                hideLoading();
-                
-                if (result.success) {
-                    prepareDownload(result);
-                    triggerDownload();
-                    showToast('✅ 완료! 다운로드가 시작되지 않으면 아래 버튼을 눌러주세요', 'success');
-                } else {
-                    showToast(result.error || 'HTML 생성 실패', 'error');
-                }
-            } catch (error) {
-                console.error('Export error:', error);
-                hideLoading();
-                showToast('HTML 생성 중 오류 발생', 'error');
-            }
-        }
-
-        // Refresh reports
-        function refreshReports() {
-            checkExistingFile();
-            showToast('보고서 목록 새로고침', 'info');
-        }
-
-        // Loading functions
-        function showLoading(text, subtext) {
-            document.getElementById('loadingText').textContent = text;
-            document.getElementById('loadingSubtext').textContent = subtext;
-            document.getElementById('loadingOverlay').classList.add('active');
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('active');
-        }
-
-        function setLoadingProgress(percent) {
-            document.getElementById('loadingProgressBar').style.width = percent + '%';
-        }
-
-        // Toast function
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icons = {
-                success: '완료',
-                error: '오류',
-                warning: '경고',
-                info: '정보'
-            };
-
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    ${icons[type]}
-                </div>
-                <div class="toast-message">${message}</div>
-            `;
-
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-
-        // Utility functions
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
     </script>
 </body>

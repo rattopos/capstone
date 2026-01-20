@@ -8,6 +8,7 @@ from pathlib import Path
 from utils.excel_utils import load_generator_module
 from services.excel_processor import preprocess_excel
 from config.reports import REGION_GROUPS
+from services.excel_cache import get_sector_data
 
 
 def safe_float(value, default=None):
@@ -45,6 +46,16 @@ REGION_NAME_MAP = {
 VALID_REGIONS = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
 
+SHEET_REPORT_ID_MAP = {
+    'A 분석': 'manufacturing',
+    'B 분석': 'service',
+    'C 분석': 'consumption',
+    'G 분석': 'export',
+    'E(품목성질물가)분석': 'price',
+    'D(고용률)분석': 'employment',
+    "F'(건설)집계": 'construction'
+}
+
 
 def normalize_region_name(name):
     """지역명을 약칭으로 정규화"""
@@ -63,14 +74,14 @@ def _get_excel_path(xl_or_path):
 def _get_calculated_excel_path(excel_path: str) -> str:
     """수식 계산 로직으로 계산된 임시 파일 경로 반환 (전역 캐시 사용)."""
     from services.excel_cache import get_cached_calculated_path, set_cached_calculated_path
+    from config.settings import TEMP_CALCULATED_DIR
 
     cached_path = get_cached_calculated_path(excel_path)
     if cached_path:
         return cached_path
 
-    calc_dir = Path(__file__).parent.parent / "exports" / "_calculated"
-    calc_dir.mkdir(parents=True, exist_ok=True)
-    output_path = calc_dir / f"{Path(excel_path).stem}_calculated.xlsx"
+    TEMP_CALCULATED_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = TEMP_CALCULATED_DIR / f"{Path(excel_path).stem}_calculated.xlsx"
     result_path, success, _ = preprocess_excel(
         excel_path,
         str(output_path),
@@ -98,6 +109,106 @@ def _read_sheet_df(xl_or_path, sheet_name, data_only=None):
     return pd.read_excel(excel_path, sheet_name=sheet_name, header=None)
 
 
+def _build_chart_data_from_sector_cache(sector_payload: dict, is_trade: bool = False, is_employment: bool = False) -> dict:
+    """부문별 캐시 데이터로 요약 차트 구조 생성"""
+    data = sector_payload.get('data', {}) if isinstance(sector_payload, dict) else {}
+    table_data = sector_payload.get('table_data') or data.get('table_data') or []
+    regional_data = data.get('regional_data') or {}
+    nationwide_data = data.get('nationwide_data') or {}
+
+    def _pick_change(row: dict) -> float:
+        for key in ('change_rate', 'growth_rate', 'change'):
+            if row.get(key) is not None:
+                return row.get(key)
+        return 0.0
+
+    def _pick_value(row: dict):
+        for key in ('value', 'index', 'rate', 'employment_rate', 'amount'):
+            if row.get(key) is not None:
+                return row.get(key)
+        return None
+
+    region_changes = {}
+    region_values = {}
+    for row in table_data:
+        if not isinstance(row, dict):
+            continue
+        region_name = row.get('region_name') or row.get('region') or row.get('name')
+        if not region_name:
+            continue
+        region_changes[region_name] = _pick_change(row)
+        region_values[region_name] = _pick_value(row)
+
+    increase_regions = []
+    decrease_regions = []
+    chart_data = []
+
+    for region in VALID_REGIONS:
+        change_val = region_changes.get(region, 0.0)
+        value_val = region_values.get(region, 0.0)
+
+        data_row = {
+            'name': region,
+            'value': change_val,
+            'index': value_val,
+            'change': change_val,
+            'rate': value_val
+        }
+
+        if is_trade:
+            amount = value_val if value_val is not None else 0.0
+            try:
+                amount_normalized = min(100, max(0, float(amount) * 10))
+            except (ValueError, TypeError):
+                amount_normalized = 0.0
+            data_row['amount'] = amount
+            data_row['amount_normalized'] = amount_normalized
+
+        if change_val >= 0:
+            increase_regions.append(data_row)
+        else:
+            decrease_regions.append(data_row)
+        chart_data.append(data_row)
+
+    increase_regions.sort(key=lambda x: x['value'], reverse=True)
+    decrease_regions.sort(key=lambda x: x['value'])
+
+    nationwide_change = None
+    nationwide_value = None
+    if isinstance(nationwide_data, dict):
+        for key in ('growth_rate', 'change_rate', 'change'):
+            if nationwide_data.get(key) is not None:
+                nationwide_change = nationwide_data.get(key)
+                break
+        for key in ('production_index', 'index_value', 'value', 'rate', 'amount', 'employment_rate'):
+            if nationwide_data.get(key) is not None:
+                nationwide_value = nationwide_data.get(key)
+                break
+
+    if is_employment and nationwide_change is None:
+        nationwide_change = 0.0
+    nationwide = {'change': nationwide_change}
+    if is_trade:
+        nationwide['amount'] = nationwide_value if nationwide_value is not None else 0.0
+    else:
+        nationwide['index'] = nationwide_value
+        if is_employment:
+            nationwide['rate'] = nationwide_value if nationwide_value is not None else 0.0
+
+    return {
+        'nationwide': nationwide,
+        'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+        'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+        'increase_count': len(increase_regions),
+        'decrease_count': len(decrease_regions),
+        'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+        'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+        'above_count': len(increase_regions),
+        'below_count': len(decrease_regions),
+        'chart_data': chart_data[:18]
+    }
+
+
 def get_summary_overview_data(excel_path, year, quarter):
     """
     요약-지역경제동향 데이터 추출
@@ -110,12 +221,12 @@ def get_summary_overview_data(excel_path, year, quarter):
     try:
         xl = pd.ExcelFile(excel_path)
 
-        mining = _extract_chart_data(xl, 'A 분석')
-        service = _extract_chart_data(xl, 'B 분석')
-        consumption = _extract_chart_data(xl, 'C 분석')
-        exports = _extract_chart_data(xl, 'G 분석', is_trade=True)
-        price = _extract_chart_data(xl, 'E(품목성질물가)분석')
-        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True)
+        mining = _extract_chart_data(xl, 'A 분석', year=year, quarter=quarter)
+        service = _extract_chart_data(xl, 'B 분석', year=year, quarter=quarter)
+        consumption = _extract_chart_data(xl, 'C 분석', year=year, quarter=quarter)
+        exports = _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
+        price = _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
+        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
 
         return {
             'production': {
@@ -139,7 +250,7 @@ def get_summary_overview_data(excel_path, year, quarter):
         raise ValueError(f"요약 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
-def _build_comprehensive_table(excel_path):
+def _build_comprehensive_table(excel_path, year=None, quarter=None):
     """
     Step 1: 통합 매트릭스 생성
     17개 시도별로 [광공업, 서비스업, 소비, 수출, 물가, 고용] 데이터를 모두 담은 리스트 생성
@@ -153,7 +264,7 @@ def _build_comprehensive_table(excel_path):
     ]
     """
     # 기존 get_summary_table_data를 활용하되, comprehensive_table 형태로 변환
-    table_data = get_summary_table_data(excel_path)
+    table_data = get_summary_table_data(excel_path, year, quarter)
     
     nationwide = table_data.get('nationwide', {})
     region_groups = table_data.get('region_groups', [])
@@ -212,17 +323,17 @@ def _build_region_value_map(chart_data):
     }
 
 
-def get_summary_table_data(excel_path):
+def get_summary_table_data(excel_path, year=None, quarter=None):
     """요약-지역경제동향 하단 표 데이터"""
     try:
         xl = pd.ExcelFile(excel_path)
 
-        mining = _extract_chart_data(xl, 'A 분석')
-        service = _extract_chart_data(xl, 'B 분석')
-        retail = _extract_chart_data(xl, 'C 분석')
-        exports = _extract_chart_data(xl, 'G 분석', is_trade=True)
-        price = _extract_chart_data(xl, 'E(품목성질물가)분석')
-        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True)
+        mining = _extract_chart_data(xl, 'A 분석', year=year, quarter=quarter)
+        service = _extract_chart_data(xl, 'B 분석', year=year, quarter=quarter)
+        retail = _extract_chart_data(xl, 'C 분석', year=year, quarter=quarter)
+        exports = _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
+        price = _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
+        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
 
         mining_map = _build_region_value_map(mining)
         service_map = _build_region_value_map(service)
@@ -272,8 +383,8 @@ def get_production_summary_data(excel_path, year, quarter):
     """요약-생산 데이터"""
     try:
         xl = pd.ExcelFile(excel_path)
-        mining = _extract_chart_data(xl, 'A 분석')
-        service = _extract_chart_data(xl, 'B 분석')
+        mining = _extract_chart_data(xl, 'A 분석', year=year, quarter=quarter)
+        service = _extract_chart_data(xl, 'B 분석', year=year, quarter=quarter)
 
         return {
             'mining_production': mining,
@@ -293,10 +404,10 @@ def get_consumption_construction_data(excel_path, year, quarter):
     """요약-소비/건설 데이터"""
     try:
         xl = pd.ExcelFile(excel_path)
-        retail = _extract_chart_data(xl, 'C 분석')
+        retail = _extract_chart_data(xl, 'C 분석', year=year, quarter=quarter)
         retail['qoq_change'] = None
 
-        construction = _extract_construction_chart_data(xl)
+        construction = _extract_construction_chart_data(xl, year=year, quarter=quarter)
 
         return {
             'retail_sales': retail,
@@ -313,9 +424,25 @@ def get_consumption_construction_data(excel_path, year, quarter):
         raise ValueError(f"소비건설 데이터 추출 실패: {e}. 기본값 사용 금지: 반드시 데이터를 찾아야 합니다.")
 
 
-def _extract_construction_chart_data(xl):
+def _extract_construction_chart_data(xl, year=None, quarter=None):
     """건설수주액 차트 데이터 추출"""
     try:
+        excel_path = _get_excel_path(xl)
+        cached = None
+        if year is not None and quarter is not None:
+            cached = get_sector_data(excel_path, year, quarter, SHEET_REPORT_ID_MAP.get("F'(건설)집계"))
+        if cached:
+            cached_data = cached.get('data') if isinstance(cached, dict) else None
+            cached_table = cached.get('table_data') or (cached_data.get('table_data') if isinstance(cached_data, dict) else None)
+            has_amount = False
+            if isinstance(cached_table, list):
+                for row in cached_table:
+                    if isinstance(row, dict) and row.get('amount') is not None:
+                        has_amount = True
+                        break
+            if has_amount:
+                return _build_chart_data_from_sector_cache(cached)
+
         regions = VALID_REGIONS.copy()
         
         nationwide = {'amount': 0, 'change': 0.0}
@@ -403,8 +530,8 @@ def get_trade_price_data(excel_path, year, quarter):
     """요약-수출물가 데이터"""
     try:
         xl = pd.ExcelFile(excel_path)
-        exports = _extract_chart_data(xl, 'G 분석', is_trade=True)
-        price = _extract_chart_data(xl, 'E(품목성질물가)분석')
+        exports = _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
+        price = _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
         
         return {
             'exports': exports,
@@ -425,7 +552,7 @@ def get_employment_population_data(excel_path, year, quarter):
     """요약-고용인구 데이터"""
     try:
         xl = pd.ExcelFile(excel_path)
-        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True)
+        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
         
         population = {
             'inflow_regions': [],
@@ -452,7 +579,7 @@ def get_employment_population_data(excel_path, year, quarter):
                     try:
                         # 2025 2/4분기 데이터 (열 25)
                         curr_value = safe_float(row[25])
-                        value = int(curr_value) if curr_value is not None else 0
+                        value = int(round(curr_value / 1000)) if curr_value is not None else 0
                         # 국내인구이동은 증감률 계산하지 않음 (raw data만 사용)
                         change = None
                         
@@ -594,10 +721,18 @@ def _extract_employment_from_aggregate(xl, config, regions):
     }
 
 
-def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
+def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False, year=None, quarter=None):
     """차트용 데이터 추출 (분석 시트 우선, 없거나 비어있으면 집계 시트 사용)"""
     try:
         regions = VALID_REGIONS.copy()
+
+        excel_path = _get_excel_path(xl)
+        report_id = SHEET_REPORT_ID_MAP.get(sheet_name)
+        cached = None
+        if report_id and year is not None and quarter is not None:
+            cached = get_sector_data(excel_path, year, quarter, report_id)
+        if cached:
+            return _build_chart_data_from_sector_cache(cached, is_trade=is_trade, is_employment=is_employment)
 
         # 시트별 설정 (분석 시트와 집계 시트 매핑) - 실제 엑셀 열 구조에 맞게 수정
         sheet_config = {
@@ -902,7 +1037,7 @@ def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False):
                                 # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
                                 amount_val = safe_float(row[26])
                                 amount_val = amount_val if amount_val is not None else 0
-                                amount_in_billion = round(amount_val / 100, 0)  # 백만달러 → 억달러
+                                amount_in_billion = round(amount_val * 100, 0)  # 백만달러 → 억달러 (요청: 100배)
                                 if region == '전국':
                                     nationwide['amount'] = amount_in_billion
                                     nationwide['index'] = amount_in_billion  # 차트용

@@ -13,7 +13,16 @@ from flask import Blueprint, request, jsonify, session, send_file, make_response
 import unicodedata
 import uuid
 
-from config.settings import BASE_DIR, TEMPLATES_DIR, UPLOAD_FOLDER, EXPORT_FOLDER
+from config.settings import (
+    BASE_DIR,
+    TEMPLATES_DIR,
+    UPLOAD_FOLDER,
+    EXPORT_FOLDER,
+    TEMP_DIR,
+    TEMP_OUTPUT_DIR,
+    TEMP_REGIONAL_OUTPUT_DIR,
+    TEMP_CALCULATED_DIR
+)
 from openpyxl.utils import get_column_letter
 from openpyxl.cell.cell import MergedCell
 
@@ -76,7 +85,7 @@ def send_file_with_korean_filename(filepath, filename, mimetype):
     )
     
     return response
-from config.reports import REPORT_ORDER, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
+from config.reports import REPORT_ORDER, SECTOR_REPORTS, REGIONAL_REPORTS, SUMMARY_REPORTS, STATISTICS_REPORTS
 from utils.excel_utils import extract_year_quarter_from_excel
 from services.report_generator import (
     generate_report_html,
@@ -167,6 +176,33 @@ def cleanup_upload_folder(keep_current_files=True, cleanup_excel_only=True):
     except Exception as e:
         print(f"[경고] 업로드 폴더 정리 중 오류: {e}")
         return 0
+
+
+def cleanup_temp_artifacts(excel_path: str | None = None) -> None:
+    """임시 파일 폴더 정리 (calculated/output 등)"""
+    try:
+        import shutil
+        from services.excel_cache import clear_excel_cache
+
+        for temp_dir in (TEMP_OUTPUT_DIR, TEMP_REGIONAL_OUTPUT_DIR, TEMP_CALCULATED_DIR):
+            try:
+                if temp_dir.exists():
+                    shutil.rmtree(temp_dir)
+            except Exception as e:
+                print(f"[경고] 임시 폴더 삭제 실패 ({temp_dir}): {e}")
+
+        # 상위 TEMP_DIR가 비어있으면 정리
+        try:
+            if TEMP_DIR.exists() and not any(TEMP_DIR.iterdir()):
+                TEMP_DIR.rmdir()
+        except Exception:
+            pass
+
+        # 캐시에서 계산 경로 제거
+        if excel_path:
+            clear_excel_cache(excel_path, preserve_calculated_path=False)
+    except Exception as e:
+        print(f"[경고] 임시 파일 정리 중 오류: {e}")
 
 
 def _calculate_analysis_sheets(excel_path: str, preserve_formulas: bool = True):
@@ -338,6 +374,7 @@ def upload_excel():
         if auto_year is not None and auto_quarter is not None:
             auto_generate = _generate_all_reports_core(auto_year, auto_quarter, cleanup_after=False)
             auto_export = _export_hwp_ready_core([], auto_year, auto_quarter, output_folder=EXPORT_FOLDER)
+            cleanup_temp_artifacts(str(filepath))
         else:
             auto_generate = {'success': False, 'error': auto_err or '연도/분기 정보 없음', 'generated': [], 'errors': []}
             auto_export = {'success': False, 'error': auto_err or '연도/분기 정보 없음'}
@@ -582,7 +619,7 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
         }
 
     try:
-        for report_config in REPORT_ORDER:
+        for report_config in SECTOR_REPORTS:
             try:
                 report_name = report_config.get('name', report_config.get('id', 'Unknown'))
                 report_id = report_config.get('id', 'Unknown')
@@ -609,7 +646,8 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
                         if not report_name_safe or not isinstance(report_name_safe, str):
                             report_name_safe = 'unknown'
                         report_name_safe = report_name_safe.replace('/', '_').replace('\\', '_').replace('..', '_')
-                        output_path = TEMPLATES_DIR / f"{report_name_safe}_output.html"
+                        TEMP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                        output_path = TEMP_OUTPUT_DIR / f"{report_name_safe}_output.html"
                         output_path.parent.mkdir(parents=True, exist_ok=True)
                         with open(output_path, 'w', encoding='utf-8') as f:
                             f.write(html_content if html_content else '<!-- Empty content -->')
@@ -630,8 +668,8 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
                 continue
 
         print(f"[보도자료 생성] 시도별 보도자료 생성 시작...")
-        output_dir = TEMPLATES_DIR / 'regional_output'
-        output_dir.mkdir(exist_ok=True)
+        TEMP_REGIONAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        output_dir = TEMP_REGIONAL_OUTPUT_DIR
 
         for region_config in REGIONAL_REPORTS:
             try:
@@ -672,10 +710,61 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
                 traceback.print_exc()
                 errors.append({'report_id': region_config.get('id', 'Unknown'), 'report_name': f"시도별-{region_config.get('name', region_config.get('id', 'Unknown'))}", 'error': f"예외 발생: {error_message}"})
                 continue
+
+        print(f"[보도자료 생성] 요약 보도자료 생성 시작...")
+        for report_config in SUMMARY_REPORTS:
+            try:
+                report_name = report_config.get('name', report_config.get('id', 'Unknown'))
+                report_id = report_config.get('id', 'Unknown')
+
+                print(f"[보도자료 생성] 시작: {report_name} ({report_id})")
+
+                html_content, error, _ = generate_report_html(
+                    excel_path, report_config, year, quarter, None, excel_file=excel_file
+                )
+
+                if error:
+                    import traceback
+                    error_msg = f"{report_name} 생성 실패: {error}"
+                    print(f"[ERROR] {error_msg}")
+                    traceback.print_exc()
+                    errors.append({'report_id': report_id, 'report_name': report_name, 'error': str(error)})
+                elif html_content is None:
+                    error_msg = f"{report_name} 생성 실패: HTML 내용이 None입니다"
+                    print(f"[ERROR] {error_msg}")
+                    errors.append({'report_id': report_id, 'report_name': report_name, 'error': 'HTML 내용이 None입니다'})
+                else:
+                    try:
+                        report_name_safe = report_config.get('name', 'unknown')
+                        if not report_name_safe or not isinstance(report_name_safe, str):
+                            report_name_safe = 'unknown'
+                        report_name_safe = report_name_safe.replace('/', '_').replace('\\', '_').replace('..', '_')
+                        TEMP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                        output_path = TEMP_OUTPUT_DIR / f"{report_name_safe}_output.html"
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            f.write(html_content if html_content else '<!-- Empty content -->')
+                        print(f"[보도자료 생성] 성공: {report_name} → {output_path}")
+                        generated_reports.append({'report_id': report_id, 'name': report_name, 'path': str(output_path)})
+                    except Exception as write_error:
+                        import traceback
+                        error_msg = f"{report_name} 파일 저장 실패: {str(write_error)}"
+                        print(f"[ERROR] {error_msg}")
+                        traceback.print_exc()
+                        errors.append({'report_id': report_id, 'report_name': report_name, 'error': f"파일 저장 실패: {str(write_error)}"})
+            except Exception as e:
+                import traceback
+                error_message = str(e)
+                print(f"[ERROR] {report_config.get('name', report_config.get('id', 'Unknown'))} 생성 중 예외 발생: {error_message}")
+                traceback.print_exc()
+                errors.append({'report_id': report_config.get('id', 'Unknown'), 'report_name': report_config.get('name', report_config.get('id', 'Unknown')), 'error': f"예외 발생: {error_message}"})
+                continue
     finally:
-        clear_excel_cache(excel_path, preserve_calculated_path=True)
+        clear_excel_cache(excel_path, preserve_calculated_path=not cleanup_after)
         if cleanup_after:
             try:
+                print(f"[정리] 작업 완료 - 임시 파일 정리 시작...")
+                cleanup_temp_artifacts(excel_path)
                 print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
                 deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
                 if deleted_count > 0:
@@ -726,8 +815,8 @@ def generate_all_regional_reports():
     generated_reports = []
     errors = []
     
-    output_dir = TEMPLATES_DIR / 'regional_output'
-    output_dir.mkdir(exist_ok=True)
+    TEMP_REGIONAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir = TEMP_REGIONAL_OUTPUT_DIR
     
     gen_year, gen_quarter, resolve_err = _resolve_year_quarter(excel_path, session.get('year'), session.get('quarter'))
     if gen_year is None or gen_quarter is None:
@@ -750,6 +839,8 @@ def generate_all_regional_reports():
     
     # 작업 완료 후 업로드 파일 삭제
     try:
+        print(f"[정리] 시도별 보도자료 생성 완료 - 임시 파일 정리 시작...")
+        cleanup_temp_artifacts(excel_path)
         print(f"[정리] 시도별 보도자료 생성 완료 - 업로드 파일 정리 시작...")
         deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
         if deleted_count > 0:
@@ -1363,16 +1454,17 @@ def render_chart_image():
         if match:
             mimetype = match.group(1)
             img_data = base64.b64decode(match.group(2))
-            
-            img_path = UPLOAD_FOLDER / filename
+
+            safe_name = Path(filename).name or 'chart.png'
+            img_path = UPLOAD_FOLDER / safe_name
             with open(img_path, 'wb') as f:
                 f.write(img_data)
             
             return jsonify({
                 'success': True,
-                'filename': filename,
+                'filename': safe_name,
                 'path': str(img_path),
-                'url': f'/uploads/{filename}'
+                'url': f'/uploads/{safe_name}'
             })
         else:
             return jsonify({'success': False, 'error': '잘못된 이미지 데이터 형식입니다.'})
@@ -1692,9 +1784,8 @@ def export_hwp_import():
             body_content = re.sub(r'</html>', '', body_content)
             body_content = re.sub(r'<head[^>]*>.*?</head>', '', body_content, flags=re.DOTALL)
             
-            # 남아있는 canvas 태그 제거 (이미 이미지로 변환되었어야 함)
-            body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', '', body_content, flags=re.DOTALL)
-            body_content = re.sub(r'<canvas[^>]*/?>',  '', body_content)
+            # 그래프/차트 요소 제거
+            body_content = _strip_chart_elements(body_content)
             
             # 표에 인라인 스타일 강화 (한글 완벽 호환)
             body_content = _add_hwp_compatible_styles(body_content)
@@ -1825,6 +1916,36 @@ def _add_hwp_compatible_styles(html_content):
     return html_content
 
 
+def _strip_chart_elements(html_content: str) -> str:
+    """그래프/차트 관련 요소 제거"""
+    if not html_content:
+        return html_content
+
+    chart_class_pattern = (
+        r'chart-container|chart-wrapper|chart-area|graph-container|'
+        r'chart-canvas-wrapper|chart-title|chart-image-converted|svg-image-converted'
+    )
+
+    html_content = re.sub(
+        rf'<div[^>]*class=["\"][^"\"]*(?:{chart_class_pattern})[^"\"]*["\"][^>]*>.*?</div>',
+        '',
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+
+    html_content = re.sub(r'<canvas[^>]*>.*?</canvas>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+    html_content = re.sub(r'<canvas[^>]*/?>', '', html_content, flags=re.IGNORECASE)
+    html_content = re.sub(r'<svg[^>]*>.*?</svg>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+    html_content = re.sub(
+        rf'<img[^>]*class=["\"][^"\"]*(?:{chart_class_pattern})[^"\"]*["\"][^>]*>',
+        '',
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+
+    return html_content
+
+
 def _create_placeholder_image(image_path):
     """플레이스홀더 이미지 생성"""
     try:
@@ -1869,8 +1990,11 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
     """한글(HWP) 복붙용 HTML을 생성하고 지정 폴더에 저장"""
     try:
         if not pages:
-            templates_dir = Path(__file__).parent.parent / 'templates'
-            output_files = list(templates_dir.glob('*_output.html'))
+            output_files = []
+            if TEMP_OUTPUT_DIR.exists():
+                output_files.extend(list(TEMP_OUTPUT_DIR.glob('*_output.html')))
+            if TEMP_REGIONAL_OUTPUT_DIR.exists():
+                output_files.extend(list(TEMP_REGIONAL_OUTPUT_DIR.glob('*_output.html')))
 
             if not output_files:
                 return {'success': False, 'error': '생성된 보도자료가 없습니다. 먼저 "전체 생성"을 실행하세요.'}
@@ -1947,10 +2071,7 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
             body_content = re.sub(r'<link[^>]*>', '', body_content)
             body_content = re.sub(r'<meta[^>]*>', '', body_content)
 
-            chart_placeholder = '<div style="border: 2px dashed #666; padding: 15px; text-align: center; background: #f5f5f5; margin: 10px 0;">📊 [차트 영역 - 별도 이미지 삽입]</div>'
-            body_content = re.sub(r'<canvas[^>]*>.*?</canvas>', chart_placeholder, body_content, flags=re.DOTALL)
-            body_content = re.sub(r'<canvas[^>]*/?>',  chart_placeholder, body_content)
-            body_content = re.sub(r'<svg[^>]*>.*?</svg>', chart_placeholder, body_content, flags=re.DOTALL)
+            body_content = _strip_chart_elements(body_content)
 
             body_content = _add_table_inline_styles(body_content)
 

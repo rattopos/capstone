@@ -51,6 +51,7 @@ class BaseGenerator(ABC):
         """수식 계산 로직으로 계산된 임시 파일 경로 반환 (전역 캐시 사용)."""
         from services.excel_processor import preprocess_excel
         from services.excel_cache import get_cached_calculated_path, set_cached_calculated_path
+        from config.settings import TEMP_CALCULATED_DIR
 
         if self._calculated_excel_path and Path(self._calculated_excel_path).exists():
             return self._calculated_excel_path
@@ -60,9 +61,8 @@ class BaseGenerator(ABC):
             self._calculated_excel_path = cached_path
             return cached_path
 
-        calc_dir = Path(__file__).parent.parent / "exports" / "_calculated"
-        calc_dir.mkdir(parents=True, exist_ok=True)
-        output_path = calc_dir / f"{Path(self.excel_path).stem}_calculated.xlsx"
+        TEMP_CALCULATED_DIR.mkdir(parents=True, exist_ok=True)
+        output_path = TEMP_CALCULATED_DIR / f"{Path(self.excel_path).stem}_calculated.xlsx"
         result_path, success, _ = preprocess_excel(
             self.excel_path,
             str(output_path),

@@ -9,10 +9,22 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
+        }
+
+        /* 그래프/차트 요소 제거 */
+        .chart-container,
+        .chart-wrapper,
+        .chart-area,
+        .graph-container,
+        .chart-canvas-wrapper,
+        .chart-title,
+        canvas,
+        svg {
+            display: none !important;
         }
         
         .summary-container {
@@ -25,7 +37,7 @@
         .section-header {
             background: #4a4a4a;
             color: #fff;
-            font-size: 11pt;
+            font-size: 15pt;
             font-weight: 700;
             padding: 8px 20px;
             margin-bottom: 20px;
@@ -44,7 +56,7 @@
         .summary-box { margin-bottom: 25px; }
         
         .summary-main {
-            font-size: 11pt;
+            font-size: 14pt;
             margin-bottom: 10px;
             padding-left: 25px;
             position: relative;
@@ -54,20 +66,22 @@
             content: "□";
             position: absolute;
             left: 0;
-            font-size: 11pt;
+            font-size: 14pt;
+            color: #999;
         }
         
         .summary-sub {
-            font-size: 11pt;
+            font-size: 14pt;
             margin-left: 25px;
             padding-left: 20px;
             position: relative;
         }
         
         .summary-sub::before {
-            content: "○";
+            content: "◦";
             position: absolute;
             left: 0;
+            color: #999;
         }
         
         .highlight { font-weight: 700; }

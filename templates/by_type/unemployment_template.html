@@ -24,8 +24,8 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
         }
@@ -48,7 +48,7 @@
         /* 소제목 */
         .subsection-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 15pt;
             font-weight: bold;
             margin-bottom: 10px;
             border-bottom: 1px solid #000;
@@ -61,7 +61,7 @@
             padding: 8px 12px;
             margin-bottom: 12px;
             background-color: transparent;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .summary-box .headline {
@@ -99,7 +99,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 11pt;
+            font-size: 14pt;
         }
         
         .detail-box .item {
@@ -231,14 +231,14 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 실업률은 
+            <div class="headline">󰋮 실업률은 
                 {% for region in top3_decrease_regions %}
                 <span class="highlight">{{ region }}</span>{% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.decrease_count }}개</span> 시도에서 전년동분기대비 <span class="decrease">{{ get_terms(report_info.report_id, -1)[1] }}</span>
             </div>
             <div class="nationwide">□ 전국 실업률은 <span class="highlight">{{ "%.1f"|format(nationwide_data.rate) }}%</span>로, {{ nationwide_data.main_age_groups | join(', ') }} 연령대에서 실업률이 {{ get_terms(report_info.report_id, -1)[0] }} 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.change|abs) }}%p {{ get_terms(report_info.report_id, -1)[1] }}</span></div>
-            <div class="regional">○ 
+            <div class="regional">◦ 
                 {% for region in regional_data.increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change) }}%p){% if not loop.last %}, {% endif %}
                 {% endfor %}

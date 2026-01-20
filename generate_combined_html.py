@@ -42,19 +42,28 @@ def remove_forbidden_lines(html: str) -> str:
     return "\n".join(safe_lines)
 
 
+def strip_page_wrappers(html: str) -> str:
+        """섹션 내부의 .page 래퍼를 제거"""
+        html = re.sub(r"<div\s+class=\"page\"\s*>", "<div class=\"section\">", html)
+        html = re.sub(r"<div\s+class=\"page\s+([^\"]*)\"\s*>", r"<div class=\"section \1\">", html)
+        return html
+
+
 def build_single_html(styles: list, sections: list) -> str:
-    head_styles = "\n\n".join(f"<style>\n{css}\n</style>" for css in styles)
-    body = "\n\n".join(sections)
-    return f"""<!DOCTYPE html>
+        head_styles = "\n\n".join(f"<style>\n{css}\n</style>" for css in styles)
+        body = "\n\n".join(sections)
+        return f"""<!DOCTYPE html>
 <html lang=\"ko\">
 <head>
-  <meta charset=\"UTF-8\" />
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-  <title>지역경제동향 2025년 3분기 (통합)</title>
-  {head_styles}
+    <meta charset=\"UTF-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+    <title>지역경제동향 2025년 3분기 (통합)</title>
+    {head_styles}
 </head>
 <body>
+<div class=\"page\">
 {body}
+</div>
 </body>
 </html>"""
 
@@ -71,6 +80,7 @@ def main():
         styles_acc.extend(extract_head_styles(html))
         section = extract_body_content(html)
         section = remove_forbidden_lines(section)
+        section = strip_page_wrappers(section)
         sections_acc.append(section)
 
     single_html = build_single_html(styles_acc, sections_acc)

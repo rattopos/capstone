@@ -13,10 +13,22 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
+        }
+
+        /* 그래프/차트 요소 제거 */
+        .chart-container,
+        .chart-wrapper,
+        .chart-area,
+        .graph-container,
+        .chart-canvas-wrapper,
+        .chart-title,
+        canvas,
+        svg {
+            display: none !important;
         }
         
         .summary-container {
@@ -40,7 +52,7 @@
         <div style="border: 1px solid #000000; padding: 20px; margin-bottom: 25px;">
             <!-- 생산 -->
             <div style="margin-bottom: 15px; padding-left: 25px; position: relative;">
-                <span style="position: absolute; left: 0; font-size: 11pt;">□</span>
+                <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">□</span>
                 <span style="font-weight: 500;">생산</span>(광공업)은 
                 
                 <span style="font-weight: 700;">충북</span>(19.1%), 
@@ -54,7 +66,7 @@
                  등 7개 시도는 <span style="font-weight: 700; color: #1565c0;">감소</span><span style="color: #666; font-size: 11pt;">[전국: 5.8%]</span>
                 
                 <div style="margin-top: 8px; padding-left: 20px; position: relative;">
-                    <span style="position: absolute; left: 0; font-size: 11pt;">○</span>
+                    <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">◦</span>
                     서비스업은 
                     
                     <span style="font-weight: 700;">서울</span>(6.1%), 
@@ -71,7 +83,7 @@
             
             <!-- 소비 -->
             <div style="margin-bottom: 15px; padding-left: 25px; position: relative;">
-                <span style="position: absolute; left: 0; font-size: 11pt;">□</span>
+                <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">□</span>
                 <span style="font-weight: 500;">소비</span>(소매판매)는 
                 
                 <span style="font-weight: 700;">세종</span>(8.8%), 
@@ -87,7 +99,7 @@
             
             <!-- 수출 -->
             <div style="margin-bottom: 15px; padding-left: 25px; position: relative;">
-                <span style="position: absolute; left: 0; font-size: 11pt;">□</span>
+                <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">□</span>
                 <span style="font-weight: 500;">수출</span>(통관기준)은 
                 
                 <span style="font-weight: 700;">제주</span>(168.1%), 
@@ -103,19 +115,19 @@
             
             <!-- 물가 -->
             <div style="margin-bottom: 15px; padding-left: 25px; position: relative;">
-                <span style="position: absolute; left: 0; font-size: 11pt;">□</span>
+                <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">□</span>
                 <span style="font-weight: 500;">물가</span>(소비자물가)는 
                 
-                <span style="font-weight: 700;">경남</span>(2.2%), 
+                <span style="font-weight: 700;">부산</span>(2.0%), 
                 
-                <span style="font-weight: 700;">부산</span>(2.1%)
+                <span style="font-weight: 700;">세종</span>(1.9%)
                  등 모든 시도에서 전년동분기대비 <span style="font-weight: 700; color: #c62828;">상승</span>
-                <span style="color: #666; font-size: 11pt;">[전국: 2.0%]</span>
+                <span style="color: #666; font-size: 11pt;">[전국: 1.7%]</span>
             </div>
             
             <!-- 고용 -->
             <div style="margin-bottom: 15px; padding-left: 25px; position: relative;">
-                <span style="position: absolute; left: 0; font-size: 11pt;">□</span>
+                <span style="position: absolute; left: 0; font-size: 14pt; color: #999;">□</span>
                 <span style="font-weight: 500;">고용</span>(고용률)은 
                 
                 <span style="font-weight: 700;">대전</span>(2.2%p), 
@@ -132,14 +144,14 @@
         
         <!-- 주요 지표 테이블 (하단) -->
         <div style="margin-top: 25px;">
-            <div style="text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 10px;">
+            <div style="text-align: center; font-size: 14pt; font-weight: 700; margin-bottom: 10px;">
                 &lt;2025년 3분기 주요 지역경제 지표&gt;
             </div>
-            <div style="text-align: right; font-size: 11pt; color: #666; margin-bottom: 5px;">
+            <div style="text-align: right; font-size: 12pt; color: #666; margin-bottom: 5px;">
                 (전년동분기비, %)
             </div>
             
-            <table style="width: 100%; border-collapse: collapse !important; border: 1px solid black !important; font-size: 11pt;">
+            <table style="width: 100%; border-collapse: collapse !important; border: 1px solid black !important; font-size: 12pt;">
                 <thead>
                     <tr>
                         <th style="border: 1px solid black !important; padding: 5px 6px; text-align: center; background-color: #e3f2fd; font-weight: 600;">구분</th>
@@ -159,7 +171,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">3.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">6.5</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.0</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">0.2</td>
                     </tr>
                     
@@ -175,7 +187,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">6.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-2.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-2.8</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.5</td>
                     </tr>
                     
@@ -186,7 +198,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">4.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">11.9</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.0</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.7</td>
                     </tr>
                     
@@ -197,7 +209,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">5.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">5.5</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.7</td>
                     </tr>
                     
@@ -212,7 +224,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">3.8</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">9.0</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.2</td>
                     </tr>
                     
@@ -223,7 +235,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">3.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">8.8</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">15.6</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.1</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-1.0</td>
                     </tr>
                     
@@ -234,7 +246,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">3.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">36.8</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.4</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.5</td>
                     </tr>
                     
@@ -245,7 +257,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">7.1</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.4</td>
                     </tr>
                     
@@ -260,7 +272,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">3.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">23.5</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.1</td>
                     </tr>
                     
@@ -271,7 +283,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-1.0</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">9.1</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.0</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.1</td>
                     </tr>
                     
@@ -282,7 +294,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.8</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.2</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-1.7</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.5</td>
                     </tr>
                     
@@ -297,7 +309,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">4.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">5.4</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.1</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.4</td>
                     </tr>
                     
@@ -308,7 +320,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">5.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">8.1</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.1</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.4</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.0</td>
                     </tr>
                     
@@ -319,7 +331,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">2.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-5.5</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">2.2</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.4</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.5</td>
                     </tr>
                     
@@ -334,7 +346,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">5.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">14.2</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.8</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.1</td>
                     </tr>
                     
@@ -345,7 +357,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.4</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.9</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-6.4</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.4</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.5</td>
                     </tr>
                     
@@ -360,7 +372,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">1.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-0.6</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">16.0</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.9</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.5</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.3</td>
                     </tr>
                     
@@ -375,7 +387,7 @@
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-8.2</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #1565c0;">-1.3</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">168.1</td>
-                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.7</td>
+                        <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right;">1.1</td>
                         <td style="border: 1px solid black !important; padding: 5px 6px; text-align: right; color: #c62828;">0.4</td>
                     </tr>
                     

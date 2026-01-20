@@ -10,12 +10,13 @@ import pandas as pd
 from pathlib import Path
 from jinja2 import Template
 
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER
+from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, TEMP_OUTPUT_DIR
+from config.reports import SECTOR_REPORTS, VALID_REGIONS
 from utils.filters import is_missing, format_value
 from utils.text_utils import get_josa, get_terms, get_comparative_terms
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
-from .excel_cache import get_excel_file, clear_excel_cache
+from .excel_cache import get_excel_file, clear_excel_cache, get_sector_data, set_sector_data
 
 
 def _generate_from_schema(template_name, report_id, year, quarter, excel_path=None, custom_data=None):
@@ -151,7 +152,7 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
                     if not summary_data:
                         raise ValueError("get_summary_overview_data가 None 반환")
                     # 템플릿에서 summary 키를 사용하므로 데이터를 summary로 감싸기
-                    table_data = get_summary_table_data(excel_path)
+                    table_data = get_summary_table_data(excel_path, year, quarter)
                     data = {
                         'summary': summary_data,
                         'table_data': table_data,
@@ -266,6 +267,7 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
     주의: 기초자료 수집표는 사용하지 않으며, 분석표만 사용합니다.
     """
     try:
+        generator = None
         
         # 파일 존재 및 접근 가능 여부 확인
         excel_path_obj = Path(excel_path)
@@ -428,7 +430,8 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         # 주의: 기초자료 수집표는 사용하지 않으므로 분석표만 사용
         elif hasattr(module, 'generate_report'):
             template_path = TEMPLATES_DIR / template_name
-            output_path = TEMPLATES_DIR / f"{report_name}_output.html"
+            TEMP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+            output_path = TEMP_OUTPUT_DIR / f"{report_name}_output.html"
             try:
                 # 분석표만 사용
                 data = module.generate_report(excel_path, template_path, output_path)
@@ -504,6 +507,35 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             print(f"[ERROR] 사용 가능한 함수: {available_funcs}")
             return None, error_msg, []
         
+        # 부문별 처리 결과 캐시 (시도별/요약에서 재사용)
+        try:
+            sector_report_ids = {
+                r.get('report_id') or r.get('id')
+                for r in SECTOR_REPORTS
+                if isinstance(r, dict)
+            }
+            current_report_id = report_config.get('report_id') or report_config.get('id')
+
+            if current_report_id in sector_report_ids and excel_path:
+                cached_sector = get_sector_data(excel_path, year, quarter, current_report_id)
+                if cached_sector is None:
+                    sector_payload = {'data': data}
+                    if isinstance(data, dict) and 'table_data' in data:
+                        sector_payload['table_data'] = data.get('table_data')
+
+                    industries_by_region = {}
+                    if generator is not None and hasattr(generator, '_extract_industry_data'):
+                        for region in VALID_REGIONS:
+                            try:
+                                industries_by_region[region] = generator._extract_industry_data(region)
+                            except Exception:
+                                industries_by_region[region] = []
+                        sector_payload['industries_by_region'] = industries_by_region
+
+                    set_sector_data(excel_path, year, quarter, current_report_id, sector_payload)
+        except Exception as cache_error:
+            print(f"[WARNING] 부문별 캐시 저장 실패: {cache_error}")
+
         # 통합 Generator는 이미 올바른 필드명으로 데이터를 생성함
         # 레거시 Generator를 위한 최소한의 후처리만 수행 (안전한 처리)
         if data and isinstance(data, dict) and 'regional_data' in data and 'top3_increase_regions' not in data:

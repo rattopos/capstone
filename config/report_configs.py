@@ -280,6 +280,7 @@ REPORT_CONFIGS = {
             'aggregation': ['D(실업)집계', 'D 집계'],
             'fallback': ['실업', '실업률']
         },
+        'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},
         'aggregation_structure': {
             'region_name_col': 0,
             'industry_code_col': 1,

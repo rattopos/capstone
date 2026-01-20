@@ -24,8 +24,8 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
         }
@@ -48,7 +48,7 @@
         /* 소제목 - 나. 서비스업생산 */
         .subsection-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 15pt;
             font-weight: bold;
             margin-bottom: 10px;
             border-bottom: 1px solid #000;
@@ -61,7 +61,7 @@
             padding: 8px 12px;
             margin-bottom: 12px;
             background-color: transparent;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .summary-box .headline {
@@ -99,7 +99,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 11pt;
+            font-size: 14pt;
         }
         
         .detail-box .item {
@@ -222,14 +222,14 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 서비스업생산은 
+            <div class="headline">󰋮 서비스업생산은 
                 {% for region in top3_increase_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.industries_names | join(', ') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
             </div>
             <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span></div>
-            <div class="regional">○ 
+            <div class="regional">◦ 
                 {% for region in regional_data.decrease_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %} {{ decrease_industries_text }} 등의 생산이 줄었으나, 

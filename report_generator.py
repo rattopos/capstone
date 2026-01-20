@@ -17,10 +17,11 @@ from typing import Any
 from jinja2 import Template
 import pandas as pd
 
-from config.settings import BASE_DIR, TEMPLATES_DIR
+from config.settings import BASE_DIR, TEMPLATES_DIR, TEMP_OUTPUT_DIR, TEMP_REGIONAL_OUTPUT_DIR
 from config.reports import REPORT_ORDER, SECTOR_REPORTS, SUMMARY_REPORTS, REGIONAL_REPORTS
+from services.report_generator import generate_regional_report_html, generate_report_html
 from utils.filters import is_missing, format_value
-from utils.text_utils import get_josa, get_terms
+from utils.text_utils import get_josa, get_terms, get_comparative_terms
 
 
 class ReportGenerator:
@@ -140,7 +141,7 @@ class ReportGenerator:
         Returns:
             추출된 데이터 딕셔너리
         """
-        # REPORT_ORDER(요약+부문별)에서 report_id로 검색
+        # REPORT_ORDER(부문별+요약)에서 report_id로 검색
         all_reports = [*REPORT_ORDER]
         config = next((r for r in all_reports if r.get('id') == report_id), None)
         if not config:
@@ -241,12 +242,30 @@ class ReportGenerator:
         config = next((r for r in all_reports if r.get('id') == report_id), None)
         if not config:
             raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
+        if config.get('generator') is None:
+            year = None
+            quarter = None
+            if self._year_quarter:
+                year, quarter = self._year_quarter
+            html, error, _ = generate_report_html(
+                str(self.excel_path),
+                config,
+                year,
+                quarter,
+                custom_data=custom_data
+            )
+            if error:
+                raise ValueError(error)
+            if html is None:
+                raise ValueError("요약 보도자료 HTML 생성 결과가 None입니다")
+            return html
         # 데이터 추출
         data = self.extract_data(report_id)
         # 커스텀 데이터 병합
         if custom_data:
             data = self._merge_custom_data(data, custom_data)
         data['get_terms'] = get_terms
+        data['get_comparative_terms'] = get_comparative_terms
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / config['template']
         with open(template_path, 'r', encoding='utf-8') as f:
@@ -326,7 +345,8 @@ class ReportGenerator:
         if not config:
             raise ValueError(f"알 수 없는 보도자료 ID: {report_id}")
         if output_path is None:
-            output_path = TEMPLATES_DIR / f"{config['name']}_output.html"
+            TEMP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+            output_path = TEMP_OUTPUT_DIR / f"{config['name']}_output.html"
         html = self.generate_html(report_id, custom_data)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
@@ -345,7 +365,76 @@ class ReportGenerator:
             'errors': []
         }
         custom_data_by_report = custom_data_by_report or {}
-        for report in REPORT_ORDER:
+        year = None
+        quarter = None
+        if self._year_quarter:
+            year, quarter = self._year_quarter
+
+        # 1) 부문별 보도자료 먼저 생성
+        for report in SECTOR_REPORTS:
+            report_id = report.get('id')
+            try:
+                custom_data = custom_data_by_report.get(report_id, {})
+                output_path = self.save_report(report_id, custom_data=custom_data)
+                results['success'].append({
+                    'report_id': report_id,
+                    'name': report.get('name'),
+                    'path': output_path
+                })
+            except Exception as e:
+                results['errors'].append({
+                    'report_id': report_id,
+                    'name': report.get('name'),
+                    'error': str(e)
+                })
+
+        # 2) 시도별 보도자료 생성 (부문별 결과를 활용)
+        TEMP_REGIONAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        output_dir = TEMP_REGIONAL_OUTPUT_DIR
+        for region in REGIONAL_REPORTS:
+            region_name = region.get('name', region.get('id', 'Unknown'))
+            region_id = region.get('id', 'Unknown')
+            try:
+                html_content, error = generate_regional_report_html(
+                    str(self.excel_path),
+                    region_name,
+                    is_reference=False,
+                    year=year,
+                    quarter=quarter
+                )
+                if error:
+                    results['errors'].append({
+                        'report_id': region_id,
+                        'name': f"시도별-{region_name}",
+                        'error': str(error)
+                    })
+                    continue
+                if html_content is None:
+                    results['errors'].append({
+                        'report_id': region_id,
+                        'name': f"시도별-{region_name}",
+                        'error': 'HTML 내용이 None입니다'
+                    })
+                    continue
+
+                region_name_safe = region_name.replace('/', '_').replace('\\', '_').replace('..', '_')
+                output_path = output_dir / f"{region_name_safe}_output.html"
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(html_content if html_content else '<!-- Empty content -->')
+                results['success'].append({
+                    'report_id': region_id,
+                    'name': f"시도별-{region_name}",
+                    'path': str(output_path)
+                })
+            except Exception as e:
+                results['errors'].append({
+                    'report_id': region_id,
+                    'name': f"시도별-{region_name}",
+                    'error': str(e)
+                })
+
+        # 3) 요약 보도자료 생성 (마지막)
+        for report in SUMMARY_REPORTS:
             report_id = report.get('id')
             try:
                 custom_data = custom_data_by_report.get(report_id, {})

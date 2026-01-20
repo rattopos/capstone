@@ -24,8 +24,8 @@
         
         body {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 14pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
         }
@@ -48,7 +48,7 @@
         /* 숫자 제목 - 3. 건설 동향 */
         .section-title {
             font-family: "Malgun Gothic", serif;
-            font-size: 11pt;
+            font-size: 17pt;
             font-weight: bold;
             margin-bottom: 12px;
         }
@@ -59,7 +59,7 @@
             padding: 8px 12px;
             margin-bottom: 12px;
             background-color: transparent;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .summary-box .headline {
@@ -97,7 +97,7 @@
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
-            font-size: 11pt;
+            font-size: 14pt;
         }
         
         .detail-item {
@@ -267,7 +267,7 @@
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆건설수주는 
+            <div class="headline">󰋮 건설수주는 
                 {% if summary_box.decrease_count > summary_box.increase_count %}
                 {% for region in top3_decrease_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type }}){% if not loop.last %}, {% endif %}
@@ -288,7 +288,7 @@
                 <span class="highlight">{{ nationwide_data.main_category if nationwide_data.main_category else "토목" }}</span> 수주가 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="decrease">{{ "%.1f"|format(nationwide_data.growth_rate|abs) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span>
                 {% endif %}
             </div>
-            <div class="regional">○
+            <div class="regional">◦
                 {% if regional_data.increase_regions %}
                 {% for region in regional_data.increase_regions[:3] %}
                 <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}

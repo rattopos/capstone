@@ -9,7 +9,14 @@ from urllib.parse import quote
 
 
 from config.reports import REPORT_ORDER, REGIONAL_REPORTS
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, DEBUG_FOLDER, EXPORT_FOLDER, BASE_DIR
+from config.settings import (
+    TEMPLATES_DIR,
+    UPLOAD_FOLDER,
+    EXPORT_FOLDER,
+    BASE_DIR,
+    TEMP_OUTPUT_DIR,
+    TEMP_REGIONAL_OUTPUT_DIR
+)
 
 main_bp = Blueprint('main', __name__)
 
@@ -32,6 +39,18 @@ def send_file_with_korean_filename(filepath, filename, mimetype=None):
     )
     
     return response
+
+
+def _safe_resolve_path(base_dir: Path, target_path: str) -> Path | None:
+    """base_dir 하위 경로인지 검증 후 안전한 경로 반환"""
+    try:
+        base_resolved = base_dir.resolve()
+        resolved = (base_dir / target_path).resolve()
+        if resolved.is_relative_to(base_resolved):
+            return resolved
+    except Exception:
+        return None
+    return None
 
 
 @main_bp.route('/')
@@ -93,15 +112,15 @@ def download_report(report_id):
     if is_regional:
         # 시도별 보고서: regional_output 폴더 확인
         possible_files = [
-            TEMPLATES_DIR / 'regional_output' / f"{report_name_safe}_output.html",
-            TEMPLATES_DIR / 'regional_output' / f"{report_name}_output.html",  # 원본 이름도 시도
-            TEMPLATES_DIR / f"{report_name_safe}_output.html",
+            TEMP_REGIONAL_OUTPUT_DIR / f"{report_name_safe}_output.html",
+            TEMP_REGIONAL_OUTPUT_DIR / f"{report_name}_output.html",  # 원본 이름도 시도
+            TEMP_OUTPUT_DIR / f"{report_name_safe}_output.html",
         ]
     else:
         # 일반 보고서: templates 폴더 직접 확인 (여러 패턴 시도)
         possible_files = [
-            TEMPLATES_DIR / f"{report_name_safe}_output.html",
-            TEMPLATES_DIR / f"{report_name}_output.html",  # 원본 이름도 시도
+            TEMP_OUTPUT_DIR / f"{report_name_safe}_output.html",
+            TEMP_OUTPUT_DIR / f"{report_name}_output.html",  # 원본 이름도 시도
         ]
     
     # 디버그: 검색할 파일 목록 출력
@@ -129,13 +148,13 @@ def download_report(report_id):
     print(f"[다운로드] ❌ 파일을 찾을 수 없습니다. TEMPLATES_DIR의 파일 목록:")
     try:
         if is_regional:
-            regional_dir = TEMPLATES_DIR / 'regional_output'
-            if regional_dir.exists():
-                files = list(regional_dir.glob('*.html'))
-                print(f"  - regional_output 폴더의 HTML 파일: {[f.name for f in files[:10]]}")
+            if TEMP_REGIONAL_OUTPUT_DIR.exists():
+                files = list(TEMP_REGIONAL_OUTPUT_DIR.glob('*.html'))
+                print(f"  - regional_output 임시 폴더의 HTML 파일: {[f.name for f in files[:10]]}")
         else:
-            files = list(TEMPLATES_DIR.glob('*_output.html'))
-            print(f"  - templates 폴더의 *_output.html 파일: {[f.name for f in files[:10]]}")
+            if TEMP_OUTPUT_DIR.exists():
+                files = list(TEMP_OUTPUT_DIR.glob('*_output.html'))
+                print(f"  - output 임시 폴더의 *_output.html 파일: {[f.name for f in files[:10]]}")
     except Exception as e:
         print(f"  - 파일 목록 조회 중 오류: {e}")
     
@@ -145,7 +164,9 @@ def download_report(report_id):
 @main_bp.route('/uploads/<filename>')
 def download_file(filename):
     """업로드된 파일 다운로드 (한글 파일명 지원)"""
-    filepath = UPLOAD_FOLDER / filename
+    filepath = _safe_resolve_path(UPLOAD_FOLDER, filename)
+    if filepath is None:
+        return "유효하지 않은 경로입니다.", 400
     if filepath.exists():
         return send_file_with_korean_filename(str(filepath), filename)
     return "파일을 찾을 수 없습니다.", 404
@@ -153,39 +174,25 @@ def download_file(filename):
 
 @main_bp.route('/view/<filename>')
 def view_file(filename):
-    """파일 직접 보기 (다운로드 없이) - uploads와 debug 폴더 모두 확인"""
+    """파일 직접 보기 (다운로드 없이) - uploads 폴더 확인"""
     # uploads 폴더 먼저 확인
-    filepath = UPLOAD_FOLDER / filename
+    filepath = _safe_resolve_path(UPLOAD_FOLDER, filename)
+    if filepath is None:
+        return "유효하지 않은 경로입니다.", 400
     if filepath.exists():
         if filename.endswith('.html'):
             return send_file(str(filepath), mimetype='text/html')
         return send_file(str(filepath))
-    
-    # debug 폴더 확인
-    debug_filepath = DEBUG_FOLDER / filename
-    if debug_filepath.exists():
-        if filename.endswith('.html'):
-            return send_file(str(debug_filepath), mimetype='text/html')
-        return send_file(str(debug_filepath))
     
     return "파일을 찾을 수 없습니다.", 404
-
-
-@main_bp.route('/debug/<filename>')
-def view_debug_file(filename):
-    """디버그 파일 직접 보기"""
-    filepath = DEBUG_FOLDER / filename
-    if filepath.exists():
-        if filename.endswith('.html'):
-            return send_file(str(filepath), mimetype='text/html')
-        return send_file(str(filepath))
-    return "디버그 파일을 찾을 수 없습니다.", 404
 
 
 @main_bp.route('/exports/<path:filepath>')
 def view_export_file(filepath):
     """내보내기 파일 직접 보기 (한글 불러오기용 HTML)"""
-    file_path = EXPORT_FOLDER / filepath
+    file_path = _safe_resolve_path(EXPORT_FOLDER, filepath)
+    if file_path is None:
+        return "유효하지 않은 경로입니다.", 400
     if file_path.exists() and file_path.is_file():
         if filepath.endswith('.html'):
             return send_file(str(file_path), mimetype='text/html')
@@ -198,7 +205,9 @@ def view_export_file(filepath):
 @main_bp.route('/templates/<filename>')
 def serve_template_file(filename):
     """templates 폴더의 정적 파일 제공 (이미지 등)"""
-    filepath = TEMPLATES_DIR / filename
+    filepath = _safe_resolve_path(TEMPLATES_DIR, filename)
+    if filepath is None:
+        return "유효하지 않은 경로입니다.", 400
     if filepath.exists() and filepath.is_file():
         # 이미지 파일
         if filename.endswith('.png'):
@@ -230,8 +239,10 @@ def download_export_zip(export_dir):
     import zipfile
     import tempfile
     import shutil
-    
-    export_path = EXPORT_FOLDER / export_dir
+
+    export_path = _safe_resolve_path(EXPORT_FOLDER, export_dir)
+    if export_path is None:
+        return "유효하지 않은 경로입니다.", 400
     if not export_path.exists() or not export_path.is_dir():
         return "내보내기 폴더를 찾을 수 없습니다.", 404
     
