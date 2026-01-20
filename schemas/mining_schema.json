@@ -1,0 +1,12 @@
+{
+  "example": {
+    "report_info": {"year": 2026, "quarter": 1, "report_id": "mining"},
+    "summary": "N/A",
+    "main_table": [
+      {"지표": "N/A", "전국": "N/A", "전년동기대비": "N/A"}
+    ],
+    "narrative": "N/A",
+    "top_regions": ["N/A"],
+    "bottom_regions": ["N/A"]
+  }
+}

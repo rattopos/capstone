@@ -90,16 +90,15 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
         from pathlib import Path
         
         # 요약 보도자료별 데이터 생성
-        if report_id == 'summary_trade_price':
-            # 요약-수출물가는 실제 데이터 사용
-            if excel_path and Path(excel_path).exists():
+        if excel_path and Path(excel_path).exists():
+            # 실제 데이터 사용
+            if report_id == 'summary_trade_price':
                 trade_price_data = get_trade_price_data(excel_path, year, quarter)
                 # amount를 숫자로 변환 (문자열이면 숫자로 변환)
                 if trade_price_data and 'exports' in trade_price_data:
                     exports = trade_price_data['exports']
                     if 'nationwide' in exports and 'amount' in exports['nationwide']:
                         amount = exports['nationwide']['amount']
-                        # 문자열이면 숫자로 변환 (쉼표 제거)
                         if isinstance(amount, str):
                             try:
                                 exports['nationwide']['amount'] = float(amount.replace(',', ''))
@@ -107,7 +106,6 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
                                 exports['nationwide']['amount'] = 0.0
                         elif amount is None:
                             exports['nationwide']['amount'] = 0.0
-                    # chart_data의 amount도 숫자로 변환
                     if 'chart_data' in exports:
                         for item in exports['chart_data']:
                             if 'amount' in item and isinstance(item['amount'], str):
@@ -115,44 +113,23 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
                                     item['amount'] = float(item['amount'].replace(',', ''))
                                 except (ValueError, AttributeError):
                                     item['amount'] = 0.0
-                
                 data = trade_price_data
                 data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
             else:
-                # excel_path가 없으면 스키마 기본값 사용
-                schema_basename = template_name.replace('_template.html', '_schema.json')
-                schema_path = SCHEMAS_DIR / schema_basename
-                if schema_path.exists():
-                    with open(schema_path, 'r', encoding='utf-8') as f:
-                        schema = json.load(f)
-                    data = schema.get('example', {})
-                    # amount를 숫자로 변환
-                    if 'exports' in data and 'nationwide' in data['exports']:
-                        amount = data['exports']['nationwide'].get('amount', '0')
-                        if isinstance(amount, str):
-                            try:
-                                data['exports']['nationwide']['amount'] = float(amount.replace(',', ''))
-                            except (ValueError, AttributeError):
-                                data['exports']['nationwide']['amount'] = 0.0
-                    data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
-                else:
-                    return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
+                # 다른 요약 보도자료 실제 데이터 처리 필요시 여기에 추가
+                data = None
         else:
-            # 다른 요약 보도자료는 스키마 기본값 사용
-            schema_basename = template_name.replace('_template.html', '_schema.json')
-            schema_path = SCHEMAS_DIR / schema_basename
-            
-            if not schema_path.exists():
-                return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
-            
-            with open(schema_path, 'r', encoding='utf-8') as f:
-                schema = json.load(f)
-            
-            # 기본값 추출 (example 필드)
-            data = schema.get('example', {})
-            
-            # 연도/분기 정보 추가
-            data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': '', 'report_id': report_id}
+            # 데이터가 없으면 모든 필드를 N/A로 채움
+            data = {
+                'report_info': {'year': year, 'quarter': quarter, 'page_number': '', 'report_id': report_id},
+                'summary': 'N/A',
+                'main_table': [
+                    {'지표': 'N/A', '전국': 'N/A', '전년동기대비': 'N/A'}
+                ],
+                'narrative': 'N/A',
+                'top_regions': ['N/A'],
+                'bottom_regions': ['N/A']
+            }
         
         # 템플릿 렌더링
         template_path = TEMPLATES_DIR / template_name
