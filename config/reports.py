@@ -55,7 +55,7 @@ REGIONAL_REPORTS: list[dict[str, Any]] = [
     {'id': 'region_jeonnam', 'name': '전남', 'full_name': '전라남도', 'index': 14, 'icon': '🍃'},
     {'id': 'region_gyeongbuk', 'name': '경북', 'full_name': '경상북도', 'index': 15, 'icon': '🏔️'},
     {'id': 'region_gyeongnam', 'name': '경남', 'full_name': '경상남도', 'index': 16, 'icon': '🌳'},
-    {'id': 'region_jeju', 'name': '제주', 'full_name': '제주특별자치도', 'index': 17, 'icon': '🏝️'},
+    {'id': 'region_jeju', 'name': '제주', 'full_name': '제주특별자치도', 'index': 17, 'icon': '🏝️'}
 ]
 
 # 아래는 REGION_DISPLAY_MAPPING, REGION_GROUPS, VALID_REGIONS 등 통합 매핑 예시 (필요시 확장)
@@ -195,9 +195,23 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'icon': '🏢',
         'category': 'production',
         'class_name': 'ServiceIndustryGenerator',
-        # B(서비스업생산)집계 시트의 업종(산업명)은 H열
-        # 엑셀 H열(1-based) -> 0-based index 7
-        'industry_name_col': 7,
+        'industry_name_col': 7,  # H열(0-based)
+        'aggregation_structure': {
+            'total_code': 'E~S',
+            'sheet': 'B(서비스업생산)집계',
+            'region_name_col': 2,  # C열(0-based)
+            'industry_name_col': 7,  # H열(0-based)
+            'data_start_row': 3
+        },
+        'aggregation_columns': {
+            'target_col': 25,  # Z열(0-based)
+            'prev_y_col': 21,  # V열(0-based)
+            'prev_prev_y_col': 17,  # R열(0-based)
+            'prev_prev_prev_y_col': 13,  # N열(0-based)
+            'quarterly_cols': {
+                '2023_3Q': 17, '2024_3Q': 21, '2025_3Q': 25
+            }
+        },
         'name_mapping': {
             '수도, 하수 및 폐기물 처리, 원료 재생업': '하수·폐기물 처리',
             '도매 및 소매업': '도매·소매',
@@ -317,7 +331,21 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'employment',
         'class_name': 'EmploymentRateGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '계', 'sheet': 'D(고용률)집계'},
+        'aggregation_structure': {
+            'total_code': '계',
+            'sheet': 'D(고용률)집계',
+            'region_name_col': 0,  # A열(0-based)
+            'data_start_row': 3
+        },
+        'aggregation_columns': {
+            'target_col': 21,  # V열(0-based)
+            'prev_y_col': 17,  # R열(0-based)
+            'prev_prev_y_col': 13,  # N열(0-based)
+            'prev_prev_prev_y_col': 9,  # J열(0-based)
+            'quarterly_cols': {
+                '2023_3Q': 13, '2024_3Q': 17, '2025_3Q': 21
+            }
+        },
         'aggregation_range': {'start_row': 3, 'end_row': 111, 'start_col': 'A', 'end_col': 'V'},
         'metadata_columns': ['year', 'quarter', 'region'],
         'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
@@ -333,7 +361,21 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'employment',
         'class_name': 'UnemploymentGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '계', 'sheet': 'D(실업)집계'},
+        'aggregation_structure': {
+            'total_code': '계',
+            'sheet': 'D(실업)집계',
+            'region_name_col': 0,  # A열(0-based)
+            'data_start_row': 80
+        },
+        'aggregation_columns': {
+            'target_col': 19,  # T열(0-based)
+            'prev_y_col': 15,  # P열(0-based)
+            'prev_prev_y_col': 11,  # L열(0-based)
+            'prev_prev_prev_y_col': 7,  # H열(0-based)
+            'quarterly_cols': {
+                '2023_3Q': 11, '2024_3Q': 15, '2025_3Q': 19
+            }
+        },
         'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},
         'metadata_columns': ['year', 'quarter', 'region'],
         'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
@@ -407,27 +449,6 @@ REPORT_ORDER = SECTOR_REPORTS + SUMMARY_REPORTS
 # 주의: 고객사 요청으로 통계표 섹션 전체(통계표, GRDP, 부록)를 생성하지 않기로 결정됨
 # 실무자는 요약, 부문별, 시도별의 표와 나레이션만 사용함
 STATISTICS_REPORTS = []
-
-# 시도별 보도자료 목록 (17개 시도 + 참고_GRDP)
-REGIONAL_REPORTS = [
-    {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
-    {'id': 'region_busan', 'name': '부산', 'full_name': '부산광역시', 'index': 2, 'icon': '🌊'},
-    {'id': 'region_daegu', 'name': '대구', 'full_name': '대구광역시', 'index': 3, 'icon': '🏛️'},
-    {'id': 'region_incheon', 'name': '인천', 'full_name': '인천광역시', 'index': 4, 'icon': '✈️'},
-    {'id': 'region_gwangju', 'name': '광주', 'full_name': '광주광역시', 'index': 5, 'icon': '🎨'},
-    {'id': 'region_daejeon', 'name': '대전', 'full_name': '대전광역시', 'index': 6, 'icon': '🔬'},
-    {'id': 'region_ulsan', 'name': '울산', 'full_name': '울산광역시', 'index': 7, 'icon': '🚗'},
-    {'id': 'region_sejong', 'name': '세종', 'full_name': '세종특별자치시', 'index': 8, 'icon': '🏛️'},
-    {'id': 'region_gyeonggi', 'name': '경기', 'full_name': '경기도', 'index': 9, 'icon': '🏘️'},
-    {'id': 'region_gangwon', 'name': '강원', 'full_name': '강원특별자치도', 'index': 10, 'icon': '⛰️'},
-    {'id': 'region_chungbuk', 'name': '충북', 'full_name': '충청북도', 'index': 11, 'icon': '🌾'},
-    {'id': 'region_chungnam', 'name': '충남', 'full_name': '충청남도', 'index': 12, 'icon': '🌅'},
-    {'id': 'region_jeonbuk', 'name': '전북', 'full_name': '전북특별자치도', 'index': 13, 'icon': '🌿'},
-    {'id': 'region_jeonnam', 'name': '전남', 'full_name': '전라남도', 'index': 14, 'icon': '🍃'},
-    {'id': 'region_gyeongbuk', 'name': '경북', 'full_name': '경상북도', 'index': 15, 'icon': '🏔️'},
-    {'id': 'region_gyeongnam', 'name': '경남', 'full_name': '경상남도', 'index': 16, 'icon': '🌳'},
-    {'id': 'region_jeju', 'name': '제주', 'full_name': '제주특별자치도', 'index': 17, 'icon': '🏝️'},
-]
 
 # ===== 페이지 수 설정 (목차 생성용) =====
 # 주의: 목차를 생성하지 않으므로 이 설정은 더 이상 사용되지 않음

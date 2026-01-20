@@ -257,32 +257,42 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="nationwide-row">
-                        <td colspan="2" style="text-align: center;">전 국</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.mining_production) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.service_production) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.retail_sales) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.exports) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.price) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(table_data.nationwide.employment) }}</td>
-                    </tr>
+                {% set data_rows = table_df if table_df is defined else (table_data.region_rows if table_data is defined and table_data.region_rows is defined else []) %}
+                {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
+                <tr class="nationwide-row">
+                    <td colspan="2" style="text-align: center;">전 국</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.mining_production if nationwide_row and nationwide_row.mining_production is defined else 0) }}</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.service_production if nationwide_row and nationwide_row.service_production is defined else 0) }}</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.retail_sales if nationwide_row and nationwide_row.retail_sales is defined else 0) }}</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.exports if nationwide_row and nationwide_row.exports is defined else 0) }}</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.price if nationwide_row and nationwide_row.price is defined else 0) }}</td>
+                    <td class="value-cell">{{ "%.1f"|format(nationwide_row.employment if nationwide_row and nationwide_row.employment is defined else 0) }}</td>
+                </tr>
 
-                    {% for group in table_data.region_groups %}
-                    {% for region in group.regions %}
-                    <tr>
-                        {% if loop.first %}
-                        <td rowspan="{{ group.regions|length }}" class="group-cell" style="width: 40px;">{{ group.name }}</td>
-                        {% endif %}
-                        <td class="region-cell" style="width: 50px;">{{ region.name }}</td>
-                        <td class="value-cell {% if region.mining_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.mining_production) }}</td>
-                        <td class="value-cell {% if region.service_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.service_production) }}</td>
-                        <td class="value-cell {% if region.retail_sales >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.retail_sales) }}</td>
-                        <td class="value-cell {% if region.exports >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.exports) }}</td>
-                        <td class="value-cell">{{ "%.1f"|format(region.price) }}</td>
-                        <td class="value-cell {% if region.employment >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.employment) }}</td>
-                    </tr>
+                {% set region_groups = [
+                    {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                    {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                    {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                    {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                    {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                ] %}
+                {% for group in region_groups %}
+                    {% for region_name in group.regions %}
+                        {% set row = (data_rows | selectattr('region_name', 'equalto', region_name) | list | first) %}
+                        <tr>
+                            {% if loop.first %}
+                            <td rowspan="{{ group.regions|length }}" class="group-cell" style="width: 40px;">{{ group.name }}</td>
+                            {% endif %}
+                            <td class="region-cell" style="width: 50px;">{{ row.region_display if row and row.region_display is defined and row.region_display else region_name }}</td>
+                            <td class="value-cell {% if row and row.mining_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(row.mining_production if row and row.mining_production is defined else 0) }}</td>
+                            <td class="value-cell {% if row and row.service_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(row.service_production if row and row.service_production is defined else 0) }}</td>
+                            <td class="value-cell {% if row and row.retail_sales >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(row.retail_sales if row and row.retail_sales is defined else 0) }}</td>
+                            <td class="value-cell {% if row and row.exports >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(row.exports if row and row.exports is defined else 0) }}</td>
+                            <td class="value-cell">{{ "%.1f"|format(row.price if row and row.price is defined else 0) }}</td>
+                            <td class="value-cell {% if row and row.employment >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(row.employment if row and row.employment is defined else 0) }}</td>
+                        </tr>
                     {% endfor %}
-                    {% endfor %}
+                {% endfor %}
                 </tbody>
             </table>
         </div>

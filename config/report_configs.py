@@ -22,7 +22,7 @@ REPORT_CONFIGS = {
             'fallback': ['광공업생산', '광공업생산지수']
         },
         'aggregation_structure': {
-            'region_name_col': 4,
+            'region_name_col': 3,  # D열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 7,
             'total_code': 'BCD'
         },
@@ -76,7 +76,7 @@ REPORT_CONFIGS = {
             'fallback': ['서비스업생산', '서비스업생산지수']
         },
         'aggregation_structure': {
-            'region_name_col': 3,
+            'region_name_col': 0,  # A열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 6,
             'total_code': 'E~S'
         },
@@ -116,7 +116,7 @@ REPORT_CONFIGS = {
             'fallback': ['소비', '소매판매액지수']
         },
         'aggregation_structure': {
-            'region_name_col': 2,
+            'region_name_col': 2,  # C열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 5,
             'total_code': 'A0'
         },
@@ -152,7 +152,7 @@ REPORT_CONFIGS = {
             'fallback': ['건설', '건설수주']
         },
         'aggregation_structure': {
-            'region_name_col': 1,
+            'region_name_col': 1,  # B열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 3,
             'total_code': '0'
         },
@@ -182,7 +182,7 @@ REPORT_CONFIGS = {
             'fallback': ['수출', '수출액']
         },
         'aggregation_structure': {
-            'region_name_col': 3,
+            'region_name_col': 3,  # D열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 6,
             'total_code': '합계'
         },
@@ -207,7 +207,7 @@ REPORT_CONFIGS = {
             'fallback': ['수입', '수입액']
         },
         'aggregation_structure': {
-            'region_name_col': 3,
+            'region_name_col': 3,  # D열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 6,
             'total_code': '합계'
         },
@@ -232,7 +232,7 @@ REPORT_CONFIGS = {
             'fallback': ['물가', '소비자물가']
         },
         'aggregation_structure': {
-            'region_name_col': 2,
+            'region_name_col': 2,  # C열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 5,
             'total_code': '00'
         },
@@ -257,7 +257,7 @@ REPORT_CONFIGS = {
             'fallback': ['고용', '고용률']
         },
         'aggregation_structure': {
-            'region_name_col': 1,
+            'region_name_col': 1,  # B열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 3,
             'total_code': '계'
         },
@@ -283,7 +283,7 @@ REPORT_CONFIGS = {
         },
         'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},
         'aggregation_structure': {
-            'region_name_col': 0,
+            'region_name_col': 0,  # A열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 1,
             'total_code': '계'
         },
@@ -308,7 +308,7 @@ REPORT_CONFIGS = {
             'fallback': ['인구이동', '순인구이동']
         },
         'aggregation_structure': {
-            'region_name_col': 4,           # 지역이름 컬럼 (서울, 부산, ...)
+            'region_name_col': 4,  # E열(0-based, 실제 지역명 컬럼)
             'industry_code_col': 3,          # 지역코드 컬럼 (11, 21, 22, ...)
             'total_code': '순인구이동 수'   # 이동 유형: 유입/유출/순인구이동 중 '순인구이동 수' 선택
         },

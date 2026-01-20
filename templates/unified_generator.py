@@ -86,6 +86,113 @@ class UnifiedReportGenerator(BaseGenerator):
         self.analysis_quarterly_cols = {}
         # 인스턴스 생성 시 데이터프레임 등 필드 자동 초기화
         self.load_data()
+        # region_name_col, target_col, prev_y_col 등 주요 컬럼 자동 탐색
+        if self.df_aggregation is not None and self.year is not None and self.quarter is not None:
+            import re
+            max_header_rows = min(10, len(self.df_aggregation))
+            # 1. 지역명 컬럼(기존대로)
+            if self.region_name_col is None:
+                region_keywords = ['지역', '시도', '구분', '행정구역']
+                found = False
+                for row_idx in range(max_header_rows):
+                    row = self.df_aggregation.iloc[row_idx]
+                    for col_idx, val in enumerate(row):
+                        if pd.isna(val):
+                            continue
+                        val_str = str(val).strip()
+                        if any(kw in val_str for kw in region_keywords):
+                            self.region_name_col = col_idx
+                            found = True
+                            print(f"[자동탐색] 헤더 {row_idx+1}행에서 지역명 컬럼 인덱스 자동설정: {col_idx} ({val_str})")
+                            break
+                    if found:
+                        break
+                if not found:
+                    print("[자동탐색] 지역명 컬럼을 헤더에서 찾지 못했습니다. 기존 로직을 사용합니다.")
+
+            # 2. 지수/값 컬럼 (target_col, 기존대로)
+            if self.target_col is None:
+                value_keywords = ['지수', '값', '실적', '금액', '규모', '수치', '매출', '생산', '수출', '수입', '고용', '취업', '실업', '인구']
+                found = False
+                for row_idx in range(max_header_rows):
+                    row = self.df_aggregation.iloc[row_idx]
+                    for col_idx, val in enumerate(row):
+                        if pd.isna(val):
+                            continue
+                        val_str = str(val).strip()
+                        if any(kw in val_str for kw in value_keywords):
+                            self.target_col = col_idx
+                            found = True
+                            print(f"[자동탐색] 헤더 {row_idx+1}행에서 지수/값 컬럼 인덱스 자동설정: {col_idx} ({val_str})")
+                            break
+                    if found:
+                        break
+                if not found:
+                    print("[자동탐색] 지수/값 컬럼을 헤더에서 찾지 못했습니다. 기존 로직을 사용합니다.")
+
+            # 3. 현재 분기명 패턴 추출 및 변형으로 prev_y_col 등 동적 탐색
+            # 헤더에서 현재 분기명(연도/분기) 패턴 찾기
+            current_patterns = []
+            for row_idx in range(max_header_rows):
+                row = self.df_aggregation.iloc[row_idx]
+                for col_idx, val in enumerate(row):
+                    if pd.isna(val):
+                        continue
+                    val_str = str(val).strip()
+                    # 예: 2025.3/4, 2025년 3분기, 2025 3/4, 2025-3Q 등 다양한 패턴
+                    m = re.match(r'(20\d{2})[.\-/년 ]+([1-4])[분기Q/4 ]*', val_str)
+                    if m:
+                        current_patterns.append((row_idx, col_idx, val_str, m.group(1), m.group(2)))
+            # 가장 최근 연도/분기 패턴 사용
+            if current_patterns:
+                # 최신 연도/분기 우선
+                current_patterns.sort(key=lambda x: (int(x[3]), int(x[4])), reverse=True)
+                row_idx, col_idx, cur_val, cur_year, cur_q = current_patterns[0]
+                cur_year = int(cur_year)
+                cur_q = int(cur_q)
+                # 전년, 전전년, 전전전년 분기명 생성
+                prev_y = f"{cur_year-1}{cur_val[len(str(cur_year)):] }"  # 연도만 -1, 나머지 패턴 유지
+                prev_prev_y = f"{cur_year-2}{cur_val[len(str(cur_year)):] }"
+                prev_prev_prev_y = f"{cur_year-3}{cur_val[len(str(cur_year)):] }"
+                # 헤더 전체에서 해당 패턴 탐색
+                def normalize(s):
+                    # 숫자, 한글, 영문, 분기/년/공백/구분자만 남기고 모두 제거
+                    import re
+                    return re.sub(r'[^0-9a-zA-Z가-힣분기년Q/4 ]', '', str(s)).replace('  ', ' ').replace(' ', '').replace('.', '').replace('/', '').replace('-', '').replace('년', '').replace('분기', '').replace('Q', '').lower()
+                def find_col_by_pattern(pattern):
+                    norm_pat = normalize(pattern)
+                    best_idx = None
+                    best_score = 0
+                    for r in range(max_header_rows):
+                        row = self.df_aggregation.iloc[r]
+                        for c, v in enumerate(row):
+                            if pd.isna(v):
+                                continue
+                            norm_v = normalize(v)
+                            # 완전일치 우선, 아니면 앞부분/뒷부분 일치 허용
+                            if norm_v == norm_pat:
+                                return c
+                            if norm_pat in norm_v or norm_v in norm_pat:
+                                score = min(len(norm_pat), len(norm_v))
+                                if score > best_score:
+                                    best_score = score
+                                    best_idx = c
+                    return best_idx
+                if self.prev_y_col is None:
+                    idx = find_col_by_pattern(prev_y)
+                    if idx is not None:
+                        self.prev_y_col = idx
+                        print(f"[자동탐색] '{prev_y}' 패턴으로 전년 컬럼 인덱스 자동설정: {idx}")
+                if self.prev_prev_y_col is None:
+                    idx = find_col_by_pattern(prev_prev_y)
+                    if idx is not None:
+                        self.prev_prev_y_col = idx
+                        print(f"[자동탐색] '{prev_prev_y}' 패턴으로 2년전 컬럼 인덱스 자동설정: {idx}")
+                if self.prev_prev_prev_y_col is None:
+                    idx = find_col_by_pattern(prev_prev_prev_y)
+                    if idx is not None:
+                        self.prev_prev_prev_y_col = idx
+                        print(f"[자동탐색] '{prev_prev_prev_y}' 패턴으로 3년전 컬럼 인덱스 자동설정: {idx}")
     def _get_region_display_name(self, region: str) -> str:
         try:
             return REGION_DISPLAY_MAPPING.get(region, region)
@@ -216,9 +323,18 @@ class UnifiedReportGenerator(BaseGenerator):
         end_quarter: int,
         max_header_rows: int
     ) -> None:
-        # 동적 데이터 탐색 제거: 설정 기반 컬럼만 사용
-        self.quarterly_keys = []
-        self.quarterly_cols = {}
+        """
+        동적으로 분기별 컬럼 인덱스 매핑 (헤더 기반)
+        """
+        from utils.excel_utils import get_period_context, find_columns_by_period
+        # 분기 키 생성
+        period_ctx = get_period_context(end_year, end_quarter)
+        period_list = [period_ctx['target_period'], period_ctx['prev_y_period'], period_ctx['prev_q_period']]
+        # 최근 5분기 등 필요시 period_ctx['recent_5_quarters'] 활용 가능
+        header_row = self.config.get('header_rows', 1) - 1
+        col_map = find_columns_by_period(df, period_list, header_row=header_row, exact=False)
+        self.quarterly_keys = period_list
+        self.quarterly_cols = col_map
 
     def _collect_quarter_columns(
         self,
@@ -229,8 +345,15 @@ class UnifiedReportGenerator(BaseGenerator):
         end_quarter: int,
         max_header_rows: int
     ) -> tuple[List[str], Dict[str, Optional[int]]]:
-        # 동적 데이터 탐색 제거: 설정 기반 컬럼만 사용
-        return [], {}
+        """
+        동적으로 분기별 컬럼 인덱스 매핑 (헤더 기반)
+        """
+        from utils.excel_utils import get_period_context, find_columns_by_period
+        period_ctx = get_period_context(end_year, end_quarter)
+        period_list = [period_ctx['target_period'], period_ctx['prev_y_period'], period_ctx['prev_q_period']]
+        header_row = self.config.get('header_rows', 1) - 1
+        col_map = find_columns_by_period(df, period_list, header_row=header_row, exact=False)
+        return period_list, col_map
     def load_data(self):
         """
         테스트 호환성: 기존 테스트 코드에서 generator.load_data()를 호출하는 경우
@@ -1464,27 +1587,50 @@ class UnifiedReportGenerator(BaseGenerator):
         data['regional_data'] = regional
 
         # Top3 리스트 별칭 보강
-        for item in top3_increase + top3_decrease:
+        # None 제거 및 products 필드 항상 리스트 보장
+        def ensure_products(item):
             if not isinstance(item, dict):
-                continue
+                return {}
             item.setdefault('change', item.get('growth_rate'))
-            
-            # 모든 타입에 대해 industries_names 추가 (템플릿에서 JSON 렌더링 방지)
             if item.get('industries'):
                 item['industries_names'] = self._extract_item_names(item.get('industries'))
-            
             if self.report_type in ['export', 'import']:
-                item.setdefault('products', self._extract_item_names(item.get('industries')))
+                industries = item.get('industries')
+                if not isinstance(industries, list):
+                    industries = [] if industries is None else [industries]
+                names = self._extract_item_names(industries)
+                # products는 반드시 리스트로 보장
+                if isinstance(names, list):
+                    item['products'] = names
+                else:
+                    item['products'] = []
+                # products가 None이거나 리스트가 아니면 무조건 빈 리스트로 보정
+                if not isinstance(item.get('products'), list):
+                    item['products'] = []
+                if item['products'] is None:
+                    item['products'] = []
             elif self.report_type == 'price':
                 item.setdefault('categories', item.get('industries', []))
             elif self.report_type in ['employment', 'unemployment']:
                 item.setdefault('age_groups', [])
             elif self.report_type == 'construction':
-                # construction_template.html 호환성 보강
                 item.setdefault('civil_growth', item.get('growth_rate'))
                 item.setdefault('building_growth', item.get('growth_rate'))
                 item.setdefault('civil_subtypes', '철도·궤도, 기계설치')
                 item.setdefault('building_subtypes', '주택, 관공서 등')
+            return item
+
+        # None 제거 및 보정 적용 (products 필드가 항상 리스트가 되도록 보정)
+        def ensure_products_final(x):
+            x = ensure_products(x)
+            if not isinstance(x, dict):
+                return None
+            if 'products' not in x or not isinstance(x['products'], list) or x['products'] is None:
+                x['products'] = []
+            return x
+
+        top3_increase[:] = [y for y in (ensure_products_final(i) for i in top3_increase) if isinstance(y, dict) and y]
+        top3_decrease[:] = [y for y in (ensure_products_final(i) for i in top3_decrease) if isinstance(y, dict) and y]
 
         data['top3_increase_regions'] = top3_increase
         data['top3_decrease_regions'] = top3_decrease

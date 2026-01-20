@@ -1,3 +1,42 @@
+import pandas as pd
+def find_column_by_header(df: pd.DataFrame, header_keyword: str, header_row: int = 0, exact: bool = False) -> int:
+    """
+    DataFrame의 지정된 헤더 행에서 header_keyword(문자열)가 포함된 첫 번째 컬럼 인덱스를 반환
+    Args:
+        df: DataFrame
+        header_keyword: 찾을 헤더 문자열(예: '2025.4/4')
+        header_row: 헤더가 위치한 행 인덱스(0-based)
+        exact: True면 완전일치, False면 부분일치
+    Returns:
+        컬럼 인덱스(int), 없으면 -1
+    """
+    if header_row >= len(df):
+        return -1
+    header = df.iloc[header_row]
+    for idx, col in enumerate(header):
+        if pd.isna(col):
+            continue
+        col_str = str(col).strip()
+        if (exact and col_str == header_keyword) or (not exact and header_keyword in col_str):
+            return idx
+    return -1
+
+
+def find_columns_by_period(df: pd.DataFrame, period_list: list, header_row: int = 0, exact: bool = False) -> dict:
+    """
+    period_list에 있는 각 period 문자열에 대해 DataFrame 헤더에서 컬럼 인덱스 매핑 반환
+    Args:
+        df: DataFrame
+        period_list: ['2025.4/4', '2024.4/4', ...]
+        header_row: 헤더가 위치한 행 인덱스(0-based)
+        exact: True면 완전일치, False면 부분일치
+    Returns:
+        {period: col_idx, ...} (없으면 -1)
+    """
+    mapping = {}
+    for period in period_list:
+        mapping[period] = find_column_by_header(df, period, header_row, exact)
+    return mapping
 # -*- coding: utf-8 -*-
 """
 엑셀 파일 관련 유틸리티 함수

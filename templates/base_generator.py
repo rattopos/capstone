@@ -35,7 +35,7 @@ class BaseGenerator(ABC):
         self.year = year
         self.quarter = quarter
         self.xl = excel_file  # 캐시된 ExcelFile 객체 재사용
-        self.df_cache = {}  # 시트별 DataFrame 캐시
+        self.df_cache: Dict[str, pd.DataFrame] = {}  # 시트별 DataFrame 캐시
         self._xl_owner = excel_file is not None  # 외부에서 전달된 경우 소유권 없음
         self._calculated_excel_path = None
         
@@ -94,9 +94,9 @@ class BaseGenerator(ABC):
         
         if '분석' in sheet_name:
             calculated_path = self._get_calculated_excel_path()
-            df = pd.read_excel(calculated_path, sheet_name=sheet_name, header=None)
+            df = pd.read_excel(calculated_path, sheet_name=sheet_name, header=None)  # type: ignore
         else:
-            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)  # type: ignore
         
         if use_cache:
             self.df_cache[sheet_name] = df
@@ -158,7 +158,7 @@ class BaseGenerator(ABC):
                 # 정규표현식으로 숫자, 점(.), 음수 부호(-), 지수 표기(e, E)만 남기기
                 import re
                 # 숫자, 점(.), 음수 부호(-), 지수 표기(e, E)만 남기기 (콤마는 자동 제거됨)
-                cleaned = re.sub(r'[^\d\.\-\+\eE]', '', value)
+                cleaned = re.sub(r'[^\d\.\-\+eE]', '', value)
                 # 빈 문자열이면 default 반환
                 if not cleaned:
                     return 0.0 if default is None else default
@@ -313,7 +313,7 @@ class BaseGenerator(ABC):
         Returns:
             조건에 맞는 행 인덱스 목록
         """
-        result = []
+        result: List[int] = []
         try:
             for i in range(start_row, len(df)):
                 match = True
@@ -516,7 +516,7 @@ class BaseGenerator(ABC):
         industries_str = ', '.join(main_industries[:3]) if main_industries else "주요 업종"
         
         # 어휘 선택
-        cause_verb, result_noun = get_terms(report_id, growth_rate)
+        cause_verb, result_noun, _ = get_terms(report_id, growth_rate)
         
         # 2. 패턴별 문장 생성
         if pattern == 'pattern_a':
@@ -558,7 +558,7 @@ class BaseGenerator(ABC):
         elif pattern == 'pattern_d':
             # 패턴 D (추세): "[지역]은 전분기 증가하였으나, 이번 분기 [업종] 등이 줄어 3.1% 감소."
             if prev_rate is not None:
-                _, prev_result = get_terms(report_id, prev_rate)
+                _, prev_result, _ = get_terms(report_id, prev_rate)
             else:
                 prev_result = "변동"
             
@@ -602,14 +602,14 @@ class BaseGenerator(ABC):
         for ind in industries:
             weight = self.safe_float(ind.get('weight'), 0)
             change_rate = self.safe_float(ind.get('change_rate'), 0)
-            
             # Fallback: 가중치 없으면 주요 업종 여부로 가산점
-            if weight == 0 or pd.isna(weight):
+            if weight is None or weight == 0 or pd.isna(weight):
                 is_major = any(major in ind.get('name', '') for major in MAJOR_INDUSTRIES)
                 weight = 10 if is_major else 1
-            
+            if change_rate is None or pd.isna(change_rate):
+                change_rate = 0.0
             # 기여도 = |증감률 × 가중치|
-            ind['contribution'] = abs(change_rate * weight)
+            ind['contribution'] = abs(float(change_rate) * float(weight))
         
         # 기여도 순 정렬 (내림차순)
         ranked = sorted(

@@ -418,7 +418,7 @@
                         {'name': '동북', 'regions': ['대구', '경북', '강원']},
                         {'name': '동남', 'regions': ['부산', '울산', '경남']}
                     ] %}
-                    {% set data_rows = summary_table.rows if summary_table and summary_table.rows is defined else [] %}
+                    {% set data_rows = table_df if table_df is defined else (summary_table.rows if summary_table and summary_table.rows is defined else []) %}
                     {% set change_len = change_cols|length %}
                     {% set rate_len = rate_cols|length %}
                     {% set base_rate_len = rate_len - 1 if rate_len > 0 else 0 %}

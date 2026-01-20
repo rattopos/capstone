@@ -88,13 +88,15 @@
             <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
         </div>
         
+        {% set data_rows = table_df if table_df is defined else (retail_sales.region_rows if retail_sales is defined and retail_sales.region_rows is defined else []) %}
+        {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
         <div class="summary-box" style="margin-bottom: 22px;">
             <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">□</span>
                 <span>
-                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는
-                    {% set retail_yoy = retail_sales.nationwide.change %}
-                    {% set retail_qoq = retail_sales.qoq_change %}
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 소매판매</span>({{ "%.1f"|format(nationwide_row.index if nationwide_row and nationwide_row.index is defined else 0) }})는
+                    {% set retail_yoy = nationwide_row.change if nationwide_row and nationwide_row.change is defined else 0 %}
+                    {% set retail_qoq = nationwide_row.qoq_change if nationwide_row and nationwide_row.qoq_change is defined else 0 %}
                     {% set retail_yoy_valid = retail_yoy is not none and (retail_yoy | abs) >= 0.01 %}
                     {% set retail_qoq_valid = retail_qoq is not none and (retail_qoq | abs) >= 0.01 %}
                     {% if retail_yoy_valid %}
@@ -120,12 +122,12 @@
             <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">ㅇ</span>
                 <span>
-                    {% for region in retail_sales.increase_regions[:3] %}
-                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ retail_sales.increase_count }}개 시도는 소매판매가 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('consumption', 1)[1] }}</span>{{ get_terms('consumption', 1)[2] }},
-                    {% for region in retail_sales.decrease_regions[:3] %}
-                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ retail_sales.decrease_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('consumption', -1)[1] }}</span>
+                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change >= 0 %}
+                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'ge', 0) | list | length }}개 시도는 소매판매가 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('consumption', 1)[1] }}</span>{{ get_terms('consumption', 1)[2] }},
+                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change < 0 %}
+                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'lt', 0) | list | length }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('consumption', -1)[1] }}</span>
                 </span>
             </div>
         </div>
