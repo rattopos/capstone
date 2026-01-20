@@ -71,8 +71,8 @@ class ReportGenerator:
         """
         import re
         s = filename
-        # 1) '2025년 3분기' 또는 '25년 3분기'
-        m = re.search(r"(\d{2,4})\s*년\s*(\d)\s*분기", s)
+        # 1) '2025년 3분기' 또는 '25년 3분기' (언더스코어, 하이픈, 공백 모두 허용)
+        m = re.search(r"(\d{2,4})[ _-]*년[ _-]*(\d)[ _-]*분기", s)
         if m:
             y = int(m.group(1))
             if y < 100:  # 두 자리 연도 처리 (예: 25 -> 2025)

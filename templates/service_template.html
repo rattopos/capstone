@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅰ. 부문별 지역경제동향 - 서비스업생산 ({% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기)</title>
-    
+    <title>Ⅰ. 부문별 지역경제동향 - 서비스업생산 ({% if report_info.year is defined and report_info.year %}{{ report_info.year }}{%
+        else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{
+        report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기)</title>
+
     {# 결측치 플레이스홀더 매크로 #}
     {% macro val(value, format="%.1f", suffix="") %}
-        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
-            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
-        {%- else -%}
-            {{ format|format(value) }}{{ suffix }}
-        {%- endif -%}
+    {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+    <span class="editable-placeholder" contenteditable="true">[ ]</span>{{ suffix }}
+    {%- else -%}
+    {{ format|format(value) }}{{ suffix }}
+    {%- endif -%}
     {% endmacro %}
-    
+
     <style>
         /* 기본 리셋 */
         * {
@@ -21,7 +24,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 14pt;
@@ -29,7 +32,7 @@
             color: #000;
             background: #fff;
         }
-        
+
         .page {
             width: 210mm;
             min-height: 297mm;
@@ -37,14 +40,14 @@
             margin: 0 auto;
             background: #fff;
         }
-        
+
         @media screen {
             .page {
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                 margin-bottom: 10px;
             }
         }
-        
+
         /* 소제목 - 나. 서비스업생산 */
         .subsection-title {
             font-family: "Malgun Gothic", serif;
@@ -54,7 +57,7 @@
             border-bottom: 1px solid #000;
             padding-bottom: 3px;
         }
-        
+
         /* 요약 박스 */
         .summary-box {
             border: 1px dotted #555;
@@ -63,62 +66,63 @@
             background-color: transparent;
             line-height: 1.5;
         }
-        
+
         .summary-box .headline {
             margin-bottom: 6px;
             text-indent: -12px;
             padding-left: 12px;
         }
-        
+
         .summary-box .nationwide {
             margin-bottom: 4px;
             padding-left: 16px;
             text-indent: -16px;
         }
-        
+
         .summary-box .regional {
             padding-left: 16px;
             text-indent: -16px;
         }
-        
+
         .highlight {
             font-weight: bold;
         }
-        
-        .increase, .decrease {
+
+        .increase,
+        .decrease {
             font-weight: bold;
         }
-        
+
         /* 상세 박스 */
         .detail-box {
             border: 1px dotted #555;
             padding: 8px 12px;
             margin-bottom: 15px;
         }
-        
+
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
             font-size: 14pt;
         }
-        
+
         .detail-box .item {
             margin-bottom: 1px;
             line-height: 1.45;
             padding-left: 8px;
             text-indent: -8px;
         }
-        
+
         .detail-box .separator {
             border-top: 1px dotted #888;
             margin: 5px 0;
         }
-        
+
         /* 테이블 */
         .table-container {
             margin-top: 12px;
         }
-        
+
         .table-title {
             text-align: center;
             font-weight: bold;
@@ -126,7 +130,7 @@
             font-size: 11pt;
             font-family: "Malgun Gothic", serif;
         }
-        
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -134,10 +138,10 @@
             font-size: 11pt;
             table-layout: fixed;
         }
-        
+
         .data-table th,
         .data-table td {
-            
+
             padding: 2px 3px;
             text-align: center;
             vertical-align: middle;
@@ -145,40 +149,40 @@
             word-break: break-word;
             overflow-wrap: break-word;
         }
-        
+
         /* 테이블 헤더 - 연보라색 */
         .data-table th {
             background-color: #e6e0ec;
             font-weight: normal;
         }
-        
+
         /* 지역 그룹 셀 */
         .data-table .region-group {
             background-color: #f5f5f5;
             font-weight: normal;
             width: 28px;
         }
-        
+
         .data-table .region-name {
             width: 32px;
         }
-        
+
         /* 지수 섹션 */
         .data-table td.index-section {
             background-color: #fef9e7;
         }
-        
+
         .data-table th.index-section {
             background-color: #e6e0ec;
         }
-        
+
         .footnote {
             font-size: 11pt;
             color: #333;
             margin-top: 4px;
         }
-        
-        
+
+
         /* 결측치 플레이스홀더 */
         .editable-placeholder {
             background-color: #fff59d;
@@ -189,16 +193,16 @@
             min-width: 25px;
             text-align: center;
         }
-        
+
         .missing-cell {
             background-color: #fff9c4 !important;
         }
-        
+
         sup {
             font-size: 70%;
             vertical-align: super;
         }
-        
+
         /* 공통 디자인(광공업과 일치) */
         .section-main-title {
             font-family: "Malgun Gothic", serif;
@@ -212,21 +216,21 @@
             border-radius: 6px;
             position: relative;
             background-image:
-                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
-                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
-                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
-                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+                radial-gradient(circle at 18px 50%, rgba(255, 255, 255, 0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255, 255, 255, 0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255, 255, 255, 0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255, 255, 255, 0.25) 0 5px, transparent 6px);
         }
-        
+
         .section-main-title__label {
             display: inline-block;
             background: #ffffff;
             padding: 4px 26px;
             border-radius: 999px;
             color: #000;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
         }
-        
+
         .section-title {
             font-family: "Malgun Gothic", serif;
             font-size: 17pt;
@@ -234,7 +238,7 @@
             margin-bottom: 15px;
             margin-top: 10px;
         }
-        
+
         .subsection-title {
             font-family: "Malgun Gothic", serif;
             font-size: 15pt;
@@ -243,7 +247,7 @@
             border-bottom: none;
             padding-bottom: 0;
         }
-        
+
         .summary-box {
             border: none;
             padding: 0;
@@ -252,34 +256,34 @@
             line-height: 1.6;
             font-size: 11pt;
         }
-        
+
         .detail-box .title {
             font-size: 11pt;
         }
-        
+
         .data-table th,
         .data-table td {
             border: 1px solid #000;
         }
-        
+
         .data-table th {
             background-color: #e0e0e0;
             border: 1px solid #000;
         }
-        
+
         .data-table .region-group,
         .data-table .region-name {
             border: 1px solid #000;
         }
-        
+
         .data-table td.index-section {
             background-color: #fff6d6;
         }
-        
+
         .data-table th.index-section {
             background-color: #e0e0e0;
         }
-        
+
         @media print {
             .page {
                 width: 100%;
@@ -288,7 +292,7 @@
                 margin: 0;
                 box-shadow: none;
             }
-            
+
             .data-table th {
                 background-color: #e0e0e0 !important;
                 -webkit-print-color-adjust: exact;
@@ -297,118 +301,128 @@
         }
     </style>
 </head>
+
 <body>
     <div class="page">
         <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
         <div class="subsection-title">나. 서비스업생산</div>
-        
+
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">◆ 서비스업생산은 
+            <div class="headline">◆ 서비스업생산은
                 {% for region in top3_increase_regions %}
-                <span class="highlight">{{ region.region }}</span>({{ region.industries_names | join(', ') }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ region.industries_names | join(', ') }}){% if not
+                loop.last %}, {% endif %}
                 {% endfor %}
-                등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
+                등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{
+                    get_terms(report_info.report_id, 1)[1] }}</span>
             </div>
-            <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{ nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.growth_rate) }}% {{ get_terms(report_info.report_id, nationwide_data.growth_rate)[1] }}</span></div>
-            <div class="regional">◦ 
+            <div class="nationwide">□ 전국 서비스업생산({{ "%.1f"|format(nationwide_data.production_index) }})은 {{
+                nationwide_data.main_industries | map(attribute='name') | join(', ') }} 등의 생산이 {{
+                get_terms(report_info.report_id, nationwide_data.growth_rate)[0] }} 전년동분기대비 <span class="increase">{{
+                    "%.1f"|format(nationwide_data.growth_rate) }}% {{ get_terms(report_info.report_id,
+                    nationwide_data.growth_rate)[1] }}</span></div>
+            <div class="regional">◦
                 {% for region in regional_data.decrease_regions[:3] %}
-                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ decrease_industries_text }} 등의 생산이 줄었으나, 
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif
+                    %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ decrease_industries_text }} 등의 생산이 줄었으나,
                 {% for region in regional_data.increase_regions[:3] %}
-                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} {{ increase_industries_text }} 등의 생산이 {{ get_terms(report_info.report_id, 1)[0] }} <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
+                <span class="highlight">{{ region.region }}{% if loop.last %}{{ region.region | josa('Topic') }}{% endif
+                    %}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% endfor %} {{ increase_industries_text }} 등의 생산이 {{ get_terms(report_info.report_id, 1)[0] }} <span
+                    class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
             </div>
         </div>
-        
+
         <!-- 주요 증감 지역 및 업종 -->
         <div class="detail-box">
             <div class="title">&lt; 주요 증감지역 및 업종 &gt;</div>
-            
+
             <!-- 전국 -->
-                <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
-                {% for industry in nationwide_data.main_industries[:3] %}
-                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else (industry.contribution if industry.contribution is not none else (industry.growth_rate if industry.growth_rate is not none else industry.change_rate)) %}
+            <div class="item">·전 국( {{ "%.1f"|format(nationwide_data.growth_rate) }}%):
+                {% for industry in (nationwide_data.main_industries or [])[:3] %}
+                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else
+                (industry.contribution if industry.contribution is not none else (industry.growth_rate if
+                industry.growth_rate is not none else industry.change_rate)) %}
                 {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
-            
+
             <div class="separator"></div>
-            
+
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%):
                 {% for industry in (region.industries or [])[:3] %}
-                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else (industry.contribution if industry.contribution is not none else (industry.growth_rate if industry.growth_rate is not none else industry.change_rate)) %}
+                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else
+                (industry.contribution if industry.contribution is not none else (industry.growth_rate if
+                industry.growth_rate is not none else industry.change_rate)) %}
                 {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
-            
+
             <div class="separator"></div>
-            
+
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
+            <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%):
                 {% for industry in (region.industries or [])[:3] %}
-                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else (industry.contribution if industry.contribution is not none else (industry.growth_rate if industry.growth_rate is not none else industry.change_rate)) %}
+                {% set rate = industry.contribution_rate if industry.contribution_rate is not none else
+                (industry.contribution if industry.contribution is not none else (industry.growth_rate if
+                industry.growth_rate is not none else industry.change_rate)) %}
                 {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
         </div>
-        
+
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 서비스업생산지수 및 증감률 》</div>
             {% set base_year = report_info.year if report_info and report_info.year else none %}
             {% set base_quarter = report_info.quarter if report_info and report_info.quarter else none %}
             {% if base_year and base_quarter %}
-                {% set prev_q_year = base_year %}
-                {% set prev_q = base_quarter - 1 %}
-                {% if prev_q <= 0 %}
-                    {% set prev_q_year = base_year - 1 %}
-                    {% set prev_q = prev_q + 4 %}
-                {% endif %}
-                {% set growth_cols = [
-                    (base_year - 2) ~ ". " ~ base_quarter ~ "/4",
-                    (base_year - 1) ~ ". " ~ base_quarter ~ "/4",
-                    prev_q_year ~ ". " ~ prev_q ~ "/4",
-                    base_year ~ ". " ~ base_quarter ~ "/4"
-                ] %}
-                {% set index_cols = [
-                    (base_year - 1) ~ ". " ~ base_quarter ~ "/4",
-                    base_year ~ ". " ~ base_quarter ~ "/4"
-                ] %}
-            {% else %}
-                {% set growth_cols = ["[기간]", "[기간]", "[기간]", "[기간]"] %}
-                {% set index_cols = ["[기간]", "[기간]"] %}
-            {% endif %}
-            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+            {% set prev_q_year = base_year %}
+            {% set prev_q = base_quarter - 1 %}
+            {% if prev_q <= 0 %} {% set prev_q_year=base_year - 1 %} {% set prev_q=prev_q + 4 %} {% endif %} {% set
+                growth_cols=[ (base_year - 2) ~ ". " ~ base_quarter ~ "/4" , (base_year - 1) ~ ". " ~ base_quarter
+                ~ "/4" , prev_q_year ~ ". " ~ prev_q ~ "/4" , base_year ~ ". " ~ base_quarter ~ "/4" ] %} {% set
+                index_cols=[ (base_year - 1) ~ ". " ~ base_quarter ~ "/4" , base_year ~ ". " ~ base_quarter ~ "/4" ] %}
+                {% else %} {% set growth_cols=["[기간]", "[기간]" , "[기간]" , "[기간]" ] %} {% set index_cols=["[기간]", "[기간]" ]
+                %} {% endif %} <table style="border-collapse: collapse !important; border: 1px solid black !important;"
+                class="data-table">
                 <thead style="border: 1px solid black !important;">
                     <tr>
                         <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
-                        <th colspan="{{ growth_cols|length }}" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
-                        <th colspan="{{ index_cols|length }}" class="index-section" style="border: 1px solid black !important;">서비스업생산지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
+                        <th colspan="{{ growth_cols|length }}" style="border: 1px solid black !important;">전년동분기대비
+                            증감률(%)</th>
+                        <th colspan="{{ index_cols|length }}" class="index-section"
+                            style="border: 1px solid black !important;">서비스업생산지수({{ summary_table.base_year if
+                            summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
                     </tr>
                     <tr>
                         {% for col in growth_cols %}
-                        <th style="width: 58px;; border: 1px solid black !important">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        <th style="width: 58px;; border: 1px solid black !important">{{ col }}{% if loop.last
+                            %}<sup>p</sup>{% endif %}</th>
                         {% endfor %}
                         {% for col in index_cols %}
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ col }}{%
+                            if loop.last %}<sup>p</sup>{% endif %}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% set region_groups = [
-                        {'name': '경인', 'regions': ['서울', '인천', '경기']},
-                        {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
-                        {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
-                        {'name': '동북', 'regions': ['대구', '경북', '강원']},
-                        {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                    {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                    {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                    {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                    {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                    {'name': '동남', 'regions': ['부산', '울산', '경남']}
                     ] %}
-                    {% set data_rows = summary_table.regions if summary_table and summary_table.regions is defined else [] %}
+                    {% set data_rows = summary_table.regions if summary_table and summary_table.regions is defined else
+                    [] %}
                     {% set growth_len = growth_cols|length %}
                     {% set index_len = index_cols|length %}
                     {% set nationwide_row = (data_rows | selectattr('region', 'equalto', '전국') | list | first) %}
@@ -416,46 +430,56 @@
                         <td class="region-group" style="border: 1px solid black !important;"></td>
                         <td class="region-name" style="border: 1px solid black !important;">전국</td>
                         {% for i in range(growth_len) %}
-                        {% set rate = nationwide_row.growth_rates[i] if nationwide_row and nationwide_row.growth_rates is defined and nationwide_row.growth_rates|length > i else none %}
-                        <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                        {% set rate = nationwide_row.growth_rates[i] if nationwide_row and nationwide_row.growth_rates
+                        is defined and nationwide_row.growth_rates|length > i else none %}
+                        <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}"
+                            style="border: 1px solid black !important;">
                             {{ val(rate) }}
                         </td>
                         {% endfor %}
                         {% for i in range(index_len) %}
-                        {% set idx = nationwide_row.indices[i] if nationwide_row and nationwide_row.indices is defined and nationwide_row.indices|length > i else none %}
-                        <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                        {% set idx = nationwide_row.indices[i] if nationwide_row and nationwide_row.indices is defined
+                        and nationwide_row.indices|length > i else none %}
+                        <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}"
+                            style="border: 1px solid black !important;">
                             {{ val(idx) }}
                         </td>
                         {% endfor %}
                     </tr>
                     {% for group in region_groups %}
-                        {% for region_name in group.regions %}
-                        {% set row = (data_rows | selectattr('region', 'equalto', region_name) | list | first) %}
-                        <tr>
-                            {% if loop.first %}
-                            <td class="region-group" rowspan="{{ group.regions|length }}" style="border: 1px solid black !important;">{{ group.name }}</td>
-                            {% endif %}
-                            <td class="region-name" style="border: 1px solid black !important;">{{ region_name }}</td>
-                            {% for i in range(growth_len) %}
-                            {% set rate = row.growth_rates[i] if row and row.growth_rates is defined and row.growth_rates|length > i else none %}
-                            <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
-                                {{ val(rate) }}
-                            </td>
-                            {% endfor %}
-                            {% for i in range(index_len) %}
-                            {% set idx = row.indices[i] if row and row.indices is defined and row.indices|length > i else none %}
-                            <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
-                                {{ val(idx) }}
-                            </td>
-                            {% endfor %}
-                        </tr>
+                    {% for region_name in group.regions %}
+                    {% set row = (data_rows | selectattr('region', 'equalto', region_name) | list | first) %}
+                    <tr>
+                        {% if loop.first %}
+                        <td class="region-group" rowspan="{{ group.regions|length }}"
+                            style="border: 1px solid black !important;">{{ group.name }}</td>
+                        {% endif %}
+                        <td class="region-name" style="border: 1px solid black !important;">{{ region_name }}</td>
+                        {% for i in range(growth_len) %}
+                        {% set rate = row.growth_rates[i] if row and row.growth_rates is defined and
+                        row.growth_rates|length > i else none %}
+                        <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}"
+                            style="border: 1px solid black !important;">
+                            {{ val(rate) }}
+                        </td>
                         {% endfor %}
+                        {% for i in range(index_len) %}
+                        {% set idx = row.indices[i] if row and row.indices is defined and row.indices|length > i else
+                        none %}
+                        <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}"
+                            style="border: 1px solid black !important;">
+                            {{ val(idx) }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
                     {% endfor %}
                 </tbody>
-            </table>
-            
-            
+                </table>
+
+
         </div>
-        
+
 </body>
+
 </html>

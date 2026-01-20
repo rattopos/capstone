@@ -392,7 +392,22 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'class_name': 'DomesticMigrationGenerator',
         'name_mapping': {},
         # 집계 시트의 합계 행은 연령별 컬럼에 '합계'로 표기됨
-        'aggregation_structure': {'total_code': '합계', 'sheet': 'I(순인구이동)집계'},
+        'aggregation_structure': {
+            'total_code': '합계', 
+            'sheet': 'I(순인구이동)집계',
+            'region_name_col': 4,  # E열(0-based) - 지역 이름
+            'industry_name_col': 7,  # H열(0-based) - 연령별
+            'data_start_row': 3  # 데이터 시작 행 (헤더가 3행, 그 다음부터 데이터)
+        },
+        'aggregation_columns': {
+            'target_col': 25,  # 2025 3/4 (Z열)
+            'prev_y_col': 21,  # 2024 3/4
+            'prev_prev_y_col': 17,  # 2023 3/4
+            'prev_prev_prev_y_col': 13,  # 2022 3/4
+            'quarterly_cols': {
+                '2022_3Q': 13, '2023_3Q': 17, '2024_3Q': 21, '2025_3Q': 25
+            }
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name'],
         'require_industry_code': False,
         'has_nationwide': False  # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미없음

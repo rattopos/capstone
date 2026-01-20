@@ -156,36 +156,38 @@ class ExcelCache:
     
     def clear_cache(self, excel_path: Optional[str] = None, preserve_calculated_path: bool = False):
         """
-        캐시 정리
+        캐시 정리 (비활성화됨)
         
-        Args:
-            excel_path: 특정 파일의 캐시만 정리 (None이면 전체 정리)
-            preserve_calculated_path: 계산된 파일 경로 캐시는 보존할지 여부
+        안전성을 위해 캐시 정리를 수행하지 않습니다.
         """
         with self._lock:
-            if excel_path:
-                # 특정 파일의 모든 캐시 항목 제거
-                keys_to_remove = [k for k in self._cache.keys() if k.startswith(excel_path)]
-                if preserve_calculated_path:
-                    keys_to_remove = [k for k in keys_to_remove if not k.endswith(':calculated_path')]
-                for key in keys_to_remove:
-                    try:
-                        # openpyxl Workbook은 명시적으로 닫아야 함
-                        entry = self._cache[key]
-                        if 'wb' in entry:
-                            entry['wb'].close()
-                    except:
-                        pass
-                    del self._cache[key]
-            else:
-                # 전체 캐시 정리
-                for entry in self._cache.values():
-                    try:
-                        if 'wb' in entry:
-                            entry['wb'].close()
-                    except:
-                        pass
-                self._cache.clear()
+            # 캐시 정리 로직 비활성화
+            # 메모리 누수보다 안정성을 우선시함
+            pass
+            
+            # if excel_path:
+            #     # 특정 파일의 모든 캐시 항목 제거
+            #     keys_to_remove = [k for k in self._cache.keys() if k.startswith(excel_path)]
+            #     if preserve_calculated_path:
+            #         keys_to_remove = [k for k in keys_to_remove if not k.endswith(':calculated_path')]
+            #     for key in keys_to_remove:
+            #         try:
+            #             # openpyxl Workbook은 명시적으로 닫아야 함
+            #             entry = self._cache[key]
+            #             if 'wb' in entry:
+            #                 entry['wb'].close()
+            #         except:
+            #             pass
+            #         del self._cache[key]
+            # else:
+            #     # 전체 캐시 정리
+            #     for entry in self._cache.values():
+            #         try:
+            #             if 'wb' in entry:
+            #                 entry['wb'].close()
+            #         except:
+            #             pass
+            #     self._cache.clear()
     
     def get_cache_info(self) -> Dict[str, Any]:
         """캐시 정보 반환"""
@@ -254,13 +256,15 @@ class SectorDataCache:
             }
 
     def clear_cache(self, excel_path: Optional[str] = None) -> None:
-        with self._lock:
-            if excel_path:
-                keys_to_remove = [k for k in self._cache.keys() if k.startswith(excel_path)]
-                for key in keys_to_remove:
-                    del self._cache[key]
-            else:
-                self._cache.clear()
+        """캐시 정리 (비활성화됨)"""
+        pass
+        # with self._lock:
+        #     if excel_path:
+        #         keys_to_remove = [k for k in self._cache.keys() if k.startswith(excel_path)]
+        #         for key in keys_to_remove:
+        #             del self._cache[key]
+        #     else:
+        #         self._cache.clear()
 
     def get_cache_info(self) -> Dict[str, Any]:
         with self._lock:

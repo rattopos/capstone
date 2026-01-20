@@ -8,7 +8,7 @@ import json
 import inspect
 import pandas as pd
 from pathlib import Path
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader
 
 from config.settings import TEMPLATES_DIR, SCHEMAS_DIR, UPLOAD_FOLDER, TEMP_OUTPUT_DIR
 from config.reports import SECTOR_REPORTS, VALID_REGIONS
@@ -21,10 +21,10 @@ from .excel_cache import get_excel_file, clear_excel_cache, get_sector_data, set
 
 def _fixed_period_labels(year: int | None, quarter: int | None, age_label: str = "15-29세") -> tuple[list[str], list[str], list[str]]:
     if not year or not quarter:
-        growth = ["{Y-2}. {Q}/4", "{Y-1}. {Q}/4", "{Y}. {Q-1}/4", "{Y}. {Q}/4"]
+        change = ["{Y-2}. {Q}/4", "{Y-1}. {Q}/4", "{Y}. {Q-1}/4", "{Y}. {Q}/4"]
         index = ["{Y-1}. {Q}/4", "{Y}. {Q}/4"]
         rate = ["{Y-1}. {Q}/4", "{Y}. {Q}/4", age_label]
-        return growth, index, rate
+        return change, index, rate
 
     prev_q_year, prev_q = (year - 1, 4) if quarter <= 1 else (year, quarter - 1)
     growth = [
@@ -136,13 +136,14 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
         if not template_path.exists():
             return None, f"템플릿 파일을 찾을 수 없습니다: {template_path}", []
         
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template_content = f.read()
+        # 템플릿 환경 설정 및 렌더링
+        env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+        env.filters['format_value'] = format_value
+        env.filters['is_missing'] = is_missing
+        env.filters['josa'] = get_josa
         
-        template = Template(template_content)
-        template.environment.filters['format_value'] = format_value
-        template.environment.filters['is_missing'] = is_missing
-        template.environment.filters['josa'] = get_josa
+        template = env.get_template(template_name)
+        
         data['get_terms'] = get_terms
         data['get_comparative_terms'] = get_comparative_terms
         html_content = template.render(**data)
@@ -258,13 +259,14 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
         if not template_path.exists():
             return None, f"템플릿 파일을 찾을 수 없습니다: {template_path}", []
         
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template_content = f.read()
+        # 템플릿 환경 설정 및 렌더링
+        env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+        env.filters['format_value'] = format_value
+        env.filters['is_missing'] = is_missing
+        env.filters['josa'] = get_josa
         
-        template = Template(template_content)
-        template.environment.filters['format_value'] = format_value
-        template.environment.filters['is_missing'] = is_missing
-        template.environment.filters['josa'] = get_josa
+        template = env.get_template(template_name)
+        
         data['get_terms'] = get_terms
         data['get_comparative_terms'] = get_comparative_terms
         html_content = template.render(**data)
@@ -350,12 +352,14 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     trade_price_data['report_info'] = {'year': year, 'quarter': quarter, 'page_number': ''}
                     
                     # 템플릿 렌더링
-                    template_path = TEMPLATES_DIR / template_name
-                    with open(template_path, 'r', encoding='utf-8') as f:
-                        template = Template(f.read())
-                    template.environment.filters['format_value'] = format_value
-                    template.environment.filters['is_missing'] = is_missing
-                    template.environment.filters['josa'] = get_josa
+                    # 템플릿 렌더링
+                    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+                    env.filters['format_value'] = format_value
+                    env.filters['is_missing'] = is_missing
+                    env.filters['josa'] = get_josa
+                    
+                    template = env.get_template(template_name)
+                    
                     trade_price_data['get_terms'] = get_terms
                     trade_price_data['get_comparative_terms'] = get_comparative_terms
                     html_content = template.render(**trade_price_data)
@@ -730,37 +734,33 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
             return None, error_msg, []
         
         try:
-            with open(template_path, 'r', encoding='utf-8') as f:
-                template_content = f.read()
-            
-            if not template_content:
-                error_msg = f"템플릿 파일이 비어있습니다: {template_path}"
-                print(f"[ERROR] {error_msg}")
-                return None, error_msg, []
-            
-            template = Template(template_content)
-            
-            # 필터 등록 (안전한 등록)
-            try:
-                template.environment.filters['format_value'] = format_value
-            except Exception as e:
-                print(f"[WARNING] format_value 필터 등록 실패: {e}")
-            
-            try:
-                template.environment.filters['is_missing'] = is_missing
-            except Exception as e:
-                print(f"[WARNING] is_missing 필터 등록 실패: {e}")
-            
-            try:
-                template.environment.filters['josa'] = get_josa
-                data['get_terms'] = get_terms
-                data['get_comparative_terms'] = get_comparative_terms
-            except Exception as e:
-                print(f"[WARNING] josa 필터 등록 실패: {e}")
-            
             # 템플릿 렌더링 (안전한 렌더링)
             try:
+                # 템플릿 환경 설정
+                env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+                
+                # 필터 등록
+                try:
+                    env.filters['format_value'] = format_value
+                except Exception as e:
+                    print(f"[WARNING] format_value 필터 등록 실패: {e}")
+                
+                try:
+                    env.filters['is_missing'] = is_missing
+                except Exception as e:
+                    print(f"[WARNING] is_missing 필터 등록 실패: {e}")
+                
+                try:
+                    env.filters['josa'] = get_josa
+                    data['get_terms'] = get_terms
+                    data['get_comparative_terms'] = get_comparative_terms
+                except Exception as e:
+                    print(f"[WARNING] josa 필터 등록 실패: {e}")
+                
+                template = env.get_template(template_name)
+                
                 html_content = template.render(**data)
+                
                 if not html_content:
                     print(f"[WARNING] 템플릿 렌더링 결과가 비어있습니다.")
                     html_content = "<!-- Empty template render -->"

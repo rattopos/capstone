@@ -184,22 +184,24 @@ def cleanup_temp_artifacts(excel_path: str | None = None) -> None:
         import shutil
         from services.excel_cache import clear_excel_cache
 
-        for temp_dir in (TEMP_OUTPUT_DIR, TEMP_REGIONAL_OUTPUT_DIR, TEMP_CALCULATED_DIR):
-            try:
-                if temp_dir.exists():
-                    shutil.rmtree(temp_dir)
-            except Exception as e:
-                print(f"[경고] 임시 폴더 삭제 실패 ({temp_dir}): {e}")
+        # 임시 파일 삭제 로직 비활성화
+        # for temp_dir in (TEMP_OUTPUT_DIR, TEMP_REGIONAL_OUTPUT_DIR, TEMP_CALCULATED_DIR):
+        #     try:
+        #         if temp_dir.exists():
+        #             shutil.rmtree(temp_dir)
+        #     except Exception as e:
+        #         print(f"[경고] 임시 폴더 삭제 실패 ({temp_dir}): {e}")
 
-        # 상위 TEMP_DIR가 비어있으면 정리
-        try:
-            if TEMP_DIR.exists() and not any(TEMP_DIR.iterdir()):
-                TEMP_DIR.rmdir()
-        except Exception:
-            pass
+        # 상위 TEMP_DIR가 비어있으면 정리 (비활성화)
+        # try:
+        #     if TEMP_DIR.exists() and not any(TEMP_DIR.iterdir()):
+        #         TEMP_DIR.rmdir()
+        # except Exception:
+        #     pass
 
-        # 캐시에서 계산 경로 제거
+        # 캐시에서 계산 경로 제거만 수행 (파일 삭제는 안함)
         if excel_path:
+            # clear_excel_cache는 이미 services/excel_cache.py에서 비활성화됨
             clear_excel_cache(excel_path, preserve_calculated_path=False)
     except Exception as e:
         print(f"[경고] 임시 파일 정리 중 오류: {e}")

@@ -23,7 +23,7 @@ def create_app():
     app = Flask(
         __name__, 
             template_folder=str(BASE_DIR),
-        static_folder=str(BASE_DIR)
+        static_folder='static'
     )
     
     # 설정
