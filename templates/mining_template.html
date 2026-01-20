@@ -361,8 +361,29 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 광공업생산지수 및 증감률 》</div>
-            {% set growth_cols = summary_table.columns.growth_rate_columns if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined and summary_table.columns.growth_rate_columns|length > 0 else ["[기간]", "[기간]", "[기간]", "[기간]"] %}
-            {% set index_cols = summary_table.columns.index_columns if summary_table and summary_table.columns and summary_table.columns.index_columns is defined and summary_table.columns.index_columns|length > 0 else ["[기간]", "[기간]"] %}
+            {% set base_year = report_info.year if report_info and report_info.year else none %}
+            {% set base_quarter = report_info.quarter if report_info and report_info.quarter else none %}
+            {% if base_year and base_quarter %}
+                {% set prev_q_year = base_year %}
+                {% set prev_q = base_quarter - 1 %}
+                {% if prev_q <= 0 %}
+                    {% set prev_q_year = base_year - 1 %}
+                    {% set prev_q = prev_q + 4 %}
+                {% endif %}
+                {% set growth_cols = [
+                    (base_year - 2) ~ ". " ~ base_quarter ~ "/4",
+                    (base_year - 1) ~ ". " ~ base_quarter ~ "/4",
+                    prev_q_year ~ ". " ~ prev_q ~ "/4",
+                    base_year ~ ". " ~ base_quarter ~ "/4"
+                ] %}
+                {% set index_cols = [
+                    (base_year - 1) ~ ". " ~ base_quarter ~ "/4",
+                    base_year ~ ". " ~ base_quarter ~ "/4"
+                ] %}
+            {% else %}
+                {% set growth_cols = ["[기간]", "[기간]", "[기간]", "[기간]"] %}
+                {% set index_cols = ["[기간]", "[기간]"] %}
+            {% endif %}
             <table class="data-table" style="border-collapse: collapse !important; border: 1px solid black !important;">
                 <thead>
                     <!-- 1행: 구분 | 전년동분기대비 증감률(%) (colspan=4) | 광공업생산지수([기준연도]=100) (colspan=2) -->
@@ -391,8 +412,8 @@
                         {'name': '동남', 'regions': ['부산', '울산', '경남']}
                     ] %}
                     {% set data_rows = summary_table.regions if summary_table and summary_table.regions is defined else [] %}
-                    {% set growth_len = summary_table.columns.growth_rate_columns|length if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined else 4 %}
-                    {% set index_len = summary_table.columns.index_columns|length if summary_table and summary_table.columns and summary_table.columns.index_columns is defined else 2 %}
+                    {% set growth_len = growth_cols|length %}
+                    {% set index_len = index_cols|length %}
                     {% set nationwide_row = (data_rows | selectattr('region', 'equalto', '전국') | list | first) %}
                     <tr>
                         <td class="region-group" style="border: 1px solid black !important;"></td>

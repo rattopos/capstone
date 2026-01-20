@@ -24,101 +24,59 @@ def get_previous_quarter():
     current_year = now.year
     current_month = now.month
     current_quarter = (current_month - 1) // 3 + 1
-    
+
     # 이전 분기 계산
     if current_quarter == 1:
-        # 1분기면 작년 4분기
         return current_year - 1, 4
-    else:
-        # 2, 3, 4분기면 올해의 이전 분기
-        return current_year, current_quarter - 1
+    return current_year, current_quarter - 1
 
 
 def get_period_context(target_year: int, target_quarter: int) -> Dict[str, Any]:
     """
-    분석 대상 연도/분기를 기준으로 비교 시점들을 수학적으로 계산하는 함수
-    
-    입력: 분석 대상 연도(target_year), 분기(target_quarter)
-    반환: 모든 비교 시점 정보를 담은 딕셔너리
-    
-    Args:
-        target_year: 분석 대상 연도 (예: 2025)
-        target_quarter: 분석 대상 분기 (1-4)
-    
-    Returns:
-        {
-            'target_year': int,           # 분석 대상 연도
-            'target_quarter': int,        # 분석 대상 분기
-            'target_period': str,         # "2025.3/4" 형식
-            'prev_q_year': int,           # 전분기 연도
-            'prev_q': int,                # 전분기 (1-4)
-            'prev_q_period': str,         # "2025.2/4" 형식
-            'prev_y_year': int,           # 전년동기 연도
-            'prev_y_quarter': int,        # 전년동기 분기
-            'prev_y_period': str,         # "2024.3/4" 형식
-            'recent_5_years': list,       # [2021, 2022, 2023, 2024, 2025]
-            'recent_5_quarters': list,    # ["2024.1/4", "2024.2/4", "2024.3/4", "2024.4/4", "2025.1/4"] (역순)
-            'quarter_keys': dict,         # {'2025_3Q': '2025.3/4', '2024_3Q': '2024.3/4', ...}
-            'target_key': str,            # '2025_3Q' (현재 분기)
-            'prev_quarter_key': str,      # '2025_2Q' (전분기)
-            'prev_year_key': str,         # '2024_3Q' (전년동기)
-        }
+    분석 대상 연도/분기를 기준으로 비교 시점들을 계산
     """
-    # 전분기(QoQ) 계산: 분기가 1이면 작년 4분기, 아니면 올해 (분기-1)
     if target_quarter == 1:
         prev_q_year = target_year - 1
         prev_q = 4
     else:
         prev_q_year = target_year
         prev_q = target_quarter - 1
-    
-    # 전년동기(YoY) 계산: (연도-1) 동일 분기
+
     prev_y_year = target_year - 1
     prev_y_quarter = target_quarter
-    
-    # 최근 5년 리스트: [target_year-4, ..., target_year]
+
     recent_5_years = list(range(target_year - 4, target_year + 1))
-    
-    # 최근 5분기 리스트: 역순으로 계산
     recent_5_quarters = []
-    for i in range(4, -1, -1):  # 4, 3, 2, 1, 0
+    for i in range(4, -1, -1):
         q_offset = i
         if q_offset == 0:
-            # 현재 분기
             q_year = target_year
             q_num = target_quarter
         else:
-            # 과거 분기
-            total_quarters_back = q_offset
             q_year = target_year
             q_num = target_quarter
-            
-            # 분기를 역산
-            for _ in range(total_quarters_back):
+            for _ in range(q_offset):
                 if q_num == 1:
                     q_num = 4
                     q_year -= 1
                 else:
                     q_num -= 1
-        
         recent_5_quarters.append(f"{q_year}.{q_num}/4")
-    
-    # Quarter Key 형식 생성 (예: '2025_3Q')
+
     def make_quarter_key(year: int, quarter: int) -> str:
         return f"{year}_{quarter}Q"
-    
+
     target_key = make_quarter_key(target_year, target_quarter)
     prev_q_key = make_quarter_key(prev_q_year, prev_q)
     prev_y_key = make_quarter_key(prev_y_year, prev_y_quarter)
-    
-    # Quarter Keys 딕셔너리 (최근 5분기)
+
     quarter_keys = {}
     for period_str in recent_5_quarters:
         year_str, q_str = period_str.split('.')
         q_num = int(q_str.split('/')[0])
         year = int(year_str)
         quarter_keys[make_quarter_key(year, q_num)] = period_str
-    
+
     return {
         'target_year': target_year,
         'target_quarter': target_quarter,
@@ -136,113 +94,6 @@ def get_period_context(target_year: int, target_quarter: int) -> Dict[str, Any]:
         'prev_quarter_key': prev_q_key,
         'prev_year_key': prev_y_key,
     }
-
-
-def find_column_by_header(df: pd.DataFrame, header_pattern: str, search_rows: int = 5) -> Optional[int]:
-    """
-    엑셀 헤더를 동적으로 찾아 컬럼 인덱스를 반환
-    
-    엑셀 파일의 컬럼 헤더 위치가 바뀔 수 있으므로, 인덱스 번호를 하드코딩하는 대신
-    헤더 텍스트를 찾아 매핑합니다.
-    
-    Args:
-        df: pandas DataFrame (엑셀 시트)
-        header_pattern: 찾을 헤더 패턴 (예: "2025.3/4", "2025", "3/4")
-        search_rows: 헤더를 찾을 상단 행 수 (기본값: 5)
-    
-    Returns:
-        컬럼 인덱스 (0-based) 또는 None (찾지 못한 경우)
-    """
-    import re
-    
-    # 상단 행들을 스캔
-    for row_idx in range(min(search_rows, len(df))):
-        row = df.iloc[row_idx]
-        
-        # 모든 컬럼을 순회하며 패턴 찾기
-        for col_idx in range(len(row)):
-            cell_value = row.iloc[col_idx] if hasattr(row, 'iloc') else row[col_idx]
-            
-            if pd.notna(cell_value):
-                cell_str = str(cell_value).strip()
-                
-                # 정확한 매칭 또는 패턴 포함 확인
-                if header_pattern in cell_str:
-                    return col_idx
-                
-                # 정규식 패턴 매칭 (예: "2025.3/4", "2025 3/4" 등)
-                pattern_escaped = re.escape(header_pattern)
-                if re.search(pattern_escaped, cell_str, re.IGNORECASE):
-                    return col_idx
-    
-    return None
-
-
-def find_columns_by_period(df: pd.DataFrame, period_context: Dict[str, Any], search_rows: int = 5) -> Dict[str, Optional[int]]:
-    """
-    period_context를 사용하여 여러 컬럼을 한 번에 찾기
-    
-    Args:
-        df: pandas DataFrame (엑셀 시트)
-        period_context: get_period_context()로 생성한 딕셔너리
-        search_rows: 헤더를 찾을 상단 행 수
-    
-    Returns:
-        {
-            'target_col': int,      # 현재 분기 컬럼 인덱스
-            'prev_q_col': int,      # 전분기 컬럼 인덱스
-            'prev_y_col': int,      # 전년동기 컬럼 인덱스
-        }
-    """
-    target_period = period_context['target_period']
-    prev_q_period = period_context['prev_q_period']
-    prev_y_period = period_context['prev_y_period']
-    
-    # 여러 패턴으로 시도 (더 유연한 매칭)
-    target_patterns = [
-        target_period,  # "2025.3/4"
-        f"{period_context['target_year']}.{period_context['target_quarter']}/4",
-        f"{period_context['target_year']} {period_context['target_quarter']}/4",
-    ]
-    
-    prev_q_patterns = [
-        prev_q_period,
-        f"{period_context['prev_q_year']}.{period_context['prev_q']}/4",
-    ]
-    
-    prev_y_patterns = [
-        prev_y_period,
-        f"{period_context['prev_y_year']}.{period_context['prev_y_quarter']}/4",
-    ]
-    
-    result = {
-        'target_col': None,
-        'prev_q_col': None,
-        'prev_y_col': None,
-    }
-    
-    # 현재 분기 찾기
-    for pattern in target_patterns:
-        col_idx = find_column_by_header(df, pattern, search_rows)
-        if col_idx is not None:
-            result['target_col'] = col_idx
-            break
-    
-    # 전분기 찾기
-    for pattern in prev_q_patterns:
-        col_idx = find_column_by_header(df, pattern, search_rows)
-        if col_idx is not None:
-            result['prev_q_col'] = col_idx
-            break
-    
-    # 전년동기 찾기
-    for pattern in prev_y_patterns:
-        col_idx = find_column_by_header(df, pattern, search_rows)
-        if col_idx is not None:
-            result['prev_y_col'] = col_idx
-            break
-    
-    return result
 
 
 def load_generator_module(generator_name):

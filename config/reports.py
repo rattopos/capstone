@@ -9,6 +9,8 @@ from typing import Any
 from pathlib import Path
 import csv
 
+from config.table_locations import load_table_locations
+
 
 def _load_export_name_mapping() -> dict[str, str]:
     csv_path = Path(__file__).resolve().parents[1] / '수출축약.csv'
@@ -301,7 +303,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'price',
         'class_name': 'PriceTrendGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '00', 'sheet': 'E(지출목적물가)집계'},
+        'aggregation_structure': {'total_code': '00', 'sheet': 'E(품목성질물가)집계'},
         'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
@@ -354,6 +356,49 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'has_nationwide': False  # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미없음
     }
 ]
+
+
+def _apply_table_locations_to_sector_reports() -> None:
+    """data_table_locations.md 기준으로 집계 시트/범위를 갱신"""
+    locations = load_table_locations()
+    if not locations:
+        return
+
+    name_to_report_id = {
+        '광공업생산': 'manufacturing',
+        '서비스업생산': 'service',
+        '소매판매': 'consumption',
+        '고용률': 'employment',
+        '실업률': 'unemployment',
+        '물가': 'price',
+        '건설': 'construction',
+        '수출': 'export',
+        '수입': 'import',
+        '순인구이동': 'migration',
+    }
+
+    for section_name, info in locations.items():
+        report_id = name_to_report_id.get(section_name)
+        if not report_id:
+            continue
+        for config in SECTOR_REPORTS:
+            if config.get('id') == report_id or config.get('report_id') == report_id:
+                agg = config.get('aggregation_structure')
+                if not isinstance(agg, dict):
+                    agg = {}
+                    config['aggregation_structure'] = agg
+                if 'sheet' in info:
+                    agg['sheet'] = info['sheet']
+                if 'range_dict' in info:
+                    config['aggregation_range'] = info['range_dict']
+                if 'header_included' in info:
+                    config['header_included'] = info['header_included']
+                if 'template' in info:
+                    config['template'] = info['template']
+                break
+
+
+_apply_table_locations_to_sector_reports()
 
 # 전체 보도자료 순서 (부문별 → 요약)
 REPORT_ORDER = SECTOR_REPORTS + SUMMARY_REPORTS

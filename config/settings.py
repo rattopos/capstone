@@ -10,6 +10,7 @@ from pathlib import Path
 # 프로젝트 루트 설정
 BASE_DIR = Path(__file__).parent.parent
 TEMPLATES_DIR = BASE_DIR / 'templates'
+SCHEMAS_DIR = BASE_DIR / 'schemas'
 
 # 경로 설정
 APP_DATA_DIR = BASE_DIR
@@ -31,6 +32,7 @@ EXPORT_FOLDER.mkdir(parents=True, exist_ok=True)
 TEMP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_REGIONAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_CALCULATED_DIR.mkdir(parents=True, exist_ok=True)
+SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Flask 설정
 SECRET_KEY = 'capstone_secret_key_2025'

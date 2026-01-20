@@ -591,6 +591,8 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
     generated_reports = []
     errors = []
     excel_file = None
+    result_missing = False
+    temp_cleaned = False
 
     try:
         excel_file = get_excel_file(excel_path, use_data_only=True)
@@ -760,11 +762,28 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
                 errors.append({'report_id': report_config.get('id', 'Unknown'), 'report_name': report_config.get('name', report_config.get('id', 'Unknown')), 'error': f"예외 발생: {error_message}"})
                 continue
     finally:
-        clear_excel_cache(excel_path, preserve_calculated_path=not cleanup_after)
+        try:
+            expected_count = len(SECTOR_REPORTS) + len(REGIONAL_REPORTS) + len(SUMMARY_REPORTS)
+            result_missing = len(errors) > 0 or len(generated_reports) < expected_count
+        except Exception:
+            result_missing = True
+
+        if result_missing:
+            try:
+                print("[정리] 결과 누락 감지 - 캐시 및 임시 파일 즉시 삭제")
+                cleanup_temp_artifacts(excel_path)
+                temp_cleaned = True
+            except Exception as cleanup_error:
+                print(f"[경고] 결과 누락 정리 중 오류 (무시): {cleanup_error}")
+        else:
+            clear_excel_cache(excel_path, preserve_calculated_path=not cleanup_after)
+
         if cleanup_after:
             try:
-                print(f"[정리] 작업 완료 - 임시 파일 정리 시작...")
-                cleanup_temp_artifacts(excel_path)
+                if not temp_cleaned:
+                    print(f"[정리] 작업 완료 - 임시 파일 정리 시작...")
+                    cleanup_temp_artifacts(excel_path)
+                    temp_cleaned = True
                 print(f"[정리] 작업 완료 - 업로드 파일 정리 시작...")
                 deleted_count = cleanup_upload_folder(keep_current_files=False, cleanup_excel_only=True)
                 if deleted_count > 0:

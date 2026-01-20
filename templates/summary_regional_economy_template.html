@@ -92,6 +92,8 @@
         .highlight { font-weight: 700; }
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
+        .value-increase { color: #c62828; }
+        .value-decrease { color: #1565c0; }
         .note { font-size: 11.5pt; color: #666; margin-left: 4px; }
 
         .table-title {
@@ -217,13 +219,8 @@
                 <span style="color: #666;">□</span>
                 <span>
                     <span class="summary-label" style="font-weight: 700;">물가</span>(소비자물가)는
-                    전국 전년동분기대비 <span class="{% if summary.price.nationwide >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if summary.price.nationwide >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(summary.price.nationwide | abs) }}% {{ get_terms('price', summary.price.nationwide)[1] }}</span>,
-                {% for region in summary.price.above_regions[:2] %}
-                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ summary.price.above_count }}개 시도는 전국 평균보다 <span class="increase" style="font-weight: 700; color: #c62828;">높음</span>,
-                {% for region in summary.price.below_regions[:2] %}
-                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ summary.price.below_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">낮음</span>
+                    전국 전년동분기대비 <span class="{% if summary.price.nationwide >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(summary.price.nationwide | abs) }}% {{ get_terms('price', summary.price.nationwide)[1] }}</span>,
+                    {{ summary.price.below_phrase }} 소비자물가 상승률이 전국보다 낮았으나, {{ summary.price.above_phrase }} 전국보다 <span class="increase" style="font-weight: 700; color: #c62828;">높음</span>
                 </span>
             </div>
 
@@ -277,12 +274,12 @@
                         <td rowspan="{{ group.regions|length }}" class="group-cell" style="width: 40px;">{{ group.name }}</td>
                         {% endif %}
                         <td class="region-cell" style="width: 50px;">{{ region.name }}</td>
-                        <td class="value-cell" style="{% if region.mining_production >= 0 %}color: #c62828;{% else %}color: #1565c0;{% endif %}">{{ "%.1f"|format(region.mining_production) }}</td>
-                        <td class="value-cell" style="{% if region.service_production >= 0 %}color: #c62828;{% else %}color: #1565c0;{% endif %}">{{ "%.1f"|format(region.service_production) }}</td>
-                        <td class="value-cell" style="{% if region.retail_sales >= 0 %}color: #c62828;{% else %}color: #1565c0;{% endif %}">{{ "%.1f"|format(region.retail_sales) }}</td>
-                        <td class="value-cell" style="{% if region.exports >= 0 %}color: #c62828;{% else %}color: #1565c0;{% endif %}">{{ "%.1f"|format(region.exports) }}</td>
+                        <td class="value-cell {% if region.mining_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.mining_production) }}</td>
+                        <td class="value-cell {% if region.service_production >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.service_production) }}</td>
+                        <td class="value-cell {% if region.retail_sales >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.retail_sales) }}</td>
+                        <td class="value-cell {% if region.exports >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.exports) }}</td>
                         <td class="value-cell">{{ "%.1f"|format(region.price) }}</td>
-                        <td class="value-cell" style="{% if region.employment >= 0 %}color: #c62828;{% else %}color: #1565c0;{% endif %}">{{ "%.1f"|format(region.employment) }}</td>
+                        <td class="value-cell {% if region.employment >= 0 %}value-increase{% else %}value-decrease{% endif %}">{{ "%.1f"|format(region.employment) }}</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}

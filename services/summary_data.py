@@ -113,6 +113,15 @@ def _build_chart_data_from_sector_cache(sector_payload: dict, is_trade: bool = F
     """부문별 캐시 데이터로 요약 차트 구조 생성"""
     data = sector_payload.get('data', {}) if isinstance(sector_payload, dict) else {}
     table_data = sector_payload.get('table_data') or data.get('table_data') or []
+    if not table_data:
+        table_df = sector_payload.get('table_df') if isinstance(sector_payload, dict) else None
+        if isinstance(table_df, pd.DataFrame):
+            try:
+                table_data = table_df.to_dict(orient='records')
+            except Exception:
+                table_data = []
+        elif isinstance(table_df, list):
+            table_data = table_df
     regional_data = data.get('regional_data') or {}
     nationwide_data = data.get('nationwide_data') or {}
 
@@ -326,6 +335,49 @@ def _compute_above_below_by_nationwide(chart_data):
     return above_regions, below_regions
 
 
+def _format_region_entries(regions, max_items=3):
+    entries = []
+    for region in (regions or [])[:max_items]:
+        name = region.get('name') if isinstance(region, dict) else None
+        if not name or name == '-':
+            continue
+        value = safe_float(region.get('value'), None)
+        if value is None:
+            entries.append(f"{name}")
+        else:
+            entries.append(f"{name}({value:.1f}%)")
+    return entries
+
+
+def _build_region_phrase(regions, count):
+    entries = _format_region_entries(regions, max_items=3)
+    if not entries:
+        return "해당 시도는"
+
+    list_text = ', '.join(entries)
+    count_value = count if isinstance(count, int) else 0
+
+    if count_value >= 4:
+        return f"{list_text} 등 {count_value}개 시도는"
+
+    last_name = None
+    for region in reversed((regions or [])[:3]):
+        if isinstance(region, dict) and region.get('name') and region.get('name') != '-':
+            last_name = region.get('name')
+            break
+
+    if not last_name:
+        return list_text
+
+    try:
+        from utils.text_utils import get_josa
+        josa = get_josa(last_name, "은/는")
+    except Exception:
+        josa = "은"
+
+    return f"{list_text}{josa}"
+
+
 def _summary_from_chart(chart_data, include_above_below=False):
     summary = {
         'increase_regions': chart_data.get('increase_regions', []),
@@ -349,6 +401,9 @@ def _summary_from_chart(chart_data, include_above_below=False):
             summary['above_count'] = chart_data.get('above_count', summary['increase_count'])
             summary['below_count'] = chart_data.get('below_count', summary['decrease_count'])
 
+        summary['below_phrase'] = _build_region_phrase(summary.get('below_regions'), summary.get('below_count'))
+        summary['above_phrase'] = _build_region_phrase(summary.get('above_regions'), summary.get('above_count'))
+
     return summary
 
 
@@ -364,12 +419,20 @@ def get_summary_table_data(excel_path, year=None, quarter=None):
     try:
         xl = pd.ExcelFile(excel_path)
 
-        mining = _extract_chart_data(xl, 'A 분석', year=year, quarter=quarter)
-        service = _extract_chart_data(xl, 'B 분석', year=year, quarter=quarter)
-        retail = _extract_chart_data(xl, 'C 분석', year=year, quarter=quarter)
-        exports = _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
-        price = _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
-        employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
+        def _chart_from_cache(report_id, is_trade=False, is_employment=False):
+            if year is None or quarter is None:
+                return None
+            cached = get_sector_data(excel_path, year, quarter, report_id)
+            if cached:
+                return _build_chart_data_from_sector_cache(cached, is_trade=is_trade, is_employment=is_employment)
+            return None
+
+        mining = _chart_from_cache('manufacturing') or _extract_chart_data(xl, 'A 분석', year=year, quarter=quarter)
+        service = _chart_from_cache('service') or _extract_chart_data(xl, 'B 분석', year=year, quarter=quarter)
+        retail = _chart_from_cache('consumption') or _extract_chart_data(xl, 'C 분석', year=year, quarter=quarter)
+        exports = _chart_from_cache('export', is_trade=True) or _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
+        price = _chart_from_cache('price') or _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
+        employment = _chart_from_cache('employment', is_employment=True) or _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
 
         mining_map = _build_region_value_map(mining)
         service_map = _build_region_value_map(service)
@@ -576,6 +639,9 @@ def get_trade_price_data(excel_path, year, quarter):
             price['below_regions'] = below_regions[:3] if below_regions else [{'name': '-', 'value': 0.0}]
             price['above_count'] = len(above_regions)
             price['below_count'] = len(below_regions)
+
+        price['below_phrase'] = _build_region_phrase(price.get('below_regions'), price.get('below_count'))
+        price['above_phrase'] = _build_region_phrase(price.get('above_regions'), price.get('above_count'))
         
         return {
             'exports': exports,

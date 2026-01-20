@@ -68,6 +68,9 @@ class UnifiedReportGenerator(BaseGenerator):
         self.data_start_row = None
         self.df_analysis = None
         self.df_aggregation = None
+        self.df_aggregation_raw = None
+        self.df_aggregation_table = None
+        self.preprocessed_table_df = None
         self.df_reference = None
         self.target_col = None
         self.prev_y_col = None
@@ -213,23 +216,9 @@ class UnifiedReportGenerator(BaseGenerator):
         end_quarter: int,
         max_header_rows: int
     ) -> None:
-        if df is None or start_year is None or start_quarter is None or end_year is None or end_quarter is None:
-            return
-        quarter_range = self._build_quarter_range(start_year, start_quarter, end_year, end_quarter)
-        keys: List[str] = []
-        cols: Dict[str, Optional[int]] = {}
-        for y, q in quarter_range:
-            key = self._format_quarter_key(y, q)
-            keys.append(key)
-            cols[key] = self.find_target_col_index(
-                df,
-                y,
-                q,
-                require_type_match=False,
-                max_header_rows=max_header_rows
-            )
-        self.quarterly_keys = keys
-        self.quarterly_cols = cols
+        # 동적 데이터 탐색 제거: 설정 기반 컬럼만 사용
+        self.quarterly_keys = []
+        self.quarterly_cols = {}
 
     def _collect_quarter_columns(
         self,
@@ -240,22 +229,8 @@ class UnifiedReportGenerator(BaseGenerator):
         end_quarter: int,
         max_header_rows: int
     ) -> tuple[List[str], Dict[str, Optional[int]]]:
-        if df is None or start_year is None or start_quarter is None or end_year is None or end_quarter is None:
-            return [], {}
-        quarter_range = self._build_quarter_range(start_year, start_quarter, end_year, end_quarter)
-        keys: List[str] = []
-        cols: Dict[str, Optional[int]] = {}
-        for y, q in quarter_range:
-            key = self._format_quarter_key(y, q)
-            keys.append(key)
-            cols[key] = self.find_target_col_index(
-                df,
-                y,
-                q,
-                require_type_match=False,
-                max_header_rows=max_header_rows
-            )
-        return keys, cols
+        # 동적 데이터 탐색 제거: 설정 기반 컬럼만 사용
+        return [], {}
     def load_data(self):
         """
         테스트 호환성: 기존 테스트 코드에서 generator.load_data()를 호출하는 경우
@@ -303,671 +278,70 @@ class UnifiedReportGenerator(BaseGenerator):
             print(
                 f"[{self.config['name']}] ✅ 집계 범위 적용: rows {start_row}-{end_row}, cols {agg_range.get('start_col')}-{agg_range.get('end_col')}"
             )
+        # 원본 보관
+        self.df_aggregation_raw = self.df_aggregation
+        # 헤더 포함 표를 DataFrame으로 분리 저장
+        if self.config.get('header_included') and self.df_aggregation is not None and not self.df_aggregation.empty:
+            try:
+                df_table = self.df_aggregation.copy()
+                df_table.columns = df_table.iloc[0].tolist()
+                df_table = df_table.iloc[1:].reset_index(drop=True)
+                self.df_aggregation_table = df_table
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ 헤더 포함 테이블 변환 실패: {e}")
         self.target_col = None
-        
-        # target column 찾기 (요청한 연도/분기)
-        require_type_match = False
-        sheet_type = agg_sheet_name
-        
-        # config에서 header_rows 가져오기 (기본값 5)
-        max_header_rows = self.config.get('header_rows', 5)
-        
-        # 1. 요청한 연도/분기 찾기 (max_header_rows 전달)
-        target_col_result = self.find_target_col_index(
-            self.df_aggregation, self.year, self.quarter, 
-            require_type_match=require_type_match,
-            max_header_rows=max_header_rows
-        )
-        
-        # 2. 없으면 최신 데이터 자동 사용 (우아한 처리)
-        if target_col_result is None:
-            print(f"[{self.config['name']}] ⚠️ {self.year}년 {self.quarter}분기 데이터를 찾을 수 없음. 최신 데이터 탐색 시작...")
-            # 헤더 행에서 최신 연도/분기 자동 탐색
-            latest_col = self._find_latest_data_col()
-            if latest_col is not None:
-                print(f"[{self.config['name']}] ✅ 최신 데이터 컬럼 사용: {latest_col}")
-                self.target_col = latest_col
-            else:
-                # 여전히 못 찾으면 에러
-                print(f"[{self.config['name']}] 🔍 [디버그] Target 컬럼 찾기 실패:")
-                print(f"  - 찾으려는 연도/분기: {self.year}년 {self.quarter}분기")
-                print(f"  - 확인한 시트: {sheet_type}")
-                print(f"  - 시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열")
-                raise ValueError(
-                    f"[{self.config['name']}] ❌ Target 컬럼을 찾을 수 없습니다 (최신 데이터도 없음).\n"
-                    f"  찾으려는 연도/분기: {self.year}년 {self.quarter}분기\n"
-                    f"  확인한 시트: {sheet_type}\n"
-                    f"  시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열"
-                )
-        else:
-            self.target_col = target_col_result
-        
-        # 전년 컬럼 찾기 (max_header_rows 전달)
-        prev_y_col_result = self.find_target_col_index(
-            self.df_aggregation, self.year - 1, self.quarter, 
-            require_type_match=require_type_match,
-            max_header_rows=max_header_rows
-        )
-        if prev_y_col_result is not None:
-            self.prev_y_col = prev_y_col_result
-            print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
-        else:
-            # 전년 데이터가 없으면 최신 데이터 - 1년
-            print(f"[{self.config['name']}] ⚠️ {self.year - 1}년 {self.quarter}분기 데이터 없음. 이전 연도 데이터 탐색...")
-            prev_col = self._find_latest_data_col(target_year=self.year - 1)
-            if prev_col is not None:
-                self.prev_y_col = prev_col
-                print(f"[{self.config['name']}] ✅ 이전 연도 데이터 사용: {self.prev_y_col}")
-            else:
-                print(f"[{self.config['name']}] ⚠️ 이전 연도 데이터도 없음 (계속 진행)")
-                self.prev_y_col = None
+        # 정적 컬럼 인덱스 로드 (동적 탐색 제거)
+        column_indices = self.config.get('aggregation_columns') or self.config.get('column_indices') or {}
+        self.target_col = column_indices.get('target_col')
+        self.prev_y_col = column_indices.get('prev_y_col')
+        self.prev_prev_y_col = column_indices.get('prev_prev_y_col')
+        self.prev_prev_prev_y_col = column_indices.get('prev_prev_prev_y_col')
+        self.quarterly_cols = column_indices.get('quarterly_cols', {}) or {}
+        self.quarterly_keys = list(self.quarterly_cols.keys())
 
-        # 전전년 컬럼 찾기 (2년 전)
-        prev_prev_y_col_result = self.find_target_col_index(
-            self.df_aggregation, self.year - 2, self.quarter,
-            require_type_match=require_type_match,
-            max_header_rows=max_header_rows
-        )
-        if prev_prev_y_col_result is not None:
-            self.prev_prev_y_col = prev_prev_y_col_result
-            print(f"[{self.config['name']}] ✅ 전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_y_col} ({self.year - 2} {self.quarter}/4)")
-        else:
-            print(f"[{self.config['name']}] ⚠️ {self.year - 2}년 {self.quarter}분기 데이터 없음 (계속 진행)")
-            self.prev_prev_y_col = None
-
-        # 전전전년 컬럼 찾기 (3년 전) - 재작년 증감률 계산용
-        prev_prev_prev_y_col_result = self.find_target_col_index(
-            self.df_aggregation, self.year - 3, self.quarter,
-            require_type_match=require_type_match,
-            max_header_rows=max_header_rows
-        )
-        if prev_prev_prev_y_col_result is not None:
-            self.prev_prev_prev_y_col = prev_prev_prev_y_col_result
-            print(f"[{self.config['name']}] ✅ 전전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_prev_y_col} ({self.year - 3} {self.quarter}/4)")
-        else:
-            self.prev_prev_prev_y_col = None
-
-        # 22년 3분기 ~ 25년 3분기처럼 분기 단위 전체 범위 컬럼 확보
-        if self.year is not None and self.quarter is not None:
-            self._ensure_quarter_columns(
-                self.df_aggregation,
-                self.year - 3,
-                self.quarter,
-                self.year,
-                self.quarter,
-                max_header_rows
-            )
-        
         wb.close()
 
-        # header_rows: config에서 지정하거나 기본값 1
+        # 정적 메타 컬럼 설정 (동적 탐색 제거)
         header_rows = self.config.get('header_rows', 1)
-        # region_keywords: config에서 지정하거나 기본값
-        region_keywords = self.config.get('region_keywords', ['지역', '시도', '시군구', '지역명', '행정구역'])
-
-        # 이름 기반 탐색으로 완전 전환 - 산업코드 로직 완전 제거
-        # 설정에서 업종/산업명 컬럼을 명시한 경우 우선 적용
-        forced_industry_name_col = self.config.get('industry_name_col') if isinstance(self.config, dict) else None
-        if isinstance(forced_industry_name_col, int) and forced_industry_name_col >= 0:
-            self.industry_name_col = forced_industry_name_col
-            print(f"[{self.config['name']}] ✅ 설정된 업종명 컬럼 사용: {self.industry_name_col}")
-
-        name_keywords = ['이름', 'name', '산업명', '산업 이름', '업태명', '품목명', '품목 이름', '공정이름', '공정명', '연령']
-
-        # 지역명 컬럼 후보 목록 (순서대로)
-        region_col_candidates = []
-
-        # df_aggregation을 df로 사용
-        df = self.df_aggregation
-
-        # 산업코드 컬럼은 사용하지 않음 (이름 기반 탐색만 사용)
-        self.industry_code_col = None
-
-        # 0) 컬럼명에서 우선 탐색 (ws.values 첫 행이 헤더인 구조 대응)
-        for col_idx, col_name in enumerate(df.columns):
-            if pd.isna(col_name):
-                continue
-            cell_str = str(col_name).strip().lower()
-            matched_region = False
-            if self.region_name_col is None:
-                for keyword in region_keywords:
-                    if keyword.lower() in cell_str:
-                        region_col_candidates.append((col_idx, keyword, -1))
-                        matched_region = True
-                        print(f"[{self.config['name']}] 🔍 [헤더] 지역명 컬럼 후보: {col_idx} (키워드: '{keyword}')")
-                        break
-            if matched_region:
-                continue
-            if self.industry_name_col is None:
-                for keyword in name_keywords:
-                    if keyword.lower() in cell_str:
-                        self.industry_name_col = col_idx
-                        print(f"[{self.config['name']}] ✅ [헤더] 산업명 컬럼 발견: {col_idx} (키워드: '{keyword}')")
-                        break
-
-        # 1) 헤더 행 내용에서도 키워드 검색 (병합 헤더 등 대응)
-        for row_idx in range(header_rows):
-            row = df.iloc[row_idx]
-            for col_idx, cell_value in enumerate(row):
-                if pd.isna(cell_value):
-                    continue
-                cell_str = str(cell_value).strip().lower()
-                matched_region = False
-
-                # 지역명 컬럼 후보 찾기 (모든 일치하는 컬럼 수집)
-                if self.region_name_col is None:
-                    for keyword in region_keywords:
-                        if keyword.lower() in cell_str:
-                            region_col_candidates.append((col_idx, keyword, row_idx))
-                            print(f"[{self.config['name']}] 🔍 지역명 컬럼 후보: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
-                            matched_region = True
-                            break
-
-                # 산업명 컬럼 찾기
-                if matched_region:
-                    continue
-                if self.industry_name_col is None:
-                    for keyword in name_keywords:
-                        if keyword.lower() in cell_str:
-                            self.industry_name_col = col_idx
-                            print(f"[{self.config['name']}] ✅ 산업명 컬럼 발견: {col_idx} (키워드: '{keyword}', 행: {row_idx})")
-                            break
-
-        # 지역명 컬럼을 찾지 못한 경우, 데이터에서 직접 '전국' 등으로 탐색하여 추정
-        if self.region_name_col is None and not region_col_candidates:
-            valid_regions_probe = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                                   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
-            found_col = None
-            rows_to_scan = min(30, len(df))
-            try:
-                for r in range(rows_to_scan):
-                    for c in range(len(df.columns)):
-                        val = df.iloc[r, c]
-                        if pd.notna(val):
-                            s = str(val).strip()
-                            if s in valid_regions_probe:
-                                found_col = c
-                                print(f"[{self.config['name']}] ✅ 데이터에서 지역명 발견으로 컬럼 추정: {found_col} (예: '{s}', 행 {r})")
-                                break
-                    if found_col is not None:
-                        break
-            except Exception:
-                found_col = None
-            if found_col is not None:
-                self.region_name_col = found_col
-            else:
-                self.region_name_col = 0
-                print(f"[{self.config['name']}] ⚠️ 지역명 컬럼 후보가 없어, 첫 번째 컬럼(0)으로 임시 설정합니다. 이후 검증 단계에서 교체됩니다.")
-        
-        # 지역명 컬럼 후보 중에서 실제 유효한 지역명이 있는 컬럼 선택
-        if region_col_candidates:
-            valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                            '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
-            valid_region_codes = ['00', '11', '26', '27', '28', '29', '30', '31', '36', '41', '42', '43', '44', '45', '46', '47', '48', '50']
-            
-            # 먼저 실제 지역명이 있는 컬럼 찾기 (우선순위: 실제 지역명 > 지역 코드)
-            for col_idx, keyword, _ in region_col_candidates:
-                # 데이터 행에서 이 컬럼의 값들 확인 (헤더 이후 처음 20행)
-                has_actual_region_name = False
-                has_valid_region = False
-                
-                for data_row_idx in range(header_rows, min(header_rows + 20, len(df))):
-                    if col_idx < len(df.columns):
-                        cell_value = df.iloc[data_row_idx, col_idx]
-                        if pd.notna(cell_value):
-                            cell_str = str(cell_value).strip()
-                            # 실제 지역명 확인
-                            if cell_str in valid_regions:
-                                has_actual_region_name = True
-                                self.region_name_col = col_idx
-                                print(f"[{self.config['name']}] ✅ 지역명 컬럼 확정: {col_idx} (키워드: '{keyword}', 실제 지역명 발견: '{cell_str}')")
-                                break
-                            # 지역 코드 확인 (실제 지역명이 없을 때만)
-                            elif cell_str in valid_region_codes and not has_actual_region_name:
-                                has_valid_region = True
-                
-                if has_actual_region_name:
-                    break  # 실제 지역명 찾음 - 종료
-            
-            # 실제 지역명을 찾지 못했지만 지역 코드만 있는 경우, 지역 코드 다음 컬럼에서 지역명 찾기
-            if self.region_name_col is None:
-                for col_idx, keyword, _ in region_col_candidates:
-                    # 이 컬럼이 지역 코드 컬럼인지 확인
-                    is_code_column = False
-                    for data_row_idx in range(header_rows, min(header_rows + 5, len(df))):
-                        if col_idx < len(df.columns):
-                            cell_value = df.iloc[data_row_idx, col_idx]
-                            if pd.notna(cell_value) and str(cell_value).strip() in valid_region_codes:
-                                is_code_column = True
-                                break
-                    
-                    if is_code_column:
-                        # 지역명이 다음 컬럼에 있는지 확인
-                        next_col_idx = col_idx + 1
-                        if next_col_idx < len(df.columns):
-                            for data_row_idx in range(header_rows, min(header_rows + 20, len(df))):
-                                if next_col_idx < len(df.columns):
-                                    cell_value = df.iloc[data_row_idx, next_col_idx]
-                                    if pd.notna(cell_value):
-                                        cell_str = str(cell_value).strip()
-                                        if cell_str in valid_regions:
-                                            self.region_name_col = next_col_idx
-                                            print(f"[{self.config['name']}] ✅ 지역명 컬럼 확정: {next_col_idx} (지역 코드 컬럼 {col_idx} 다음, 지역명 발견: '{cell_str}')")
-                                            break
-                        
-                        if self.region_name_col is not None:
-                            break
-            
-            # 여전히 찾지 못했으면 첫 번째 후보 사용
-            if self.region_name_col is None and region_col_candidates:
-                self.region_name_col = region_col_candidates[0][0]
-                print(f"[{self.config['name']}] ⚠️ 실제 지역명/지역명 다음 컬럼을 찾지 못해, 첫 번째 후보 컬럼 사용: {self.region_name_col}")
-        
-        # 데이터 시작 행 찾기 (헤더 다음 행)
-        # 지역명이나 산업코드가 실제로 나타나는 첫 번째 행 찾기
-
-        # 산업명 컬럼이 지역명 컬럼과 동일하게 잡힌 경우 초기화 후 재추정
-        if self.industry_name_col is not None and self.region_name_col is not None and self.industry_name_col == self.region_name_col:
-            print(f"[{self.config['name']}] ⚠️ 산업명 컬럼이 지역명 컬럼과 동일({self.industry_name_col})하여 재탐색합니다.")
-            self.industry_name_col = None
-
-        # 업종/품목명 컬럼을 찾지 못했거나 제거된 경우, 텍스트 비율 기반으로 재추정
+        agg_struct = self.config.get('aggregation_structure', {}) if isinstance(self.config, dict) else {}
+        self.region_name_col = agg_struct.get('region_name_col')
+        self.industry_code_col = agg_struct.get('industry_code_col')
         if self.industry_name_col is None:
-            exclude_cols = [self.region_name_col] if self.region_name_col is not None else []
-            guessed_col = self._find_textual_column(df, header_rows=header_rows, exclude_cols=exclude_cols)
-            if guessed_col is not None and guessed_col != self.region_name_col:
-                self.industry_name_col = guessed_col
-                print(f"[{self.config['name']}] ✅ 업종/품목 컬럼 재추정: {guessed_col}")
-
-        if self.region_name_col is not None:
-            valid_regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-                            '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
-            valid_region_codes = ['00', '11', '26', '27', '28', '29', '30', '31', '36', '41', '42', '43', '44', '45', '46', '47', '48', '50']  # 지역 코드
-            
-            # 먼저 지역명 컬럼에서 실제 지역명 찾기
-            for row_idx in range(header_rows, min(header_rows + 20, len(df))):
-                row = df.iloc[row_idx]
-                if self.region_name_col < len(row):
-                    cell_value = row.iloc[self.region_name_col]
-                    if pd.notna(cell_value):
-                        cell_str = str(cell_value).strip()
-                        # 지역명이 실제로 나타나는 행 찾기 (또는 지역 코드)
-                        if cell_str in valid_regions or cell_str in valid_region_codes:
-                            self.data_start_row = row_idx
-                            print(f"[{self.config['name']}] ✅ 데이터 시작 행 발견: {row_idx} (지역명: '{cell_str}')")
-                            break
-            
-            # 지역명 컬럼에서 찾지 못했으면, 다른 컬럼에서도 찾기 (국내인구이동의 경우 지역명이 다른 컬럼에 있을 수 있음)
-            if self.data_start_row is None and self.report_type == 'migration':
-                # 지역명 컬럼이 코드 컬럼인 경우, 실제 지역명이 있는 다른 컬럼 찾기
-                # 보통 지역명은 코드 컬럼 옆에 있음
-                for col_idx in range(max(0, self.region_name_col - 2), min(len(df.columns), self.region_name_col + 3)):
-                    if col_idx == self.region_name_col:
-                        continue
-                    for row_idx in range(header_rows, min(header_rows + 20, len(df))):
-                        row = df.iloc[row_idx]
-                        if col_idx < len(row):
-                            cell_value = row.iloc[col_idx]
-                            if pd.notna(cell_value):
-                                cell_str = str(cell_value).strip()
-                                if cell_str in valid_regions:
-                                    # 지역명 컬럼을 실제 지역명이 있는 컬럼으로 업데이트
-                                    print(f"[{self.config['name']}] 🔍 지역명 컬럼 업데이트: {self.region_name_col} → {col_idx} (실제 지역명 발견: '{cell_str}')")
-                                    self.region_name_col = col_idx
-                                    self.data_start_row = row_idx
-                                    print(f"[{self.config['name']}] ✅ 데이터 시작 행 발견: {row_idx} (지역명: '{cell_str}')")
-                                    break
-                        if self.data_start_row is not None:
-                            break
-                    if self.data_start_row is not None:
-                        break
-        
-        # 기본값/폴백 사용 금지: 동적으로 찾지 못하면 ValueError 발생 (상세 디버그 정보 포함)
-        if self.region_name_col is None:
-            # 상세 디버그 정보 출력
-            print(f"[{self.config['name']}] 🔍 [디버그] 지역명 컬럼 찾기 실패:")
-            print(f"  - 확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}")
-            print(f"  - 확인한 행 수: {header_rows}")
-            print(f"  - 찾으려는 키워드: {region_keywords}")
-            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
-            # 헤더 행 샘플 출력
-            print(f"  - 헤더 행 샘플 (처음 3행):")
-            for i in range(min(3, header_rows)):
-                row_sample = [str(df.iloc[i, j])[:20] if j < len(df.columns) and pd.notna(df.iloc[i, j]) else 'NaN' 
-                             for j in range(min(10, len(df.columns)))]
-                print(f"    행 {i}: {row_sample}")
-            raise ValueError(
-                f"[{self.config['name']}] ❌ 지역명 컬럼을 찾을 수 없습니다.\n"
-                f"  확인한 시트: {'집계' if self.df_aggregation is not None else '분석'}\n"
-                f"  찾으려는 키워드: {region_keywords}\n"
-                f"  시트 크기: {len(df)}행 × {len(df.columns)}열\n"
-                f"  확인한 헤더 행 수: {header_rows}"
-            )
-        
-        # 실업률/고용률/마이그레이션은 산업코드가 선택적일 수 있음
-        if self.industry_code_col is None:
-            # 산업코드가 없더라도 이름/패턴 기반 폴백으로 진행 가능
-            print(f"[{self.config['name']}] ⚠️ 산업코드 컬럼을 찾지 못했습니다. 이름·패턴 기반 폴백으로 계속 진행합니다.")
-        
-        # 실업률/고용률은 산업명이 선택적일 수 있음 (연령별 데이터이므로)
-        # 국내인구이동은 산업명이 아예 필요 없음 (연령으로 구분)
-        if self.industry_name_col is None:
-            if self.report_type in ['employment', 'unemployment']:
-                print(f"[{self.config['name']}] ⚠️ 산업명 컬럼을 찾을 수 없지만, 고용률/실업률은 산업명이 선택적이므로 계속 진행합니다.")
-                # 산업명이 없으면 None으로 유지 (나중에 사용 시 체크 필요)
-            else:
-                # (A) 헤더에서 '산업'과 '이름' 토큰 동시 포함 컬럼 우선 선택
-                import re
-                header_exact_idx = None
-                for c, cname in enumerate(df.columns):
-                    try:
-                        s = str(cname).strip().lower()
-                    except Exception:
-                        s = ''
-                    s_norm = re.sub(r"\s+", "", s)
-                    if '산업' in s and ('이름' in s or '명' in s) or '산업이름' in s_norm:
-                        header_exact_idx = c
-                        break
-                if header_exact_idx is not None:
-                    self.industry_name_col = header_exact_idx
-                    print(f"[{self.config['name']}] ✅ 헤더 정확매칭으로 업종명 컬럼 확정: {header_exact_idx}")
-                else:
-                    # (B) 데이터에서 총계 키워드 등장 컬럼 탐색 (헤더 오탐 방지 필터 포함)
-                    total_pattern = re.compile(r'(?:총지수|총계|합계|전\s*산업|전체)')
-                    disallow_in_header = ['코드', '단계', '가중치', '지역', '조회']
-                    best_idx = None
-                    best_hits = -1
-                    for c in range(len(df.columns)):
-                        try:
-                            header_s = str(df.columns[c]).lower()
-                        except Exception:
-                            header_s = ''
-                        # 헤더에 금지 토큰 있으면 제외
-                        if any(k in header_s for k in disallow_in_header):
-                            continue
-                        try:
-                            series = df.iloc[:, c].astype(str).str.strip()
-                            # 헤더 행 이후 데이터에서만 검사
-                            window = series.iloc[max(header_rows, 0):max(header_rows, 0)+50]
-                            hits = window.str.contains(total_pattern, regex=True, na=False).sum()
-                            if hits > best_hits:
-                                best_hits = hits
-                                best_idx = c
-                        except Exception:
-                            continue
-                    if best_idx is not None and best_hits > 0:
-                        self.industry_name_col = best_idx
-                        print(f"[{self.config['name']}] ✅ 총계 키워드로 업종명 컬럼 추정: {best_idx} (매치 {best_hits}건)")
-                    else:
-                        # (C) 헤더 키워드로 탐색 (산업/업종/품목/공정 포함, 단 '코드' 제외)
-                        header_guess = None
-                        for c, cname in enumerate(df.columns):
-                            try:
-                                s = str(cname).strip().lower()
-                            except Exception:
-                                s = ''
-                            if any(k in s for k in ['산업', '업종', '품목', '공정']) and '코드' not in s:
-                                header_guess = c
-                                break
-                        if header_guess is not None:
-                            self.industry_name_col = header_guess
-                            print(f"[{self.config['name']}] ✅ 헤더명으로 업종명 컬럼 추정: {header_guess}")
-                        else:
-                            # (D) 데이터 특성을 보고 업종명 컬럼 추정
-                            guessed = self._find_textual_column(df, header_rows, exclude_cols=[self.region_name_col] if self.region_name_col is not None else [])
-                            if guessed is not None:
-                                self.industry_name_col = guessed
-                                print(f"[{self.config['name']}] ✅ 헤더 키워드 없이 업종명 컬럼 추정: {guessed}")
-                            else:
-                                print(f"[{self.config['name']}] ⚠️ 업종명 컬럼을 추정하지 못했습니다.")
-            class UnifiedReportGenerator(BaseGenerator):
-                """통합 보고서 Generator (집계 시트 기반)
-                mining_manufacturing_generator의 검증된 로직을 기반으로 구현
-                """
-
-                # 데이터 시작 행은 동적으로 찾음 (하드코딩 제거)
-
-                def __init__(self, report_type: str, excel_path: str, year=None, quarter=None, excel_file=None):
-                    super().__init__(excel_path, year, quarter, excel_file)
-
-                    # 설정 로드
-                    self.config = get_report_config(report_type)
-                    if not self.config:
-                        raise ValueError(f"Unknown report type: {report_type}")
-
-                    self.report_type = report_type
-                    self.report_id = self.config['report_id']
-                    # 기본값/폴백 사용 금지: 설정에서 값을 찾을 수 없으면 ValueError 발생
-                    if 'name_mapping' not in self.config:
-                        raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'name_mapping'을 찾을 수 없습니다. 기본값 사용 금지.")
-                    self.name_mapping = self.config['name_mapping']
-
-                    # 집계 시트 구조 (설정에서 로드, 기본값/폴백 사용 금지)
-                    if 'aggregation_structure' not in self.config:
-                        raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'aggregation_structure'를 찾을 수 없습니다. 기본값 사용 금지.")
-                    agg_struct = self.config['aggregation_structure']
-                    # 기본값은 설정에서 가져오지만, 실제로는 동적으로 찾음
-                    self.region_name_col = None  # 동적으로 찾음
-                    self.industry_code_col = None  # 동적으로 찾음
-                    self.total_code = agg_struct.get('total_code', 'BCD')
-
-                    # metadata_columns 설정 (동적 컬럼 찾기에 사용, 기본값/폴백 사용 금지)
-                    if 'metadata_columns' not in self.config:
-                        raise ValueError(f"[{self.config['name']}] ❌ 설정에서 'metadata_columns'를 찾을 수 없습니다. 기본값 사용 금지.")
-                    self.metadata_cols = self.config['metadata_columns']
-
-                    # 설정 로드: REPORT_ORDER에서 report_type(id)로 검색
-                    all_reports = [*REPORT_ORDER]
-                    self.config = next((r for r in all_reports if r.get('id') == report_type), None)
-                    if not self.config:
-                        raise ValueError(f"알 수 없는 report_type: {report_type}")
-                    self.report_type = report_type
-                    self.report_id = self.config.get('report_id', report_type)
-                    if 'name_mapping' not in self.config:
-                        raise ValueError(f"name_mapping이 설정에 없습니다: {report_type}")
-                    self.name_mapping = self.config['name_mapping']
-                    if 'aggregation_structure' not in self.config:
-                        raise ValueError(f"aggregation_structure가 설정에 없습니다: {report_type}")
-                    agg_struct = self.config['aggregation_structure']
-                    self.region_name_col = None  # 동적으로 찾음
-                    self.industry_code_col = None  # 동적으로 찾음
-                    self.total_code = agg_struct.get('total_code', 'BCD')
-                    if 'metadata_columns' not in self.config:
-                        raise ValueError(f"metadata_columns가 설정에 없습니다: {report_type}")
-                    self.metadata_cols = self.config['metadata_columns']
-                    self.industry_name_col = None  # 동적으로 찾음
-                    self.data_start_row = None  # 동적으로 찾음
-                    self.df_analysis = None
-                    self.df_aggregation = None
-                    self.df_reference = None
-                    self.target_col = None
-                    self.prev_y_col = None
-                    self.prev_prev_y_col = None
-                    self.prev_prev_prev_y_col = None
-                    self.use_aggregation_only = False
-                    print(f"[{self.config['name']}] Generator 초기화")
-
-                    # 안전하게 미정의 변수 기본값 처리
-                    analysis_sheet = None
-                    require_analysis_sheet = False
-                    analysis_sheets = []
-                    # 실제 엑셀 파일에서 시트 목록 읽기
-                    sheet_names = []
-                    try:
-                        import openpyxl
-                        wb = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
-                        sheet_names = wb.sheetnames
-                        wb.close()
-                    except Exception as e:
-                        print(f"[경고] 엑셀 시트 목록을 읽는 중 오류 발생: {e}")
-
-                def load_data(self):
-                    """테스트 호환성: 기존 테스트 코드에서 generator.load_data()를 호출하는 경우 extract_all_data()로 프록시"""
-                    return self.extract_all_data()
-        # prev_y_col 찾기
-        require_type_match = False  # 기본값 False로 선언
-        sheet_type = agg_sheet_name  # 디버그 메시지용 시트명
-        if self.prev_y_col is None:
-            self.prev_y_col = self.find_target_col_index(df, self.year - 1, self.quarter, require_type_match=require_type_match)
-            if self.prev_y_col is not None:
-                print(f"[{self.config['name']}] ✅ 전년 컬럼 ({sheet_type} 시트): {self.prev_y_col} ({self.year - 1} {self.quarter}/4)")
-
-        if self.prev_prev_y_col is None:
-            self.prev_prev_y_col = self.find_target_col_index(df, self.year - 2, self.quarter, require_type_match=require_type_match)
-            if self.prev_prev_y_col is not None:
-                print(f"[{self.config['name']}] ✅ 전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_y_col} ({self.year - 2} {self.quarter}/4)")
-
-        if self.prev_prev_prev_y_col is None:
-            self.prev_prev_prev_y_col = self.find_target_col_index(df, self.year - 3, self.quarter, require_type_match=require_type_match)
-            if self.prev_prev_prev_y_col is not None:
-                print(f"[{self.config['name']}] ✅ 전전전년 컬럼 ({sheet_type} 시트): {self.prev_prev_prev_y_col} ({self.year - 3} {self.quarter}/4)")
-
+            self.industry_name_col = self.config.get('industry_name_col') or agg_struct.get('industry_name_col')
+        if self.data_start_row is None:
+            self.data_start_row = self.config.get('data_start_row', header_rows)
         analysis_sheet = self.config.get('analysis_sheet')
         if analysis_sheet and analysis_sheet != agg_sheet_name:
             try:
                 self.df_analysis = pd.read_excel(self.excel_path, sheet_name=analysis_sheet, header=None)
-                analysis_header_rows = self.config.get('analysis_header_rows', max_header_rows)
-                self.analysis_target_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-                self.analysis_prev_y_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year - 1,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-                self.analysis_prev_prev_y_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year - 2,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-                self.analysis_prev_prev_prev_y_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year - 3,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-                if self.year is not None and self.quarter is not None:
-                    keys, cols = self._collect_quarter_columns(
-                        self.df_analysis,
-                        self.year - 3,
-                        self.quarter,
-                        self.year,
-                        self.quarter,
-                        analysis_header_rows
-                    )
-                    self.analysis_quarterly_keys = keys
-                    self.analysis_quarterly_cols = cols
+                analysis_columns = self.config.get('analysis_columns') or self.config.get('analysis_column_indices') or {}
+                self.analysis_target_col = analysis_columns.get('target_col')
+                self.analysis_prev_y_col = analysis_columns.get('prev_y_col')
+                self.analysis_prev_prev_y_col = analysis_columns.get('prev_prev_y_col')
+                self.analysis_prev_prev_prev_y_col = analysis_columns.get('prev_prev_prev_y_col')
+                self.analysis_quarterly_cols = analysis_columns.get('quarterly_cols', {}) or {}
+                self.analysis_quarterly_keys = list(self.analysis_quarterly_cols.keys())
             except Exception as e:
                 print(f"[{self.config['name']}] ⚠️ 분석 시트 로드 실패: {analysis_sheet} ({e})")
-        
-        # 기본값 사용 금지: 반드시 찾아야 함 (상세 디버그 정보 포함)
-        if self.target_col is None:
-            # 헤더 행 샘플 출력
-            print(f"[{self.config['name']}] 🔍 [디버그] Target 컬럼 찾기 실패:")
-            print(f"  - 찾으려는 연도/분기: {self.year}년 {self.quarter}분기")
-            print(f"  - 확인한 시트: {sheet_type}")
-            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
-            # 헤더 행 샘플 출력
-            header_sample_rows = min(3, len(df))
-            print(f"  - 헤더 행 샘플 (처음 {header_sample_rows}행):")
-            for i in range(header_sample_rows):
-                row_sample = [str(df.iloc[i, j])[:30] if j < len(df.columns) and pd.notna(df.iloc[i, j]) else 'NaN' 
-                             for j in range(min(15, len(df.columns)))]
-                print(f"    행 {i}: {row_sample}")
-            raise ValueError(
-                f"[{self.config['name']}] ❌ Target 컬럼을 찾을 수 없습니다.\n"
-                f"  찾으려는 연도/분기: {self.year}년 {self.quarter}분기\n"
-                f"  확인한 시트: {sheet_type}\n"
-                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
-            )
-        
-        if self.prev_y_col is None:
-            print(f"[{self.config['name']}] 🔍 [디버그] 전년 컬럼 찾기 실패:")
-            print(f"  - 찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기")
-            print(f"  - 확인한 시트: {sheet_type}")
-            print(f"  - 시트 크기: {len(df)}행 × {len(df.columns)}열")
-            raise ValueError(
-                f"[{self.config['name']}] ❌ 전년 컬럼을 찾을 수 없습니다.\n"
-                f"  찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기\n"
-                f"  확인한 시트: {sheet_type}\n"
-                f"  시트 크기: {len(df)}행 × {len(df.columns)}열"
-            )
     
     def _find_latest_data_col(self, target_year=None):
         """
-        헤더 행에서 최신 연도/분기의 데이터 컬럼을 찾기
-        target_year이 지정되면 그 연도 데이터를 찾음
+        동적 데이터 탐색 기능은 제거되었습니다.
         """
-        import re
-        import pandas as pd
-        
-        if not hasattr(self, 'df_aggregation') or self.df_aggregation is None:
-            return None
-        
-        df = self.df_aggregation
-        if len(df) == 0:
-            return None
-        
-        # 헤더 행 (첫 번째 행)
-        header_row = df.iloc[0]
-        
-        # 숫자로 보이는 값 추출 (연도 후보)
-        year_patterns = []
-        for idx, cell in enumerate(header_row):
-            if pd.isna(cell):
-                continue
-            cell_str = str(cell).strip()
-            
-            # 정수 추출 (연도 후보)
-            numbers = re.findall(r'\d+', cell_str)
-            if numbers:
-                for num_str in numbers:
-                    year_val = int(num_str)
-                    # 범위 체크: 1990 ~ 2100
-                    if 1990 <= year_val <= 2100:
-                        year_patterns.append((idx, year_val, cell_str))
-        
-        if not year_patterns:
-            return None
-        
-        # target_year이 지정되면 그에 맞는 것 찾기
-        if target_year is not None:
-            for idx, year_val, cell_str in year_patterns:
-                if year_val == target_year:
-                    return idx
-            # target_year 못 찾으면 None
-            return None
-        
-        # target_year 미지정 시 최대 연도 찾기
-        max_year = max(year_patterns, key=lambda x: x[1])
-        return max_year[0]
-    
+        raise NotImplementedError(
+            "동적 데이터 탐색 기능이 제거되었습니다. 설정에서 컬럼 인덱스를 지정하세요."
+        )
+
     def _extract_table_data_ssot(self) -> List[Dict[str, Any]]:
         """
-        집계 시트 또는 분석 시트에서 전국 + 17개 시도 데이터 추출 (SSOT)
-        집계 시트 우선, 없으면 분석 시트 사용
+        집계/분석 데이터를 단일 테이블 형태로 추출
         """
-        # 데이터 소스 결정: 집계 시트 우선, 없으면 분석 시트
-        df = None
-        if self.df_aggregation is not None:
-            df = self.df_aggregation
-        elif self.df_analysis is not None:
-            df = self.df_analysis
-        else:
+        if self.df_aggregation is None:
             raise ValueError(
-                f"[{self.config['name']}] ❌ 집계 시트와 분석 시트가 모두 로드되지 않았습니다. "
+                f"[{self.config['name']}] ❌ 집계 시트를 로드할 수 없습니다. "
                 f"load_data() 또는 extract_all_data()를 먼저 호출해야 합니다."
             )
-        
+        df = self.df_aggregation
         # 데이터 행만 (헤더 제외) - 동적으로 찾은 시작 행 사용
         if self.data_start_row is None:
             self.data_start_row = 0
@@ -981,18 +355,8 @@ class UnifiedReportGenerator(BaseGenerator):
             print(f"[{self.config['name']}] ⚠️ data_start_row({self.data_start_row})가 DataFrame 길이({len(df)})를 초과합니다. 전체 DataFrame 사용")
             data_df = df.copy()
         
-        # 분기 단위 전체 범위 컬럼 확보 (22년 3분기 ~ 25년 3분기 등)
+        # 분기 단위 전체 범위 컬럼은 설정 기반으로만 사용
         header_rows = self.config.get('header_rows', 5)
-        if self.year is not None and self.quarter is not None:
-            if not self.quarterly_keys or not self.quarterly_cols or (df is not self.df_aggregation):
-                self._ensure_quarter_columns(
-                    df,
-                    self.year - 3,
-                    self.quarter,
-                    self.year,
-                    self.quarter,
-                    header_rows
-                )
 
         # 직전 분기 컬럼
         prev_q_col = None
@@ -1002,35 +366,6 @@ class UnifiedReportGenerator(BaseGenerator):
             prev_q_col = self.quarterly_cols.get(prev_q_key)
 
         use_analysis_rates = self.config.get('value_type') == 'change_rate' and self.df_analysis is not None
-        if use_analysis_rates and self.year is not None and self.quarter is not None:
-            analysis_header_rows = self.config.get('analysis_header_rows', header_rows)
-            if self.analysis_target_col is None:
-                self.analysis_target_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-            if self.analysis_prev_y_col is None:
-                self.analysis_prev_y_col = self.find_target_col_index(
-                    self.df_analysis,
-                    self.year - 1,
-                    self.quarter,
-                    require_type_match=False,
-                    max_header_rows=analysis_header_rows
-                )
-            if not self.analysis_quarterly_keys or not self.analysis_quarterly_cols:
-                keys, cols = self._collect_quarter_columns(
-                    self.df_analysis,
-                    self.year - 3,
-                    self.quarter,
-                    self.year,
-                    self.quarter,
-                    analysis_header_rows
-                )
-                self.analysis_quarterly_keys = keys
-                self.analysis_quarterly_cols = cols
         
         # 지역 목록
         regions = ['전국', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -1191,11 +526,11 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # 컬럼 인덱스 검증 (동적으로 찾은 컬럼)
         if self.region_name_col is None or self.region_name_col < 0 or self.region_name_col >= len(data_df.columns):
-            raise ValueError(
-                f"[{self.config['name']}] ❌ 지역명 컬럼을 찾을 수 없습니다. "
-                f"동적 탐색 실패 또는 인덱스({self.region_name_col})가 유효하지 않습니다. "
-                f"DataFrame 컬럼 수: {len(data_df.columns)}"
+            print(
+                f"[{self.config['name']}] ⚠️ 지역명 컬럼이 설정되지 않았거나 유효하지 않습니다. "
+                f"인덱스({self.region_name_col}), DataFrame 컬럼 수: {len(data_df.columns)}"
             )
+            return []
         
         for region in regions:
             row = _select_region_total(df, region)
@@ -1205,34 +540,19 @@ class UnifiedReportGenerator(BaseGenerator):
 
             analysis_row = _select_region_total(self.df_analysis, region) if use_analysis_rates else None
             
-            # 기본값 사용 금지: 반드시 유효한 인덱스여야 함 (상세 디버그 정보 포함)
-            if self.target_col is None:
-                print(f"[{self.config['name']}] 🔍 [디버그] {region} Target 컬럼이 None:")
-                print(f"  - 찾으려는 연도/분기: {self.year}년 {self.quarter}분기")
-                print(f"  - 행 길이: {len(row)}")
-                print(f"  - 행 샘플: {[str(row.iloc[j])[:20] if j < len(row) and pd.notna(row.iloc[j]) else 'NaN' for j in range(min(10, len(row)))]}")
-                raise ValueError(
-                    f"[{self.config['name']}] ❌ {region} Target 컬럼이 None입니다.\n"
-                    f"  찾으려는 연도/분기: {self.year}년 {self.quarter}분기\n"
-                    f"  행 길이: {len(row)}"
+            if self.target_col is None or self.prev_y_col is None:
+                print(
+                    f"[{self.config['name']}] ⚠️ {region}: 컬럼 인덱스가 설정되지 않아 스킵합니다. "
+                    f"target_col={self.target_col}, prev_y_col={self.prev_y_col}"
                 )
-            
-            if self.prev_y_col is None:
-                print(f"[{self.config['name']}] 🔍 [디버그] {region} 전년 컬럼이 None:")
-                print(f"  - 찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기")
-                print(f"  - 행 길이: {len(row)}")
-                raise ValueError(
-                    f"[{self.config['name']}] ❌ {region} 전년 컬럼이 None입니다.\n"
-                    f"  찾으려는 연도/분기: {self.year - 1}년 {self.quarter}분기\n"
-                    f"  행 길이: {len(row)}"
-                )
+                continue
             
             # 인덱스 범위 체크
-            if self.target_col >= len(row):
+            if self.target_col is None or self.target_col >= len(row):
                 print(f"[{self.config['name']}] ⚠️ Target 컬럼 인덱스({self.target_col})가 행 길이({len(row)})를 초과합니다. 스킵합니다.")
                 continue
             
-            if self.prev_y_col >= len(row):
+            if self.prev_y_col is None or self.prev_y_col >= len(row):
                 print(f"[{self.config['name']}] ⚠️ 전년 컬럼 인덱스({self.prev_y_col})가 행 길이({len(row)})를 초과합니다. 스킵합니다.")
                 continue
 
@@ -2207,61 +1527,19 @@ class UnifiedReportGenerator(BaseGenerator):
         """전체 데이터 추출"""
         # 데이터 로드는 외부에서 보장 (테스트 호환성)
         
-        # config에서 header_rows 가져오기 (기본값 5)
-        max_header_rows = self.config.get('header_rows', 5)
-        
-        # migration은 load_data()에서 이미 명시적 헤더 탐색으로 컬럼 설정됨
-        if self.report_type == 'migration':
-            target_idx = self.target_col
-            prev_y_idx = self.prev_y_col
-        else:
-            # 스마트 헤더 탐색기로 인덱스 확보 (병합된 셀 처리)
-            # 기본값 사용 금지: 반드시 찾아야 함
-            # 타입 키워드가 헤더에 없을 수 있으므로 모든 보고서에서 타입 매칭을 강제하지 않음
-            require_type_match = False
-            
-            target_idx = self.find_target_col_index(
-                self.df_aggregation, self.year, self.quarter, 
-                require_type_match=require_type_match,
-                max_header_rows=max_header_rows
-            )
-            prev_y_idx = self.find_target_col_index(
-                self.df_aggregation, self.year - 1, self.quarter, 
-                require_type_match=require_type_match,
-                max_header_rows=max_header_rows
-            )
+        # 정적 컬럼 인덱스 사용 (동적 탐색 제거)
+        target_idx = self.target_col
+        prev_y_idx = self.prev_y_col
         
         if self.df_aggregation is not None:
-            if target_idx is None:
-                print(f"[{self.config['name']}] 🔍 [디버그] {self.year}년 {self.quarter}분기 컬럼 찾기 실패:")
-                print(f"  - 확인한 시트: 집계")
-                print(f"  - 시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열")
-                # 헤더 행 샘플 출력
-                header_sample_rows = min(3, len(self.df_aggregation))
-                print(f"  - 헤더 행 샘플 (처음 {header_sample_rows}행):")
-                for i in range(header_sample_rows):
-                    row_sample = [str(self.df_aggregation.iloc[i, j])[:30] if j < len(self.df_aggregation.columns) and pd.notna(self.df_aggregation.iloc[i, j]) else 'NaN' 
-                                 for j in range(min(15, len(self.df_aggregation.columns)))]
-                    print(f"    행 {i}: {row_sample}")
-                raise ValueError(
-                    f"[{self.config['name']}] ❌ {self.year}년 {self.quarter}분기 컬럼을 찾을 수 없습니다.\n"
-                    f"  확인한 시트: 집계\n"
-                    f"  시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열"
-                )
-            
-            if prev_y_idx is None:
-                print(f"[{self.config['name']}] 🔍 [디버그] {self.year - 1}년 {self.quarter}분기 컬럼 찾기 실패:")
-                print(f"  - 확인한 시트: 집계")
-                print(f"  - 시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열")
-                raise ValueError(
-                    f"[{self.config['name']}] ❌ {self.year - 1}년 {self.quarter}분기 컬럼을 찾을 수 없습니다.\n"
-                    f"  확인한 시트: 집계\n"
-                    f"  시트 크기: {len(self.df_aggregation)}행 × {len(self.df_aggregation.columns)}열"
+            if target_idx is None or prev_y_idx is None:
+                print(
+                    f"[{self.config['name']}] ⚠️ 컬럼 인덱스가 설정되지 않아 기본 인덱스를 유지합니다. "
+                    f"target_col={target_idx}, prev_y_col={prev_y_idx}"
                 )
             
             self.target_col = target_idx
             self.prev_y_col = prev_y_idx
-            print(f"[{self.config['name']}] ✅ extract_all_data: Target 컬럼 = {target_idx}, 전년 컬럼 = {prev_y_idx}")
         else:
             raise ValueError(
                 f"[{self.config['name']}] ❌ 집계 시트를 로드할 수 없습니다. "
@@ -2270,6 +1548,13 @@ class UnifiedReportGenerator(BaseGenerator):
         
         # Table Data (SSOT)
         table_data = self._extract_table_data_ssot()
+        # 전처리 결과 DF 저장
+        self.preprocessed_table_df = None
+        if isinstance(table_data, list):
+            try:
+                self.preprocessed_table_df = pd.DataFrame(table_data)
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ 전처리 결과 DF 생성 실패: {e}")
         
         # Text Data
         # 국내인구이동은 nationwide 데이터가 없음
@@ -2629,18 +1914,21 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
         self.generators = {}  # 부문별 Generator 캐시
     
     def extract_all_data(self, region: Optional[str] = None) -> Dict[str, Any]:
-        """시도별 모든 데이터 추출
-        
-        Returns:
-            지역별 모든 데이터 (섹션별로 다른 generator를 사용하므로 기본 구조만 반환)
-        """
-        return {
-            'report_info': {'year': self.year, 'quarter': self.quarter},
-            'nationwide_data': None,
-            'regional_data': {},
-            'table_data': [],
-            'sections': {},
-        }
+        """시도별 모든 데이터 추출 (템플릿 요구에 맞는 sections 구조 보장)"""
+        # 단일 시도만 추출 시
+        if region:
+            region_data = {'sections': {}}
+            for report_type in ['mining', 'service', 'consumption', 'construction', 'export', 'import', 'employment', 'unemployment', 'price', 'migration']:
+                section = self.extract_regional_section(region, report_type)
+                if section:
+                    region_data['sections'][report_type] = section
+            return {
+                'report_info': {'year': self.year, 'quarter': self.quarter},
+                'region_name': region,
+                'sections': region_data['sections']
+            }
+        # 전체 시도
+        return self.extract_all_regions_data()
     
     def _get_generator(self, report_type: str) -> UnifiedReportGenerator:
         """부문별 Generator 캐시 또는 생성"""
@@ -2712,11 +2000,20 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
                 increase_industries[:3] if increase_industries else []
             )
             
+            # 템플릿 요구: narrative는 반드시 리스트, table.data는 [지표값, 증감률] 순서 보장
+            table_row = self._format_table_row(region_data, industries)
+            # 값이 2개 미만이면 보정
+            values = table_row.get('values', [])
+            if not isinstance(values, list):
+                values = [values]
+            if len(values) < 2:
+                values = (values + ['-']*2)[:2]
+            table_row['values'] = values
             return {
-                'narrative': narrative,
+                'narrative': narrative if isinstance(narrative, list) else [str(narrative)],
                 'table': {
-                    'periods': self._get_table_periods(gen),
-                    'data': [self._format_table_row(region_data, industries)]
+                    'periods': self._get_table_periods(self._get_generator(report_type)),
+                    'data': [table_row]
                 }
             }
         except Exception as e:
@@ -2813,23 +2110,21 @@ class RegionalEconomyByRegionGenerator(BaseGenerator):
     def extract_all_regions_data(self) -> Dict[str, Any]:
         """모든 시도의 통합 데이터 추출"""
         all_regions_data = {}
-        
-        # 부문별 데이터 추출
-        report_types = ['mining', 'service', 'consumption', 'construction', 'export', 'import', 
-                        'employment', 'unemployment', 'price', 'migration']
-        
-        for region in self.REGIONS:
+        report_types = ['mining', 'service', 'consumption', 'construction', 'export', 'import', 'employment', 'unemployment', 'price', 'migration']
+        for idx, region in enumerate(self.REGIONS, 1):
             region_name = region['name']
-            all_regions_data[region_name] = {
-                'region_info': region,
-                'sections': {}
-            }
-            
+            region_info = dict(region)
+            region_info['order'] = idx
+            sections = {}
             for report_type in report_types:
-                section_data = self.extract_regional_section(region_name, report_type)
-                if section_data:
-                    all_regions_data[region_name]['sections'][report_type] = section_data
-        
+                section = self.extract_regional_section(region_name, report_type)
+                if section:
+                    sections[report_type] = section
+            all_regions_data[region_name] = {
+                'region_info': region_info,
+                'region_name': region_name,
+                'sections': sections
+            }
         return all_regions_data
 
 

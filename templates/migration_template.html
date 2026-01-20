@@ -357,7 +357,7 @@
                         {'name': '동북', 'regions': ['대구', '경북', '강원']},
                         {'name': '동남', 'regions': ['부산', '울산', '경남']}
                     ] %}
-                    {% set data_rows = table_data if table_data is defined else [] %}
+                    {% set data_rows = table_df if table_df is defined else (table_data if table_data is defined else []) %}
                     {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
                     <tr>
                         <td class="region-group"></td>

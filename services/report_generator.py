@@ -10,13 +10,60 @@ import pandas as pd
 from pathlib import Path
 from jinja2 import Template
 
-from config.settings import TEMPLATES_DIR, UPLOAD_FOLDER, TEMP_OUTPUT_DIR
+from config.settings import TEMPLATES_DIR, SCHEMAS_DIR, UPLOAD_FOLDER, TEMP_OUTPUT_DIR
 from config.reports import SECTOR_REPORTS, VALID_REGIONS
 from utils.filters import is_missing, format_value
 from utils.text_utils import get_josa, get_terms, get_comparative_terms
 from utils.excel_utils import load_generator_module
 from utils.data_utils import check_missing_data
 from .excel_cache import get_excel_file, clear_excel_cache, get_sector_data, set_sector_data
+
+
+def _fixed_period_labels(year: int | None, quarter: int | None, age_label: str = "15-29세") -> tuple[list[str], list[str], list[str]]:
+    if not year or not quarter:
+        growth = ["{Y-2}. {Q}/4", "{Y-1}. {Q}/4", "{Y}. {Q-1}/4", "{Y}. {Q}/4"]
+        index = ["{Y-1}. {Q}/4", "{Y}. {Q}/4"]
+        rate = ["{Y-1}. {Q}/4", "{Y}. {Q}/4", age_label]
+        return growth, index, rate
+
+    prev_q_year, prev_q = (year - 1, 4) if quarter <= 1 else (year, quarter - 1)
+    growth = [
+        f"{year-2}. {quarter}/4",
+        f"{year-1}. {quarter}/4",
+        f"{prev_q_year}. {prev_q}/4",
+        f"{year}. {quarter}/4",
+    ]
+    index = [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4"]
+    rate = [f"{year-1}. {quarter}/4", f"{year}. {quarter}/4", age_label]
+    return growth, index, rate
+
+
+def _apply_fixed_summary_columns(data: dict, report_id: str, year: int | None, quarter: int | None) -> None:
+    if not isinstance(data, dict):
+        return
+    summary_table = data.get("summary_table")
+    if not isinstance(summary_table, dict):
+        return
+
+    columns = summary_table.get("columns")
+    if not isinstance(columns, dict):
+        columns = {}
+        summary_table["columns"] = columns
+
+    growth, index, rate = _fixed_period_labels(year, quarter)
+
+    if report_id in {"manufacturing", "service", "consumption", "construction"}:
+        columns["growth_rate_columns"] = growth
+        columns["index_columns"] = index
+    elif report_id in {"export", "import"}:
+        columns["growth_rate_columns"] = growth
+        columns["amount_columns"] = index
+    elif report_id == "price":
+        columns["change_columns"] = growth
+        columns["index_columns"] = index
+    elif report_id in {"employment", "unemployment"}:
+        columns["change_columns"] = growth
+        columns["rate_columns"] = rate
 
 
 def _generate_from_schema(template_name, report_id, year, quarter, excel_path=None, custom_data=None):
@@ -74,7 +121,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
             else:
                 # excel_path가 없으면 스키마 기본값 사용
                 schema_basename = template_name.replace('_template.html', '_schema.json')
-                schema_path = TEMPLATES_DIR / schema_basename
+                schema_path = SCHEMAS_DIR / schema_basename
                 if schema_path.exists():
                     with open(schema_path, 'r', encoding='utf-8') as f:
                         schema = json.load(f)
@@ -93,7 +140,7 @@ def _generate_from_schema(template_name, report_id, year, quarter, excel_path=No
         else:
             # 다른 요약 보도자료는 스키마 기본값 사용
             schema_basename = template_name.replace('_template.html', '_schema.json')
-            schema_path = TEMPLATES_DIR / schema_basename
+            schema_path = SCHEMAS_DIR / schema_basename
             
             if not schema_path.exists():
                 return None, f"스키마 파일을 찾을 수 없습니다: {schema_path}", []
@@ -523,6 +570,24 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
                     if isinstance(data, dict) and 'table_data' in data:
                         sector_payload['table_data'] = data.get('table_data')
 
+                    # 전처리 DF 저장
+                    try:
+                        source_table_df = None
+                        table_df = None
+                        if generator is not None:
+                            source_table_df = getattr(generator, 'df_aggregation_table', None)
+                            table_df = getattr(generator, 'preprocessed_table_df', None)
+                        if table_df is None and isinstance(data, dict):
+                            table_data = data.get('table_data')
+                            if isinstance(table_data, list):
+                                table_df = pd.DataFrame(table_data)
+                        if table_df is not None:
+                            sector_payload['table_df'] = table_df
+                        if source_table_df is not None:
+                            sector_payload['source_table_df'] = source_table_df
+                    except Exception as cache_df_error:
+                        print(f"[WARNING] 전처리 DF 캐시 저장 실패: {cache_df_error}")
+
                     industries_by_region = {}
                     if generator is not None and hasattr(generator, '_extract_industry_data'):
                         for region in VALID_REGIONS:
@@ -633,6 +698,31 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
         
         # 페이지 번호는 더 이상 사용하지 않음 (목차 생성 중단)
         data['report_info']['page_number'] = ""
+
+        # 요약 테이블 컬럼 라벨 고정 (헤더/데이터는 연·분기 기반으로 동적)
+        _apply_fixed_summary_columns(data, report_id, year, quarter)
+
+        # 전처리 DF 및 원본 표 DF를 템플릿 데이터로 매핑
+        try:
+            if generator is not None and isinstance(data, dict):
+                source_table_df = getattr(generator, 'df_aggregation_table', None)
+                preprocessed_df = getattr(generator, 'preprocessed_table_df', None)
+
+                if preprocessed_df is not None:
+                    try:
+                        data['table_df'] = preprocessed_df.to_dict(orient='records')
+                        data['table_df_columns'] = list(preprocessed_df.columns)
+                    except Exception as to_dict_error:
+                        print(f"[WARNING] 전처리 DF 매핑 실패: {to_dict_error}")
+
+                if source_table_df is not None:
+                    try:
+                        data['source_table_df'] = source_table_df.to_dict(orient='records')
+                        data['source_table_df_columns'] = list(source_table_df.columns)
+                    except Exception as to_dict_error:
+                        print(f"[WARNING] 원본 표 DF 매핑 실패: {to_dict_error}")
+        except Exception as df_attach_error:
+            print(f"[WARNING] DF 템플릿 매핑 실패: {df_attach_error}")
         
         
         # 결측치 확인
