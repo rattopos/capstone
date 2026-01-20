@@ -207,6 +207,85 @@
             font-size: 70%;
             vertical-align: super;
         }
+
+        /* 공통 디자인(광공업과 일치) */
+        .section-main-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 12px;
+            margin-bottom: 18px;
+            background-color: #6d78b8;
+            color: #000;
+            border-radius: 6px;
+            position: relative;
+            background-image:
+                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+        }
+
+        .section-main-title__label {
+            display: inline-block;
+            background: #ffffff;
+            padding: 4px 26px;
+            border-radius: 999px;
+            color: #000;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+        }
+
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 17pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .subsection-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .summary-box {
+            border: none;
+            padding: 0;
+            margin-bottom: 10px;
+            background-color: transparent;
+            line-height: 1.6;
+            font-size: 11pt;
+        }
+
+        .detail-box .title {
+            font-size: 11pt;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+        }
+
+        .data-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+        }
+
+        .data-table .region-group,
+        .data-table .region-name {
+            border: 1px solid #000;
+        }
+
+        .data-table td.rate-section {
+            background-color: #fff6d6;
+        }
+
+        .data-table th.rate-section {
+            background-color: #e0e0e0;
+        }
         
         @media print {
             .page {
@@ -218,7 +297,7 @@
             }
             
             .data-table th {
-                background-color: #e6e0ec !important;
+                background-color: #e0e0e0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -227,12 +306,13 @@
 </head>
 <body>
     <div class="page">
+        <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
         <div class="section-title">6. 고용 동향</div>
         <div class="subsection-title">가. 고용률</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">󰋮 고용률은 
+            <div class="headline">◆ 고용률은 
                 
                 <span class="highlight">{'region': '대전', 'growth_rate': 2.2, 'industries': [{'name': '60세이상', 'value': 45.9, 'prev_value': 42.4, 'change_rate': 8.3, 'growth_rate': 8.3}, {'name': '15 - 29세', 'value': 46.3, 'prev_value': 44.2, 'change_rate': 4.8, 'growth_rate': 4.8}, {'name': '50 - 59세', 'value': 78.4, 'prev_value': 75.2, 'change_rate': 4.3, 'growth_rate': 4.3}], 'change': 2.2, 'industries_names': ['60세이상', '15 - 29세', '50 - 59세'], 'age_groups': []}</span>, 
                 
@@ -310,6 +390,8 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《고용률<sup>1)</sup> 및 증감 》</div>
+            
+            
             <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
                 <thead style="border: 1px solid black !important;">
                     <tr>
@@ -318,13 +400,22 @@
                         <th colspan="3" class="rate-section" style="border: 1px solid black !important;">고용률(%)</th>
                     </tr>
                     <tr>
+                        
                         <th style="width: 50px;; border: 1px solid black !important">2023.3/4</th>
+                        
                         <th style="width: 50px;; border: 1px solid black !important">2024.3/4</th>
+                        
                         <th style="width: 50px;; border: 1px solid black !important">2025.2/4</th>
+                        
                         <th style="width: 50px;; border: 1px solid black !important">2025.3/4</th>
+                        
+                        
                         <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2024.3/4</th>
+                        
                         <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2025.3/4</th>
-                        <th class="rate-section dashed-border" style="width: 55px;; border: 1px solid black !important">20-29세</th>
+                        
+                        <th class="rate-section dashed-border" style="width: 55px;; border: 1px solid black !important">15-29세</th>
+                        
                     </tr>
                 </thead>
                 <tbody>
@@ -1130,7 +1221,7 @@
             </table>
             
             <div class="footnote">1) 고용률(%) 산식</div>
-            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+            
         </div>
         
 </body>

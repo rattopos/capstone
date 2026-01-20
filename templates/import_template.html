@@ -198,6 +198,87 @@
             font-size: 70%;
             vertical-align: super;
         }
+
+        /* 공통 디자인(광공업과 일치) */
+        .section-main-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 12px;
+            margin-bottom: 18px;
+            background-color: #6d78b8;
+            color: #000;
+            border-radius: 6px;
+            position: relative;
+            background-image:
+                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+        }
+
+        .section-main-title__label {
+            display: inline-block;
+            background: #ffffff;
+            padding: 4px 26px;
+            border-radius: 999px;
+            color: #000;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+        }
+
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 17pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .subsection-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .summary-box {
+            border: none;
+            padding: 0;
+            margin-bottom: 10px;
+            background-color: transparent;
+            line-height: 1.6;
+            font-size: 11pt;
+        }
+
+        .detail-box .title {
+            font-size: 11pt;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+        }
+
+        .data-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+        }
+
+        .data-table .region-group,
+        .data-table .region-name {
+            border: 1px solid #000;
+        }
+
+        .data-table td.amount-section {
+            background-color: #fff6d6;
+        }
+
+        .data-table th.amount-section {
+            background-color: #e0e0e0;
+        }
         
         @media print {
             .page {
@@ -209,7 +290,7 @@
             }
             
             .data-table th {
-                background-color: #e6e0ec !important;
+                background-color: #e0e0e0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -218,11 +299,13 @@
 </head>
 <body>
     <div class="page">
+        <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
+        <div class="section-title">4. 수출입 동향</div>
         <div class="subsection-title">나. 수입</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">󰋮 수입은 
+            <div class="headline">◆ 수입은 
                 {% for region in top3_decrease_regions %}
                 <span class="highlight">{{ region.region }}</span>({{ region.products | join(', ') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
@@ -244,9 +327,14 @@
             <div class="title">&lt; 주요 증감지역 및 품목 &gt;</div>
             
             <!-- 전국 -->
-            <div class="item">·전 국( {{ "%.1f"|format(nationwide_data.change) }}%): 
+            <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.change) }}%): 
                 {% for prod in nationwide_data.products[:3] %}
-                {{ prod.name }}({{ "%.1f"|format(prod.change) }}%){% if not loop.last %}, {% endif %}
+                {% if prod is mapping %}
+                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
+                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% else %}
+                {{ prod }}{% if not loop.last %}, {% endif %}
+                {% endif %}
                 {% endfor %}
             </div>
             
@@ -254,9 +342,14 @@
             
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
-            <div class="item">·{{ region.name }}( {{ "%.1f"|format(region.change) }}%): 
-                {% for prod in region.products %}
-                {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}( {{ "%.1f"|format(region.change) }}%): 
+                {% for prod in (region.products or [])[:3] %}
+                {% if prod is mapping %}
+                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
+                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% else %}
+                {{ prod }}{% if not loop.last %}, {% endif %}
+                {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -265,9 +358,14 @@
             
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
-            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
-                {% for prod in region.products %}
-                {{ prod.name if prod.name else prod }}{% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% for prod in (region.products or [])[:3] %}
+                {% if prod is mapping %}
+                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
+                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% else %}
+                {{ prod }}{% if not loop.last %}, {% endif %}
+                {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -276,20 +374,22 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 수입액 및 증감률 》</div>
+            {% set change_cols = summary_table.columns.growth_rate_columns if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined and summary_table.columns.growth_rate_columns|length > 0 else ["[기간]", "[기간]", "[기간]", "[기간]"] %}
+            {% set amount_cols = summary_table.columns.amount_columns if summary_table and summary_table.columns and summary_table.columns.amount_columns is defined and summary_table.columns.amount_columns|length > 0 else ["[기간]", "[기간]"] %}
             <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
                 <thead style="border: 1px solid black !important;">
                     <tr>
                         <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
-                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
-                        <th colspan="2" class="amount-section" style="border: 1px solid black !important;">수입액(억달러)</th>
+                        <th colspan="{{ change_cols|length }}" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
+                        <th colspan="{{ amount_cols|length }}" class="amount-section" style="border: 1px solid black !important;">수입액(억달러)</th>
                     </tr>
                     <tr>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
-                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.amount_columns[1] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
+                        {% for col in change_cols %}
+                        <th style="width: 58px;; border: 1px solid black !important">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        {% endfor %}
+                        {% for col in amount_cols %}
+                        <th class="amount-section" style="width: 70px;; border: 1px solid black !important">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>

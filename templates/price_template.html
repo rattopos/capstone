@@ -196,6 +196,78 @@
             font-size: 70%;
             vertical-align: super;
         }
+
+        /* 공통 디자인(광공업과 일치) */
+        .section-main-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 12px;
+            margin-bottom: 18px;
+            background-color: #6d78b8;
+            color: #000;
+            border-radius: 6px;
+            position: relative;
+            background-image:
+                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+        }
+
+        .section-main-title__label {
+            display: inline-block;
+            background: #ffffff;
+            padding: 4px 26px;
+            border-radius: 999px;
+            color: #000;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+        }
+
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 17pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .summary-box {
+            border: none;
+            padding: 0;
+            margin-bottom: 10px;
+            background-color: transparent;
+            line-height: 1.6;
+            font-size: 11pt;
+        }
+
+        .detail-box .title {
+            font-size: 11pt;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+        }
+
+        .data-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+        }
+
+        .data-table .region-group,
+        .data-table .region-name {
+            border: 1px solid #000;
+        }
+
+        .data-table td.index-section {
+            background-color: #fff6d6;
+        }
+
+        .data-table th.index-section {
+            background-color: #e0e0e0;
+        }
         
         @media print {
             .page {
@@ -207,7 +279,7 @@
             }
             
             .data-table th {
-                background-color: #e6e0ec !important;
+                background-color: #e0e0e0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -216,11 +288,12 @@
 </head>
 <body>
     <div class="page">
+        <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
         <div class="section-title">5. 물가 동향</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
-            <div class="headline">󰋮 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 모든 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
+            <div class="headline">◆ 소비자물가는 {{ summary_box.main_items | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 모든 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
             <div class="nationwide">□ 전국 소비자물가({{ "%.1f"|format(nationwide_data.index) }})는 {{ nationwide_data.categories | map(attribute='name') | join(', ') }} 등이 {{ get_terms(report_info.report_id, nationwide_data.change)[0] }} 전년동분기대비 <span class="increase">{{ "%.1f"|format(nationwide_data.change) }}% {{ get_terms(report_info.report_id, nationwide_data.change)[1] }}</span></div>
             <div class="regional">◦ 
                 {% set comp_terms = get_comparative_terms(report_info.report_id, nationwide_data.change) %}
@@ -239,8 +312,9 @@
             
             <!-- 전국 -->
             <div class="item">·전 국({{ "%.1f"|format(nationwide_data.change) }}%): 
-                {% for cat in nationwide_data.categories[:4] %}
-                {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
+                {% for cat in nationwide_data.categories[:3] %}
+                {% set rate = cat.contribution_rate if cat.contribution_rate is not none else (cat.contribution if cat.contribution is not none else (cat.change if cat.change is not none else cat.growth_rate)) %}
+                {{ cat.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             
@@ -248,9 +322,10 @@
             
             <!-- 전국보다 높은 지역 Top 3 -->
             {% for region in top3_above_regions %}
-            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
-                {% for cat in region.categories[:4] %}
-                {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% for cat in (region.categories or [])[:3] %}
+                {% set rate = cat.contribution_rate if cat.contribution_rate is not none else (cat.contribution if cat.contribution is not none else (cat.change if cat.change is not none else cat.growth_rate)) %}
+                {{ cat.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -259,9 +334,10 @@
             
             <!-- 전국보다 낮은 지역 Top 3 -->
             {% for region in top3_below_regions %}
-            <div class="item">·{{ region.name }}({{ "%.1f"|format(region.change) }}%): 
-                {% for cat in region.categories[:4] %}
-                {{ cat.name }}({{ "%.1f"|format(cat.change) }}%){% if not loop.last %}, {% endif %}
+            <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}({{ "%.1f"|format(region.change) }}%): 
+                {% for cat in (region.categories or [])[:3] %}
+                {% set rate = cat.contribution_rate if cat.contribution_rate is not none else (cat.contribution if cat.contribution is not none else (cat.change if cat.change is not none else cat.growth_rate)) %}
+                {{ cat.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -270,20 +346,22 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 소비자물가지수 및 등락률 》</div>
+            {% set change_cols = summary_table.columns.change_columns if summary_table and summary_table.columns and summary_table.columns.change_columns is defined and summary_table.columns.change_columns|length > 0 else ["[기간]", "[기간]", "[기간]", "[기간]"] %}
+            {% set index_cols = summary_table.columns.index_columns if summary_table and summary_table.columns and summary_table.columns.index_columns is defined and summary_table.columns.index_columns|length > 0 else ["[기간]", "[기간]"] %}
             <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
                 <thead style="border: 1px solid black !important;">
                     <tr>
                         <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
-                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 등락률(%)</th>
-                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">소비자물가지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
+                        <th colspan="{{ change_cols|length }}" style="border: 1px solid black !important;">전년동분기대비 등락률(%)</th>
+                        <th colspan="{{ index_cols|length }}" class="index-section" style="border: 1px solid black !important;">소비자물가지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
                     </tr>
                     <tr>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[1] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[2] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px;; border: 1px solid black !important">{{ summary_table.columns.change_columns[3] if summary_table.columns else "[기간]" }}</th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ summary_table.columns.index_columns[1] if summary_table.columns else "[기간]" }}</th>
+                        {% for col in change_cols %}
+                        <th style="width: 58px;; border: 1px solid black !important">{{ col }}</th>
+                        {% endfor %}
+                        {% for col in index_cols %}
+                        <th class="index-section" style="width: 70px;; border: 1px solid black !important">{{ col }}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>

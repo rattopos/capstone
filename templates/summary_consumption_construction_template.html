@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 소비/건설</title>
     <style>
-                * {
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 14pt;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #000;
             background: #fff;
         }
@@ -30,127 +30,144 @@
         svg {
             display: none !important;
         }
-        
+
         .summary-container {
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 30px 40px;
+            padding: 28px 40px;
         }
-        
-        .section-header {
-            background: #4a4a4a;
-            color: #fff;
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0 12px;
+        }
+
+        .section-title span {
+            background: #d9d9d9;
+            color: #000;
             font-size: 15pt;
             font-weight: 700;
-            padding: 8px 20px;
-            margin-bottom: 20px;
-            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 2px;
         }
-        
-        .section-header::after {
-            content: "";
-            display: block;
-            width: 100%;
-            height: 2px;
-            background: #ffc107;
-            margin-top: 3px;
-        }
-        
-        .summary-box {
-            margin-bottom: 25px;
-        }
-        
+
+        .summary-box { margin-bottom: 22px; }
+
         .summary-main {
             font-size: 14pt;
-            margin-bottom: 10px;
-            padding-left: 25px;
-            position: relative;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-main::before {
-            content: "□";
-            position: absolute;
-            left: 0;
-            font-size: 14pt;
-            color: #999;
-        }
-        
+
         .summary-sub {
             font-size: 14pt;
-            margin-left: 25px;
-            padding-left: 20px;
-            position: relative;
+            margin-left: 22px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-sub::before {
-            content: "◦";
-            position: absolute;
-            left: 0;
-            color: #999;
-        }
-        
+
         .highlight { font-weight: 700; }
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
-        
-        .section-spacer { height: 1em; }
+
+        .section-spacer { height: 0.8em; }
         .footnote { font-size: 12pt; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div class="summary-container">
+    <div class="summary-container" style="width: 210mm; min-height: 297mm; margin: 0 auto; padding: 28px 40px; font-family: 'Malgun Gothic', serif; font-size: 14pt; line-height: 1.6; color: #000; background: #fff;">
         <!-- 소비 섹션 -->
-        <div class="section-header">소비</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">소비</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는 
-                {% if retail_sales.nationwide.change is defined and retail_sales.qoq_change is defined %}
-                    {% if retail_sales.nationwide.change >= 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change < 0 %}
-                        전년동분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.nationwide.change) }}% {{ get_terms('consumption', 1)[1] }}</span>{{ get_terms('consumption', 1)[2] }} 전분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.qoq_change | abs) }}% {{ get_terms('consumption', -1)[1] }}</span>
-                    {% elif retail_sales.nationwide.change >= 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change >= 0 %}
-                        전년동분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.nationwide.change) }}% {{ get_terms('consumption', 1)[1] }}</span> 전분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.qoq_change) }}% {{ get_terms('consumption', 1)[1] }}</span>
-                    {% elif retail_sales.nationwide.change < 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change >= 0 %}
-                        전년동분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {{ get_terms('consumption', -1)[1] }}</span>{{ get_terms('consumption', -1)[2] }} 전분기대비 <span class="increase">{{ "%.1f"|format(retail_sales.qoq_change) }}% {{ get_terms('consumption', 1)[1] }}</span>
-                    {% elif retail_sales.nationwide.change < 0 and retail_sales.qoq_change is not none and retail_sales.qoq_change < 0 %}
-                        전년동분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {{ get_terms('consumption', -1)[1] }}</span> 전분기대비 <span class="decrease">{{ "%.1f"|format(retail_sales.qoq_change | abs) }}% {{ get_terms('consumption', -1)[1] }}</span>
-                    {% else %}
-                        전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {% if retail_sales.nationwide.change >= 0 %}{{ get_terms('consumption', 1)[1] }}{% else %}{{ get_terms('consumption', -1)[1] }}{% endif %}</span>
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 소매판매</span>({{ "%.1f"|format(retail_sales.nationwide.index) }})는
+                    {% set retail_yoy = retail_sales.nationwide.change %}
+                    {% set retail_qoq = retail_sales.qoq_change %}
+                    {% set retail_yoy_valid = retail_yoy is not none and (retail_yoy | abs) >= 0.01 %}
+                    {% set retail_qoq_valid = retail_qoq is not none and (retail_qoq | abs) >= 0.01 %}
+                    {% if retail_yoy_valid %}
+                        {% set retail_yoy_terms = get_terms('consumption', retail_yoy) %}
                     {% endif %}
-                {% else %}
-                    전년동분기대비 <span class="{% if retail_sales.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(retail_sales.nationwide.change | abs) }}% {% if retail_sales.nationwide.change >= 0 %}{{ get_terms('consumption', 1)[1] }}{% else %}{{ get_terms('consumption', -1)[1] }}{% endif %}</span>
-                {% endif %}
+                    {% if retail_qoq_valid %}
+                        {% set retail_qoq_terms = get_terms('consumption', retail_qoq) %}
+                    {% endif %}
+
+                    {% if not retail_yoy_valid and not retail_qoq_valid %}
+                        전년동분기대비 변동 없음
+                    {% elif retail_yoy_valid and retail_qoq_valid and ((retail_yoy > 0 and retail_qoq < 0) or (retail_yoy < 0 and retail_qoq > 0)) %}
+                        전분기대비 <span class="{% if retail_qoq > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_qoq > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_qoq | abs) }}% {{ retail_qoq_terms[1] }}</span>{{ retail_qoq_terms[2] }} 전년동분기대비 <span class="{% if retail_yoy > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_yoy > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_yoy | abs) }}% {{ retail_yoy_terms[1] }}</span>
+                    {% elif retail_yoy_valid and retail_qoq_valid %}
+                        전년동분기대비 <span class="{% if retail_yoy > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_yoy > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_yoy | abs) }}% {{ retail_yoy_terms[1] }}</span> 전분기대비 <span class="{% if retail_qoq > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_qoq > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_qoq | abs) }}% {{ retail_qoq_terms[1] }}</span>
+                    {% elif retail_yoy_valid %}
+                        전년동분기대비 <span class="{% if retail_yoy > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_yoy > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_yoy | abs) }}% {{ retail_yoy_terms[1] }}</span>
+                    {% else %}
+                        전분기대비 <span class="{% if retail_qoq > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if retail_qoq > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(retail_qoq | abs) }}% {{ retail_qoq_terms[1] }}</span>
+                    {% endif %}
+                </span>
             </div>
-            <div class="summary-sub">
-                {% for region in retail_sales.increase_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ retail_sales.increase_count }}개 시도는 소매판매가 <span class="increase">{{ get_terms('consumption', 1)[1] }}</span>{{ get_terms('consumption', 1)[2] }},
-                {% for region in retail_sales.decrease_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ retail_sales.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('consumption', -1)[1] }}</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    {% for region in retail_sales.increase_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ retail_sales.increase_count }}개 시도는 소매판매가 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('consumption', 1)[1] }}</span>{{ get_terms('consumption', 1)[2] }},
+                    {% for region in retail_sales.decrease_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ retail_sales.decrease_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('consumption', -1)[1] }}</span>
+                </span>
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <div class="section-spacer" style="height: 0.8em;"></div>
         
         <!-- 건설 섹션 -->
-        <div class="section-header">건설</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">건설</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 건설수주</span>({{ construction.nationwide.amount }}조원)는 전년동분기대비 <span class="{% if construction.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(construction.nationwide.change) }}% {% if construction.nationwide.change >= 0 %}{{ get_terms('construction', 1)[1] }}{% else %}{{ get_terms('construction', -1)[1] }}{% endif %}</span>
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 건설수주</span>({{ construction.nationwide.amount }}조원)는
+                    {% set construction_yoy = construction.nationwide.change %}
+                    {% set construction_yoy_valid = construction_yoy is not none and (construction_yoy | abs) >= 0.01 %}
+                    {% if construction_yoy_valid %}
+                        {% set construction_yoy_terms = get_terms('construction', construction_yoy) %}
+                    {% endif %}
+                    {% if not construction_yoy_valid %}
+                        전년동분기대비 변동 없음
+                    {% else %}
+                        전년동분기대비 <span class="{% if construction_yoy > 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if construction_yoy > 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(construction_yoy | abs) }}% {{ construction_yoy_terms[1] }}</span>
+                    {% endif %}
+                </span>
             </div>
-            <div class="summary-sub">
-                {% for region in construction.increase_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ construction.increase_count }}개 시도는 건설수주가 <span class="increase">{{ get_terms('construction', 1)[1] }}</span>{{ get_terms('construction', 1)[2] }},
-                {% for region in construction.decrease_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ construction.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('construction', -1)[1] }}</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    {% for region in construction.increase_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ construction.increase_count }}개 시도는 건설수주가 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('construction', 1)[1] }}</span>{{ get_terms('construction', 1)[2] }},
+                    {% for region in construction.decrease_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ construction.decrease_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('construction', -1)[1] }}</span>
+                </span>
             </div>
         </div>
         
-    
+    </div>
 </body>
 </html>

@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 수출/물가</title>
     <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 14pt;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #000;
             background: #fff;
         }
@@ -26,106 +26,111 @@
         svg {
             display: none !important;
         }
-        
+
         .summary-container {
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 30px 40px;
+            padding: 28px 40px;
         }
-        
-        .section-header {
-            background: #4a4a4a;
-            color: #fff;
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0 12px;
+        }
+
+        .section-title span {
+            background: #d9d9d9;
+            color: #000;
             font-size: 15pt;
             font-weight: 700;
-            padding: 8px 20px;
-            margin-bottom: 20px;
-            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 2px;
         }
-        
-        .section-header::after {
-            content: "";
-            display: block;
-            width: 100%;
-            height: 2px;
-            background: #ffc107;
-            margin-top: 3px;
-        }
-        
-        .summary-box { margin-bottom: 25px; }
-        
+
+        .summary-box { margin-bottom: 22px; }
+
         .summary-main {
             font-size: 14pt;
-            margin-bottom: 10px;
-            padding-left: 25px;
-            position: relative;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-main::before {
-            content: "□";
-            position: absolute;
-            left: 0;
-            font-size: 14pt;
-            color: #999;
-        }
-        
+
         .summary-sub {
             font-size: 14pt;
-            margin-left: 25px;
-            padding-left: 20px;
-            position: relative;
+            margin-left: 22px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-sub::before {
-            content: "◦";
-            position: absolute;
-            left: 0;
-            color: #999;
-        }
-        
+
         .highlight { font-weight: 700; }
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
-        
-        .section-spacer { height: 1em; }
+
+        .section-spacer { height: 0.8em; }
     </style>
 </head>
 <body>
-    <div class="summary-container">
+    <div class="summary-container" style="width: 210mm; min-height: 297mm; margin: 0 auto; padding: 28px 40px; font-family: 'Malgun Gothic', serif; font-size: 14pt; line-height: 1.6; color: #000; background: #fff;">
         <!-- 수출 섹션 -->
-        <div class="section-header">수출</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">수출</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 수출</span>({{ "%.1f"|format(exports.nationwide.amount) }}억달러)은 전년동분기대비 <span class="{% if exports.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(exports.nationwide.change) }}% {% if exports.nationwide.change >= 0 %}{{ get_terms('export', 1)[1] }}{% else %}{{ get_terms('export', -1)[1] }}{% endif %}</span>
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 수출</span>({{ "%.1f"|format(exports.nationwide.amount) }}억달러)은 전년동분기대비 <span class="{% if exports.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if exports.nationwide.change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(exports.nationwide.change) }}% {% if exports.nationwide.change >= 0 %}{{ get_terms('export', 1)[1] }}{% else %}{{ get_terms('export', -1)[1] }}{% endif %}</span>
+                </span>
             </div>
-            <div class="summary-sub">
-                {% for region in exports.increase_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ exports.increase_count }}개 시도는 수출이 <span class="increase">{{ get_terms('export', 1)[1] }}</span>{{ get_terms('export', 1)[2] }},
-                {% for region in exports.decrease_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ exports.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('export', -1)[1] }}</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    {% for region in exports.increase_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ exports.increase_count }}개 시도는 수출이 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('export', 1)[1] }}</span>{{ get_terms('export', 1)[2] }},
+                    {% for region in exports.decrease_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ exports.decrease_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('export', -1)[1] }}</span>
+                </span>
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <div class="section-spacer" style="height: 0.8em;"></div>
         
         <!-- 물가 섹션 -->
-        <div class="section-header">물가</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">물가</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight">전국 소비자물가</span>({{ "%.1f"|format(price.nationwide.index) }})는 전년동분기대비 <span class="{% if price.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(price.nationwide.change) }}% {% if price.nationwide.change >= 0 %}{{ get_terms('price', 1)[1] }}{% else %}{{ get_terms('price', -1)[1] }}{% endif %}</span>
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 소비자물가</span>({{ "%.1f"|format(price.nationwide.index) }})는 전년동분기대비 <span class="{% if price.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if price.nationwide.change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(price.nationwide.change | abs) }}% {{ get_terms('price', price.nationwide.change)[1] }}</span>
+                </span>
             </div>
-            <div class="summary-sub">
-                {% for region in price.increase_regions[:3] %}
-                <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
-                {% endfor %} 등 {{ price.increase_count }}개 시도가 전국 평균({{ "%.1f"|format(price.nationwide.change) }}%) 이상 <span class="increase">{{ get_terms('price', 1)[1] }}</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    {% for region in price.above_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ price.above_count }}개 시도는 전국 평균({{ "%.1f"|format(price.nationwide.change) }}%)보다 <span class="increase" style="font-weight: 700; color: #c62828;">높음</span>,
+                    {% for region in price.below_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ price.below_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">낮음</span>
+                </span>
             </div>
         </div>
         
-    
+    </div>
 </body>
 </html>

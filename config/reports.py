@@ -6,6 +6,35 @@ from __future__ import annotations
 """
 
 from typing import Any
+from pathlib import Path
+import csv
+
+
+def _load_export_name_mapping() -> dict[str, str]:
+    csv_path = Path(__file__).resolve().parents[1] / '수출축약.csv'
+    if not csv_path.exists():
+        return {}
+    mapping: dict[str, str] = {}
+    with csv_path.open('r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        header_skipped = False
+        for row in reader:
+            if not header_skipped:
+                header_skipped = True
+                continue
+            if not row:
+                continue
+            original = row[0].strip() if len(row) > 0 and row[0] else ''
+            short_name = row[1].strip() if len(row) > 1 and row[1] else ''
+            if not original:
+                continue
+            if not short_name:
+                continue
+            mapping[original] = short_name
+    return mapping
+
+
+EXPORT_NAME_MAPPING = _load_export_name_mapping()
 
 REGIONAL_REPORTS: list[dict[str, Any]] = [
     {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
@@ -168,8 +197,8 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         # 엑셀 H열(1-based) -> 0-based index 7
         'industry_name_col': 7,
         'name_mapping': {
-            '수도, 하수 및 폐기물 처리, 원료 재생업': '수도·하수',
-            '도매 및 소매업': '도소매',
+            '수도, 하수 및 폐기물 처리, 원료 재생업': '하수·폐기물 처리',
+            '도매 및 소매업': '도매·소매',
             '운수 및 창고업': '운수·창고',
             '숙박 및 음식점업': '숙박·음식점',
             '정보통신업': '정보통신',
@@ -180,7 +209,8 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '교육 서비스업': '교육',
             '보건업 및 사회복지 서비스업': '보건·복지',
             '예술, 스포츠 및 여가관련 서비스업': '예술·스포츠·여가',
-            '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인서비스'
+            '협회 및 단체, 수리 및 기타 개인 서비스업': '협회·수리·개인',
+            '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인'
         },
         'aggregation_structure': {'total_code': 'E~S', 'sheet': 'B(서비스업생산)집계'},
         'metadata_columns': ['region', 'classification', 'code', 'name']
@@ -240,7 +270,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'icon': '📦',
         'category': 'trade',
         'class_name': 'ExportGenerator',
-        'name_mapping': {},
+        'name_mapping': EXPORT_NAME_MAPPING,
         'aggregation_structure': {'total_code': '합계', 'sheet': 'G(수출)집계'},
         'metadata_columns': ['region', 'classification', 'code', 'name'],
         'header_rows': 3  # 집계 시트 헤더 행 수 (데이터는 4행부터)

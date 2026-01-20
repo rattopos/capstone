@@ -298,6 +298,34 @@ def _build_comprehensive_table(excel_path, year=None, quarter=None):
     return comprehensive_table
 
 
+def _compute_above_below_by_nationwide(chart_data):
+    nationwide = chart_data.get('nationwide', {}).get('change')
+    rows = chart_data.get('chart_data', [])
+    if nationwide is None or not rows:
+        return None
+
+    above_regions = []
+    below_regions = []
+
+    for item in rows:
+        name = item.get('name')
+        if name not in VALID_REGIONS:
+            continue
+        value = item.get('value', item.get('change'))
+        if value is None:
+            continue
+        entry = {'name': name, 'value': value}
+        if value >= nationwide:
+            above_regions.append(entry)
+        else:
+            below_regions.append(entry)
+
+    above_regions.sort(key=lambda x: x['value'], reverse=True)
+    below_regions.sort(key=lambda x: x['value'])
+
+    return above_regions, below_regions
+
+
 def _summary_from_chart(chart_data, include_above_below=False):
     summary = {
         'increase_regions': chart_data.get('increase_regions', []),
@@ -308,10 +336,18 @@ def _summary_from_chart(chart_data, include_above_below=False):
     }
 
     if include_above_below:
-        summary['above_regions'] = chart_data.get('above_regions', summary['increase_regions'])
-        summary['below_regions'] = chart_data.get('below_regions', summary['decrease_regions'])
-        summary['above_count'] = chart_data.get('above_count', summary['increase_count'])
-        summary['below_count'] = chart_data.get('below_count', summary['decrease_count'])
+        comparison = _compute_above_below_by_nationwide(chart_data)
+        if comparison:
+            above_regions, below_regions = comparison
+            summary['above_regions'] = above_regions[:3] if above_regions else [{'name': '-', 'value': 0.0}]
+            summary['below_regions'] = below_regions[:3] if below_regions else [{'name': '-', 'value': 0.0}]
+            summary['above_count'] = len(above_regions)
+            summary['below_count'] = len(below_regions)
+        else:
+            summary['above_regions'] = chart_data.get('above_regions', summary['increase_regions'])
+            summary['below_regions'] = chart_data.get('below_regions', summary['decrease_regions'])
+            summary['above_count'] = chart_data.get('above_count', summary['increase_count'])
+            summary['below_count'] = chart_data.get('below_count', summary['decrease_count'])
 
     return summary
 
@@ -532,6 +568,14 @@ def get_trade_price_data(excel_path, year, quarter):
         xl = pd.ExcelFile(excel_path)
         exports = _extract_chart_data(xl, 'G 분석', is_trade=True, year=year, quarter=quarter)
         price = _extract_chart_data(xl, 'E(품목성질물가)분석', year=year, quarter=quarter)
+
+        comparison = _compute_above_below_by_nationwide(price)
+        if comparison:
+            above_regions, below_regions = comparison
+            price['above_regions'] = above_regions[:3] if above_regions else [{'name': '-', 'value': 0.0}]
+            price['below_regions'] = below_regions[:3] if below_regions else [{'name': '-', 'value': 0.0}]
+            price['above_count'] = len(above_regions)
+            price['below_count'] = len(below_regions)
         
         return {
             'exports': exports,

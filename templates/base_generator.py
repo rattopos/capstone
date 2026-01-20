@@ -523,8 +523,8 @@ class BaseGenerator(ABC):
         print(f"  헤더 영역: 상위 {max_header_rows}행 사용")
         print(f"{'='*80}\n")
         
-        # 3. 헤더 재구성: 병합된 셀 채우기 (강화된 버전)
-        print(f"[디버그] 병합 셀 처리 시작...")
+        # 3. 헤더 재구성: 병합된 셀 채우기 제거
+        print(f"[디버그] 병합 셀 채우기 제거됨. 원본 헤더만 사용합니다...")
         
         # 원본 헤더 저장 (디버깅용)
         headers_original = header_df.copy()
@@ -544,28 +544,7 @@ class BaseGenerator(ABC):
                 else:
                     headers.iloc[row_idx, col_idx] = str(val).strip()
         
-        print(f"[디버그] 빈 셀 개수 (처리 전): {empty_count}개")
-        
-        # 좌우 병합 채우기 (axis=1): [2025년][빈칸][빈칸] -> [2025년][2025년][2025년]
-        headers = headers.ffill(axis=1, limit=None)
-        filled_horizontal = sum(1 for col_idx in range(len(headers.columns)) 
-                                for row_idx in range(len(headers)) 
-                                if headers.iloc[row_idx, col_idx] is not None and 
-                                   (headers_original.iloc[row_idx, col_idx] is None or 
-                                    pd.isna(headers_original.iloc[row_idx, col_idx])))
-        
-        # 상하 병합 채우기 (axis=0): 위 행의 값이 없으면 아래 행에서 채움
-        headers = headers.ffill(axis=0, limit=None)
-        
-        # 역방향 채우기 (bfill): 아래에서 위로도 채우기 (상하 병합 대응)
-        headers = headers.bfill(axis=0, limit=None)
-        
-        final_empty_count = sum(1 for col_idx in range(len(headers.columns)) 
-                                for row_idx in range(len(headers)) 
-                                if headers.iloc[row_idx, col_idx] is None)
-        
-        print(f"[디버그] 병합 처리 완료: 빈 셀 {empty_count}개 → {final_empty_count}개 (채움: {empty_count - final_empty_count}개)")
-        print(f"[디버그] 좌우 병합으로 채운 셀: 약 {filled_horizontal}개\n")
+        print(f"[디버그] 빈 셀 개수 (처리 후): {empty_count}개 (채움 없음)\n")
         
         # 4. 전수 조사: 열 단위로 스캔 (개선된 버전)
         print(f"[디버그] 컬럼 전수 조사 시작 (총 {len(headers.columns)}개 컬럼)...\n")

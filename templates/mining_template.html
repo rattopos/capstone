@@ -316,7 +316,12 @@
             <!-- 전국 -->
             <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.growth_rate) }}%): 
                 {% for industry in nationwide_data.main_increase_industries[:3] %}
-                {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% set contribution_rate = industry.get('contribution_rate') if industry is mapping else industry.contribution_rate %}
+                {% set contribution = industry.get('contribution') if industry is mapping else industry.contribution %}
+                {% set growth_rate = industry.get('growth_rate') if industry is mapping else industry.growth_rate %}
+                {% set change_rate = industry.get('change_rate') if industry is mapping else industry.change_rate %}
+                {% set rate = contribution_rate if contribution_rate is not none else (contribution if contribution is not none else (growth_rate if growth_rate is not none else change_rate)) %}
+                {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             
@@ -325,8 +330,13 @@
             <!-- 증가 지역 Top 3 -->
             {% for region in top3_increase_regions %}
             <div class="item">·{{ region.region }}( {{ "%.1f"|format(region.growth_rate) }}%): 
-                {% for industry in region.industries[:3] %}
-                {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% for industry in (region.industries or [])[:3] %}
+                {% set contribution_rate = industry.get('contribution_rate') if industry is mapping else industry.contribution_rate %}
+                {% set contribution = industry.get('contribution') if industry is mapping else industry.contribution %}
+                {% set growth_rate = industry.get('growth_rate') if industry is mapping else industry.growth_rate %}
+                {% set change_rate = industry.get('change_rate') if industry is mapping else industry.change_rate %}
+                {% set rate = contribution_rate if contribution_rate is not none else (contribution if contribution is not none else (growth_rate if growth_rate is not none else change_rate)) %}
+                {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -336,8 +346,13 @@
             <!-- 감소 지역 Top 3 -->
             {% for region in top3_decrease_regions %}
             <div class="item">·{{ region.region }}({{ "%.1f"|format(region.growth_rate) }}%): 
-                {% for industry in region.industries[:3] %}
-                {{ industry.name }}({{ "%.1f"|format(industry.growth_rate) }}%){% if not loop.last %}, {% endif %}
+                {% for industry in (region.industries or [])[:3] %}
+                {% set contribution_rate = industry.get('contribution_rate') if industry is mapping else industry.contribution_rate %}
+                {% set contribution = industry.get('contribution') if industry is mapping else industry.contribution %}
+                {% set growth_rate = industry.get('growth_rate') if industry is mapping else industry.growth_rate %}
+                {% set change_rate = industry.get('change_rate') if industry is mapping else industry.change_rate %}
+                {% set rate = contribution_rate if contribution_rate is not none else (contribution if contribution is not none else (growth_rate if growth_rate is not none else change_rate)) %}
+                {{ industry.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -346,23 +361,25 @@
         <!-- 데이터 테이블 -->
         <div class="table-container">
             <div class="table-title">《 광공업생산지수 및 증감률 》</div>
+            {% set growth_cols = summary_table.columns.growth_rate_columns if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined and summary_table.columns.growth_rate_columns|length > 0 else ["[기간]", "[기간]", "[기간]", "[기간]"] %}
+            {% set index_cols = summary_table.columns.index_columns if summary_table and summary_table.columns and summary_table.columns.index_columns is defined and summary_table.columns.index_columns|length > 0 else ["[기간]", "[기간]"] %}
             <table class="data-table" style="border-collapse: collapse !important; border: 1px solid black !important;">
                 <thead>
                     <!-- 1행: 구분 | 전년동분기대비 증감률(%) (colspan=4) | 광공업생산지수([기준연도]=100) (colspan=2) -->
                     <tr>
                         <th rowspan="2" style="width: 30px; border: 1px solid black !important;">구분</th>
                         <th rowspan="2" style="width: 30px; border: 1px solid black !important;"></th>
-                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
-                        <th colspan="2" class="index-section" style="border: 1px solid black !important;">광공업생산지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
+                        <th colspan="{{ growth_cols|length }}" style="border: 1px solid black !important;">전년동분기대비 증감률(%)</th>
+                        <th colspan="{{ index_cols|length }}" class="index-section" style="border: 1px solid black !important;">광공업생산지수({{ summary_table.base_year if summary_table.base_year is defined and summary_table.base_year else "[기준연도]" }}=100)</th>
                     </tr>
                     <!-- 2행: (증감률 하위) [기간] | [기간] | [기간] | [기간]p | (지수 하위) [기간] | [기간]p -->
                     <tr>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[1] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[2] if summary_table.columns else "[기간]" }}</th>
-                        <th style="width: 58px; border: 1px solid black !important;">{{ summary_table.columns.growth_rate_columns[3] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
-                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[0] if summary_table.columns else "[기간]" }}</th>
-                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ summary_table.columns.index_columns[1] if summary_table.columns else "[기간]" }}<sup>p</sup></th>
+                        {% for col in growth_cols %}
+                        <th style="width: 58px; border: 1px solid black !important;">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        {% endfor %}
+                        {% for col in index_cols %}
+                        <th class="index-section" style="width: 70px; border: 1px solid black !important;">{{ col }}{% if loop.last %}<sup>p</sup>{% endif %}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>

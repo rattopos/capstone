@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 - 고용/인구</title>
     <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 14pt;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #000;
             background: #fff;
         }
@@ -26,125 +26,127 @@
         svg {
             display: none !important;
         }
-        
+
         .summary-container {
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 30px 40px;
+            padding: 28px 40px;
         }
-        
-        .section-header {
-            background: #4a4a4a;
-            color: #fff;
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0 12px;
+        }
+
+        .section-title span {
+            background: #d9d9d9;
+            color: #000;
             font-size: 15pt;
             font-weight: 700;
-            padding: 8px 20px;
-            margin-bottom: 20px;
-            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 2px;
         }
-        
-        .section-header::after {
-            content: "";
-            display: block;
-            width: 100%;
-            height: 2px;
-            background: #ffc107;
-            margin-top: 3px;
-        }
-        
-        .summary-box { margin-bottom: 25px; }
-        
+
+        .summary-box { margin-bottom: 22px; }
+
         .summary-main {
             font-size: 14pt;
-            margin-bottom: 10px;
-            padding-left: 25px;
-            position: relative;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-main::before {
-            content: "□";
-            position: absolute;
-            left: 0;
-            font-size: 14pt;
-            color: #999;
-        }
-        
+
         .summary-sub {
             font-size: 14pt;
-            margin-left: 25px;
-            padding-left: 20px;
-            position: relative;
+            margin-left: 22px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
         }
-        
-        .summary-sub::before {
-            content: "◦";
-            position: absolute;
-            left: 0;
-            color: #999;
-        }
-        
+
         .highlight { font-weight: 700; }
         .increase { font-weight: 700; color: #c62828; }
         .decrease { font-weight: 700; color: #1565c0; }
-        
-        .section-divider { border: none; border-top: 1px solid #ccc; margin: 30px 0; }
+
+        .section-spacer { height: 0.8em; }
     </style>
 </head>
 <body>
-    <div class="summary-container">
+    <div class="summary-container" style="width: 210mm; min-height: 297mm; margin: 0 auto; padding: 28px 40px; font-family: 'Malgun Gothic', serif; font-size: 14pt; line-height: 1.6; color: #000; background: #fff;">
         <!-- 고용 섹션 -->
-        <div class="section-header">고용</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">고용</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                2025년 3/4분기 <span class="highlight">전국 고용률</span>(81.0%)은 전년동분기대비 <span class="increase">0.6%p 상승</span>
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    2025년 3/4분기 <span class="highlight" style="font-weight: 700;">전국 고용률</span>(81.0%)은 전년동분기대비 <span class="increase" style="font-weight: 700; color: #c62828;">0.6%p 상승</span>
+                </span>
             </div>
-            <div class="summary-sub">
-                
-                <span class="highlight">대전</span>(2.2%p), 
-                
-                <span class="highlight">충북</span>(1.5%p), 
-                
-                <span class="highlight">경북</span>(1.5%p)
-                 등 13개 시도는 고용률이 <span class="increase">상승</span>하였으나,
-                
-                <span class="highlight">세종</span>(-1.0%p), 
-                
-                <span class="highlight">인천</span>(-0.7%p), 
-                
-                <span class="highlight">경기</span>(-0.7%p)
-                 등 4개 시도는 <span class="decrease">하락</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    
+                    <span class="highlight" style="font-weight: 700;">대전</span>(2.2%p), 
+                    
+                    <span class="highlight" style="font-weight: 700;">충북</span>(1.5%p), 
+                    
+                    <span class="highlight" style="font-weight: 700;">경북</span>(1.5%p)
+                     등 13개 시도는 고용률이 <span class="increase" style="font-weight: 700; color: #c62828;">상승</span>하였으나,
+                    
+                    <span class="highlight" style="font-weight: 700;">세종</span>(-1.0%p), 
+                    
+                    <span class="highlight" style="font-weight: 700;">인천</span>(-0.7%p), 
+                    
+                    <span class="highlight" style="font-weight: 700;">경기</span>(-0.7%p)
+                     등 4개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">하락</span>
+                </span>
             </div>
         </div>
         
-        <hr class="section-divider">
+        <div class="section-spacer" style="height: 0.8em;"></div>
         
         <!-- 인구 섹션 -->
-        <div class="section-header">인구</div>
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">인구</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
+        </div>
         
-        <div class="summary-box">
-            <div class="summary-main">
-                2025년 3/4분기 <span class="highlight">시도별 인구순이동</span>은
+        <div class="summary-box" style="margin-bottom: 22px;">
+            <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">□</span>
+                <span>
+                    2025년 3/4분기 <span class="highlight" style="font-weight: 700;">시도별 인구순이동</span>은
+                </span>
             </div>
-            <div class="summary-sub">
-                
-                <span class="highlight">인천</span>(7명), 
-                
-                <span class="highlight">경기</span>(7명), 
-                
-                <span class="highlight">대전</span>(3명)
-                 등 5개 지역은 <span class="increase">순유입</span><br>
-                - 
-                <span class="highlight">서울</span>(-8명), 
-                
-                <span class="highlight">경북</span>(-4명), 
-                
-                <span class="highlight">경남</span>(-3명)
-                 등 12개 지역은 <span class="decrease">순유출</span>
+            <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
+                <span style="color: #666;">ㅇ</span>
+                <span>
+                    
+                    <span class="highlight" style="font-weight: 700;">인천</span>(7명), 
+                    
+                    <span class="highlight" style="font-weight: 700;">경기</span>(7명), 
+                    
+                    <span class="highlight" style="font-weight: 700;">대전</span>(3명)
+                     등 5개 지역은 <span class="increase" style="font-weight: 700; color: #c62828;">순유입</span><br>
+                    - 
+                    <span class="highlight" style="font-weight: 700;">서울</span>(-8명), 
+                    
+                    <span class="highlight" style="font-weight: 700;">경북</span>(-4명), 
+                    
+                    <span class="highlight" style="font-weight: 700;">경남</span>(-3명)
+                     등 12개 지역은 <span class="decrease" style="font-weight: 700; color: #1565c0;">순유출</span>
+                </span>
             </div>
         </div>
         
-    
+    </div>
 </body>
 </html>
