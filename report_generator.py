@@ -109,7 +109,7 @@ class ReportGenerator:
         """요약 표 라벨(증감률/지수/율)을 현재 연·분기에 맞게 구성"""
         age_label = "15-29세"
         if report_id == "employment" or report_id == "summary_employment":
-            age_label = "20-29세"
+            age_label = "15-29세"
         elif report_id == "unemployment":
             age_label = "15-29세"
 

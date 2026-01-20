@@ -87,7 +87,7 @@ class DataTableBuilder:
 
     def _rate_labels(self, report_id: str) -> list[str]:
         year_quarter = self.generator._year_quarter
-        age_label = "20-29세" if report_id == "employment" else "15-29세"
+        age_label = "15-29세"
         if not year_quarter:
             return ["{Y-1}. {Q}/4", "{Y}. {Q}/4", age_label]
         year, quarter = year_quarter

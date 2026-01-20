@@ -51,6 +51,22 @@
             margin-bottom: 24px;
         }
 
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: contain;
+            background: #0b1220;
+            border: 1px solid var(--border);
+            padding: 6px;
+        }
+
         .title h1 {
             font-size: 1.4rem;
             margin-bottom: 6px;
@@ -150,6 +166,7 @@
 
         .status-badge.active { color: var(--warning); border-color: rgba(245, 158, 11, 0.5); }
         .status-badge.done { color: var(--success); border-color: rgba(16, 185, 129, 0.5); }
+        .status-badge.partial { color: var(--warning); border-color: rgba(245, 158, 11, 0.5); }
         .status-badge.error { color: var(--danger); border-color: rgba(239, 68, 68, 0.5); }
 
         .actions-row {
@@ -239,14 +256,17 @@
 <body>
     <div class="container">
         <header>
-            <div class="title">
+            <div class="brand">
+                <img class="brand-logo" src="/logo.png" alt="로고">
+                <div class="title">
                 <h1>지역경제동향 보도자료 생성 시스템</h1>
                 <p>엑셀 업로드 → 처리 → HTML 내보내기</p>
+                </div>
             </div>
         </header>
 
         <section class="panel">
-            <h2>1. 업로드</h2>
+            <h2>업로드</h2>
             <p>엑셀 파일(.xlsx/.xls)을 업로드하세요.</p>
             <div class="upload-area">
                 <div class="upload-actions">
@@ -258,7 +278,7 @@
         </section>
 
         <section class="panel">
-            <h2>2. 처리 프로세스</h2>
+            <h2>처리 프로세스</h2>
             <div class="status-list">
                 <div class="status-item">
                     <span>업로드</span>
@@ -277,7 +297,7 @@
         </section>
 
         <section class="panel">
-            <h2>3. 내보내기</h2>
+            <h2>내보내기</h2>
             <p>처리 완료 후 HTML 보고서 내보내기가 가능합니다.</p>
             <div class="actions-row">
                 <button id="exportBtn" disabled>내보내기</button>
@@ -350,9 +370,13 @@
         exportBtn.addEventListener('click', handleExport);
 
         function setStatus(el, state, text) {
-            el.classList.remove('active', 'done', 'error');
+            el.classList.remove('active', 'done', 'partial', 'error');
             if (state) el.classList.add(state);
             el.textContent = text;
+        }
+
+        function hasGeneratedReports(result) {
+            return Array.isArray(result?.generated) && result.generated.length > 0;
         }
 
         function resetStatus() {
@@ -576,6 +600,25 @@
                 const generateResult = await safeJson(generateResponse);
                 if (!generateResponse.ok || !generateResult.success) {
                     setStatus(statusGenerate, 'error', '실패');
+
+                    if (hasGeneratedReports(generateResult)) {
+                        const errorCount = Array.isArray(generateResult?.errors)
+                            ? generateResult.errors.length
+                            : null;
+                        const partialMessage = errorCount
+                            ? `일부 보도자료 생성 실패 (${errorCount}건). 가능한 항목만 내보내기 가능합니다.`
+                            : '일부 보도자료 생성 실패. 가능한 항목만 내보내기 가능합니다.';
+                        setStatus(statusDone, 'partial', '부분 완료');
+                        setStatusMessage(partialMessage);
+                        exportBtn.disabled = false;
+                        exportReady = true;
+                        stopDetailTicker();
+                        currentStage = null;
+                        stopEtaTicker();
+                        hideProgressOverlay();
+                        return;
+                    }
+
                     setStatusMessage(generateResult.error || '보도자료 생성 실패');
                     stopDetailTicker();
                     currentStage = null;

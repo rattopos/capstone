@@ -300,33 +300,61 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in summary_table.rows %}
+                    {% set region_groups = [
+                        {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                        {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                        {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                        {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                        {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                    ] %}
+                    {% set data_rows = summary_table.rows if summary_table and summary_table.rows is defined else [] %}
+                    {% set change_len = summary_table.columns.growth_rate_columns|length if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined else 4 %}
+                    {% set amount_len = summary_table.columns.amount_columns|length if summary_table and summary_table.columns and summary_table.columns.amount_columns is defined else 2 %}
+                    {% set nationwide_row = (data_rows | selectattr('sido', 'equalto', '전국') | list | first) %}
                     <tr>
-                        {% if row.region_group %}
-                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}" style="border: 1px solid black !important;">{{ row.region_group }}</td>
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% elif '전' in row.sido and '국' in row.sido %}
-                        <td colspan="2" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% else %}
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% endif %}
-                        {% for change in row.changes %}
+                        <td class="region-group" style="border: 1px solid black !important;"></td>
+                        <td class="region-name" style="border: 1px solid black !important;">전국</td>
+                        {% for i in range(change_len) %}
+                        {% set change = nationwide_row.changes[i] if nationwide_row and nationwide_row.changes is defined and nationwide_row.changes|length > i else none %}
                         <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(change) }}
                         </td>
                         {% endfor %}
-                        {% for amount in row.amounts %}
+                        {% for i in range(amount_len) %}
+                        {% set amount = nationwide_row.amounts[i] if nationwide_row and nationwide_row.amounts is defined and nationwide_row.amounts|length > i else none %}
                         <td class="amount-section {% if amount is none or amount == '' or amount == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(amount) }}
                         </td>
                         {% endfor %}
                     </tr>
+                    {% for group in region_groups %}
+                        {% for region_name in group.regions %}
+                        {% set row = (data_rows | selectattr('sido', 'equalto', region_name) | list | first) %}
+                        <tr>
+                            {% if loop.first %}
+                            <td class="region-group" rowspan="{{ group.regions|length }}" style="border: 1px solid black !important;">{{ group.name }}</td>
+                            {% endif %}
+                            <td class="region-name" style="border: 1px solid black !important;">{{ region_name }}</td>
+                            {% for i in range(change_len) %}
+                            {% set change = row.changes[i] if row and row.changes is defined and row.changes|length > i else none %}
+                            <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(change) }}
+                            </td>
+                            {% endfor %}
+                            {% for i in range(amount_len) %}
+                            {% set amount = row.amounts[i] if row and row.amounts is defined and row.amounts|length > i else none %}
+                            <td class="amount-section {% if amount is none or amount == '' or amount == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(amount) }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
             
             <div class="footnote">1) 수출신고서 상 제조자의 사업장 소재지 기준</div>
-            <div class="footnote">{{ footer_info.source | default('자료: [출처]') }}</div>
+            
         </div>
         
 </body>

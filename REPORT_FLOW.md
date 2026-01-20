@@ -63,8 +63,10 @@
 
 ## 6) 템플릿 (HTML 구조)
 
-- **부문별 템플릿**: [templates/by_type](templates/by_type)
-  - 광공업/서비스/소비/건설/수출/수입/물가/고용/실업/인구이동
+- **부문별 템플릿**: [templates](templates)
+  - mining_template.html, service_template.html, consumption_template.html, construction_template.html,
+    export_template.html, import_template.html, price_template.html, employment_template.html,
+    unemployment_template.html, migration_template.html
 - **요약 템플릿**: [templates/summary_*.html](templates)
   - 요약-지역경제동향, 요약-생산, 요약-소비건설 등
 - **시도별 통합 템플릿**: [templates/regional_economy_by_region_template.html](templates/regional_economy_by_region_template.html)

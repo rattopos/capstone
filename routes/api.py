@@ -1124,9 +1124,8 @@ def export_final_document():
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
             page_title = page.get('title', f'페이지 {idx}')
-            
-            # body 내용 추출
-            body_content = page_html
+            padding: 0;
+            margin: 0;
             if '<body' in page_html.lower():
                 body_match = re.search(r'<body[^>]*>(.*?)</body>', page_html, re.DOTALL | re.IGNORECASE)
                 if body_match:
@@ -1946,6 +1945,37 @@ def _strip_chart_elements(html_content: str) -> str:
     return html_content
 
 
+def _strip_placeholders(html_content: str) -> str:
+    """편집용 placeholder 제거"""
+    if not html_content:
+        return html_content
+
+    html_content = re.sub(
+        r'<span[^>]*class=["\"][^"\"]*\beditable-placeholder\b[^"\"]*["\"][^>]*>.*?</span>',
+        '',
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+    html_content = re.sub(r'\[[^\]]*입력 필요\]', '', html_content)
+    html_content = re.sub(r'\[\s*\]', '', html_content)
+
+    return html_content
+
+
+def _strip_page_wrapper(html_content: str) -> str:
+    """페이지 래퍼 div 제거 (중첩 방지)"""
+    if not html_content:
+        return html_content
+
+    page_open_pattern = r'<div[^>]*class=["\"][^"\"]*\bpage\b[^"\"]*["\"][^>]*>'
+    if not re.search(page_open_pattern, html_content, flags=re.IGNORECASE):
+        return html_content
+
+    html_content = re.sub(page_open_pattern, '', html_content, count=1, flags=re.IGNORECASE)
+    html_content = re.sub(r'</div>\s*$', '', html_content.strip(), count=1)
+    return html_content
+
+
 def _create_placeholder_image(image_path):
     """플레이스홀더 이미지 생성"""
     try:
@@ -1990,19 +2020,42 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
     """한글(HWP) 복붙용 HTML을 생성하고 지정 폴더에 저장"""
     try:
         if not pages:
-            output_files = []
-            if TEMP_OUTPUT_DIR.exists():
-                output_files.extend(list(TEMP_OUTPUT_DIR.glob('*_output.html')))
-            if TEMP_REGIONAL_OUTPUT_DIR.exists():
-                output_files.extend(list(TEMP_REGIONAL_OUTPUT_DIR.glob('*_output.html')))
+            def _safe_output_name(name: str) -> str:
+                if not name or not isinstance(name, str):
+                    name = 'unknown'
+                return name.replace('/', '_').replace('\\', '_').replace('..', '_')
 
-            if not output_files:
+            ordered_files = []
+
+            # 1) 요약 → 2) 부문별 → 3) 시도별 (요청 순서)
+            for report in SUMMARY_REPORTS:
+                report_name = report.get('name', report.get('id', 'Unknown'))
+                safe_name = _safe_output_name(report_name)
+                path = TEMP_OUTPUT_DIR / f"{safe_name}_output.html"
+                if path.exists():
+                    ordered_files.append((report_name, path))
+
+            for report in SECTOR_REPORTS:
+                report_name = report.get('name', report.get('id', 'Unknown'))
+                safe_name = _safe_output_name(report_name)
+                path = TEMP_OUTPUT_DIR / f"{safe_name}_output.html"
+                if path.exists():
+                    ordered_files.append((report_name, path))
+
+            for region in REGIONAL_REPORTS:
+                region_name = region.get('name', region.get('id', 'Unknown'))
+                safe_name = _safe_output_name(region_name)
+                path = TEMP_REGIONAL_OUTPUT_DIR / f"{safe_name}_output.html"
+                if path.exists():
+                    ordered_files.append((f"시도별-{region_name}", path))
+
+            if not ordered_files:
                 return {'success': False, 'error': '생성된 보도자료가 없습니다. 먼저 "전체 생성"을 실행하세요.'}
 
-            for output_file in sorted(output_files):
+            for title, output_file in ordered_files:
                 with open(output_file, 'r', encoding='utf-8') as f:
                     html_content = f.read()
-                    pages.append({'title': output_file.stem.replace('_output', ''), 'html': html_content})
+                    pages.append({'title': title, 'html': html_content})
 
         if not pages:
             return {'success': False, 'error': '페이지 데이터가 없습니다.'}
@@ -2050,6 +2103,7 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
 '''
 
         excluded_report_ids = {'cover', 'toc', 'stat_toc', 'guide', 'infographic', 'stat_appendix', 'stat_grdp'}
+        is_first_page = True
 
         for idx, page in enumerate(pages, 1):
             page_html = page.get('html', '')
@@ -2072,19 +2126,18 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
             body_content = re.sub(r'<meta[^>]*>', '', body_content)
 
             body_content = _strip_chart_elements(body_content)
+            body_content = _strip_placeholders(body_content)
+            body_content = _strip_page_wrapper(body_content)
 
             body_content = _add_table_inline_styles(body_content)
 
-            if re.search(r'<div[^>]*class=["\"][^"\"]*\bpage\b[^"\"]*["\"][^>]*>', body_content):
-                body_content = body_content.rstrip() + "\n</div>"
+            if not is_first_page:
+                final_html += '\n<div style="height: 1em;"></div>\n'
+            is_first_page = False
 
             final_html += f'''
             <!-- 페이지 {idx}: {page_title} -->
-            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
-            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 {body_content}
-            </div>
-        </div>
 '''
 
         final_html += '''

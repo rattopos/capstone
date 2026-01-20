@@ -291,32 +291,60 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in summary_table.regions %}
+                    {% set region_groups = [
+                        {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                        {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                        {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                        {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                        {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                    ] %}
+                    {% set data_rows = summary_table.regions if summary_table and summary_table.regions is defined else [] %}
+                    {% set growth_len = summary_table.columns.growth_rate_columns|length if summary_table and summary_table.columns and summary_table.columns.growth_rate_columns is defined else 4 %}
+                    {% set index_len = summary_table.columns.index_columns|length if summary_table and summary_table.columns and summary_table.columns.index_columns is defined else 2 %}
+                    {% set nationwide_row = (data_rows | selectattr('region', 'equalto', '전국') | list | first) %}
                     <tr>
-                        {% if row.group %}
-                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}" style="border: 1px solid black !important;">{{ row.group }}</td>
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.region }}</td>
-                        {% elif '전' in row.region and '국' in row.region %}
-                        <td colspan="2" style="border: 1px solid black !important;">{{ row.region }}</td>
-                        {% else %}
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.region }}</td>
-                        {% endif %}
-                        {% for rate in row.growth_rates %}
+                        <td class="region-group" style="border: 1px solid black !important;"></td>
+                        <td class="region-name" style="border: 1px solid black !important;">전국</td>
+                        {% for i in range(growth_len) %}
+                        {% set rate = nationwide_row.growth_rates[i] if nationwide_row and nationwide_row.growth_rates is defined and nationwide_row.growth_rates|length > i else none %}
                         <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(rate) }}
                         </td>
                         {% endfor %}
-                        {% for idx in row.indices %}
+                        {% for i in range(index_len) %}
+                        {% set idx = nationwide_row.indices[i] if nationwide_row and nationwide_row.indices is defined and nationwide_row.indices|length > i else none %}
                         <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(idx) }}
                         </td>
                         {% endfor %}
                     </tr>
+                    {% for group in region_groups %}
+                        {% for region_name in group.regions %}
+                        {% set row = (data_rows | selectattr('region', 'equalto', region_name) | list | first) %}
+                        <tr>
+                            {% if loop.first %}
+                            <td class="region-group" rowspan="{{ group.regions|length }}" style="border: 1px solid black !important;">{{ group.name }}</td>
+                            {% endif %}
+                            <td class="region-name" style="border: 1px solid black !important;">{{ region_name }}</td>
+                            {% for i in range(growth_len) %}
+                            {% set rate = row.growth_rates[i] if row and row.growth_rates is defined and row.growth_rates|length > i else none %}
+                            <td class="{% if rate is none or rate == '' or rate == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(rate) }}
+                            </td>
+                            {% endfor %}
+                            {% for i in range(index_len) %}
+                            {% set idx = row.indices[i] if row and row.indices is defined and row.indices|length > i else none %}
+                            <td class="index-section {% if idx is none or idx == '' or idx == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(idx) }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
             
-            <div class="footnote">{{ footer_info.source | default('자료: [출처]') }}</div>
+            
         </div>
         
 </body>

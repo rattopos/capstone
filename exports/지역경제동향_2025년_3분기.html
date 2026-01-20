@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025년 3/4분기 지역경제동향</title>
     <style>
+        /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
         body {
             font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
             font-size: 10pt;
             line-height: 1.5;
             color: #000;
             background: #fff;
-            padding: 0;
-            margin: 0;
+            padding: 20px;
+            max-width: 210mm;
+            margin: 0 auto;
         }
         .copy-btn {
             position: fixed;
@@ -34,9 +36,12 @@
 </head>
 <body>
     <button class="copy-btn" onclick="copyAll()">📋 전체 복사 (클릭)</button>
+    
     <div id="hwp-content">
 
-        <!-- 페이지 1: 요약-지역경제동향 -->
+            <!-- 페이지 1: 요약-지역경제동향 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
     <div class="summary-container">
         <!-- 메인 타이틀 박스 -->
@@ -387,10 +392,12 @@
         </div>
     </div>
 
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 2: 요약-생산 -->
+            <!-- 페이지 2: 요약-생산 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
     <div class="summary-container">
         <!-- 생산 섹션 헤더 -->
@@ -421,7 +428,7 @@
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <hr class="section-divider">
         
         <!-- 서비스업생산 -->
         <div class="summary-box">
@@ -447,10 +454,12 @@
         </div>
         
 
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 3: 요약-소비건설 -->
+            <!-- 페이지 3: 요약-소비건설 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
     <div class="summary-container">
         <!-- 소비 섹션 -->
@@ -483,7 +492,7 @@
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <hr class="section-divider">
         
         <!-- 건설 섹션 -->
         <div class="section-header">건설</div>
@@ -512,10 +521,12 @@
         
     
 
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 4: 요약-수출물가 -->
+            <!-- 페이지 4: 요약-수출물가 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
     <div class="summary-container">
         <!-- 수출 섹션 -->
@@ -543,7 +554,7 @@
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <hr class="section-divider">
         
         <!-- 물가 섹션 -->
         <div class="section-header">물가</div>
@@ -565,10 +576,12 @@
         
     
 
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 5: 요약-고용인구 -->
+            <!-- 페이지 5: 요약-고용인구 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
     <div class="summary-container">
         <!-- 고용 섹션 -->
@@ -596,7 +609,7 @@
             </div>
         </div>
         
-        <div class="section-spacer"></div>
+        <hr class="section-divider">
         
         <!-- 인구 섹션 -->
         <div class="section-header">인구</div>
@@ -625,11 +638,15 @@
         
     
 
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 6: 광공업생산 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 6: 광공업생산 -->
-<!-- Level 1: 대제목 -->
+    <div class="page">
+        <!-- Level 1: 대제목 -->
         <div class="section-main-title">Ⅰ. 부문별 지역경제동향</div>
         
         <!-- Level 2: 숫자 제목 -->
@@ -828,7 +845,7 @@
                         
                         
                         <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -874,7 +891,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -917,7 +934,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -960,7 +977,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1007,7 +1024,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1050,7 +1067,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1093,7 +1110,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1136,7 +1153,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1183,7 +1200,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1226,7 +1243,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1269,7 +1286,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1312,7 +1329,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1359,7 +1376,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1402,7 +1419,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1445,7 +1462,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1492,7 +1509,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1535,7 +1552,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1578,7 +1595,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important; text-align: right;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1587,15 +1604,35 @@
                 </tbody>
             </table>
             
-            
+            <div class="footnote">담당: [연락처]</div>
         </div>
         
+    </div>
     
+    <!-- 표준 푸터 (PDF 양식과 일치) -->
+    <div style="margin-top: 50px; width: 100%;">
+        <table style="width: 100%; border: none; border-collapse: collapse;" style="border-collapse: collapse; width: 100%; margin: 10px 0; border-top: 2px solid #000000; border-bottom: 2px solid #000000; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+            <tr>
+                <td style="text-align: left; font-family: 'Malgun Gothic', sans-serif; font-size: 10pt; color: #444;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+                    자료: 국가데이터처 국가통계포털(KOSIS), 집계시트
+                </td>
+                <td style="text-align: center; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; font-weight: bold;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+                    - 1 -
+                </td>
+                <td style="width: 30%;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 7: 서비스업생산 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 7: 서비스업생산 -->
-<div class="subsection-title">나. 서비스업생산</div>
+    <div class="page">
+        <div class="subsection-title">나. 서비스업생산</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -1776,7 +1813,7 @@
                         
                         
                         <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -1822,7 +1859,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1865,7 +1902,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1908,7 +1945,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1955,7 +1992,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -1998,7 +2035,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2041,7 +2078,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2084,7 +2121,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2131,7 +2168,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2174,7 +2211,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2217,7 +2254,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2260,7 +2297,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2307,7 +2344,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2350,7 +2387,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2393,7 +2430,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2440,7 +2477,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2483,7 +2520,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2526,7 +2563,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2535,13 +2572,18 @@
                 </tbody>
             </table>
             
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 8: 소비동향 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 8: 소비동향 -->
-<div class="section-title">2. 소비 동향</div>
+    <div class="page">
+        <div class="section-title">2. 소비 동향</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -2722,7 +2764,7 @@
                         
                         
                         <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -2768,7 +2810,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2811,7 +2853,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2854,7 +2896,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2901,7 +2943,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2944,7 +2986,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -2987,7 +3029,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3030,7 +3072,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3077,7 +3119,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3120,7 +3162,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3163,7 +3205,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3206,7 +3248,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3253,7 +3295,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3296,7 +3338,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3339,7 +3381,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3386,7 +3428,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3429,7 +3471,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3472,7 +3514,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3481,13 +3523,18 @@
                 </tbody>
             </table>
             
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 9: 건설동향 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 9: 건설동향 -->
-<div class="section-title">3. 건설 동향</div>
+    <div class="page">
+        <div class="section-title">3. 건설 동향</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -3707,7 +3754,7 @@
                         
                         
                         <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -3753,7 +3800,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3796,7 +3843,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3839,7 +3886,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3886,7 +3933,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3929,7 +3976,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -3972,7 +4019,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4015,7 +4062,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4062,7 +4109,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4105,7 +4152,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4148,7 +4195,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4191,7 +4238,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4238,7 +4285,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4281,7 +4328,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4324,7 +4371,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4371,7 +4418,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4414,7 +4461,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4457,7 +4504,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4466,13 +4513,18 @@
                 </tbody>
             </table>
             
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 10: 수출 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 10: 수출 -->
-<div class="section-title">4. 수출입 동향</div>
+    <div class="page">
+        <div class="section-title">4. 수출입 동향</div>
         <div class="subsection-title">가. 수출</div>
         
         <!-- 요약 박스 -->
@@ -4644,12 +4696,12 @@
                         
                         
                         <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                         
                         <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -4685,12 +4737,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4723,12 +4775,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4761,12 +4813,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4803,12 +4855,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4841,12 +4893,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4879,12 +4931,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4917,12 +4969,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4959,12 +5011,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -4997,12 +5049,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5035,12 +5087,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5073,12 +5125,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5115,12 +5167,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5153,12 +5205,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5191,12 +5243,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5233,12 +5285,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5271,12 +5323,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5309,12 +5361,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5324,13 +5376,18 @@
             </table>
             
             <div class="footnote">1) 수출신고서 상 제조자의 사업장 소재지 기준</div>
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 11: 수입 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 11: 수입 -->
-<div class="subsection-title">나. 수입</div>
+    <div class="page">
+        <div class="subsection-title">나. 수입</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -5501,12 +5558,12 @@
                         
                         
                         <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                         
                         <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -5542,12 +5599,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5580,12 +5637,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5618,12 +5675,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5660,12 +5717,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5698,12 +5755,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5736,12 +5793,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5774,12 +5831,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5816,12 +5873,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5854,12 +5911,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5892,12 +5949,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5930,12 +5987,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -5972,12 +6029,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6010,12 +6067,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6048,12 +6105,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6090,12 +6147,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6128,12 +6185,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6166,12 +6223,12 @@
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                             
                             <td class="amount-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6181,13 +6238,18 @@
             </table>
             
             <div class="footnote">1) 수입신고서 상 납세의무자의 소재지 기준</div>
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 12: 물가동향 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 12: 물가동향 -->
-<div class="section-title">5. 물가 동향</div>
+    <div class="page">
+        <div class="section-title">5. 물가 동향</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -6324,7 +6386,7 @@
                         
                         
                         <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -6370,7 +6432,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6413,7 +6475,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6456,7 +6518,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6503,7 +6565,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6546,7 +6608,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6589,7 +6651,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6632,7 +6694,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6679,7 +6741,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6722,7 +6784,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6765,7 +6827,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6808,7 +6870,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6855,7 +6917,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6898,7 +6960,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6941,7 +7003,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -6988,7 +7050,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7031,7 +7093,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7074,7 +7136,7 @@
                             
                             
                             <td class="index-section missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7083,26 +7145,46 @@
                 </tbody>
             </table>
             
-            
+            <div class="footnote">담당: [연락처]</div>
         </div>
         
+    </div>
     
+    <!-- 표준 푸터 (PDF 양식과 일치) -->
+    <div style="margin-top: 50px; width: 100%;">
+        <table style="width: 100%; border: none; border-collapse: collapse;" style="border-collapse: collapse; width: 100%; margin: 10px 0; border-top: 2px solid #000000; border-bottom: 2px solid #000000; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+            <tr>
+                <td style="text-align: left; font-family: 'Malgun Gothic', sans-serif; font-size: 10pt; color: #444;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+                    자료: 국가데이터처 국가통계포털(KOSIS), 집계시트
+                </td>
+                <td style="text-align: center; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; font-weight: bold;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
+                    - 1 -
+                </td>
+                <td style="width: 30%;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 13: 고용률 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 13: 고용률 -->
-<div class="section-title">6. 고용 동향</div>
+    <div class="page">
+        <div class="section-title">6. 고용 동향</div>
         <div class="subsection-title">가. 고용률</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
             <div class="headline">󰋮 고용률은 
                 
-                <span class="highlight">{'region': '대전', 'growth_rate': 2.2, 'industries': [{'name': '60세이상', 'value': 45.9, 'prev_value': 42.4, 'change_rate': 8.3, 'growth_rate': 8.3}, {'name': '15 - 29세', 'value': 46.3, 'prev_value': 44.2, 'change_rate': 4.8, 'growth_rate': 4.8}, {'name': '50 - 59세', 'value': 78.4, 'prev_value': 75.2, 'change_rate': 4.3, 'growth_rate': 4.3}], 'change': 2.2, 'industries_names': ['60세이상', '15 - 29세', '50 - 59세'], 'age_groups': }</span>, 
+                <span class="highlight">{'region': '대전', 'growth_rate': 2.2, 'industries': [{'name': '60세이상', 'value': 45.9, 'prev_value': 42.4, 'change_rate': 8.3, 'growth_rate': 8.3}, {'name': '15 - 29세', 'value': 46.3, 'prev_value': 44.2, 'change_rate': 4.8, 'growth_rate': 4.8}, {'name': '50 - 59세', 'value': 78.4, 'prev_value': 75.2, 'change_rate': 4.3, 'growth_rate': 4.3}], 'change': 2.2, 'industries_names': ['60세이상', '15 - 29세', '50 - 59세'], 'age_groups': []}</span>, 
                 
-                <span class="highlight">{'region': '충북', 'growth_rate': 1.5, 'industries': [{'name': '30 - 39세', 'value': 82.8, 'prev_value': 78.2, 'change_rate': 5.9, 'growth_rate': 5.9}, {'name': '40 - 49세', 'value': 83.7, 'prev_value': 80.2, 'change_rate': 4.4, 'growth_rate': 4.4}, {'name': '60세이상', 'value': 56.7, 'prev_value': 55.3, 'change_rate': 2.5, 'growth_rate': 2.5}], 'change': 1.5, 'industries_names': ['30 - 39세', '40 - 49세', '60세이상'], 'age_groups': }</span>, 
+                <span class="highlight">{'region': '충북', 'growth_rate': 1.5, 'industries': [{'name': '30 - 39세', 'value': 82.8, 'prev_value': 78.2, 'change_rate': 5.9, 'growth_rate': 5.9}, {'name': '40 - 49세', 'value': 83.7, 'prev_value': 80.2, 'change_rate': 4.4, 'growth_rate': 4.4}, {'name': '60세이상', 'value': 56.7, 'prev_value': 55.3, 'change_rate': 2.5, 'growth_rate': 2.5}], 'change': 1.5, 'industries_names': ['30 - 39세', '40 - 49세', '60세이상'], 'age_groups': []}</span>, 
                 
-                <span class="highlight">{'region': '경북', 'growth_rate': 1.5, 'industries': [{'name': '15 - 29세', 'value': 45.7, 'prev_value': 42.6, 'change_rate': 7.3, 'growth_rate': 7.3}, {'name': '30 - 39세', 'value': 79.1, 'prev_value': 76.1, 'change_rate': 3.9, 'growth_rate': 3.9}, {'name': '60세이상', 'value': 59.0, 'prev_value': 57.0, 'change_rate': 3.5, 'growth_rate': 3.5}], 'change': 1.5, 'industries_names': ['15 - 29세', '30 - 39세', '60세이상'], 'age_groups': }</span>
+                <span class="highlight">{'region': '경북', 'growth_rate': 1.5, 'industries': [{'name': '15 - 29세', 'value': 45.7, 'prev_value': 42.6, 'change_rate': 7.3, 'growth_rate': 7.3}, {'name': '30 - 39세', 'value': 79.1, 'prev_value': 76.1, 'change_rate': 3.9, 'growth_rate': 3.9}, {'name': '60세이상', 'value': 59.0, 'prev_value': 57.0, 'change_rate': 3.5, 'growth_rate': 3.5}], 'change': 1.5, 'industries_names': ['15 - 29세', '30 - 39세', '60세이상'], 'age_groups': []}</span>
                 
                 등 <span class="highlight">12개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
             </div>
@@ -7234,7 +7316,7 @@
                         
                         
                         <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                         
                     </tr>
@@ -7280,7 +7362,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7323,7 +7405,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7366,7 +7448,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7413,7 +7495,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7456,7 +7538,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7499,7 +7581,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7542,7 +7624,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7589,7 +7671,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7632,7 +7714,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7675,7 +7757,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7718,7 +7800,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7765,7 +7847,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7808,7 +7890,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7851,7 +7933,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7898,7 +7980,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7941,7 +8023,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7984,7 +8066,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                             
                         </tr>
@@ -7994,23 +8076,28 @@
             </table>
             
             <div class="footnote">1) 고용률(%) 산식</div>
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 14: 실업률 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 14: 실업률 -->
-<div class="subsection-title">나. 실업률</div>
+    <div class="page">
+        <div class="subsection-title">나. 실업률</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
             <div class="headline">󰋮 실업률은 
                 
-                <span class="highlight">{'region': '울산', 'growth_rate': -1.7, 'industries': [{'name': '30 - 59세', 'value': 0.9, 'prev_value': 2.5, 'change_rate': -64.0, 'growth_rate': -64.0}, {'name': '계', 'value': 1.7, 'prev_value': 3.4, 'change_rate': -50.0, 'growth_rate': -50.0}, {'name': '60세이상', 'value': 1.7, 'prev_value': 3.1, 'change_rate': -45.2, 'growth_rate': -45.2}], 'main_business': '30 - 59세', 'change': -1.7, 'industries_names': ['30 - 59세', '계', '60세이상'], 'age_groups': }</span>, 
+                <span class="highlight">{'region': '울산', 'growth_rate': -1.7, 'industries': [{'name': '30 - 59세', 'value': 0.9, 'prev_value': 2.5, 'change_rate': -64.0, 'growth_rate': -64.0}, {'name': '계', 'value': 1.7, 'prev_value': 3.4, 'change_rate': -50.0, 'growth_rate': -50.0}, {'name': '60세이상', 'value': 1.7, 'prev_value': 3.1, 'change_rate': -45.2, 'growth_rate': -45.2}], 'main_business': '30 - 59세', 'change': -1.7, 'industries_names': ['30 - 59세', '계', '60세이상'], 'age_groups': []}</span>, 
                 
-                <span class="highlight">{'region': '충북', 'growth_rate': -0.7, 'industries': [{'name': '30 - 59세', 'value': 0.6, 'prev_value': 1.3, 'change_rate': -53.8, 'growth_rate': -53.8}, {'name': '15 - 29세', 'value': 2.5, 'prev_value': 4.6, 'change_rate': -45.7, 'growth_rate': -45.7}, {'name': '계', 'value': 1.0, 'prev_value': 1.7, 'change_rate': -41.2, 'growth_rate': -41.2}], 'main_business': '30 - 59세', 'change': -0.7, 'industries_names': ['30 - 59세', '15 - 29세', '계'], 'age_groups': }</span>, 
+                <span class="highlight">{'region': '충북', 'growth_rate': -0.7, 'industries': [{'name': '30 - 59세', 'value': 0.6, 'prev_value': 1.3, 'change_rate': -53.8, 'growth_rate': -53.8}, {'name': '15 - 29세', 'value': 2.5, 'prev_value': 4.6, 'change_rate': -45.7, 'growth_rate': -45.7}, {'name': '계', 'value': 1.0, 'prev_value': 1.7, 'change_rate': -41.2, 'growth_rate': -41.2}], 'main_business': '30 - 59세', 'change': -0.7, 'industries_names': ['30 - 59세', '15 - 29세', '계'], 'age_groups': []}</span>, 
                 
-                <span class="highlight">{'region': '제주', 'growth_rate': -0.4, 'industries': [{'name': '15 - 29세', 'value': 4.6, 'prev_value': 5.9, 'change_rate': -22.0, 'growth_rate': -22.0}, {'name': '계', 'value': 1.5, 'prev_value': 1.9, 'change_rate': -21.1, 'growth_rate': -21.1}, {'name': '60세이상', 'value': 0.4, 'prev_value': 0.5, 'change_rate': -20.0, 'growth_rate': -20.0}], 'main_business': '15 - 29세', 'change': -0.4, 'industries_names': ['15 - 29세', '계', '60세이상'], 'age_groups': }</span>
+                <span class="highlight">{'region': '제주', 'growth_rate': -0.4, 'industries': [{'name': '15 - 29세', 'value': 4.6, 'prev_value': 5.9, 'change_rate': -22.0, 'growth_rate': -22.0}, {'name': '계', 'value': 1.5, 'prev_value': 1.9, 'change_rate': -21.1, 'growth_rate': -21.1}, {'name': '60세이상', 'value': 0.4, 'prev_value': 0.5, 'change_rate': -20.0, 'growth_rate': -20.0}], 'main_business': '15 - 29세', 'change': -0.4, 'industries_names': ['15 - 29세', '계', '60세이상'], 'age_groups': []}</span>
                 
                 등 <span class="highlight">7개</span> 시도에서 전년동분기대비 <span class="decrease">감소</span>
             </div>
@@ -8143,7 +8230,7 @@
                         
                         
                         <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                            
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
                         </td>
                     </tr>
                     
@@ -8188,7 +8275,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8230,7 +8317,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8272,7 +8359,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8318,7 +8405,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8360,7 +8447,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8402,7 +8489,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8444,7 +8531,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8490,7 +8577,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8532,7 +8619,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8574,7 +8661,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8616,7 +8703,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8662,7 +8749,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8704,7 +8791,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8746,7 +8833,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8792,7 +8879,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8834,7 +8921,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8876,7 +8963,7 @@
                             
                             
                             <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">
-                                
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
                             </td>
                         </tr>
                         
@@ -8885,13 +8972,18 @@
             </table>
             
             <div class="footnote">1) 실업률(%) = (실업자수 ÷ 경제활동인구) × 100</div>
-            
-        
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
+        </div>
+</div>
+            </div>
+        </div>
 
-<div style="height: 1em;"></div>
+            <!-- 페이지 15: 국내인구이동 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
 
-        <!-- 페이지 15: 국내인구이동 -->
-<div class="section-title">[번호]. [항목명]</div>
+    <div class="page">
+        <div class="section-title">[번호]. [항목명]</div>
         
         <!-- 요약 박스 -->
         <div class="summary-box">
@@ -8962,12 +9054,12 @@
                     <tr>
                         <td class="region-group" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"></td>
                         <td class="region-name" style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">전국</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                        <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                     </tr>
                     
                         
@@ -8982,8 +9074,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -8995,8 +9087,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9008,8 +9100,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                     
@@ -9025,8 +9117,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9038,8 +9130,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9051,8 +9143,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9064,8 +9156,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                     
@@ -9081,8 +9173,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9094,8 +9186,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9107,8 +9199,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9120,8 +9212,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                     
@@ -9137,8 +9229,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9150,8 +9242,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9163,8 +9255,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                     
@@ -9180,8 +9272,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9193,8 +9285,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                         
@@ -9206,8 +9298,8 @@
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
                             <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt; text-align: right; padding-right: 4px;">-0.0명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
-                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;">명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
+                            <td style="border: 1px solid #DDDDDD; padding: 4px 6px; text-align: center; vertical-align: middle; font-family: \'Malgun Gothic\', \'맑은 고딕\', \'Dotum\', \'돋움\', sans-serif; font-size: 11pt;"><span class="editable-placeholder" contenteditable="true">[  ]</span>명</td>
                         </tr>
                         
                     
@@ -9216,14 +9308,20 @@
             
             <div class="footnote">1) 순이동 산식</div>
             <div class="footnote">2) 그 외 연령층</div>
-            
+            <div class="footnote">자료: 국가데이터처 국가통계포털(KOSIS), 집계시트</div>
         </div>
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 16: 시도별-서울 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 16: 시도별-서울 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">서울</div>
         
@@ -9240,12 +9338,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 17: 시도별-부산 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 17: 시도별-부산 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">부산</div>
         
@@ -9262,12 +9366,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 18: 시도별-대구 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 18: 시도별-대구 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">대구</div>
         
@@ -9284,12 +9394,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 19: 시도별-인천 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 19: 시도별-인천 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">인천</div>
         
@@ -9306,12 +9422,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 20: 시도별-광주 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 20: 시도별-광주 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">광주</div>
         
@@ -9328,12 +9450,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 21: 시도별-대전 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 21: 시도별-대전 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">대전</div>
         
@@ -9350,12 +9478,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 22: 시도별-울산 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 22: 시도별-울산 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">울산</div>
         
@@ -9372,12 +9506,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 23: 시도별-세종 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 23: 시도별-세종 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">세종</div>
         
@@ -9394,12 +9534,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 24: 시도별-경기 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 24: 시도별-경기 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">경기</div>
         
@@ -9416,12 +9562,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 25: 시도별-강원 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 25: 시도별-강원 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">강원</div>
         
@@ -9438,12 +9590,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 26: 시도별-충북 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 26: 시도별-충북 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">충북</div>
         
@@ -9460,12 +9618,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 27: 시도별-충남 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 27: 시도별-충남 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">충남</div>
         
@@ -9482,12 +9646,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 28: 시도별-전북 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 28: 시도별-전북 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">전북</div>
         
@@ -9504,12 +9674,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 29: 시도별-전남 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 29: 시도별-전남 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">전남</div>
         
@@ -9526,12 +9702,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 30: 시도별-경북 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 30: 시도별-경북 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">경북</div>
         
@@ -9548,12 +9730,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 31: 시도별-경남 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 31: 시도별-경남 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">경남</div>
         
@@ -9570,12 +9758,18 @@
         
         
         
+    </div>
+</div>
+            </div>
+        </div>
+
+            <!-- 페이지 32: 시도별-제주 -->
+            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000000; width: 210mm; padding: 20mm 15mm;">
+            <div style="font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif; font-size: 10pt; line-height: 1.5;">
+
     
-
-<div style="height: 1em;"></div>
-
-        <!-- 페이지 32: 시도별-제주 -->
-<div class="main-header">Ⅲ　시도별 경제동향</div>
+    <div class="page">
+        <div class="main-header">Ⅲ　시도별 경제동향</div>
         
         <div class="region-title">제주</div>
         
@@ -9592,9 +9786,13 @@
         
         
         
-    
+    </div>
+</div>
+            </div>
+        </div>
 
     </div>
+    
     <script>
         function copyAll() {
             const content = document.getElementById('hwp-content');
@@ -9603,18 +9801,17 @@
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
+            
             try {
                 document.execCommand('copy');
-                alert('복사 완료!
-
-한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.
-※ 표와 서식이 유지됩니다.');
+                alert('복사 완료!\n\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.\n※ 표와 서식이 유지됩니다.');
             } catch (e) {
-                alert('자동 복사 실패.
-Ctrl+A로 전체 선택 후 Ctrl+C로 복사하세요.');
+                alert('자동 복사 실패.\nCtrl+A로 전체 선택 후 Ctrl+C로 복사하세요.');
             }
+            
             selection.removeAllRanges();
         }
+        
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'a') {
                 e.preventDefault();

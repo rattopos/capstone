@@ -56,7 +56,7 @@ class TemplateTableGenerator:
 
     def _age_label(self, report_id: str) -> str:
         if report_id == "employment":
-            return "20-29세"
+            return "15-29세"
         if report_id == "unemployment":
             return "15-29세"
         return "15-29세"

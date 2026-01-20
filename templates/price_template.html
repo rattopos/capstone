@@ -287,49 +287,63 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in summary_table.rows %}
+                    {% set region_groups = [
+                        {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                        {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                        {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                        {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                        {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                    ] %}
+                    {% set data_rows = summary_table.rows if summary_table and summary_table.rows is defined else [] %}
+                    {% set change_len = summary_table.columns.change_columns|length if summary_table and summary_table.columns and summary_table.columns.change_columns is defined else 4 %}
+                    {% set index_len = summary_table.columns.index_columns|length if summary_table and summary_table.columns and summary_table.columns.index_columns is defined else 2 %}
+                    {% set nationwide_row = (data_rows | selectattr('sido', 'equalto', '전국') | list | first) %}
                     <tr>
-                        {% if row.region_group %}
-                        <td class="region-group" rowspan="{{ row.rowspan | default(1) }}" style="border: 1px solid black !important;">{{ row.region_group }}</td>
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% elif '전' in row.sido and '국' in row.sido %}
-                        <td colspan="2" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% else %}
-                        <td class="region-name" style="border: 1px solid black !important;">{{ row.sido }}</td>
-                        {% endif %}
-                        {% for change in row.changes %}
+                        <td class="region-group" style="border: 1px solid black !important;"></td>
+                        <td class="region-name" style="border: 1px solid black !important;">전국</td>
+                        {% for i in range(change_len) %}
+                        {% set change = nationwide_row.changes[i] if nationwide_row and nationwide_row.changes is defined and nationwide_row.changes|length > i else none %}
                         <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(change) }}
                         </td>
                         {% endfor %}
-                        {% for index in row.indices %}
+                        {% for i in range(index_len) %}
+                        {% set index = nationwide_row.indices[i] if nationwide_row and nationwide_row.indices is defined and nationwide_row.indices|length > i else none %}
                         <td class="index-section {% if index is none or index == '' or index == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
                             {{ val(index) }}
                         </td>
                         {% endfor %}
                     </tr>
+                    {% for group in region_groups %}
+                        {% for region_name in group.regions %}
+                        {% set row = (data_rows | selectattr('sido', 'equalto', region_name) | list | first) %}
+                        <tr>
+                            {% if loop.first %}
+                            <td class="region-group" rowspan="{{ group.regions|length }}" style="border: 1px solid black !important;">{{ group.name }}</td>
+                            {% endif %}
+                            <td class="region-name" style="border: 1px solid black !important;">{{ region_name }}</td>
+                            {% for i in range(change_len) %}
+                            {% set change = row.changes[i] if row and row.changes is defined and row.changes|length > i else none %}
+                            <td class="{% if change is none or change == '' or change == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(change) }}
+                            </td>
+                            {% endfor %}
+                            {% for i in range(index_len) %}
+                            {% set index = row.indices[i] if row and row.indices is defined and row.indices|length > i else none %}
+                            <td class="index-section {% if index is none or index == '' or index == '-' %}missing-cell{% endif %}" style="border: 1px solid black !important;">
+                                {{ val(index) }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
             
-            <div class="footnote">{{ footer_info.contact | default('담당: [연락처]') }}</div>
+            
         </div>
         
     </div>
     
-    <!-- 표준 푸터 (PDF 양식과 일치) -->
-    <div style="margin-top: 50px; width: 100%;">
-        <table style="width: 100%; border: none; border-collapse: collapse;">
-            <tr>
-                <td style="text-align: left; font-family: 'Malgun Gothic', sans-serif; font-size: 10pt; color: #444;">
-                    {{ footer_info.source | default('자료: [출처]') }}
-                </td>
-                <td style="text-align: center; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; font-weight: bold;">
-                    - {{ footer_info.page_num | default('[페이지]') | replace('-', '') | trim }} -
-                </td>
-                <td style="width: 30%;"></td>
-            </tr>
-        </table>
-    </div>
 </body>
 </html>

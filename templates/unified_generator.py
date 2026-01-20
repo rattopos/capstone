@@ -406,6 +406,12 @@ class UnifiedReportGenerator(BaseGenerator):
         region_keywords = self.config.get('region_keywords', ['지역', '시도', '시군구', '지역명', '행정구역'])
 
         # 이름 기반 탐색으로 완전 전환 - 산업코드 로직 완전 제거
+        # 설정에서 업종/산업명 컬럼을 명시한 경우 우선 적용
+        forced_industry_name_col = self.config.get('industry_name_col') if isinstance(self.config, dict) else None
+        if isinstance(forced_industry_name_col, int) and forced_industry_name_col >= 0:
+            self.industry_name_col = forced_industry_name_col
+            print(f"[{self.config['name']}] ✅ 설정된 업종명 컬럼 사용: {self.industry_name_col}")
+
         name_keywords = ['이름', 'name', '산업명', '산업 이름', '업태명', '품목명', '품목 이름', '공정이름', '공정명', '연령']
 
         # 지역명 컬럼 후보 목록 (순서대로)
@@ -1037,6 +1043,65 @@ class UnifiedReportGenerator(BaseGenerator):
         except Exception:
             total_code = None
 
+        def _parse_age_range(name: Any) -> Optional[tuple[int, int]]:
+            if not name:
+                return None
+            age_str = str(name).strip()
+            if not age_str:
+                return None
+            normalized = age_str.replace(' ', '')
+            if normalized in {'계', '합계', '총계', '전체', '전연령', '전연령층', '전체연령', '총연령'}:
+                return None
+            normalized = normalized.replace('세', '')
+            normalized = normalized.replace('~', '-').replace('–', '-').replace('—', '-')
+            try:
+                import re
+                match = re.search(r'(\d{1,2})-(\d{1,2})', normalized)
+                if match:
+                    return (int(match.group(1)), int(match.group(2)))
+                match = re.search(r'(\d{1,2})대', normalized)
+                if match:
+                    start = int(match.group(1))
+                    return (start, start + 9)
+            except Exception:
+                return None
+            return None
+
+        def _compute_migration_age_sums(region_name: str) -> tuple[Optional[float], Optional[float]]:
+            items = self._extract_industry_data(region_name)
+            if not items:
+                return (None, None)
+            sum_20_29 = 0.0
+            found_20_29_parts = False
+            alt_20_29 = None
+            sum_other = 0.0
+            found_other = False
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                name = item.get('name')
+                value = item.get('value')
+                if value is None:
+                    continue
+                age_range = _parse_age_range(name)
+                if age_range is None:
+                    continue
+                if age_range in [(20, 24), (25, 29)]:
+                    sum_20_29 += float(value)
+                    found_20_29_parts = True
+                elif age_range == (20, 29):
+                    alt_20_29 = float(value)
+                else:
+                    sum_other += float(value)
+                    found_other = True
+            age_20_29 = None
+            if found_20_29_parts:
+                age_20_29 = round(sum_20_29, 1)
+            elif alt_20_29 is not None:
+                age_20_29 = round(alt_20_29, 1)
+            age_other = round(sum_other, 1) if found_other else None
+            return (age_20_29, age_other)
+
         def _select_region_total(df_source: pd.DataFrame, region_name: str) -> Optional[pd.Series]:
             if df_source is None:
                 return None
@@ -1311,6 +1376,7 @@ class UnifiedReportGenerator(BaseGenerator):
                 change_rate = None
             
             if self.report_type == 'migration':
+                age_20_29, age_other = _compute_migration_age_sums(region)
                 row_data = {
                     'region_name': region,
                     'region_display': self._get_region_display_name(region),
@@ -1322,8 +1388,8 @@ class UnifiedReportGenerator(BaseGenerator):
                     'quarterly_keys': self.quarterly_keys,
                     'quarterly_values': quarterly_values,
                     'quarterly_growth_rates': quarterly_growth_rates,
-                    'age_20_29': None,
-                    'age_other': None
+                    'age_20_29': age_20_29,
+                    'age_other': age_other
                 }
             else:
                 row_data = {
@@ -1368,8 +1434,8 @@ class UnifiedReportGenerator(BaseGenerator):
                         'prev_prev_value': sum_field('prev_prev_value'),
                         'prev_prev_prev_value': sum_field('prev_prev_prev_value'),
                         'change_rate': sum_field('change_rate'),
-                        'age_20_29': None,
-                        'age_other': None
+                        'age_20_29': sum_field('age_20_29'),
+                        'age_other': sum_field('age_other')
                     }
                     table_data.insert(0, nationwide_row)
                     print(f"[{self.config['name']}] ✅ 전국 데이터가 없어 지역 합계로 추가")
@@ -1794,7 +1860,7 @@ class UnifiedReportGenerator(BaseGenerator):
 
         def _index_labels(year: Optional[int], quarter: Optional[int]) -> List[str]:
             if self.report_type == 'employment':
-                age_label = "20-29세"
+                age_label = "15-29세"
             elif self.report_type == 'unemployment':
                 age_label = "15-29세"
             else:
@@ -2011,6 +2077,12 @@ class UnifiedReportGenerator(BaseGenerator):
             nationwide.setdefault('change', nationwide.get('growth_rate'))
             nationwide.setdefault('age_groups', nationwide.get('age_groups', []))
             nationwide.setdefault('main_age_groups', nationwide.get('main_age_groups', []))
+        elif self.report_type == 'migration':
+            report_info = data.get('report_info', {}) or {}
+            report_info.setdefault('age_20_29_label', '20-29세')
+            report_info.setdefault('age_other_label', '그 외 연령층')
+            report_info.setdefault('age_other_note', '그 외 연령층')
+            data['report_info'] = report_info
         elif self.report_type == 'construction':
             # construction_template.html 호환성 보강
             nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))

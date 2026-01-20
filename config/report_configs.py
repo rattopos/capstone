@@ -56,7 +56,7 @@ REPORT_CONFIGS = {
             '목재 및 나무제품 제조업; 가구 제외': '목재제품',
             '비금속광물 광업; 연료용 제외': '비금속광물광업',
         },
-        'template': 'by_type/mining_template.html',
+        'template': 'mining_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -95,7 +95,7 @@ REPORT_CONFIGS = {
             '예술, 스포츠 및 여가관련 서비스업': '예술·스포츠·여가',
             '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인서비스'
         },
-        'template': 'by_type/service_template.html',
+        'template': 'service_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -131,7 +131,7 @@ REPORT_CONFIGS = {
             '전문소매점': '전문소매점',
             '무점포 소매': '무점포소매'
         },
-        'template': 'by_type/consumption_template.html',
+        'template': 'consumption_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -161,7 +161,7 @@ REPORT_CONFIGS = {
             '주거용 건물': '주거용',
             '비주거용 건물': '비주거용',
         },
-        'template': 'by_type/construction_template.html',
+        'template': 'construction_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -186,7 +186,7 @@ REPORT_CONFIGS = {
             'total_code': '합계'
         },
         'name_mapping': {},  # 품목명은 그대로 사용
-        'template': 'by_type/export_template.html',
+        'template': 'export_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -211,7 +211,7 @@ REPORT_CONFIGS = {
             'total_code': '합계'
         },
         'name_mapping': {},
-        'template': 'by_type/import_template.html',
+        'template': 'import_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -236,7 +236,7 @@ REPORT_CONFIGS = {
             'total_code': '00'
         },
         'name_mapping': {},
-        'template': 'by_type/price_template.html',
+        'template': 'price_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -261,7 +261,7 @@ REPORT_CONFIGS = {
             'total_code': '계'
         },
         'name_mapping': {},
-        'template': 'by_type/employment_template.html',
+        'template': 'employment_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -287,7 +287,7 @@ REPORT_CONFIGS = {
             'total_code': '계'
         },
         'name_mapping': {},
-        'template': 'by_type/unemployment_template.html',
+        'template': 'unemployment_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계'],
@@ -312,7 +312,7 @@ REPORT_CONFIGS = {
             'total_code': '순인구이동 수'   # 이동 유형: 유입/유출/순인구이동 중 '순인구이동 수' 선택
         },
         'name_mapping': {},
-        'template': 'by_type/migration_template.html',
+        'template': 'migration_template.html',
         'metadata_columns': {
             'region': ['지역', 'region', '시도'],
             'classification': ['분류단계', 'classification', '단계', '유형'],  # 이동 유형 (유입/유출/순이동)

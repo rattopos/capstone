@@ -146,6 +146,12 @@
             font-weight: normal;
         }
         
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: normal;
+            width: 28px;
+        }
+
         .data-table .region-name {
             text-align: left;
             padding-left: 8px;
@@ -269,6 +275,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
+                        <th rowspan="2" style="width: 30px;">권역</th>
                         <th rowspan="2" style="width: 50px;">시 도</th>
                         <th colspan="4">순이동(천명)</th>
                         <th colspan="2">{{ current_label }}<sup>2)</sup></th>
@@ -283,23 +290,49 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in table_data %}
+                    {% set region_groups = [
+                        {'name': '경인', 'regions': ['서울', '인천', '경기']},
+                        {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
+                        {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
+                        {'name': '동북', 'regions': ['대구', '경북', '강원']},
+                        {'name': '동남', 'regions': ['부산', '울산', '경남']}
+                    ] %}
+                    {% set data_rows = table_data if table_data is defined else [] %}
+                    {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
                     <tr>
-                        <td class="region-name">{{ row.region_display | default(row.region_name) }}</td>
-                        <td>{{ val_thousand(row.prev_prev_prev_value) }}</td>
-                        <td>{{ val_thousand(row.prev_prev_value) }}</td>
-                        <td>{{ val_thousand(row.prev_value) }}</td>
-                        <td>{{ val_thousand(row.value) }}</td>
-                        <td>{{ val_thousand(row.age_20_29) }}</td>
-                        <td>{{ val_thousand(row.age_other) }}</td>
+                        <td class="region-group"></td>
+                        <td class="region-name">전국</td>
+                        <td>{{ val_thousand(nationwide_row.prev_prev_prev_value if nationwide_row and nationwide_row.prev_prev_prev_value is defined else none) }}</td>
+                        <td>{{ val_thousand(nationwide_row.prev_prev_value if nationwide_row and nationwide_row.prev_prev_value is defined else none) }}</td>
+                        <td>{{ val_thousand(nationwide_row.prev_value if nationwide_row and nationwide_row.prev_value is defined else none) }}</td>
+                        <td>{{ val_thousand(nationwide_row.value if nationwide_row and nationwide_row.value is defined else none) }}</td>
+                        <td>{{ val_thousand(nationwide_row.age_20_29 if nationwide_row and nationwide_row.age_20_29 is defined else none) }}</td>
+                        <td>{{ val_thousand(nationwide_row.age_other if nationwide_row and nationwide_row.age_other is defined else none) }}</td>
                     </tr>
+                    {% for group in region_groups %}
+                        {% for region_name in group.regions %}
+                        {% set row = (data_rows | selectattr('region_name', 'equalto', region_name) | list | first) %}
+                        {% set region_label = row.region_display if row and row.region_display is defined and row.region_display else region_name %}
+                        <tr>
+                            {% if loop.first %}
+                            <td class="region-group" rowspan="{{ group.regions|length }}">{{ group.name }}</td>
+                            {% endif %}
+                            <td class="region-name">{{ region_label }}</td>
+                            <td>{{ val_thousand(row.prev_prev_prev_value if row and row.prev_prev_prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(row.prev_prev_value if row and row.prev_prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(row.prev_value if row and row.prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(row.value if row and row.value is defined else none) }}</td>
+                            <td>{{ val_thousand(row.age_20_29 if row and row.age_20_29 is defined else none) }}</td>
+                            <td>{{ val_thousand(row.age_other if row and row.age_other is defined else none) }}</td>
+                        </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
             
             <div class="footnote">1) {{ report_info.migration_note if report_info and report_info.migration_note else "순이동 산식" }}</div>
             <div class="footnote">2) {{ report_info.age_other_note if report_info and report_info.age_other_note else "그 외 연령층" }}</div>
-            <div class="footnote">{{ footer_info.source | default('자료: [출처]') }}</div>
+            
         </div>
     </div>
 </body>
