@@ -639,9 +639,69 @@ class UnifiedReportGenerator(BaseGenerator):
                 return None
 
             try:
+                from config.reports import REGION_DISPLAY_MAPPING
+                full_name = REGION_DISPLAY_MAPPING.get(region_name)
+                
+                # 1. Exact match (short name)
                 region_filter = local_df[
                     local_df.iloc[:, region_col].astype(str).str.strip() == region_name
                 ]
+                
+                # 2. Exact match (full name)
+                if region_filter.empty and full_name:
+                    region_filter = local_df[
+                        local_df.iloc[:, region_col].astype(str).str.strip() == full_name
+                    ]
+
+                # 3. Alias match (Historical/Nomenclature variations)
+                if region_filter.empty:
+                    REGION_ALIASES = {
+                        '전북': ['전라북도', '전북특별자치도'],
+                        '강원': ['강원도', '강원특별자치도'],
+                        '경기': ['경기도'],
+                        '충북': ['충청북도'],
+                        '충남': ['충청남도'],
+                        '전남': ['전라남도'],
+                        '경북': ['경상북도'],
+                        '경남': ['경상남도'],
+                        '제주': ['제주특별자치도', '제주도', '제주'],
+                        '세종': ['세종특별자치시'],
+                        '서울': ['서울특별시'],
+                        '부산': ['부산광역시'],
+                        '대구': ['대구광역시'],
+                        '인천': ['인천광역시'],
+                        '광주': ['광주광역시'],
+                        '대전': ['대전광역시'],
+                        '울산': ['울산광역시'],
+                    }
+                    aliases = REGION_ALIASES.get(region_name, [])
+                    for alias in aliases:
+                        region_filter = local_df[
+                            local_df.iloc[:, region_col].astype(str).str.strip() == alias
+                        ]
+                        if not region_filter.empty:
+                            break
+                
+                # 3. Fuzzy match / Alias fallback (especially for '전국')
+                if region_filter.empty:
+                    if region_name == '전국':
+                        if total_code:
+                            region_filter = local_df[
+                                local_df.iloc[:, region_col].astype(str).str.strip().str.contains(total_code, na=False)
+                            ]
+                        if region_filter.empty:
+                            for alias in ['합계', '총계', '전국', '전 국']:
+                                region_filter = local_df[
+                                    local_df.iloc[:, region_col].astype(str).str.strip() == alias
+                                ]
+                                if not region_filter.empty:
+                                    break
+                    else:
+                        # Other regions fuzzy match (e.g. '서울' matches '서울특별시' via contains)
+                        region_filter = local_df[
+                            local_df.iloc[:, region_col].astype(str).str.strip().str.contains(region_name, na=False)
+                        ]
+
             except (IndexError, KeyError):
                 return None
             if region_filter.empty and df_source is not local_df:
@@ -686,6 +746,10 @@ class UnifiedReportGenerator(BaseGenerator):
                 if len(region_filter) > 0:
                     region_total = region_filter.head(1)
             if region_total is None or region_total.empty:
+                if self.report_type == 'price' and region_name == '전북':
+                    print(f"[DEBUG] {region_name}: region_filter empty? {region_filter.empty}, industry_name_col: {self.industry_name_col}")
+                    if not region_filter.empty:
+                        print(f"[DEBUG] {region_name} first 5 rows in industry_col:\n{region_filter.iloc[:5, self.industry_name_col]}")
                 return None
             return region_total.iloc[0]
         
@@ -782,12 +846,12 @@ class UnifiedReportGenerator(BaseGenerator):
             if self.report_type == 'construction':
                 # 10억원 단위 → 100억원 단위 (1/10)
                 scale_factor = 0.1
-            elif self.report_type == 'export':
-                # 백만달러 단위 → 억달러 단위 (요청: 100배)
-                scale_factor = 100.0
+            elif self.report_type in ['export', 'import']:
+                # 백만달러 단위 → 억달러 단위 (1/100)
+                scale_factor = 0.01
             elif self.report_type == 'migration':
-                # 명 단위 → 천명 단위
-                scale_factor = 0.001
+                # 연령별 계산 등이 복잡하므로 원형(명) 유지, 템플릿(val_thousand)에서 나누기 수행
+                scale_factor = 1.0
 
             if scale_factor != 1.0:
                 idx_current = (idx_current * scale_factor) if idx_current is not None else None
@@ -857,7 +921,9 @@ class UnifiedReportGenerator(BaseGenerator):
                 else:
                     # 증감률 (%)
                     change_rate = round(((idx_current - idx_prev_year) / idx_prev_year) * 100, 1)
-            else:
+            elif idx_current is not None:
+                # 전년 데이터가 없으면 증감률을 0.0으로 처리하거나 보합으로 간주 (또는 None 유지)
+                # 여기서는 명확성을 위해 None을 유지하되, 나중에 템플릿에서 처리하도록 함
                 change_rate = None
             
             if self.report_type == 'migration':
@@ -1054,7 +1120,9 @@ class UnifiedReportGenerator(BaseGenerator):
                 'value': round(idx_current, 1),
                 'prev_value': round(idx_prev_year, 1) if idx_prev_year else None,
                 'change_rate': change_rate,
-                'growth_rate': change_rate  # 템플릿 호환 필드명
+                'growth_rate': change_rate,  # 템플릿 호환 필드명
+                'contribution_rate': None,   # UndefinedError 방지
+                'contribution': None        # UndefinedError 방지
             })
         
         return industries
@@ -1118,7 +1186,10 @@ class UnifiedReportGenerator(BaseGenerator):
         if table_data is None:
             table_data = self._extract_table_data_ssot()
         
-        nationwide = next((d for d in table_data if d['region_name'] == '전국'), None)
+        nationwide = next((d for d in table_data if str(d.get('region_name')).strip() == '전국'), None)
+        if not nationwide:
+             # some reports might use '합계' or other terms for nationwide in table_data
+             nationwide = next((d for d in table_data if d.get('region_name') == self.config.get('aggregation_structure', {}).get('total_code')), None)
         
         # 국내인구이동의 경우 전국 데이터가 없으면 지역 합계로 계산
         if not nationwide or not isinstance(nationwide, dict):
@@ -1222,8 +1293,9 @@ class UnifiedReportGenerator(BaseGenerator):
             main_increase = None
             main_decrease = None
         
-        # 모든 필드명 포함 (템플릿 호환)
-        result = {
+        # 모든 필드명 포함 (기존 데이터 유지 및 템플릿 호환 필드 추가)
+        result = (nationwide.copy() if nationwide else {})
+        result.update({
             'production_index': index_value,
             'sales_index': index_value,  # 소비동향 템플릿 호환
             'service_index': index_value,  # 서비스업 템플릿 호환
@@ -1232,8 +1304,10 @@ class UnifiedReportGenerator(BaseGenerator):
             'main_industries': main_increase,  # 템플릿 호환
             'main_businesses': main_increase,  # 소비동향 템플릿 호환
             'main_increase_industries': main_increase,  # 템플릿 호환
-            'main_decrease_industries': main_decrease   # 템플릿 호환
-        }
+            'main_decrease_industries': main_decrease,   # 템플릿 호환
+            'value': index_value,  # 명시적으로 보장
+            'change_rate': growth_rate  # 명시적으로 보장
+        })
 
         # 건설동향 템플릿 호환 별칭 추가
         if self.report_type == 'construction':
@@ -1448,6 +1522,7 @@ class UnifiedReportGenerator(BaseGenerator):
                 'growth_rates': growth_rates,
                 'indices': [prev_value, value, ''],
                 'changes': growth_rates,
+                'amounts': [prev_value, value] if self.report_type in ['export', 'import'] else [prev_value, value],
                 'rates': [prev_value, value, youth_rate if youth_rate not in (None, '', '-') else ''],
                 'youth_rate': youth_rate,
                 'quarterly_keys': row.get('quarterly_keys') if isinstance(row, dict) else None,
@@ -1517,8 +1592,9 @@ class UnifiedReportGenerator(BaseGenerator):
         # nationwide 필드 보강 (보고서 타입별 별칭)
         nationwide = data.get('nationwide_data') or {}
         if self.report_type in ['export', 'import']:
-            nationwide.setdefault('amount', nationwide.get('production_index'))
-            nationwide.setdefault('change', nationwide.get('growth_rate'))
+            # scale_factor가 이미 0.01이 적용되어 있음
+            nationwide.setdefault('amount', nationwide.get('value'))
+            nationwide.setdefault('change', nationwide.get('change_rate'))
             products = nationwide.get('products') or nationwide.get('main_items') or []
             normalized_products = []
             for p in products:
@@ -1577,8 +1653,9 @@ class UnifiedReportGenerator(BaseGenerator):
         for entry in regional_increase + regional_decrease:
             if not isinstance(entry, dict):
                 continue
-            entry.setdefault('change', entry.get('growth_rate'))
             if self.report_type in ['export', 'import']:
+                entry.setdefault('amount', entry.get('value'))
+                entry.setdefault('change', entry.get('change_rate'))
                 raw_products = entry.get('products') or self._extract_item_names(entry.get('top_industries'))
                 normalized_products = []
                 for p in raw_products or []:
@@ -1625,10 +1702,9 @@ class UnifiedReportGenerator(BaseGenerator):
         def ensure_products(item):
             if not isinstance(item, dict):
                 return {}
-            item.setdefault('change', item.get('growth_rate'))
-            if item.get('industries'):
-                item['industries_names'] = self._extract_item_names(item.get('industries'))
             if self.report_type in ['export', 'import']:
+                item.setdefault('amount', item.get('value'))
+                item.setdefault('change', item.get('change_rate'))
                 industries = item.get('industries')
                 if not isinstance(industries, list):
                     industries = [] if industries is None else [industries]
@@ -1737,11 +1813,7 @@ class UnifiedReportGenerator(BaseGenerator):
                 print(f"[{self.config['name']}] ⚠️ 전처리 결과 DF 생성 실패: {e}")
         
         # Text Data
-        # 국내인구이동은 nationwide 데이터가 없음
-        if self.report_type == 'migration':
-            nationwide = None
-        else:
-            nationwide = self.extract_nationwide_data(table_data)
+        nationwide = self.extract_nationwide_data(table_data)
         regional = self.extract_regional_data(table_data)
         
         # Top3 regions (템플릿 호환 필드명으로 생성, 기본값/폴백 사용 금지)

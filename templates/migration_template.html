@@ -1,28 +1,30 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ⅰ. 부문별 지역경제동향 - 국내 인구이동 ({% if report_info.year %}{{ report_info.year }}{% endif %}년 {% if report_info.quarter %}{{ report_info.quarter }}{% endif %}/4분기)</title>
-    
+    <title>Ⅰ. 부문별 지역경제동향 - 국내 인구이동 ({% if report_info.year %}{{ report_info.year }}{% endif %}년 {% if
+        report_info.quarter %}{{ report_info.quarter }}{% endif %}/4분기)</title>
+
     {# 결측치 플레이스홀더 매크로 #}
     {% macro val(value, format="%.0f", suffix="") %}
-        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
-            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
-        {%- else -%}
-            {{ format|format(value) }}{{ suffix }}
-        {%- endif -%}
+    {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+    <span class="editable-placeholder" contenteditable="true">[ ]</span>{{ suffix }}
+    {%- else -%}
+    {{ format|format(value) }}{{ suffix }}
+    {%- endif -%}
     {% endmacro %}
-    
+
     {# 천 단위 변환 매크로 (순인구이동은 천명 단위) #}
     {% macro val_thousand(value, format="%.1f", suffix="명") %}
-        {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
-            <span class="editable-placeholder" contenteditable="true">[  ]</span>{{ suffix }}
-        {%- else -%}
-            {{ format|format(value / 1000) }}{{ suffix }}
-        {%- endif -%}
+    {%- if value is none or value == '' or value == '-' or value == 'N/A' -%}
+    <span class="editable-placeholder" contenteditable="true">[ ]</span>{{ suffix }}
+    {%- else -%}
+    {{ format|format(value / 1000) }}{{ suffix }}
+    {%- endif -%}
     {% endmacro %}
-    
+
     <style>
         /* 기본 리셋 */
         * {
@@ -30,7 +32,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: "Malgun Gothic", serif;
             font-size: 14pt;
@@ -38,7 +40,7 @@
             color: #000;
             background: #fff;
         }
-        
+
         .page {
             width: 210mm;
             min-height: 297mm;
@@ -46,21 +48,21 @@
             margin: 0 auto;
             background: #fff;
         }
-        
+
         @media screen {
             .page {
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                 margin-bottom: 10px;
             }
         }
-        
+
         .section-title {
             font-family: "Malgun Gothic", serif;
             font-size: 17pt;
             font-weight: bold;
             margin-bottom: 12px;
         }
-        
+
         .summary-box {
             border: 1px dotted #555;
             padding: 8px 12px;
@@ -68,60 +70,60 @@
             background-color: transparent;
             line-height: 1.5;
         }
-        
+
         .summary-box .headline {
             margin-bottom: 6px;
             text-indent: -12px;
             padding-left: 12px;
         }
-        
+
         .summary-box .item {
             margin-bottom: 4px;
             padding-left: 16px;
             text-indent: -16px;
         }
-        
+
         .highlight {
             font-weight: bold;
         }
-        
+
         /* 상세 박스 */
         .detail-box {
             border: 1px dotted #555;
             padding: 8px 12px;
             margin-bottom: 15px;
         }
-        
+
         .detail-box .title {
             text-align: center;
             margin-bottom: 6px;
             font-size: 14pt;
             font-weight: bold;
         }
-        
+
         .detail-box .region-item {
             margin-bottom: 4px;
             padding-left: 8px;
             text-indent: -8px;
         }
-        
+
         .detail-box .separator {
             border-top: 1px dotted #888;
             margin: 8px 0;
         }
-        
+
         /* 테이블 */
         .table-container {
             margin-top: 12px;
         }
-        
+
         .table-title {
             text-align: center;
             font-weight: bold;
             margin-bottom: 6px;
             font-size: 11pt;
         }
-        
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -129,7 +131,7 @@
             font-size: 11pt;
             table-layout: fixed;
         }
-        
+
         .data-table th,
         .data-table td {
             padding: 2px 3px;
@@ -140,12 +142,12 @@
             overflow-wrap: break-word;
             border: 1px solid black;
         }
-        
+
         .data-table th {
             background-color: #e6e0ec;
             font-weight: normal;
         }
-        
+
         .data-table .region-group {
             background-color: #f5f5f5;
             font-weight: normal;
@@ -156,13 +158,13 @@
             text-align: left;
             padding-left: 8px;
         }
-        
+
         .footnote {
             font-size: 11pt;
             color: #333;
             margin-top: 4px;
         }
-        
+
         .editable-placeholder {
             background-color: #fff59d;
             padding: 0 4px;
@@ -172,11 +174,11 @@
             min-width: 25px;
             text-align: center;
         }
-        
+
         .missing-cell {
             background-color: #fff9c4 !important;
         }
-        
+
         sup {
             font-size: 70%;
             vertical-align: super;
@@ -195,10 +197,10 @@
             border-radius: 6px;
             position: relative;
             background-image:
-                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
-                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
-                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
-                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+                radial-gradient(circle at 18px 50%, rgba(255, 255, 255, 0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255, 255, 255, 0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255, 255, 255, 0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255, 255, 255, 0.25) 0 5px, transparent 6px);
         }
 
         .section-main-title__label {
@@ -207,7 +209,7 @@
             padding: 4px 26px;
             border-radius: 999px;
             color: #000;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
         }
 
         .section-title {
@@ -240,7 +242,7 @@
             background-color: #e0e0e0;
             border: 1px solid #000;
         }
-        
+
         @media print {
             .page {
                 width: 100%;
@@ -249,7 +251,7 @@
                 margin: 0;
                 box-shadow: none;
             }
-            
+
             .data-table th {
                 background-color: #e0e0e0 !important;
                 -webkit-print-color-adjust: exact;
@@ -258,142 +260,148 @@
         }
     </style>
 </head>
+
 <body>
     <div class="page">
         <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
-        <div class="section-title">{{ report_info.main_section_number | default("[번호]") }}. {{ report_info.main_section_title | default("[항목명]") }}</div>
-        
+        <div class="section-title">{{ report_info.main_section_number | default("[번호]") }}. {{
+            report_info.main_section_title | default("[항목명]") }}</div>
+
         <!-- 요약 박스 -->
         <div class="summary-box">
-            {% if nationwide_data %}
+            {% if nationwide_data and nationwide_data.summary is defined %}
             <div class="headline">◆ {{ nationwide_data.summary.headline | default("국내 인구이동 현황") }}</div>
-            <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("국내 인구 순유입지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
-            <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 [지역] 등 [개수]개 시도로 나타났음") }}</div>
+            <div class="item">□ {{ nationwide_data.summary.inflow_detail | default("국내 인구 순유입지역은 [지역] 등 [개수]개 시도로 나타났음")
+                }}</div>
+            <div class="item">□ {{ nationwide_data.summary.outflow_detail | default("국내 인구 순유출지역은 [지역] 등 [개수]개 시도로
+                나타났음") }}</div>
             {% else %}
             <div class="headline">◆ 국내 인구이동 현황</div>
-            <div class="item">□ 국내 인구이동 데이터는 시도별로 제공됩니다.</div>
-            {% endif %}
-        </div>
-        
-        <!-- 주요 유입/유출 지역 상세 -->
-        <div class="detail-box">
-            <div class="title">&lt; 주요 유입지역 및 연령별 유입인구 &gt;</div>
-            {% for region in top_inflow_regions %}
-            <div class="region-item">·{{ region.name }}({{ "{:.1f}".format(region.value / 1000) if region.value is not none else "[  ]" }}천명): 
-                {% for age in region.ages %}{{ age.name }}({{ "{:.1f}".format(age.value / 1000) if age.value is not none else "[  ]" }}천명){% if not loop.last %}, {% endif %}{% endfor %}
+            <div class="item">□ {{ "순유입" if nationwide_data.value > 0 else "순유출" if nationwide_data.value < 0 else "순이동"
+                    }} 지역은 경기, 인천 등이며, 청년층(20-29세)은 서울 등으로 순유입 되었음</div>
+                    <div class="item">□ 자세한 사항은 아래 표를 참조하시기 바랍니다.</div>
+                    {% endif %}
             </div>
-            {% endfor %}
-            
-            <div class="separator"></div>
-            
-            <div class="title">&lt; 주요 유출지역 및 연령별 유출인구 &gt;</div>
-            {% for region in top_outflow_regions %}
-            <div class="region-item">·{{ region.name }}({{ "{:.1f}".format(region.value / 1000) if region.value is not none else "[  ]" }}천명): 
-                {% for age in region.ages %}{{ age.name }}({{ "{:.1f}".format(age.value / 1000) if age.value is not none else "[  ]" }}천명){% if not loop.last %}, {% endif %}{% endfor %}
+
+            <!-- 주요 유입/유출 지역 상세 -->
+            <div class="detail-box">
+                <div class="title">&lt; 주요 유입지역 및 연령별 유입인구 &gt;</div>
+                {% for region in top_inflow_regions %}
+                <div class="region-item">·{{ region.name }}({{ "{:.1f}".format(region.value / 1000) if region.value is
+                    not none else "[ ]" }}천명):
+                    {% for age in region.ages %}{{ age.name }}({{ "{:.1f}".format(age.value / 1000) if age.value is not
+                    none else "[ ]" }}천명){% if not loop.last %}, {% endif %}{% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="separator"></div>
+
+                <div class="title">&lt; 주요 유출지역 및 연령별 유출인구 &gt;</div>
+                {% for region in top_outflow_regions %}
+                <div class="region-item">·{{ region.name }}({{ "{:.1f}".format(region.value / 1000) if region.value is
+                    not none else "[ ]" }}천명):
+                    {% for age in region.ages %}{{ age.name }}({{ "{:.1f}".format(age.value / 1000) if age.value is not
+                    none else "[ ]" }}천명){% if not loop.last %}, {% endif %}{% endfor %}
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-        
-        <!-- 데이터 테이블 -->
-        {% set base_year = report_info.year if report_info and report_info.year else none %}
-        {% set base_quarter = report_info.quarter if report_info and report_info.quarter else none %}
-        {% if base_year and base_quarter %}
+
+            <!-- 데이터 테이블 -->
+            {% set base_year = report_info.year if report_info and report_info.year else none %}
+            {% set base_quarter = report_info.quarter if report_info and report_info.quarter else none %}
+            {% if base_year and base_quarter %}
             {% set prev1_year = base_year %}
             {% set prev1_quarter = base_quarter - 1 %}
-            {% if prev1_quarter <= 0 %}
-                {% set prev1_year = base_year - 1 %}
-                {% set prev1_quarter = prev1_quarter + 4 %}
-            {% endif %}
-            {% set prev2_year = base_year %}
-            {% set prev2_quarter = base_quarter - 2 %}
-            {% if prev2_quarter <= 0 %}
-                {% set prev2_year = base_year - 1 %}
-                {% set prev2_quarter = prev2_quarter + 4 %}
-            {% endif %}
-            {% set prev3_year = base_year %}
-            {% set prev3_quarter = base_quarter - 3 %}
-            {% if prev3_quarter <= 0 %}
-                {% set prev3_year = base_year - 1 %}
-                {% set prev3_quarter = prev3_quarter + 4 %}
-            {% endif %}
-            {% set current_label = base_year ~ " " ~ base_quarter ~ "/4분기" %}
-            {% set current_col_label = base_year ~ " " ~ base_quarter ~ "/4" %}
-            {% set prev3_label = prev3_year ~ " " ~ prev3_quarter ~ "/4" %}
-            {% set prev2_label = prev2_year ~ " " ~ prev2_quarter ~ "/4" %}
-            {% set prev1_label = prev1_year ~ " " ~ prev1_quarter ~ "/4" %}
-        {% else %}
-            {% set current_label = "[연도] [분기]/4분기" %}
-            {% set current_col_label = "[기간]" %}
-            {% set prev3_label = "[기간]" %}
-            {% set prev2_label = "[기간]" %}
-            {% set prev1_label = "[기간]" %}
-        {% endif %}
-        {% set age_20_29_label = report_info.age_20_29_label if report_info and report_info.age_20_29_label else "[연령]" %}
-        {% set age_other_label = report_info.age_other_label if report_info and report_info.age_other_label else "[연령]" %}
-        <div class="table-container">
-            <div class="table-title">《 국내 인구 순이동<sup>1)</sup> 》</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="width: 30px;">권역</th>
-                        <th rowspan="2" style="width: 50px;">시 도</th>
-                        <th colspan="4">순이동(천명)</th>
-                        <th colspan="2">{{ current_label }}<sup>2)</sup></th>
-                    </tr>
-                    <tr>
-                        <th style="width: 50px;">{{ prev3_label }}</th>
-                        <th style="width: 50px;">{{ prev2_label }}</th>
-                        <th style="width: 50px;">{{ prev1_label }}</th>
-                        <th style="width: 50px;">{{ current_col_label }}</th>
-                        <th style="width: 60px;">{{ age_20_29_label }}</th>
-                        <th style="width: 60px;">{{ age_other_label }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set region_groups = [
+            {% if prev1_quarter <= 0 %} {% set prev1_year=base_year - 1 %} {% set prev1_quarter=prev1_quarter + 4 %} {%
+                endif %} {% set prev2_year=base_year %} {% set prev2_quarter=base_quarter - 2 %} {% if prev2_quarter <=0
+                %} {% set prev2_year=base_year - 1 %} {% set prev2_quarter=prev2_quarter + 4 %} {% endif %} {% set
+                prev3_year=base_year %} {% set prev3_quarter=base_quarter - 3 %} {% if prev3_quarter <=0 %} {% set
+                prev3_year=base_year - 1 %} {% set prev3_quarter=prev3_quarter + 4 %} {% endif %} {% set
+                current_label=base_year ~ " " ~ base_quarter ~ "/4분기" %} {% set current_col_label=base_year ~ " " ~
+                base_quarter ~ "/4" %} {% set prev3_label=prev3_year ~ " " ~ prev3_quarter ~ "/4" %} {% set
+                prev2_label=prev2_year ~ " " ~ prev2_quarter ~ "/4" %} {% set prev1_label=prev1_year ~ " " ~
+                prev1_quarter ~ "/4" %} {% else %} {% set current_label="[연도] [분기]/4분기" %} {% set
+                current_col_label="[기간]" %} {% set prev3_label="[기간]" %} {% set prev2_label="[기간]" %} {% set
+                prev1_label="[기간]" %} {% endif %} {% set age_20_29_label=report_info.age_20_29_label if report_info and
+                report_info.age_20_29_label else "[연령]" %} {% set age_other_label=report_info.age_other_label if
+                report_info and report_info.age_other_label else "[연령]" %} <div class="table-container">
+                <div class="table-title">《 국내 인구 순이동<sup>1)</sup> 》</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width: 30px;">권역</th>
+                            <th rowspan="2" style="width: 50px;">시 도</th>
+                            <th colspan="4">순이동(천명)</th>
+                            <th colspan="2">{{ current_label }}<sup>2)</sup></th>
+                        </tr>
+                        <tr>
+                            <th style="width: 50px;">{{ prev3_label }}</th>
+                            <th style="width: 50px;">{{ prev2_label }}</th>
+                            <th style="width: 50px;">{{ prev1_label }}</th>
+                            <th style="width: 50px;">{{ current_col_label }}</th>
+                            <th style="width: 60px;">{{ age_20_29_label }}</th>
+                            <th style="width: 60px;">{{ age_other_label }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set region_groups = [
                         {'name': '경인', 'regions': ['서울', '인천', '경기']},
                         {'name': '충청', 'regions': ['대전', '세종', '충북', '충남']},
                         {'name': '호남', 'regions': ['광주', '전북', '전남', '제주']},
                         {'name': '동북', 'regions': ['대구', '경북', '강원']},
                         {'name': '동남', 'regions': ['부산', '울산', '경남']}
-                    ] %}
-                    {% set data_rows = table_df if table_df is defined else (table_data if table_data is defined else []) %}
-                    {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
-                    <tr>
-                        <td class="region-group"></td>
-                        <td class="region-name">전국</td>
-                        <td>{{ val_thousand(nationwide_row.prev_prev_prev_value if nationwide_row and nationwide_row.prev_prev_prev_value is defined else none) }}</td>
-                        <td>{{ val_thousand(nationwide_row.prev_prev_value if nationwide_row and nationwide_row.prev_prev_value is defined else none) }}</td>
-                        <td>{{ val_thousand(nationwide_row.prev_value if nationwide_row and nationwide_row.prev_value is defined else none) }}</td>
-                        <td>{{ val_thousand(nationwide_row.value if nationwide_row and nationwide_row.value is defined else none) }}</td>
-                        <td>{{ val_thousand(nationwide_row.age_20_29 if nationwide_row and nationwide_row.age_20_29 is defined else none) }}</td>
-                        <td>{{ val_thousand(nationwide_row.age_other if nationwide_row and nationwide_row.age_other is defined else none) }}</td>
-                    </tr>
-                    {% for group in region_groups %}
+                        ] %}
+                        {% set data_rows = table_df if table_df is defined else (table_data if table_data is defined
+                        else []) %}
+                        {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first)
+                        %}
+                        <tr>
+                            <td class="region-group"></td>
+                            <td class="region-name">전국</td>
+                            <td>{{ val_thousand(nationwide_row.prev_prev_prev_value if nationwide_row and
+                                nationwide_row.prev_prev_prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(nationwide_row.prev_prev_value if nationwide_row and
+                                nationwide_row.prev_prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(nationwide_row.prev_value if nationwide_row and
+                                nationwide_row.prev_value is defined else none) }}</td>
+                            <td>{{ val_thousand(nationwide_row.value if nationwide_row and nationwide_row.value is
+                                defined else none) }}</td>
+                            <td>{{ val_thousand(nationwide_row.age_20_29 if nationwide_row and nationwide_row.age_20_29
+                                is defined else none) }}</td>
+                            <td>{{ val_thousand(nationwide_row.age_other if nationwide_row and nationwide_row.age_other
+                                is defined else none) }}</td>
+                        </tr>
+                        {% for group in region_groups %}
                         {% for region_name in group.regions %}
                         {% set row = (data_rows | selectattr('region_name', 'equalto', region_name) | list | first) %}
-                        {% set region_label = row.region_display if row and row.region_display is defined and row.region_display else region_name %}
+                        {% set region_label = row.region_display if row and row.region_display is defined and
+                        row.region_display else region_name %}
                         <tr>
                             {% if loop.first %}
                             <td class="region-group" rowspan="{{ group.regions|length }}">{{ group.name }}</td>
                             {% endif %}
-                            <td class="region-name">{{ region_label }}</td>
-                            <td>{{ val_thousand(row.prev_prev_prev_value if row and row.prev_prev_prev_value is defined else none) }}</td>
-                            <td>{{ val_thousand(row.prev_prev_value if row and row.prev_prev_value is defined else none) }}</td>
+                            <td class="region-name">{{ region_name }}</td>
+                            <td>{{ val_thousand(row.prev_prev_prev_value if row and row.prev_prev_prev_value is defined
+                                else none) }}</td>
+                            <td>{{ val_thousand(row.prev_prev_value if row and row.prev_prev_value is defined else none)
+                                }}</td>
                             <td>{{ val_thousand(row.prev_value if row and row.prev_value is defined else none) }}</td>
                             <td>{{ val_thousand(row.value if row and row.value is defined else none) }}</td>
                             <td>{{ val_thousand(row.age_20_29 if row and row.age_20_29 is defined else none) }}</td>
                             <td>{{ val_thousand(row.age_other if row and row.age_other is defined else none) }}</td>
                         </tr>
                         {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <div class="footnote">1) {{ report_info.migration_note if report_info and report_info.migration_note else "순이동 산식" }}</div>
-            <div class="footnote">2) {{ report_info.age_other_note if report_info and report_info.age_other_note else "그 외 연령층" }}</div>
-            
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="footnote">1) {{ report_info.migration_note if report_info and report_info.migration_note
+                    else "순이동 산식" }}</div>
+                <div class="footnote">2) {{ report_info.age_other_note if report_info and report_info.age_other_note
+                    else "그 외 연령층" }}</div>
+
         </div>
     </div>
 </body>
+
 </html>

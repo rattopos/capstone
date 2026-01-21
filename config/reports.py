@@ -252,9 +252,16 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '전문소매점': '전문소매점',
             '무점포 소매': '무점포소매'
         },
-        'aggregation_structure': {'total_code': 'A0', 'sheet': 'C(소비)집계'},
+        'aggregation_structure': {
+            'total_code': 'A0', 
+            'sheet': 'C(소비)집계',
+            'region_name_col': 2,
+            'industry_name_col': 6,
+            'data_start_row': 0
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name'],
-        'value_type': 'change_rate',  # 이미 계산된 증감률 직접 읽기
+        'data_start_row': 0,
+        'industry_name_col': 6,
         'analysis_sheet': 'C 분석'
     },
     {
@@ -317,7 +324,15 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'price',
         'class_name': 'PriceTrendGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '00', 'sheet': 'E(품목성질물가)집계'},
+        'aggregation_structure': {
+            'total_code': '총지수', 
+            'sheet': 'E(품목성질물가)집계',
+            'region_name_col': 0,
+            'industry_name_col': 3,
+            'data_start_row': 0
+        },
+        'data_start_row': 0,
+        'industry_name_col': 3,
         'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
@@ -397,7 +412,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'sheet': 'I(순인구이동)집계',
             'region_name_col': 4,  # E열(0-based) - 지역 이름
             'industry_name_col': 7,  # H열(0-based) - 연령별
-            'data_start_row': 3  # 데이터 시작 행 (헤더가 3행, 그 다음부터 데이터)
+            'data_start_row': 0  # 데이터 시작 행 (range가 3행부터 시작하므로 0)
         },
         'aggregation_columns': {
             'target_col': 25,  # 2025 3/4 (Z열)
