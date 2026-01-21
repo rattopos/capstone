@@ -66,6 +66,9 @@ class UnifiedReportGenerator(BaseGenerator):
         self.industry_code_col = None
         self.industry_name_col = None
         self.data_start_row = None
+        
+        # 경고 메시지 중복 출력 방지 플래그
+        self._warned_industry_col_missing = False
         self.df_analysis = None
         self.df_aggregation = None
         self.df_aggregation_raw = None
@@ -213,10 +216,10 @@ class UnifiedReportGenerator(BaseGenerator):
                 print(f"[자동탐색] 데이터 시작 행 자동설정: {self.data_start_row}")
 
             if cur_year is not None and cur_q is not None:
-                # 최근 8분기 컬럼 자동 탐색 (현재 분기 포함)
+                # 최근 9분기 컬럼 자동 탐색 (현재 분기 포함, 2년 전 동분기까지 포함)
                 # 이를 통해 prev_q_col 등 테이블에서 요구하는 이전 분기 컬럼을 동적으로 확보
                 temp_year, temp_q = cur_year, cur_q
-                for _ in range(8):
+                for _ in range(9):
                     pat = f"{temp_year} {temp_q}/4"
                     key = self._format_quarter_key(temp_year, temp_q)
                     
@@ -774,6 +777,49 @@ class UnifiedReportGenerator(BaseGenerator):
             )
             return []
         
+        def _select_youth_rate(df_source: pd.DataFrame, region_name: str, target_col_idx: int) -> Optional[float]:
+            """실업률/고용률에서 청년층 데이터 추출 (고용률: 20-29세, 실업률: 15-29세)"""
+            if df_source is None or self.report_type not in ['employment', 'unemployment']:
+                return None
+            
+            if self.data_start_row is None:
+                start_row = 0
+            else:
+                start_row = max(self.data_start_row, 0)
+            
+            if start_row < len(df_source):
+                local_df = df_source.iloc[start_row:].copy()
+            else:
+                local_df = df_source.copy()
+            
+            # 지역명 컬럼 (0번)과 연령계층 컬럼 (1번)
+            region_col = 0
+            age_col = 1
+            
+            # 고용률은 20-29세, 실업률은 15-29세 사용
+            if self.report_type == 'employment':
+                age_pattern = '20.*29'
+            else:  # unemployment
+                age_pattern = '15.*29'
+            
+            try:
+                # 지역명과 연령계층 조건으로 필터링
+                youth_filter = local_df[
+                    (local_df.iloc[:, region_col].astype(str).str.strip() == region_name) &
+                    (local_df.iloc[:, age_col].astype(str).str.strip().str.contains(age_pattern, regex=True, na=False))
+                ]
+                
+                if youth_filter.empty:
+                    return None
+                
+                youth_row = youth_filter.iloc[0]
+                if target_col_idx is not None and target_col_idx < len(youth_row):
+                    return self.safe_float(youth_row.iloc[target_col_idx], None)
+            except Exception as e:
+                print(f"[{self.config['name']}] ⚠️ {region_name} 청년층 데이터 추출 실패: {e}")
+            
+            return None
+
         for region in regions:
             row = _select_region_total(df, region)
             if row is None:
@@ -781,6 +827,9 @@ class UnifiedReportGenerator(BaseGenerator):
                 continue
 
             analysis_row = _select_region_total(self.df_analysis, region) if use_analysis_rates else None
+            
+            # 청년층(15-29세) 데이터 추출 (실업률/고용률만)
+            youth_rate = _select_youth_rate(df, region, self.target_col)
             
             if self.target_col is None or self.prev_y_col is None:
                 print(
@@ -969,7 +1018,8 @@ class UnifiedReportGenerator(BaseGenerator):
                     'quarterly_values': quarterly_values,
                     'quarterly_growth_rates': quarterly_growth_rates,
                     'rate_quarterly_keys': self.analysis_quarterly_keys if use_analysis_rates else None,
-                    'rate_quarterly_values': rate_quarterly_values if use_analysis_rates else None
+                    'rate_quarterly_values': rate_quarterly_values if use_analysis_rates else None,
+                    'youth_rate': round(youth_rate, 1) if youth_rate is not None else None
                 }
 
             table_data.append(row_data)
@@ -1061,7 +1111,10 @@ class UnifiedReportGenerator(BaseGenerator):
         # 산업명 컬럼 찾기 (동적으로 찾은 값 사용)
         if self.industry_name_col is None:
             if self.report_type in ['employment', 'unemployment']:
-                print(f"[{self.config['name']}] ⚠️ 산업명 컬럼을 찾을 수 없지만, 고용률/실업률은 산업명이 선택적이므로 계속 진행합니다.")
+                # 경고 메시지 중복 출력 방지
+                if not self._warned_industry_col_missing:
+                    print(f"[{self.config['name']}] ⚠️ 산업명 컬럼을 찾을 수 없지만, 고용률/실업률은 산업명이 선택적이므로 계속 진행합니다.")
+                    self._warned_industry_col_missing = True
                 industry_name_col = None
             else:
                 # 헤더로 못 찾은 경우 텍스트 비율 기반 추정 시도
@@ -1424,9 +1477,9 @@ class UnifiedReportGenerator(BaseGenerator):
 
         def _index_labels(year: Optional[int], quarter: Optional[int]) -> List[str]:
             if self.report_type == 'employment':
-                age_label = "15-29세"
+                age_label = "20-29세"  # 고용률은 20-29세 사용
             elif self.report_type == 'unemployment':
-                age_label = "15-29세"
+                age_label = "15-29세"  # 실업률은 15-29세 사용
             else:
                 age_label = "15-29세"
             if year is None or quarter is None:
@@ -1450,13 +1503,30 @@ class UnifiedReportGenerator(BaseGenerator):
                 self._format_quarter_key(self.year, self.quarter),
             ]
 
+        def _normalize_quarter_key(key: str) -> str:
+            """분기 키를 정규화 (예: '2023_3Q' -> '2023 3/4')"""
+            if not key:
+                return key
+            key = str(key).strip()
+            # '2023_3Q' -> '2023 3/4' 형식 변환
+            import re
+            match = re.match(r'(\d{4})_(\d)Q', key)
+            if match:
+                return f"{match.group(1)} {match.group(2)}/4"
+            # '2023 3/4' 형식은 그대로 반환
+            return key
+
         def _map_quarter_values(keys: Any, values: Any) -> List[Optional[float]]:
             if not keys or not values:
                 return [None, None, None, None]
-            mapping = {k: v for k, v in zip(keys, values)}
+            # 키 정규화 후 매핑
+            normalized_mapping = {}
+            for k, v in zip(keys, values):
+                normalized_key = _normalize_quarter_key(k)
+                normalized_mapping[normalized_key] = v
             if not target_quarter_keys:
                 return [None, None, None, None]
-            return [mapping.get(k) for k in target_quarter_keys]
+            return [normalized_mapping.get(k) for k in target_quarter_keys]
 
         def _to_float(value: Any) -> Optional[float]:
             if value is None or value == '' or value == '-':
@@ -1717,7 +1787,9 @@ class UnifiedReportGenerator(BaseGenerator):
                 return {}
             if self.report_type in ['export', 'import']:
                 item.setdefault('amount', item.get('value'))
-                item.setdefault('change', item.get('change_rate'))
+                # change_rate 또는 growth_rate에서 change 값을 가져옴
+                change_val = item.get('change_rate') or item.get('growth_rate')
+                item.setdefault('change', change_val)
                 industries = item.get('industries')
                 if not isinstance(industries, list):
                     industries = [] if industries is None else [industries]
@@ -2398,52 +2470,221 @@ class RegionalReportGenerator(BaseGenerator):
     
     # 17개 시도 정보
     REGIONS = {
-        'region_seoul': {'code': '11', 'name': '서울', 'full_name': '서울특별시'},
-        'region_busan': {'code': '21', 'name': '부산', 'full_name': '부산광역시'},
-        'region_daegu': {'code': '22', 'name': '대구', 'full_name': '대구광역시'},
-        'region_incheon': {'code': '23', 'name': '인천', 'full_name': '인천광역시'},
-        'region_gwangju': {'code': '24', 'name': '광주', 'full_name': '광주광역시'},
-        'region_daejeon': {'code': '25', 'name': '대전', 'full_name': '대전광역시'},
-        'region_ulsan': {'code': '26', 'name': '울산', 'full_name': '울산광역시'},
-        'region_sejong': {'code': '29', 'name': '세종', 'full_name': '세종특별자치시'},
-        'region_gyeonggi': {'code': '31', 'name': '경기', 'full_name': '경기도'},
-        'region_gangwon': {'code': '32', 'name': '강원', 'full_name': '강원특별자치도'},
-        'region_chungbuk': {'code': '33', 'name': '충북', 'full_name': '충청북도'},
-        'region_chungnam': {'code': '34', 'name': '충남', 'full_name': '충청남도'},
-        'region_jeonbuk': {'code': '35', 'name': '전북', 'full_name': '전북특별자치도'},
-        'region_jeonnam': {'code': '36', 'name': '전남', 'full_name': '전라남도'},
-        'region_gyeongbuk': {'code': '37', 'name': '경북', 'full_name': '경상북도'},
-        'region_gyeongnam': {'code': '38', 'name': '경남', 'full_name': '경상남도'},
-        'region_jeju': {'code': '39', 'name': '제주', 'full_name': '제주특별자치도'},
+        'region_seoul': {'code': '11', 'name': '서울', 'full_name': '서울특별시', 'order': 1},
+        'region_busan': {'code': '21', 'name': '부산', 'full_name': '부산광역시', 'order': 2},
+        'region_daegu': {'code': '22', 'name': '대구', 'full_name': '대구광역시', 'order': 3},
+        'region_incheon': {'code': '23', 'name': '인천', 'full_name': '인천광역시', 'order': 4},
+        'region_gwangju': {'code': '24', 'name': '광주', 'full_name': '광주광역시', 'order': 5},
+        'region_daejeon': {'code': '25', 'name': '대전', 'full_name': '대전광역시', 'order': 6},
+        'region_ulsan': {'code': '26', 'name': '울산', 'full_name': '울산광역시', 'order': 7},
+        'region_sejong': {'code': '29', 'name': '세종', 'full_name': '세종특별자치시', 'order': 8},
+        'region_gyeonggi': {'code': '31', 'name': '경기', 'full_name': '경기도', 'order': 9},
+        'region_gangwon': {'code': '32', 'name': '강원', 'full_name': '강원특별자치도', 'order': 10},
+        'region_chungbuk': {'code': '33', 'name': '충북', 'full_name': '충청북도', 'order': 11},
+        'region_chungnam': {'code': '34', 'name': '충남', 'full_name': '충청남도', 'order': 12},
+        'region_jeonbuk': {'code': '35', 'name': '전북', 'full_name': '전북특별자치도', 'order': 13},
+        'region_jeonnam': {'code': '36', 'name': '전남', 'full_name': '전라남도', 'order': 14},
+        'region_gyeongbuk': {'code': '37', 'name': '경북', 'full_name': '경상북도', 'order': 15},
+        'region_gyeongnam': {'code': '38', 'name': '경남', 'full_name': '경상남도', 'order': 16},
+        'region_jeju': {'code': '39', 'name': '제주', 'full_name': '제주특별자치도', 'order': 17},
+    }
+    
+    # 부문별 report_type 매핑
+    SECTOR_MAPPING = {
+        'mining': 'manufacturing',
+        'service': 'service',
+        'consumption': 'consumption',
+        'construction': 'construction',
+        'export': 'export',
+        'import': 'import',
+        'price': 'price',
+        'employment': 'employment',
+        'unemployment': 'unemployment',
+        'migration': 'migration',
     }
     
     def __init__(self, excel_path: str, year=None, quarter=None, excel_file=None):
         super().__init__(excel_path, year, quarter, excel_file)
+        # 부문별 generator 캐시
+        self._sector_generators = {}
+        self._sector_data_cache = {}
+    
+    def _get_sector_generator(self, sector_key: str) -> Optional['UnifiedReportGenerator']:
+        """부문별 generator 가져오기 (캐싱)"""
+        if sector_key in self._sector_generators:
+            return self._sector_generators[sector_key]
+        
+        report_type = self.SECTOR_MAPPING.get(sector_key)
+        if not report_type:
+            print(f"[지역경제동향] 알 수 없는 부문: {sector_key}")
+            return None
+        
+        try:
+            generator = UnifiedReportGenerator(
+                report_type, 
+                self.excel_path, 
+                year=self.year, 
+                quarter=self.quarter, 
+                excel_file=self.xl  # BaseGenerator에서 excel_file은 self.xl로 저장됨
+            )
+            self._sector_generators[sector_key] = generator
+            return generator
+        except Exception as e:
+            print(f"[지역경제동향] {sector_key} generator 생성 실패: {e}")
+            return None
+    
+    def _get_sector_table_data(self, sector_key: str) -> List[Dict[str, Any]]:
+        """부문별 테이블 데이터 가져오기 (캐싱)"""
+        if sector_key in self._sector_data_cache:
+            return self._sector_data_cache[sector_key]
+        
+        generator = self._get_sector_generator(sector_key)
+        if not generator:
+            return []
+        
+        try:
+            table_data = generator._extract_table_data_ssot()
+            self._sector_data_cache[sector_key] = table_data
+            return table_data
+        except Exception as e:
+            print(f"[지역경제동향] {sector_key} 데이터 추출 실패: {e}")
+            return []
+    
+    def _get_region_data_from_sector(self, sector_key: str, region_name: str) -> Optional[Dict[str, Any]]:
+        """특정 부문에서 특정 지역의 데이터 추출"""
+        table_data = self._get_sector_table_data(sector_key)
+        if not table_data:
+            return None
+        
+        # 지역명으로 필터링
+        for row in table_data:
+            row_region = row.get('region_name', row.get('region', ''))
+            if row_region == region_name:
+                return row
+        
+        return None
+    
+    def _format_value(self, value, default='-') -> str:
+        """값을 문자열로 포맷팅"""
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return default
+        try:
+            if isinstance(value, (int, float)):
+                return f"{value:.1f}" if value != int(value) else str(int(value))
+            return str(value)
+        except Exception:
+            return default
     
     def extract_all_data(self, region: Optional[str] = None) -> Dict[str, Any]:
         """시도별 모든 데이터 추출
         
+        Args:
+            region: 지역 키 (e.g., 'region_seoul') 또는 지역명 ('서울')
+        
         Returns:
             지역별 모든 데이터
         """
-        try:
-            # 이 generator는 섹션별로 다른 generator를 사용하므로,
-            # 전체 데이터를 한 번에 추출하지 않고 기본 구조만 반환
+        # 지역명 결정
+        if region and region in self.REGIONS:
+            region_name = self.REGIONS[region]['name']
+            region_info = self.REGIONS[region]
+        elif region:
+            # 직접 지역명이 전달된 경우
+            region_name = region
+            region_info = {'code': '00', 'name': region, 'full_name': region, 'order': 0}
+            # REGIONS에서 찾기
+            for key, info in self.REGIONS.items():
+                if info['name'] == region:
+                    region_info = info
+                    break
+        else:
+            region_name = '서울'  # 기본값
+            region_info = self.REGIONS['region_seoul']
+        
+        print(f"[지역경제동향] {region_name} 데이터 추출 시작...")
+        
+        # 각 부문별 데이터 추출
+        mining_data = self._get_region_data_from_sector('mining', region_name)
+        service_data = self._get_region_data_from_sector('service', region_name)
+        consumption_data = self._get_region_data_from_sector('consumption', region_name)
+        construction_data = self._get_region_data_from_sector('construction', region_name)
+        export_data = self._get_region_data_from_sector('export', region_name)
+        import_data = self._get_region_data_from_sector('import', region_name)
+        price_data = self._get_region_data_from_sector('price', region_name)
+        employment_data = self._get_region_data_from_sector('employment', region_name)
+        unemployment_data = self._get_region_data_from_sector('unemployment', region_name)
+        migration_data = self._get_region_data_from_sector('migration', region_name)
+        
+        # 상단 생산 표 데이터 구성 (한 행만)
+        # 실제 데이터 키: value (지수/금액), change_rate (증감률)
+        table_row = {
+            'region_name': region_name,
+            'mining_index': self._format_value(mining_data.get('value') if mining_data else None),
+            'mining_change': self._format_value(mining_data.get('change_rate') if mining_data else None),
+            'service_index': self._format_value(service_data.get('value') if service_data else None),
+            'service_change': self._format_value(service_data.get('change_rate') if service_data else None),
+            'retail_index': self._format_value(consumption_data.get('value') if consumption_data else None),
+            'retail_change': self._format_value(consumption_data.get('change_rate') if consumption_data else None),
+            'export_amount': self._format_value(export_data.get('value') if export_data else None),
+            'export_change': self._format_value(export_data.get('change_rate') if export_data else None),
+            'price_index': self._format_value(price_data.get('value') if price_data else None),
+            'price_change': self._format_value(price_data.get('change_rate') if price_data else None),
+            'employment_rate': self._format_value(employment_data.get('value') if employment_data else None),
+            'employment_change': self._format_value(employment_data.get('change_rate') if employment_data else None),
+        }
+        
+        # 하단 부문별 표 데이터 구성 (sections)
+        # 실제 데이터 키: value (지수/금액), change_rate (증감률)
+        def _make_section_data(data: Optional[Dict], value_key: str = 'value', change_key: str = 'change_rate') -> Dict[str, Any]:
+            """부문별 섹션 데이터 생성"""
+            if not data:
+                return {
+                    'table': {
+                        'periods': [f'{self.year}. {self.quarter}/4' if self.year and self.quarter else '현 기간'],
+                        'data': [{'values': ['-', '-']}]
+                    },
+                    'narrative': []
+                }
+            
+            current_value = self._format_value(data.get(value_key))
+            change_value = self._format_value(data.get(change_key))
+            
             return {
-                'report_info': {'year': self.year, 'quarter': self.quarter},
-                'nationwide_data': None,
-                'regional_data': {},
-                'table_data': [],
-                'sections': {},
+                'table': {
+                    'periods': [f'{self.year}. {self.quarter}/4' if self.year and self.quarter else '현 기간'],
+                    'data': [{'values': [current_value, change_value]}]
+                },
+                'narrative': []  # 나레이션은 별도 생성 필요
             }
-        except Exception as e:
-            print(f"[지역경제동향] [경고] 시도별 데이터 추출 중 오류: {e}")
-            return {
-                'report_info': {'year': self.year, 'quarter': self.quarter},
-                'nationwide_data': None,
-                'regional_data': {},
-                'table_data': [],
-            }
+        
+        sections = {
+            'mining': _make_section_data(mining_data),
+            'service': _make_section_data(service_data),
+            'consumption': _make_section_data(consumption_data),
+            'construction': _make_section_data(construction_data),
+            'export': _make_section_data(export_data),
+            'import': _make_section_data(import_data),
+            'employment': _make_section_data(employment_data),
+            'unemployment': _make_section_data(unemployment_data),
+            'price': _make_section_data(price_data),
+            'migration': _make_section_data(migration_data),
+        }
+        
+        print(f"[지역경제동향] {region_name} 데이터 추출 완료")
+        print(f"  - 광공업: {table_row['mining_index']} ({table_row['mining_change']}%)")
+        print(f"  - 서비스업: {table_row['service_index']} ({table_row['service_change']}%)")
+        print(f"  - 소매판매: {table_row['retail_index']} ({table_row['retail_change']}%)")
+        
+        return {
+            'report_info': {'year': self.year, 'quarter': self.quarter},
+            'region_info': region_info,
+            'region_name': region_name,
+            'nationwide_data': None,
+            'regional_data': {},
+            'table_data': [table_row],  # 상단 표 데이터 (한 행)
+            'table_df': [table_row],    # 템플릿 호환성
+            'sections': sections,        # 하단 부문별 표 및 나레이션
+        }
     
     def render_html(self, region: str, template_path: str) -> str:
         """시도별 HTML 보도자료 렌더링
@@ -2456,6 +2697,16 @@ class RegionalReportGenerator(BaseGenerator):
             렌더링된 HTML 문자열
         """
         from jinja2 import Environment, FileSystemLoader
+        
+        # 필터 임포트
+        try:
+            from utils.filters import format_value, is_missing
+            from utils.text_utils import get_josa, get_terms, get_comparative_terms
+        except ImportError:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from utils.filters import format_value, is_missing
+            from utils.text_utils import get_josa, get_terms, get_comparative_terms
         
         # 데이터 추출
         data = self.extract_all_data(region)
@@ -2472,22 +2723,33 @@ class RegionalReportGenerator(BaseGenerator):
         
         # Jinja2 환경 설정
         env = Environment(loader=FileSystemLoader(str(template_path_obj.parent)))
+        
+        # 필터 등록
+        env.filters['format_value'] = format_value
+        env.filters['is_missing'] = is_missing
+        env.filters['josa'] = get_josa
+        
         template = env.get_template(template_path_obj.name)
         
-        # 데이터에 지역 정보 추가
-        if region in self.REGIONS:
-            data['region_info'] = self.REGIONS[region]
-            data['region_name'] = self.REGIONS[region]['name']
-        else:
-            data['region_info'] = {'code': '00', 'name': region, 'full_name': region}
-            data['region_name'] = region
+        # 유틸리티 함수 데이터에 추가
+        data['get_terms'] = get_terms
+        data['get_comparative_terms'] = get_comparative_terms
+        
+        # 데이터에 지역 정보 추가 (extract_all_data에서 이미 설정됨)
+        if 'region_info' not in data:
+            if region in self.REGIONS:
+                data['region_info'] = self.REGIONS[region]
+                data['region_name'] = self.REGIONS[region]['name']
+            else:
+                data['region_info'] = {'code': '00', 'name': region, 'full_name': region, 'order': 0}
+                data['region_name'] = region
         
         # report_info 추가 (regional templates에 필요)
         if 'report_info' not in data:
             data['report_info'] = {
                 'year': self.year,
                 'quarter': self.quarter,
-                'name': self.config.get('name', '지역경제동향') if hasattr(self, 'config') else '지역경제동향'
+                'name': '지역경제동향'
             }
         
         # regional_economy_by_region_template.html 호환 기본값

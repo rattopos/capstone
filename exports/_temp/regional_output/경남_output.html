@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if report_info.year is defined and report_info.quarter is defined %}{{ report_info.year }}년 {{ report_info.quarter }}분기{% else %}[연도/분기 입력 필요]{% endif %} {{ region_name | default("[시도]") }} 지역경제동향</title>
+    <title>2025년 3분기 경남 지역경제동향</title>
     <style>
         * {
             margin: 0;
@@ -98,9 +98,9 @@
     </style>
 </head>
 <body>
-    {% set region_label = region_name | default(region_info.name if region_info is defined else "[시도]") %}
-    <div class="page-title">{{ region_info.order ~ ". " if region_info is defined and region_info.order is defined else "" }}{{ region_label }}</div>
-    <div class="page-subtitle">{% if report_info.year is defined and report_info.quarter is defined %}{{ report_info.year }}년 {{ report_info.quarter }}분기{% else %}<span class="placeholder">[연도/분기]</span>{% endif %} 지역경제동향</div>
+    
+    <div class="page-title">16. 경남</div>
+    <div class="page-subtitle">2025년 3분기 지역경제동향</div>
 
     <!-- 생산 -->
     <div class="section-title">□ 생산</div>
@@ -132,24 +132,24 @@
                 </tr>
             </thead>
             <tbody>
-            {% set data_rows = table_df if table_df is defined else (table_data if table_data is defined else []) %}
-            {% for row in data_rows %}
+            
+            
                 <tr>
-                    <td class="region-cell">{{ row.region_name }}</td>
-                    <td class="value-cell">{{ row.mining_index }}</td>
-                    <td class="value-cell">{{ row.mining_change }}</td>
-                    <td class="value-cell">{{ row.service_index }}</td>
-                    <td class="value-cell">{{ row.service_change }}</td>
-                    <td class="value-cell">{{ row.retail_index }}</td>
-                    <td class="value-cell">{{ row.retail_change }}</td>
-                    <td class="value-cell">{{ row.export_amount }}</td>
-                    <td class="value-cell">{{ row.export_change }}</td>
-                    <td class="value-cell">{{ row.price_index }}</td>
-                    <td class="value-cell">{{ row.price_change }}</td>
-                    <td class="value-cell">{{ row.employment_rate }}</td>
-                    <td class="value-cell">{{ row.employment_change }}</td>
+                    <td class="region-cell">경남</td>
+                    <td class="value-cell">118.5</td>
+                    <td class="value-cell">3</td>
+                    <td class="value-cell">110</td>
+                    <td class="value-cell">-0.3</td>
+                    <td class="value-cell">102.5</td>
+                    <td class="value-cell">2.3</td>
+                    <td class="value-cell">118</td>
+                    <td class="value-cell">-5.5</td>
+                    <td class="value-cell">116.9</td>
+                    <td class="value-cell">2.2</td>
+                    <td class="value-cell">63.6</td>
+                    <td class="value-cell">1.5</td>
                 </tr>
-            {% endfor %}
+            
             </tbody>
         </table>
     </div>
@@ -159,12 +159,10 @@
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set construction_texts = sections.construction.narrative if sections and sections.construction is defined and sections.construction.narrative is defined else [] %}
-                {% if construction_texts and construction_texts|length > 0 %}
-                    {{ construction_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[건설 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
     </div>
@@ -175,34 +173,28 @@
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set export_texts = sections.export.narrative if sections and sections.export is defined and sections.export.narrative is defined else [] %}
-                {% if export_texts and export_texts|length > 0 %}
-                    {{ export_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[수출 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set import_texts = sections.import.narrative if sections and sections.import is defined and sections.import.narrative is defined else [] %}
-                {% if import_texts and import_texts|length > 0 %}
-                    {{ import_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[수입 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set price_texts = sections.price.narrative if sections and sections.price is defined and sections.price.narrative is defined else [] %}
-                {% if price_texts and price_texts|length > 0 %}
-                    {{ price_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[소비자물가 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
     </div>
@@ -213,23 +205,19 @@
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set employment_texts = sections.employment.narrative if sections and sections.employment is defined and sections.employment.narrative is defined else [] %}
-                {% if employment_texts and employment_texts|length > 0 %}
-                    {{ employment_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[고용 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
         <div class="bullet">
             <span class="bullet-icon">○</span>
             <span class="bullet-text">
-                {% set migration_texts = sections.migration.narrative if sections and sections.migration is defined and sections.migration.narrative is defined else [] %}
-                {% if migration_texts and migration_texts|length > 0 %}
-                    {{ migration_texts[0] }}
-                {% else %}
+                
+                
                     <span class="placeholder">[인구이동 나레이션]</span>
-                {% endif %}
+                
             </span>
         </div>
     </div>
@@ -242,32 +230,93 @@
             <thead>
                 <tr>
                     <th style="width: 22%;">부문</th>
-                    <th style="width: 39%;">{% if sections and sections.mining is defined and sections.mining.table is defined and sections.mining.table.periods is defined and sections.mining.table.periods|length > 0 %}{{ sections.mining.table.periods[0] }}{% else %}현 기간{% endif %}</th>
+                    <th style="width: 39%;">2025. 3/4</th>
                     <th style="width: 39%;">전년동기대비(%)</th>
                 </tr>
             </thead>
             <tbody>
-                {% set sector_order = [
-                    ('광공업생산', 'mining'),
-                    ('서비스업생산', 'service'),
-                    ('소비', 'consumption'),
-                    ('건설', 'construction'),
-                    ('수출', 'export'),
-                    ('수입', 'import'),
-                    ('고용률', 'employment'),
-                    ('실업률', 'unemployment'),
-                    ('소비자물가', 'price'),
-                    ('순인구이동', 'migration')
-                ] %}
-                {% for label, key in sector_order %}
-                {% set section = sections[key] if sections and sections[key] is defined else none %}
-                {% set row = section.table.data[0] if section and section.table is defined and section.table.data is defined and section.table.data|length > 0 else none %}
+                
+                
+                
+                
                 <tr>
-                    <td>{{ label }}</td>
-                    <td>{{ row['values'][0] if row and row['values'] is defined and row['values']|length > 0 else '-' }}</td>
-                    <td>{{ row['values'][1] if row and row['values'] is defined and row['values']|length > 1 else '-' }}</td>
+                    <td>광공업생산</td>
+                    <td>118.5</td>
+                    <td>3</td>
                 </tr>
-                {% endfor %}
+                
+                
+                
+                <tr>
+                    <td>서비스업생산</td>
+                    <td>110</td>
+                    <td>-0.3</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>소비</td>
+                    <td>102.5</td>
+                    <td>2.3</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>건설</td>
+                    <td>213.4</td>
+                    <td>11.6</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>수출</td>
+                    <td>118</td>
+                    <td>-5.5</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>수입</td>
+                    <td>61.5</td>
+                    <td>4.8</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>고용률</td>
+                    <td>63.6</td>
+                    <td>1.5</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>실업률</td>
+                    <td>1.6</td>
+                    <td>-0.2</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>소비자물가</td>
+                    <td>116.9</td>
+                    <td>2.2</td>
+                </tr>
+                
+                
+                
+                <tr>
+                    <td>순인구이동</td>
+                    <td>-2834</td>
+                    <td>-</td>
+                </tr>
+                
             </tbody>
         </table>
         <div class="note">※ 그래프는 제외하고 나레이션과 표만 표시합니다.</div>

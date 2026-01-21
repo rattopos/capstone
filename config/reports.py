@@ -183,6 +183,15 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '비금속광물 광업; 연료용 제외': '비금속광물광업',
         },
         'aggregation_structure': {'total_code': 'BCD', 'sheet': 'A(광공업생산)집계'},
+        'aggregation_columns': {
+            'target_col': 26,  # AA열(0-based) - 2025 3/4
+            'prev_y_col': 22,  # W열(0-based) - 2024 3/4
+            'prev_prev_y_col': 18,  # S열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 14,  # O열(0-based) - 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 14, '2023 3/4': 18, '2024 3/4': 22, '2025 2/4': 25, '2025 3/4': 26
+            }
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
@@ -353,12 +362,12 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'data_start_row': 3
         },
         'aggregation_columns': {
-            'target_col': 21,  # V열(0-based)
-            'prev_y_col': 17,  # R열(0-based)
-            'prev_prev_y_col': 13,  # N열(0-based)
-            'prev_prev_prev_y_col': 9,  # J열(0-based)
+            'target_col': 21,  # V열(0-based) - 2025 3/4
+            'prev_y_col': 17,  # R열(0-based) - 2024 3/4
+            'prev_prev_y_col': 13,  # N열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 9,  # J열(0-based) - 2022 3/4
             'quarterly_cols': {
-                '2023_3Q': 13, '2024_3Q': 17, '2025_3Q': 21
+                '2022 3/4': 9, '2023 3/4': 13, '2024 3/4': 17, '2025 2/4': 20, '2025 3/4': 21
             }
         },
         'aggregation_range': {'start_row': 3, 'end_row': 111, 'start_col': 'A', 'end_col': 'V'},
@@ -383,12 +392,12 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'data_start_row': 80
         },
         'aggregation_columns': {
-            'target_col': 19,  # T열(0-based)
-            'prev_y_col': 15,  # P열(0-based)
-            'prev_prev_y_col': 11,  # L열(0-based)
-            'prev_prev_prev_y_col': 7,  # H열(0-based)
+            'target_col': 19,  # T열(0-based) - 2025 3/4
+            'prev_y_col': 15,  # P열(0-based) - 2024 3/4
+            'prev_prev_y_col': 11,  # L열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 7,  # H열(0-based) - 2022 3/4
             'quarterly_cols': {
-                '2023_3Q': 11, '2024_3Q': 15, '2025_3Q': 19
+                '2022 3/4': 7, '2023 3/4': 11, '2024 3/4': 15, '2025 2/4': 18, '2025 3/4': 19
             }
         },
         'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},

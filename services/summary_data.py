@@ -847,283 +847,139 @@ def _extract_employment_from_aggregate(xl, config, regions):
 
 
 def _extract_chart_data(xl, sheet_name, is_trade=False, is_employment=False, year=None, quarter=None):
-    """차트용 데이터 추출 (분석 시트 우선, 없거나 비어있으면 집계 시트 사용)"""
-
-    # === table_locations/reports 기반 config 적용 ===
-    from config.reports import SECTOR_REPORTS
-    from config.table_locations import load_table_locations
+    """차트용 데이터 추출 (분석 시트 기반)
+    
+    각 분석 시트에서 지역별 증감률 데이터를 추출합니다.
+    시트별 컬럼 매핑:
+    - A 분석 (광공업): 지역(3), 분류단계(4), 2025 3/4 증감률(21)
+    - B 분석 (서비스업): 지역(3), 분류단계(4), 2025 3/4 증감률(20)
+    - C 분석 (소비): 지역(3), 분류단계(4), 2025 3/4 증감률(20)
+    - G 분석 (수출): 지역(3), 분류단계(4), 2025 3/4 증감률(22)
+    - E(품목성질물가)분석 (물가): 지역(3), 분류단계(4), 2025 3/4 증감률(16)
+    - D(고용률)분석 (고용률): 지역(3), 분류단계(4), 2025 3/4 증감률(18)
+    """
+    import pandas as pd
+    
     regions = VALID_REGIONS.copy()
     excel_path = _get_excel_path(xl)
+    
+    # 캐시된 데이터 확인
     report_id = SHEET_REPORT_ID_MAP.get(sheet_name)
-    cached = None
     if report_id and year is not None and quarter is not None:
         cached = get_sector_data(excel_path, year, quarter, report_id)
-    if cached:
-        return _build_chart_data_from_sector_cache(cached, is_trade=is_trade, is_employment=is_employment)
-
-    # SECTOR_REPORTS에서 해당 sheet의 config 찾기
-    sector_config = None
-    for config in SECTOR_REPORTS:
-        if config.get('sheet') == sheet_name or config.get('aggregation_structure', {}).get('sheet') == sheet_name:
-            sector_config = config
-            break
-    if not sector_config:
-        raise ValueError(f"[table_locations] 시트 설정을 찾을 수 없습니다: {sheet_name}. 반드시 데이터를 찾아야 합니다.")
-
-    agg_struct = sector_config.get('aggregation_structure', {})
-    agg_range = sector_config.get('aggregation_range', None)
-    sheet_to_read = agg_struct.get('sheet', sheet_name)
-    # pandas로 범위 추출
-    import pandas as pd
-    df = None
-    if sheet_to_read:
-        try:
-            df_full = pd.read_excel(excel_path, sheet_name=sheet_to_read, header=None)
-            if agg_range:
-                from openpyxl.utils import column_index_from_string
-                def _col_to_index(col_value):
-                    if col_value is None:
-                        return None
-                    if isinstance(col_value, int):
-                        return col_value
-                    if isinstance(col_value, str) and col_value.strip():
-                        return column_index_from_string(col_value.strip().upper()) - 1
-                    return None
-                row_start = max((agg_range.get('start_row', 1) - 1), 0)
-                row_end = agg_range.get('end_row', len(df_full))
-                col_start = _col_to_index(agg_range.get('start_col'))
-                col_end = _col_to_index(agg_range.get('end_col'))
-                if col_end is not None:
-                    col_end += 1
-                df = df_full.iloc[row_start:row_end, col_start:col_end].copy()
-            else:
-                df = df_full.copy()
-        except Exception as e:
-            raise ValueError(f"[table_locations] 표 추출 실패: {sheet_to_read}, {agg_range}, {e}")
+        if cached:
+            return _build_chart_data_from_sector_cache(cached, is_trade=is_trade, is_employment=is_employment)
+    
+    # 시트별 컬럼 매핑 (컬럼 인덱스: 지역명, 분류단계, 증감률)
+    # 각 시트의 실제 구조에 맞게 매핑
+    SHEET_COLUMN_MAP = {
+        'A 분석': {'region_col': 3, 'division_col': 4, 'change_col': 21, 'total_code': '0'},
+        'B 분석': {'region_col': 3, 'division_col': 4, 'change_col': 20, 'total_code': '0'},
+        'C 분석': {'region_col': 3, 'division_col': 4, 'change_col': 20, 'total_code': '0'},
+        'G 분석': {'region_col': 3, 'division_col': 4, 'change_col': 22, 'total_code': '0'},
+        'E(품목성질물가)분석': {'region_col': 0, 'division_col': 1, 'change_col': 16, 'total_code': '0'},
+        'D(고용률)분석': {'region_col': 2, 'division_col': 3, 'change_col': 18, 'total_code': '0'},
+    }
+    
+    config = SHEET_COLUMN_MAP.get(sheet_name)
+    if not config:
+        raise ValueError(f"지원하지 않는 시트입니다: {sheet_name}")
+    
+    region_col = config['region_col']
+    division_col = config['division_col']
+    change_col = config['change_col']
+    total_code = config['total_code']
+    
+    # 시트 데이터 읽기 (분석 시트는 이미 계산된 값이므로 data_only=False로 읽음)
+    try:
+        # xl이 ExcelFile이면 직접 읽고, 그렇지 않으면 경로로 읽음
+        if isinstance(xl, pd.ExcelFile):
+            df = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        else:
+            df = pd.read_excel(excel_path, sheet_name=sheet_name, header=None)
+    except Exception as e:
+        raise ValueError(f"시트 읽기 실패: {sheet_name}, {e}")
+    
     if df is None or df.empty:
-        raise ValueError(f"[table_locations] 추출된 표 데이터가 없습니다: {sheet_to_read}, {agg_range}")
-
-    # 헤더 포함 여부에 따라 첫 행을 컬럼명으로 지정
-    if sector_config.get('header_included') and not df.empty:
-        try:
-            df.columns = df.iloc[0].tolist()
-            df = df.iloc[1:].reset_index(drop=True)
-        except Exception as e:
-            print(f"[WARNING] 헤더 변환 실패: {e}")
-
-    # 전국/지역별 change_rate 등 주요 값 추출 (예시: '전국' 행의 '증감률' 컬럼)
-    # 실제 프로젝트별로 컬럼명/구조가 다를 수 있으므로, 여기서는 예시로 '전국' 행의 첫 번째 float 컬럼을 change_rate로 사용
-    nationwide_row = None
+        raise ValueError(f"시트 데이터가 비어있습니다: {sheet_name}")
+    
+    # 결과 변수 초기화
+    nationwide = {'index': 0.0, 'change': 0.0, 'rate': 0.0, 'amount': 0}
+    region_changes = {}
+    increase_regions = []
+    decrease_regions = []
+    chart_data = []
+    nationwide_change_set = False
+    
+    # 데이터 행 순회 (헤더 스킵: 처음 3행)
     for i, row in df.iterrows():
-        region_val = str(row[0]).strip() if not pd.isna(row[0]) else ''
-        if region_val == '전국':
-            nationwide_row = row
-            break
-    change_rate = None
-    if nationwide_row is not None:
-        for v in nationwide_row:
-            try:
-                fval = float(v)
-                change_rate = fval
-                break
-            except Exception:
+        if i < 3:  # 헤더 행 스킵
+            continue
+        try:
+            region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
+            division = str(row[division_col]).strip() if pd.notna(row[division_col]) else ''
+            
+            # 총지수/합계 행만 처리 (분류단계 = 0)
+            if division != total_code:
                 continue
-    if change_rate is None:
-        raise ValueError(f"[table_locations] 전국 change_rate를 추출할 수 없습니다. 반드시 지정된 범위에서 추출해야 합니다.")
-
-    # 결과 dict 예시 (실제 템플릿/데이터 구조에 맞게 확장 필요)
-
-        
-        nationwide_change_set = False  # 전국 증감률이 설정되었는지 추적
-        
-        for i, row in df.iterrows():
-            try:
-                region = str(row[region_col]).strip() if pd.notna(row[region_col]) else ''
-                
-                # 총지수 행인지 확인
-                is_total_row = False
-                if code_col is not None:
-                    code = str(row[code_col]).strip() if pd.notna(row[code_col]) else ''
-                    is_total_row = (code == total_code)
-                elif division_col is not None:
-                    division = str(row[division_col]).strip() if pd.notna(row[division_col]) else ''
-                    is_total_row = (division == total_code)
-                
-                if is_total_row:
-                    # 유효한 숫자 값인지 확인
-                    change_val = None
-                    if change_col < len(row):
-                        change_val = safe_float(row[change_col], None)
-                        if change_val is not None:
-                            change_val = round(change_val, 1)
-                    
-                    if region == '전국':
-                        # 첫 번째 유효한 전국 값만 사용
-                        if not nationwide_change_set and change_val is not None:
-                            nationwide['change'] = change_val
-                            nationwide_change_set = True
-                    elif region in regions and change_val is not None:
-                        # 첫 번째 유효한 지역 값만 사용
-                        if region not in region_changes:
-                            region_changes[region] = change_val
-            except:
-                continue
-        
-        # 집계 시트에서 지수/고용률 값 추출
-        region_indices = {}
-        
-        if is_employment and 'rate_sheet' in config:
-            # 고용률 집계 시트에서 값 추출
-            try:
-                df_rate = _read_sheet_df(xl, config['rate_sheet'], data_only=False)
-                rate_region_col = config['rate_region_col']
-                rate_code_col = config.get('rate_code_col')
-                rate_division_col = config.get('rate_division_col')
-                rate_total_code = config['rate_total_code']
-                rate_value_col = config['rate_value_col']
-                prev_rate_col = config.get('prev_rate_col', rate_value_col - 4)
-                
-                for i, row in df_rate.iterrows():
-                    try:
-                        region_raw = str(row[rate_region_col]).strip() if pd.notna(row[rate_region_col]) else ''
-                        region = normalize_region_name(region_raw)  # 지역명 정규화
-                        
-                        # 코드 컬럼 또는 division 컬럼으로 총계 행 확인
-                        is_total = False
-                        if rate_code_col is not None:
-                            code = str(row[rate_code_col]).strip() if pd.notna(row[rate_code_col]) else ''
-                            is_total = (code == rate_total_code)
-                        elif rate_division_col is not None:
-                            division = str(row[rate_division_col]).strip() if pd.notna(row[rate_division_col]) else ''
-                            is_total = (division == rate_total_code)
-                        
-                        if is_total:
-                            rate_val = safe_float(row[rate_value_col])
-                            prev_rate = safe_float(row[prev_rate_col])
-                            change_val = round(rate_val - prev_rate, 1) if (rate_val is not None and prev_rate is not None) else None
-                            
-                            if region == '전국':
-                                nationwide['rate'] = round(rate_val, 1)
-                                nationwide['index'] = round(rate_val, 1)
-                                nationwide['change'] = change_val
-                            elif region in regions:
-                                region_indices[region] = round(rate_val, 1)
-                                region_changes[region] = change_val
-                    except:
-                        continue
-            except Exception as e:
-                print(f"고용률 집계 시트 오류: {e}")
-        
-        elif 'index_sheet' in config:
-            # 지수 집계 시트에서 값 추출
-            try:
-                df_index = _read_sheet_df(xl, config['index_sheet'], data_only=False)
-                idx_region_col = config['index_region_col']
-                idx_code_col = config.get('index_code_col')
-                idx_division_col = config.get('index_division_col')
-                idx_total_code = config['index_total_code']
-                idx_value_col = config['index_value_col']
-                
-                nationwide_index_set = False  # 전국 지수가 설정되었는지 추적
-                
-                for i, row in df_index.iterrows():
-                    try:
-                        region_raw = str(row[idx_region_col]).strip() if pd.notna(row[idx_region_col]) else ''
-                        region = normalize_region_name(region_raw)  # 지역명 정규화
-                        
-                        is_total = False
-                        if idx_code_col is not None:
-                            code = str(row[idx_code_col]).strip() if pd.notna(row[idx_code_col]) else ''
-                            is_total = (code == str(idx_total_code))
-                        elif idx_division_col is not None:
-                            division = str(row[idx_division_col]).strip() if pd.notna(row[idx_division_col]) else ''
-                            is_total = (division == str(idx_total_code))
-                        
-                        if is_total:
-                            # 유효한 숫자 값인지 확인
-                            index_val = safe_float(row[idx_value_col], None)
-                            if index_val is not None:
-                                index_val = round(index_val, 1)
-                            
-                            if region == '전국':
-                                # 첫 번째 유효한 전국 값만 사용
-                                if not nationwide_index_set and index_val is not None:
-                                    nationwide['index'] = index_val
-                                    if is_trade:
-                                        nationwide['amount'] = round(index_val, 0)
-                                    nationwide_index_set = True
-                            elif region in regions and index_val is not None:
-                                # 첫 번째 유효한 지역 값만 사용
-                                if region not in region_indices:
-                                    region_indices[region] = index_val
-                    except:
-                        continue
-            except Exception as e:
-                print(f"지수 집계 시트 오류: {e}")
-        
-        # 수출액 특별 처리 (G 분석) - 금액을 억달러 단위로 변환
-        if is_trade and config.get('is_amount'):
-            try:
-                # G(수출)집계 시트에서 수출액 가져오기
-                if 'G(수출)집계' in xl.sheet_names:
-                    df_export = _read_sheet_df(xl, 'G(수출)집계', data_only=False)
-                    for i, row in df_export.iterrows():
-                        try:
-                            region = str(row[3]).strip() if pd.notna(row[3]) else ''
-                            division = str(row[4]).strip() if pd.notna(row[4]) else ''
-                            if division == '0':
-                                # 2025 2/4분기 수출액 (열 26, 백만달러 → 억달러 변환)
-                                amount_val = safe_float(row[26])
-                                amount_val = amount_val if amount_val is not None else 0
-                                amount_in_billion = round(amount_val * 100, 0)  # 백만달러 → 억달러 (요청: 100배)
-                                if region == '전국':
-                                    nationwide['amount'] = amount_in_billion
-                                    nationwide['index'] = amount_in_billion  # 차트용
-                                elif region in regions:
-                                    region_indices[region] = amount_in_billion
-                        except:
-                            continue
-            except Exception as e:
-                print(f"수출 집계 시트 오류: {e}")
-        
-        # 차트 데이터 구성
-        for region in regions:
-            change_val = region_changes.get(region, 0.0)
-            index_val = region_indices.get(region, 100.0)
             
-            data = {
-                'name': region,
-                'value': change_val,
-                'index': index_val,
-                'change': change_val,
-                'rate': index_val
-            }
+            # 증감률 값 추출
+            change_val = safe_float(row[change_col], None)
+            if change_val is not None:
+                change_val = round(change_val, 1)
             
-            if is_trade:
-                data['amount'] = index_val
-                data['amount_normalized'] = min(100, max(0, index_val / 6))
-            
-            if change_val >= 0:
-                increase_regions.append(data)
-            else:
-                decrease_regions.append(data)
-            chart_data.append(data)
+            if region == '전국':
+                if not nationwide_change_set and change_val is not None:
+                    nationwide['change'] = change_val
+                    nationwide['change_rate'] = change_val
+                    nationwide_change_set = True
+            elif region in regions and change_val is not None:
+                if region not in region_changes:
+                    region_changes[region] = change_val
+        except Exception as e:
+            continue
+    
+    # 전국 데이터가 없으면 오류
+    if not nationwide_change_set:
+        raise ValueError(f"전국 증감률 데이터를 찾을 수 없습니다: {sheet_name}")
+    
+    # 차트 데이터 구성
+    for region in regions:
+        change_val = region_changes.get(region, 0.0)
         
-        increase_regions.sort(key=lambda x: x['value'], reverse=True)
-        decrease_regions.sort(key=lambda x: x['value'])
-
-        return {
-            'nationwide': nationwide,
-            'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
-            'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
-            'increase_count': len(increase_regions),
-            'decrease_count': len(decrease_regions),
-            'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
-            'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
-            'above_count': len(increase_regions),
-            'below_count': len(decrease_regions),
-            'chart_data': chart_data[:18]
+        data = {
+            'name': region,
+            'value': change_val,
+            'index': 0.0,
+            'change': change_val,
+            'rate': 0.0
         }
+        
+        if is_trade:
+            data['amount'] = 0.0
+            data['amount_normalized'] = 0.0
+        
+        if change_val >= 0:
+            increase_regions.append(data)
+        else:
+            decrease_regions.append(data)
+        chart_data.append(data)
+    
+    increase_regions.sort(key=lambda x: x['value'], reverse=True)
+    decrease_regions.sort(key=lambda x: x['value'])
+    
+    return {
+        'nationwide': nationwide,
+        'increase_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+        'decrease_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+        'increase_count': len(increase_regions),
+        'decrease_count': len(decrease_regions),
+        'above_regions': increase_regions[:3] if increase_regions else [{'name': '-', 'value': 0.0}],
+        'below_regions': decrease_regions[:3] if decrease_regions else [{'name': '-', 'value': 0.0}],
+        'above_count': len(increase_regions),
+        'below_count': len(decrease_regions),
+        'chart_data': chart_data[:18]
+    }
 
 
 def _extract_chart_data_from_raw(xl, config, regions, is_trade=False, is_employment=False):

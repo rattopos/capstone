@@ -6,12 +6,18 @@ API 라우트
 import json
 import base64
 import re
+import threading
+import time
 from pathlib import Path
 from urllib.parse import quote
 
-from flask import Blueprint, request, jsonify, session, send_file, make_response
+from flask import Blueprint, request, jsonify, session, send_file, make_response, current_app
 import unicodedata
 import uuid
+
+# 비동기 작업 저장소 (Thread-safe)
+_jobs_lock = threading.Lock()
+_jobs = {}  # job_id -> {'status': 'pending'|'running'|'completed'|'failed', 'result': ..., 'progress': ...}
 
 from config.settings import (
     BASE_DIR,
@@ -99,6 +105,86 @@ from services.excel_cache import set_cached_calculated_path
 import openpyxl
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+# ========== 비동기 작업 관리 함수 ==========
+
+def _create_job(job_type: str = 'generate') -> str:
+    """새 작업 생성 및 job_id 반환"""
+    job_id = str(uuid.uuid4())
+    with _jobs_lock:
+        _jobs[job_id] = {
+            'status': 'pending',
+            'type': job_type,
+            'result': None,
+            'progress': 0,
+            'message': '작업 대기 중...',
+            'created_at': time.time()
+        }
+    return job_id
+
+
+def _update_job(job_id: str, status: str = None, result=None, progress: int = None, message: str = None):
+    """작업 상태 업데이트"""
+    with _jobs_lock:
+        if job_id in _jobs:
+            if status is not None:
+                _jobs[job_id]['status'] = status
+            if result is not None:
+                _jobs[job_id]['result'] = result
+            if progress is not None:
+                _jobs[job_id]['progress'] = progress
+            if message is not None:
+                _jobs[job_id]['message'] = message
+
+
+def _get_job(job_id: str) -> dict:
+    """작업 상태 조회"""
+    with _jobs_lock:
+        return _jobs.get(job_id, None)
+
+
+def _cleanup_old_jobs(max_age_seconds: int = 3600):
+    """오래된 작업 정리 (기본 1시간)"""
+    current_time = time.time()
+    with _jobs_lock:
+        expired_jobs = [
+            job_id for job_id, job in _jobs.items()
+            if current_time - job.get('created_at', 0) > max_age_seconds
+        ]
+        for job_id in expired_jobs:
+            del _jobs[job_id]
+
+
+def _run_generate_job(job_id: str, year, quarter, cleanup_after: bool, excel_path: str):
+    """백그라운드에서 보도자료 생성 실행"""
+    try:
+        _update_job(job_id, status='running', progress=10, message='보도자료 생성 시작...')
+        
+        # 세션 정보를 직접 사용 (백그라운드 스레드에서는 Flask 세션 사용 불가)
+        # excel_path는 함수 인자로 전달받음
+        if excel_path:
+            session_data = {'excel_path': excel_path}
+        else:
+            session_data = {}
+        
+        result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after)
+        
+        if result.get('success'):
+            _update_job(job_id, status='completed', result=result, progress=100, message='보도자료 생성 완료')
+        else:
+            _update_job(job_id, status='completed', result=result, progress=100, message='일부 보도자료 생성 실패')
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"[Job {job_id}] Error: {error_msg}")
+        print(traceback.format_exc())
+        _update_job(job_id, status='failed', result={
+            'success': False,
+            'error': error_msg,
+            'generated': [],
+            'errors': [{'report_id': 'all', 'report_name': '전체', 'error': error_msg}]
+        }, progress=100, message=f'오류 발생: {error_msg}')
 
 
 def _resolve_year_quarter(excel_path: str, year=None, quarter=None):
@@ -802,13 +888,18 @@ def _generate_all_reports_core(year, quarter, cleanup_after=True):
 
 @api_bp.route('/generate-all', methods=['POST'])
 def generate_all_reports():
-    """모든 보도자료 일괄 생성 (최적화 버전 - 엑셀 파일 캐싱)"""
+    """모든 보도자료 일괄 생성 (비동기 지원)
+    
+    async=true 파라미터가 있으면 비동기로 처리하고 job_id 반환
+    그렇지 않으면 기존처럼 동기 처리
+    """
     data = request.get_json(silent=True)
     if data is None:
         data = {}
     year = data.get('year', session.get('year'))
     quarter = data.get('quarter', session.get('quarter'))
     cleanup_after = data.get('cleanup_after', True)
+    async_mode = data.get('async', False)  # 비동기 모드 여부
 
     if year is None or quarter is None:
         excel_path = session.get('excel_path')
@@ -822,8 +913,57 @@ def generate_all_reports():
                 'cleanup': cleanup_after
             })
 
+    # 비동기 모드: 백그라운드에서 처리하고 job_id 반환
+    if async_mode:
+        excel_path = session.get('excel_path')
+        job_id = _create_job('generate')
+        
+        # 백그라운드 스레드에서 실행
+        thread = threading.Thread(
+            target=_run_generate_job,
+            args=(job_id, year, quarter, cleanup_after, excel_path),
+            daemon=True
+        )
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'async': True,
+            'job_id': job_id,
+            'message': '보도자료 생성이 시작되었습니다. 상태를 확인하세요.'
+        })
+
+    # 동기 모드: 기존 방식대로 처리
     result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after)
     return jsonify(result)
+
+
+@api_bp.route('/job-status/<job_id>', methods=['GET'])
+def get_job_status(job_id):
+    """작업 상태 조회"""
+    # 오래된 작업 정리 (가끔 실행)
+    _cleanup_old_jobs()
+    
+    job = _get_job(job_id)
+    if job is None:
+        return jsonify({
+            'success': False,
+            'error': '작업을 찾을 수 없습니다'
+        }), 404
+    
+    response = {
+        'success': True,
+        'job_id': job_id,
+        'status': job['status'],
+        'progress': job['progress'],
+        'message': job['message']
+    }
+    
+    # 작업 완료/실패 시 결과 포함
+    if job['status'] in ('completed', 'failed'):
+        response['result'] = job['result']
+    
+    return jsonify(response)
 
 
 @api_bp.route('/generate-all-regional', methods=['POST'])

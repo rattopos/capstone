@@ -95,28 +95,26 @@
         </div>
         
         <!-- 광공업생산 -->
-        {% set data_rows = table_df if table_df is defined else (mining_production.region_rows if mining_production is defined and mining_production.region_rows is defined else []) %}
-        {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
+        {% set mining_nationwide = mining_production.nationwide if mining_production is defined and mining_production.nationwide is defined else {'change': 0, 'index': 0} %}
+        {% set mining_change = mining_nationwide.change if mining_nationwide.change is defined else 0 %}
+        {% set mining_index = mining_nationwide.index if mining_nationwide.index is defined else 0 %}
         <div class="summary-box" style="margin-bottom: 22px;">
             <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">□</span>
                 <span>
-                    {% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %} <span class="highlight" style="font-weight: 700;">전국 광공업생산</span>({{ "%.1f"|format(nationwide_row.index if nationwide_row and nationwide_row.index is defined else 0) }})은
-                    {% if mining_production.main_increase_industries is defined and mining_production.main_increase_industries | length > 0 %}
-                    {{ mining_production.main_increase_industries | map(attribute='name') | join(', ') }} 등의 생산이 {{ get_terms('manufacturing', 1)[0] }}
-                    {% endif %}
-                    전년동분기대비 <span class="{% if nationwide_row and nationwide_row.change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if nationwide_row and nationwide_row.change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(nationwide_row.change if nationwide_row and nationwide_row.change is defined else 0) }}% {% if nationwide_row and nationwide_row.change >= 0 %}{{ get_terms('manufacturing', 1)[1] }}{% else %}{{ get_terms('manufacturing', -1)[1] }}{% endif %}</span>
+                    {% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}/4분기{% else %}[연도/분기 입력 필요]{% endif %} <span class="highlight" style="font-weight: 700;">전국 광공업생산</span>은
+                    전년동분기대비 <span class="{% if mining_change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if mining_change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(mining_change) }}% {% if mining_change >= 0 %}{{ get_terms('manufacturing', 1)[1] }}{% else %}{{ get_terms('manufacturing', -1)[1] }}{% endif %}</span>
                 </span>
             </div>
             <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">ㅇ</span>
                 <span>
-                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change < 0 %}
-                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'lt', 0) | list | length }}개 시도는 광공업생산이 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('manufacturing', -1)[1] }}</span>{{ get_terms('manufacturing', -1)[2] }},
-                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change >= 0 %}
-                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'ge', 0) | list | length }}개 시도는 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('manufacturing', 1)[1] }}</span>
+                    {% for region in mining_production.decrease_regions[:3] if mining_production is defined and mining_production.decrease_regions is defined %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ mining_production.decrease_count if mining_production is defined and mining_production.decrease_count is defined else 0 }}개 시도는 광공업생산이 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('manufacturing', -1)[1] }}</span>{{ get_terms('manufacturing', -1)[2] }},
+                    {% for region in mining_production.increase_regions[:3] if mining_production is defined and mining_production.increase_regions is defined %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ mining_production.increase_count if mining_production is defined and mining_production.increase_count is defined else 0 }}개 시도는 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('manufacturing', 1)[1] }}</span>
                 </span>
             </div>
         </div>

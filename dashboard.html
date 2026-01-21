@@ -586,19 +586,79 @@
                 uploadedYear = uploadResult.year ?? null;
                 uploadedQuarter = uploadResult.quarter ?? null;
 
+                // 비동기 모드로 보도자료 생성 시작
                 const generateResponse = await fetch('/api/generate-all', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         year: uploadedYear,
                         quarter: uploadedQuarter,
-                        cleanup_after: false
+                        cleanup_after: false,
+                        async: true  // 비동기 모드 활성화
                     })
                 });
+                
+                const startResult = await safeJson(generateResponse);
+                if (!generateResponse.ok || !startResult.success) {
+                    setStatus(statusGenerate, 'error', '실패');
+                    setStatusMessage(startResult.error || '보도자료 생성 시작 실패');
+                    stopDetailTicker();
+                    currentStage = null;
+                    stopEtaTicker();
+                    hideProgressOverlay();
+                    return;
+                }
+
+                // 비동기 모드: 폴링으로 상태 확인
+                const jobId = startResult.job_id;
+                let generateResult = null;
+                let pollCount = 0;
+                const maxPolls = 600;  // 최대 10분 (1초 간격)
+                
+                while (pollCount < maxPolls) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));  // 1초 대기
+                    pollCount++;
+                    
+                    try {
+                        const statusResponse = await fetch(`/api/job-status/${jobId}`);
+                        const statusData = await safeJson(statusResponse);
+                        
+                        if (!statusResponse.ok) {
+                            console.warn('폴링 오류, 재시도...', statusData);
+                            continue;
+                        }
+                        
+                        // 진행 상황 업데이트
+                        if (statusData.message) {
+                            setStatusMessage(statusData.message);
+                        }
+                        
+                        // 작업 완료 확인
+                        if (statusData.status === 'completed' || statusData.status === 'failed') {
+                            generateResult = statusData.result;
+                            break;
+                        }
+                    } catch (pollError) {
+                        console.warn('폴링 중 오류, 재시도...', pollError);
+                        // 네트워크 오류 시 계속 폴링 시도
+                    }
+                }
+                
                 const generateElapsed = performance.now() - generateStart;
                 endStage('generate', generateElapsed);
-                const generateResult = await safeJson(generateResponse);
-                if (!generateResponse.ok || !generateResult.success) {
+                
+                // 결과 처리
+                if (!generateResult) {
+                    setStatus(statusGenerate, 'error', '실패');
+                    setStatusMessage('보도자료 생성 시간 초과');
+                    stopDetailTicker();
+                    currentStage = null;
+                    stopEtaTicker();
+                    hideProgressOverlay();
+                    return;
+                }
+                
+                if (!generateResult.success) {
                     setStatus(statusGenerate, 'error', '실패');
 
                     if (hasGeneratedReports(generateResult)) {

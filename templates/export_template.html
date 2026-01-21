@@ -311,7 +311,7 @@
         <div class="summary-box">
             <div class="headline">◆ 수출은 
                 {% for region in top3_increase_regions %}
-                <span class="highlight">{{ region.region }}</span>({{ region.products | join(', ') }}){% if not loop.last %}, {% endif %}
+                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate if region.growth_rate is not none else region.change) }}%){% if not loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.increase_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{ get_terms(report_info.report_id, 1)[1] }}</span>
             </div>

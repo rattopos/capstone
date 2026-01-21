@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅰ. 부문별 지역경제동향 - 고용률 (2025년 3/4분기)</title>
+    
+    
+    
+    
+    <style>
+        /* 기본 리셋 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Malgun Gothic", serif;
+            font-size: 14pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            background: #fff;
+        }
+        
+        @media screen {
+            .page {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* 숫자 제목 */
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 17pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        /* 소제목 */
+        .subsection-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        /* 요약 박스 */
+        .summary-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: transparent;
+            line-height: 1.5;
+        }
+        
+        .summary-box .headline {
+            margin-bottom: 6px;
+            text-indent: -12px;
+            padding-left: 12px;
+        }
+        
+        .summary-box .nationwide {
+            margin-bottom: 4px;
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .summary-box .regional {
+            padding-left: 16px;
+            text-indent: -16px;
+        }
+        
+        .highlight {
+            font-weight: bold;
+        }
+        
+        .increase, .decrease {
+            font-weight: bold;
+        }
+        
+        /* 상세 박스 */
+        .detail-box {
+            border: 1px dotted #555;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-box .title {
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 14pt;
+        }
+        
+        .detail-box .item {
+            margin-bottom: 1px;
+            line-height: 1.45;
+            padding-left: 8px;
+            text-indent: -8px;
+        }
+        
+        .detail-box .separator {
+            border-top: 1px dotted #888;
+            margin: 5px 0;
+        }
+        
+        /* 테이블 */
+        .table-container {
+            margin-top: 12px;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            font-family: "Malgun Gothic", serif;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            table-layout: fixed;
+        }
+        
+        .data-table th,
+        .data-table td {
+            
+            padding: 2px 3px;
+            text-align: center;
+            vertical-align: middle;
+            height: 22px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* 테이블 헤더 - 연보라색 */
+        .data-table th {
+            background-color: #e6e0ec;
+            font-weight: normal;
+        }
+        
+        /* 지역 그룹 셀 */
+        .data-table .region-group {
+            background-color: #f5f5f5;
+            font-weight: normal;
+            width: 28px;
+        }
+        
+        .data-table .region-name {
+            width: 32px;
+        }
+        
+        /* 비율 섹션 */
+        .data-table td.rate-section {
+            background-color: #fef9e7;
+        }
+        
+        .data-table th.rate-section {
+            background-color: #e6e0ec;
+        }
+        
+        /* 점선 구분 헤더 */
+        .data-table th.dashed-border {
+            border-left: 1px dashed #999;
+        }
+        
+        .data-table td.dashed-border {
+            border-left: 1px dashed #999;
+        }
+        
+        .footnote {
+            font-size: 11pt;
+            color: #333;
+            margin-top: 4px;
+        }
+        
+        
+        /* 결측치 플레이스홀더 */
+        .editable-placeholder {
+            background-color: #fff59d;
+            padding: 0 4px;
+            border: 1px dashed #fbc02d;
+            color: #5d4037;
+            display: inline-block;
+            min-width: 25px;
+            text-align: center;
+        }
+        
+        .missing-cell {
+            background-color: #fff9c4 !important;
+        }
+        
+        sup {
+            font-size: 70%;
+            vertical-align: super;
+        }
+
+        /* 공통 디자인(광공업과 일치) */
+        .section-main-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 12px;
+            margin-bottom: 18px;
+            background-color: #6d78b8;
+            color: #000;
+            border-radius: 6px;
+            position: relative;
+            background-image:
+                radial-gradient(circle at 18px 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at 38px 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px),
+                radial-gradient(circle at calc(100% - 18px) 50%, rgba(255,255,255,0.35) 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 38px) 50%, rgba(255,255,255,0.25) 0 5px, transparent 6px);
+        }
+
+        .section-main-title__label {
+            display: inline-block;
+            background: #ffffff;
+            padding: 4px 26px;
+            border-radius: 999px;
+            color: #000;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
+        }
+
+        .section-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 17pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .subsection-title {
+            font-family: "Malgun Gothic", serif;
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .summary-box {
+            border: none;
+            padding: 0;
+            margin-bottom: 10px;
+            background-color: transparent;
+            line-height: 1.6;
+            font-size: 11pt;
+        }
+
+        .detail-box .title {
+            font-size: 11pt;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+        }
+
+        .data-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+        }
+
+        .data-table .region-group,
+        .data-table .region-name {
+            border: 1px solid #000;
+        }
+
+        .data-table td.rate-section {
+            background-color: #fff6d6;
+        }
+
+        .data-table th.rate-section {
+            background-color: #e0e0e0;
+        }
+        
+        @media print {
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .data-table th {
+                background-color: #e0e0e0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="section-main-title"><span class="section-main-title__label">Ⅰ. 부문별 지역경제동향</span></div>
+        <div class="section-title">6. 고용 동향</div>
+        <div class="subsection-title">가. 고용률</div>
+        
+        <!-- 요약 박스 -->
+        <div class="summary-box">
+            <div class="headline">◆ 고용률은 
+                
+                <span class="highlight">대전</span>(2.2%p), 
+                
+                <span class="highlight">충북</span>(1.5%p), 
+                
+                <span class="highlight">경북</span>(1.5%p)
+                
+                등 <span class="highlight">12개</span> 시도에서 전년동분기대비 <span class="increase">증가</span>
+            </div>
+            <div class="nationwide">□ 전국 고용률은 <span class="highlight">63.5%</span>로, 의 고용률이 늘어 전년동분기대비 <span class="increase">0.2%p 증가</span></div>
+            <div class="regional">◦ 
+                
+                <span class="highlight">세종</span>(-1.0%p), 
+                
+                <span class="highlight">인천</span>(-0.7%p), 
+                
+                <span class="highlight">경기</span>(-0.7%p)
+                
+                등의 고용률은 <span class="decrease">감소</span>하였으나, 
+                
+                <span class="highlight">대전</span>(2.2%p), 
+                
+                <span class="highlight">충북</span>(1.5%p), 
+                
+                <span class="highlight">경북</span>(1.5%p)
+                
+                등의 고용률은 <span class="increase">증가</span>
+            </div>
+        </div>
+        
+        <!-- 주요 등락지역 및 연령별 고용률 -->
+        <div class="detail-box">
+            <div class="title">&lt; 주요 등락지역 및 연령별 고용률 &gt;</div>
+            
+            <!-- 전국 -->
+            <div class="item">·전 국(  0.2%p): 
+                
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- 증가 지역 Top 3 -->
+            
+            <div class="item">·대전( 2.2%p): 
+                
+            </div>
+            
+            <div class="item">·충북( 1.5%p): 
+                
+            </div>
+            
+            <div class="item">·경북( 1.5%p): 
+                
+            </div>
+            
+            
+            <div class="separator"></div>
+            
+            <!-- 감소 지역 Top 3 -->
+            
+            <div class="item">·세종(-1.0%p): 
+                
+            </div>
+            
+            <div class="item">·인천(-0.7%p): 
+                
+            </div>
+            
+            <div class="item">·경기(-0.7%p): 
+                
+            </div>
+            
+        </div>
+        
+        <!-- 데이터 테이블 -->
+        <div class="table-container">
+            <div class="table-title">《고용률<sup>1)</sup> 및 증감 》</div>
+            
+            
+            
+                
+                
+                
+                
+                
+            
+            <table style="border-collapse: collapse !important; border: 1px solid black !important;" class="data-table">
+                <thead style="border: 1px solid black !important;">
+                    <tr>
+                        <th rowspan="2" colspan="2" style="width: 60px;; border: 1px solid black !important"></th>
+                        <th colspan="4" style="border: 1px solid black !important;">전년동분기대비 증감(%p)</th>
+                        <th colspan="3" class="rate-section" style="border: 1px solid black !important;">고용률(%)</th>
+                    </tr>
+                    <tr>
+                        
+                        <th style="width: 50px;; border: 1px solid black !important">2023. 3/4</th>
+                        
+                        <th style="width: 50px;; border: 1px solid black !important">2024. 3/4</th>
+                        
+                        <th style="width: 50px;; border: 1px solid black !important">2025. 2/4</th>
+                        
+                        <th style="width: 50px;; border: 1px solid black !important">2025. 3/4</th>
+                        
+                        
+                        <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2024. 3/4</th>
+                        
+                        <th class="rate-section" style="width: 55px;; border: 1px solid black !important">2025. 3/4</th>
+                        
+                        <th class="rate-section dashed-border" style="width: 55px;; border: 1px solid black !important">20-29세</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    
+                    
+                    
+                    
+                    <tr>
+                        <td class="region-group" style="border: 1px solid black !important;"></td>
+                        <td class="region-name" style="border: 1px solid black !important;">전국</td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.4
+                        </td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.1
+                        </td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.2
+                        </td>
+                        
+                        
+                        <td class="" style="border: 1px solid black !important;">
+                            0.0
+                        </td>
+                        
+                        
+                        
+                        <td class="rate-section  " style="border: 1px solid black !important;">
+                            63.3
+                        </td>
+                        
+                        
+                        <td class="rate-section  " style="border: 1px solid black !important;">
+                            63.5
+                        </td>
+                        
+                        
+                        <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                            <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                        </td>
+                        
+                    </tr>
+                    
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-group" rowspan="3" style="border: 1px solid black !important;">경인</td>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">서울</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.6
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                61.8
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                62.3
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">인천</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.6
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.1
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.4
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                63.7
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">경기</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.1
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.7
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.7
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.0
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                    
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-group" rowspan="4" style="border: 1px solid black !important;">충청</td>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">대전</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -1.1
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                2.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.2
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                60.5
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                62.7
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">세종</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.6
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.6
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.8
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                65.8
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.8
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">충북</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.6
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                68.1
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">충남</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.1
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.8
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.4
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.1
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.5
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                    
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-group" rowspan="4" style="border: 1px solid black !important;">호남</td>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">광주</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.1
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.6
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                60.5
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                61.6
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">전북</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.9
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -1.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.1
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.8
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.9
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">전남</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.7
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.5
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.6
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.1
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">제주</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.7
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.3
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                69.5
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                69.9
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                    
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-group" rowspan="3" style="border: 1px solid black !important;">동북</td>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">대구</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -2.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.4
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                58.0
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                58.1
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">경북</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.8
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.7
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.8
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                64.8
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.3
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">강원</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.8
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.5
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.2
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.2
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                66.5
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                    
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-group" rowspan="3" style="border: 1px solid black !important;">동남</td>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">부산</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.1
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.6
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.2
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                58.3
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                58.7
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">울산</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.0
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.4
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.4
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                60.2
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                60.2
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                        
+                        <tr>
+                            
+                            <td class="region-name" style="border: 1px solid black !important;">경남</td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                -0.3
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                1.2
+                            </td>
+                            
+                            
+                            <td class="" style="border: 1px solid black !important;">
+                                0.3
+                            </td>
+                            
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                62.1
+                            </td>
+                            
+                            
+                            <td class="rate-section  " style="border: 1px solid black !important;">
+                                63.6
+                            </td>
+                            
+                            
+                            <td class="rate-section dashed-border missing-cell" style="border: 1px solid black !important;">
+                                <span class="editable-placeholder" contenteditable="true">[  ]</span>
+                            </td>
+                            
+                        </tr>
+                        
+                    
+                </tbody>
+            </table>
+            
+            <div class="footnote">1) 고용률(%) 산식</div>
+            
+        </div>
+        
+</body>
+</html>

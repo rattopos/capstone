@@ -6,6 +6,7 @@
 import importlib.util
 import json
 import inspect
+import warnings
 import pandas as pd
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -178,9 +179,40 @@ def _generate_from_schema_with_excel(template_name, report_id, year, quarter, ex
                         raise ValueError("get_summary_overview_data가 None 반환")
                     # 템플릿에서 summary 키를 사용하므로 데이터를 summary로 감싸기
                     table_data = get_summary_table_data(excel_path, year, quarter)
+                    
+                    # table_data를 템플릿에서 사용하는 table_df 형식으로 변환
+                    # 템플릿에서는 table_df (리스트 of 딕셔너리) 또는 table_data.region_rows를 사용
+                    table_df = []
+                    
+                    # 전국 데이터 추가
+                    nationwide = table_data.get('nationwide', {})
+                    table_df.append({
+                        'region_name': '전국',
+                        'mining_production': nationwide.get('mining_production', 0.0),
+                        'service_production': nationwide.get('service_production', 0.0),
+                        'retail_sales': nationwide.get('retail_sales', 0.0),
+                        'exports': nationwide.get('exports', 0.0),
+                        'price': nationwide.get('price', 0.0),
+                        'employment': nationwide.get('employment', 0.0)
+                    })
+                    
+                    # 지역별 데이터 추가
+                    for group in table_data.get('region_groups', []):
+                        for region in group.get('regions', []):
+                            table_df.append({
+                                'region_name': region.get('name', ''),
+                                'mining_production': region.get('mining_production', 0.0),
+                                'service_production': region.get('service_production', 0.0),
+                                'retail_sales': region.get('retail_sales', 0.0),
+                                'exports': region.get('exports', 0.0),
+                                'price': region.get('price', 0.0),
+                                'employment': region.get('employment', 0.0)
+                            })
+                    
                     data = {
                         'summary': summary_data,
                         'table_data': table_data,
+                        'table_df': table_df,
                         'report_info': {'year': year, 'quarter': quarter, 'page_number': ''}
                     }
                 
@@ -698,6 +730,20 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
 
                 if source_table_df is not None:
                     try:
+                        # 중복 컬럼명을 고유하게 만들어 경고 방지
+                        if source_table_df.columns.duplicated().any():
+                            cols = list(source_table_df.columns)
+                            seen = {}
+                            new_cols = []
+                            for col in cols:
+                                if col in seen:
+                                    seen[col] += 1
+                                    new_cols.append(f"{col}_{seen[col]}")
+                                else:
+                                    seen[col] = 0
+                                    new_cols.append(col)
+                            source_table_df = source_table_df.copy()
+                            source_table_df.columns = new_cols
                         data['source_table_df'] = source_table_df.to_dict(orient='records')
                         data['source_table_df_columns'] = list(source_table_df.columns)
                     except Exception as to_dict_error:

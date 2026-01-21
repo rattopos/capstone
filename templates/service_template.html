@@ -311,7 +311,7 @@
         <div class="summary-box">
             <div class="headline">◆ 서비스업생산은
                 {% for region in top3_increase_regions %}
-                <span class="highlight">{{ region.region }}</span>({{ region.industries_names | join(', ') }}){% if not
+                <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.growth_rate) }}%){% if not
                 loop.last %}, {% endif %}
                 {% endfor %}
                 등 <span class="highlight">{{ summary_box.region_count }}개</span> 시도에서 전년동분기대비 <span class="increase">{{

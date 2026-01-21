@@ -335,12 +335,10 @@ report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_i
     <div class="headline">◆ 건설수주는
         {% if summary_box.decrease_count > summary_box.increase_count %}
         {% for region in top3_decrease_regions %}
-        <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type
-        }}){% if not loop.last %}, {% endif %}
+        <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change_rate if region.change_rate is defined and region.change_rate is not none else (region.growth_rate if region.growth_rate is defined else 0)) }}%){% if not loop.last %}, {% endif %}
         {% endfor %}
         {% for region in top3_increase_regions %}
-        <span class="highlight">{{ region.region }}</span>({{ region.sub_type if region.sub_type else region.main_type
-        }}){% if not loop.last %}, {% endif %}
+        <span class="highlight">{{ region.region }}</span>({{ "%.1f"|format(region.change_rate if region.change_rate is defined and region.change_rate is not none else (region.growth_rate if region.growth_rate is defined else 0)) }}%){% if not loop.last %}, {% endif %}
         {% endfor %}
         {% set rate = nationwide_data.change_rate if nationwide_data.change_rate is defined else
         (nationwide_data.growth_rate if nationwide_data.growth_rate is defined else 0.0) %}
