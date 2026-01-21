@@ -213,28 +213,41 @@ class UnifiedReportGenerator(BaseGenerator):
                 print(f"[자동탐색] 데이터 시작 행 자동설정: {self.data_start_row}")
 
             if cur_year is not None and cur_q is not None:
-                # 전년, 전전년, 전전전년 컬럼 탐색
-                prev_y_pat = f"{cur_year-1} {cur_q}/4"
-                prev_prev_y_pat = f"{cur_year-2} {cur_q}/4"
-                prev_prev_prev_y_pat = f"{cur_year-3} {cur_q}/4"
+                # 최근 8분기 컬럼 자동 탐색 (현재 분기 포함)
+                # 이를 통해 prev_q_col 등 테이블에서 요구하는 이전 분기 컬럼을 동적으로 확보
+                temp_year, temp_q = cur_year, cur_q
+                for _ in range(8):
+                    pat = f"{temp_year} {temp_q}/4"
+                    key = self._format_quarter_key(temp_year, temp_q)
+                    
+                    # 이미 설정에 있는 컬럼은 유지, 없는 경우만 탐색
+                    if key not in self.quarterly_cols:
+                        idx, _ = find_col_by_pattern(pat)
+                        if idx is None:
+                            # 보조 패턴: '2025. 3/4'
+                            idx, _ = find_col_by_pattern(f"{temp_year}. {temp_q}/4")
+                        
+                        if idx is not None:
+                            self.quarterly_cols[key] = idx
+                            print(f"[자동탐색] '{pat}' 패턴으로 컬럼 인덱스 자동설정: {idx}")
+                    
+                    # 전 분기로 이동
+                    temp_y_prev, temp_q_prev = self._previous_quarter(temp_year, temp_q)
+                    
+                    # 전년 동기 컬럼들도 특별히 속성에 저장 (하위 호환성)
+                    if temp_year == cur_year - 1 and temp_q == cur_q:
+                        if self.prev_y_col is None:
+                            self.prev_y_col = self.quarterly_cols.get(key)
+                    elif temp_year == cur_year - 2 and temp_q == cur_q:
+                        if self.prev_prev_y_col is None:
+                            self.prev_prev_y_col = self.quarterly_cols.get(key)
+                    elif temp_year == cur_year - 3 and temp_q == cur_q:
+                        if self.prev_prev_prev_y_col is None:
+                            self.prev_prev_prev_y_col = self.quarterly_cols.get(key)
+                    
+                    temp_year, temp_q = temp_y_prev, temp_q_prev
 
-                if self.prev_y_col is None:
-                    idx, _ = find_col_by_pattern(prev_y_pat)
-                    if idx is not None:
-                        self.prev_y_col = idx
-                        print(f"[자동탐색] '{prev_y_pat}' 패턴으로 전년 컬럼 인덱스 자동설정: {idx}")
-                
-                if self.prev_prev_y_col is None:
-                    idx, _ = find_col_by_pattern(prev_prev_y_pat)
-                    if idx is not None:
-                        self.prev_prev_y_col = idx
-                        print(f"[자동탐색] '{prev_prev_y_pat}' 패턴으로 2년전 컬럼 인덱스 자동설정: {idx}")
-                
-                if self.prev_prev_prev_y_col is None:
-                    idx, _ = find_col_by_pattern(prev_prev_prev_y_pat)
-                    if idx is not None:
-                        self.prev_prev_prev_y_col = idx
-                        print(f"[자동탐색] '{prev_prev_prev_y_pat}' 패턴으로 3년전 컬럼 인덱스 자동설정: {idx}")
+                self.quarterly_keys = list(self.quarterly_cols.keys())
     def _get_region_display_name(self, region: str) -> str:
         try:
             return REGION_DISPLAY_MAPPING.get(region, region)
