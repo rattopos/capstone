@@ -679,6 +679,43 @@ def get_employment_population_data(excel_path, year, quarter):
         xl = pd.ExcelFile(excel_path)
         employment = _extract_chart_data(xl, 'D(고용률)분석', is_employment=True, year=year, quarter=quarter)
         
+        # 집계 시트에서 실제 고용률 값 추출 (분석 시트에서는 증감률만 추출됨)
+        try:
+            if 'D(고용률)집계' in xl.sheet_names:
+                df_rate = pd.read_excel(xl, sheet_name='D(고용률)집계', header=None)
+                # 시트 구조: 열1=지역이름, 열2=분류단계, 열21=2025 3/4 고용률
+                for i, row in df_rate.iterrows():
+                    if i < 3:  # 헤더 스킵
+                        continue
+                    region = str(row[1]).strip() if pd.notna(row[1]) else ''
+                    division = str(row[2]).strip() if pd.notna(row[2]) else ''
+                    
+                    if region == '전국' and division == '0':
+                        rate_val = safe_float(row[21])  # 2025 3/4 열
+                        if rate_val is not None:
+                            employment['nationwide']['rate'] = round(rate_val, 1)
+                            employment['nationwide']['index'] = round(rate_val, 1)
+                        break
+                
+                # 지역별 고용률도 추출
+                for i, row in df_rate.iterrows():
+                    if i < 3:
+                        continue
+                    region = normalize_region_name(str(row[1]).strip() if pd.notna(row[1]) else '')
+                    division = str(row[2]).strip() if pd.notna(row[2]) else ''
+                    
+                    if division == '0' and region in VALID_REGIONS:
+                        rate_val = safe_float(row[21])
+                        if rate_val is not None:
+                            # chart_data에서 해당 지역 찾아서 rate 업데이트
+                            for item in employment.get('chart_data', []):
+                                if item.get('name') == region:
+                                    item['rate'] = round(rate_val, 1)
+                                    item['index'] = round(rate_val, 1)
+                                    break
+        except Exception as rate_error:
+            print(f"고용률 집계 데이터 추출 오류: {rate_error}")
+        
         population = {
             'inflow_regions': [],
             'outflow_regions': [],

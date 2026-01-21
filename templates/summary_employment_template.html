@@ -83,24 +83,22 @@
             <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
         </div>
         
-        {% set data_rows = table_df if table_df is defined else (employment.region_rows if employment is defined and employment.region_rows is defined else []) %}
-        {% set nationwide_row = (data_rows | selectattr('region_name', 'equalto', '전국') | list | first) %}
         <div class="summary-box" style="margin-bottom: 22px;">
             <div class="summary-main" style="font-size: 14pt; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">□</span>
                 <span>
-                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 고용률</span>({{ "%.1f"|format(nationwide_row.rate if nationwide_row and nationwide_row.rate is defined else 0) }}%)은 전년동분기대비 <span class="{% if nationwide_row and nationwide_row.change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if nationwide_row and nationwide_row.change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(nationwide_row.change if nationwide_row and nationwide_row.change is defined else 0) }}%p {% if nationwide_row and nationwide_row.change >= 0 %}{{ get_terms('employment', 1)[1] }}{% else %}{{ get_terms('employment', -1)[1] }}{% endif %}</span>
+                    {% if report_info.year is defined and report_info.year %}{{ report_info.year }}{% else %}[연도 입력 필요]{% endif %}년 {% if report_info.quarter is defined and report_info.quarter %}{{ report_info.quarter }}{% else %}[분기 입력 필요]{% endif %}/4분기 <span class="highlight" style="font-weight: 700;">전국 고용률</span>({{ "%.1f"|format(employment.nationwide.rate if employment.nationwide.rate is defined else 0) }}%)은 전년동분기대비 <span class="{% if employment.nationwide.change >= 0 %}increase{% else %}decrease{% endif %}" style="font-weight: 700; color: {% if employment.nationwide.change >= 0 %}#c62828{% else %}#1565c0{% endif %};">{{ "%.1f"|format(employment.nationwide.change if employment.nationwide.change is defined else 0) }}%p {% if employment.nationwide.change >= 0 %}{{ get_terms('employment', 1)[1] }}{% else %}{{ get_terms('employment', -1)[1] }}{% endif %}</span>
                 </span>
             </div>
             <div class="summary-sub" style="font-size: 14pt; margin-left: 22px; display: flex; gap: 8px; align-items: flex-start;">
                 <span style="color: #666;">ㅇ</span>
                 <span>
-                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change >= 0 %}
-                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%p){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'ge', 0) | list | length }}개 시도는 고용률이 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('employment', 1)[1] }}</span>{{ get_terms('employment', 1)[2] }},
-                    {% for row in data_rows if row.region_name != '전국' and row.change is defined and row.change < 0 %}
-                    <span class="highlight" style="font-weight: 700;">{{ row.region_name }}</span>({{ "%.1f"|format(row.change) }}%p){% if not loop.last %}, {% endif %}
-                    {% endfor %} 등 {{ data_rows | selectattr('change', 'defined') | selectattr('change', 'lt', 0) | list | length }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('employment', -1)[1] }}</span>
+                    {% for region in employment.increase_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ employment.increase_count }}개 시도는 고용률이 <span class="increase" style="font-weight: 700; color: #c62828;">{{ get_terms('employment', 1)[1] }}</span>{{ get_terms('employment', 1)[2] }},
+                    {% for region in employment.decrease_regions[:3] %}
+                    <span class="highlight" style="font-weight: 700;">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}
+                    {% endfor %} 등 {{ employment.decrease_count }}개 시도는 <span class="decrease" style="font-weight: 700; color: #1565c0;">{{ get_terms('employment', -1)[1] }}</span>
                 </span>
             </div>
         </div>

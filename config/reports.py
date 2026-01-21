@@ -195,7 +195,13 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '목재 및 나무제품 제조업; 가구 제외': '목재제품',
             '비금속광물 광업; 연료용 제외': '비금속광물광업',
         },
-        'aggregation_structure': {'total_code': 'BCD', 'sheet': 'A(광공업생산)집계'},
+        'aggregation_structure': {
+            'total_code': 'BCD', 
+            'sheet': 'A(광공업생산)집계',
+            'region_name_col': 4,  # E열(0-based) - 지역이름
+            'industry_name_col': 7,  # H열(0-based) - 업종이름
+            'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
+        },
         'aggregation_columns': {
             'target_col': 26,  # AA열(0-based) - 2025 3/4
             'prev_y_col': 22,  # W열(0-based) - 2024 3/4
@@ -226,12 +232,12 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'data_start_row': 3
         },
         'aggregation_columns': {
-            'target_col': 25,  # Z열(0-based)
-            'prev_y_col': 21,  # V열(0-based)
-            'prev_prev_y_col': 17,  # R열(0-based)
-            'prev_prev_prev_y_col': 13,  # N열(0-based)
+            'target_col': 25,  # Z열(0-based) - 2025 3/4
+            'prev_y_col': 21,  # V열(0-based) - 2024 3/4
+            'prev_prev_y_col': 17,  # R열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 13,  # N열(0-based) - 2022 3/4
             'quarterly_cols': {
-                '2023_3Q': 17, '2024_3Q': 21, '2025_3Q': 25
+                '2022 3/4': 13, '2023 3/4': 17, '2024 3/4': 21, '2025 2/4': 24, '2025 3/4': 25
             }
         },
         'name_mapping': {
@@ -250,7 +256,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '협회 및 단체, 수리 및 기타 개인 서비스업': '협회·수리·개인',
             '협회 및 단체, 수리  및 기타 개인 서비스업': '협회·수리·개인'
         },
-        'aggregation_structure': {'total_code': 'E~S', 'sheet': 'B(서비스업생산)집계'},
+        # 중복된 aggregation_structure 제거됨 - 위에 이미 정의되어 있음
         'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
@@ -316,7 +322,22 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'trade',
         'class_name': 'ExportGenerator',
         'name_mapping': EXPORT_NAME_MAPPING,
-        'aggregation_structure': {'total_code': '합계', 'sheet': 'G(수출)집계'},
+        'aggregation_structure': {
+            'total_code': '합계', 
+            'sheet': 'G(수출)집계',
+            'region_name_col': 3,  # D열(0-based) - 지역이름
+            'industry_name_col': 6,  # G열(0-based) - 품목이름
+            'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
+        },
+        'aggregation_columns': {
+            'target_col': 26,  # AA열(0-based) - 2025 3/4
+            'prev_y_col': 22,  # W열(0-based) - 2024 3/4
+            'prev_prev_y_col': 18,  # S열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 14,  # O열(0-based) - 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 14, '2023 3/4': 18, '2024 3/4': 22, '2025 2/4': 25, '2025 3/4': 26
+            }
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name'],
         'header_rows': 3  # 집계 시트 헤더 행 수 (데이터는 4행부터)
     },
@@ -331,7 +352,22 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'trade',
         'class_name': 'ImportGenerator',
         'name_mapping': {},
-        'aggregation_structure': {'total_code': '합계', 'sheet': 'H(수입)집계'},
+        'aggregation_structure': {
+            'total_code': '합계', 
+            'sheet': 'H(수입)집계',
+            'region_name_col': 3,  # D열(0-based) - 지역이름
+            'industry_name_col': 6,  # G열(0-based) - 품목이름
+            'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
+        },
+        'aggregation_columns': {
+            'target_col': 26,  # AA열(0-based) - 2025 3/4
+            'prev_y_col': 22,  # W열(0-based) - 2024 3/4
+            'prev_prev_y_col': 18,  # S열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 14,  # O열(0-based) - 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 14, '2023 3/4': 18, '2024 3/4': 22, '2025 2/4': 25, '2025 3/4': 26
+            }
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name'],
         'header_rows': 3  # 집계 시트 헤더 행 수 (데이터는 4행부터)
     },
