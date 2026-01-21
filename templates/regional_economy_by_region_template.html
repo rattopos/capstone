@@ -112,8 +112,8 @@
     
     <!-- 첫 번째 지역(서울)일 때만 페이지 브레이크와 큰 제목 표시 -->
     {% if region_info is defined and region_info.order is defined and region_info.order == 1 %}
-    <div class="page-break"></div>
-    <div class="chapter-title">III. 시도별 경제동향</div>
+    <div style="margin-top: 100pt; padding-top: 50pt;"></div>
+    <div class="chapter-title" style="margin-top: 50pt;">III. 시도별 경제동향</div>
     {% endif %}
     
     <div class="page-title">{{ region_info.order ~ ". " if region_info is defined and region_info.order is defined else "" }}{{ region_label }}</div>

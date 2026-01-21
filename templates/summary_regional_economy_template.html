@@ -15,14 +15,14 @@
         }
 
         body {
-            font-family: "Malgun Gothic", serif;
-            font-size: 14pt;
-            line-height: 1.6;
+            font-family: "바탕", "Batang", "BatangChe", serif;
+            font-size: 12pt;
+            line-height: 1.8;
             color: #000;
             background: #fff;
         }
 
-        /* 그래프/차트 요소 제거 (만약을 위해 유지하되 안보이게 처리) */
+        /* 그래프/차트 요소 제거 */
         .chart-container,
         .chart-wrapper,
         canvas,
@@ -36,12 +36,12 @@
             padding: 26px 40px 6px 40px;
         }
 
-        /* Section Title Style - 생산 섹션과 동일 */
+        /* Section Title Style */
         .section-title {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 6px 0 12px;
+            margin: 6px 0 18px;
         }
 
         .section-title span:first-child {
@@ -53,54 +53,57 @@
             border-radius: 2px;
         }
 
-        /* Clean Summary Text Layout */
+        /* Summary Box */
         .summary-box {
-            /* Border removed to match typical clean look, or kept if screenshot had it. 
-               User said 'duplicate screenshot', usually these are just lists. */
             margin-bottom: 30px;
         }
 
+        /* Summary Item - 주요 항목 */
         .summary-item {
-            margin-bottom: 12px;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            text-align: justify;
+            margin-bottom: 14px;
+            display: table;
+            width: 100%;
         }
 
         .summary-bullet {
-            font-family: "Malgun Gothic", serif;
+            display: table-cell;
+            width: 18px;
+            vertical-align: top;
             font-weight: 400;
             color: #000;
-            min-width: 20px;
+            padding-top: 1px;
         }
 
-        .summary-label {
-            font-weight: 700;
-            font-size: 15pt;
-            /* Slightly larger for emphasis */
-            display: inline-block;
-            margin-bottom: 4px;
-            background-color: #f0f0f0;
-            /* Light highlight for the label like '고용' */
-            padding: 2px 6px;
+        .summary-content {
+            display: table-cell;
+            vertical-align: top;
+            text-align: justify;
+            word-break: keep-all;
         }
 
-        /* Adjusted label style to match common government report styles (usually just bold text usually) */
+        /* Label Style - 고용, 생산, 소비 등 */
         .summary-label-clean {
             font-weight: 700;
-            font-size: 15pt;
+            font-size: 12pt;
         }
 
+        /* Sub Item - 서비스업 등 하위 항목 */
         .summary-sub {
-            margin-top: 6px;
-            margin-left: 20px;
-            /* Indent sub-items */
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            margin-top: 8px;
+            padding-left: 24px;
+            display: table;
+            width: calc(100% - 24px);
         }
 
+        .summary-sub .summary-bullet {
+            width: 20px;
+        }
+
+        .summary-sub .summary-content {
+            text-align: justify;
+        }
+
+        /* Text Styles */
         .highlight {
             font-weight: 700;
         }
@@ -116,24 +119,23 @@
         }
 
         .note {
-            font-size: 11.5pt;
-            color: #666;
-            margin-left: 4px;
+            font-size: 10.5pt;
+            color: #555;
         }
 
         /* Table Styles */
         .table-title {
             text-align: center;
-            font-size: 15pt;
+            font-size: 13pt;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .table-note {
             text-align: right;
-            font-size: 11pt;
+            font-size: 10pt;
             color: #666;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .summary-table {
@@ -141,18 +143,17 @@
             border-collapse: collapse;
             border-top: 2px solid #000;
             border-bottom: 2px solid #000;
-            font-size: 11pt;
+            font-size: 10.5pt;
         }
 
         .summary-table th,
         .summary-table td {
             border: 1px solid #ccc;
-            padding: 6px 4px;
+            padding: 5px 4px;
         }
 
         .summary-table th {
             background: #f5f5f5;
-            /* Light Gray Header */
             text-align: center;
             font-weight: 600;
             border-bottom: 1px solid #000;
@@ -160,7 +161,6 @@
 
         .summary-table .nationwide-row td {
             background-color: #fffde7;
-            /* Note: Keeping slight highlight for nationwide if needed, or make white */
             font-weight: 700;
         }
 
@@ -214,60 +214,20 @@
             <!-- 1. 고용 -->
             <div class="summary-item">
                 <div class="summary-bullet">□</div>
-                <div>
-                    <span class="summary-label-clean">고용</span>
-                    <span>
-                        (고용률)은
-                        {% for region in summary.employment.increase_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.employment.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{
-                            get_terms('employment', 1)[1] }}</span>,
-                        {% for region in summary.employment.decrease_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %}등 {{ summary.employment.decrease_count }}개 시도는 <span class="decrease">{{
-                            get_terms('employment', -1)[1] }}</span><span class="note">[전국: {{
-                            "%.1f"|format(summary.employment.nationwide) }}%p]</span>
-                    </span>
+                <div class="summary-content">
+                    <span class="summary-label-clean">고용</span><span class="note"> (고용률)</span>은 {% for region in summary.employment.increase_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.employment.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{ get_terms('employment', 1)[1] }}</span>, {% for region in summary.employment.decrease_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%p){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.employment.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('employment', -1)[1] }}</span> <span class="note">[전국: {{ "%.1f"|format(summary.employment.nationwide) }}%p]</span>
                 </div>
             </div>
 
             <!-- 2. 생산 (광공업 + 서비스업) -->
             <div class="summary-item">
                 <div class="summary-bullet">□</div>
-                <div>
-                    <span class="summary-label-clean">생산</span>
-                    <span>
-                        (광공업)은
-                        {% for region in summary.production.mining.increase_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.production.mining.increase_count }}개 시도에서 전년동분기대비 <span
-                            class="increase">{{ get_terms('manufacturing', 1)[1] }}</span>,
-                        {% for region in summary.production.mining.decrease_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.production.mining.decrease_count }}개 시도는 <span class="decrease">{{
-                            get_terms('manufacturing', -1)[1] }}</span><span class="note">[전국: {{
-                            "%.1f"|format(summary.production.mining.nationwide) }}%]</span>
-                    </span>
-
+                <div class="summary-content">
+                    <span class="summary-label-clean">생산</span><span class="note"> (광공업)</span>은 {% for region in summary.production.mining.increase_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.production.mining.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{ get_terms('manufacturing', 1)[1] }}</span>, {% for region in summary.production.mining.decrease_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.production.mining.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('manufacturing', -1)[1] }}</span> <span class="note">[전국: {{ "%.1f"|format(summary.production.mining.nationwide) }}%]</span>
                     <div class="summary-sub">
                         <div class="summary-bullet">ㅇ</div>
-                        <div>
-                            (서비스업)은
-                            {% for region in summary.production.service.increase_regions[:2] %}
-                            <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if
-                            not loop.last %}, {% endif %}
-                            {% endfor %} 등 {{ summary.production.service.increase_count }}개 시도에서 전년동분기대비 <span
-                                class="increase">{{ get_terms('service', 1)[1] }}</span>,
-                            {% for region in summary.production.service.decrease_regions[:2] %}
-                            <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if
-                            not loop.last %}, {% endif %}
-                            {% endfor %} 등 {{ summary.production.service.decrease_count }}개 시도는 <span
-                                class="decrease">{{ get_terms('service', -1)[1] }}</span><span class="note">[전국: {{
-                                "%.1f"|format(summary.production.service.nationwide) }}%]</span>
+                        <div class="summary-content">
+                            <span class="note">(서비스업)</span>은 {% for region in summary.production.service.increase_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.production.service.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{ get_terms('service', 1)[1] }}</span>, {% for region in summary.production.service.decrease_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.production.service.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('service', -1)[1] }}</span> <span class="note">[전국: {{ "%.1f"|format(summary.production.service.nationwide) }}%]</span>
                         </div>
                     </div>
                 </div>
@@ -276,69 +236,24 @@
             <!-- 3. 소비 -->
             <div class="summary-item">
                 <div class="summary-bullet">□</div>
-                <div>
-                    <span class="summary-label-clean">소비</span>
-                    <span>
-                        (소매판매)는
-                        {% for region in summary.consumption.increase_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.consumption.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{
-                            get_terms('consumption', 1)[1] }}</span>,
-                        {% for region in summary.consumption.decrease_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.consumption.decrease_count }}개 시도는 <span class="decrease">{{
-                            get_terms('consumption', -1)[1] }}</span><span class="note">[전국: {{
-                            "%.1f"|format(summary.consumption.nationwide) }}%]</span>
-                    </span>
+                <div class="summary-content">
+                    <span class="summary-label-clean">소비</span><span class="note"> (소매판매)</span>는 {% for region in summary.consumption.increase_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.consumption.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{ get_terms('consumption', 1)[1] }}</span>, {% for region in summary.consumption.decrease_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.consumption.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('consumption', -1)[1] }}</span> <span class="note">[전국: {{ "%.1f"|format(summary.consumption.nationwide) }}%]</span>
                 </div>
             </div>
 
-            <!-- 4. 건설 (수주 - 추가가 필요할 수 있음, 없으면 건너뜀) -->
-            <!-- 건설이 스크린샷에 있었다면 추가해야 하나, 일단 위쪽 로직에는 없음. 
-                  summary_data.py의 get_summary_overview_data에는 Construction이 없음.
-                  Production, Consumption, Exports, Price, Employment.
-                  하지만 consumption 함수에 construction이 엮여있는 경우도 있음. 
-                  여기서는 기존 템플릿에 없었으므로 생략하거나, 소비에 포함된 경우 확인 필요.
-                  기존 템플릿에는 소비만 있었음. -->
-
-            <!-- 5. 수출 -->
+            <!-- 4. 수출 -->
             <div class="summary-item">
                 <div class="summary-bullet">□</div>
-                <div>
-                    <span class="summary-label-clean">수출</span>
-                    <span>
-                        (통관기준)은
-                        {% for region in summary.exports.increase_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.exports.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{
-                            get_terms('export', 1)[1] }}</span>,
-                        {% for region in summary.exports.decrease_regions[:2] %}
-                        <span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not
-                        loop.last %}, {% endif %}
-                        {% endfor %} 등 {{ summary.exports.decrease_count }}개 시도는 <span class="decrease">{{
-                            get_terms('export', -1)[1] }}</span><span class="note">[전국: {{
-                            "%.1f"|format(summary.exports.nationwide) }}%]</span>
-                    </span>
+                <div class="summary-content">
+                    <span class="summary-label-clean">수출</span><span class="note"> (통관기준)</span>은 {% for region in summary.exports.increase_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.exports.increase_count }}개 시도에서 전년동분기대비 <span class="increase">{{ get_terms('export', 1)[1] }}</span>, {% for region in summary.exports.decrease_regions[:2] %}<span class="highlight">{{ region.name }}</span>({{ "%.1f"|format(region.value) }}%){% if not loop.last %}, {% endif %}{% endfor %} 등 {{ summary.exports.decrease_count }}개 시도는 <span class="decrease">{{ get_terms('export', -1)[1] }}</span> <span class="note">[전국: {{ "%.1f"|format(summary.exports.nationwide) }}%]</span>
                 </div>
             </div>
 
-            <!-- 6. 물가 -->
+            <!-- 5. 물가 -->
             <div class="summary-item">
                 <div class="summary-bullet">□</div>
-                <div>
-                    <span class="summary-label-clean">물가</span>
-                    <span>
-                        (소비자물가)는
-                        전국 전년동분기대비 <span
-                            class="{% if summary.price.nationwide >= 0 %}increase{% else %}decrease{% endif %}">{{
-                            "%.1f"|format(summary.price.nationwide | abs) }}% {{ get_terms('price',
-                            summary.price.nationwide)[1] }}</span>,
-                        {{ summary.price.below_phrase }} 소비자물가 상승률이 전국보다 낮았으나, {{ summary.price.above_phrase }} 전국보다
-                        <span class="increase">높음</span>
-                    </span>
+                <div class="summary-content">
+                    <span class="summary-label-clean">물가</span><span class="note"> (소비자물가)</span>는 전국 전년동분기대비 <span class="{% if summary.price.nationwide >= 0 %}increase{% else %}decrease{% endif %}">{{ "%.1f"|format(summary.price.nationwide | abs) }}% {{ get_terms('price', summary.price.nationwide)[1] }}</span>, {{ summary.price.below_phrase }} 소비자물가 상승률이 전국보다 낮았으나, {{ summary.price.above_phrase }} 전국보다 <span class="increase">높음</span>
                 </div>
             </div>
 
