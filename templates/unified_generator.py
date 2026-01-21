@@ -1595,6 +1595,23 @@ class UnifiedReportGenerator(BaseGenerator):
             prev_prev_prev_value = row.get('prev_prev_prev_value') if isinstance(row, dict) else None
 
             computed = _build_growth_slots(row) if isinstance(row, dict) else [None, None, None, None]
+            
+            # 마지막 슬롯(현재 분기)에 change_rate 사용 (분기별 매핑 실패 시 폴백)
+            if computed[3] is None and growth_rate is not None:
+                computed[3] = growth_rate
+            
+            # 실업률/고용률/국내인구이동: prev_prev_value와 prev_prev_prev_value를 사용하여 이전 분기 증감도 계산
+            if self.report_type in ['employment', 'unemployment']:
+                # 전년동분기대비 증감(%p) 계산
+                if computed[0] is None and prev_prev_prev_value is not None:
+                    # 2023. 3/4 증감 = 2023 3/4 - 2022 3/4 (= prev_prev_value - prev_prev_prev_value)
+                    if prev_prev_value is not None:
+                        computed[0] = round(prev_prev_value - prev_prev_prev_value, 1)
+                if computed[1] is None and prev_prev_value is not None and prev_value is not None:
+                    # 2024. 3/4 증감 = 2024 3/4 - 2023 3/4 (= prev_value - prev_prev_value)
+                    computed[1] = round(prev_value - prev_prev_value, 1)
+                # 직전 분기(2025. 2/4) 증감은 계산하기 어려우므로 None 유지
+            
             growth_rates = [
                 '' if computed[0] is None else computed[0],
                 '' if computed[1] is None else computed[1],

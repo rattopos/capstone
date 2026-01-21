@@ -36,3 +36,4 @@ env/
 *.temp
 *.log
 
+exports/

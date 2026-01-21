@@ -2233,9 +2233,9 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
     <style>
         /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
         body {{
-            font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
-            font-size: 10pt;
-            line-height: 1.5;
+            font-family: "Malgun Gothic", serif;
+            font-size: 14pt;
+            line-height: 1.6;
             color: #000;
             background: #fff;
             padding: 20px;
@@ -2258,13 +2258,200 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
         }}
         .copy-btn:hover {{ background: #0055aa; }}
         @media print {{ .copy-btn {{ display: none; }} }}
+        
+        /* ===== 요약 보도자료 스타일 (summary_regional_economy_template.html 기준) ===== */
+        /* 그래프/차트 요소 제거 */
+        .chart-container,
+        .chart-wrapper,
+        canvas,
+        svg {{
+            display: none !important;
+        }}
+
+        .summary-container {{
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 26px 40px;
+        }}
+
+        /* Gray Header Title Style */
+        .summary-title-wrap {{
+            margin-bottom: 24px;
+        }}
+
+        .summary-title-box {{
+            background-color: #e0e0e0;
+            padding: 12px 20px;
+            font-size: 18pt;
+            font-weight: 700;
+            color: #000;
+            border-left: 10px solid #777;
+        }}
+
+        /* Clean Summary Text Layout */
+        .summary-box {{
+            margin-bottom: 30px;
+        }}
+
+        .summary-item {{
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            text-align: justify;
+        }}
+
+        .summary-bullet {{
+            font-family: "Malgun Gothic", serif;
+            font-weight: 400;
+            color: #000;
+            min-width: 20px;
+        }}
+
+        .summary-label {{
+            font-weight: 700;
+            font-size: 15pt;
+            display: inline-block;
+            margin-bottom: 4px;
+            background-color: #f0f0f0;
+            padding: 2px 6px;
+        }}
+
+        .summary-label-clean {{
+            font-weight: 700;
+            font-size: 15pt;
+        }}
+
+        .summary-sub {{
+            margin-top: 6px;
+            margin-left: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }}
+
+        .highlight {{
+            font-weight: 700;
+        }}
+
+        .increase {{
+            font-weight: 700;
+            color: #c62828;
+        }}
+
+        .decrease {{
+            font-weight: 700;
+            color: #1565c0;
+        }}
+
+        .note {{
+            font-size: 11.5pt;
+            color: #666;
+            margin-left: 4px;
+        }}
+
+        /* Table Styles */
+        .table-title {{
+            text-align: center;
+            font-size: 15pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }}
+
+        .table-note {{
+            text-align: right;
+            font-size: 11pt;
+            color: #666;
+            margin-bottom: 6px;
+        }}
+
+        .summary-table {{
+            width: 100%;
+            border-collapse: collapse;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            font-size: 11pt;
+        }}
+
+        .summary-table th,
+        .summary-table td {{
+            border: 1px solid #ccc;
+            padding: 6px 4px;
+        }}
+
+        .summary-table th {{
+            background: #f5f5f5;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid #000;
+        }}
+
+        .summary-table .nationwide-row td {{
+            background-color: #fffde7;
+            font-weight: 700;
+        }}
+
+        .summary-table .group-cell {{
+            background-color: #f9f9f9;
+            text-align: center;
+            font-weight: 600;
+        }}
+
+        .summary-table .region-cell {{
+            text-align: center;
+        }}
+
+        .summary-table .value-cell {{
+            text-align: right;
+            padding-right: 8px;
+        }}
+
+        .value-increase {{
+            color: #c62828;
+        }}
+
+        .value-decrease {{
+            color: #1565c0;
+        }}
+
+        @media print {{
+            .summary-title-box {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }}
+
+            .summary-table th {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }}
+        }}
     </style>
 </head>
 <body>
-    <button class="copy-btn" onclick="copyAll()">📋 전체 복사 (클릭)</button>
+    <button class="copy-btn" onclick="copyAll()">전체 복사 (클릭)</button>
     
     <div id="hwp-content">
 '''
+
+        # 각 페이지에서 스타일을 추출하여 수집
+        all_extracted_styles = set()
+        collected_styles = []
+        for page in pages:
+            page_html = page.get('html', '')
+            if '<style' in page_html:
+                style_matches = re.findall(r'<style[^>]*>(.*?)</style>', page_html, re.DOTALL)
+                for style in style_matches:
+                    # 중복 방지를 위해 hash 사용
+                    style_hash = hash(style.strip())
+                    if style_hash not in all_extracted_styles:
+                        all_extracted_styles.add(style_hash)
+                        collected_styles.append(style)
+        
+        # 수집된 스타일을 head에 한 번에 추가
+        if collected_styles:
+            style_block = '\n'.join([f'    <style>/* 추출된 스타일 */\n{style}\n    </style>' for style in collected_styles])
+            final_html = final_html.replace('</head>', f'{style_block}\n</head>')
 
         excluded_report_ids = {'cover', 'toc', 'stat_toc', 'guide', 'infographic', 'stat_appendix', 'stat_grdp'}
         is_first_page = True
@@ -2344,9 +2531,10 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_html)
 
+        # HTML 전체를 JSON 응답에 포함하지 않음 (파일 크기가 커서 응답 파싱 문제 발생)
+        # 클라이언트에서 download_url을 통해 파일을 직접 다운로드
         return {
             'success': True,
-            'html': final_html,
             'filename': output_filename,
             'view_url': f'/exports/{output_filename}',
             'download_url': f'/exports/{output_filename}',

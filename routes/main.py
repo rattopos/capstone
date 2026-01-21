@@ -59,6 +59,12 @@ def index():
     return render_template('dashboard.html', reports=REPORT_ORDER, regional_reports=REGIONAL_REPORTS)
 
 
+@main_bp.route('/preview')
+def preview():
+    """보도자료 미리보기/편집 페이지"""
+    return render_template('preview.html')
+
+
 @main_bp.route('/download/<report_id>')
 def download_report(report_id):
     """보도자료 다운로드 (안전한 처리)"""

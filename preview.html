@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보도자료 미리보기 - 지역경제동향</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --panel: #ffffff;
+            --text: #333333;
+            --muted: #666666;
+            --primary: #2B4E88;
+            --primary-light: #4a7ec7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* 상단 툴바 */
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toolbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .toolbar-info {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: #f0f4ff;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-edit {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #e68a00;
+        }
+
+        .btn-edit.active {
+            background: var(--success);
+        }
+
+        .btn-download {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #0d9668;
+        }
+
+        /* 메인 콘텐츠 영역 */
+        .main-content {
+            margin-top: 60px;
+            padding: 24px;
+            max-width: 210mm;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 보도자료 컨테이너 */
+        .report-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            padding: 20mm 15mm;
+            min-height: 297mm;
+        }
+
+        /* 편집 모드 스타일 */
+        .edit-mode .report-container {
+            border: 2px dashed var(--warning);
+        }
+
+        .edit-mode [contenteditable="true"] {
+            outline: none;
+            background: rgba(245, 158, 11, 0.05);
+            border-radius: 2px;
+        }
+
+        .edit-mode [contenteditable="true"]:focus {
+            background: rgba(245, 158, 11, 0.1);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+        }
+
+        .edit-mode [contenteditable="true"]:hover {
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        /* 편집 모드 안내 배너 */
+        .edit-banner {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--warning);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+        }
+
+        .edit-mode .edit-banner {
+            display: block;
+        }
+
+        /* 보도자료 내 표 스타일 */
+        .report-container table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            font-size: 11pt;
+        }
+
+        .report-container th,
+        .report-container td {
+            border: 1px solid #DDDDDD;
+            padding: 4px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .report-container th {
+            background-color: #F5F7FA;
+            border-top: 1px solid #888;
+            border-bottom: 1px solid #888;
+        }
+
+        /* 보도자료 내 제목 스타일 */
+        .report-container h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+        }
+
+        .report-container h2 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+        }
+
+        .report-container h3 {
+            font-size: 11.5pt;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            margin: 10px 0 8px 0;
+        }
+
+        .report-container h4 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+        }
+
+        .report-container p {
+            font-size: 10pt;
+            line-height: 1.5;
+            margin: 5px 0;
+        }
+
+        /* 로딩 오버레이 */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-card {
+            background: white;
+            padding: 32px 48px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e0e0e0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        /* 토스트 메시지 */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        /* 인쇄 스타일 */
+        @media print {
+            .toolbar,
+            .edit-banner,
+            .loading-overlay,
+            .toast {
+                display: none !important;
+            }
+
+            .main-content {
+                margin-top: 0;
+                padding: 0;
+            }
+
+            .report-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 0 12px;
+                height: auto;
+                min-height: 60px;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .toolbar-left,
+            .toolbar-right {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .main-content {
+                padding: 12px;
+            }
+
+            .report-container {
+                padding: 10mm 8mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 상단 툴바 -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="toolbar-title">보도자료 미리보기</div>
+            <div class="toolbar-info" id="reportInfo">로딩 중...</div>
+        </div>
+        <div class="toolbar-right">
+            <button class="btn btn-secondary" id="backBtn" onclick="goBack()">
+                이전으로
+            </button>
+            <button class="btn btn-edit" id="editBtn" onclick="toggleEditMode()">
+                편집 모드
+            </button>
+            <button class="btn btn-download" id="downloadBtn" onclick="downloadReport()">
+                다운로드
+            </button>
+        </div>
+    </div>
+
+    <!-- 편집 모드 안내 배너 -->
+    <div class="edit-banner" id="editBanner">
+        편집 모드 활성화됨 - 텍스트와 표를 직접 클릭하여 수정하세요
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+        <div class="report-container" id="reportContainer">
+            <!-- 보도자료 내용이 여기에 로드됩니다 -->
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">보도자료 불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 토스트 메시지 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 상태 변수
+        let isEditMode = false;
+        let reportYear = null;
+        let reportQuarter = null;
+        let reportHtml = null;
+        let reportFilename = null;
+
+        // DOM 요소
+        const reportContainer = document.getElementById('reportContainer');
+        const reportInfo = document.getElementById('reportInfo');
+        const editBtn = document.getElementById('editBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const toast = document.getElementById('toast');
+
+        // 페이지 로드 시 보도자료 불러오기
+        document.addEventListener('DOMContentLoaded', loadReport);
+
+        async function loadReport() {
+            showLoading('보도자료 불러오는 중...');
+            
+            try {
+                // URL 파라미터 확인
+                const urlParams = new URLSearchParams(window.location.search);
+                const year = urlParams.get('year');
+                const quarter = urlParams.get('quarter');
+                const filename = urlParams.get('filename');
+                
+                // 세션에서 연도/분기 정보 가져오기
+                const sessionResponse = await fetch('/api/session-info');
+                const sessionData = await sessionResponse.json();
+                
+                reportYear = year || sessionData.year;
+                reportQuarter = quarter || sessionData.quarter;
+                
+                if (!reportYear || !reportQuarter) {
+                    showError('연도/분기 정보를 찾을 수 없습니다.');
+                    hideLoading();
+                    return;
+                }
+
+                // 보도자료 HTML 생성/가져오기
+                showLoading('보도자료 생성 중...');
+                
+                const response = await fetch('/api/export-hwp-ready', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: reportYear,
+                        quarter: reportQuarter
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok || !result.success) {
+                    showError(result.error || '보도자료 생성에 실패했습니다.');
+                    hideLoading();
+                    return;
+                }
+                
+                // 보도자료 내용 렌더링
+                reportHtml = result.html;
+                reportFilename = result.filename || `지역경제동향_${reportYear}년_${reportQuarter}분기.html`;
+                
+                // body 내용만 추출
+                const bodyMatch = reportHtml.match(/<div id="hwp-content">([\s\S]*?)<\/div>\s*<script>/);
+                if (bodyMatch) {
+                    reportContainer.innerHTML = bodyMatch[1];
+                } else {
+                    // 전체 HTML에서 body 추출 시도
+                    const fullBodyMatch = reportHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                    if (fullBodyMatch) {
+                        reportContainer.innerHTML = fullBodyMatch[1];
+                    } else {
+                        reportContainer.innerHTML = reportHtml;
+                    }
+                }
+                
+                // 정보 업데이트
+                reportInfo.textContent = `${reportYear}년 ${reportQuarter}/4분기 지역경제동향`;
+                document.title = `${reportYear}년 ${reportQuarter}/4분기 지역경제동향 - 미리보기`;
+                
+                hideLoading();
+                showToast('보도자료를 성공적으로 불러왔습니다.', 'success');
+                
+            } catch (error) {
+                console.error('보도자료 로드 오류:', error);
+                showError('보도자료를 불러오는 중 오류가 발생했습니다.');
+                hideLoading();
+            }
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            
+            if (isEditMode) {
+                document.body.classList.add('edit-mode');
+                editBtn.textContent = '편집 완료';
+                editBtn.classList.add('active');
+                
+                // 편집 가능한 요소에 contenteditable 속성 추가
+                makeEditable(reportContainer);
+                
+                showToast('편집 모드가 활성화되었습니다.', 'success');
+            } else {
+                document.body.classList.remove('edit-mode');
+                editBtn.textContent = '편집 모드';
+                editBtn.classList.remove('active');
+                
+                // contenteditable 속성 제거
+                removeEditable(reportContainer);
+                
+                showToast('편집 모드가 종료되었습니다.', 'success');
+            }
+        }
+
+        function makeEditable(container) {
+            // 텍스트 요소들 편집 가능하게
+            const editableSelectors = 'p, h1, h2, h3, h4, h5, h6, li, td, th, span, div:not(.report-container):not([class*="chart"]):not([class*="wrapper"])';
+            const elements = container.querySelectorAll(editableSelectors);
+            
+            elements.forEach(el => {
+                // 자식 요소가 없거나 텍스트만 있는 경우에만 편집 가능하게
+                const hasOnlyText = el.childNodes.length === 0 || 
+                    Array.from(el.childNodes).every(node => 
+                        node.nodeType === Node.TEXT_NODE || 
+                        node.nodeName === 'BR' ||
+                        (node.nodeType === Node.ELEMENT_NODE && ['STRONG', 'B', 'I', 'EM', 'U', 'SUB', 'SUP'].includes(node.nodeName))
+                    );
+                
+                if (hasOnlyText || ['TD', 'TH', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI'].includes(el.tagName)) {
+                    el.setAttribute('contenteditable', 'true');
+                }
+            });
+        }
+
+        function removeEditable(container) {
+            const elements = container.querySelectorAll('[contenteditable="true"]');
+            elements.forEach(el => {
+                el.removeAttribute('contenteditable');
+            });
+        }
+
+        function downloadReport() {
+            if (!reportContainer.innerHTML.trim()) {
+                showToast('다운로드할 보도자료가 없습니다.', 'error');
+                return;
+            }
+            
+            showLoading('다운로드 준비 중...');
+            
+            // 현재 편집된 내용으로 HTML 생성
+            const editedContent = reportContainer.innerHTML;
+            
+            // 완전한 HTML 문서 생성
+            const fullHtml = generateFullHtml(editedContent);
+            
+            // Blob으로 다운로드
+            const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = reportFilename || `지역경제동향_${reportYear}년_${reportQuarter}분기.html`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            hideLoading();
+            showToast('다운로드가 완료되었습니다.', 'success');
+        }
+
+        function generateFullHtml(content) {
+            return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${reportYear}년 ${reportQuarter}/4분기 지역경제동향</title>
+    <style>
+        /* 브라우저 미리보기용 스타일 (한글 복붙 시에는 인라인 스타일 적용됨) */
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            padding: 20px;
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        .copy-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #0066cc;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12pt;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .copy-btn:hover { background: #0055aa; }
+        @media print { .copy-btn { display: none; } }
+        
+        /* 표 스타일 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            font-size: 11pt;
+        }
+        th, td {
+            border: 1px solid #DDDDDD;
+            padding: 4px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #F5F7FA;
+            border-top: 1px solid #888;
+            border-bottom: 1px solid #888;
+        }
+        h1 { font-size: 14pt; font-weight: bold; margin: 15px 0 10px 0; }
+        h2 { font-size: 13pt; font-weight: bold; margin: 15px 0 10px 0; }
+        h3 { font-size: 11.5pt; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 10px 0 8px 0; }
+        h4 { font-size: 11pt; font-weight: bold; margin: 10px 0 5px 0; }
+        p { font-size: 10pt; line-height: 1.5; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <button class="copy-btn" onclick="copyAll()">전체 복사 (클릭)</button>
+    
+    <div id="hwp-content">
+${content}
+    </div>
+    
+    <script>
+        function copyAll() {
+            const content = document.getElementById('hwp-content');
+            const range = document.createRange();
+            range.selectNodeContents(content);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            try {
+                document.execCommand('copy');
+                alert('복사 완료!\\n\\n한글(HWP)에서 Ctrl+V로 붙여넣기 하세요.\\n표와 서식이 유지됩니다.');
+            } catch (e) {
+                alert('자동 복사 실패.\\nCtrl+A로 전체 선택 후 Ctrl+C로 복사하세요.');
+            }
+            
+            selection.removeAllRanges();
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                copyAll();
+            }
+        });
+    <\/script>
+</body>
+</html>`;
+        }
+
+        function goBack() {
+            if (isEditMode) {
+                if (confirm('편집 중인 내용이 있습니다. 저장하지 않고 나가시겠습니까?')) {
+                    window.location.href = '/';
+                }
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function showLoading(message) {
+            loadingText.textContent = message || '로딩 중...';
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function showToast(message, type = '') {
+            toast.textContent = message;
+            toast.className = 'toast show';
+            if (type) toast.classList.add(type);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showError(message) {
+            reportContainer.innerHTML = `
+                <div style="text-align: center; padding: 48px; color: #ef4444;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">오류</div>
+                    <div style="font-size: 16px;">${message}</div>
+                    <button onclick="window.location.href='/'" style="margin-top: 24px; padding: 12px 24px; background: #2B4E88; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        메인으로 돌아가기
+                    </button>
+                </div>
+            `;
+        }
+
+        // 키보드 단축키
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S: 다운로드
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                downloadReport();
+            }
+            // Ctrl+E: 편집 모드 토글
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                toggleEditMode();
+            }
+            // Escape: 편집 모드 종료
+            if (e.key === 'Escape' && isEditMode) {
+                toggleEditMode();
+            }
+        });
+    </script>
+</body>
+</html>
