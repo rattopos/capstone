@@ -1,5 +1,100 @@
 # 디버그 로그
 
+## 2026-01-21: 실업률 표 빈칸 문제 수정
+
+### 문제 설명
+- 실업률 표에서 세종, 전남, 강원의 2025. 2/4 열이 빈칸으로 표시됨
+- 이미지에서 전년동분기대비 증감(%p) 컬럼의 2025. 2/4 데이터가 누락됨
+
+### 원인 분석
+- `config/reports.py`의 실업률 `aggregation_columns` 설정에서 컬럼 인덱스가 잘못 설정되어 있음
+- 설정에서 `'2025 2/4': 18`로 되어있었지만, 실제 엑셀에서는 **컬럼 13**에 데이터가 있음
+- 컬럼 18-19는 모두 NaN 값이므로 빈칸으로 표시됨
+
+### 에이전트 사고 과정
+1. **문제 인식**: 사용자가 제공한 이미지에서 세종, 전남, 강원의 2025. 2/4 열이 빈칸
+2. **데이터 확인**: 엑셀 파일(D(실업)분석 시트)에서 실제 데이터 존재 확인
+3. **컬럼 구조 분석**: Row 79(헤더 행)에서 정확한 컬럼 인덱스 확인
+   - 컬럼 13 = 2025 2/4 (실제 데이터 있음)
+   - 컬럼 18 = NaN (설정에서 참조하는 잘못된 컬럼)
+4. **설정 비교**: `config/reports.py`의 설정과 실제 엑셀 구조 비교
+5. **수정 결정**: 모든 컬럼 인덱스를 올바른 값으로 수정
+
+### 해결 방법
+**config/reports.py 수정**:
+| 설정 키 | 수정 전 | 수정 후 | 설명 |
+|---------|---------|---------|------|
+| `target_col` | 19 | 14 | 2025 3/4 |
+| `prev_y_col` | 15 | 10 | 2024 3/4 |
+| `prev_prev_y_col` | 11 | 6 | 2023 3/4 |
+| `prev_prev_prev_y_col` | 7 | 3 | 2022년 (연도별) |
+| `quarterly_cols['2023 3/4']` | 11 | 6 | |
+| `quarterly_cols['2024 3/4']` | 15 | 10 | |
+| `quarterly_cols['2025 2/4']` | 18 | 13 | |
+| `quarterly_cols['2025 3/4']` | 19 | 14 | |
+| `aggregation_range.end_col` | 'T' | 'O' | |
+
+### 관련 파일
+- `config/reports.py`
+
+### 작업 상태
+완료
+
+### 참고 사항
+- D(실업)분석 시트의 실업률(%) 섹션은 Row 80부터 시작
+- 실제 엑셀 헤더 구조: 컬럼 0=시도별, 1=연령계층별, 2=2021.0, ..., 6=2023 3/4, ..., 13=2025 2/4, 14=2025 3/4, 15=분기순위
+
+---
+
+## 2026-01-21: 시도별 경제동향 나레이션 생성 기능 추가
+
+### 문제 설명
+- III. 시도별 경제 동향 섹션에서 각 영역(건설, 수출입/물가, 고용/인구이동)의 나레이션이 생성되지 않음
+- 템플릿에 `[건설 나레이션]`, `[수출 나레이션]` 등의 플레이스홀더가 그대로 표시됨
+
+### 원인 분석
+- `RegionalReportGenerator.extract_all_data()`의 `_make_section_data()` 함수에서 `'narrative': []`로 빈 리스트 반환
+- `RegionalEconomyByRegionGenerator`에는 `_generate_narrative()` 메서드가 있지만, `RegionalReportGenerator`에는 없음
+- `generate_regional_report_html()`이 `RegionalReportGenerator`를 사용하므로 나레이션이 생성되지 않음
+
+### 에이전트 사고 과정
+1. **템플릿 분석**: `regional_economy_by_region_template.html`에서 `sections.construction.narrative`, `sections.export.narrative` 등을 사용
+2. **Generator 분석**: 
+   - `RegionalEconomyByRegionGenerator`에 `_generate_narrative()` 구현됨
+   - `RegionalReportGenerator`에는 해당 로직 없음
+3. **해결 방안 결정**: `RegionalReportGenerator`에 `_generate_section_narrative()` 메서드 추가
+4. **구현**: 
+   - `_generate_section_narrative()` 메서드 추가
+   - `_make_section_data()`에서 나레이션 생성 호출
+   - migration(순인구이동)의 경우 % 대신 명 단위 사용
+
+### 해결 방법
+**templates/unified_generator.py 수정**:
+1. `RegionalReportGenerator._generate_section_narrative()` 메서드 추가:
+   - 부문별 나레이션 템플릿 정의
+   - `get_terms()` 함수를 사용하여 어휘 통제 준수
+   - migration의 경우 % 대신 명 단위로 표시
+
+2. `_make_section_data()` 함수 수정:
+   - `sector_key` 파라미터 추가
+   - `_generate_section_narrative()` 호출하여 나레이션 생성
+
+### 관련 파일
+- `templates/unified_generator.py`
+- `templates/regional_economy_by_region_template.html`
+
+### 작업 상태
+완료
+
+### 참고 사항
+- 나레이션 형식: `{지역}의 {부문}은 전년동기대비 {증감률}% {증가/감소/상승/하락}`
+- 순인구이동: `{지역}의 순인구이동은 전년동기대비 {증감명}명 {증가/감소}`
+- 어휘 통제: `utils/text_utils.py`의 `get_terms()` 함수 사용
+  - quantity 그룹 (생산, 소비, 건설, 수출, 수입, 인구이동): 증가/감소
+  - price 그룹 (물가, 고용률, 실업률): 상승/하락
+
+---
+
 ## 2026-01-21: 고용률/실업률 연령별 데이터 미표시 및 테이블 빈칸 버그 수정
 
 ### 문제 설명

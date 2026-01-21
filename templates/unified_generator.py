@@ -2137,10 +2137,108 @@ class UnifiedReportGenerator(BaseGenerator):
             nationwide.setdefault('main_age_groups', nationwide.get('main_age_groups', []))
         elif self.report_type == 'migration':
             report_info = data.get('report_info', {}) or {}
+            # 섹션 번호 및 제목 설정 (템플릿에서 [번호], [항목명] 대신 표시)
+            report_info.setdefault('main_section_number', 7)
+            report_info.setdefault('main_section_title', '국내 인구이동')
             report_info.setdefault('age_20_29_label', '20-29세')
             report_info.setdefault('age_other_label', '그 외 연령층')
             report_info.setdefault('age_other_note', '그 외 연령층')
+            report_info.setdefault('migration_note', '순이동 = 전입 - 전출')
             data['report_info'] = report_info
+            
+            # table_df에 table_data 복사 및 전국 데이터 추가 (템플릿 호환성)
+            if 'table_data' in data and data['table_data']:
+                table_data_copy = list(data['table_data'])
+                
+                # 전국 데이터 생성 (모든 지역 합계)
+                # 국내인구이동에서는 전국 순이동 합계는 0 (유입=유출)이지만 표시용으로 계산
+                total_value = sum(r.get('value', 0) or 0 for r in table_data_copy)
+                total_prev_value = sum(r.get('prev_value', 0) or 0 for r in table_data_copy)
+                total_prev_prev_value = sum(r.get('prev_prev_value', 0) or 0 for r in table_data_copy)
+                total_prev_prev_prev_value = sum(r.get('prev_prev_prev_value', 0) or 0 for r in table_data_copy)
+                total_age_20_29 = sum(r.get('age_20_29', 0) or 0 for r in table_data_copy)
+                total_age_other = sum(r.get('age_other', 0) or 0 for r in table_data_copy)
+                
+                nationwide_row = {
+                    'region_name': '전국',
+                    'region_display': '전국',
+                    'value': total_value,
+                    'prev_value': total_prev_value,
+                    'prev_prev_value': total_prev_prev_value,
+                    'prev_prev_prev_value': total_prev_prev_prev_value,
+                    'age_20_29': total_age_20_29,
+                    'age_other': total_age_other
+                }
+                
+                # 전국 데이터를 맨 앞에 추가
+                table_data_copy.insert(0, nationwide_row)
+                data['table_df'] = table_data_copy
+            
+            # top_inflow_regions, top_outflow_regions 생성 (순이동 양수/음수 기준)
+            table_data_list = data.get('table_data', [])
+            if table_data_list:
+                # 순유입 지역 (value > 0)
+                inflow_regions = [r for r in table_data_list if r.get('value') is not None and r.get('value') > 0]
+                # 순유출 지역 (value < 0)
+                outflow_regions = [r for r in table_data_list if r.get('value') is not None and r.get('value') < 0]
+                
+                # 순유입 크기 기준 정렬 (큰 순)
+                inflow_regions.sort(key=lambda x: x.get('value', 0), reverse=True)
+                # 순유출 크기 기준 정렬 (작은 순, 즉 유출 많은 순)
+                outflow_regions.sort(key=lambda x: x.get('value', 0))
+                
+                # 연령대 패턴 필터 (00~04세, 20~24세, 80세이상 등 "세" 포함 항목만)
+                def is_age_group(name: str) -> bool:
+                    if not name:
+                        return False
+                    return '세' in name and ('~' in name or '이상' in name)
+                
+                # 상위 3개 지역에 연령별 데이터 추가
+                top_inflow = []
+                for r in inflow_regions[:3]:
+                    region_name = r.get('region_name', '')
+                    region_industries = self._extract_industry_data(region_name)
+                    # 상위 3개 연령대 (순이동이 큰 순)
+                    ages = []
+                    if region_industries:
+                        # 연령대 데이터만 필터링 ("세" 포함 항목)
+                        valid_ages = [a for a in region_industries 
+                                     if a.get('value') is not None and is_age_group(a.get('name', ''))]
+                        valid_ages.sort(key=lambda x: abs(x.get('value', 0)), reverse=True)
+                        for age in valid_ages[:3]:
+                            ages.append({
+                                'name': age.get('name', ''),
+                                'value': age.get('value')
+                            })
+                    top_inflow.append({
+                        'name': region_name,
+                        'value': r.get('value'),
+                        'ages': ages
+                    })
+                data['top_inflow_regions'] = top_inflow
+                
+                top_outflow = []
+                for r in outflow_regions[:3]:
+                    region_name = r.get('region_name', '')
+                    region_industries = self._extract_industry_data(region_name)
+                    # 상위 3개 연령대 (순유출이 큰 순, 즉 값이 작은 순)
+                    ages = []
+                    if region_industries:
+                        # 연령대 데이터만 필터링 ("세" 포함 항목)
+                        valid_ages = [a for a in region_industries 
+                                     if a.get('value') is not None and is_age_group(a.get('name', ''))]
+                        valid_ages.sort(key=lambda x: abs(x.get('value', 0)), reverse=True)
+                        for age in valid_ages[:3]:
+                            ages.append({
+                                'name': age.get('name', ''),
+                                'value': age.get('value')
+                            })
+                    top_outflow.append({
+                        'name': region_name,
+                        'value': r.get('value'),
+                        'ages': ages
+                    })
+                data['top_outflow_regions'] = top_outflow
         elif self.report_type == 'construction':
             # construction_template.html 호환성 보강 - 실제 데이터 사용
             civil_building_nationwide = self._get_civil_building_growth('전국')
@@ -3261,6 +3359,79 @@ class RegionalReportGenerator(BaseGenerator):
         except Exception:
             return default
     
+    def _generate_section_narrative(
+        self,
+        region_name: str,
+        sector_key: str,
+        sector_data: Optional[Dict[str, Any]]
+    ) -> List[str]:
+        """부문별 나레이션 생성
+        
+        Args:
+            region_name: 지역명 (예: '서울')
+            sector_key: 부문 키 (예: 'construction', 'export')
+            sector_data: 부문 데이터 (value, change_rate 포함)
+        
+        Returns:
+            나레이션 리스트
+        """
+        if not sector_data:
+            return []
+        
+        try:
+            from utils.text_utils import get_terms
+        except ImportError:
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from utils.text_utils import get_terms
+        
+        value = sector_data.get('value')
+        change_rate = sector_data.get('change_rate')
+        
+        if value is None:
+            return []
+        
+        # 부문별 나레이션 템플릿
+        template_map = {
+            'mining': '{region}의 광공업생산은 {changes}',
+            'service': '{region}의 서비스업생산은 {changes}',
+            'consumption': '{region}의 소비는 {changes}',
+            'construction': '{region}의 건설은 {changes}',
+            'export': '{region}의 수출은 {changes}',
+            'import': '{region}의 수입은 {changes}',
+            'employment': '{region}의 고용률은 {changes}',
+            'unemployment': '{region}의 실업률은 {changes}',
+            'price': '{region}의 물가는 {changes}',
+            'migration': '{region}의 순인구이동은 {changes}',
+        }
+        
+        template = template_map.get(sector_key, '{region}는 {changes}')
+        
+        # 증감 텍스트 생성
+        if change_rate is None:
+            changes_text = '변화'
+        else:
+            try:
+                change_float = float(change_rate)
+                _, result_noun, _ = get_terms(sector_key, change_float)
+                if abs(change_float) < 0.01:
+                    changes_text = '전년동기대비 보합'
+                elif sector_key == 'migration':
+                    # 순인구이동은 인원수(명)로 표시
+                    changes_text = f'전년동기대비 {abs(int(change_float)):,}명 {result_noun}'
+                else:
+                    changes_text = f'전년동기대비 {abs(change_float):.1f}% {result_noun}'
+            except (ValueError, TypeError):
+                changes_text = '변화'
+        
+        narrative_text = template.format(
+            region=region_name,
+            changes=changes_text
+        )
+        
+        return [narrative_text]
+    
     def extract_all_data(self, region: Optional[str] = None) -> Dict[str, Any]:
         """시도별 모든 데이터 추출
         
@@ -3321,8 +3492,8 @@ class RegionalReportGenerator(BaseGenerator):
         
         # 하단 부문별 표 데이터 구성 (sections)
         # 실제 데이터 키: value (지수/금액), change_rate (증감률)
-        def _make_section_data(data: Optional[Dict], value_key: str = 'value', change_key: str = 'change_rate') -> Dict[str, Any]:
-            """부문별 섹션 데이터 생성"""
+        def _make_section_data(data: Optional[Dict], sector_key: str, value_key: str = 'value', change_key: str = 'change_rate') -> Dict[str, Any]:
+            """부문별 섹션 데이터 생성 (나레이션 포함)"""
             if not data:
                 return {
                     'table': {
@@ -3335,25 +3506,28 @@ class RegionalReportGenerator(BaseGenerator):
             current_value = self._format_value(data.get(value_key))
             change_value = self._format_value(data.get(change_key))
             
+            # 나레이션 생성
+            narrative = self._generate_section_narrative(region_name, sector_key, data)
+            
             return {
                 'table': {
                     'periods': [f'{self.year}. {self.quarter}/4' if self.year and self.quarter else '현 기간'],
                     'data': [{'values': [current_value, change_value]}]
                 },
-                'narrative': []  # 나레이션은 별도 생성 필요
+                'narrative': narrative
             }
         
         sections = {
-            'mining': _make_section_data(mining_data),
-            'service': _make_section_data(service_data),
-            'consumption': _make_section_data(consumption_data),
-            'construction': _make_section_data(construction_data),
-            'export': _make_section_data(export_data),
-            'import': _make_section_data(import_data),
-            'employment': _make_section_data(employment_data),
-            'unemployment': _make_section_data(unemployment_data),
-            'price': _make_section_data(price_data),
-            'migration': _make_section_data(migration_data),
+            'mining': _make_section_data(mining_data, 'mining'),
+            'service': _make_section_data(service_data, 'service'),
+            'consumption': _make_section_data(consumption_data, 'consumption'),
+            'construction': _make_section_data(construction_data, 'construction'),
+            'export': _make_section_data(export_data, 'export'),
+            'import': _make_section_data(import_data, 'import'),
+            'employment': _make_section_data(employment_data, 'employment'),
+            'unemployment': _make_section_data(unemployment_data, 'unemployment'),
+            'price': _make_section_data(price_data, 'price'),
+            'migration': _make_section_data(migration_data, 'migration'),
         }
         
         print(f"[지역경제동향] {region_name} 데이터 추출 완료")
@@ -3463,6 +3637,34 @@ if __name__ == '__main__':
     excel_path = base_path / '분석표_25년 3분기_캡스톤(업데이트).xlsx'
     
     print("=" * 70)
+    print("통합 Generator V2 테스트 (집계 시트 기반)")
+    print("=" * 70)
+    
+    for report_type in ['mining', 'service', 'consumption']:
+        print(f"\n{'='*70}")
+        print(f"[TEST] {REPORT_CONFIGS[report_type]['name']}")
+        print(f"{'='*70}\n")
+        
+        try:
+            generator = UnifiedReportGenerator(report_type, str(excel_path), 2025, 3)
+            data = generator.extract_all_data()
+            
+            # 결과 출력
+            print(f"\n[결과] ✅ 데이터 추출 완료")
+            nationwide = data['nationwide_data']
+            print(f"  전국: 지수={nationwide['production_index']:.1f}, 증감률={nationwide['growth_rate']}%")
+            
+            regional = data['regional_data']
+            print(f"  지역: 증가={len(regional['increase_regions'])}개, 감소={len(regional['decrease_regions'])}개")
+            
+            if regional['increase_regions']:
+                top = regional['increase_regions'][0]
+                print(f"  최고: {top['region_name']} ({top['change_rate']}%)")
+            
+        except Exception as e:
+            print(f"\n[오류] ❌ {e}")
+            import traceback
+            traceback.print_exc()
     print("통합 Generator V2 테스트 (집계 시트 기반)")
     print("=" * 70)
     

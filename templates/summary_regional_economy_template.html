@@ -36,20 +36,21 @@
             padding: 26px 40px 6px 40px;
         }
 
-        /* Gray Header Title Style */
-        .summary-title-wrap {
-            margin-bottom: 24px;
+        /* Section Title Style - 생산 섹션과 동일 */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0 12px;
         }
 
-        .summary-title-box {
-            background-color: #e0e0e0;
-            /* 연한 회색 배경 */
-            padding: 12px 20px;
-            font-size: 18pt;
-            font-weight: 700;
+        .section-title span:first-child {
+            background: #d9d9d9;
             color: #000;
-            border-left: 10px solid #777;
-            /* 왼쪽 진한 회색 포인트 */
+            font-size: 15pt;
+            font-weight: 700;
+            padding: 4px 14px;
+            border-radius: 2px;
         }
 
         /* Clean Summary Text Layout */
@@ -202,13 +203,10 @@
 
 <body>
     <div class="summary-container">
-        <!-- Gray Header Title -->
-        <div class="summary-title-wrap">
-            <div class="summary-title-box">
-                {% if report_info.year is defined and report_info.quarter is defined and report_info.year and
-                report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}분기{% else %}[연도/분기 입력 필요]{% endif
-                %} 지역경제동향[요약]
-            </div>
+        <!-- Gray Header Title - 생산 섹션과 동일한 스타일 -->
+        <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 6px 0 12px;">
+            <span style="background: #d9d9d9; color: #000; font-size: 15pt; font-weight: 700; padding: 4px 14px; border-radius: 2px;">{% if report_info.year is defined and report_info.quarter is defined and report_info.year and report_info.quarter %}{{ report_info.year }}년 {{ report_info.quarter }}분기{% else %}[연도/분기 입력 필요]{% endif %} 지역경제동향[요약]</span>
+            <span style="flex: 1; height: 1px; background: #8f8f8f;"></span>
         </div>
 
         <!-- Summary Items List -->

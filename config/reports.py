@@ -502,15 +502,15 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'data_start_row': 1  # 첫 행(헤더)을 건너뛰고 데이터 시작 (aggregation_range가 이미 80행부터 읽어옴)
         },
         'aggregation_columns': {
-            'target_col': 19,  # T열(0-based) - 2025 3/4
-            'prev_y_col': 15,  # P열(0-based) - 2024 3/4
-            'prev_prev_y_col': 11,  # L열(0-based) - 2023 3/4
-            'prev_prev_prev_y_col': 7,  # H열(0-based) - 2022 3/4
+            'target_col': 14,  # O열(0-based) - 2025 3/4
+            'prev_y_col': 10,  # K열(0-based) - 2024 3/4
+            'prev_prev_y_col': 6,  # G열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 3,  # D열(0-based) - 2022년 (연도별, 분기별 없음)
             'quarterly_cols': {
-                '2022 3/4': 7, '2023 3/4': 11, '2024 3/4': 15, '2025 2/4': 18, '2025 3/4': 19
+                '2023 3/4': 6, '2024 3/4': 10, '2025 2/4': 13, '2025 3/4': 14
             }
         },
-        'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'T'},
+        'aggregation_range': {'start_row': 80, 'end_row': 152, 'start_col': 'A', 'end_col': 'O'},
         'metadata_columns': ['year', 'quarter', 'region'],
         'header_rows': 3  # 상단 2줄 설명 + 실제 헤더 1줄
     },

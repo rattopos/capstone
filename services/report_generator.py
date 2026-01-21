@@ -723,12 +723,15 @@ def generate_report_html(excel_path, report_config, year, quarter, custom_data=N
 
                 if preprocessed_df is not None:
                     try:
-                        # summary_table.rows가 있으면 그것을 table_df로 사용 (템플릿 호환성)
-                        # summary_table.rows에는 sido, changes, rates 등 템플릿에서 기대하는 필드가 있음
-                        if isinstance(data.get('summary_table'), dict) and data['summary_table'].get('rows'):
-                            data['table_df'] = data['summary_table']['rows']
-                        else:
-                            data['table_df'] = preprocessed_df.to_dict(orient='records')
+                        # 이미 table_df가 설정되어 있으면 (예: migration 타입에서 _enrich_template_data로 설정)
+                        # 덮어쓰지 않음
+                        if 'table_df' not in data or not data['table_df']:
+                            # summary_table.rows가 있으면 그것을 table_df로 사용 (템플릿 호환성)
+                            # summary_table.rows에는 sido, changes, rates 등 템플릿에서 기대하는 필드가 있음
+                            if isinstance(data.get('summary_table'), dict) and data['summary_table'].get('rows'):
+                                data['table_df'] = data['summary_table']['rows']
+                            else:
+                                data['table_df'] = preprocessed_df.to_dict(orient='records')
                         data['table_df_columns'] = list(preprocessed_df.columns)
                     except Exception as to_dict_error:
                         print(f"[WARNING] 전처리 DF 매핑 실패: {to_dict_error}")

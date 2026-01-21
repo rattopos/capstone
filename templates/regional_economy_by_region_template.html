@@ -95,10 +95,27 @@
             padding: 1px 4px;
             border: 1px dashed #fbc02d;
         }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .chapter-title {
+            font-size: 22pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     {% set region_label = region_name | default(region_info.name if region_info is defined else "[시도]") %}
+    
+    <!-- 첫 번째 지역(서울)일 때만 페이지 브레이크와 큰 제목 표시 -->
+    {% if region_info is defined and region_info.order is defined and region_info.order == 1 %}
+    <div class="page-break"></div>
+    <div class="chapter-title">III. 시도별 경제동향</div>
+    {% endif %}
+    
     <div class="page-title">{{ region_info.order ~ ". " if region_info is defined and region_info.order is defined else "" }}{{ region_label }}</div>
     <div class="page-subtitle">{% if report_info.year is defined and report_info.quarter is defined %}{{ report_info.year }}년 {{ report_info.quarter }}분기{% else %}<span class="placeholder">[연도/분기]</span>{% endif %} 지역경제동향</div>
 
