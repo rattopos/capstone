@@ -971,8 +971,11 @@ class UnifiedReportGenerator(BaseGenerator):
             # value_type='change_rate': 이미 계산된 증감률 직접 사용
             # 기타 지수: 증감률(%)
             if self.report_type == 'migration':
-                # 국내인구이동은 증감률 계산하지 않음
-                change_rate = None
+                # 국내인구이동은 증감률(%)이 아닌 전년동분기대비 증감(명)을 계산
+                if idx_prev_year is not None:
+                    change_rate = round(idx_current - idx_prev_year, 1)
+                else:
+                    change_rate = None
             elif self.config.get('value_type') == 'change_rate':
                 # 시트에 이미 증감률이 계산되어 있는 경우 (예: C 분석)
                 change_rate = round(rate_current, 1) if rate_current is not None else round(idx_current, 1)
@@ -997,7 +1000,8 @@ class UnifiedReportGenerator(BaseGenerator):
                     'prev_value': round(idx_prev_quarter, 1) if idx_prev_quarter is not None else None,
                     'prev_prev_value': round(idx_prev_prev, 1) if idx_prev_prev is not None else None,
                     'prev_prev_prev_value': round(idx_prev_prev_prev, 1) if idx_prev_prev_prev is not None else None,
-                    # 국내인구이동은 증감률 계산하지 않음
+                    'prev_year_value': round(idx_prev_year, 1) if idx_prev_year is not None else None,
+                    'change_rate': change_rate,  # 전년동분기대비 증감(명)
                     'quarterly_keys': self.quarterly_keys,
                     'quarterly_values': quarterly_values,
                     'quarterly_growth_rates': quarterly_growth_rates,
@@ -1024,7 +1028,11 @@ class UnifiedReportGenerator(BaseGenerator):
 
             table_data.append(row_data)
             
-            print(f"[{self.config['name']}] ✅ {region}: 지수={idx_current:.1f}, 증감률={change_rate}%")
+            if self.report_type == 'migration':
+                change_str = f"{change_rate:.1f}명" if change_rate is not None else "N/A"
+                print(f"[{self.config['name']}] ✅ {region}: 순이동={idx_current:.1f}명, 전년동분기대비 증감={change_str}")
+            else:
+                print(f"[{self.config['name']}] ✅ {region}: 지수={idx_current:.1f}, 증감률={change_rate}%")
         
         # 국내인구이동: 전국 데이터 생성 여부 확인 (config의 has_nationwide 설정)
         # 국내이동은 지역간 이동이므로 전국 합계(0)는 의미가 없어 생성하지 않음

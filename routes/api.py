@@ -161,14 +161,8 @@ def _run_generate_job(job_id: str, year, quarter, cleanup_after: bool, excel_pat
     try:
         _update_job(job_id, status='running', progress=10, message='보도자료 생성 시작...')
         
-        # 세션 정보를 직접 사용 (백그라운드 스레드에서는 Flask 세션 사용 불가)
-        # excel_path는 함수 인자로 전달받음
-        if excel_path:
-            session_data = {'excel_path': excel_path}
-        else:
-            session_data = {}
-        
-        result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after)
+        # 백그라운드 스레드에서는 Flask 세션 사용 불가하므로 excel_path를 직접 전달
+        result = _generate_all_reports_core(year, quarter, cleanup_after=cleanup_after, excel_path=excel_path)
         
         if result.get('success'):
             _update_job(job_id, status='completed', result=result, progress=100, message='보도자료 생성 완료')
@@ -668,11 +662,20 @@ def get_session_info():
     })
 
 
-def _generate_all_reports_core(year, quarter, cleanup_after=True):
-    """모든 보도자료 생성 공통 로직 (옵션: 업로드 정리 여부)"""
+def _generate_all_reports_core(year, quarter, cleanup_after=True, excel_path=None):
+    """모든 보도자료 생성 공통 로직 (옵션: 업로드 정리 여부)
+    
+    Args:
+        year: 연도
+        quarter: 분기
+        cleanup_after: 작업 후 정리 여부
+        excel_path: 엑셀 파일 경로 (백그라운드 스레드에서는 직접 전달, 일반 요청에서는 세션에서 가져옴)
+    """
     from services.excel_cache import get_excel_file, clear_excel_cache
 
-    excel_path = session.get('excel_path')
+    # excel_path가 전달되지 않으면 세션에서 가져옴 (동기 모드일 때)
+    if excel_path is None:
+        excel_path = session.get('excel_path')
     if not excel_path or not Path(excel_path).exists():
         return {'success': False, 'error': '엑셀 파일을 먼저 업로드하세요', 'generated': [], 'errors': [], 'cleanup': cleanup_after}
 

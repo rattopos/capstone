@@ -38,7 +38,12 @@ def _load_export_name_mapping() -> dict[str, str]:
 
 EXPORT_NAME_MAPPING = _load_export_name_mapping()
 
-REGIONAL_REPORTS: list[dict[str, Any]] = [
+# ===== 테스트 모드 설정 =====
+# 테스트 시 True로 설정하면 서울만 생성, False로 설정하면 17개 시도 전체 생성
+TEST_MODE_SEOUL_ONLY = True  # TODO: 테스트 완료 후 False로 변경
+
+# 17개 시도 전체 목록 (원본)
+_ALL_REGIONAL_REPORTS: list[dict[str, Any]] = [
     {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
     {'id': 'region_busan', 'name': '부산', 'full_name': '부산광역시', 'index': 2, 'icon': '🌊'},
     {'id': 'region_daegu', 'name': '대구', 'full_name': '대구광역시', 'index': 3, 'icon': '🏛️'},
@@ -57,6 +62,14 @@ REGIONAL_REPORTS: list[dict[str, Any]] = [
     {'id': 'region_gyeongnam', 'name': '경남', 'full_name': '경상남도', 'index': 16, 'icon': '🌳'},
     {'id': 'region_jeju', 'name': '제주', 'full_name': '제주특별자치도', 'index': 17, 'icon': '🏝️'}
 ]
+
+# 테스트용: 서울만 포함
+_TEST_REGIONAL_REPORTS: list[dict[str, Any]] = [
+    {'id': 'region_seoul', 'name': '서울', 'full_name': '서울특별시', 'index': 1, 'icon': '🏙️'},
+]
+
+# 테스트 모드에 따라 사용할 목록 선택
+REGIONAL_REPORTS: list[dict[str, Any]] = _TEST_REGIONAL_REPORTS if TEST_MODE_SEOUL_ONLY else _ALL_REGIONAL_REPORTS
 
 # 아래는 REGION_DISPLAY_MAPPING, REGION_GROUPS, VALID_REGIONS 등 통합 매핑 예시 (필요시 확장)
 REGION_DISPLAY_MAPPING: dict[str, str] = {
