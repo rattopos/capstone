@@ -490,7 +490,12 @@ class UnifiedReportGenerator(BaseGenerator):
         if self.industry_name_col is None:
             self.industry_name_col = self.config.get('industry_name_col') or agg_struct.get('industry_name_col')
         if self.data_start_row is None:
-            self.data_start_row = self.config.get('data_start_row', header_rows)
+            # aggregation_structure.data_start_row 우선 (0도 유효한 값이므로 is not None 체크)
+            agg_data_start = agg_struct.get('data_start_row')
+            if agg_data_start is not None:
+                self.data_start_row = agg_data_start
+            else:
+                self.data_start_row = self.config.get('data_start_row', header_rows)
         analysis_sheet = self.config.get('analysis_sheet')
         if analysis_sheet and analysis_sheet != agg_sheet_name:
             try:
@@ -778,7 +783,7 @@ class UnifiedReportGenerator(BaseGenerator):
             return []
         
         def _select_youth_rate(df_source: pd.DataFrame, region_name: str, target_col_idx: int) -> Optional[float]:
-            """실업률/고용률에서 청년층 데이터 추출 (고용률: 20-29세, 실업률: 15-29세)"""
+            """실업률/고용률에서 청년층 데이터 추출 (둘 다 15-29세 사용)"""
             if df_source is None or self.report_type not in ['employment', 'unemployment']:
                 return None
             
@@ -792,16 +797,13 @@ class UnifiedReportGenerator(BaseGenerator):
             else:
                 local_df = df_source.copy()
             
-            # 지역명 컬럼 (0번)과 연령계층 컬럼 (1번)
-            region_col = 0
-            age_col = 1
+            # 지역명 컬럼과 연령계층 컬럼 - 설정에서 가져오기
+            agg_struct = self.config.get('aggregation_structure', {})
+            region_col = agg_struct.get('region_name_col', 0)
+            age_col = agg_struct.get('age_col', 1)
             
-            # 고용률은 20-29세, 실업률은 15-29세 사용
-            if self.report_type == 'employment':
-                # 여러 패턴 시도: '20-29', '20~29', '20∼29', '20～29' 등
-                age_patterns = ['20.*29', '20~29', '20-29', '20∼29', '20～29']
-            else:  # unemployment
-                age_patterns = ['15.*29', '15~29', '15-29', '15∼29', '15～29']
+            # 고용률/실업률 모두 15-29세 사용 (엑셀 데이터에는 15-29세만 있음)
+            age_patterns = ['15.*29', '15~29', '15-29', '15∼29', '15～29', '15 - 29']
             
             try:
                 youth_filter = None
@@ -1105,9 +1107,21 @@ class UnifiedReportGenerator(BaseGenerator):
         else:
             data_df = df.copy()
         
-        # 지역명 컬럼 (0번)과 연령계층 컬럼 (1번) - 고용률/실업률 시트 구조
-        region_col = 0
-        age_col = 1
+        # 지역명 컬럼과 연령계층 컬럼 - 설정에서 가져오기
+        agg_struct = self.config.get('aggregation_structure', {})
+        region_col = agg_struct.get('region_name_col')
+        age_col = agg_struct.get('age_col')
+        
+        # 설정에 없으면 동적으로 찾은 값 사용, 그래도 없으면 ValueError
+        if region_col is None:
+            region_col = self.region_name_col
+        if age_col is None:
+            age_col = self.industry_name_col  # 고용률/실업률에서는 산업명 컬럼이 연령 역할
+        
+        if region_col is None:
+            raise ValueError(f"[{self.config['name']}] ❌ 지역명 컬럼(region_name_col)을 찾을 수 없습니다. 설정을 확인하세요.")
+        if age_col is None:
+            raise ValueError(f"[{self.config['name']}] ❌ 연령 컬럼(age_col)을 찾을 수 없습니다. 설정을 확인하세요.")
         
         # 현재 분기와 전년 동분기 컬럼 인덱스
         target_col = self.target_col
@@ -1124,6 +1138,9 @@ class UnifiedReportGenerator(BaseGenerator):
             ]
             
             if region_filter.empty:
+                # 디버그: 사용 가능한 지역명 확인
+                unique_regions = data_df.iloc[:, region_col].astype(str).str.strip().unique()
+                print(f"[{self.config['name']}] ⚠️ {region} 연령별 데이터 없음. 사용 가능한 지역: {unique_regions[:5]}...")
                 return []
             
             # 연령별 데이터 추출
@@ -1157,6 +1174,12 @@ class UnifiedReportGenerator(BaseGenerator):
             age_groups_with_change = [a for a in age_groups if a.get('change') is not None]
             age_groups_with_change.sort(key=lambda x: abs(x['change']), reverse=True)
             
+            # 디버그: 추출된 연령별 데이터 확인
+            if age_groups_with_change:
+                print(f"[{self.config['name']}] ✅ {region} 연령별 데이터 추출: {len(age_groups_with_change)}개 연령대")
+            else:
+                print(f"[{self.config['name']}] ⚠️ {region} 연령별 데이터 없음 (필터링 후 0개)")
+            
             return age_groups_with_change
             
         except Exception as e:
@@ -1173,6 +1196,10 @@ class UnifiedReportGenerator(BaseGenerator):
         Returns:
             업종별 데이터 리스트 [{'name': '업종명', 'value': 지수, 'change_rate': 증감률, 'growth_rate': 증감률}, ...]
         """
+        # 수출/수입의 경우 분석 시트에서 품목별 기여율 데이터 추출
+        if self.report_type in ['export', 'import']:
+            return self._extract_trade_product_data(region)
+        
         if self.df_aggregation is None:
             return []
         
@@ -1196,10 +1223,36 @@ class UnifiedReportGenerator(BaseGenerator):
             data_df = df.copy()
         
         # 지역 필터링 (안전한 인덱스 접근)
+        # 정확한 매칭 또는 부분 문자열 매칭 (예: "부산" → "부산광역시")
+        # 지역명 매핑 (짧은 이름 → 긴 이름 패턴)
+        region_name_patterns = {
+            '서울': '서울',
+            '부산': '부산',
+            '대구': '대구',
+            '인천': '인천',
+            '광주': '광주',
+            '대전': '대전',
+            '울산': '울산',
+            '세종': '세종',
+            '경기': '경기',
+            '강원': '강원',
+            '충북': '충청북|충북',
+            '충남': '충청남|충남',
+            '전북': '전라북|전북',
+            '전남': '전라남|전남',
+            '경북': '경상북|경북',
+            '경남': '경상남|경남',
+            '제주': '제주',
+        }
         try:
-            region_filter = data_df[
-                data_df.iloc[:, self.region_name_col].astype(str).str.strip() == region
-            ]
+            region_col_values = data_df.iloc[:, self.region_name_col].astype(str).str.strip()
+            # 1차: 정확한 매칭
+            region_filter = data_df[region_col_values == region]
+            
+            # 2차: 정확한 매칭 실패 시 패턴 매칭 (물가 등에서 "경남" → "경상남도" 처리)
+            if region_filter.empty and region != '전국':
+                pattern = region_name_patterns.get(region, region)
+                region_filter = data_df[region_col_values.str.contains(pattern, na=False, regex=True)]
         except (IndexError, KeyError) as e:
             print(f"[{self.config['name']}] ⚠️ {region} 필터링 오류: {e}")
             return []
@@ -1296,7 +1349,133 @@ class UnifiedReportGenerator(BaseGenerator):
                 'contribution': None        # UndefinedError 방지
             })
         
+        # 변화율 절대값 기준으로 정렬 (영향력 높은 품목 우선)
+        try:
+            industries.sort(key=lambda x: abs(x.get('change_rate') or 0), reverse=True)
+        except (TypeError, AttributeError):
+            pass  # 정렬 실패 시 원래 순서 유지
+        
         return industries
+    
+    def _extract_trade_product_data(self, region: str) -> List[Dict[str, Any]]:
+        """
+        수출/수입 지역의 품목별 기여율 데이터 추출
+        
+        Args:
+            region: 지역명 ('전국', '서울', 등)
+            
+        Returns:
+            품목별 데이터 리스트 [{'name': '품목명', 'contribution_rate': 기여율, ...}, ...]
+        """
+        # 분석 시트 사용 (df_analysis가 있으면 사용, 없으면 df_aggregation)
+        df = self.df_analysis if self.df_analysis is not None else self.df_aggregation
+        
+        if df is None:
+            print(f"[{self.config['name']}] ⚠️ 수출/수입 품목 데이터 추출: 데이터 없음")
+            return []
+        
+        # 분석 구조 설정 가져오기
+        analysis_struct = self.config.get('analysis_structure', {})
+        agg_struct = self.config.get('aggregation_structure', {})
+        
+        # 컬럼 인덱스 설정 (분석 구조 우선, 없으면 집계 구조 사용)
+        region_col = analysis_struct.get('region_name_col', agg_struct.get('region_name_col', self.region_name_col))
+        product_col = analysis_struct.get('industry_name_col', agg_struct.get('industry_name_col', self.industry_name_col))
+        contribution_col = analysis_struct.get('contribution_col')
+        data_start = analysis_struct.get('data_start_row', agg_struct.get('data_start_row', 3))
+        
+        # 컬럼 인덱스 검증
+        if region_col is None or product_col is None:
+            print(f"[{self.config['name']}] ⚠️ 수출/수입 품목 데이터 추출: 컬럼 인덱스 없음 (region_col={region_col}, product_col={product_col})")
+            return []
+        
+        if region_col < 0 or region_col >= len(df.columns):
+            print(f"[{self.config['name']}] ⚠️ 수출/수입 품목 데이터 추출: 지역 컬럼 인덱스({region_col}) 범위 초과")
+            return []
+        
+        # 데이터 행만 추출
+        if data_start < len(df):
+            data_df = df.iloc[data_start:].copy()
+        else:
+            data_df = df.copy()
+        
+        # 지역 필터링 (전국 또는 특정 지역)
+        try:
+            if region == '전국':
+                # 전국의 경우 '합계', '전국' 등으로 표시될 수 있음
+                region_filter = data_df[
+                    data_df.iloc[:, region_col].astype(str).str.strip().isin(['전국', '합계', '전 국'])
+                ]
+            else:
+                region_filter = data_df[
+                    data_df.iloc[:, region_col].astype(str).str.strip() == region
+                ]
+        except (IndexError, KeyError) as e:
+            print(f"[{self.config['name']}] ⚠️ {region} 필터링 오류: {e}")
+            return []
+        
+        if region_filter.empty:
+            print(f"[{self.config['name']}] ⚠️ {region} 품목 데이터 없음 (필터 결과 없음)")
+            return []
+        
+        products = []
+        name_mapping = self.config.get('name_mapping', {})
+        
+        for idx, row in region_filter.iterrows():
+            # 품목명 추출
+            if product_col >= len(row):
+                continue
+            product_name = str(row.iloc[product_col]).strip() if pd.notna(row.iloc[product_col]) else ''
+            
+            if not product_name:
+                continue
+            
+            # 합계 행 스킵
+            if any(kw in product_name for kw in ['합계', '총계', '전체']):
+                continue
+            
+            # 이름 매핑 적용
+            if product_name in name_mapping:
+                product_name = name_mapping[product_name]
+            
+            # 기여율 추출 (있으면)
+            contribution_rate = None
+            if contribution_col is not None and contribution_col < len(row):
+                contribution_rate = self.safe_float(row.iloc[contribution_col], None)
+            
+            # 금액/지수 추출
+            value = None
+            prev_value = None
+            if self.target_col is not None and self.target_col < len(row):
+                value = self.safe_float(row.iloc[self.target_col], None)
+            if self.prev_y_col is not None and self.prev_y_col < len(row):
+                prev_value = self.safe_float(row.iloc[self.prev_y_col], None)
+            
+            # 증감률 계산 (기여율이 없으면 증감률 사용)
+            change_rate = None
+            if value is not None and prev_value is not None and prev_value != 0:
+                change_rate = round(((value - prev_value) / prev_value) * 100, 1)
+            
+            products.append({
+                'name': product_name,
+                'value': round(value, 1) if value is not None else None,
+                'prev_value': round(prev_value, 1) if prev_value is not None else None,
+                'change_rate': change_rate,
+                'growth_rate': change_rate,
+                'contribution_rate': round(contribution_rate, 1) if contribution_rate is not None else None,
+                'contribution': round(contribution_rate, 1) if contribution_rate is not None else None
+            })
+        
+        # 기여율 또는 증감률의 절대값 기준으로 정렬 (상위 영향력 품목 우선)
+        try:
+            products.sort(
+                key=lambda x: abs(x.get('contribution_rate') or x.get('change_rate') or 0),
+                reverse=True
+            )
+        except (TypeError, AttributeError):
+            pass
+        
+        return products
     
     def _get_top_industries_for_region(self, region: str, increase: bool = True, top_n: int = 3) -> List[Dict[str, Any]]:
         """
@@ -1354,15 +1533,25 @@ class UnifiedReportGenerator(BaseGenerator):
     
     def _get_civil_building_growth(self, region: str) -> Dict[str, Any]:
         """
-        건설 데이터에서 토목/건축 증감률을 추출합니다.
+        건설 데이터에서 토목/건축 증감률과 세부 공종을 추출합니다.
         
         Args:
             region: 지역명 ('전국', '서울' 등)
             
         Returns:
-            {'civil_growth': 토목 증감률, 'building_growth': 건축 증감률}
+            {
+                'civil_growth': 토목 증감률,
+                'building_growth': 건축 증감률,
+                'civil_subtypes': 토목 세부 공종 텍스트,
+                'building_subtypes': 건축 세부 공종 텍스트
+            }
         """
-        result = {'civil_growth': None, 'building_growth': None}
+        result = {
+            'civil_growth': None, 
+            'building_growth': None,
+            'civil_subtypes': None,
+            'building_subtypes': None
+        }
         
         if self.report_type != 'construction':
             return result
@@ -1372,18 +1561,65 @@ class UnifiedReportGenerator(BaseGenerator):
         if not industries:
             return result
         
+        # 토목/건축 대분류 키워드
+        civil_keywords = ['토목', '토목공사', 'civil', 'Civil']
+        building_keywords = ['건축', '건축공사', 'building', 'Building']
+        
+        # 토목 세부 공종 키워드 (토목 하위 공종들)
+        civil_subtype_keywords = ['철도', '궤도', '도로', '교량', '기계설치', '기계', '치산', '치수', 
+                                   '항만', '공항', '터널', '토지조성', '상하수도', '조경', '발전소',
+                                   '환경설비', '통신', '농업', '어업', '수력', '지하철']
+        # 건축 세부 공종 키워드 (건축 하위 공종들)
+        building_subtype_keywords = ['주택', '관공서', '사무실', '점포', '공장', '창고', '학교',
+                                      '병원', '문화', '종교', '위락', '비주거', '주거용']
+        
+        # 세부 공종 수집용 리스트
+        civil_subtypes_list = []
+        building_subtypes_list = []
+        
         for ind in industries:
             if not isinstance(ind, dict):
                 continue
             name = ind.get('name', '').strip()
             change_rate = ind.get('change_rate')
             
-            # 토목 매칭
-            if name in ['토목', '토목공사', 'civil', 'Civil']:
+            # 토목 대분류 매칭
+            if name in civil_keywords:
                 result['civil_growth'] = change_rate
-            # 건축 매칭
-            elif name in ['건축', '건축공사', 'building', 'Building']:
+            # 건축 대분류 매칭
+            elif name in building_keywords:
                 result['building_growth'] = change_rate
+            # 토목 세부 공종 매칭
+            elif any(kw in name for kw in civil_subtype_keywords):
+                civil_subtypes_list.append({
+                    'name': name,
+                    'change_rate': change_rate
+                })
+            # 건축 세부 공종 매칭
+            elif any(kw in name for kw in building_subtype_keywords):
+                building_subtypes_list.append({
+                    'name': name,
+                    'change_rate': change_rate
+                })
+        
+        # 세부 공종 정렬 및 상위 2개 선택 (증감률 기준)
+        # 토목 세부 공종: 증감률 절대값이 큰 순으로 정렬하여 상위 2개
+        if civil_subtypes_list:
+            # None이 아닌 항목만 필터링
+            valid_civil = [s for s in civil_subtypes_list if s.get('change_rate') is not None]
+            if valid_civil:
+                # 증감률 절대값 기준으로 정렬 (가장 영향이 큰 공종)
+                valid_civil.sort(key=lambda x: abs(x['change_rate']), reverse=True)
+                top_civil_names = [s['name'] for s in valid_civil[:2]]
+                result['civil_subtypes'] = ', '.join(top_civil_names) if top_civil_names else None
+        
+        # 건축 세부 공종: 증감률 절대값이 큰 순으로 정렬하여 상위 2개
+        if building_subtypes_list:
+            valid_building = [s for s in building_subtypes_list if s.get('change_rate') is not None]
+            if valid_building:
+                valid_building.sort(key=lambda x: abs(x['change_rate']), reverse=True)
+                top_building_names = [s['name'] for s in valid_building[:2]]
+                result['building_subtypes'] = ', '.join(top_building_names) if top_building_names else None
         
         return result
     
@@ -1522,13 +1758,13 @@ class UnifiedReportGenerator(BaseGenerator):
             construction_trillion = (index_value / 100) if index_value else None
             result['construction_index_trillion'] = construction_trillion
             result['change'] = growth_rate
-            # 토목/건축 증감률 추출 (실제 데이터 사용)
+            # 토목/건축 증감률 및 세부 공종 추출 (실제 데이터 사용)
             civil_building = self._get_civil_building_growth('전국')
             result['civil_growth'] = civil_building.get('civil_growth') if civil_building.get('civil_growth') is not None else growth_rate
             result['building_growth'] = civil_building.get('building_growth') if civil_building.get('building_growth') is not None else growth_rate
-            # 토목/건축 부공종 (기본값)
-            result['civil_subtypes'] = '철도·궤도, 기계설치'
-            result['building_subtypes'] = '주택, 관공서 등'
+            # 토목/건축 세부 공종 (실제 데이터 사용, 없으면 기본값)
+            result['civil_subtypes'] = civil_building.get('civil_subtypes') if civil_building.get('civil_subtypes') else '철도·궤도, 기계설치'
+            result['building_subtypes'] = civil_building.get('building_subtypes') if civil_building.get('building_subtypes') else '주택, 관공서 등'
             result['main_category'] = '토목' if (growth_rate is not None and growth_rate >= 0) else '토목'
             result['sub_types_text'] = '철도·궤도, 도로·교량, 주택'
         # 고용률/실업률 템플릿 호환 별칭 추가
@@ -1733,9 +1969,10 @@ class UnifiedReportGenerator(BaseGenerator):
             )
             
             # 현재 분기의 전년동분기 대비 증감률
-            current = _compute_growth(current_value, prev_value)
+            # row.get('change_rate')를 우선 사용하여 내레이션과 표가 일치하도록 함
+            current = _to_float(row.get('change_rate'))
             if current is None:
-                current = _to_float(row.get('change_rate'))
+                current = _compute_growth(current_value, prev_value)
 
             return [two_years_ago, last_year, previous_quarter, current]
 
@@ -1857,13 +2094,19 @@ class UnifiedReportGenerator(BaseGenerator):
             # scale_factor가 이미 0.01이 적용되어 있음
             nationwide.setdefault('amount', nationwide.get('value'))
             nationwide.setdefault('change', nationwide.get('change_rate'))
+            # 전국 품목 데이터 추출 (기존 데이터가 없으면 다시 추출)
             products = nationwide.get('products') or nationwide.get('main_items') or []
+            if not products:
+                products = self._extract_industry_data('전국')[:3]
             normalized_products = []
             for p in products:
                 if isinstance(p, dict):
                     normalized_products.append({
                         'name': p.get('name') or p.get('display_name') or str(p),
-                        'change': p.get('change', nationwide.get('change'))
+                        'change': p.get('change', p.get('change_rate', nationwide.get('change'))),
+                        'contribution_rate': p.get('contribution_rate'),
+                        'contribution': p.get('contribution') or p.get('contribution_rate'),
+                        'growth_rate': p.get('growth_rate') or p.get('change_rate')
                     })
                 else:
                     normalized_products.append({'name': p, 'change': nationwide.get('change')})
@@ -1899,11 +2142,29 @@ class UnifiedReportGenerator(BaseGenerator):
             report_info.setdefault('age_other_note', '그 외 연령층')
             data['report_info'] = report_info
         elif self.report_type == 'construction':
-            # construction_template.html 호환성 보강
-            nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))
-            nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
-            nationwide.setdefault('civil_subtypes', '철도·궤도, 기계설치')
-            nationwide.setdefault('building_subtypes', '주택, 관공서 등')
+            # construction_template.html 호환성 보강 - 실제 데이터 사용
+            civil_building_nationwide = self._get_civil_building_growth('전국')
+            if not nationwide.get('civil_growth'):
+                if civil_building_nationwide.get('civil_growth') is not None:
+                    nationwide['civil_growth'] = civil_building_nationwide['civil_growth']
+                else:
+                    nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))
+            if not nationwide.get('building_growth'):
+                if civil_building_nationwide.get('building_growth') is not None:
+                    nationwide['building_growth'] = civil_building_nationwide['building_growth']
+                else:
+                    nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
+            # 세부 공종도 실제 데이터 사용
+            if not nationwide.get('civil_subtypes'):
+                if civil_building_nationwide.get('civil_subtypes'):
+                    nationwide['civil_subtypes'] = civil_building_nationwide['civil_subtypes']
+                else:
+                    nationwide.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+            if not nationwide.get('building_subtypes'):
+                if civil_building_nationwide.get('building_subtypes'):
+                    nationwide['building_subtypes'] = civil_building_nationwide['building_subtypes']
+                else:
+                    nationwide.setdefault('building_subtypes', '주택, 관공서 등')
             nationwide.setdefault('main_category', '토목' if (nationwide.get('growth_rate') is not None and nationwide.get('growth_rate') >= 0) else '토목')
             nationwide.setdefault('sub_types_text', '철도·궤도, 도로·교량, 주택')
         data['nationwide_data'] = nationwide
@@ -1918,13 +2179,20 @@ class UnifiedReportGenerator(BaseGenerator):
             if self.report_type in ['export', 'import']:
                 entry.setdefault('amount', entry.get('value'))
                 entry.setdefault('change', entry.get('change_rate'))
-                raw_products = entry.get('products') or self._extract_item_names(entry.get('top_industries'))
+                # 품목 데이터 추출 (기존 데이터가 없으면 다시 추출)
+                region_name = entry.get('region') or entry.get('region_name')
+                raw_products = entry.get('products') or entry.get('top_industries') or []
+                if not raw_products and region_name:
+                    raw_products = self._extract_industry_data(region_name)[:3]
                 normalized_products = []
                 for p in raw_products or []:
                     if isinstance(p, dict):
                         normalized_products.append({
                             'name': p.get('name') or p.get('display_name') or str(p),
-                            'change': p.get('change', entry.get('change'))
+                            'change': p.get('change', p.get('change_rate', entry.get('change'))),
+                            'contribution_rate': p.get('contribution_rate'),
+                            'contribution': p.get('contribution') or p.get('contribution_rate'),
+                            'growth_rate': p.get('growth_rate') or p.get('change_rate')
                         })
                     else:
                         normalized_products.append({'name': p, 'change': entry.get('change')})
@@ -1957,8 +2225,11 @@ class UnifiedReportGenerator(BaseGenerator):
                 nationwide_age_groups = self._extract_age_groups_for_region('전국')
                 nationwide['top_age_groups'] = nationwide_age_groups
                 nationwide['main_age_groups'] = nationwide_age_groups[:4]
+                nationwide['age_groups'] = nationwide_age_groups  # 템플릿 호환용
             if not nationwide.get('main_age_groups') and nationwide.get('top_age_groups'):
                 nationwide['main_age_groups'] = nationwide.get('top_age_groups', [])[:4]
+            if not nationwide.get('age_groups') and nationwide.get('top_age_groups'):
+                nationwide['age_groups'] = nationwide.get('top_age_groups', [])
         
         if self.report_type == 'construction':
             # 전국 토목/건축 증감률 (이미 extract_nationwide_data에서 설정됨)
@@ -1973,28 +2244,69 @@ class UnifiedReportGenerator(BaseGenerator):
                 else:
                     nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
             
-            # 각 지역별 토목/건축 증감률 설정
+            # 각 지역별 토목/건축 증감률 및 세부 공종 설정
             for entry in regional_increase + regional_decrease:
                 if not isinstance(entry, dict):
                     continue
                 region_name = entry.get('region') or entry.get('region_name')
                 if region_name:
                     civil_building = self._get_civil_building_growth(region_name)
+                    # 토목 증감률
                     if civil_building.get('civil_growth') is not None:
                         entry['civil_growth'] = civil_building['civil_growth']
                     else:
                         entry.setdefault('civil_growth', entry.get('growth_rate'))
+                    # 건축 증감률
                     if civil_building.get('building_growth') is not None:
                         entry['building_growth'] = civil_building['building_growth']
                     else:
                         entry.setdefault('building_growth', entry.get('growth_rate'))
+                    # 토목 세부 공종
+                    if civil_building.get('civil_subtypes'):
+                        entry['civil_subtypes'] = civil_building['civil_subtypes']
+                    else:
+                        entry.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+                    # 건축 세부 공종
+                    if civil_building.get('building_subtypes'):
+                        entry['building_subtypes'] = civil_building['building_subtypes']
+                    else:
+                        entry.setdefault('building_subtypes', '주택, 관공서 등')
                 else:
                     entry.setdefault('civil_growth', entry.get('growth_rate'))
                     entry.setdefault('building_growth', entry.get('growth_rate'))
+                    entry.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+                    entry.setdefault('building_subtypes', '주택, 관공서 등')
 
         if self.report_type == 'price':
-            regional['high_regions'] = regional_increase
-            regional['low_regions'] = regional_decrease
+            # 물가 동향: 전국 대비 높음/낮음으로 분류 (단순 증가/감소가 아님)
+            # 물가는 모든 지역이 양수 증가율이므로, 전국 증감률과 비교해야 함
+            nationwide_change = nationwide.get('change') or nationwide.get('growth_rate') or nationwide.get('change_rate') or 0
+            
+            # 전체 지역 리스트에서 전국 대비 분류
+            all_regional = regional.get('all_regions', [])
+            
+            # 전국 대비 높은 지역 (change_rate > nationwide_change)
+            high_regions = [
+                r for r in all_regional
+                if r and isinstance(r, dict) and r.get('change_rate') is not None and r.get('change_rate') > nationwide_change
+            ]
+            high_regions.sort(key=lambda x: x.get('change_rate', 0), reverse=True)
+            
+            # 전국 대비 낮은 지역 (change_rate < nationwide_change)
+            low_regions = [
+                r for r in all_regional
+                if r and isinstance(r, dict) and r.get('change_rate') is not None and r.get('change_rate') < nationwide_change
+            ]
+            low_regions.sort(key=lambda x: x.get('change_rate', 0))
+            
+            # 템플릿 호환 필드 추가 (change, region)
+            for r in high_regions + low_regions:
+                if isinstance(r, dict):
+                    r['change'] = r.get('change_rate')
+                    r['region'] = r.get('region_name') or r.get('region')
+            
+            regional['high_regions'] = high_regions
+            regional['low_regions'] = low_regions
             
             # 물가 보고서: summary_box.main_items에 전국 주요 품목 이름 추가
             nationwide_categories = nationwide.get('categories') or nationwide.get('main_items') or []
@@ -2009,9 +2321,9 @@ class UnifiedReportGenerator(BaseGenerator):
             summary_box['main_items'] = main_item_names[:3]  # 상위 3개만
             
             # 물가 보고서: low_items_text와 high_items_text 생성
-            # 전국보다 낮은 지역의 주요 품목 텍스트
+            # 전국보다 낮은 지역의 주요 품목 텍스트 (새로 분류한 low_regions 사용)
             low_items = []
-            for region in regional_decrease[:3]:
+            for region in low_regions[:3]:
                 if isinstance(region, dict):
                     region_name = region.get('region') or region.get('region_name')
                     if region_name:
@@ -2027,9 +2339,9 @@ class UnifiedReportGenerator(BaseGenerator):
                                     low_items.append(name)
             data['low_items_text'] = ', '.join(low_items[:3]) if low_items else ''
             
-            # 전국보다 높은 지역의 주요 품목 텍스트
+            # 전국보다 높은 지역의 주요 품목 텍스트 (새로 분류한 high_regions 사용)
             high_items = []
-            for region in regional_increase[:3]:
+            for region in high_regions[:3]:
                 if isinstance(region, dict):
                     region_name = region.get('region') or region.get('region_name')
                     if region_name:
@@ -2096,23 +2408,41 @@ class UnifiedReportGenerator(BaseGenerator):
             elif self.report_type == 'construction':
                 # 이미 설정된 경우 유지, 없으면 실제 데이터 추출 시도
                 region_name = item.get('region') or item.get('region_name')
-                if region_name and (item.get('civil_growth') is None or item.get('building_growth') is None):
-                    civil_building = self._get_civil_building_growth(region_name)
-                    if item.get('civil_growth') is None:
-                        if civil_building.get('civil_growth') is not None:
-                            item['civil_growth'] = civil_building['civil_growth']
-                        else:
-                            item['civil_growth'] = item.get('growth_rate')
-                    if item.get('building_growth') is None:
-                        if civil_building.get('building_growth') is not None:
-                            item['building_growth'] = civil_building['building_growth']
-                        else:
-                            item['building_growth'] = item.get('growth_rate')
+                if region_name:
+                    # 증감률 또는 세부 공종이 없으면 데이터 추출 시도
+                    needs_data = (item.get('civil_growth') is None or item.get('building_growth') is None or 
+                                  item.get('civil_subtypes') is None or item.get('building_subtypes') is None)
+                    if needs_data:
+                        civil_building = self._get_civil_building_growth(region_name)
+                        # 토목 증감률
+                        if item.get('civil_growth') is None:
+                            if civil_building.get('civil_growth') is not None:
+                                item['civil_growth'] = civil_building['civil_growth']
+                            else:
+                                item['civil_growth'] = item.get('growth_rate')
+                        # 건축 증감률
+                        if item.get('building_growth') is None:
+                            if civil_building.get('building_growth') is not None:
+                                item['building_growth'] = civil_building['building_growth']
+                            else:
+                                item['building_growth'] = item.get('growth_rate')
+                        # 토목 세부 공종
+                        if item.get('civil_subtypes') is None:
+                            if civil_building.get('civil_subtypes'):
+                                item['civil_subtypes'] = civil_building['civil_subtypes']
+                            else:
+                                item['civil_subtypes'] = '철도·궤도, 기계설치'
+                        # 건축 세부 공종
+                        if item.get('building_subtypes') is None:
+                            if civil_building.get('building_subtypes'):
+                                item['building_subtypes'] = civil_building['building_subtypes']
+                            else:
+                                item['building_subtypes'] = '주택, 관공서 등'
                 else:
                     item.setdefault('civil_growth', item.get('growth_rate'))
                     item.setdefault('building_growth', item.get('growth_rate'))
-                item.setdefault('civil_subtypes', '철도·궤도, 기계설치')
-                item.setdefault('building_subtypes', '주택, 관공서 등')
+                    item.setdefault('civil_subtypes', '철도·궤도, 기계설치')
+                    item.setdefault('building_subtypes', '주택, 관공서 등')
             return item
 
         # None 제거 및 보정 적용 (products 필드가 항상 리스트가 되도록 보정)
@@ -2144,10 +2474,12 @@ class UnifiedReportGenerator(BaseGenerator):
                     item['age_groups'] = age_groups
 
         if self.report_type == 'price':
-            # 물가 보고서: top3_above_regions 생성 (categories가 없으면 추출)
+            # 물가 보고서: top3_above_regions 생성 (전국 대비 높은 지역에서 가져옴)
+            # high_regions는 이미 전국 대비로 분류됨
+            price_high_regions = regional.get('high_regions', [])[:3]
             top3_above = []
-            for item in top3_increase:
-                region_name = item.get('region')
+            for item in price_high_regions:
+                region_name = item.get('region') or item.get('region_name')
                 existing_cats = item.get('categories', item.get('industries', []))
                 if not existing_cats and region_name:
                     # categories가 없으면 _extract_industry_data로 추출
@@ -2157,25 +2489,27 @@ class UnifiedReportGenerator(BaseGenerator):
                     if isinstance(cat, dict):
                         normalized_cats.append({
                             'name': cat.get('name') or cat.get('display_name') or str(cat),
-                            'change': cat.get('change', cat.get('growth_rate', cat.get('change_rate', item.get('growth_rate')))),
+                            'change': cat.get('change', cat.get('growth_rate', cat.get('change_rate', item.get('change_rate')))),
                             'contribution_rate': cat.get('contribution_rate'),
                             'contribution': cat.get('contribution'),
                             'growth_rate': cat.get('growth_rate', cat.get('change_rate'))
                         })
                     else:
-                        normalized_cats.append({'name': cat, 'change': item.get('growth_rate')})
+                        normalized_cats.append({'name': cat, 'change': item.get('change_rate')})
                 top3_above.append({
                     'name': region_name,
                     'region': region_name,
-                    'change': item.get('growth_rate'),
+                    'change': item.get('change_rate'),
                     'categories': normalized_cats[:3]
                 })
             data['top3_above_regions'] = top3_above
             
-            # 물가 보고서: top3_below_regions 생성 (categories가 없으면 추출)
+            # 물가 보고서: top3_below_regions 생성 (전국 대비 낮은 지역에서 가져옴)
+            # low_regions는 이미 전국 대비로 분류됨
+            price_low_regions = regional.get('low_regions', [])[:3]
             top3_below = []
-            for item in top3_decrease:
-                region_name = item.get('region')
+            for item in price_low_regions:
+                region_name = item.get('region') or item.get('region_name')
                 existing_cats = item.get('categories', item.get('industries', []))
                 if not existing_cats and region_name:
                     # categories가 없으면 _extract_industry_data로 추출
@@ -2185,17 +2519,17 @@ class UnifiedReportGenerator(BaseGenerator):
                     if isinstance(cat, dict):
                         normalized_cats.append({
                             'name': cat.get('name') or cat.get('display_name') or str(cat),
-                            'change': cat.get('change', cat.get('growth_rate', cat.get('change_rate', item.get('growth_rate')))),
+                            'change': cat.get('change', cat.get('growth_rate', cat.get('change_rate', item.get('change_rate')))),
                             'contribution_rate': cat.get('contribution_rate'),
                             'contribution': cat.get('contribution'),
                             'growth_rate': cat.get('growth_rate', cat.get('change_rate'))
                         })
                     else:
-                        normalized_cats.append({'name': cat, 'change': item.get('growth_rate')})
+                        normalized_cats.append({'name': cat, 'change': item.get('change_rate')})
                 top3_below.append({
                     'name': region_name,
                     'region': region_name,
-                    'change': item.get('growth_rate'),
+                    'change': item.get('change_rate'),
                     'categories': normalized_cats[:3]
                 })
             data['top3_below_regions'] = top3_below

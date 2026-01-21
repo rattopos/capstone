@@ -2482,8 +2482,7 @@ def _export_hwp_ready_core(pages, year, quarter, output_folder=EXPORT_FOLDER):
 
             body_content = _add_table_inline_styles(body_content)
 
-            if not is_first_page:
-                final_html += '\n<div style="height: 1em;"></div>\n'
+            # 페이지 구분자 제거 - 요약 섹션들 사이의 여백을 일정하게 유지
             is_first_page = False
 
             final_html += f'''

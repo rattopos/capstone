@@ -352,6 +352,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'report_id': 'export',
         'name': '수출',
         'sheet': 'G 분석',
+        'analysis_sheet': 'G 분석',  # 품목별 상세 데이터 추출용 분석 시트
         'generator': 'unified_generator.py',
         'template': 'export_template.html',
         'icon': '📦',
@@ -364,6 +365,12 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'region_name_col': 3,  # D열(0-based) - 지역이름
             'industry_name_col': 7,  # H열(0-based) - 상품 이름 (컬럼 6은 상품코드)
             'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
+        },
+        'analysis_structure': {
+            'region_name_col': 3,  # D열(0-based) - 지역이름
+            'industry_name_col': 8,  # I열(0-based) - 상품 이름 (G 분석 시트에서는 열 8, 열 7은 상품코드)
+            'contribution_col': 27,  # AB열(0-based) - 기여율
+            'data_start_row': 3
         },
         'aggregation_columns': {
             'target_col': 26,  # AA열(0-based) - 2025 3/4
@@ -382,6 +389,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'report_id': 'import',
         'name': '수입',
         'sheet': 'H 분석',
+        'analysis_sheet': 'H 분석',  # 품목별 상세 데이터 추출용 분석 시트
         'generator': 'unified_generator.py',
         'template': 'import_template.html',
         'icon': '🚢',
@@ -394,6 +402,12 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'region_name_col': 3,  # D열(0-based) - 지역이름
             'industry_name_col': 7,  # H열(0-based) - 상품 이름 (컬럼 6은 상품코드)
             'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
+        },
+        'analysis_structure': {
+            'region_name_col': 3,  # D열(0-based) - 지역이름
+            'industry_name_col': 8,  # I열(0-based) - 상품 이름 (H 분석 시트에서는 열 8, 열 7은 상품코드)
+            'contribution_col': 27,  # AB열(0-based) - 기여율
+            'data_start_row': 3
         },
         'aggregation_columns': {
             'target_col': 26,  # AA열(0-based) - 2025 3/4
@@ -452,8 +466,9 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'aggregation_structure': {
             'total_code': '계',
             'sheet': 'D(고용률)집계',
-            'region_name_col': 0,  # A열(0-based)
-            'data_start_row': 3
+            'region_name_col': 1,  # B열(0-based) - 지역 이름
+            'age_col': 3,  # D열(0-based) - 연령 (산업 이름 컬럼)
+            'data_start_row': 0  # aggregation_range가 이미 행 3부터 읽어옴
         },
         'aggregation_columns': {
             'target_col': 21,  # V열(0-based) - 2025 3/4
@@ -482,8 +497,9 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'aggregation_structure': {
             'total_code': '계',
             'sheet': 'D(실업)집계',
-            'region_name_col': 0,  # A열(0-based)
-            'data_start_row': 80
+            'region_name_col': 0,  # A열(0-based) - 시도별
+            'age_col': 1,  # B열(0-based) - 연령계층별
+            'data_start_row': 1  # 첫 행(헤더)을 건너뛰고 데이터 시작 (aggregation_range가 이미 80행부터 읽어옴)
         },
         'aggregation_columns': {
             'target_col': 19,  # T열(0-based) - 2025 3/4
