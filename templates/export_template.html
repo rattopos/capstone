@@ -334,8 +334,8 @@
             <div class="item">·전 국(  {{ "%.1f"|format(nationwide_data.change) }}%): 
                 {% for prod in nationwide_data.products[:3] %}
                 {% if prod is mapping %}
-                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
-                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% set rate = prod.get('contribution_rate') if prod.get('contribution_rate') is not none else (prod.get('contribution') if prod.get('contribution') is not none else (prod.get('change') if prod.get('change') is not none else prod.get('growth_rate'))) %}
+                {{ prod.get('name', prod) }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% else %}
                 {{ prod }}{% if not loop.last %}, {% endif %}
                 {% endif %}
@@ -349,8 +349,8 @@
             <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}( {{ "%.1f"|format(region.change) }}%): 
                 {% for prod in (region.products or [])[:3] %}
                 {% if prod is mapping %}
-                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
-                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% set rate = prod.get('contribution_rate') if prod.get('contribution_rate') is not none else (prod.get('contribution') if prod.get('contribution') is not none else (prod.get('change') if prod.get('change') is not none else prod.get('growth_rate'))) %}
+                {{ prod.get('name', prod) }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% else %}
                 {{ prod }}{% if not loop.last %}, {% endif %}
                 {% endif %}
@@ -365,8 +365,8 @@
             <div class="item">·{{ region.region if region.region is defined and region.region else region.name }}({{ "%.1f"|format(region.change) }}%): 
                 {% for prod in (region.products or [])[:3] %}
                 {% if prod is mapping %}
-                {% set rate = prod.contribution_rate if prod.contribution_rate is not none else (prod.contribution if prod.contribution is not none else (prod.change if prod.change is not none else prod.growth_rate)) %}
-                {{ prod.name }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
+                {% set rate = prod.get('contribution_rate') if prod.get('contribution_rate') is not none else (prod.get('contribution') if prod.get('contribution') is not none else (prod.get('change') if prod.get('change') is not none else prod.get('growth_rate'))) %}
+                {{ prod.get('name', prod) }}({{ val(rate, "%.1f", "%") }}){% if not loop.last %}, {% endif %}
                 {% else %}
                 {{ prod }}{% if not loop.last %}, {% endif %}
                 {% endif %}

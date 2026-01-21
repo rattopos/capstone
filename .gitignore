@@ -36,4 +36,7 @@ env/
 *.temp
 *.log
 
-exports/
+exports/*
+result_data/*
+
+ 

@@ -1352,6 +1352,41 @@ class UnifiedReportGenerator(BaseGenerator):
             return None
         return filtered[:top_n]
     
+    def _get_civil_building_growth(self, region: str) -> Dict[str, Any]:
+        """
+        건설 데이터에서 토목/건축 증감률을 추출합니다.
+        
+        Args:
+            region: 지역명 ('전국', '서울' 등)
+            
+        Returns:
+            {'civil_growth': 토목 증감률, 'building_growth': 건축 증감률}
+        """
+        result = {'civil_growth': None, 'building_growth': None}
+        
+        if self.report_type != 'construction':
+            return result
+        
+        # 업종 데이터에서 토목과 건축 찾기
+        industries = self._extract_industry_data(region)
+        if not industries:
+            return result
+        
+        for ind in industries:
+            if not isinstance(ind, dict):
+                continue
+            name = ind.get('name', '').strip()
+            change_rate = ind.get('change_rate')
+            
+            # 토목 매칭
+            if name in ['토목', '토목공사', 'civil', 'Civil']:
+                result['civil_growth'] = change_rate
+            # 건축 매칭
+            elif name in ['건축', '건축공사', 'building', 'Building']:
+                result['building_growth'] = change_rate
+        
+        return result
+    
     def extract_nationwide_data(self, table_data: List[Dict] = None) -> Dict[str, Any]:
         """전국 데이터 추출 - 템플릿 호환 필드명"""
         if table_data is None:
@@ -1487,9 +1522,10 @@ class UnifiedReportGenerator(BaseGenerator):
             construction_trillion = (index_value / 100) if index_value else None
             result['construction_index_trillion'] = construction_trillion
             result['change'] = growth_rate
-            # 토목/건축 증감률 (기본값은 전체 증감률 사용)
-            result['civil_growth'] = growth_rate
-            result['building_growth'] = growth_rate
+            # 토목/건축 증감률 추출 (실제 데이터 사용)
+            civil_building = self._get_civil_building_growth('전국')
+            result['civil_growth'] = civil_building.get('civil_growth') if civil_building.get('civil_growth') is not None else growth_rate
+            result['building_growth'] = civil_building.get('building_growth') if civil_building.get('building_growth') is not None else growth_rate
             # 토목/건축 부공종 (기본값)
             result['civil_subtypes'] = '철도·궤도, 기계설치'
             result['building_subtypes'] = '주택, 관공서 등'
@@ -1925,13 +1961,36 @@ class UnifiedReportGenerator(BaseGenerator):
                 nationwide['main_age_groups'] = nationwide.get('top_age_groups', [])[:4]
         
         if self.report_type == 'construction':
-            nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))
-            nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
+            # 전국 토목/건축 증감률 (이미 extract_nationwide_data에서 설정됨)
+            if not nationwide.get('civil_growth') or not nationwide.get('building_growth'):
+                civil_building_nationwide = self._get_civil_building_growth('전국')
+                if civil_building_nationwide.get('civil_growth') is not None:
+                    nationwide['civil_growth'] = civil_building_nationwide['civil_growth']
+                else:
+                    nationwide.setdefault('civil_growth', nationwide.get('growth_rate'))
+                if civil_building_nationwide.get('building_growth') is not None:
+                    nationwide['building_growth'] = civil_building_nationwide['building_growth']
+                else:
+                    nationwide.setdefault('building_growth', nationwide.get('growth_rate'))
+            
+            # 각 지역별 토목/건축 증감률 설정
             for entry in regional_increase + regional_decrease:
                 if not isinstance(entry, dict):
                     continue
-                entry.setdefault('civil_growth', entry.get('growth_rate'))
-                entry.setdefault('building_growth', entry.get('growth_rate'))
+                region_name = entry.get('region') or entry.get('region_name')
+                if region_name:
+                    civil_building = self._get_civil_building_growth(region_name)
+                    if civil_building.get('civil_growth') is not None:
+                        entry['civil_growth'] = civil_building['civil_growth']
+                    else:
+                        entry.setdefault('civil_growth', entry.get('growth_rate'))
+                    if civil_building.get('building_growth') is not None:
+                        entry['building_growth'] = civil_building['building_growth']
+                    else:
+                        entry.setdefault('building_growth', entry.get('growth_rate'))
+                else:
+                    entry.setdefault('civil_growth', entry.get('growth_rate'))
+                    entry.setdefault('building_growth', entry.get('growth_rate'))
 
         if self.report_type == 'price':
             regional['high_regions'] = regional_increase
@@ -2035,8 +2094,23 @@ class UnifiedReportGenerator(BaseGenerator):
             elif self.report_type in ['employment', 'unemployment']:
                 item.setdefault('age_groups', [])
             elif self.report_type == 'construction':
-                item.setdefault('civil_growth', item.get('growth_rate'))
-                item.setdefault('building_growth', item.get('growth_rate'))
+                # 이미 설정된 경우 유지, 없으면 실제 데이터 추출 시도
+                region_name = item.get('region') or item.get('region_name')
+                if region_name and (item.get('civil_growth') is None or item.get('building_growth') is None):
+                    civil_building = self._get_civil_building_growth(region_name)
+                    if item.get('civil_growth') is None:
+                        if civil_building.get('civil_growth') is not None:
+                            item['civil_growth'] = civil_building['civil_growth']
+                        else:
+                            item['civil_growth'] = item.get('growth_rate')
+                    if item.get('building_growth') is None:
+                        if civil_building.get('building_growth') is not None:
+                            item['building_growth'] = civil_building['building_growth']
+                        else:
+                            item['building_growth'] = item.get('growth_rate')
+                else:
+                    item.setdefault('civil_growth', item.get('growth_rate'))
+                    item.setdefault('building_growth', item.get('growth_rate'))
                 item.setdefault('civil_subtypes', '철도·궤도, 기계설치')
                 item.setdefault('building_subtypes', '주택, 관공서 등')
             return item

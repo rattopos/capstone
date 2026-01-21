@@ -166,8 +166,16 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'category': 'production',
         'class_name': 'MiningManufacturingGenerator',
         'name_mapping': {
+            # 전자/반도체 관련
+            '전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
+            '전자부품, 컴퓨터, 영상, 음향 및 통신장비 제조업': '반도체·전자부품',
+            '전자 부품 제조업': '전자부품',
+            '컴퓨터 및 주변 장치 제조업': '컴퓨터·주변장치',
+            '통신 및 방송장비 제조업': '통신·방송장비',
+            # 의료/정밀 관련
             '의료, 정밀, 광학 기기 및 시계 제조업': '의료·정밀',
             '의료용 물질 및 의약품 제조업': '의약품',
+            # 기타 제조업
             '기타 운송장비 제조업': '기타 운송장비',
             '기타 기계 및 장비 제조업': '기타기계장비',
             '전기장비 제조업': '전기장비',
@@ -194,12 +202,16 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '코크스, 연탄 및 석유정제품 제조업': '석유정제품',
             '목재 및 나무제품 제조업; 가구 제외': '목재제품',
             '비금속광물 광업; 연료용 제외': '비금속광물광업',
+            # 광업 관련
+            '석탄, 원유 및 천연가스 광업': '석탄·원유·천연가스',
+            '토사석 광업': '토사석',
+            '기타 비금속광물 광업': '기타비금속',
         },
         'aggregation_structure': {
             'total_code': 'BCD', 
             'sheet': 'A(광공업생산)집계',
             'region_name_col': 4,  # E열(0-based) - 지역이름
-            'industry_name_col': 7,  # H열(0-based) - 업종이름
+            'industry_name_col': 8,  # I열(0-based) - 산업 이름 (컬럼 7은 산업코드)
             'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
         },
         'aggregation_columns': {
@@ -227,8 +239,8 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
         'aggregation_structure': {
             'total_code': 'E~S',
             'sheet': 'B(서비스업생산)집계',
-            'region_name_col': 2,  # C열(0-based)
-            'industry_name_col': 7,  # H열(0-based)
+            'region_name_col': 3,  # D열(0-based) - 지역이름 (컬럼 2는 지역코드)
+            'industry_name_col': 7,  # H열(0-based) - 산업 이름
             'data_start_row': 3
         },
         'aggregation_columns': {
@@ -285,10 +297,19 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'sheet': 'C(소비)집계',
             'region_name_col': 2,
             'industry_name_col': 6,
-            'data_start_row': 0
+            'data_start_row': 3  # 헤더 3행 후 데이터 시작
+        },
+        'aggregation_columns': {
+            'target_col': 24,  # 2025 3/4
+            'prev_y_col': 20,  # 2024 3/4
+            'prev_prev_y_col': 16,  # 2023 3/4
+            'prev_prev_prev_y_col': 12,  # 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 12, '2023 3/4': 16, '2024 3/4': 20, '2025 2/4': 23, '2025 3/4': 24
+            }
         },
         'metadata_columns': ['region', 'classification', 'code', 'name'],
-        'data_start_row': 0,
+        'data_start_row': 3,
         'industry_name_col': 6,
         'analysis_sheet': 'C 분석'
     },
@@ -308,7 +329,22 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             '주거용 건물': '주거용',
             '비주거용 건물': '비주거용',
         },
-        'aggregation_structure': {'total_code': '0', 'sheet': "F'(건설)집계"},
+        'aggregation_structure': {
+            'total_code': '0', 
+            'sheet': "F'(건설)집계",
+            'region_name_col': 1,  # 지역이름
+            'industry_name_col': 4,  # 공정 이름
+            'data_start_row': 3
+        },
+        'aggregation_columns': {
+            'target_col': 22,  # 2025 3/4
+            'prev_y_col': 18,  # 2024 3/4
+            'prev_prev_y_col': 14,  # 2023 3/4
+            'prev_prev_prev_y_col': 10,  # 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 10, '2023 3/4': 14, '2024 3/4': 18, '2025 2/4': 21, '2025 3/4': 22
+            }
+        },
         'metadata_columns': ['region', 'classification', 'code', 'name']
     },
     {
@@ -326,7 +362,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'total_code': '합계', 
             'sheet': 'G(수출)집계',
             'region_name_col': 3,  # D열(0-based) - 지역이름
-            'industry_name_col': 6,  # G열(0-based) - 품목이름
+            'industry_name_col': 7,  # H열(0-based) - 상품 이름 (컬럼 6은 상품코드)
             'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
         },
         'aggregation_columns': {
@@ -356,7 +392,7 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'total_code': '합계', 
             'sheet': 'H(수입)집계',
             'region_name_col': 3,  # D열(0-based) - 지역이름
-            'industry_name_col': 6,  # G열(0-based) - 품목이름
+            'industry_name_col': 7,  # H열(0-based) - 상품 이름 (컬럼 6은 상품코드)
             'data_start_row': 3  # 헤더 3행 후 4행부터 데이터
         },
         'aggregation_columns': {
@@ -388,6 +424,15 @@ SECTOR_REPORTS: list[dict[str, Any]] = [
             'region_name_col': 0,
             'industry_name_col': 3,
             'data_start_row': 0
+        },
+        'aggregation_columns': {
+            'target_col': 21,  # V열(0-based) - 2025 3/4
+            'prev_y_col': 17,  # R열(0-based) - 2024 3/4
+            'prev_prev_y_col': 13,  # N열(0-based) - 2023 3/4
+            'prev_prev_prev_y_col': 9,  # J열(0-based) - 2022 3/4
+            'quarterly_cols': {
+                '2022 3/4': 9, '2023 3/4': 13, '2024 3/4': 17, '2025 2/4': 20, '2025 3/4': 21
+            }
         },
         'data_start_row': 0,
         'industry_name_col': 3,
